@@ -52,7 +52,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - run: python ./dependencies/tools/checkstyle/test-coverage.py
+      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - rpm_install
       - bazel:
           command: bazel build //...
@@ -140,7 +140,7 @@ jobs:
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  dependency-update:
+  release-dependency-update:
     machine: true
     steps:
       - checkout
@@ -148,15 +148,15 @@ jobs:
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
-            bazel run @graknlabs_grabl//ci:dependency-update -- --dependency grakn:master \
+            bazel run @graknlabs_build_tools//release:dependency-update -- --dependency grakn:master \
               --user docs:development workbase:master client-java:master client-python:master client-nodejs:master
   
-  release-approval:
+  release-approval-request:
     machine: true
     steps:
       - checkout
       - bazel_install
-      - run: bazel run @graknlabs_grabl//ci:release-approval
+      - run: bazel run @graknlabs_build_tools//release:approval-request
 
   release-cleanup:
     machine: true
@@ -215,7 +215,7 @@ workflows:
               ignore: grakn-core-release-branch
 
       # sync dependencies to the latest grakn version
-      - dependency-update:
+      - release-dependency-update:
           filters:
             branches:
               only: master
@@ -231,17 +231,17 @@ workflows:
 
       # wait for an approval for Grakn to be released
       # triggers 'ci-release' workflow by creating a branch 'grakn-core-release-branch' in graknlabs/grakn
-      - release-approval:
+      - release-approval-request:
           filters:
             branches:
               only: master
           requires:
-            - dependency-update
+            - release-dependency-update
 
   # the 'ci-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
   # it consists of jobs which:
   # - publishes Grakn by creating a Github release
-  # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval job
+  # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval-request job
   grakn-core-release:
     jobs:
       - publish-github-draft:

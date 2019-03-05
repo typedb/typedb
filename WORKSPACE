@@ -19,19 +19,49 @@
 workspace(name = "graknlabs_grakn_core")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
+################################
+# Load Grakn Labs Dependencies #
+################################
+
+git_repository(
+    name = "graknlabs_graql",
+    remote = "https://github.com/graknlabs/graql",
+    commit = "8b21baff544db206443cc953c22767563e42dd99",
+)
+
+git_repository(
+    name = "graknlabs_client_java",
+    remote = "https://github.com/graknlabs/client-java",
+    commit = "c2485b7321bcdff2475d0e3ae0cb7108b8d44a75",
+)
+
+git_repository(
+    name = "graknlabs_build_tools",
+    remote = "https://github.com/graknlabs/build-tools",
+    commit = "917ecad53c6c713cb1f1456344d9cb42a7c8d85f",
+)
+
+load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
+graknlabs_bazel_distribution()
 
 ####################
 # Load Build Tools #
 ####################
 
-# Load additional build tools, such bazel-deps and unused-deps
-load("//dependencies/tools:dependencies.bzl", "tools_dependencies")
-tools_dependencies()
+load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_common", "bazel_deps", "bazel_toolchain")
+bazel_common()
+bazel_deps()
+bazel_toolchain()
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
+load("@graknlabs_build_tools//bazel:dependencies.bzl", "buildifier", "buildozer", "unused_deps")
+buildifier()
+buildozer()
+unused_deps()
+
+load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
-
 
 #####################################
 # Load Java dependencies from Maven #
@@ -40,13 +70,9 @@ checkstyle_dependencies()
 load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
 maven_dependencies()
 
-
 ###########################
 # Load Graql dependencies #
 ###########################
-
-load("//dependencies/git:dependencies.bzl", "graknlabs_graql")
-graknlabs_graql()
 
 # Load ANTLR dependencies for Bazel
 load("@graknlabs_graql//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
@@ -58,13 +84,6 @@ antlr_dependencies()
 
 load("@graknlabs_graql//dependencies/maven:dependencies.bzl", graql_dependencies = "maven_dependencies")
 graql_dependencies()
-
-
-load("//dependencies/git:dependencies.bzl", "graknlabs_client_java")
-graknlabs_client_java()
-
-load("//dependencies/git:dependencies.bzl", "graknlabs_grabl")
-graknlabs_grabl()
 
 #######################################
 # Load compiler dependencies for GRPC #
@@ -85,9 +104,6 @@ java_grpc_compile()
 ##################################
 # Load Distribution Dependencies #
 ##################################
-
-load("//dependencies/distribution:dependencies.bzl", "distribution_dependencies")
-distribution_dependencies()
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
 github_dependencies_for_deployment()
