@@ -52,7 +52,7 @@ jobs:
       - checkout
       - bazel_install
       - bazel_add_rbe_credential
-      - run: python ./dependencies/tools/checkstyle/test-coverage.py
+      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - rpm_install
       - bazel:
           command: bazel build //...
@@ -62,7 +62,7 @@ jobs:
           paths:
             - .
 
-  common:
+  test-common:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -72,7 +72,7 @@ jobs:
       - bazel:
           command: bazel test //common/... --test_output=errors
 
-  console:
+  test-console:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -83,7 +83,7 @@ jobs:
       - bazel:
           command: bazel test //console/... --test_output=errors
 
-  server:
+  test-server:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -140,7 +140,7 @@ jobs:
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  dependency-update:
+  sync-dependencies:
     machine: true
     steps:
       - checkout
@@ -148,7 +148,7 @@ jobs:
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
-            bazel run @graknlabs_grabl//ci:dependency-update -- --dependency grakn:master \
+            bazel run @graknlabs_build_tools//ci:sync-dependencies -- --dependency grakn:master \
               --user docs:development workbase:master client-java:master client-python:master client-nodejs:master
   
   release-approval:
@@ -156,15 +156,9 @@ jobs:
     steps:
       - checkout
       - bazel_install
-      - run: bazel run @graknlabs_grabl//ci:release-approval
+      - run: bazel run @graknlabs_build_tools//ci:release-approval
 
-  release-cleanup:
-    machine: true
-    steps:
-      - checkout
-      - run: git push --delete origin grakn-core-release-branch
-
-  publish-github-draft:
+  release-github-draft:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -172,6 +166,12 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
+
+  release-cleanup:
+    machine: true
+    steps:
+      - checkout
+      - run: git push --delete origin grakn-core-release-branch
 
 workflows:
   # the 'ci' workflow consists of jobs which:
@@ -185,15 +185,15 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - common:
+      - test-common:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - console:
+      - test-console:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - server:
+      - test-server:
           filters:
             branches:
               ignore: grakn-core-release-branch
@@ -215,15 +215,15 @@ workflows:
               ignore: grakn-core-release-branch
 
       # sync dependencies to the latest grakn version
-      - dependency-update:
+      - sync-dependencies:
           filters:
             branches:
               only: master
           requires:
             - build
-            - common
-            - console
-            - server
+            - test-common
+            - test-console
+            - test-server
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -236,21 +236,21 @@ workflows:
             branches:
               only: master
           requires:
-            - dependency-update
+            - sync-dependencies
 
-  # the 'ci-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
+  # the 'grakn-core-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
   # it consists of jobs which:
   # - publishes Grakn by creating a Github release
   # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval job
   grakn-core-release:
     jobs:
-      - publish-github-draft:
+      - release-github-draft:
           filters:
             branches:
               only: grakn-core-release-branch
       - release-cleanup:
           requires:
-            - publish-github-draft
+            - release-github-draft
           filters:
             branches:
               only: grakn-core-release-branch

@@ -21,7 +21,7 @@ load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
 load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
 load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
 load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 
 java_library(
