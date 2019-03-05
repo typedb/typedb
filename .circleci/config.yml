@@ -1,6 +1,15 @@
 version: 2.1
 commands:
-  build_tools_install:
+  install_bazel:
+    steps:
+      - run:
+          name: Bazel - Install
+          command: |
+            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
+            chmod +x bazel-0.20.0-installer-linux-x86_64.sh
+            sudo ./bazel-0.20.0-installer-linux-x86_64.sh
+
+  install_build_tools:
     steps:
       - run:
           name: Install build-tools
@@ -19,8 +28,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - rpm_install
@@ -36,8 +45,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - run: build-tools/ci/run-bazel bazel test //common/... --test_output=errors
 
@@ -46,8 +55,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - rpm_install
       - run: build-tools/ci/run-bazel bazel test //console/... --test_output=errors
@@ -57,8 +66,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - rpm_install
       - run: build-tools/ci/run-bazel bazel test //server/... --test_output=errors
@@ -68,8 +77,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - run: build-tools/ci/run-bazel bazel test //test-integration/server/... --test_output=errors
       - run: build-tools/ci/run-bazel bazel test //test-integration/graql/executor/... --test_output=errors
@@ -80,8 +89,8 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - build_tools_install
-    - run: build-tools/ci/install-bazel
+    - install_bazel
+    - install_build_tools
     - run: build-tools/ci/install-bazel-rbe-credential
     - run: build-tools/ci/run-bazel bazel test //test-integration/graql/reasoner/... --test_output=errors
 
@@ -90,8 +99,8 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - build_tools_install
-    - run: build-tools/ci/install-bazel
+    - install_bazel
+    - install_build_tools
     - run: build-tools/ci/install-bazel-rbe-credential
     - run: build-tools/ci/run-bazel bazel test //test-integration/graql/analytics/... --test_output=errors
 
@@ -100,8 +109,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - run: build-tools/ci/run-bazel bazel build //:distribution
       - run: build-tools/ci/run-bazel bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
@@ -110,8 +119,8 @@ jobs:
     machine: true
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
@@ -122,8 +131,8 @@ jobs:
     machine: true
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:release-approval
 
   release-github-draft:
@@ -131,8 +140,8 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - build_tools_install
-      - run: build-tools/ci/install-bazel
+      - install_bazel
+      - install_build_tools
       - run: build-tools/ci/install-bazel-rbe-credential
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
