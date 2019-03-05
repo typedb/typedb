@@ -40,7 +40,7 @@ git_repository(
 git_repository(
     name = "graknlabs_build_tools",
     remote = "https://github.com/graknlabs/build-tools",
-    commit = "71046bcb3548e1ab3c01c45d81f8c4b59f2c5ca3",
+    commit = "e474eb86f67f56640da5cb91604aaf23d3eb7147",
 )
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
