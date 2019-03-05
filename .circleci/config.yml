@@ -9,13 +9,6 @@ commands:
             chmod +x bazel-0.20.0-installer-linux-x86_64.sh
             sudo ./bazel-0.20.0-installer-linux-x86_64.sh
 
-  install_build_tools:
-    steps:
-      - run:
-          name: Install build-tools
-          command: |
-            bazel build @graknlabs_build_tools//...
-            cp -r bazel-bin/external/graknlabs_build_tools build-tools
   rpm_install:
     steps:
       - run:
@@ -29,11 +22,10 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - rpm_install
-      - run: build-tools/ci/run-bazel bazel build //...
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel build //...
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
       - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
           root: ~/grakn
@@ -46,9 +38,8 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-      - run: build-tools/ci/run-bazel bazel test //common/... --test_output=errors
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //common/... --test_output=errors
 
   test-console:
     machine: true
@@ -56,10 +47,9 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
       - rpm_install
-      - run: build-tools/ci/run-bazel bazel test //console/... --test_output=errors
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //console/... --test_output=errors
 
   test-server:
     machine: true
@@ -67,10 +57,9 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
       - rpm_install
-      - run: build-tools/ci/run-bazel bazel test //server/... --test_output=errors
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //server/... --test_output=errors
 
   test-integration:
     machine: true
@@ -78,11 +67,10 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-      - run: build-tools/ci/run-bazel bazel test //test-integration/server/... --test_output=errors
-      - run: build-tools/ci/run-bazel bazel test //test-integration/graql/executor/... --test_output=errors
-      - run: build-tools/ci/run-bazel bazel test //test-integration/graql/query/... --test_output=errors
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //test-integration/server/... --test_output=errors
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //test-integration/graql/executor/... --test_output=errors
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //test-integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -90,9 +78,8 @@ jobs:
     steps:
     - checkout
     - install_bazel
-    - install_build_tools
     - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-    - run: build-tools/ci/run-bazel bazel test //test-integration/graql/reasoner/... --test_output=errors
+    - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -100,9 +87,8 @@ jobs:
     steps:
     - checkout
     - install_bazel
-    - install_build_tools
     - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-    - run: build-tools/ci/run-bazel bazel test //test-integration/graql/analytics/... --test_output=errors
+    - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -110,17 +96,15 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-      - run: build-tools/ci/run-bazel bazel build //:distribution
-      - run: build-tools/ci/run-bazel bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel build //:distribution
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
   sync-dependencies:
     machine: true
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
@@ -132,7 +116,6 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:release-approval
 
   release-github-draft:
@@ -141,7 +124,6 @@ jobs:
     steps:
       - checkout
       - install_bazel
-      - install_build_tools
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
