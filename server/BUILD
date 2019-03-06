@@ -183,7 +183,7 @@ distribution_rpm(
     package_name = "grakn-core-server",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
-    spec_file = "//dependencies/distribution/rpm:grakn-core-server.spec",
+    spec_file = "//config/rpm:grakn-core-server.spec",
     distribution_structures = [":grakn-core-server"],
     empty_dirs = [
         "opt/grakn/core/server/services/lib/",
