@@ -149,26 +149,18 @@ public class TransactionOLTP implements Transaction {
 
         createdInCurrentThread.set(true);
 
-        ScopedSpan span = null;
-        if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("TransactionOLTP constructor"); }
-
         this.session = session;
         this.janusGraph = janusGraph;
 
-        if (span != null) { span.annotate("Creating janusGraph Tx"); }
-
         this.janusTransaction = janusGraph.tx();
 
-        if (span != null) { span.annotate("Creating ElementFactory"); }
         this.elementFactory = new ElementFactory(this, janusGraph);
 
-        if (span != null) { span.annotate("Creating RuleCache"); }
         this.ruleCache = new RuleCache(this);
 
         this.keyspaceCache = keyspaceCache;
         this.transactionCache = new TransactionCache(keyspaceCache);
 
-        if (span != null) { span.finish(); }
     }
 
     void open(Type type) {

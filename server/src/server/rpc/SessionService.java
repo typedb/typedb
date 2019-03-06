@@ -122,8 +122,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final Map<String, SessionImpl> openSessions;
         private final Iterators iterators = Iterators.create();
 
-        private TraceContext receivedTraceContext;
-
         @Nullable
         private TransactionOLTP tx = null;
 
