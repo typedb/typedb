@@ -18,30 +18,19 @@
 
 workspace(name = "graknlabs_grakn_core")
 
-load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
-
 
 ################################
 # Load Grakn Labs Dependencies #
 ################################
 
-git_repository(
-    name = "graknlabs_graql",
-    remote = "https://github.com/graknlabs/graql",
-    commit = "33b53ca88871a4efdd3d4e17e7e40e2317c3778b", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
-)
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_graql")
+graknlabs_graql()
 
-git_repository(
-    name = "graknlabs_client_java",
-    remote = "https://github.com/graknlabs/client-java",
-    commit = "c2485b7321bcdff2475d0e3ae0cb7108b8d44a75",
-)
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
+graknlabs_client_java()
 
-git_repository(
-    name = "graknlabs_build_tools",
-    remote = "https://github.com/graknlabs/build-tools",
-    commit = "20dd9604bf28a2b3af7a550227c0f74aa5564dd1", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
-)
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools")
+graknlabs_build_tools()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
