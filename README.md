@@ -53,11 +53,17 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
     - Java 8
     - Python >= 2.7 and Pip >= 18.1
     - [Bazel](http://docs.bazel.build/install.html)
-1. Compile (you should get `bazel-genfiles/grakn-core-all.zip` as a result) 
+1. Depending on your Operating System, you can build Grakn with either one of the following commands: 
 ```
-$ bazel build //:assemble-all-zip
-````
-
+$ bazel build //:assemble-linux-targz
+```
+```
+$ bazel build //:assemble-mac-zip
+```
+```
+$ bazel build //:assemble-windows-zip
+```
+Which will produce the distribution at: `./bazel-genfiles/grakn-core-all.{zip|tar.gz}`
 ## Contributions
 
 Grakn Core is built using various state-of-the-art open-source Graph and Distributed Computing frameworks: [ANTLR](http://www.antlr.org), [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), [JanusGraph](http://janusgraph.org), and [RocksDB](https://rocksdb.org). Thank you!
