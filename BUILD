@@ -40,9 +40,11 @@ assemble_targz(
                "//console:console-deps",
                "//bin:assemble-targz-bash"],
     additional_files = {
-       "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
-       "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-       "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
     },
     empty_directories = [
         "server/db/cassandra",
@@ -62,6 +64,8 @@ assemble_zip(
                "//console:console-deps",
                "//bin:assemble-targz-bash"],
     additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
@@ -85,6 +89,8 @@ assemble_zip(
                "//console:console-deps",
                "//bin:assemble-targz-bat"],
     additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
