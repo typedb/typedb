@@ -132,8 +132,6 @@ jobs:
       - checkout
       - install-bazel
       - bazel-rbe:
-          command: bazel build //:distribution
-      - bazel-rbe:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
   sync-dependencies:
