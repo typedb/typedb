@@ -18,8 +18,8 @@
 
 workspace(name = "graknlabs_grakn_core")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
+
 
 ################################
 # Load Grakn Labs Dependencies #
@@ -28,7 +28,7 @@ load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 git_repository(
     name = "graknlabs_graql",
     remote = "https://github.com/graknlabs/graql",
-    commit = "8b21baff544db206443cc953c22767563e42dd99",
+    commit = "8b21baff544db206443cc953c22767563e42dd99", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
 )
 
 git_repository(
@@ -45,6 +45,7 @@ git_repository(
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
+
 
 ####################
 # Load Build Tools #
@@ -63,12 +64,14 @@ unused_deps()
 load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
 
+
 #####################################
 # Load Java dependencies from Maven #
 #####################################
 
 load("//dependencies/maven:dependencies.bzl", "maven_dependencies")
 maven_dependencies()
+
 
 ###########################
 # Load Graql dependencies #
@@ -84,6 +87,7 @@ antlr_dependencies()
 
 load("@graknlabs_graql//dependencies/maven:dependencies.bzl", graql_dependencies = "maven_dependencies")
 graql_dependencies()
+
 
 #######################################
 # Load compiler dependencies for GRPC #
