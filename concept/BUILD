@@ -39,7 +39,7 @@ java_library(
 
 
 deploy_maven_jar(
-    name = "deploy-maven-jar",
+    name = "deploy-maven",
     target = ":concept",
     package = "concept",
 )
