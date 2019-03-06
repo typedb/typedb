@@ -40,7 +40,7 @@ git_repository(
 git_repository(
     name = "graknlabs_build_tools",
     remote = "https://github.com/lolski/build-tools",
-    commit = "c7bce0ed4d84c4d7195dfadd646349d5f994a25e", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+    commit = "d8c00e8247723b52592278c6c617a45f48b751d9", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
 )
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
