@@ -28,17 +28,17 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 deploy_github(
     name = "deploy-github-zip",
-    target = ":assemble-zip-mac",
+    target = ":assemble-mac-zip",
     deployment_properties = ":deployment.properties",
     version_file = "//:VERSION"
 )
 
 
 assemble_targz(
-    name = "assemble-targz",
+    name = "assemble-linux-targz",
     targets = ["//server:server-deps",
                "//console:console-deps",
-               "//bin:assemble-targz-bash"],
+               "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
@@ -59,10 +59,10 @@ assemble_targz(
 )
 
 assemble_zip(
-    name = "assemble-zip-mac",
+    name = "assemble-mac-zip",
     targets = ["//server:server-deps",
                "//console:console-deps",
-               "//bin:assemble-targz-bash"],
+               "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
@@ -84,10 +84,10 @@ assemble_zip(
 )
 
 assemble_zip(
-    name = "assemble-zip-windows",
+    name = "assemble-windows-zip",
     targets = ["//server:server-deps",
                "//console:console-deps",
-               "//bin:assemble-targz-bat"],
+               "//bin:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
@@ -116,7 +116,7 @@ deploy_brew(
 container_image(
     name = "assemble-docker",
     base = "@openjdk_image//image",
-    tars = [":assemble-targz"],
+    tars = [":assemble-linux-targz"],
     files = ["//bin:grakn-docker.sh"],
     ports = ["48555"],
     cmd = ["./grakn-docker.sh"],

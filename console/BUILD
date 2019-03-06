@@ -75,9 +75,9 @@ java_deps(
 )
 
 assemble_targz(
-    name = "assemble-targz",
+    name = "assemble-linux-targz",
     output_filename = "grakn-core-console",
-    targets = [":console-deps", "//bin:assemble-targz-bash"],
+    targets = [":console-deps", "//bin:assemble-bash-targz"],
     empty_directories = [
         "console/db/cassandra",
         "console/db/queue"
@@ -94,9 +94,9 @@ assemble_targz(
 )
 
 assemble_zip(
-    name = "assemble-zip-mac",
+    name = "assemble-mac-zip",
     output_filename = "grakn-core-console-mac",
-    targets = [":console-deps", "//bin:assemble-targz-bash"],
+    targets = [":console-deps", "//bin:assemble-bash-targz"],
     empty_directories = [
         "console/db/cassandra",
         "console/db/queue"
@@ -113,9 +113,9 @@ assemble_zip(
 )
 
 assemble_zip(
-    name = "assemble-zip-windows",
+    name = "assemble-windows-zip",
     output_filename = "grakn-core-console-windows",
-    targets = [":console-deps", "//bin:assemble-targz-bat"],
+    targets = [":console-deps", "//bin:assemble-bat-targz"],
     empty_directories = [
         "console/db/cassandra",
         "console/db/queue"

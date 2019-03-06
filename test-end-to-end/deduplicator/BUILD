@@ -21,7 +21,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
-    data = ["//:assemble-zip-mac"],
+    data = ["//:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
