@@ -57,11 +57,6 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - bazel-rbe:
           command: bazel build //...
-      - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
-      - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
-          root: ~/grakn
-          paths:
-            - .
 
   test-common:
     machine: true
