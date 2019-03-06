@@ -268,16 +268,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            ScopedSpan span = null;
-            if (ServerTracingInstrumentation.tracingActive()) { span = ServerTracingInstrumentation.createScopedChildSpan("SessionService.open"); }
-
-            Span getSession = null;
-            if (span != null) { getSession = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting session", span.context()).start(); }
             SessionImpl sess = openSessions.get(request.getSessionId());
-            if (getSession != null) getSession.finish();
-
-            Span txSpan = null;
-            if (span != null) { txSpan = ServerTracingInstrumentation.createChildSpanWithParentContext("SessionService.open getting transaction", span.context()).start(); }
 
             Type type = Type.of(request.getType().getNumber());
             if (type != null && type.equals(Type.WRITE)) {
@@ -288,16 +279,15 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw TransactionException.create("Invalid Transaction Type");
             }
 
-            if (txSpan != null) { txSpan.finish(); }
-
             Transaction.Res response = ResponseBuilder.Transaction.open();
-            if (span != null) { span.finish(); }
 
             onNextResponse(response);
-
         }
 
         private void commit() {
+
+            /* permanent tracing hooks one method down */
+
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((attributeIndex, conceptIds) ->
                             conceptIds.forEach(id -> attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), attributeIndex, id))
@@ -306,10 +296,24 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
+
+            /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
+
+            ScopedSpan span = null;
+            if (ServerTracingInstrumentation.tracingActive()) {
+                span = ServerTracingInstrumentation.createScopedChildSpan("Parsing Graql Query");
+            }
             GraqlQuery query = Graql.parse(request.getQuery());
+
+            if (span != null) {
+                span.finish();
+                span = ServerTracingInstrumentation.createScopedChildSpan("Creating query stream");
+            }
 
             Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
             Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
+
+            if (span != null) { span.finish(); }
             onNextResponse(response);
         }
 
@@ -384,6 +388,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void next(Transaction.Iter.Req iterate) {
+
             int iteratorId = iterate.getId();
             Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);

@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import brave.ScopedSpan;
+import brave.Span;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
@@ -844,7 +845,15 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
+
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
+
+        /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
+        ScopedSpan span = null;
+        if (ServerTracingInstrumentation.tracingActive()) {
+            span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs validate");
+        }
+
         checkMutationAllowed();
         validateGraph();
 
@@ -852,8 +861,13 @@ public class TransactionOLTP implements Transaction {
         Map<String, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
+        if (span != null) {
+            span.finish();
+            span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs commit");
+        }
+
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
-        // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
+        // force serialized updates, keeping Janus and our KeyspaceCache in sync
         synchronized (keyspaceCache) {
             commitTransactionInternal();
             transactionCache.flushToKeyspaceCache();
@@ -861,8 +875,19 @@ public class TransactionOLTP implements Transaction {
 
         //If we have logs to commit get them and add them
         if (logsExist) {
-            return Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
+
+            if (span != null) {
+                span.finish();
+                span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs create log");
+            }
+
+            Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
+
+            if (span != null)  { span.finish(); }
+
+            return logs;
         }
+
 
         return Optional.empty();
     }
