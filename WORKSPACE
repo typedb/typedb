@@ -18,18 +18,41 @@
 
 workspace(name = "graknlabs_grakn_core")
 
-load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
+
+################################
+# Load Grakn Labs Dependencies #
+################################
+
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_graql")
+graknlabs_graql()
+
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
+graknlabs_client_java()
+
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools")
+graknlabs_build_tools()
+
+load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
+graknlabs_bazel_distribution()
 
 
 ####################
 # Load Build Tools #
 ####################
 
-# Load additional build tools, such bazel-deps and unused-deps
-load("//dependencies/tools:dependencies.bzl", "tools_dependencies")
-tools_dependencies()
+load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_common", "bazel_deps", "bazel_toolchain", "bazel_rules_docker")
+bazel_common()
+bazel_deps()
+bazel_toolchain()
+bazel_rules_docker()
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_dependencies")
+
+load("@graknlabs_build_tools//bazel:dependencies.bzl", "buildifier", "buildozer", "unused_deps")
+buildifier()
+buildozer()
+unused_deps()
+
+load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
 
 
@@ -45,9 +68,6 @@ maven_dependencies()
 # Load Graql dependencies #
 ###########################
 
-load("//dependencies/git:dependencies.bzl", "graknlabs_graql")
-graknlabs_graql()
-
 # Load ANTLR dependencies for Bazel
 load("@graknlabs_graql//dependencies/compilers:dependencies.bzl", "antlr_dependencies")
 antlr_dependencies()
@@ -59,12 +79,6 @@ antlr_dependencies()
 load("@graknlabs_graql//dependencies/maven:dependencies.bzl", graql_dependencies = "maven_dependencies")
 graql_dependencies()
 
-
-load("//dependencies/git:dependencies.bzl", "graknlabs_client_java")
-graknlabs_client_java()
-
-load("//dependencies/git:dependencies.bzl", "graknlabs_grabl")
-graknlabs_grabl()
 
 #######################################
 # Load compiler dependencies for GRPC #
@@ -86,18 +100,12 @@ java_grpc_compile()
 # Load Distribution Dependencies #
 ##################################
 
-load("//dependencies/distribution:dependencies.bzl", "distribution_dependencies")
-distribution_dependencies()
-
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
 github_dependencies_for_deployment()
 
 # Why does it break when we move thie declaration after loading tools_dependencies?
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
-
-load("//dependencies/docker:dependencies.bzl", "docker_dependencies")
-docker_dependencies()
 
 load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
 container_repositories()

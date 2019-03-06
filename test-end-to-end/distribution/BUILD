@@ -1,4 +1,4 @@
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "grakn-graql-commands-e2e",
@@ -11,7 +11,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
-    data = ["//:distribution-zip-mac"],
+    data = ["//:assemble-zip-mac"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
@@ -26,7 +26,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"
     ],
-    data = ["//:distribution-zip-mac"],
+    data = ["//:assemble-zip-mac"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 

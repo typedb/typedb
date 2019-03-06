@@ -19,22 +19,22 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_graql():
-    git_repository(
-        name = "graknlabs_graql",
-        remote = "https://github.com/graknlabs/graql",
-        commit = "8b21baff544db206443cc953c22767563e42dd99",
-    )
+     git_repository(
+         name = "graknlabs_graql",
+         remote = "https://github.com/graknlabs/graql",
+         commit = "2b03fcc539e25cb9d7efc9540293b1e330ab062f", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+     )
 
 def graknlabs_client_java():
-    git_repository(
-        name = "graknlabs_client_java",
-        remote = "https://github.com/graknlabs/client-java",
-        commit = "c2485b7321bcdff2475d0e3ae0cb7108b8d44a75",
-    )
+     git_repository(
+         name = "graknlabs_client_java",
+         remote = "https://github.com/graknlabs/client-java",
+         commit = "c2485b7321bcdff2475d0e3ae0cb7108b8d44a75",
+     )
 
-def graknlabs_grabl():
-    git_repository(
-        name = "graknlabs_grabl",
-        remote = "https://github.com/graknlabs/grabl",
-        commit = "ad79f87f869d25694fe11196e16be42a80e95d14",
-    )
+def graknlabs_build_tools():
+     git_repository(
+         name = "graknlabs_build_tools",
+         remote = "https://github.com/graknlabs/build-tools",
+         commit = "b8b7734ff62964be107413c0857b72be93335e92", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+     )

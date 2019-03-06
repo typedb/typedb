@@ -37,6 +37,7 @@ service SessionService {
 message Session {
     message Open {
         message Req {
+            map<string, string> metadata = 1000;
             string Keyspace = 1;
         }
         message Res {
@@ -46,9 +47,11 @@ message Session {
 
     message Close {
         message Req {
+            map<string, string> metadata = 1000;
             string sessionId = 1;
         }
-        message Res {}
+        message Res {
+        }
     }
 }
 
@@ -73,7 +76,6 @@ message Transaction {
         }
     }
     message Res {
-        map<string, string> metadata = 1000;
         oneof res {
             Open.Res open_res = 1;
             Commit.Res commit_res = 2;

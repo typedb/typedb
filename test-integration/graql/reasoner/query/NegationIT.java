@@ -273,33 +273,6 @@ public class NegationIT {
         }
     }
 
-    //TODO update expected answers
-    @Ignore
-    @Test
-    public void negateResource_UserDefinedResourceVariable(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
-            String specificStringValue = "unattached";
-
-            Statement hasPattern = Graql.var("x").has("attribute", Graql.var("r").val(specificStringValue));
-            Pattern pattern =
-            Graql.and(
-                    Graql.var("x").isa("entity"),
-                    Graql.not(hasPattern)
-            );
-            List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(Graql.match(pattern).get());
-            List<ConceptMap> fullAnswers = tx.execute(Graql.parse("match $x has attribute $r;get;").asGet());
-
-            List<ConceptMap> expectedAnswers = fullAnswers.stream()
-                    .filter(ans -> !ans.get("r").asAttribute().value().equals(specificStringValue))
-                    .collect(toList());
-
-            assertCollectionsNonTriviallyEqual(
-                    expectedAnswers,
-                    answersWithoutSpecificStringValue
-            );
-        }
-    }
-
     @Test
     public void entitiesHavingAttributesThatAreNotOfSpecificType(){
         try(TransactionOLTP tx = negationSession.transaction().write()) {
@@ -578,7 +551,6 @@ public class NegationIT {
         }
     }
 
-    @Ignore("To be fixed")
     @Test
     public void testStratifiedProgram(){
         try (TransactionOLTP tx = reachabilitySession.transaction().write()) {

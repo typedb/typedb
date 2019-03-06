@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "daemon",

@@ -1,48 +1,50 @@
+#
+# GRAKN.AI - THE KNOWLEDGE GRAPH
+# Copyright (C) 2018 Grakn Labs Ltd
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+
 version: 2.1
 commands:
-  bazel_install:
+  install-bazel:
     steps:
       - run:
-          name: Bazel - Install
+          name: Install bazel and RBE credential
           command: |
+            # Install bazel
             curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
             chmod +x bazel-0.20.0-installer-linux-x86_64.sh
             sudo ./bazel-0.20.0-installer-linux-x86_64.sh
-  bazel_add_rbe_credential:
+
+            # Install RBE credential
+            bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
+
+  install-rpm:
     steps:
       - run:
-          name: Bazel - Add RBE Credential
-          command: |
-            if [[ -n "$BAZEL_RBE_CREDENTIAL" ]]; then
-              BAZEL_RBE_CREDENTIAL_LOCATION=~/.config/gcloud/application_default_credentials.json
-              echo "An RBE credential is found and will be saved to $BAZEL_RBE_CREDENTIAL_LOCATION. Bazel will be executed with RBE support."
-              mkdir -p ~/.config/gcloud/
-              echo $BAZEL_RBE_CREDENTIAL > "$BAZEL_RBE_CREDENTIAL_LOCATION"
-            else
-              echo "No RBE credential found. Bazel will be executed locally without RBE support."
-            fi
-  bazel:
+          name: Install rpm (for rpmbuild)
+          command: sudo apt update && sudo apt install rpm -y
+
+  run-bazel-rbe:
     parameters:
       command:
           type: string
     steps:
       - run:
-          name: Bazel - Execute
           command: |
-            if [[ -f ~/.config/gcloud/application_default_credentials.json ]]; then
-              echo "Bazel will be executed with RBE support. This means the build is remotely executed and the cache will be re-used by subsequent CI jobs."
-              CMD="<< parameters.command >> --config=rbe"
-            else
-              echo "Bazel will be executed locally (without RBE support)."
-              CMD="<< parameters.command >>"
-            fi
-            echo "Executing $CMD"
-            $CMD
-  rpm_install:
-    steps:
-      - run:
-          name: Install rpm (for rpmbuild)
-          command: sudo apt update && sudo apt install rpm -y
+            bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
 
 jobs:
   build:
@@ -50,48 +52,39 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - run: python ./dependencies/tools/checkstyle/test-coverage.py
-      - rpm_install
-      - bazel:
+      - install-bazel
+      - install-rpm
+      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run-bazel-rbe:
           command: bazel build //...
-      - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all-mac.zip dist/
-      - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
-          root: ~/grakn
-          paths:
-            - .
 
-  common:
+  test-common:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - bazel:
+      - install-bazel
+      - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
-  console:
+  test-console:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - rpm_install
-      - bazel:
+      - install-bazel
+      - install-rpm
+      - run-bazel-rbe:
           command: bazel test //console/... --test_output=errors
 
-  server:
+  test-server:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - rpm_install
-      - bazel:
+      - install-bazel
+      - install-rpm
+      - run-bazel-rbe:
           command: bazel test //server/... --test_output=errors
 
   test-integration:
@@ -99,13 +92,12 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - bazel:
+      - install-bazel
+      - run-bazel-rbe:
           command: bazel test //test-integration/server/... --test_output=errors
-      - bazel:
+      - run-bazel-rbe:
           command: bazel test //test-integration/graql/executor/... --test_output=errors
-      - bazel:
+      - run-bazel-rbe:
           command: bazel test //test-integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
@@ -113,9 +105,9 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
+    - install-bazel
+    - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
+    - run-bazel-rbe:
         command: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
@@ -123,9 +115,9 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - bazel_install
-    - bazel_add_rbe_credential
-    - bazel:
+    - install-bazel
+    - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
+    - run-bazel-rbe:
         command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
@@ -133,45 +125,41 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - bazel:
-          command: bazel build //:distribution-zip-mac
-      - bazel:
+      - install-bazel
+      - run-bazel-rbe:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  dependency-update:
+  sync-dependencies:
     machine: true
     steps:
       - checkout
-      - bazel_install
+      - install-bazel
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
-            bazel run @graknlabs_grabl//ci:dependency-update -- --dependency grakn:master \
-              --user docs:development workbase:master client-java:master client-python:master client-nodejs:master
+            bazel run @graknlabs_build_tools//ci:sync-dependencies -- --source grakn:master \
+              --targets docs:development workbase:master client-java:master client-python:master client-nodejs:master
   
   release-approval:
     machine: true
     steps:
       - checkout
-      - bazel_install
-      - run: bazel run @graknlabs_grabl//ci:release-approval
+      - install-bazel
+      - run: bazel run @graknlabs_build_tools//ci:release-approval
+
+  release-github-draft:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - install-bazel
+      - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
   release-cleanup:
     machine: true
     steps:
       - checkout
       - run: git push --delete origin grakn-core-release-branch
-
-  publish-github-draft:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - bazel_install
-      - bazel_add_rbe_credential
-      - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
 workflows:
   # the 'ci' workflow consists of jobs which:
@@ -185,15 +173,15 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - common:
+      - test-common:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - console:
+      - test-console:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - server:
+      - test-server:
           filters:
             branches:
               ignore: grakn-core-release-branch
@@ -215,15 +203,15 @@ workflows:
               ignore: grakn-core-release-branch
 
       # sync dependencies to the latest grakn version
-      - dependency-update:
+      - sync-dependencies:
           filters:
             branches:
               only: master
           requires:
             - build
-            - common
-            - console
-            - server
+            - test-common
+            - test-console
+            - test-server
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
@@ -236,21 +224,21 @@ workflows:
             branches:
               only: master
           requires:
-            - dependency-update
+            - sync-dependencies
 
-  # the 'ci-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
+  # the 'grakn-core-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
   # it consists of jobs which:
   # - publishes Grakn by creating a Github release
   # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval job
   grakn-core-release:
     jobs:
-      - publish-github-draft:
+      - release-github-draft:
           filters:
             branches:
               only: grakn-core-release-branch
       - release-cleanup:
           requires:
-            - publish-github-draft
+            - release-github-draft
           filters:
             branches:
               only: grakn-core-release-branch

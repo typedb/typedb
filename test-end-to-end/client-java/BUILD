@@ -1,4 +1,4 @@
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "client-java-e2e",
@@ -20,7 +20,7 @@ java_test(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
-    data = ["//:distribution-zip-mac"],
+    data = ["//:assemble-zip-mac"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 

@@ -55,7 +55,7 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
     - [Bazel](http://docs.bazel.build/install.html)
 1. Compile (you should get `bazel-genfiles/grakn-core-all.zip` as a result) 
 ```
-$ bazel build //:distribution
+$ bazel build //:assemble-all-zip
 ````
 
 ## Contributions

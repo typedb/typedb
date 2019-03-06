@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//daemon:__subpackages__"])
 
-load("//dependencies/tools/checkstyle:checkstyle.bzl", "checkstyle_test")
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "exception",
