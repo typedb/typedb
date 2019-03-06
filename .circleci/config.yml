@@ -154,7 +154,7 @@ jobs:
       - bazel_install
       - bazel_add_rbe_credential
       - bazel:
-          command: bazel build //:distribution
+          command: bazel build //:assemble-zip
       - bazel:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
