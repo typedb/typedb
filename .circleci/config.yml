@@ -137,8 +137,8 @@ jobs:
       - run:
           name: Sync docs:development workbase:master client-java:master client-python:master client-nodejs:master to the latest Grakn version
           command: |
-            bazel run @graknlabs_build_tools//ci:sync-dependencies -- --dependency grakn:master \
-              --user docs:development workbase:master client-java:master client-python:master client-nodejs:master
+            bazel run @graknlabs_build_tools//ci:sync-dependencies -- --source grakn:master \
+              --targets docs:development workbase:master client-java:master client-python:master client-nodejs:master
   
   release-approval:
     machine: true

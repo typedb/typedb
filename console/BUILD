@@ -18,9 +18,9 @@
 
 package(default_visibility = ["//visibility:__subpackages__"])
 load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
-load("@graknlabs_bazel_distribution//distribution:rules.bzl", "distribution_structure", "distribution_zip", "distribution_deb", "distribution_rpm")
-load("@graknlabs_bazel_distribution//rpm/deployment:rules.bzl", "deploy_rpm")
-load("@graknlabs_bazel_distribution//deb/deployment:rules.bzl", "deploy_deb")
+load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
+load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 
@@ -67,37 +67,55 @@ java_binary(
     visibility = ["//:__pkg__"],
 )
 
-deploy_maven_jar(
-    name = "deploy-maven-jar",
-    target = ":console",
-    package = "console",
+java_deps(
+    name = "console-deps",
+    target = ":console-binary",
+    java_deps_root = "console/services/lib/",
+    visibility = ["//:__pkg__"]
 )
 
-distribution_structure(
-    name="grakn-core-console",
-    targets = {
-        "//console:console-binary": "console/services/lib/"
-    },
+assemble_targz(
+    name = "assemble-targz",
+    output_filename = "grakn-core-console",
+    targets = [":console-deps", "//bin:assemble-targz"],
+    empty_directories = [
+        "console/db/cassandra",
+        "console/db/queue"
+    ],
     additional_files = {
         "//server:conf/logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "console/conf/grakn.properties",
     },
-    visibility = ["//:__pkg__"]
+    permissions = {
+      "console/services/cassandra/cassandra.yaml": "0777",
+      "console/db/cassandra": "0777",
+      "console/db/queue": "0777",
+    }
 )
 
-distribution_zip(
-    name = "distribution",
-    distribution_structures = [":grakn-core-console", "//:grakn-core-bin"],
-    additional_files = {
-        "//:grakn": 'grakn',
-        "//server:conf/logback.xml": "conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
-    },
+assemble_zip(
+    name = "assemble-zip",
     output_filename = "grakn-core-console",
+    targets = [":console-deps", "//bin:assemble-targz"],
+    empty_directories = [
+        "console/db/cassandra",
+        "console/db/queue"
+    ],
+    permissions = {
+      "console/services/cassandra/cassandra.yaml": "0777",
+      "console/db/cassandra": "0777",
+      "console/db/queue": "0777",
+    }
 )
 
-distribution_deb(
-    name = "distribution-deb",
+deploy_maven_jar(
+    name = "deploy-maven",
+    target = ":console",
+    package = "console",
+)
+
+assemble_apt(
+    name = "assemble-apt",
     package_name = "grakn-core-console",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (console)",
@@ -106,26 +124,34 @@ distribution_deb(
       "openjdk-8-jre",
       "grakn-core-bin"
     ],
-    distribution_structures = [":grakn-core-console"],
+    files = {
+        "//server:conf/logback.xml": "console/conf/logback.xml",
+        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+    },
+    archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
     ],
 )
 
-deploy_deb(
-    name = "deploy-deb",
-    target = ":distribution-deb",
+deploy_apt(
+    name = "deploy-apt",
+    target = ":assemble-apt",
     deployment_properties = "//:deployment.properties",
 )
 
-distribution_rpm(
-    name = "distribution-rpm",
+assemble_rpm(
+    name = "assemble-rpm",
     package_name = "grakn-core-console",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-core-console.spec",
-    distribution_structures = [":grakn-core-console"],
+    archives = [":console-deps"],
+    files = {
+        "//server:conf/logback.xml": "console/conf/logback.xml",
+        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+    },
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
     ],
@@ -133,7 +159,7 @@ distribution_rpm(
 
 deploy_rpm(
     name = "deploy-rpm",
-    target = ":distribution-rpm",
+    target = ":assemble-rpm",
     deployment_properties = "//:deployment.properties",
 )
 

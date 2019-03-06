@@ -27,6 +27,7 @@ function cleanup() {
 
 trap cleanup SIGINT SIGTERM
 
+pushd grakn-core-all &>/dev/null
 ./grakn server start
 tail -f logs/grakn.log &
 
