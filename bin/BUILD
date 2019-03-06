@@ -24,11 +24,17 @@ load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm
 exports_files(["grakn", "grakn.bat", "grakn-docker.sh"])
 
 assemble_targz(
-    name = "assemble-targz",
+    name = "assemble-targz-bash",
     additional_files = {
         "//bin:grakn": 'grakn',
-        "//server:conf/logback.xml": "conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
+    },
+    visibility = ["//server:__pkg__", "//console:__pkg__", "//:__pkg__"]
+)
+
+assemble_targz(
+    name = "assemble-targz-bat",
+    additional_files = {
+        "//bin:grakn.bat": 'grakn.bat',
     },
     visibility = ["//server:__pkg__", "//console:__pkg__", "//:__pkg__"]
 )
@@ -39,7 +45,7 @@ assemble_apt(
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (binaries)",
     version_file = "//:VERSION",
-    archives = [":assemble-targz"],
+    archives = [":assemble-targz-bash"],
     installation_dir = "/opt/grakn/core/",
     empty_dirs = [
         "var/log/grakn/",
@@ -71,7 +77,7 @@ assemble_rpm(
     empty_dirs = [
         "var/log/grakn/",
     ],
-    archives = [":assemble-targz"],
+    archives = [":assemble-targz-bash"],
     permissions = {
         "var/log/grakn/": "0777",
     },

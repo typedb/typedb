@@ -28,7 +28,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 deploy_github(
     name = "deploy-github-zip",
-    target = ":assemble-zip",
+    target = ":assemble-zip-mac",
     deployment_properties = ":deployment.properties",
     version_file = "//:VERSION"
 )
@@ -38,30 +38,10 @@ assemble_targz(
     name = "assemble-targz",
     targets = ["//server:server-deps",
                "//console:console-deps",
-               "//bin:assemble-targz"],
+               "//bin:assemble-targz-bash"],
     additional_files = {
-       "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
-       "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-       "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
-    },
-    empty_directories = [
-        "server/db/cassandra",
-        "server/db/queue"
-    ],
-    permissions = {
-        "server/services/cassandra/cassandra.yaml": "0777",
-        "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
-    },
-    output_filename = "grakn-core-all",
-)
-
-assemble_zip(
-    name = "assemble-zip",
-    targets = ["//server:server-deps",
-               "//console:console-deps",
-               "//bin:assemble-targz"],
-    additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
@@ -76,9 +56,57 @@ assemble_zip(
         "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all",
+)
+
+assemble_zip(
+    name = "assemble-zip-mac",
+    targets = ["//server:server-deps",
+               "//console:console-deps",
+               "//bin:assemble-targz-bash"],
+    additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+    },
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue"
+    ],
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
+    output_filename = "grakn-core-all-mac",
     visibility = ["//visibility:public"]
 )
 
+assemble_zip(
+    name = "assemble-zip-windows",
+    targets = ["//server:server-deps",
+               "//console:console-deps",
+               "//bin:assemble-targz-bat"],
+    additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+    },
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue"
+    ],
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
+    output_filename = "grakn-core-all-windows",
+    visibility = ["//visibility:public"]
+)
 
 deploy_brew(
     name = "deploy-brew",

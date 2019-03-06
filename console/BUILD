@@ -77,7 +77,7 @@ java_deps(
 assemble_targz(
     name = "assemble-targz",
     output_filename = "grakn-core-console",
-    targets = [":console-deps", "//bin:assemble-targz"],
+    targets = [":console-deps", "//bin:assemble-targz-bash"],
     empty_directories = [
         "console/db/cassandra",
         "console/db/queue"
@@ -94,13 +94,36 @@ assemble_targz(
 )
 
 assemble_zip(
-    name = "assemble-zip",
-    output_filename = "grakn-core-console",
-    targets = [":console-deps", "//bin:assemble-targz"],
+    name = "assemble-zip-mac",
+    output_filename = "grakn-core-console-mac",
+    targets = [":console-deps", "//bin:assemble-targz-bash"],
     empty_directories = [
         "console/db/cassandra",
         "console/db/queue"
     ],
+    additional_files = {
+        "//server:conf/logback.xml": "console/conf/logback.xml",
+        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+    },
+    permissions = {
+      "console/services/cassandra/cassandra.yaml": "0777",
+      "console/db/cassandra": "0777",
+      "console/db/queue": "0777",
+    }
+)
+
+assemble_zip(
+    name = "assemble-zip-windows",
+    output_filename = "grakn-core-console-windows",
+    targets = [":console-deps", "//bin:assemble-targz-bat"],
+    empty_directories = [
+        "console/db/cassandra",
+        "console/db/queue"
+    ],
+    additional_files = {
+        "//server:conf/logback.xml": "console/conf/logback.xml",
+        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+    },
     permissions = {
       "console/services/cassandra/cassandra.yaml": "0777",
       "console/db/cassandra": "0777",
@@ -165,7 +188,5 @@ deploy_rpm(
 
 test_suite(
     name = "console-test-integration",
-    tests = [
-
-    ]
+    tests = []
 )
