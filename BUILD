@@ -80,7 +80,7 @@ distribution_rpm(
     package_name = "grakn-core-bin",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
-    spec_file = "//dependencies/distribution/rpm:grakn-core-bin.spec",
+    spec_file = "//config/rpm:grakn-core-bin.spec",
     empty_dirs = [
         "var/log/grakn/",
     ],

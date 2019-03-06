@@ -124,7 +124,7 @@ distribution_rpm(
     package_name = "grakn-core-console",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
-    spec_file = "//dependencies/distribution/rpm:grakn-core-console.spec",
+    spec_file = "//config/rpm:grakn-core-console.spec",
     distribution_structures = [":grakn-core-console"],
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
