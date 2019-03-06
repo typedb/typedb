@@ -9,7 +9,7 @@ commands:
             chmod +x bazel-0.20.0-installer-linux-x86_64.sh
             sudo ./bazel-0.20.0-installer-linux-x86_64.sh
 
-  rpm_install:
+  install_rpm:
     steps:
       - run:
           name: Install rpm (for rpmbuild)
@@ -22,9 +22,9 @@ jobs:
     steps:
       - checkout
       - install_bazel
+      - install_rpm
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
-      - rpm_install
       - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel build //...
       - run: mkdir dist/ && mv bazel-genfiles/grakn-core-all.zip dist/
       - persist_to_workspace: # TODO: share Grakn with other jobs by putting it in the workspace
@@ -47,8 +47,8 @@ jobs:
     steps:
       - checkout
       - install_bazel
+      - install_rpm
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-      - rpm_install
       - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //console/... --test_output=errors
 
   test-server:
@@ -57,8 +57,8 @@ jobs:
     steps:
       - checkout
       - install_bazel
+      - install_rpm
       - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-      - rpm_install
       - run: bazel run @graknlabs_build_tools//ci:run-bazel bazel test //server/... --test_output=errors
 
   test-integration:
