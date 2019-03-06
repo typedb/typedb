@@ -63,7 +63,7 @@ $ bazel build //:assemble-mac-zip
 ```
 $ bazel build //:assemble-windows-zip
 ```
-Which will produce the distribution at: `./bazel-genfiles/grakn-core-all.{zip|tar.gz}`
+Which will produce the distribution at: `./bazel-genfiles/grakn-core-all-{os}-{formaat}.{format}`
 ## Contributions
 
 Grakn Core is built using various state-of-the-art open-source Graph and Distributed Computing frameworks: [ANTLR](http://www.antlr.org), [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), [JanusGraph](http://janusgraph.org), and [RocksDB](https://rocksdb.org). Thank you!

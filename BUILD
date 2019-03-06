@@ -55,7 +55,7 @@ assemble_targz(
         "server/db/cassandra": "0777",
         "server/db/queue": "0777",
     },
-    output_filename = "grakn-core-all",
+    output_filename = "grakn-core-all-linux",
 )
 
 assemble_zip(
