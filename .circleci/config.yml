@@ -135,10 +135,10 @@ jobs:
       - checkout
       - install-bazel
       - run:
-          name: Sync docs:development client-java:master to the latest Grakn version
+          name: Sync client-java:master and docs:development to the latest grakn:master
           command: |
             bazel run @graknlabs_build_tools//ci:sync-dependencies -- --source grakn:master \
-              --targets docs:development client-java:master
+              --targets client-java:master client-python:master docs:development
   
   release-approval:
     machine: true
