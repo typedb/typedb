@@ -20,7 +20,7 @@ workspace(name = "graknlabs_grakn_core")
 
 
 ################################
-# Load Grakn Labs Dependencies #
+# Load Grakn Labs dependencies #
 ################################
 
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_graql")
@@ -36,9 +36,9 @@ load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_d
 graknlabs_bazel_distribution()
 
 
-####################
-# Load Build Tools #
-####################
+###########################
+# Load Bazel dependencies #
+###########################
 
 load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_common", "bazel_deps", "bazel_toolchain")
 bazel_common()
@@ -94,7 +94,7 @@ java_grpc_compile()
 
 
 ##################################
-# Load Distribution Dependencies #
+# Load Distribution dependencies #
 ##################################
 
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
