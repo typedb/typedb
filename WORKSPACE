@@ -84,14 +84,12 @@ graql_dependencies()
 # Load compiler dependencies for GRPC #
 #######################################
 
-# Load GRPC dependencies
-load("//dependencies/compilers:dependencies.bzl", "grpc_dependencies")
+load("@graknlabs_build_tools//grpc:dependencies.bzl", "grpc_dependencies")
 grpc_dependencies()
 
 load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
 com_github_grpc_grpc_bazel_grpc_deps()
 
-# Load GRPC Java dependencies
 load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
 
