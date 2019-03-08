@@ -75,6 +75,13 @@ TransitiveMavenInfo = provider(
     }
 )
 
+MavenDeploymentInfo = provider(
+    fields = {
+        'jar': 'JAR file to deploy',
+        'pom': 'Accompanying pom.xml file'
+    }
+)
+
 DEP_BLOCK = """
 <dependency>
   <groupId>{0}</groupId>
@@ -86,6 +93,8 @@ DEP_BLOCK = """
 def _generate_pom_xml(ctx, maven_coordinates):
     # Final 'pom.xml' is generated in 2 steps
     preprocessed_template = ctx.actions.declare_file("_pom.xml")
+
+    pom_file = ctx.actions.declare_file("pom.xml")
 
     tags = depset(ctx.attr.target[TransitiveMavenInfo].transitive_dependencies).to_list()
 
@@ -107,53 +116,21 @@ def _generate_pom_xml(ctx, maven_coordinates):
     # Step 2: fill in {pom_version} from version_file
     ctx.actions.run_shell(
         inputs = [preprocessed_template, ctx.file.version_file],
-        outputs = [ctx.outputs.pom_file],
+        outputs = [pom_file],
         command = "VERSION=`cat %s` && sed -e s/{pom_version}/$VERSION/g %s > %s" % (
-            ctx.file.version_file.path, preprocessed_template.path, ctx.outputs.pom_file.path)
+            ctx.file.version_file.path, preprocessed_template.path, pom_file.path)
     )
 
-def _generate_deployment_script(ctx, maven_coordinates):
-    # Final 'deploy.sh' is generated in 2 steps
-    preprocessed_script = ctx.actions.declare_file("_deploy.sh")
+    return pom_file
 
-    # Maven artifact coordinates split by slash i.e. io/grakn/grakn-graql/grakn-graql
-    coordinates = "/".join([
-        maven_coordinates.group_id.replace('.', '/'),
-        maven_coordinates.artifact_id
-    ])
-
-    # Step 1: fill in {pom_version} from version_file
-    ctx.actions.run_shell(
-        inputs = [ctx.file._deployment_script_template, ctx.file.version_file],
-        outputs = [preprocessed_script],
-        command = "VERSION=`cat %s` && sed -e s/{pom_version}/$VERSION/g %s > %s" % (
-            ctx.file.version_file.path, ctx.file._deployment_script_template.path, preprocessed_script.path)
-    )
-
-    # Step 2: fill in everything except version
-    ctx.actions.expand_template(
-        template = preprocessed_script,
-        output = ctx.outputs.deployment_script,
-        substitutions = {
-            "$ARTIFACT": maven_coordinates.artifact_id,
-            "$COORDINATES": coordinates,
-        },
-        is_executable = True
-    )
-
-def _deploy_maven_jar_impl(ctx):
+def _assemble_maven_impl(ctx):
     target = ctx.attr.target
-
-    jars=[]
-    for tgt in ctx.attr.deps:
-        jars.append(tgt.java.outputs.jars[0].class_jar)
 
     target_string = target[MavenInfo].maven_artifacts.to_list()[0]
 
     maven_coordinates = _parse_maven_coordinates(target_string)
 
-    _generate_pom_xml(ctx, maven_coordinates)
-    _generate_deployment_script(ctx, maven_coordinates)
+    pom_file = _generate_pom_xml(ctx, maven_coordinates)
 
     # there is also .source_jar which produces '.srcjar'
     if hasattr(target, "java"):
@@ -163,19 +140,19 @@ def _deploy_maven_jar_impl(ctx):
     else:
         fail("Could not find JAR file to deploy in {}".format(target))
 
-    symlinks = {}
-    for i, libjar in enumerate(jars):
-        symlinks["lib{}.jar".format(i)] = libjar
+    output_jar = ctx.actions.declare_file("{}:{}.jar".format(maven_coordinates.group_id, maven_coordinates.artifact_id))
 
-    symlinks["lib.jar"] = jar
-    symlinks["pom.xml"] = ctx.outputs.pom_file
-    symlinks["deployment.properties"] = ctx.file.deployment_properties
+    ctx.actions.run(
+        inputs = [jar, pom_file, ctx.file.version_file],
+        outputs = [output_jar],
+        arguments = [output_jar.path, jar.path, pom_file.path],
+        executable = ctx.executable._assemble_script,
+    )
 
-    return DefaultInfo(executable = ctx.outputs.deployment_script,
-        runfiles = ctx.runfiles(
-            files=[jar, ctx.outputs.pom_file, ctx.file.deployment_properties] + jars,
-            # generate symlinks with predictable names
-            symlinks=symlinks))
+    return [
+        DefaultInfo(files = depset([output_jar, pom_file])),
+        MavenDeploymentInfo(jar = output_jar, pom = pom_file)
+    ]
 
 
 def _transitive_maven_dependencies(_target, ctx):
@@ -219,7 +196,7 @@ _transitive_maven_info = aspect(
     }
 )
 
-deploy_maven_jar = rule(
+assemble_maven = rule(
     attrs = {
         "target": attr.label(
             mandatory = True,
@@ -229,32 +206,67 @@ deploy_maven_jar = rule(
             ]
         ),
         "package": attr.string(),
-        "deps": attr.label_list(
-            mandatory = False,
-        ),
         "version_file": attr.label(
             allow_single_file = True,
             mandatory = not bool(_default_version_file),
             default = _default_version_file
+        ),
+        "_pom_xml_template": attr.label(
+            allow_single_file = True,
+            default = "@graknlabs_bazel_distribution//maven/templates:pom.xml",
+        ),
+        "_assemble_script": attr.label(
+            default = "@graknlabs_bazel_distribution//maven:assemble",
+            executable = True,
+            cfg = "host"
+        )
+    },
+    implementation = _assemble_maven_impl,
+)
+
+def _deploy_maven_impl(ctx):
+    deploy_maven_script = ctx.actions.declare_file("deploy.py")
+
+    lib_jar_link = "lib.jar"
+    pom_xml_link = "pom.xml"
+
+    ctx.actions.expand_template(
+        template = ctx.file._deployment_script,
+        output = deploy_maven_script,
+        substitutions = {
+            "$JAR_PATH": lib_jar_link,
+            "$POM_PATH": pom_xml_link,
+        }
+    )
+
+    return DefaultInfo(
+        executable = deploy_maven_script,
+        runfiles = ctx.runfiles(files=[
+            ctx.attr.target[MavenDeploymentInfo].jar,
+            ctx.attr.target[MavenDeploymentInfo].pom,
+            ctx.file.deployment_properties
+        ], symlinks = {
+            lib_jar_link: ctx.attr.target[MavenDeploymentInfo].jar,
+            pom_xml_link: ctx.attr.target[MavenDeploymentInfo].pom,
+        })
+    )
+
+
+deploy_maven = rule(
+    attrs = {
+        "target": attr.label(
+            providers = [MavenDeploymentInfo]
         ),
         "deployment_properties": attr.label(
             allow_single_file = True,
             mandatory = not bool(_default_deployment_properties),
             default = _default_deployment_properties
         ),
-        "_pom_xml_template": attr.label(
+        "_deployment_script": attr.label(
             allow_single_file = True,
-            default = "@graknlabs_bazel_distribution//maven/templates:pom.xml",
+            default = "@graknlabs_bazel_distribution//maven/templates:deploy.py",
         ),
-        "_deployment_script_template": attr.label(
-            allow_single_file = True,
-            default = "@graknlabs_bazel_distribution//maven/templates:deploy.sh",
-        )
     },
     executable = True,
-    outputs = {
-        "pom_file": "%{name}.xml",
-        "deployment_script": "%{name}.sh",
-    },
-    implementation = _deploy_maven_jar_impl,
+    implementation = _deploy_maven_impl
 )
