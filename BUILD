@@ -56,6 +56,7 @@ assemble_targz(
         "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-linux",
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(

@@ -28,6 +28,9 @@ assemble_targz(
     additional_files = {
         "//bin:grakn": 'grakn',
     },
+    permissions = {
+        "grakn": "0755",
+    },
     visibility = ["//server:__pkg__", "//console:__pkg__", "//:__pkg__"]
 )
 
