@@ -18,7 +18,7 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
@@ -38,10 +38,15 @@ java_library(
 )
 
 
-deploy_maven_jar(
-    name = "deploy-maven",
+assemble_maven(
+    name = "assemble-maven",
     target = ":concept",
     package = "concept",
+)
+
+deploy_maven(
+    name = "deploy-maven",
+    target = ":assemble-maven"
 )
 
 checkstyle_test(
