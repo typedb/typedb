@@ -185,11 +185,11 @@ assemble_rpm(
     ],
 )
 
-deploy_rpm(
-    name = "deploy-rpm",
-    target = ":assemble-rpm",
-    deployment_properties = "//:deployment.properties",
-)
+#deploy_rpm(
+#    name = "deploy-rpm",
+#    target = ":assemble-rpm",
+#    deployment_properties = "//:deployment.properties",
+#)
 
 test_suite(
     name = "console-test-integration",
