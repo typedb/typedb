@@ -31,6 +31,19 @@ commands:
             # Install RBE credential
             bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
 
+  install-bazel-mac:
+    steps:
+      - run:
+          name: Install bazel and RBE credential
+          command: |
+            # Install bazel
+            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-darwin-x86_64.sh
+            chmod +x bazel-0.20.0-installer-darwin-x86_64.sh
+            sudo ./bazel-0.20.0-installer-darwin-x86_64.sh
+
+            # Install RBE credential
+            bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
+
   install-rpm:
     steps:
       - run:
@@ -168,9 +181,33 @@ jobs:
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
       # deploy artifact
-      - run: bazel run //bin:deploy-apt -- test test NPeMmvBcVNBb6XYg
-      - run: bazel run //console:deploy-apt -- test test NPeMmvBcVNBb6XYg
-      - run: bazel run //server:deploy-apt -- test test NPeMmvBcVNBb6XYg
+      # TODO: enable
+#      - run: bazel run //bin:deploy-apt -- test $TODO $TODO
+#      - run: bazel run //console:deploy-apt -- test $TODO $TODO
+#      - run: bazel run //server:deploy-apt -- test $TODO $TODO
+
+  test-assembly-mac-zip:
+    macos:
+      xcode: "9.0"
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - install-bazel-mac
+
+      # build the zip distribution
+      - run: bazel build //:assemble-mac-zip
+
+      # install the zip distribution. Grakn will be available system-wide
+      - run:
+          command: |
+            unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
+            sudo mkdir -p /opt/grakn/core
+            sudo mv bazel-genfiles/grakn-core-all-mac/* /opt/grakn/core/
+            sudo chown -R distiller:staff /opt/grakn/ # TODO: how do we avoid having to chown?
+            sudo ln -s /opt/grakn/core/grakn /usr/local/bin/grakn
+
+      # run the test
+      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
   sync-dependencies:
     machine: true
@@ -212,6 +249,7 @@ workflows:
     jobs:
       - test-assembly-linux-apt
       - test-assembly-linux-targz
+      - test-assembly-mac-zip
 #  grakn-core:
 #    jobs:
 #      # test jobs
