@@ -33,32 +33,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class DistributionE2EConstants {
-    public static final Path GRAKN_TARGET_DIRECTORY = Paths.get(".").toAbsolutePath();
-    public static final Path ZIP_FULLPATH = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "grakn-core-all-mac.zip");
-    public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution-test", "grakn-core-all-mac");
+    public static final Path GRAKN_BASE_DIR = Paths.get("/", "opt", "grakn", "core");
+    public static final String GRAKN_BIN = Paths.get("/", "usr", "local", "bin", "grakn").toAbsolutePath().toString();
+
+//    public static final Path GRAKN_BASE_DIR = Paths.get("/private/var/tmp/_bazel_lolski/84c573308050bc0236391991cc923148/execroot/graknlabs_grakn_core/bazel-out/darwin-fastbuild/genfiles/grakn-core-all-mac");
+//    public static final String GRAKN_BIN = GRAKN_BASE_DIR.resolve("grakn").toAbsolutePath().toString(); // TODO: fix
 
     public static void assertGraknIsRunning() {
-        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        Config config = Config.read(GRAKN_BASE_DIR.resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", serverReady, equalTo(true));
     }
 
     public static void assertGraknIsNotRunning() {
-        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        Config config = Config.read(GRAKN_BASE_DIR.resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
-    }
-
-    public static void assertZipExists() {
-        if(!ZIP_FULLPATH.toFile().exists()) {
-            Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toAbsolutePath().toString() + "' could not be found. Please ensure it has been build (ie., run `mvn package`)");
-        }
-    }
-
-    public static void unzipGrakn() throws IOException, InterruptedException, TimeoutException {
-        System.out.println("Unzipped Grakn to: " + GRAKN_UNZIPPED_DIRECTORY.toAbsolutePath());
-        new ProcessExecutor()
-                .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
     }
 
     private static boolean isServerReady(String host, int port) {

@@ -120,14 +120,57 @@ jobs:
     - run-bazel-rbe:
         command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
-  test-end-to-end:
+  test-assembly-linux-targz:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
       - install-bazel
-      - run-bazel-rbe:
-          command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+
+      # build the targz distribution
+      - run: bazel build //:assemble-linux-targz
+
+      # install the targz distribution. Grakn will be available system-wide for test-end-to-end
+      - run:
+          command: |
+            tar -xf bazel-bin/assemble-linux-targz.tar.gz -C bazel-bin
+            sudo mkdir -p /opt/grakn/core
+            sudo mv bazel-bin/grakn-core-all-linux/* /opt/grakn/core/
+            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+            sudo ln -s /opt/grakn/core/grakn /usr/local/bin/grakn
+
+      # run the test
+      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+
+  test-assembly-linux-apt:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - install-bazel
+
+      # build the following apt packages: grakn-core-bin, grakn-core-server, and grakn-core-console
+      - run:
+          command: |
+            bazel build //bin:assemble-apt
+            bazel build //server:assemble-apt
+            bazel build //console:assemble-apt
+
+      # install the apt packages. Grakn will be available system-wide for test-end-to-end
+      - run:
+          command: |
+            sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
+            sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
+            sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
+            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+
+      # run the test
+      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+
+      # deploy artifact
+      - run: bazel run //bin:deploy-apt -- test test NPeMmvBcVNBb6XYg
+      - run: bazel run //console:deploy-apt -- test test NPeMmvBcVNBb6XYg
+      - run: bazel run //server:deploy-apt -- test test NPeMmvBcVNBb6XYg
 
   sync-dependencies:
     machine: true
@@ -167,77 +210,81 @@ workflows:
   #  - waits for an approval for Grakn to be released (executed on master only)
   grakn-core:
     jobs:
-      # test jobs
-      - build:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-common:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-console:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-server:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration-reasoner:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration-analytics:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-end-to-end:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-
-      # sync dependencies to the latest grakn version
-      - sync-dependencies:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-
-      # wait for an approval for Grakn to be released
-      # triggers 'ci-release' workflow by creating a branch 'grakn-core-release-branch' in graknlabs/grakn
-      - release-approval:
-          filters:
-            branches:
-              only: master
-          requires:
-            - sync-dependencies
-
-  # the 'grakn-core-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
-  # it consists of jobs which:
-  # - publishes Grakn by creating a Github release
-  # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval job
-  grakn-core-release:
-    jobs:
-      - release-github-draft:
-          filters:
-            branches:
-              only: grakn-core-release-branch
-      - release-cleanup:
-          requires:
-            - release-github-draft
-          filters:
-            branches:
-              only: grakn-core-release-branch
+      - test-assembly-linux-apt
+      - test-assembly-linux-targz
+#  grakn-core:
+#    jobs:
+#      # test jobs
+#      - build:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-common:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-console:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-server:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration-reasoner:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration-analytics:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-end-to-end:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#
+#      # sync dependencies to the latest grakn version
+#      - sync-dependencies:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#
+#      # wait for an approval for Grakn to be released
+#      # triggers 'ci-release' workflow by creating a branch 'grakn-core-release-branch' in graknlabs/grakn
+#      - release-approval:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - sync-dependencies
+#
+#  # the 'grakn-core-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
+#  # it consists of jobs which:
+#  # - publishes Grakn by creating a Github release
+#  # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval job
+#  grakn-core-release:
+#    jobs:
+#      - release-github-draft:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#      - release-cleanup:
+#          requires:
+#            - release-github-draft
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch

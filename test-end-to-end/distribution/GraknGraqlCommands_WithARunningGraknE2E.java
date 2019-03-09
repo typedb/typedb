@@ -30,11 +30,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.distribution.DistributionE2EConstants.GRAKN_BASE_DIR;
+import static grakn.core.distribution.DistributionE2EConstants.GRAKN_BIN;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
-import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
@@ -46,25 +45,26 @@ import static org.hamcrest.Matchers.containsString;
 public class GraknGraqlCommands_WithARunningGraknE2E {
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
-            .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
+            .directory(GRAKN_BASE_DIR.toFile())
             .redirectOutput(System.out)
             .redirectError(System.err)
             .readOutput(true);
 
     @BeforeClass
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
-        assertZipExists();
-        unzipGrakn();
         assertGraknIsNotRunning();
-        commandExecutor.command("./grakn", "server", "start").execute();
+        commandExecutor.command(GRAKN_BIN, "server", "start").execute();
         assertGraknIsRunning();
     }
 
     @AfterClass
     public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
-        commandExecutor.command("./grakn", "server", "stop").execute();
+        commandExecutor.command(GRAKN_BIN, "server", "stop").execute();
         assertGraknIsNotRunning();
-        FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
+        String userInput = "y";
+        commandExecutor
+                .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
+                .command(GRAKN_BIN, "server", "clean").execute().outputUTF8();
     }
 
     /**
@@ -76,7 +76,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
         String graql = "define person sub entity; insert $x isa person; match $x isa person; get;\n";
 
         String output = commandExecutor
-                .command("./grakn", "console", "-k", randomKeyspace)
+                .command(GRAKN_BIN, "console", "-k", randomKeyspace)
                 .redirectInput(new ByteArrayInputStream(graql.getBytes(StandardCharsets.UTF_8)))
                 .execute().outputUTF8();
 
@@ -91,7 +91,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
         String userInput = "y";
         String output = commandExecutor
                 .redirectInput(new ByteArrayInputStream(userInput.getBytes(StandardCharsets.UTF_8)))
-                .command("./grakn", "server", "clean").execute().outputUTF8();
+                .command(GRAKN_BIN, "server", "clean").execute().outputUTF8();
 
         assertThat(output, containsString("Grakn is still running! Please do a shutdown with 'grakn server stop' before performing a cleanup."));
     }
@@ -101,7 +101,7 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
      */
     @Test
     public void grakn_testPrintStatus_whenCurrentlyRunning() throws IOException, InterruptedException, TimeoutException {
-        String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
+        String output = commandExecutor.command(GRAKN_BIN, "server", "status").execute().outputUTF8();
         assertThat(output, allOf(containsString("Storage: RUNNING"), containsString("Grakn Core Server: RUNNING")));
     }
 }
