@@ -177,9 +177,9 @@ def _transitive_maven_dependencies(_target, ctx):
     return [TransitiveMavenInfo(transitive_dependencies = tags)]
 
 # Filled in by deployment_rules_builder
-_maven_packages = "api,client-java,common,concept,console,daemon,protocol,server".split(",")
+_maven_packages = "api,client-java,common,concept,console,daemon,java,protocol,server".split(",")
 _default_version_file = None if 'version_file_placeholder' in "//:VERSION" else "//:VERSION"
-_default_deployment_properties = None if 'deployment_properties_placeholder' in "//:deployment.properties" else "//:deployment.properties"
+_default_deployment_properties = None if 'deployment_properties_placeholder' in "@graknlabs_build_tools//:deployment.properties" else "@graknlabs_build_tools//:deployment.properties"
 
 _transitive_maven_info = aspect(
     attr_aspects = [
