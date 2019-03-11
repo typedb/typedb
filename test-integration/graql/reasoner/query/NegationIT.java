@@ -437,7 +437,7 @@ public class NegationIT {
                             "};" +
                         "};" +
                     "};" +
-                    "get;"
+                    "get $r;"
             )).collect(Collectors.toList());
 
             assertEquals(recipesContainingAllergens, doubleNegationEquivalent);
