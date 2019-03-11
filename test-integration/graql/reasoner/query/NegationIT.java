@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -109,6 +108,22 @@ public class NegationIT {
                                 "not {" +
                                     "$i isa entity;" +
                                 "};" +
+                            "};" +
+                            "};"
+            );
+            ReasonerQueries.composite(Iterables.getOnlyElement(pattern.getNegationDNF().getPatterns()), tx);
+        }
+    }
+
+    @Test (expected = GraqlQueryException.class)
+    public void whenNegationBlockContainsDisjunction_exceptionIsThrown(){
+        try(TransactionOLTP tx = negationSession.transaction().write()) {
+            Pattern pattern = Graql.parsePattern(
+                    "{" +
+                            "$x isa someType;" +
+                            "not {" +
+                                "{$x has resource-string 'value';} or " +
+                                "{$x has resource-string 'someString';};" +
                             "};" +
                             "};"
             );
@@ -422,7 +437,7 @@ public class NegationIT {
                             "};" +
                         "};" +
                     "};" +
-                    "get $r;"
+                    "get;"
             )).collect(Collectors.toList());
 
             assertEquals(recipesContainingAllergens, doubleNegationEquivalent);
@@ -450,7 +465,7 @@ public class NegationIT {
                         "$i isa allergenic-ingredient;" +
                     "};" +
                     "};" +
-                    "get $r;"
+                    "get;"
             )).collect(Collectors.toList());
             assertEquals(ReasonerUtils.listDifference(allRecipes, recipesContainingAllergens), recipesWithoutAllergenIngredients);
         }
@@ -497,7 +512,7 @@ public class NegationIT {
                             "};" +
                         "};" +
                     "};" +
-                    "get $r;"
+                    "get;"
             ));
 
             List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(Graql.<GraqlGet>parse("match " +
@@ -508,7 +523,7 @@ public class NegationIT {
                              "not {$i isa available-ingredient;};" +
                         "};" +
                     "};" +
-                    "get $r;"
+                    "get;"
             ));
 
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
