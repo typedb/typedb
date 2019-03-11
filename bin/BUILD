@@ -28,6 +28,9 @@ assemble_targz(
     additional_files = {
         "//bin:grakn": 'grakn',
     },
+    permissions = {
+        "grakn": "0755",
+    },
     visibility = ["//server:__pkg__", "//console:__pkg__", "//:__pkg__"]
 )
 
@@ -65,7 +68,7 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-apt",
-    deployment_properties = "//:deployment.properties",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 
 assemble_rpm(
@@ -87,8 +90,8 @@ assemble_rpm(
     },
 )
 
-deploy_rpm(
-    name = "deploy-rpm",
-    target = ":assemble-rpm",
-    deployment_properties = "//:deployment.properties",
-)
+#deploy_rpm(
+#    name = "deploy-rpm",
+#    target = ":assemble-rpm",
+#    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+#)

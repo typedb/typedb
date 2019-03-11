@@ -17,9 +17,15 @@
 #
 
 genrule(
-    name = "deployment_rules",
-    srcs = ["@graknlabs_bazel_distribution//maven/templates:rules.bzl", "//:deployment.properties"],
-    cmd = "$(location @graknlabs_bazel_distribution//maven:deployment_rules_builder.py) $(location @graknlabs_bazel_distribution//maven/templates:rules.bzl) $@ $(location //:deployment.properties) //:VERSION //:deployment.properties",
+    name = "deployment-rules",
+    srcs = [
+        "@graknlabs_bazel_distribution//maven/templates:rules.bzl",
+        "@graknlabs_build_tools//:deployment.properties"
+    ],
+    cmd = "$(location @graknlabs_bazel_distribution//maven:deployment_rules_builder.py) " +
+    "$(location @graknlabs_bazel_distribution//maven/templates:rules.bzl) $@ " +
+    "$(location @graknlabs_build_tools//:deployment.properties) " +
+    "//:VERSION @graknlabs_build_tools//:deployment.properties",
     outs = ["rules.bzl"],
     tools = ["@graknlabs_bazel_distribution//maven:deployment_rules_builder.py"]
 )

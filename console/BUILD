@@ -17,7 +17,7 @@
 #
 
 package(default_visibility = ["//visibility:__subpackages__"])
-load("//dependencies/maven:rules.bzl", "deploy_maven_jar")
+load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -131,10 +131,15 @@ assemble_zip(
     }
 )
 
-deploy_maven_jar(
-    name = "deploy-maven",
+assemble_maven(
+    name = "assemble-maven",
     target = ":console",
     package = "console",
+)
+
+deploy_maven(
+    name = "deploy-maven",
+    target = ":assemble-maven"
 )
 
 assemble_apt(
@@ -161,7 +166,7 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-apt",
-    deployment_properties = "//:deployment.properties",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 
 assemble_rpm(
@@ -180,11 +185,11 @@ assemble_rpm(
     ],
 )
 
-deploy_rpm(
-    name = "deploy-rpm",
-    target = ":assemble-rpm",
-    deployment_properties = "//:deployment.properties",
-)
+#deploy_rpm(
+#    name = "deploy-rpm",
+#    target = ":assemble-rpm",
+#    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+#)
 
 test_suite(
     name = "console-test-integration",
