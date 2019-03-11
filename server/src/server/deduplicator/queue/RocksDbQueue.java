@@ -73,6 +73,7 @@ public class RocksDbQueue implements AutoCloseable {
         WriteOptions syncWrite = new WriteOptions().setSync(true);
         try {
             queueDb.put(syncWrite, serialiseStringUtf8(attribute.conceptId().getValue()), serialiseAttributeUtf8(attribute));
+            syncWrite.close();
             synchronized (this) { notifyAll(); }
         }
         catch (RocksDBException e) {
@@ -107,6 +108,7 @@ public class RocksDbQueue implements AutoCloseable {
             it.next();
             count++;
         }
+        it.close();
 
         return result;
     }
@@ -129,6 +131,8 @@ public class RocksDbQueue implements AutoCloseable {
         }
         try {
             queueDb.write(writeOptions, acks);
+            acks.close();
+            writeOptions.close();
         }
         catch (RocksDBException e) {
             throw new RocksDbQueueException(e);
@@ -151,7 +155,9 @@ public class RocksDbQueue implements AutoCloseable {
     private boolean isQueueEmpty(RocksDB queueDb) {
         RocksIterator it = queueDb.newIterator();
         it.seekToFirst();
-        return !it.isValid();
+        boolean isQueueEmpty = !it.isValid();
+        it.close();
+        return  isQueueEmpty;
     }
 
     /**
