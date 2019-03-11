@@ -36,18 +36,17 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 
 /**
- *
  * The class containing the actual de-duplication algorithm.
- *
  */
 public class AttributeDeduplicator {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicator.class);
+
     /**
      * Deduplicate attributes that has the same value. A de-duplication process consists of picking a single attribute
      * in the duplicates as the "merge target", copying every edges from every "other duplicates" to the merge target, and
      * finally deleting that other duplicates.
      *
-     * @param sessionFactory the factory object for accessing the database
+     * @param sessionFactory    the factory object for accessing the database
      * @param keyspaceIndexPair the pair containing information about the attribute keyspace and index
      */
     public static void deduplicate(SessionFactory sessionFactory, KeyspaceIndexPair keyspaceIndexPair) {
@@ -55,33 +54,37 @@ public class AttributeDeduplicator {
         try (TransactionOLTP tx = session.transaction().write()) {
             GraphTraversalSource tinker = tx.getTinkerTraversal();
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceIndexPair.index());
-            Vertex mergeTargetV = duplicates.next();
-            while (duplicates.hasNext()) {
-                Vertex duplicate = duplicates.next();
-                try {
-                    duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
-                        // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-                        GraphTraversal<Vertex, Edge> attributeEdge =
-                                tinker.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
-                        if (attributeEdge.hasNext()) {
-                            mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
-                        }
+            // Duplicates might be empty if the user deleted the attribute right after the insertion or deleted the keyspace.
+            if (duplicates.hasNext()) {
+                Vertex mergeTargetV = duplicates.next();
+                while (duplicates.hasNext()) {
+                    Vertex duplicate = duplicates.next();
+                    try {
+                        duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
+                            // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                            GraphTraversal<Vertex, Edge> attributeEdge =
+                                    tinker.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
+                            if (attributeEdge.hasNext()) {
+                                mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
+                            }
 
-                        // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-                        GraphTraversal<Vertex, Edge> rolePlayerEdge =
-                                tinker.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
-                        if (rolePlayerEdge.hasNext()) {
-                            mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
-                        }
-                    });
-                    duplicate.remove();
+                            // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                            GraphTraversal<Vertex, Edge> rolePlayerEdge =
+                                    tinker.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
+                            if (rolePlayerEdge.hasNext()) {
+                                mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
+                            }
+                        });
+                        duplicate.remove();
+                    } catch (IllegalStateException vertexAlreadyRemovedException) {
+                        LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + duplicate.id() + " which is already removed.");
+                    }
                 }
-                catch (IllegalStateException vertexAlreadyRemovedException) {
-                    LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + duplicate.id() + " which is already removed.");
-                }
+
+                tx.commit();
+            } else {
+                tx.close();
             }
-
-            tx.commit();
         } finally {
             session.close();
         }
@@ -104,7 +107,7 @@ public class AttributeDeduplicator {
 
     private static Object[] propertiesToArray(ArrayList<Property<Object>> propertiesAsKeyValue) {
         ArrayList<Object> propertiesAsObj = new ArrayList<>();
-        for (Property<Object> property: propertiesAsKeyValue) {
+        for (Property<Object> property : propertiesAsKeyValue) {
             propertiesAsObj.add(property.key());
             propertiesAsObj.add(property.value());
         }

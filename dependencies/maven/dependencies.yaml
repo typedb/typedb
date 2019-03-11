@@ -406,7 +406,7 @@ dependencies:
 
   org.rocksdb:
     rocksdbjni:
-      version: "5.17.2"
+      version: "5.14.2"
       lang: java
 
   org.scala-lang:
