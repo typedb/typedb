@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+
 version: 2.1
 commands:
   install-bazel:
@@ -152,10 +153,10 @@ jobs:
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
             sudo ln -s /opt/grakn/core/grakn /usr/local/bin/grakn
 
-      # run the test
+      # run the test # TODO: change the test
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
-  test-assembly-linux-apt:
+  test-assembly-apt:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -177,7 +178,7 @@ jobs:
             sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
 
-      # run the test
+      # run the test # TODO: change the test
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
       # deploy artifact
@@ -185,6 +186,18 @@ jobs:
 #      - run: bazel run //bin:deploy-apt -- test $TODO $TODO
 #      - run: bazel run //console:deploy-apt -- test $TODO $TODO
 #      - run: bazel run //server:deploy-apt -- test $TODO $TODO
+
+  test-assembly-rpm:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run: echo "$GCP_CREDENTIAL" > /tmp/gcp-credential.json # TODO: move to the py script
+      - run: gcloud auth activate-service-account --key-file /tmp/gcp-credential.json # TODO: move to the py script
+      - run: ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/google_compute_engine # the file needs to be located at ~/.ssh/google_compute_engine in order for it to be recognised by gcloud # TODO: move to the py script
+      - run:
+          command: .circleci/test-assembly/rpm.py
+          no_output_timeout: 20m
 
   test-assembly-mac-zip:
     macos:
@@ -206,8 +219,17 @@ jobs:
             sudo chown -R distiller:staff /opt/grakn/ # TODO: how do we avoid having to chown?
             sudo ln -s /opt/grakn/core/grakn /usr/local/bin/grakn
 
-      # run the test
+      # run the test # TODO: change the test
       - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+
+  test-assembly-windows-zip:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run:
+          command: .circleci/test-assembly/windows-zip/windows-zip.py
+          no_output_timeout: 20m
 
   sync-dependencies:
     machine: true
@@ -247,9 +269,11 @@ workflows:
   #  - waits for an approval for Grakn to be released (executed on master only)
   grakn-core:
     jobs:
-      - test-assembly-linux-apt
       - test-assembly-linux-targz
+      - test-assembly-apt
+      - test-assembly-rpm
       - test-assembly-mac-zip
+      - test-assembly-windows-zip
 # TODO: enable
 #  grakn-core:
 #    jobs:
