@@ -69,6 +69,7 @@ jobs:
     steps:
       - checkout
       - install-bazel
+      - install-rpm
       - run-bazel-rbe:
           command: bazel test //console/... --test_output=errors
 
@@ -78,6 +79,7 @@ jobs:
     steps:
       - checkout
       - install-bazel
+      - install-rpm
       - run-bazel-rbe:
           command: bazel test //server/... --test_output=errors
 
