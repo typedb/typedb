@@ -33,18 +33,14 @@ commands:
 
   install-rpm:
     steps:
-      - run:
-          name: Install rpm (for rpmbuild)
-          command: sudo apt update && sudo apt install rpm -y
+      - run: sudo apt update && sudo apt install rpm -y
 
   run-bazel-rbe:
     parameters:
       command:
           type: string
     steps:
-      - run:
-          command: |
-            bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
 
 jobs:
   build:
@@ -73,7 +69,6 @@ jobs:
     steps:
       - checkout
       - install-bazel
-      - install-rpm
       - run-bazel-rbe:
           command: bazel test //console/... --test_output=errors
 
@@ -83,7 +78,6 @@ jobs:
     steps:
       - checkout
       - install-bazel
-      - install-rpm
       - run-bazel-rbe:
           command: bazel test //server/... --test_output=errors
 
@@ -236,8 +230,8 @@ workflows:
             branches:
               only: grakn-core-release-branch
       - release-cleanup:
-          requires:
-            - release-github-draft
           filters:
             branches:
               only: grakn-core-release-branch
+          requires:
+            - release-github-draft
