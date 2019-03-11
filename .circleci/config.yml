@@ -250,6 +250,7 @@ workflows:
       - test-assembly-linux-apt
       - test-assembly-linux-targz
       - test-assembly-mac-zip
+# TODO: enable
 #  grakn-core:
 #    jobs:
 #      # test jobs
