@@ -113,6 +113,7 @@ java_deps(
     name = "server-deps",
     target = ":server-binary",
     java_deps_root = "server/services/lib/",
+    version_file = "//:VERSION",
     visibility = ["//:__pkg__"]
 )
 

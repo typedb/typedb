@@ -23,8 +23,8 @@ JAVA_BIN=java
 GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="conf/grakn.properties"
 
-CONSOLE_JAR_FILENAME="console/services/lib/libconsole.jar"
-SERVER_JAR_FILENAME="server/services/lib/libserver.jar"
+CONSOLE_JAR_FILENAME=(${GRAKN_HOME}/console/services/lib/grakn-core-console*.jar)
+SERVER_JAR_FILENAME=(${GRAKN_HOME}/server/services/lib/grakn-core-server*.jar)
 
 # ================================================
 # common helper functions
@@ -54,7 +54,7 @@ if [ -z "$1" ]; then
     echo "  Console:         grakn console [--help]"
     echo "  Version:         grakn version"
 elif [ "$1" = "console" ]; then
-    if [ -f "${GRAKN_HOME}/${CONSOLE_JAR_FILENAME}" ]; then
+    if [ -f "${CONSOLE_JAR_FILENAME}" ]; then
         SERVICE_LIB_CP="console/services/lib/*"
         CLASSPATH="${GRAKN_HOME}/${SERVICE_LIB_CP}:${GRAKN_HOME}/conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" grakn.core.console.GraknConsole "$@"
@@ -63,7 +63,7 @@ elif [ "$1" = "console" ]; then
         echo "You may want to install Grakn Core Console or Grakn Core (all)."
     fi
 elif [[ "$1" = "server" ]] || [[ "$1" = "version" ]]; then
-    if [[ -f "${GRAKN_HOME}/${SERVER_JAR_FILENAME}" ]]; then
+    if [[ -f "${SERVER_JAR_FILENAME}" ]]; then
         SERVICE_LIB_CP="server/services/lib/*"
         CLASSPATH="${GRAKN_HOME}/${SERVICE_LIB_CP}:${GRAKN_HOME}/conf/"
         java -cp "${CLASSPATH}" -Dgrakn.dir="${GRAKN_HOME}" -Dgrakn.conf="${GRAKN_HOME}/${GRAKN_CONFIG}" -Dserver.javaopts="${SERVER_JAVAOPTS}" grakn.core.daemon.GraknDaemon $@

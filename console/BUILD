@@ -71,6 +71,7 @@ java_deps(
     name = "console-deps",
     target = ":console-binary",
     java_deps_root = "console/services/lib/",
+    version_file = "//:VERSION",
     visibility = ["//:__pkg__"]
 )
 
