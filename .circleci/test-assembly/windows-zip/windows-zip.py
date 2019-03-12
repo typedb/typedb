@@ -169,8 +169,11 @@ try:
     lprint('[Remote]: starting Grakn')
     ssh(' && '.join([
         'refreshenv',
-        'cd repo/bazel-genfiles/grakn-core-all-windows/',
+        'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
         'grakn server start',
+        'cd /Users/circleci/repo',
+        'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no',
+        'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
         'grakn server stop'
     ]), instance_ip, 'circleci', instance_password)
 
@@ -178,7 +181,7 @@ try:
 
 finally:
     lprint('Remove instance')
-    sp.check_call([
-        'gcloud', '--quiet', 'compute', 'instances',
-        'delete', instance_name, '--delete-disks=all'
-    ])
+    # sp.check_call([
+    #     'gcloud', '--quiet', 'compute', 'instances',
+    #     'delete', instance_name, '--delete-disks=all'
+    # ])

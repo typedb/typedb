@@ -140,21 +140,13 @@ jobs:
     steps:
       - checkout
       - install-bazel
-
-      # build the targz distribution
-      - run: bazel build //:assemble-linux-targz
-
-      # install the targz distribution. Grakn will be available system-wide for test-end-to-end
       - run:
           command: |
+            bazel build //:assemble-linux-targz
             tar -xf bazel-bin/assemble-linux-targz.tar.gz -C bazel-bin
-            sudo mkdir -p /opt/grakn/core
-            sudo mv bazel-bin/grakn-core-all-linux/* /opt/grakn/core/
-            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-            sudo ln -s /opt/grakn/core/grakn /usr/local/bin/grakn
-
-      # run the test # TODO: change the test
-      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+            nohup bazel-bin/grakn-core-all-linux/grakn server start
+      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel-bin/grakn-core-all-linux/grakn server stop
 
   test-assembly-apt:
     machine: true
@@ -162,42 +154,44 @@ jobs:
     steps:
       - checkout
       - install-bazel
-
-      # build the following apt packages: grakn-core-bin, grakn-core-server, and grakn-core-console
       - run:
           command: |
             bazel build //bin:assemble-apt
             bazel build //server:assemble-apt
             bazel build //console:assemble-apt
-
-      # install the apt packages. Grakn will be available system-wide for test-end-to-end
-      - run:
-          command: |
             sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
             sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
             sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+            nohup grakn server start
+            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+            grakn server stop
+      - run:
+          command: |
+            bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+            bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+            bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
 
-      # run the test # TODO: change the test
-      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
-
-      # deploy artifact
-      # TODO: enable
-#      - run: bazel run //bin:deploy-apt -- test $TODO $TODO
-#      - run: bazel run //console:deploy-apt -- test $TODO $TODO
-#      - run: bazel run //server:deploy-apt -- test $TODO $TODO
+  test-deployment-apt:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: echo TODO
 
   test-assembly-rpm:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
-      - run: echo "$GCP_CREDENTIAL" > /tmp/gcp-credential.json # TODO: move to the py script
-      - run: gcloud auth activate-service-account --key-file /tmp/gcp-credential.json # TODO: move to the py script
-      - run: ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/google_compute_engine # the file needs to be located at ~/.ssh/google_compute_engine in order for it to be recognised by gcloud # TODO: move to the py script
       - run:
           command: .circleci/test-assembly/rpm.py
           no_output_timeout: 20m
+
+  test-deployment-rpm:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: echo TODO
 
   test-assembly-mac-zip:
     macos:
@@ -206,21 +200,13 @@ jobs:
     steps:
       - checkout
       - install-bazel-mac
-
-      # build the zip distribution
-      - run: bazel build //:assemble-mac-zip
-
-      # install the zip distribution. Grakn will be available system-wide
       - run:
           command: |
+            bazel build //:assemble-mac-zip
             unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
-            sudo mkdir -p /opt/grakn/core
-            sudo mv bazel-genfiles/grakn-core-all-mac/* /opt/grakn/core/
-            sudo chown -R distiller:staff /opt/grakn/ # TODO: how do we avoid having to chown?
-            sudo ln -s /opt/grakn/core/grakn /usr/local/bin/grakn
-
-      # run the test # TODO: change the test
-      - run: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+            nohup bazel-genfiles/grakn-core-all-mac/grakn server start
+      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
   test-assembly-windows-zip:
     machine: true
@@ -271,7 +257,13 @@ workflows:
     jobs:
       - test-assembly-linux-targz
       - test-assembly-apt
+      - test-deployment-apt:
+          requires:
+            - test-assembly-apt
       - test-assembly-rpm
+      - test-deployment-rpm:
+          requires:
+            - test-assembly-rpm
       - test-assembly-mac-zip
       - test-assembly-windows-zip
 # TODO: enable
