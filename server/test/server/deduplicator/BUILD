@@ -19,7 +19,7 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "rocks-db-queue-test",
+    name = "in-memory-queue-test",
     test_class = "grakn.core.server.deduplicator.InMemoryQueueTest",
     srcs = ["InMemoryQueueTest.java"],
     deps = [
@@ -29,13 +29,12 @@ java_test(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    size = "small",
-    flaky = True
+    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":rocks-db-queue-test"
+        ":in-memory-queue-test"
     ],
 )

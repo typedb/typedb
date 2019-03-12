@@ -27,7 +27,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -55,7 +57,7 @@ public class InMemoryQueueTest {
             queue.insert(attr);
         }
         List<Attribute> insertedAttributes = queue.read(attributes.size());
-        assertThat(insertedAttributes, equalTo(attributes));
+        assertThat(new HashSet<>(insertedAttributes), equalTo(new HashSet<>(attributes)));
     }
 
 
@@ -74,30 +76,30 @@ public class InMemoryQueueTest {
             queue.insert(attr);
         }
         List<Attribute> insertedAttributes = queue.read(Integer.MAX_VALUE);
-        assertThat(insertedAttributes, equalTo(attributes));
+        assertThat(new HashSet<>(insertedAttributes), equalTo(new HashSet<>(attributes)));
         List<Attribute> remainingAttributes = queue.read(Integer.MAX_VALUE);
-        assertThat(remainingAttributes, equalTo(attributes));
+        assertThat(new HashSet<>(remainingAttributes), equalTo(new HashSet<>(attributes)));
     }
 
     @Test
     public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException {
         InMemoryQueue queue = new InMemoryQueue();
-        List<Attribute> attributes1 = Arrays.asList(
+        List<Attribute> attributes = new ArrayList<>(Arrays.asList(
                 Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
-                Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2"))
-        );
-        List<Attribute> attributes2 = Arrays.asList(
+                Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2")),
                 Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
                 Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
                 Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
-        );
+        ));
 
-        Stream.concat(attributes1.stream(), attributes2.stream()).forEach(attr -> queue.insert(attr));
-
-        List<Attribute> insertedAttributes1 = queue.read(attributes1.size());
+        attributes.forEach(queue::insert);
+        List<Attribute> insertedAttributes1 = queue.read(2);
         queue.ack(insertedAttributes1);
+
+
         List<Attribute> insertedAttributes2 = queue.read(Integer.MAX_VALUE);
-        assertThat(insertedAttributes2, equalTo(attributes2));
+        attributes.removeAll(insertedAttributes1);
+        assertThat(new HashSet<>(insertedAttributes2), equalTo(new HashSet<>(attributes)));
     }
 
     /**
