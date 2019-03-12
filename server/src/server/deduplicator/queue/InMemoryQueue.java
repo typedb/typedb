@@ -18,7 +18,6 @@
 
 package grakn.core.server.deduplicator.queue;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +29,6 @@ import java.util.stream.Collectors;
  * <p>
  * The read and ack should be used together in order to provide fault-tolerance.
  * The attribute de-duplicator can read attributes from the queue and only ack after everything has been processed.
- * If the de-duplicator crashes during a deduplication, it can resume operation from the last ack-ed attribute.
  */
 public class InMemoryQueue {
     private final Map<String, Attribute> queue;

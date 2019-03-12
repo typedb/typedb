@@ -20,7 +20,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "rocks-db-queue-test",
-    test_class = "grakn.core.server.deduplicator.RocksDbQueueTest",
+    test_class = "grakn.core.server.deduplicator.InMemoryQueueTest",
     srcs = ["InMemoryQueueTest.java"],
     deps = [
         "//concept:concept",
