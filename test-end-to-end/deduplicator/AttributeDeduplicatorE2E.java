@@ -26,10 +26,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.rocksdb.Options;
-import org.rocksdb.RocksDB;
-import org.rocksdb.RocksDBException;
-import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
@@ -84,7 +80,7 @@ public class AttributeDeduplicatorE2E {
     }
 
     @Test
-    public void shouldDeduplicateAttributes() throws RocksDBException, InterruptedException, ExecutionException {
+    public void shouldDeduplicateAttributes() throws InterruptedException, ExecutionException {
         int numOfUniqueNames = 10;
         int numOfDuplicatesPerName = 673;
         ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
@@ -99,9 +95,8 @@ public class AttributeDeduplicatorE2E {
 
             // wait until queue is empty
             LOG.info("names and duplicates have been inserted. waiting for the deduplication to finish...");
-            long timeoutMs = 60000;
-            long pollFrequencyMs = 2000;
-            waitUntilAllAttributesDeduplicated(timeoutMs, pollFrequencyMs);
+            long timeoutMs = 10000;
+            waitUntilAllAttributesDeduplicated(timeoutMs);
             LOG.info("deduplication has finished.");
 
             // verify deduplicated attributes
@@ -152,39 +147,10 @@ public class AttributeDeduplicatorE2E {
         CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[] {})).get();
     }
 
-    private void waitUntilAllAttributesDeduplicated(long timeoutMs, long pollFrequencyMs) throws RocksDBException, InterruptedException {
-        long startMs = System.currentTimeMillis();
-        int queueSize = countRemainingItemsInQueue(queuePath);
-        while (queueSize > 0) {
-            LOG.info("deduplication in progress. there are " + queueSize + " attributes left to process.");
-            Thread.sleep(pollFrequencyMs);
-            long elapsedMs = System.currentTimeMillis() - startMs;
-            if (elapsedMs > timeoutMs) {
-                String message = "waitUntilAllAttributesDeduplicated - Timeout of '" + timeoutMs + "ms has been exceeded. There are '" + queueSize + "' items remaining in the queue.";
-                throw new RuntimeException(message);
-            }
-            queueSize = countRemainingItemsInQueue(queuePath);
-        }
+    private void waitUntilAllAttributesDeduplicated(long timeoutMs) throws InterruptedException {
+        Thread.sleep(timeoutMs);
     }
 
-    /**
-     * Count the number of elements in the queue
-     *
-     * @param queuePath the queue to be checked
-     * @return the number of elements in the queue
-     */
-    private int countRemainingItemsInQueue(Path queuePath) throws RocksDBException {
-        RocksDB queue = RocksDB.openReadOnly(new Options(), queuePath.toAbsolutePath().toString());
-        RocksIterator it = queue.newIterator();
-        it.seekToFirst();
-        int count = 0;
-        while (it.isValid()) {
-            it.next();
-            count++;
-        }
-        queue.close();
-        return count;
-    }
 
     private int countTotalNames(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction().read()) {

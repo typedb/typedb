@@ -404,11 +404,6 @@ dependencies:
       version: "1.19"
       lang: java
 
-  org.rocksdb:
-    rocksdbjni:
-      version: "5.14.2"
-      lang: java
-
   org.scala-lang:
     scala-library:
       version: "2.11.8"

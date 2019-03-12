@@ -48,12 +48,10 @@ assemble_targz(
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
     ],
     permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-linux",
     visibility = ["//visibility:public"]
@@ -73,12 +71,10 @@ assemble_zip(
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
     ],
     permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-mac",
     visibility = ["//visibility:public"]
@@ -98,12 +94,10 @@ assemble_zip(
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
     ],
     permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-windows",
     visibility = ["//visibility:public"]

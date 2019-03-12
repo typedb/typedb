@@ -16,7 +16,6 @@ java_test(
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/commons-io:commons-io",
-        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"

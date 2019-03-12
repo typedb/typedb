@@ -68,7 +68,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/org/rocksdb:rocksdbjni",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cassandra",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
