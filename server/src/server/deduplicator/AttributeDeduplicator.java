@@ -74,6 +74,12 @@ public class AttributeDeduplicator {
                             if (rolePlayerEdge.hasNext()) {
                                 mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
                             }
+                            try {
+                                attributeEdge.close();
+                                rolePlayerEdge.close();
+                            } catch (Exception e) {
+                                LOG.warn("Exception while closing traversals:", e);
+                            }
                         });
                         duplicate.remove();
                     } catch (IllegalStateException vertexAlreadyRemovedException) {
@@ -85,6 +91,14 @@ public class AttributeDeduplicator {
             } else {
                 tx.close();
             }
+
+            try {
+                tinker.close();
+                duplicates.close();
+            } catch (Exception e) {
+                LOG.warn("Exception while closing traversals:", e);
+            }
+
         } finally {
             session.close();
         }
