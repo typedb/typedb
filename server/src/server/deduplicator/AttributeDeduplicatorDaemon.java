@@ -82,7 +82,7 @@ public class AttributeDeduplicatorDaemon {
      */
     public void markForDeduplication(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
         Attribute attribute = Attribute.create(keyspace, index, conceptId);
-        LOG.trace("insert(" + attribute + ")");
+        LOG.trace("insert({})",  attribute);
         queue.insert(attribute);
     }
 
@@ -100,7 +100,7 @@ public class AttributeDeduplicatorDaemon {
                 try {
                     List<Attribute> attributes = queue.read(QUEUE_GET_BATCH_MAX);
 
-                    LOG.trace("starting a new batch to process these new attributes: " + attributes);
+                    LOG.trace("starting a new batch to process these new attributes: {}", attributes);
 
                     // group the attributes into a set of unique (keyspace -> value) pair
                     Set<KeyspaceIndexPair> uniqueKeyValuePairs = attributes.stream()

@@ -55,7 +55,7 @@ public class GraknStorage {
             writer.print(pidString);
             writer.close();
         } catch (IOException e) {
-            LOG.error("Error persisting storage PID:" + e.getMessage());
+            LOG.error("Error persisting storage PID:{}", e.getMessage());
         }
     }
 }

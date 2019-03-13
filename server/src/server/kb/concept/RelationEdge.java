@@ -102,7 +102,7 @@ public class RelationEdge implements RelationStructure, CacheOwner {
 
     @Override
     public RelationReified reify() {
-        LOG.debug("Reifying concept [" + id() + "]");
+        LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
         VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATION, id());
         RelationReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());

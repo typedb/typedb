@@ -215,12 +215,12 @@ class ComputeExecutor {
 
         if (query.method().equals(MEDIAN)) {
             Number result = computerResult.memory().get(MedianVertexProgram.MEDIAN);
-            LOG.debug("Median = " + result);
+            LOG.debug("Median = {}", result);
             return (S) result;
         }
 
         Map<Serializable, S> resultMap = computerResult.memory().get(mapReduce.getClass().getName());
-        LOG.debug("Result = " + resultMap.get(MapReduce.NullObject.instance()));
+        LOG.debug("Result = {}", resultMap.get(MapReduce.NullObject.instance()));
         return resultMap.get(MapReduce.NullObject.instance());
     }
 
@@ -321,7 +321,7 @@ class ComputeExecutor {
             finalCount += count.get(GraknMapReduce.RESERVED_TYPE_LABEL_KEY);
         }
 
-        LOG.debug("Count = " + finalCount);
+        LOG.debug("Count = {}", finalCount);
         return Stream.of(new Numeric(finalCount));
     }
 
