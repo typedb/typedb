@@ -132,7 +132,7 @@ jobs:
       - install-bazel
       - run: |
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
-          --source grakn:master \
+          --source grakn \
           --targets client-java:master client-python:master client-nodejs:master workbase:master docs:development
   
   release-approval:
