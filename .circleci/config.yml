@@ -236,9 +236,16 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
+      - run: bazel run //:assemble-docker
+      - run: docker run -d --rm -ti -p 127.0.0.1:48555:48555/tcp bazel:assemble-docker
       - run:
-          command: .circleci/test-assembly/windows-zip/windows-zip.py
-          no_output_timeout: 20m
+          command:
+            until $(curl --output /dev/null --silent --head --fail localhost:48555); do
+              echo -n "."
+              sleep 1
+            done
+            echo
+
   sync-dependencies:
     machine: true
     steps:
@@ -282,6 +289,7 @@ workflows:
       - test-deployment-apt:
           requires:
             - test-assembly-apt
+      - test-assembly-docker
 #      - test-assembly-rpm
 #      - test-deployment-rpm:
 #          requires:
