@@ -257,6 +257,7 @@ public class ConsoleSession implements AutoCloseable {
     public final void close() throws IOException {
         tx.close();
         session.close();
+        client.close();
         historyFile.flush();
     }
 
