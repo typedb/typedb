@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.rule;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
@@ -93,7 +94,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "[" + resolutionPriority() +"]\n";
+        return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "]\n";
     }
 
     @Override
@@ -119,7 +120,12 @@ public class InferenceRule {
         if (priority == Long.MAX_VALUE) {
             //NB: this has to be relatively lightweight as it is called on each rule
             //TODO come with a more useful metric
-            priority = getBody().isRuleResolvable()? -1 : 0;
+            boolean bodyRuleResolvable = getBody().getAtoms(Atom.class)
+                    .map(Atom::getSchemaConcept)
+                    .filter(Objects::nonNull)
+                    .map(Concept::asType)
+                    .anyMatch(t -> t.thenRules().findFirst().isPresent());
+            priority = bodyRuleResolvable? -1 : 0;
         }
         return priority;
     }
