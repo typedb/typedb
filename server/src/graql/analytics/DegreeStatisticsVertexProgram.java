@@ -79,7 +79,7 @@ public class DegreeStatisticsVertexProgram extends DegreeVertexProgram {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Degree Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Degree Iteration {}", memory.getIteration());
         return memory.getIteration() == 2;
     }
 

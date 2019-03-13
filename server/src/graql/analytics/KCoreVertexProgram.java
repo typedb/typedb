@@ -173,7 +173,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
             }
 
             if (messageCount >= memory.<Long>get(K)) {
-                LOGGER.trace("Sending msg from " + id);
+                LOGGER.trace("Sending msg from {}", id);
                 sendMessage(messenger, id);
                 memory.add(K_CORE_EXIST, true);
 
@@ -182,7 +182,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
                     vertex.property(MESSAGE_COUNT, messageCount);
                 }
             } else {
-                LOGGER.trace("Removing label of " + id);
+                LOGGER.trace("Removing label of {}", id);
                 vertex.property(K_CORE_LABEL).remove();
                 memory.add(K_CORE_STABLE, false);
             }
@@ -194,12 +194,12 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         String max = IteratorUtils.reduce(messenger.receiveMessages(), currentMax,
                 (a, b) -> a.compareTo(b) > 0 ? a : b);
         if (!max.equals(currentMax)) {
-            LOGGER.trace("Cluster label of " + vertex + " changed from " + currentMax + " to " + max);
+            LOGGER.trace("Cluster label of {} changed from {} to {}", vertex, currentMax, max);
             vertex.property(K_CORE_LABEL, max);
             sendMessage(messenger, max);
             memory.add(VOTE_TO_HALT, false);
         } else {
-            LOGGER.trace("Cluster label of " + vertex + " is still " + currentMax);
+            LOGGER.trace("Cluster label of {} is still {}", vertex, currentMax);
         }
     }
 
@@ -229,17 +229,17 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Iteration {}", memory.getIteration());
         if (memory.isInitialIteration()) return false;
 
         if (memory.getIteration() == MAX_ITERATION) {
-            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
+            LOGGER.debug("Reached Max Iteration: {}", MAX_ITERATION);
             throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
         if (memory.<Boolean>get(CONNECTED_COMPONENT_STARTED)) {
             if (memory.<Boolean>get(VOTE_TO_HALT)) {
-                LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
+                LOGGER.debug("KCoreVertexProgram Finished");
                 return true; // connected component is done
             } else {
                 memory.set(VOTE_TO_HALT, true);
@@ -248,14 +248,14 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         } else {
             if (!atRelations(memory)) {
                 if (!memory.<Boolean>get(K_CORE_EXIST)) {
-                    LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
-                    LOGGER.debug("No Such Core Areas Found !!!!!!!!");
+                    LOGGER.debug("KCoreVertexProgram Finished");
+                    LOGGER.debug("No Such Core Areas Found");
                     throw new NoResultException();
                 } else {
                     if (memory.<Boolean>get(K_CORE_STABLE)) {
                         memory.set(CONNECTED_COMPONENT_STARTED, true);
-                        LOGGER.debug("Found Core Areas !!!!!!!!");
-                        LOGGER.debug("Starting Connected Components !!!!!!!!");
+                        LOGGER.debug("Found Core Areas");
+                        LOGGER.debug("Starting Connected Components");
                     } else {
                         memory.set(K_CORE_EXIST, false);
                         memory.set(K_CORE_STABLE, true);

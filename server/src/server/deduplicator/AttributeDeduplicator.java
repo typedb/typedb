@@ -83,7 +83,7 @@ public class AttributeDeduplicator {
                         });
                         duplicate.remove();
                     } catch (IllegalStateException vertexAlreadyRemovedException) {
-                        LOG.warn("Trying to call the method vertices(Direction.IN) on vertex " + duplicate.id() + " which is already removed.");
+                        LOG.warn("Trying to call the method vertices(Direction.IN) on vertex {} which is already removed.", duplicate.id());
                     }
                 }
 

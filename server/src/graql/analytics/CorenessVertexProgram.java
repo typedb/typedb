@@ -136,12 +136,12 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
     @Override
     public boolean terminate(final Memory memory) {
         if (memory.isInitialIteration()) {
-            LOGGER.debug("Finished Iteration " + memory.getIteration());
+            LOGGER.debug("Finished Iteration {}", memory.getIteration());
             return false;
         }
 
         if (memory.getIteration() == MAX_ITERATION) {
-            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
+            LOGGER.debug("Reached Max Iteration: {}", MAX_ITERATION);
             throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 
@@ -149,13 +149,13 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
             memory.set(PERSIST_CORENESS, false);
         }
         if (!atRelations(memory)) {
-            LOGGER.debug("UpdateEntityAndAttribute... Finished Iteration " + memory.getIteration());
+            LOGGER.debug("UpdateEntityAndAttribute... Finished Iteration {}", memory.getIteration());
             if (!memory.<Boolean>get(K_CORE_EXIST)) {
-                LOGGER.debug("KCoreVertexProgram Finished !!!!!!!!");
+                LOGGER.debug("KCoreVertexProgram Finished");
                 return true;
             } else {
                 if (memory.<Boolean>get(K_CORE_STABLE)) {
-                    LOGGER.debug("Found Core Areas K = " + memory.<Long>get(K) + "\n");
+                    LOGGER.debug("Found Core Areas K = {}\n", memory.<Long>get(K));
                     memory.set(K, memory.<Long>get(K) + 1L);
                     memory.set(PERSIST_CORENESS, true);
                 } else {
@@ -165,7 +165,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
                 return false;
             }
         } else {
-            LOGGER.debug("RelayOrSaveMessage...       Finished Iteration " + memory.getIteration());
+            LOGGER.debug("RelayOrSaveMessage...       Finished Iteration {}", memory.getIteration());
             return false; // can not end after relayOrSaveMessages
         }
     }

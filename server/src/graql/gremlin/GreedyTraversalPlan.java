@@ -190,7 +190,7 @@ public class GreedyTraversalPlan {
 
         // add disconnected fragment set with no edge fragment
         addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
-        LOG.trace("Greedy Plan = " + plan);
+        LOG.trace("Greedy Plan = {}", plan);
         return plan;
     }
 
