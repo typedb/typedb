@@ -179,6 +179,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
+      - install-bazel
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
@@ -236,6 +237,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
+      - install-bazel
       - run: bazel run //:assemble-docker
       - run: docker run -d --rm -ti -p 127.0.0.1:48555:48555/tcp bazel:assemble-docker
       - run:
