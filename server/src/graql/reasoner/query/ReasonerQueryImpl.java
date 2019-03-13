@@ -316,10 +316,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         throw GraqlQueryException.getUnifierOfNonAtomicQuery();
     }
 
-    public GraqlGet getQuery() {
-        return Graql.match(getPattern()).get();
-    }
-
     private Stream<IsaAtom> inferEntityTypes(ConceptMap sub) {
         Set<Variable> typedVars = getAtoms(IsaAtomBase.class).map(AtomicBase::getVarName).collect(Collectors.toSet());
         return Stream.concat(
