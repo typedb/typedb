@@ -186,8 +186,9 @@ jobs:
           command: |
             echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
             echo VERSION=$(cat VERSION)
-            sudo apt install grakn-core-server grakn-core-console # TODO: install the right version
-      - run: nohup grakn server start
+            sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION) # TODO: install the right version
+            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+            nohup grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
 
@@ -230,6 +231,14 @@ jobs:
           command: .circleci/test-assembly/windows-zip/windows-zip.py
           no_output_timeout: 20m
 
+  test-assembly-docker:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run:
+          command: .circleci/test-assembly/windows-zip/windows-zip.py
+          no_output_timeout: 20m
   sync-dependencies:
     machine: true
     steps:
