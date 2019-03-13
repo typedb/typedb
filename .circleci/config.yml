@@ -154,20 +154,22 @@ jobs:
     steps:
       - checkout
       - install-bazel
+#      - run:
+#          command: |
+#            bazel build //bin:assemble-apt
+#            bazel build //server:assemble-apt
+#            bazel build //console:assemble-apt
+#            sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
+#            sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
+#            sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
+#            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+#            nohup grakn server start
+#            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+#            grakn server stop
       - run:
           command: |
-            bazel build //bin:assemble-apt
-            bazel build //server:assemble-apt
-            bazel build //console:assemble-apt
-            sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
-            sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-            sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
-            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-            nohup grakn server start
-            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-            grakn server stop
-      - run:
-          command: |
+            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+            echo VERSION=$(cat VERSION)
             bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
             bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
             bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
@@ -176,7 +178,18 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: echo TODO
+      - checkout
+      - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
+      - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
+      - run: sudo apt update
+      - run:
+          command: |
+            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+            echo VERSION=$(cat VERSION)
+            sudo apt install grakn-core-server grakn-core-console # TODO: install the right version
+      - run: nohup grakn server start
+      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: grakn server stop
 
   test-assembly-rpm:
     machine: true
@@ -255,17 +268,17 @@ workflows:
   #  - waits for an approval for Grakn to be released (executed on master only)
   grakn-core:
     jobs:
-      - test-assembly-linux-targz
+#      - test-assembly-linux-targz
       - test-assembly-apt
       - test-deployment-apt:
           requires:
             - test-assembly-apt
-      - test-assembly-rpm
-      - test-deployment-rpm:
-          requires:
-            - test-assembly-rpm
-      - test-assembly-mac-zip
-      - test-assembly-windows-zip
+#      - test-assembly-rpm
+#      - test-deployment-rpm:
+#          requires:
+#            - test-assembly-rpm
+#      - test-assembly-mac-zip
+#      - test-assembly-windows-zip
 # TODO: enable
 #  grakn-core:
 #    jobs:
