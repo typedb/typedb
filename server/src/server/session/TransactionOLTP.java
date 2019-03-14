@@ -490,7 +490,8 @@ public class TransactionOLTP implements Transaction {
                 vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
             }
 
-            schemaConcept = SchemaConceptImpl.from(buildSchemaConcept(label, () -> newConceptFactory.apply(vertexElement)));
+            // if the schema concept is not in janus, create it here
+            schemaConcept = SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
         } else if (!baseType.equals(schemaConcept.baseType())) {
             throw labelTaken(schemaConcept);
         }
@@ -658,7 +659,12 @@ public class TransactionOLTP implements Transaction {
     private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
         operateOnOpenGraph(() -> null); //Makes sure the graph is open
 
-        SchemaConcept schemaConcept = buildSchemaConcept(label, () -> getSchemaConcept(convertToId(label)));
+        SchemaConcept schemaConcept;
+        if (transactionCache.isTypeCached(label)) {
+            schemaConcept = transactionCache.getCachedSchemaConcept(label);
+        } else {
+            schemaConcept = getSchemaConcept(convertToId(label));
+        }
         return validateSchemaConcept(schemaConcept, baseType, () -> null);
     }
 
