@@ -19,12 +19,11 @@
 exports_files(["VERSION"], visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
-
 
 deploy_github(
     name = "deploy-github-zip",
@@ -33,6 +32,18 @@ deploy_github(
     version_file = "//:VERSION"
 )
 
+deploy_brew(
+    name = "deploy-brew",
+    checksum = "//:checksum",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    formula = "//config/brew:grakn-core.rb",
+    version_file = "//:VERSION"
+)
+
+checksum(
+    name = "checksum",
+    target = ":assemble-mac-zip"
+)
 
 assemble_targz(
     name = "assemble-linux-targz",
@@ -103,11 +114,6 @@ assemble_zip(
     visibility = ["//visibility:public"]
 )
 
-deploy_brew(
-    name = "deploy-brew",
-    version_file = "//:VERSION"
-)
-
 container_image(
     name = "assemble-docker",
     base = "@openjdk_image//image",
@@ -118,7 +124,6 @@ container_image(
     volumes = ["/server/db"]
 )
 
-
 container_push(
     name = "deploy-docker",
     image = ":assemble-docker",
@@ -126,7 +131,6 @@ container_push(
     registry = "index.docker.io",
     repository = "graknlabs/grakn-core",
 )
-
 
 # When a Bazel build or test is executed with RBE, it will be executed using the following platform.
 # The platform is based on the standard rbe_ubuntu1604 from @bazel_toolchains,

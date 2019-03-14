@@ -29,12 +29,19 @@ graknlabs_graql()
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
 
-load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools")
-graknlabs_build_tools()
+#load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools")
+#graknlabs_build_tools()
+local_repository(
+    name = "graknlabs_build_tools",
+    path = "/Users/lolski/grakn.ai/build-tools"
+)
 
-load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
-graknlabs_bazel_distribution()
-
+#load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
+#graknlabs_bazel_distribution()
+local_repository(
+    name = "graknlabs_bazel_distribution",
+    path = "/Users/lolski/grakn.ai/bazel-distribution"
+)
 
 ###########################
 # Load Bazel dependencies #
