@@ -519,20 +519,6 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    /**
-     * A helper method which either retrieves the SchemaConcept from the cache or builds it using a provided supplier
-     *
-     * @param label     The Label of the SchemaConcept to retrieve or build
-     * @param dbBuilder A method which builds the SchemaConcept via a DB read or write
-     * @return The SchemaConcept which was either cached or built via a DB read or write
-     */
-    private SchemaConcept buildSchemaConcept(Label label, Supplier<SchemaConcept> dbBuilder) {
-//        if (transactionCache.isTypeCached(label)) {
-//            return transactionCache.getCachedSchemaConcept(label);
-//        } else {
-            return dbBuilder.get();
-//        }
-    }
 
     /**
      * @param label A unique label for the RelationType
