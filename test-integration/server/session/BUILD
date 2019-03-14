@@ -32,9 +32,22 @@ java_test(
 
 java_test(
     name = "keyspace-cache-it",
-    test_class = "grakn.core.server.session.KeyspaceCacheIT",
-    srcs = ["KeyspaceCacheIT.java"],
+    test_class = "grakn.core.server.session.cache.KeyspaceCacheIT",
+    srcs = ["cache/KeyspaceCacheIT.java"],
     deps = ["//server", "//test-integration/rule:grakn-test-server", "@graknlabs_client_java//:client-java", "//concept"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+java_test(
+    name = "transaction-cache-it",
+    test_class = "grakn.core.server.session.cache.TransactionCacheIT",
+    srcs = ["cache/TransactionCacheIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//concept",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+    ],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
@@ -42,6 +55,7 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":session-it",
-        ":keyspace-cache-it"
+        ":keyspace-cache-it",
+        ":transaction-cache-it"
     ],
 )

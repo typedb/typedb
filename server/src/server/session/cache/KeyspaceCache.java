@@ -132,8 +132,8 @@ public class KeyspaceCache {
         }
 
         //Flush All The Internal TransactionOLTP Caches
-        transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
-                -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
+//        transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
+//                -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }
 
     /**
