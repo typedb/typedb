@@ -194,25 +194,14 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - run:
-          command: .circleci/test-assembly/rpm.py
-          no_output_timeout: 20m
+      - run: .circleci/test/assembly/rpm.py
 
   test-deployment-rpm:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: sudo yum install yum-utils
-      - run: sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/test-grakn-core.repo
-      - run: sudo yum -y update
-      - run:
-          command: |
-            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
-            echo VERSION=$(cat VERSION)
-            sudo yum -y install grakn-core-server grakn-core-console
-      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-      - run: grakn server stop
-      - run: sudo yum remove grakn-core-server grakn-core-console grakn-core-bin
+      - checkout
+      - run: .circleci/test/deployment/rpm.py
 
   test-assembly-mac-zip:
     macos:
@@ -235,7 +224,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: .circleci/test-assembly/windows-zip/windows-zip.py
+          command: .circleci/test/assembly/windows-zip/windows-zip.py
           no_output_timeout: 20m
 
   test-assembly-docker:
@@ -244,7 +233,7 @@ jobs:
     steps:
       - checkout
       - install-bazel
-      - run: .circleci/test-assembly/docker.py
+      - run: .circleci/test/assembly/docker.py
 
   sync-dependencies:
     machine: true
