@@ -23,7 +23,9 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import org.slf4j.Logger;
@@ -52,6 +54,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final MultilevelSemanticCache cache;
     private final Stack<ResolutionState> states = new Stack<>();
 
+    private Set<ReasonerAtomicQuery> toComplete = new HashSet<>();
+
     private ConceptMap nextAnswer = null;
     private final boolean reiterationRequired;
 
@@ -64,6 +68,13 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals, cache));
     }
 
+    private void markForCompletion(ResolutionState state){
+        if (state.isQueryState()){
+            ReasonerQueryImpl query = state.asQueryState().getQuery();
+            if (query.isAtomic()) toComplete.add((ReasonerAtomicQuery) query);
+        }
+    }
+
     private ConceptMap findNextAnswer(){
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
@@ -74,6 +85,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return state.getSubstitution();
             }
 
+            markForCompletion(state);
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);
@@ -113,7 +125,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
-        query.getAtoms(Atom.class).map(ReasonerQueries::atomic).forEach(cache::ackCompleteness);
+        toComplete.forEach(cache::ackCompleteness);
 
         return false;
     }

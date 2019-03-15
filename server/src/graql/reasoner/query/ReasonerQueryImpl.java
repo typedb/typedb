@@ -43,6 +43,7 @@ import grakn.core.graql.reasoner.cache.Index;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
@@ -89,6 +90,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     private final ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableMap<Variable, Type> varTypeMap = null;
+    private ResolutionPlan resolutionPlan = null;
 
     ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionOLTP tx) {
         this.tx = tx;
@@ -389,6 +391,17 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     /**
+     *
+     * @return
+     */
+    public ResolutionPlan resolutionPlan(){
+        if (resolutionPlan == null){
+            resolutionPlan = new ResolutionPlan(this);
+        }
+        return resolutionPlan;
+    }
+
+    /**
      * @param var variable name
      * @return id predicate for the specified var name if any
      */
@@ -483,6 +496,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public boolean requiresReiteration() {
+        //TODO
         return false;
         /*
         if (getAtoms(Atom.class).filter(Atom::isRuleResolvable).allMatch(at -> tx().queryCache().isComplete(ReasonerQueries.atomic(at)))){

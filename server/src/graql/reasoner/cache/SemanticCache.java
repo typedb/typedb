@@ -71,7 +71,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class SemanticCache<
         QE,
-        SE extends Set<ConceptMap>> extends QueryCacheBase<ReasonerAtomicQuery, Set<ConceptMap>, QE, SE> {
+        SE extends Set<ConceptMap>> extends AtomicQueryCacheBase<QE, SE> {
 
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
@@ -109,30 +109,9 @@ public abstract class SemanticCache<
         return cacheEntry;
     }
 
-    final private Set<ReasonerAtomicQuery> dbCompleteQueries = new HashSet<>();
-    final private Set<QE> dbCompleteEntries = new HashSet<>();
-
-    final private Set<ReasonerAtomicQuery> completeQueries = new HashSet<>();
-    final private Set<QE> completeEntries = new HashSet<>();
-
-    private boolean isDBComplete(ReasonerAtomicQuery query){
-        return dbCompleteEntries.contains(queryToKey(query))
-                || dbCompleteQueries.contains(query);
-    }
-
-    public boolean isComplete(ReasonerAtomicQuery query){
-        return completeEntries.contains(queryToKey(query))
-                || completeQueries.contains(query);
-    }
-
+    @Override
     public void ackCompleteness(ReasonerAtomicQuery query) {
-        //if (getEntry(query) != null) {
-            if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
-                completeQueries.add(query);
-            } else {
-                completeEntries.add(queryToKey(query));
-            }
-        //}
+        super.ackCompleteness(query);
         getChildren(query).forEach(childKey -> {
             ReasonerAtomicQuery child = keyToQuery(childKey);
             CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
@@ -141,28 +120,6 @@ public abstract class SemanticCache<
                 ackCompleteness(child);
             }
         });
-    }
-
-    public void ackDBCompleteness(ReasonerAtomicQuery query){
-        if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
-            dbCompleteQueries.add(query);
-        } else {
-            dbCompleteEntries.add(queryToKey(query));
-        }
-    }
-
-    private void ackCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
-        if (completeQueries.contains(parent)) completeQueries.add(query);
-        if (completeEntries.contains(queryToKey(parent))){
-            completeEntries.add(queryToKey(query));
-        }
-    }
-
-    private void ackDBCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
-        if (dbCompleteQueries.contains(parent)) dbCompleteQueries.add(query);
-        if (dbCompleteEntries.contains(queryToKey(parent))){
-            dbCompleteEntries.add(queryToKey(query));
-        }
     }
 
     private Set<QE> getParents(ReasonerAtomicQuery child){

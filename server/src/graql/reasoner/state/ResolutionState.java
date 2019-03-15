@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 
 /**
  *
@@ -55,6 +56,13 @@ public abstract class ResolutionState {
      * @return true if this resolution state is an answer state
      */
     public boolean isAnswerState(){ return false;}
+
+    /**
+     * @return true if this state is a query state
+     */
+    public boolean isQueryState(){ return false;}
+
+    public QueryState<? extends ReasonerQueryImpl> asQueryState(){ throw new IllegalArgumentException();}
 
     /**
      * @return true if this state is a top resolution state
