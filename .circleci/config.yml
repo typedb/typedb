@@ -189,7 +189,7 @@ jobs:
       # TODO: how to get repo.grakn.ai apt repository to not ignore commit id in the version? that way we don't have to add date +%s
       - run:
           command: |
-            echo $(cat VERSION)-$CIRCLE_SHA1-$(date +%s) > VERSION
+            echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
             echo VERSION=$(cat VERSION)
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
