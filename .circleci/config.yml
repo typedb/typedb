@@ -188,7 +188,7 @@ jobs:
 #            grakn server stop
       - run:
           command: |
-            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+            echo $(cat VERSION)-$CIRCLE_SHA1-$(date +%s) > VERSION
             echo VERSION=$(cat VERSION)
             bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
             bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
@@ -205,7 +205,7 @@ jobs:
       - run: sudo apt update
       - run:
           command: |
-            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+            echo $(cat VERSION)-$CIRCLE_SHA1-$(date +%s) > VERSION
             echo VERSION=$(cat VERSION)
             sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION) # TODO: install the right version
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
