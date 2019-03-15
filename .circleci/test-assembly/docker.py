@@ -16,7 +16,8 @@ sys.stdout.write('Waiting for the instance to be ready')
 sys.stdout.flush()
 timeout = 0 # TODO: add timeout
 # TODO: fail if the docker image is dead
-while sp.call(['curl', '--output', '/dev/null', '--silent', '--head', '--fail', 'localhost:48555']) != 8: # TODO: explain why waiting for exit code 8
+# upon a successful gRPC connection, the curl returns 0 in linux, and 8 in mac
+while sp.call(['curl', '--output', '/dev/null', '--silent', '--head', '--fail', 'localhost:48555']) not in {0, 8}:
     sys.stdout.write('.')
     sys.stdout.flush()
     time.sleep(1)

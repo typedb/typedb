@@ -287,7 +287,7 @@ workflows:
 #      - test-deployment-apt:
 #          requires:
 #            - test-assembly-apt
-#      - test-assembly-docker
+      - test-assembly-docker
       - test-assembly-rpm
       - test-deployment-rpm:
           requires:
