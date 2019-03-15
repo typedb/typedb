@@ -71,6 +71,7 @@ java_deps(
     name = "console-deps",
     target = ":console-binary",
     java_deps_root = "console/services/lib/",
+    version_file = "//:VERSION",
     visibility = ["//:__pkg__"]
 )
 
@@ -166,7 +167,7 @@ assemble_apt(
 deploy_apt(
     name = "deploy-apt",
     target = ":assemble-apt",
-    deployment_properties = "//:deployment.properties",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 
 assemble_rpm(
@@ -188,7 +189,7 @@ assemble_rpm(
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-rpm",
-    deployment_properties = "//:deployment.properties",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 
 test_suite(

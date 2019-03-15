@@ -18,6 +18,7 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
+load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
@@ -41,6 +42,18 @@ java_library(
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",
     visibility = ["//server:__pkg__"],
+    tags = ["maven_coordinates=grakn.core:daemon:{pom_version}"],
+)
+
+assemble_maven(
+    name = "assemble-maven",
+    target = ":daemon",
+    package = "daemon",
+)
+
+deploy_maven(
+    name = "deploy-maven",
+    target = ":assemble-maven"
 )
 
 checkstyle_test(

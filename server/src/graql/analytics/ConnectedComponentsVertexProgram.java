@@ -91,13 +91,13 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Iteration {}", memory.getIteration());
         if (memory.getIteration() < 2) return false;
         if (memory.<Boolean>get(VOTE_TO_HALT)) {
             return true;
         }
         if (memory.getIteration() == MAX_ITERATION) {
-            LOGGER.debug("Reached Max Iteration: " + MAX_ITERATION + " !!!!!!!!");
+            LOGGER.debug("Reached Max Iteration: {}", MAX_ITERATION);
             throw GraqlQueryException.maxIterationsReached(this.getClass());
         }
 

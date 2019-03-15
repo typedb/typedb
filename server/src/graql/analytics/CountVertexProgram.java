@@ -70,7 +70,7 @@ public class CountVertexProgram extends GraknVertexProgram<Long> {
 
     @Override
     public boolean terminate(final Memory memory) {
-        LOGGER.debug("Finished Count Iteration " + memory.getIteration());
+        LOGGER.debug("Finished Count Iteration {}", memory.getIteration());
         return memory.getIteration() == 1;
     }
 }

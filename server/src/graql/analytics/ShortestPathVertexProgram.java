@@ -124,7 +124,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
                 List<VertexMessage> messages = messages(messenger);
                 List<MessageFromSource> incomingSourceMsg = messageFromSource(messages);
                 List<MessageFromDestination> incomingDestMsg = messageFromDestination(messages);
-                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received the following messages: " + incomingSourceMsg + ", " + incomingDestMsg);
+                LOG.debug("Iteration {} , Vertex {}: received the following messages: {}, {}", memory.getIteration(), vertexId, incomingSourceMsg, incomingDestMsg);
                 if (!incomingSourceMsg.isEmpty() || !incomingDestMsg.isEmpty()) {
                     if (!incomingDestMsg.isEmpty()) {
                         long pathLength = incomingDestMsg.get(0).pathLength();
@@ -132,12 +132,12 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
                             recordShortestPath_AndMarkBroadcasted(vertex, memory, vertexId, incomingDestMsg, pathLength);
                         }
                         else {
-                            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + incomingDestMsg + " of length " +
-                                    pathLength + ". This isn't the shortest path, which is of length " + memory.<Long>get(shortestPathLength) + ". Do nothing.");
+                            LOG.debug("Iteration {}, Vertex {}: received {} of length {}. This isn't the shortest path, which is of length {}. Do nothing.",
+                                    memory.getIteration(), vertexId, incomingDestMsg, pathLength, memory.<Long>get(shortestPathLength));
                         }
                     }
                     else {
-                        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": no message from destination yet. Do nothing");
+                        LOG.debug("Iteration {}, Vertex {}: no message from destination yet. Do nothing", memory.getIteration(), vertexId);
                     }
                 }
             }
@@ -151,7 +151,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
                 List<VertexMessage> messages = messages(messenger);
                 List<MessageFromSource> incomingSourceMsg = messageFromSource(messages);
                 List<MessageFromDestination> incomingDestMsg = messageFromDestination(messages);
-                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received the following messages: " + incomingSourceMsg + ", " + incomingDestMsg);
+                LOG.debug("Iteration {} , Vertex {}: received the following messages: {}, {}", memory.getIteration(), vertexId, incomingSourceMsg, incomingDestMsg);
                 if (!incomingSourceMsg.isEmpty() || !incomingDestMsg.isEmpty()) {
                     if (!incomingSourceMsg.isEmpty()) {
                         long pathLength = incomingSourceMsg.get(0).pathLength();
@@ -159,32 +159,32 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
                             markBroadcasted_TerminateAtTheEndOfThisIeration(vertex, memory, vertexId, incomingSourceMsg, pathLength);
                         }
                         else {
-                            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + incomingSourceMsg + " of length " +
-                                    pathLength + ". This isn't the shortest path, which is of length " + memory.<Long>get(shortestPathLength) + ". Do nothing.");
+                            LOG.debug("Iteration {}, Vertex {}: received {} of length {}. This isn't the shortest path, which is of length {}. Do nothing.",
+                                    memory.getIteration(), vertexId, incomingDestMsg, pathLength, memory.<Long>get(shortestPathLength));
                         }
                     }
                     else {
-                        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": no message from source yet. Do nothing");
+                        LOG.debug("Iteration {}, Vertex {}: no message from source yet. Do nothing", memory.getIteration(), vertexId);
                     }
                 }
             }
         }
         else { // if neither source nor destination vertex
             if (memory.isInitialIteration()) {
-                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": neither a source nor destination vertex. Do nothing.");
+                LOG.debug("Iteration {}, Vertex {}: neither a source nor destination vertex. Do nothing", memory.getIteration(), vertexId);
             }
             else {
                 boolean shortestPathProcessed = this.<Boolean>get(vertex, shortestPathRecordedAndBroadcasted).orElse(false);
 
                 if (shortestPathProcessed) {
-                    LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": shortest path have been relayed. Do nothing.");
+                    LOG.debug("Iteration {}, Vertex {}: shortest path have been relayed. Do nothing", memory.getIteration(), vertexId);
                     return;
                 }
 
                 List<VertexMessage> messages = messages(messenger);
                 List<MessageFromSource> incomingSourceMsg = messageFromSource(messages);
                 List<MessageFromDestination> incomingDestMsg = messageFromDestination(messages);
-                LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received the following messages: " + incomingSourceMsg + ", " + incomingDestMsg);
+                LOG.debug("Iteration {} , Vertex {}: received the following messages: {}, {}", memory.getIteration(), vertexId, incomingSourceMsg, incomingDestMsg);
 
                 if (!incomingSourceMsg.isEmpty() || !incomingDestMsg.isEmpty()) {
                     boolean hasNewMessageToProcess = false;
@@ -202,20 +202,20 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
                         List<MessageFromSource> srcMsgs = this.<List<MessageFromSource>>get(vertex, srcMsgFromPrevIterations).get();
                         List<MessageFromDestination> destMsgs = this.<List<MessageFromDestination>>get(vertex, destMsgFromPrevIterations).get();
                         long pathLength = srcMsgs.get(0).pathLength() + destMsgs.get(0).pathLength();
-                        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Path between source and destination with length " + pathLength + " found here.");
+                        LOG.debug("Iteration {}, Vertex {}: Path between source and destination with length {} found here.", memory.getIteration(), vertexId, pathLength );
 
                         if (memory.<Long>get(shortestPathLength) == SHORTEST_PATH_LENGTH_NOT_YET_SET || pathLength == memory.<Long>get(shortestPathLength)) {
                             recordShortestPath_AndMarkBroadcasted(vertex, memory, vertexId, destMsgs, pathLength);
                         }
                         else {
-                            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": is not the shortest path. Do nothing.");
+                            LOG.debug("Iteration {}, Vertex {}: is not the shortest path. Do nothing", memory.getIteration(), vertexId);
                             set(vertex, pathFoundButIsNotTheShortest, true);
                         }
                     }
                     memory.add(atLeastOneVertexActive, hasNewMessageToProcess);
                 }
                 else {
-                    LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": receives no message. Do nothing.");
+                    LOG.debug("Iteration {}, Vertex {}: receives no message. Do nothing", memory.getIteration(), vertexId);
                 }
             }
         }
@@ -240,7 +240,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
         memory.add(SHORTEST_PATH, msg);
         memory.add(shortestPathLength, pathLength);
         set(vertex, shortestPathRecordedAndBroadcasted, true);
-        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": is the shortest path. Record(" + msg + ")");
+        LOG.debug("Iteration {}, Vertex {}: is the shortest path. Record({})", memory.getIteration(), vertexId, msg);
         return msg;
     }
 
@@ -251,19 +251,19 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
         memory.add(shortestPathLength, pathLength);
         set(vertex, shortestPathRecordedAndBroadcasted, true);
         memory.add(allShortestPathsFound_TerminateAtTheEndOfThisIteration, true);
-        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": received " + msg + ". 'compute new-path' finished. Terminating...");
+        LOG.debug("Iteration {}, Vertex {}: received {}. 'compute new-path' finished. Terminating...", memory.getIteration(), vertexId, msg);
     }
 
     private void broadcastInitialDestinationMessage(Messenger<VertexMessage> messenger, Memory memory, String vertexId) {
         MessageFromDestination initialOutgoingDestMsg = new MessageFromDestination(vertexId,1L);
-        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": I am the destination vertex [" + vertexId + "]. Sending message " + initialOutgoingDestMsg + " to neighbors");
+        LOG.debug("Iteration {}, Vertex {}: I am the destination vertex [{}]. Sending message {} to neighbors", memory.getIteration(), vertexId, vertexId, initialOutgoingDestMsg);
         broadcastToNeighbors(messenger, initialOutgoingDestMsg);
     }
 
     private void broadcastInitialSourceMessage(Messenger<VertexMessage> messenger, Memory memory, String vertexId) {
         MessageFromSource initialOutgoingSrcMsg = new MessageFromSource(vertexId,1L);
         broadcastToNeighbors(messenger, initialOutgoingSrcMsg);
-        LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": I am the source vertex [" + vertexId + "]. Sending message " + initialOutgoingSrcMsg + " to neighbors");
+        LOG.debug("Iteration {}, Vertex {}: I am the source vertex [{}]. Sending message {} to neighbors", memory.getIteration(), vertexId, vertexId, initialOutgoingSrcMsg);
     }
 
     private void broadcastDestinationMessages(Messenger<VertexMessage> messenger, Memory memory, String vertexId, List<MessageFromDestination> incomingDestMsg) {
@@ -271,7 +271,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
             MessageFromDestination msg = incomingDestMsg.get(0);
             MessageFromDestination outgoingDstMsg = new MessageFromDestination(vertexId, msg.pathLength() + 1);
             broadcastToNeighbors(messenger, outgoingDstMsg);
-            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Relaying message " + outgoingDstMsg + ".");
+            LOG.debug("Iteration {}, Vertex {}: Relaying message {}", memory.getIteration(), vertexId, outgoingDstMsg);
         }
     }
 
@@ -280,7 +280,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
             MessageFromSource msg = incomingSourceMsg.get(0);
             MessageFromSource outgoingSrcMsg = new MessageFromSource(vertexId, msg.pathLength() + 1);
             broadcastToNeighbors(messenger, outgoingSrcMsg);
-            LOG.debug("Iteration " + memory.getIteration() + ", Vertex " + vertexId + ": Relaying message " + outgoingSrcMsg + ".");
+            LOG.debug("Iteration {}, Vertex {}: Relaying message {}.", memory.getIteration(), vertexId, outgoingSrcMsg);
         }
     }
 

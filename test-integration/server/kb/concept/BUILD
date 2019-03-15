@@ -22,6 +22,7 @@ java_test(
      deps = [
          "//concept:concept",
          "//server:server",
+         "@graknlabs_graql//java:graql",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],

@@ -44,7 +44,6 @@ import static grakn.core.common.util.Collections.tuple;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
- *
  */
 public final class Schema {
     public final static String PREFIX_VERTEX = "V";
@@ -106,7 +105,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public LabelId getId(){
+        public LabelId getId() {
             return id;
         }
 
@@ -117,7 +116,7 @@ public final class Schema {
 
         @Nullable
         @CheckReturnValue
-        public static MetaSchema valueOf(Label label){
+        public static MetaSchema valueOf(Label label) {
             for (MetaSchema metaSchema : MetaSchema.values()) {
                 if (metaSchema.getLabel().equals(label)) return metaSchema;
             }
@@ -149,12 +148,12 @@ public final class Schema {
 
         private final Class classType;
 
-        BaseType(Class classType){
+        BaseType(Class classType) {
             this.classType = classType;
         }
 
         @CheckReturnValue
-        public Class getClassType(){
+        public Class getClassType() {
             return classType;
         }
     }
@@ -284,7 +283,7 @@ public final class Schema {
         }
 
         @CheckReturnValue
-        public String getValue(){
+        public String getValue() {
             return label;
         }
 
@@ -295,13 +294,15 @@ public final class Schema {
          * @return The original label which was used to build this type
          */
         @CheckReturnValue
-        public static Label explicitLabel(Label implicitType){
-            if(!implicitType.getValue().startsWith("key") && implicitType.getValue().startsWith("has")){
+        public static Label explicitLabel(Label implicitType) {
+            if (!(implicitType.getValue().startsWith("@key") || implicitType.getValue().startsWith("@has"))) {
                 throw new IllegalArgumentException(INVALID_IMPLICIT_TYPE.getMessage(implicitType));
             }
 
             int endIndex = implicitType.getValue().length();
-            if(implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner")) {
+            // We need to exclude the scenario where the user literally names their attributes 'value' or 'owner'
+            // which will result in @has-value, @has-owner, @key-value, @key-owner as legitimate implicit-relation names
+            if (implicitType.getValue().length() > 10 && (implicitType.getValue().endsWith("-value") || implicitType.getValue().endsWith("-owner"))) {
                 endIndex = implicitType.getValue().lastIndexOf("-");
             }
 
@@ -311,13 +312,12 @@ public final class Schema {
     }
 
     /**
-     *
      * @param label The AttributeType label
      * @param value The value of the Attribute
      * @return A unique id for the Attribute
      */
     @CheckReturnValue
-    public static String generateAttributeIndex(Label label, String value){
+    public static String generateAttributeIndex(Label label, String value) {
         return Schema.BaseType.ATTRIBUTE.name() + "-" + label + "-" + value;
     }
 }

@@ -16,11 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.session;
+package grakn.core.server.session.cache;
 
 import grakn.client.GraknClient;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

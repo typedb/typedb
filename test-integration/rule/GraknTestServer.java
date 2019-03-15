@@ -207,7 +207,7 @@ public class GraknTestServer extends ExternalResource {
         // tx-factory
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, serverConfig);
 
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(serverConfig, sessionFactory);
+        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(sessionFactory);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)

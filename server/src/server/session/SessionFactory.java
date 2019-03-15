@@ -121,14 +121,16 @@ public class SessionFactory {
         Lock lock = lockManager.getLock(getLockingKey(session.keyspace()));
         lock.lock();
         try {
-            KeyspaceCacheContainer cacheContainer = keyspaceCacheMap.get(session.keyspace());
-            cacheContainer.removeSessionReference(session);
-            // If there are no more sessions associated to current keyspace,
-            // close graph and remove reference from cache.
-            if (cacheContainer.referenceCount() == 0) {
-                JanusGraph graph = cacheContainer.graph();
-                graph.close();
-                keyspaceCacheMap.remove(session.keyspace());
+            if (keyspaceCacheMap.containsKey(session.keyspace())) {
+                KeyspaceCacheContainer cacheContainer = keyspaceCacheMap.get(session.keyspace());
+                cacheContainer.removeSessionReference(session);
+                // If there are no more sessions associated to current keyspace,
+                // close graph and remove reference from cache.
+                if (cacheContainer.referenceCount() == 0) {
+                    JanusGraph graph = cacheContainer.graph();
+                    graph.close();
+                    keyspaceCacheMap.remove(session.keyspace());
+                }
             }
         } finally {
             lock.unlock();

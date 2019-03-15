@@ -19,18 +19,14 @@
 package grakn.core.server.deduplicator;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import grakn.core.common.config.Config;
-import grakn.core.common.config.ConfigKey;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.deduplicator.queue.Attribute;
-import grakn.core.server.deduplicator.queue.RocksDbQueue;
+import grakn.core.server.deduplicator.queue.InMemoryQueue;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -59,24 +55,20 @@ import static grakn.core.server.deduplicator.AttributeDeduplicator.deduplicate;
 public class AttributeDeduplicatorDaemon {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorDaemon.class);
     private static final int QUEUE_GET_BATCH_MAX = 1000;
-    private static final Path queueDataDirRelative = Paths.get("queue"); // path to the queue storage location, relative to the data directory
 
     private ExecutorService executorServiceForDaemon = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat("attribute-deduplicator-daemon-%d").build());
 
     private SessionFactory sessionFactory;
-    private RocksDbQueue queue;
+    private InMemoryQueue queue;
 
     private boolean stopDaemon = false;
 
     /**
      * Instantiates AttributeDeduplicatorDaemon
-     * @param config a reference to an instance of Config which is initialised from a grakn.properties.
      * @param sessionFactory an SessionFactory instance to create new Sessions
      */
-    public AttributeDeduplicatorDaemon(Config config, SessionFactory sessionFactory) {
-        Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
-        Path queueDataDir = dataDir.resolve(queueDataDirRelative);
-        this.queue = new RocksDbQueue(queueDataDir);
+    public AttributeDeduplicatorDaemon(SessionFactory sessionFactory) {
+        this.queue = new InMemoryQueue();
         this.sessionFactory = sessionFactory;
     }
 
@@ -90,7 +82,7 @@ public class AttributeDeduplicatorDaemon {
      */
     public void markForDeduplication(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
         Attribute attribute = Attribute.create(keyspace, index, conceptId);
-        LOG.trace("insert(" + attribute + ")");
+        LOG.trace("insert({})",  attribute);
         queue.insert(attribute);
     }
 
@@ -108,7 +100,7 @@ public class AttributeDeduplicatorDaemon {
                 try {
                     List<Attribute> attributes = queue.read(QUEUE_GET_BATCH_MAX);
 
-                    LOG.trace("starting a new batch to process these new attributes: " + attributes);
+                    LOG.trace("starting a new batch to process these new attributes: {}", attributes);
 
                     // group the attributes into a set of unique (keyspace -> value) pair
                     Set<KeyspaceIndexPair> uniqueKeyValuePairs = attributes.stream()

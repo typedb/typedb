@@ -47,18 +47,14 @@ commands:
 
   install-rpm:
     steps:
-      - run:
-          name: Install rpm (for rpmbuild)
-          command: sudo apt update && sudo apt install rpm -y
+      - run: sudo apt update && sudo apt install rpm -y
 
   run-bazel-rbe:
     parameters:
       command:
           type: string
     steps:
-      - run:
-          command: |
-            bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
 
 jobs:
   build:
@@ -247,8 +243,10 @@ jobs:
       - install-bazel
       - run: |
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
-          --source grakn:master \
-          --targets client-java:master client-python:master client-nodejs:master docs:development
+          --source grakn@$CIRCLE_SHA1 \
+          --targets \
+          client-java:master client-python:master client-nodejs:master \
+          workbase:master docs:development examples:development
   
   release-approval:
     machine: true
@@ -272,10 +270,6 @@ jobs:
       - run: git push --delete origin grakn-core-release-branch
 
 workflows:
-  # the 'ci' workflow consists of jobs which:
-  #  - executes tests (executed on pull requests and master)
-  #  - syncs docs/development to the latest grakn version (executed on master only)
-  #  - waits for an approval for Grakn to be released (executed on master only)
   grakn-core:
     jobs:
 #      - test-assembly-linux-targz
@@ -290,10 +284,7 @@ workflows:
 #            - test-assembly-rpm
 #      - test-assembly-mac-zip
 #      - test-assembly-windows-zip
-# TODO: enable
-#  grakn-core:
-#    jobs:
-#      # test jobs
+#       TODO: enable
 #      - build:
 #          filters:
 #            branches:
@@ -326,8 +317,6 @@ workflows:
 #          filters:
 #            branches:
 #              ignore: grakn-core-release-branch
-#
-#      # sync dependencies to the latest grakn version
 #      - sync-dependencies:
 #          filters:
 #            branches:
@@ -341,9 +330,6 @@ workflows:
 #            - test-integration-reasoner
 #            - test-integration-analytics
 #            - test-end-to-end
-#
-#      # wait for an approval for Grakn to be released
-#      # triggers 'ci-release' workflow by creating a branch 'grakn-core-release-branch' in graknlabs/grakn
 #      - release-approval:
 #          filters:
 #            branches:
@@ -351,10 +337,6 @@ workflows:
 #          requires:
 #            - sync-dependencies
 #
-#  # the 'grakn-core-release' workflow is triggered by the creation of 'grakn-core-release-branch' branch in graknlabs/grakn
-#  # it consists of jobs which:
-#  # - publishes Grakn by creating a Github release
-#  # - cleans up the 'grakn-core-release-branch' branch which was created by the release-approval job
 #  grakn-core-release:
 #    jobs:
 #      - release-github-draft:
@@ -362,8 +344,8 @@ workflows:
 #            branches:
 #              only: grakn-core-release-branch
 #      - release-cleanup:
-#          requires:
-#            - release-github-draft
 #          filters:
 #            branches:
 #              only: grakn-core-release-branch
+#          requires:
+#            - release-github-draft

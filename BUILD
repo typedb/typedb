@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["grakn", "VERSION", "deployment.properties"], visibility = ["//visibility:public"])
+exports_files(["VERSION"], visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
@@ -29,7 +29,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 deploy_github(
     name = "deploy-github-zip",
     target = ":assemble-mac-zip",
-    deployment_properties = ":deployment.properties",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
     version_file = "//:VERSION"
 )
 
@@ -48,12 +48,10 @@ assemble_targz(
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
     ],
     permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-linux",
     visibility = ["//visibility:public"]
@@ -73,12 +71,10 @@ assemble_zip(
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
     ],
     permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-mac",
     visibility = ["//visibility:public"]
@@ -98,12 +94,10 @@ assemble_zip(
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
     ],
     permissions = {
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
-        "server/db/queue": "0777",
     },
     output_filename = "grakn-core-all-windows",
     visibility = ["//visibility:public"]

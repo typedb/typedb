@@ -57,7 +57,7 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
 ```
 $ bazel build //:assemble-linux-targz
 ```
-Outputs to: `bazel-bin/assemble-linux-targz.tar.gz`
+Outputs to: `bazel-genfiles/grakn-core-all-linux.tar.gz`
 ```
 $ bazel build //:assemble-mac-zip
 ```

@@ -46,13 +46,26 @@ bazel_deps()
 bazel_toolchain()
 
 
-load("@graknlabs_build_tools//bazel:dependencies.bzl", "buildifier", "buildozer", "unused_deps")
-buildifier()
-buildozer()
-unused_deps()
+#################################
+# Load Build Tools dependencies #
+#################################
 
 load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
+
+load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_python")
+bazel_rules_python()
+
+load("@io_bazel_rules_python//python:pip.bzl", "pip_repositories", "pip_import")
+pip_repositories()
+
+pip_import(
+    name = "graknlabs_build_tools_ci_pip",
+    requirements = "@graknlabs_build_tools//ci:requirements.txt",
+)
+load("@graknlabs_build_tools_ci_pip//:requirements.bzl",
+graknlabs_build_tools_ci_pip_install = "pip_install")
+graknlabs_build_tools_ci_pip_install()
 
 
 #####################################
@@ -75,8 +88,9 @@ antlr_dependencies()
 load("@rules_antlr//antlr:deps.bzl", "antlr_dependencies")
 antlr_dependencies()
 
-load("@graknlabs_graql//dependencies/maven:dependencies.bzl", graql_dependencies = "maven_dependencies")
-graql_dependencies()
+load("@graknlabs_graql//dependencies/maven:dependencies.bzl",
+graknlabs_graql_maven_dependencies = "maven_dependencies")
+graknlabs_graql_maven_dependencies()
 
 
 #######################################
@@ -86,8 +100,9 @@ graql_dependencies()
 load("@graknlabs_build_tools//grpc:dependencies.bzl", "grpc_dependencies")
 grpc_dependencies()
 
-load("@com_github_grpc_grpc//bazel:grpc_deps.bzl", com_github_grpc_grpc_bazel_grpc_deps = "grpc_deps")
-com_github_grpc_grpc_bazel_grpc_deps()
+load("@com_github_grpc_grpc//bazel:grpc_deps.bzl",
+com_github_grpc_grpc_deps = "grpc_deps")
+com_github_grpc_grpc_deps()
 
 load("@stackb_rules_proto//java:deps.bzl", "java_grpc_compile")
 java_grpc_compile()
@@ -97,14 +112,16 @@ java_grpc_compile()
 # Load Distribution dependencies #
 ##################################
 
+# TODO: rename the macro we load here to deploy_github_dependencies
 load("@graknlabs_bazel_distribution//github:dependencies.bzl", "github_dependencies_for_deployment")
 github_dependencies_for_deployment()
 
 load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_docker")
 bazel_rules_docker()
 
-load("@io_bazel_rules_docker//repositories:repositories.bzl", container_repositories = "repositories")
-container_repositories()
+load("@io_bazel_rules_docker//repositories:repositories.bzl",
+bazel_rules_docker_repositories = "repositories")
+bazel_rules_docker_repositories()
 
 load("@io_bazel_rules_docker//container:container.bzl", "container_pull")
 container_pull(
