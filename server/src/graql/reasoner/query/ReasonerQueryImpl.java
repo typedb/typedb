@@ -501,6 +501,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     private static String PLACEHOLDER_ID = "placeholder_id";
 
     private boolean isCacheComplete(){
+        //TODO sort out properly
+        if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());
         Set<IdPredicate> subs = new HashSet<>();

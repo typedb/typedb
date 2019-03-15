@@ -65,7 +65,7 @@ public class ResolutionQueryPlan {
      * @return list of prioritised queries
      */
     private static ImmutableList<ReasonerQueryImpl> queryPlan(ReasonerQueryImpl query){
-        ResolutionPlan resolutionPlan = new ResolutionPlan(query);//query.resolutionPlan();
+        ResolutionPlan resolutionPlan = query.resolutionPlan();
 
         ImmutableList<Atom> plan = resolutionPlan.plan();
         TransactionOLTP tx = query.tx();
