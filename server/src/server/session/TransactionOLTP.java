@@ -42,6 +42,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
@@ -112,6 +113,7 @@ public class TransactionOLTP implements Transaction {
     private final ElementFactory elementFactory;
 
     // Caches
+    private final MultilevelSemanticCache queryCache;
     private final RuleCache ruleCache;
     private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
@@ -157,6 +159,7 @@ public class TransactionOLTP implements Transaction {
 
         this.elementFactory = new ElementFactory(this, janusGraph);
 
+        this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
 
         this.keyspaceCache = keyspaceCache;
@@ -282,6 +285,8 @@ public class TransactionOLTP implements Transaction {
     }
 
     public RuleCache ruleCache() { return ruleCache;}
+
+    public MultilevelSemanticCache queryCache(){ return queryCache;}
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs

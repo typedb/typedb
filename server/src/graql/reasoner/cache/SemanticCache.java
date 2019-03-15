@@ -112,9 +112,35 @@ public abstract class SemanticCache<
     final private Set<ReasonerAtomicQuery> dbCompleteQueries = new HashSet<>();
     final private Set<QE> dbCompleteEntries = new HashSet<>();
 
+    final private Set<ReasonerAtomicQuery> completeQueries = new HashSet<>();
+    final private Set<QE> completeEntries = new HashSet<>();
+
     private boolean isDBComplete(ReasonerAtomicQuery query){
         return dbCompleteEntries.contains(queryToKey(query))
                 || dbCompleteQueries.contains(query);
+    }
+
+    public boolean isComplete(ReasonerAtomicQuery query){
+        return completeEntries.contains(queryToKey(query))
+                || completeQueries.contains(query);
+    }
+
+    public void ackCompleteness(ReasonerAtomicQuery query) {
+        //if (getEntry(query) != null) {
+            if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
+                completeQueries.add(query);
+            } else {
+                completeEntries.add(queryToKey(query));
+            }
+        //}
+        getChildren(query).forEach(childKey -> {
+            ReasonerAtomicQuery child = keyToQuery(childKey);
+            CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
+            if (childEntry != null){
+                propagateAnswersToQuery(child, childEntry, true);
+                ackCompleteness(child);
+            }
+        });
     }
 
     public void ackDBCompleteness(ReasonerAtomicQuery query){
@@ -122,6 +148,13 @@ public abstract class SemanticCache<
             dbCompleteQueries.add(query);
         } else {
             dbCompleteEntries.add(queryToKey(query));
+        }
+    }
+
+    private void ackCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
+        if (completeQueries.contains(parent)) completeQueries.add(query);
+        if (completeEntries.contains(queryToKey(parent))){
+            completeEntries.add(queryToKey(query));
         }
     }
 
@@ -136,6 +169,20 @@ public abstract class SemanticCache<
         Set<QE> parents = this.parents.get(queryToKey(child));
         if (!parents.isEmpty()) return parents;
         return computeParents(child);
+    }
+
+    private Set<QE> getChildren(ReasonerAtomicQuery parent){
+        Set<QE> family = getFamily(parent);
+        Set<QE> children = new HashSet<>();
+        if (family != null) {
+            family.stream()
+                    .map(this::keyToQuery)
+                    .filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
+                    .filter(potentialChild -> potentialChild.subsumes(parent))
+                    .map(this::queryToKey)
+                    .forEach(children::add);
+        }
+        return children;
     }
 
     private Set<QE> getFamily(ReasonerAtomicQuery query){
@@ -173,6 +220,7 @@ public abstract class SemanticCache<
 
     /**
      * NB: uses getEntry
+     * NB: target and childMatch.query() are in general not the same hence explicit arguments
      * @param target query we want propagate the answers to
      * @param childMatch entry to which we want to propagate answers
      * @param inferred true if inferred answers should be propagated
@@ -188,9 +236,11 @@ public abstract class SemanticCache<
                 .map(this::keyToQuery)
                 .map(this::getEntry)
                 .forEach(parentMatch -> {
-                        boolean newAnswers = propagateAnswers(parentMatch, childMatch, inferred);
-                        newAnswersFound[0] = newAnswers;
-                        ackDBCompletenessFromParent(target, parentMatch.query());
+                    ReasonerAtomicQuery parent = parentMatch.query();
+                    boolean newAnswers = propagateAnswers(parentMatch, childMatch, inferred || isComplete(parent));
+                    newAnswersFound[0] = newAnswers;
+                    ackDBCompletenessFromParent(target, parent);
+                    ackCompletenessFromParent(target, parent);
                 });
         return newAnswersFound[0];
     }

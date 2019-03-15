@@ -483,9 +483,15 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public boolean requiresReiteration() {
+        return false;
+        /*
+        if (getAtoms(Atom.class).filter(Atom::isRuleResolvable).allMatch(at -> tx().queryCache().isComplete(ReasonerQueries.atomic(at)))){
+            return false;
+        }
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
         return RuleUtils.subGraphIsCyclical(dependentRules)||
                 RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+                */
     }
 
     @Override

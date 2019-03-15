@@ -19,8 +19,10 @@
 package grakn.core.graql.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
@@ -110,6 +112,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return hasNext();
             }
         }
+
+        query.getAtoms(Atom.class).map(ReasonerQueries::atomic).forEach(cache::ackCompleteness);
 
         return false;
     }

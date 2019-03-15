@@ -128,7 +128,7 @@ public abstract class QueryCacheBase<
         return cacheEntry;
     }
 
-    public static <T extends ReasonerQueryImpl> void validateAnswer(ConceptMap answer, T query, Set<Variable> expectedVars){
+    static <T extends ReasonerQueryImpl> void validateAnswer(ConceptMap answer, T query, Set<Variable> expectedVars){
         if (!answer.vars().containsAll(expectedVars)
                 || answer.explanation() == null
                 || (

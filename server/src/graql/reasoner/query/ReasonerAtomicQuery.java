@@ -215,6 +215,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Iterator<ResolutionState> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
         if(visitedSubGoals.contains(this)
+                || cache.isComplete(this)
                 || (this.isGround() && dbIterator.hasNext())){
             subGoalIterator = Collections.emptyIterator();
         } else {
