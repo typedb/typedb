@@ -96,8 +96,10 @@ try:
     gcloud_ssh(instance, 'curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh')
     gcloud_ssh(instance, 'chmod +x bazel-0.20.0-installer-linux-x86_64.sh')
     gcloud_ssh(instance, 'sudo ./bazel-0.20.0-installer-linux-x86_64.sh')
+    gcloud_ssh(instance, 'rm ./bazel-0.20.0-installer-linux-x86_64.sh')
 
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
+    sp.check_call(['bazel', 'clean'])
     sp.check_call(['zip', '-r', 'grakn.zip', '.'])
     gcloud_scp(instance, local='grakn.zip', remote='~')
     gcloud_ssh(instance, 'unzip grakn.zip')
