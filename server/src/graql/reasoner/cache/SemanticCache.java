@@ -113,11 +113,12 @@ public abstract class SemanticCache<
                 || getParents(query).stream().anyMatch(q -> super.isComplete(keyToQuery(q)));
     }
 
-
     @Override
     public void ackCompleteness(ReasonerAtomicQuery query) {
         super.ackCompleteness(query);
-        getChildren(query).forEach(childKey -> {
+        getChildren(query).stream()
+                .filter(q -> !isComplete(keyToQuery(q)))
+                .forEach(childKey -> {
             ReasonerAtomicQuery child = keyToQuery(childKey);
             CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
             if (childEntry != null){

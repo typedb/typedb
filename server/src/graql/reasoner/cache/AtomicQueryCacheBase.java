@@ -24,6 +24,10 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * @param <QE>
+ * @param <SE>
+ */
 public abstract class AtomicQueryCacheBase<
         QE,
         SE extends Set<ConceptMap>> extends QueryCacheBase<ReasonerAtomicQuery, Set<ConceptMap>, QE, SE> {
