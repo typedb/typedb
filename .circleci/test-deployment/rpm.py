@@ -78,7 +78,7 @@ project = 'grakn-dev'
 instance = 'circleci-' + os.getenv('CIRCLE_PROJECT_REPONAME') + '-' + os.getenv('CIRCLE_JOB') + '-' + os.getenv('CIRCLE_BUILD_NUM')
 
 try:
-    lprint('Configuring the gcloud CLI')
+    lprint('Configure the gcloud CLI')
     credential_file = '/tmp/gcp-credential.json'
     with open(credential_file, 'w') as f:
         f.write(credential)
@@ -92,36 +92,27 @@ try:
     lprint('Installing dependencies')
     gcloud_ssh(instance, 'sudo yum install -y http://opensource.wandisco.com/centos/7/git/x86_64/wandisco-git-release-7-2.noarch.rpm')
     gcloud_ssh(instance, 'sudo yum update -y')
-    gcloud_ssh(instance, 'sudo yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build')
+    gcloud_ssh(instance, 'sudo yum install -y sudo procps which gcc gcc-c++ python-devel unzip git java-1.8.0-openjdk-devel rpm-build yum-utils')
     gcloud_ssh(instance, 'curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh')
     gcloud_ssh(instance, 'chmod +x bazel-0.20.0-installer-linux-x86_64.sh')
     gcloud_ssh(instance, 'sudo ./bazel-0.20.0-installer-linux-x86_64.sh')
 
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
+    version_file_append_commit(version_file='VERSION', commit_id=os.getenv('CIRCLE_SHA1'))
+    sp.check_call(['cat', 'VERSION'])
     sp.check_call(['zip', '-r', 'grakn.zip', '.'])
     gcloud_scp(instance, local='grakn.zip', remote='~')
     gcloud_ssh(instance, 'unzip grakn.zip')
 
-    lprint('Building RPM packages')
-    gcloud_ssh(instance, 'bazel build //bin:assemble-rpm')
-    gcloud_ssh(instance, 'bazel build //server:assemble-rpm')
-    # gcloud_ssh(instance, 'bazel build //console:assemble-rpm') # TODO: enable
-
     lprint('Installing RPM packages. Grakn will be available system-wide')
-    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/bin/grakn-core-bin.rpm') # TODO: fix rpm name
-    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/server/grakn-core-server.rpm') # TODO: fix rpm name
-    # gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/console/grakn-core-console.rpm') # TODO: a) fix rpm name b) enable
+    gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/test-grakn-core.repo')
+    gcloud_ssh(instance, 'sudo yum -y update')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-server')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-console')
 
     gcloud_ssh(instance, 'grakn server start')
-    gcloud_ssh(instance, 'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no')
+    # gcloud_ssh(instance, 'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no') # TODO: enable
     gcloud_ssh(instance, 'grakn server stop')
-
-    lprint('Deploying RPM packages to the RPM repository')
-    version_file_append_commit(version_file='VERSION', commit_id=os.getenv('CIRCLE_SHA1'))
-    sp.check_call(['cat', 'VERSION'])
-    sp.check_call(['bash', '-c', 'bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD'])
-    sp.check_call(['bash', '-c', 'bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD'])
-    sp.check_call(['bash', '-c', 'bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD'])
 finally:
     lprint('Deleting the CentOS instance')
-    # gcloud_instances_delete(instance) # TODO: uncomment
+    gcloud_instances_delete(instance)

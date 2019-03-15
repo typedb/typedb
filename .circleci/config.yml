@@ -202,7 +202,17 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - run: echo TODO
+      - run: sudo yum install yum-utils
+      - run: sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/test-grakn-core.repo
+      - run: sudo yum -y update
+      - run:
+          command: |
+            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+            echo VERSION=$(cat VERSION)
+            sudo yum -y install grakn-core-server grakn-core-console
+      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: grakn server stop
+      - run: sudo yum remove grakn-core-server grakn-core-console grakn-core-bin
 
   test-assembly-mac-zip:
     macos:
@@ -273,15 +283,15 @@ workflows:
   grakn-core:
     jobs:
 #      - test-assembly-linux-targz
-      - test-assembly-apt
-      - test-deployment-apt:
-          requires:
-            - test-assembly-apt
-      - test-assembly-docker
-#      - test-assembly-rpm
-#      - test-deployment-rpm:
+#      - test-assembly-apt
+#      - test-deployment-apt:
 #          requires:
-#            - test-assembly-rpm
+#            - test-assembly-apt
+#      - test-assembly-docker
+      - test-assembly-rpm
+      - test-deployment-rpm:
+          requires:
+            - test-assembly-rpm
 #      - test-assembly-mac-zip
 #      - test-assembly-windows-zip
 #       TODO: enable
