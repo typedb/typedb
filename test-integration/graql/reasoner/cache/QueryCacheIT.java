@@ -346,12 +346,13 @@ public class QueryCacheIT {
         }
     }
 
+    /*
+    //TODO
     @Test
     public void whenExecutingConjunctionWithPartialQueriesComplete_weExploitCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            //TODO
-        }
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {}
     }
+    */
 
     private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx) {
         Set<Statement> vars = Graql.parsePattern(patternString)

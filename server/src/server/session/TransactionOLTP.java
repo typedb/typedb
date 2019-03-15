@@ -839,6 +839,7 @@ public class TransactionOLTP implements Transaction {
             this.closedReason = closedReason;
             this.isTxOpen = false;
             ruleCache().clear();
+            queryCache().clear();
         }
     }
 

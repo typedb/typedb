@@ -60,7 +60,10 @@ public abstract class QueryCacheBase<
     abstract Q keyToQuery(QE key);
 
     @Override
-    public void clear() { cache.clear();}
+    public void clear() {
+        cache.clear();
+        sCache.clear();
+    }
 
     /**
      * @return structural cache of this cache
