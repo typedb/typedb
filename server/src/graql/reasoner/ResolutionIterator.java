@@ -71,7 +71,11 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private void markForCompletion(ResolutionState state){
         if (state.isQueryState()){
             ReasonerQueryImpl query = state.asQueryState().getQuery();
-            if (query.isAtomic()) toComplete.add((ReasonerAtomicQuery) query);
+            if (query.isAtomic()){
+                toComplete.add(
+                        ReasonerQueries.atomic(query.selectAtoms().iterator().next())
+                );
+            }
         }
     }
 
