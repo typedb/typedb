@@ -37,8 +37,13 @@ import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.reasoner.DisjunctionIterator;
+import grakn.core.graql.reasoner.ResolutionIterator;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
@@ -57,6 +62,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -91,6 +98,17 @@ public class QueryExecutor {
         this.transaction = transaction;
     }
 
+    private Stream<ConceptMap> resolveConjunction(Conjunction<Pattern> conj, TransactionOLTP tx){
+        ResolvableQuery query = ReasonerQueries.resolvable(conj, tx).rewrite();
+        query.checkValid();
+
+        boolean doNotResolve = query.getAtoms().isEmpty()
+                || (query.isPositive() && !query.isRuleResolvable());
+        return doNotResolve?
+                tx.stream(Graql.match(conj), false) :
+                new ResolutionIterator(query, new HashSet<>(), tx.queryCache(), query.requiresReiteration()).hasStream();
+    }
+
     public Stream<ConceptMap> match(MatchClause matchClause) {
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
@@ -103,7 +121,13 @@ public class QueryExecutor {
                 return traversal(matchClause.getPatterns().variables(), graqlTraversal);
             }
 
-            Stream<ConceptMap> answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
+            Iterator<Conjunction<Pattern>> conjIt = matchClause.getPatterns().getNegationDNF().getPatterns().iterator();
+            Stream<ConceptMap> answerStream = Stream.empty();
+            while (conjIt.hasNext()) {
+                answerStream = Stream.concat(answerStream, resolveConjunction(conjIt.next(), transaction));
+            }
+
+            //Stream<ConceptMap> answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
             return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
         } catch (GraqlQueryException e) {
             System.err.println(e.getMessage());

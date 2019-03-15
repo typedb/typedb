@@ -68,7 +68,7 @@ public class CompositeState extends QueryStateBase {
 
     public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
         super(sub, u, parent, subGoals, cache);
-        this.query = query;
+        this.query = query.withSubstitution(sub);
         this.baseConjunctionState = query.getConjunctiveQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
         this.complements = query.getComplementQueries();
     }

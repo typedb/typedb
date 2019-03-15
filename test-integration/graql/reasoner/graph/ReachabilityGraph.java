@@ -34,6 +34,17 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
  * - 5.2 from Green
  * - 6.16 from Cao
  * - 6.18 from Cao
+ *
+ * Defines two vertex loops:
+ *
+ *  a -> a1 -> ... -> an -> a1
+ *  b -> b1 -> ... -> bn -> b1
+ *
+ *  and a node configuration:
+ *
+ *              /^\
+ *  aa -> bb -> cc -> dd
+ *
  */
 public class ReachabilityGraph {
 

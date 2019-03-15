@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.query;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -28,6 +29,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -43,6 +45,7 @@ import grakn.core.graql.reasoner.cache.Index;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.reasoner.plan.GraqlTraversalPlanner;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.graql.reasoner.rule.InferenceRule;
@@ -66,6 +69,7 @@ import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import java.util.ArrayList;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
@@ -494,18 +498,41 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
+    private static String PLACEHOLDER_ID = "placeholder_id";
+
+    private boolean isCacheComplete(){
+        if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
+        List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());
+        Set<IdPredicate> subs = new HashSet<>();
+        Set<ReasonerAtomicQuery> partialQueries = new HashSet<>();
+        for (ReasonerAtomicQuery query : queries) {
+            Set<Variable> vars = query.getVarNames();
+            Conjunction<Statement> conjunction =
+            Graql.and(
+                    GraqlTraversalPlanner.atomsToPattern(
+                    query.getAtoms(Atom.class).collect(Collectors.toList()),
+                    Sets.union(
+                            query.getAtoms(IdPredicate.class).collect(Collectors.toSet()),
+                            subs.stream().filter(sub -> vars.contains(sub.getVarName())).collect(Collectors.toSet())
+                    )).statements()
+            );
+            partialQueries.add(ReasonerQueries.atomic(conjunction, tx()));
+            query.getVarNames().stream()
+                    .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
+                    .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
+                    .forEach(subs::add);
+        }
+        return partialQueries.stream()
+                .filter(ReasonerQueryImpl::isRuleResolvable)
+                .allMatch(q -> tx().queryCache().isComplete(q));
+    }
+
     @Override
     public boolean requiresReiteration() {
-        //TODO
-        return false;
-        /*
-        if (getAtoms(Atom.class).filter(Atom::isRuleResolvable).allMatch(at -> tx().queryCache().isComplete(ReasonerQueries.atomic(at)))){
-            return false;
-        }
+        if (isCacheComplete()) return false;
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
         return RuleUtils.subGraphIsCyclical(dependentRules)||
                 RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
-                */
     }
 
     @Override

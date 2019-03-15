@@ -193,7 +193,7 @@ public class BenchmarkSmallIT {
      */
     @Test
     public void testTransitiveChain()  {
-        int N = 400;
+        int N = 100;
         int limit = 10;
         int answers = (N+1)*N/2;
         SessionImpl session = server.sessionWithNewKeyspace();
@@ -212,10 +212,8 @@ public class BenchmarkSmallIT {
         assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
         assertEquals(executeQuery(query, tx, "full").size(), answers);
 
-        /*
         executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
         executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);
-        */
         tx.close();
         session.close();
     }

@@ -126,7 +126,7 @@ public class GraqlTraversalPlanner {
      * @param subs extra substitutions in the form of id predicates
      * @return conjunctive pattern composed of atoms + their constraints + subs
      */
-    private static Conjunction<Pattern> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
+    public static Conjunction<Pattern> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
         return Graql.and(
                 Stream.concat(
                         atoms.stream().flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints())),

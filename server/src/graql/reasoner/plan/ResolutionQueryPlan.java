@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
 import java.util.stream.Collectors;
+import javax.annotation.Nullable;
 
 
 /**
@@ -64,7 +65,7 @@ public class ResolutionQueryPlan {
      * @return list of prioritised queries
      */
     private static ImmutableList<ReasonerQueryImpl> queryPlan(ReasonerQueryImpl query){
-        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query);//query.resolutionPlan();
 
         ImmutableList<Atom> plan = resolutionPlan.plan();
         TransactionOLTP tx = query.tx();

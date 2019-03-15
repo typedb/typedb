@@ -23,7 +23,6 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -31,12 +30,11 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -110,6 +108,13 @@ public abstract class SemanticCache<
     }
 
     @Override
+    public boolean isComplete(ReasonerAtomicQuery query){
+        return super.isComplete(query)
+                || getParents(query).stream().anyMatch(q -> super.isComplete(keyToQuery(q)));
+    }
+
+
+    @Override
     public void ackCompleteness(ReasonerAtomicQuery query) {
         super.ackCompleteness(query);
         getChildren(query).forEach(childKey -> {
@@ -131,20 +136,27 @@ public abstract class SemanticCache<
     private Set<QE> getChildren(ReasonerAtomicQuery parent){
         Set<QE> family = getFamily(parent);
         Set<QE> children = new HashSet<>();
-        if (family != null) {
-            family.stream()
-                    .map(this::keyToQuery)
-                    .filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
-                    .filter(potentialChild -> potentialChild.subsumes(parent))
-                    .map(this::queryToKey)
-                    .forEach(children::add);
-        }
+        family.stream()
+                .map(this::keyToQuery)
+                .filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
+                .filter(potentialChild -> potentialChild.subsumes(parent))
+                .map(this::queryToKey)
+                .forEach(children::add);
         return children;
     }
 
+    /**
+     *
+     * @param query to find
+     * @return
+     */
     private Set<QE> getFamily(ReasonerAtomicQuery query){
         SchemaConcept schemaConcept = query.getAtom().getSchemaConcept();
-        return schemaConcept != null? families.get(schemaConcept) : null;
+        if (schemaConcept == null) return new HashSet<>();
+        Set<QE> family = families.get(schemaConcept);
+        return family != null?
+                family.stream().filter(q -> !q.equals(queryToKey(query))).collect(toSet()) :
+                new HashSet<>();
     }
 
     private void updateFamily(ReasonerAtomicQuery query){
@@ -163,15 +175,13 @@ public abstract class SemanticCache<
     private Set<QE> computeParents(ReasonerAtomicQuery child){
         Set<QE> family = getFamily(child);
         Set<QE> computedParents = new HashSet<>();
-        if (family != null) {
-            family.stream()
-                    .map(this::keyToQuery)
-                    .filter(parent -> !unifierType().equivalence().equivalent(child, parent))
-                    .filter(child::subsumes)
-                    .map(this::queryToKey)
-                    .peek(computedParents::add)
-                    .forEach(parent -> parents.put(queryToKey(child), parent));
-        }
+        family.stream()
+                .map(this::keyToQuery)
+                .filter(parent -> !unifierType().equivalence().equivalent(child, parent))
+                .filter(child::subsumes)
+                .map(this::queryToKey)
+                .peek(computedParents::add)
+                .forEach(parent -> parents.put(queryToKey(child), parent));
         return computedParents;
     }
 

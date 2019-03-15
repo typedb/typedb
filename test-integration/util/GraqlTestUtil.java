@@ -64,7 +64,7 @@ public class GraqlTestUtil {
     }
 
     public static <T> void assertCollectionsEqual(Collection<T> c1, Collection<T> c2) {
-        assertTrue(CollectionUtils.isEqualCollection(c1, c2));
+        assertTrue("c1: " + c1 + "\n!=\nc2: " + c2 , CollectionUtils.isEqualCollection(c1, c2));
     }
 
     public static <T> void assertCollectionsEqual(String msg, Collection<T> c1, Collection<T> c2) {
