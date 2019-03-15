@@ -19,7 +19,6 @@
 package grakn.core.server.session;
 
 import brave.ScopedSpan;
-import brave.Span;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
@@ -185,8 +184,18 @@ public class TransactionOLTP implements Transaction {
         });
     }
 
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
-        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptIds));
+    public VertexElement addVertexElement(Schema.BaseType baseType) {
+        return executeLockingMethod(() -> factory().addVertexElement(baseType));
+    }
+
+    /**
+     * This is only used when reifying a Relation
+     * @param baseType Concept BaseType which will become the VertexLabel
+     * @param conceptId ConceptId to be set on the vertex
+     * @return just created Vertex
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
+        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptId));
     }
 
     /**

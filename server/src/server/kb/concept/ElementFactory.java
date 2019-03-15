@@ -48,7 +48,7 @@ import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 
 /**
  * Constructs Concepts And Edges
- * This class turns Tinkerpop Vertex and org.apache.tinkerpop.gremlin.structure.Edge
+ * This class turns Tinkerpop Vertex and Edge
  * into Grakn Concept and EdgeElement.
  * Construction is only successful if the vertex and edge properties contain the needed information.
  * A concept must include a label which is a Schema.BaseType.
@@ -266,9 +266,9 @@ public final class ElementFactory {
     }
 
     /**
-     * Builds a VertexElement from an already existing Vertex. An empty optional is returned if the passed in
-     * vertex is not valid. A vertex is not valid if it is null or has been deleted
-     *
+     * Builds a VertexElement from an already existing Vertex.
+     * *
+     * @throws TransactionException if vertex is not valid. A vertex is not valid if it is null or has been deleted
      * @param vertex A vertex which can possibly be turned into a VertexElement
      * @return A VertexElement of
      */
@@ -281,20 +281,28 @@ public final class ElementFactory {
     }
 
     /**
-     * Creates a new VertexElement with a ConceptId which can optionally be set.
-     *
+     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
      * @param baseType   The Schema.BaseType
-     * @param conceptIds the optional ConceptId to set as the new ConceptId
      * @return a new VertexElement
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
+    public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = graph.addVertex(baseType.name());
         String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
-        if (conceptIds.length > 1) {
-            throw new IllegalArgumentException("Cannot provide more than one concept id when creating a new concept");
-        } else if (conceptIds.length == 1) {
-            newConceptId = conceptIds[0].getValue();
-        }
+        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
+        tx.cache().writeOccurred();
+        return new VertexElement(tx, vertex);
+    }
+
+    /**
+     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
+     * @param baseType   The Schema.BaseType
+     * @param conceptId the ConceptId to set as the new ConceptId
+     * @return a new VertexElement
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
+        Objects.requireNonNull(conceptId);
+        Vertex vertex = graph.addVertex(baseType.name());
+        String newConceptId = conceptId.getValue();
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
         tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
