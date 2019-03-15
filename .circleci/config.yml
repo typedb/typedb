@@ -191,23 +191,32 @@ jobs:
           command: |
             echo $(cat VERSION)-$CIRCLE_SHA1-$(date +%s) > VERSION
             echo VERSION=$(cat VERSION)
-            bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-            bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-            bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - persist_to_workspace:
+          root: ~/grakn
+          paths:
+            - VERSION
 
   test-deployment-apt:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/circleci-workspace
       - install-bazel
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
+      - run: ls
+      - run: ls ~
+      - run: ls ~/circleci-workspace
       - run:
           command: |
-            echo $(cat VERSION)-$CIRCLE_SHA1-$(date +%s) > VERSION
-            echo VERSION=$(cat VERSION)
+            mv ~/circleci-workspace/VERSION VERSION
+            cat VERSION
             sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION) # TODO: install the right version
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
             nohup grakn server start
@@ -313,10 +322,10 @@ workflows:
       - test-deployment-apt:
           requires:
             - test-assembly-apt
-#      - test-assembly-rpm
-#      - test-deployment-rpm:
-#          requires:
-#            - test-assembly-rpm
+      - test-assembly-rpm
+      - test-deployment-rpm:
+          requires:
+            - test-assembly-rpm
       - test-assembly-docker
 #      - sync-dependencies:
 #          filters:

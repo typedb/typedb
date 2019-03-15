@@ -105,15 +105,15 @@ try:
     lprint('Building RPM packages')
     gcloud_ssh(instance, 'bazel build //bin:assemble-rpm')
     gcloud_ssh(instance, 'bazel build //server:assemble-rpm')
-    # gcloud_ssh(instance, 'bazel build //console:assemble-rpm') # TODO: enable
+    gcloud_ssh(instance, 'bazel build //console:assemble-rpm')
 
     lprint('Installing RPM packages. Grakn will be available system-wide')
-    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/bin/grakn-core-bin.rpm') # TODO: fix rpm name
-    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/server/grakn-core-server.rpm') # TODO: fix rpm name
-    # gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/console/grakn-core-console.rpm') # TODO: a) fix rpm name b) enable
+    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/bin/grakn-core-bin.rpm')
+    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/server/grakn-core-server.rpm')
+    gcloud_ssh(instance, 'sudo yum localinstall -y bazel-genfiles/console/grakn-core-console.rpm')
 
     gcloud_ssh(instance, 'grakn server start')
-    # gcloud_ssh(instance, 'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no') # TODO: enable
+    gcloud_ssh(instance, 'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no')
     gcloud_ssh(instance, 'grakn server stop')
 
     lprint('Deploying RPM packages to the RPM repository')
