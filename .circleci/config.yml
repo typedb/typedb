@@ -130,6 +130,30 @@ jobs:
     - run-bazel-rbe:
         command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
+  test-assembly-mac-zip:
+    macos:
+      xcode: "9.0"
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - install-bazel-mac
+      - run:
+          command: |
+            bazel build //:assemble-mac-zip
+            unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
+            nohup bazel-genfiles/grakn-core-all-mac/grakn server start
+      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
+
+  test-assembly-windows-zip:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run:
+          command: .circleci/test/assembly/windows-zip/windows-zip.py # TODO: test starting Grakn from a directory which has space
+          no_output_timeout: 20m
+
   test-assembly-linux-targz:
     machine: true
     working_directory: ~/grakn
@@ -194,6 +218,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
+      - install-bazel
       - run: .circleci/test/assembly/rpm.py
 
   test-deployment-rpm:
@@ -202,30 +227,6 @@ jobs:
     steps:
       - checkout
       - run: .circleci/test/deployment/rpm.py
-
-  test-assembly-mac-zip:
-    macos:
-      xcode: "9.0"
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - install-bazel-mac
-      - run:
-          command: |
-            bazel build //:assemble-mac-zip
-            unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
-            nohup bazel-genfiles/grakn-core-all-mac/grakn server start
-      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-      - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
-
-  test-assembly-windows-zip:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - run:
-          command: .circleci/test/assembly/windows-zip/windows-zip.py
-          no_output_timeout: 20m
 
   test-assembly-docker:
     machine: true
@@ -271,18 +272,6 @@ jobs:
 workflows:
   grakn-core:
     jobs:
-#      - test-assembly-linux-targz
-#      - test-assembly-apt
-#      - test-deployment-apt:
-#          requires:
-#            - test-assembly-apt
-      - test-assembly-docker
-      - test-assembly-rpm
-      - test-deployment-rpm:
-          requires:
-            - test-assembly-rpm
-#      - test-assembly-mac-zip
-#      - test-assembly-windows-zip
 #       TODO: enable
 #      - build:
 #          filters:
@@ -316,6 +305,18 @@ workflows:
 #          filters:
 #            branches:
 #              ignore: grakn-core-release-branch
+      - test-assembly-mac-zip
+      - test-assembly-windows-zip
+      - test-assembly-linux-targz
+      - test-assembly-apt
+      - test-deployment-apt:
+          requires:
+            - test-assembly-apt
+      - test-assembly-rpm
+      - test-deployment-rpm:
+          requires:
+            - test-assembly-rpm
+      - test-assembly-docker
 #      - sync-dependencies:
 #          filters:
 #            branches:
