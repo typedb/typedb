@@ -306,17 +306,17 @@ workflows:
 #          filters:
 #            branches:
 #              ignore: grakn-core-release-branch
-      - test-assembly-mac-zip
-      - test-assembly-windows-zip
-      - test-assembly-linux-targz
+#      - test-assembly-mac-zip
+#      - test-assembly-windows-zip
+#      - test-assembly-linux-targz
       - test-assembly-apt
       - test-deployment-apt:
           requires:
             - test-assembly-apt
-      - test-assembly-rpm
-      - test-deployment-rpm:
-          requires:
-            - test-assembly-rpm
+#      - test-assembly-rpm
+#      - test-deployment-rpm:
+#          requires:
+#            - test-assembly-rpm
       - test-assembly-docker
 #      - sync-dependencies:
 #          filters:
