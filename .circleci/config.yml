@@ -186,6 +186,7 @@ jobs:
 #            nohup grakn server start
 #            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
 #            grakn server stop
+      # TODO: how to get repo.grakn.ai apt repository to not ignore commit id in the version? that way we don't have to add date +%s
       - run:
           command: |
             echo $(cat VERSION)-$CIRCLE_SHA1-$(date +%s) > VERSION
