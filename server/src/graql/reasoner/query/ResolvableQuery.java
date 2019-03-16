@@ -25,6 +25,8 @@ import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
+import graql.lang.Graql;
+import graql.lang.query.GraqlGet;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -87,6 +89,14 @@ public interface ResolvableQuery extends ReasonerQuery {
      */
     @CheckReturnValue
     boolean requiresReiteration();
+
+    /**
+     * @return corresponding Get query
+     */
+    @CheckReturnValue
+    default GraqlGet getQuery() {
+        return Graql.match(getPattern()).get();
+    }
 
     /**
      * @return rewritten (decomposed) version of the query

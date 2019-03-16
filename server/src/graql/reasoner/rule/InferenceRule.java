@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.rule;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
@@ -53,6 +54,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -72,6 +74,7 @@ public class InferenceRule {
     private final ReasonerAtomicQuery head;
 
     private long priority = Long.MAX_VALUE;
+    private Atom conclusionAtom = null;
     private Boolean requiresMaterialisation = null;
 
     public InferenceRule(Rule rule, TransactionOLTP tx){
@@ -91,7 +94,7 @@ public class InferenceRule {
 
     @Override
     public String toString(){
-        return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "[" + resolutionPriority() +"]\n";
+        return  "\n" + this.body.toString() + "->\n" + this.head.toString() + "]\n";
     }
 
     @Override
@@ -115,8 +118,14 @@ public class InferenceRule {
      */
     public long resolutionPriority(){
         if (priority == Long.MAX_VALUE) {
-            //NB: only checking locally as checking full tree (getDependentRules) is expensive
-            priority = -getBody().getAtoms(Atom.class).flatMap(Atom::getApplicableRules).count();
+            //NB: this has to be relatively lightweight as it is called on each rule
+            //TODO come with a more useful metric
+            boolean bodyRuleResolvable = getBody().getAtoms(Atom.class)
+                    .map(Atom::getSchemaConcept)
+                    .filter(Objects::nonNull)
+                    .map(Concept::asType)
+                    .anyMatch(t -> t.thenRules().findFirst().isPresent());
+            priority = bodyRuleResolvable? -1 : 0;
         }
         return priority;
     }
@@ -196,7 +205,12 @@ public class InferenceRule {
      * @return a conclusion atom which parent contains all atoms in the rule
      */
     public Atom getRuleConclusionAtom() {
-        return getCombinedQuery().getAtoms(Atom.class).filter(at -> at.equals(head.getAtom())).findFirst().orElse(null);
+        if (conclusionAtom == null) {
+            conclusionAtom = getCombinedQuery().getAtoms(Atom.class)
+                    .filter(at -> at.equals(head.getAtom()))
+                    .findFirst().orElse(null);
+        }
+        return conclusionAtom;
     }
 
     /**
@@ -316,8 +330,10 @@ public class InferenceRule {
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
             ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
 
+            Stream<Atom> bodyConjAtoms = getBody().isComposite()?
+                    getBody().asComposite().getConjunctiveQuery().getAtoms(Atom.class) : getBody().getAtoms(Atom.class);
             //NB: only rewriting atoms from the same type hierarchy
-            List<Atom> rewrittenBodyConjAtoms = getBody().asComposite().getConjunctiveQuery().getAtoms(Atom.class)
+            List<Atom> rewrittenBodyConjAtoms = bodyConjAtoms
                     .map(at ->
                             ConceptUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
                                     at : at.rewriteToUserDefined(parentAtom)
