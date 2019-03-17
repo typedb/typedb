@@ -154,15 +154,14 @@ jobs:
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
-# TODO: add after fixing the python issue regarding missing bdist_wheel
-#  test-assembly-windows-zip:
-#    machine: true
-#    working_directory: ~/grakn
-#    steps:
-#      - checkout
-#      - run:
-#          command: .circleci/test/assembly/windows-zip/windows-zip.py # TODO: test starting Grakn from a directory which has space
-#          no_output_timeout: 20m
+  test-assembly-windows-zip:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run:
+          command: .circleci/test/assembly/windows-zip/windows-zip.py # TODO: test starting Grakn from a directory which has space
+          no_output_timeout: 20m
 
   test-assembly-linux-targz:
     machine: true
@@ -337,10 +336,10 @@ workflows:
           filters:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
-#      - test-assembly-windows-zip:
-#          filters:
-#            branches:
-#              only: test-deployment # TODO: change back to master before merging the PR
+      - test-assembly-windows-zip:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
       - test-assembly-linux-targz:
           filters:
             branches:
