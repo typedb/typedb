@@ -130,6 +130,15 @@ jobs:
     - run-bazel-rbe:
         command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
+  test-end-to-end:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - install-bazel
+      - run-bazel-rbe:
+          command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+
   test-assembly-mac-zip:
     macos:
       xcode: "9.0"
@@ -145,14 +154,15 @@ jobs:
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
-  test-assembly-windows-zip:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - run:
-          command: .circleci/test/assembly/windows-zip/windows-zip.py # TODO: test starting Grakn from a directory which has space
-          no_output_timeout: 20m
+# TODO: add after fixing the python issue regarding missing bdist_wheel
+#  test-assembly-windows-zip:
+#    machine: true
+#    working_directory: ~/grakn
+#    steps:
+#      - checkout
+#      - run:
+#          command: .circleci/test/assembly/windows-zip/windows-zip.py # TODO: test starting Grakn from a directory which has space
+#          no_output_timeout: 20m
 
   test-assembly-linux-targz:
     machine: true
@@ -319,18 +329,18 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
-#      - test-end-to-end: # TODO: add it back, it seems like the job was accidentally deleted
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
+      - test-end-to-end:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
       - test-assembly-mac-zip:
           filters:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
-      - test-assembly-windows-zip:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+#      - test-assembly-windows-zip:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
       - test-assembly-linux-targz:
           filters:
             branches:
@@ -371,7 +381,7 @@ workflows:
             - test-integration
             - test-integration-reasoner
             - test-integration-analytics
-#            - test-end-to-end # TODO: add it back, it seems like the job was accidentally deleted
+            - test-end-to-end
       - release-approval:
           filters:
             branches:
