@@ -145,12 +145,6 @@ try:
         'SETX PATH "%PATH%;C:\\tools\\msys64\\usr\\bin"'
     ]), instance_ip, 'circleci', instance_password)
 
-    lprint('[Remote]: installing python dependencies')
-    ssh(' && '.join([
-        'set PYTHONIOENCODING=UTF-8',
-        'pip install wheel'
-    ]), instance_ip, 'circleci', instance_password)
-
     lprint('[Remote] Cloning grakn')
     ssh(' && '.join([
         'refreshenv',
