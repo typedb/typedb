@@ -111,7 +111,7 @@ try:
     gcloud_ssh(instance, 'sudo yum -y install grakn-core-console') # TODO: add version
 
     gcloud_ssh(instance, 'grakn server start')
-    # gcloud_ssh(instance, 'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no') # TODO: enable
+    gcloud_ssh(instance, 'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no') # TODO: enable
     gcloud_ssh(instance, 'grakn server stop')
 finally:
     lprint('Deleting the CentOS instance')
