@@ -174,18 +174,18 @@ jobs:
     steps:
       - checkout
       - install-bazel
-#      - run:
-#          command: |
-#            bazel build //bin:assemble-apt
-#            bazel build //server:assemble-apt
-#            bazel build //console:assemble-apt
-#            sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
-#            sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-#            sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
-#            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-#            nohup grakn server start
-#            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-#            grakn server stop
+      - run:
+          command: |
+            bazel build //bin:assemble-apt
+            bazel build //server:assemble-apt
+            bazel build //console:assemble-apt
+            sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
+            sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
+            sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
+            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+            nohup grakn server start
+            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+            grakn server stop
       # TODO: how to get repo.grakn.ai apt repository to not ignore commit id in the version? that way we don't have to add date +%s
       - run:
           command: |
@@ -282,80 +282,104 @@ jobs:
 workflows:
   grakn-core:
     jobs:
-#       TODO: enable
-#      - build:
+      - build:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+      - test-common:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+      - test-console:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+      - test-server:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+      - test-integration:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+      - test-integration-reasoner:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+      - test-integration-analytics:
+          filters:
+            branches:
+              ignore: grakn-core-release-branch
+#      - test-end-to-end: # TODO: add it back, it seems like the job was accidentally deleted
 #          filters:
 #            branches:
 #              ignore: grakn-core-release-branch
-#      - test-common:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-console:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-server:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-integration:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-integration-reasoner:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-integration-analytics:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-end-to-end:
-#          filters:
-#            branches:
-#              ignore: grakn-core-release-branch
-#      - test-assembly-mac-zip
-#      - test-assembly-windows-zip
-#      - test-assembly-linux-targz
-      - test-assembly-apt
+      - test-assembly-mac-zip:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR 
+      - test-assembly-windows-zip:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
+      - test-assembly-linux-targz:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
+      - test-assembly-apt:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
       - test-deployment-apt:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
           requires:
             - test-assembly-apt
-      - test-assembly-rpm
-      - test-deployment-rpm:
+# TODO: enable after fixing bazel issues on CentOS
+#      - test-assembly-rpm:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#      - test-deployment-rpm:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#          requires:
+#            - test-assembly-rpm
+      - test-assembly-docker:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
+      - sync-dependencies:
+          filters:
+            branches:
+              only: master
           requires:
-            - test-assembly-rpm
-      - test-assembly-docker
-#      - sync-dependencies:
-#          filters:
-#            branches:
-#              only: master
-#          requires:
-#            - build
-#            - test-common
-#            - test-console
-#            - test-server
-#            - test-integration
-#            - test-integration-reasoner
-#            - test-integration-analytics
-#            - test-end-to-end
-#      - release-approval:
-#          filters:
-#            branches:
-#              only: master
-#          requires:
-#            - sync-dependencies
-#
-#  grakn-core-release:
-#    jobs:
-#      - release-github-draft:
-#          filters:
-#            branches:
-#              only: grakn-core-release-branch
-#      - release-cleanup:
-#          filters:
-#            branches:
-#              only: grakn-core-release-branch
-#          requires:
-#            - release-github-draft
+            - build
+            - test-common
+            - test-console
+            - test-server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+#            - test-end-to-end # TODO: add it back, it seems like the job was accidentally deleted
+      - release-approval:
+          filters:
+            branches:
+              only: master
+          requires:
+            - sync-dependencies
+
+  grakn-core-release:
+    jobs:
+      - release-github-draft:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+      - release-cleanup:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+          requires:
+            - release-github-draft
