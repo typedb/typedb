@@ -176,21 +176,19 @@ jobs:
       - install-bazel
       - run:
           command: |
-            bazel build //bin:assemble-apt
-            bazel build //server:assemble-apt
-            bazel build //console:assemble-apt
-            sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
-            sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-            sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
-            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-            nohup grakn server start
-            bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-            grakn server stop
-      # TODO: how to get repo.grakn.ai apt repository to not ignore commit id in the version? that way we don't have to add date +%s
-      - run:
-          command: |
             echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
             echo VERSION=$(cat VERSION)
+      - run: bazel build //bin:assemble-apt
+      - run: bazel build //server:assemble-apt
+      - run: bazel build //console:assemble-apt
+      - run: sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
+      - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
+      - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
+      - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+      - run: nohup grakn server start
+      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: grakn server stop
+      # TODO: how to get repo.grakn.ai apt repository to not ignore commit id in the version? that way we don't have to add date +%s
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
@@ -229,17 +227,15 @@ jobs:
     steps:
       - checkout
       - install-bazel
-      - run: bazel build //bin:assemble-rpm
-      - run: bazel build //server:assemble-rpm
-      - run: bazel build //console:assemble-rpm
-      - run: sudo yum localinstall -y bazel-genfiles/bin/grakn-core-bin.rpm
-      - run: sudo yum localinstall -y bazel-genfiles/server/grakn-core-server.rpm
-      - run: sudo yum localinstall -y bazel-genfiles/console/grakn-core-console.rpm
+      - run: sudo apt install rpm
       - run:
           command: |
             echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
             sed -i -e 's/-/_/g' VERSION
             cat VERSION
+      - run: bazel build //bin:assemble-rpm
+      - run: bazel build //server:assemble-rpm
+      - run: bazel build //console:assemble-rpm
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
