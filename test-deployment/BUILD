@@ -10,3 +10,10 @@ java_test(
         "@graknlabs_grakn_core//concept"
     ]
 )
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":test-deployment"
+    ],
+)

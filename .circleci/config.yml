@@ -163,10 +163,10 @@ jobs:
       - run:
           command: |
             bazel build //:assemble-linux-targz
-            tar -xf bazel-bin/assemble-linux-targz.tar.gz -C bazel-bin
-            nohup bazel-bin/grakn-core-all-linux/grakn server start
+            tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
+            nohup bazel-genfiles/grakn-core-all-linux/grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-      - run: bazel-bin/grakn-core-all-linux/grakn server stop
+      - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
 
   test-assembly-apt:
     machine: true
@@ -229,7 +229,21 @@ jobs:
     steps:
       - checkout
       - install-bazel
-      - run: .circleci/test/assembly/rpm.py
+      - run: bazel build //bin:assemble-rpm
+      - run: bazel build //server:assemble-rpm
+      - run: bazel build //console:assemble-rpm
+      - run: sudo yum localinstall -y bazel-genfiles/bin/grakn-core-bin.rpm
+      - run: sudo yum localinstall -y bazel-genfiles/server/grakn-core-server.rpm
+      - run: sudo yum localinstall -y bazel-genfiles/console/grakn-core-console.rpm
+      - run:
+          command: |
+            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+            sed -i -e 's/-/_/g' VERSION
+            cat VERSION
+      - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+
 
   test-deployment-rpm:
     machine: true
@@ -317,7 +331,7 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR 
+              only: test-deployment # TODO: change back to master before merging the PR
       - test-assembly-windows-zip:
           filters:
             branches:
