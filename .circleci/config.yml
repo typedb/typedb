@@ -346,17 +346,16 @@ workflows:
               only: test-deployment # TODO: change back to master before merging the PR
           requires:
             - test-assembly-apt
-# TODO: enable after fixing bazel issues on CentOS
-#      - test-assembly-rpm:
-#          filters:
-#            branches:
-#              only: test-deployment # TODO: change back to master before merging the PR
-#      - test-deployment-rpm:
-#          filters:
-#            branches:
-#              only: test-deployment # TODO: change back to master before merging the PR
-#          requires:
-#            - test-assembly-rpm
+      - test-assembly-rpm:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
+      - test-deployment-rpm:
+          filters:
+            branches:
+              only: test-deployment # TODO: change back to master before merging the PR
+          requires:
+            - test-assembly-rpm
       - test-assembly-docker:
           filters:
             branches:
