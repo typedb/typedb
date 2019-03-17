@@ -208,16 +208,15 @@ jobs:
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: ls
-      - run: ls ~
-      - run: ls ~/circleci-workspace
       - run:
           command: |
             mv ~/circleci-workspace/VERSION VERSION
             cat VERSION
+      - run:
+          command: |
             sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION) # TODO: install the right version
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-            nohup grakn server start
+      - run: nohup grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
 
