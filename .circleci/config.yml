@@ -161,7 +161,7 @@ jobs:
 #    steps:
 #      - checkout
 #      - run:
-#          command: .circleci/test/assembly/windows-zip/windows-zip.py # TODO: test starting Grakn from a directory which has space
+#          command: .circleci/test/assembly/windows-zip/windows-zip.py
 #          no_output_timeout: 20m
 
   test-assembly-linux-targz:
@@ -198,7 +198,6 @@ jobs:
       - run: nohup grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
-      # TODO: how to get repo.grakn.ai apt repository to not ignore commit id in the version? that way we don't have to add date +%s
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
@@ -224,7 +223,7 @@ jobs:
             cat VERSION
       - run:
           command: |
-            sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION) # TODO: install the right version
+            sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
             sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
