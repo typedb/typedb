@@ -188,6 +188,7 @@ try:
 
 finally:
     lprint('Remove instance')
+    # TODO: uncomment before merging the PR
     # sp.check_call([
     #     'gcloud', '--quiet', 'compute', 'instances',
     #     'delete', instance_name, '--delete-disks=all'

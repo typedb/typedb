@@ -65,13 +65,6 @@ def gcloud_instances_delete(instance):
     ])
 
 
-def version_file_append_commit(version_file, commit_id):
-    with open(version_file, 'r') as file:
-        version_content = (file.read().strip() + commit_id).replace('-', '_')
-    with open(version_file, 'w') as file:
-        file.write(version_content)
-
-
 # TODO: exit if CIRCLE_BUILD_NUM and $GCP_CREDENTIAL aren't present
 credential = os.getenv('GCP_CREDENTIAL')
 project = 'grakn-dev'
@@ -98,7 +91,7 @@ try:
     gcloud_ssh(instance, 'sudo ./bazel-0.20.0-installer-linux-x86_64.sh')
 
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
-    version_file_append_commit(version_file='VERSION', commit_id=os.getenv('CIRCLE_SHA1'))
+
     sp.check_call(['cat', 'VERSION'])
     sp.check_call(['zip', '-r', 'grakn.zip', '.'])
     gcloud_scp(instance, local='grakn.zip', remote='~')
@@ -107,8 +100,9 @@ try:
     lprint('Installing RPM packages. Grakn will be available system-wide')
     gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/test-grakn-core.repo')
     gcloud_ssh(instance, 'sudo yum -y update')
-    gcloud_ssh(instance, 'sudo yum -y install grakn-core-server')
-    gcloud_ssh(instance, 'sudo yum -y install grakn-core-console')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-bin-$(cat VERSION)')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-server-$(cat VERSION)')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-console-$(cat VERSION)')
 
     gcloud_ssh(instance, 'grakn server start')
     gcloud_ssh(instance, 'grakn server stop')

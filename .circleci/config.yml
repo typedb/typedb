@@ -196,10 +196,11 @@ jobs:
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
           paths:
-            - VERSION
+            - VERSION.apt
 
   test-deployment-apt:
     machine: true
@@ -212,7 +213,7 @@ jobs:
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: mv ~/circleci-workspace/VERSION VERSION
+      - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
       - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
@@ -233,13 +234,20 @@ jobs:
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-
+      - run: cp VERSION VERSION.rpm
+      - persist_to_workspace:
+          root: ~/grakn
+          paths:
+            - VERSION.rpm
 
   test-deployment-rpm:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/circleci-workspace
+      - run: mv ~/circleci-workspace/VERSION.rpm VERSION
       - run: test/deployment/rpm.py
 
   test-assembly-docker:
@@ -340,16 +348,16 @@ workflows:
 #              only: test-deployment # TODO: change back to master before merging the PR
 #          requires:
 #            - test-assembly-apt
-#      - test-assembly-rpm:
-#          filters:
-#            branches:
-#              only: test-deployment # TODO: change back to master before merging the PR
-#      - test-deployment-rpm:
-#          filters:
-#            branches:
-#              only: test-deployment # TODO: change back to master before merging the PR
-#          requires:
-#            - test-assembly-rpm
+      - test-assembly-rpm:
+          filters:
+            branches:
+              only: test-deployment-windows # TODO: change back to master before merging the PR
+      - test-deployment-rpm:
+          filters:
+            branches:
+              only: test-deployment-windows # TODO: change back to master before merging the PR
+          requires:
+            - test-assembly-rpm
 #      - test-assembly-docker:
 #          filters:
 #            branches:
