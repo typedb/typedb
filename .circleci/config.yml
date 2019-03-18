@@ -145,7 +145,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel-linux-mac
+      - install-bazel-mac
       - run: bazel build //:assemble-mac-zip
       - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
       - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
