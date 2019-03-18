@@ -18,7 +18,7 @@
 
 version: 2.1
 commands:
-  install-bazel:
+  install-bazel-linux:
     steps:
       - run:
           name: Install bazel and RBE credential
@@ -31,6 +31,18 @@ commands:
             # Install RBE credential
             bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
 
+  install-bazel-mac:
+    steps:
+      - run:
+          name: Install bazel and RBE credential
+          command: |
+            # Install bazel
+            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-darwin-x86_64.sh
+            chmod +x bazel-0.20.0-installer-darwin-x86_64.sh
+            sudo ./bazel-0.20.0-installer-darwin-x86_64.sh
+
+            # Install RBE credential
+            bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
   install-rpm:
     steps:
       - run: sudo apt update && sudo apt install rpm -y
@@ -138,7 +150,6 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
- TODO: add after fixing the python issue regarding missing bdist_wheel
   test-assembly-windows-zip:
     machine: true
     working_directory: ~/grakn
@@ -182,12 +193,13 @@ jobs:
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
           paths:
-            - VERSION
+            - VERSION.apt
 
-  test-deployment-apt:
+  test-deployment-linux-apt:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -198,7 +210,7 @@ jobs:
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: mv ~/circleci-workspace/VERSION VERSION
+      - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
       - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
@@ -219,13 +231,21 @@ jobs:
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: cp VERSION VERSION.rpm
+      - persist_to_workspace:
+          root: ~/grakn
+          paths:
+            - VERSION.rpm
 
 
-  test-deployment-rpm:
+  test-deployment-linux-rpm:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/circleci-workspace
+      - run: mv ~/circleci-workspace/VERSION.rpm VERSION
       - run: test/deployment/rpm.py
 
   test-assembly-docker:
@@ -241,12 +261,13 @@ jobs:
     steps:
       - checkout
       - install-bazel-linux
-      - run: |
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
-          --source grakn@$CIRCLE_SHA1 \
-          --targets \
-          client-java:master client-python:master client-nodejs:master \
-          workbase:master docs:development examples:development
+      # TODO: uncomment before merging the PR
+#      - run: |
+#          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
+#          --source grakn@$CIRCLE_SHA1 \
+#          --targets \
+#          client-java:master client-python:master client-nodejs:master \
+#          workbase:master docs:development examples:development
   
   release-approval:
     machine: true
@@ -307,43 +328,44 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: master
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: test-deployment-windows
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
       - test-assembly-linux-targz:
           filters:
             branches:
-              only: master
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
       - test-assembly-linux-apt:
           filters:
             branches:
-              only: test-deployment-windows
-      - test-deployment-apt:
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
+
+      - test-deployment-linux-apt:
           filters:
             branches:
-              only: test-deployment-windows
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
           requires:
             - test-assembly-linux-apt
       - test-assembly-linux-rpm:
           filters:
             branches:
-              only: test-deployment-windows
-      - test-deployment-rpm:
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
+      - test-deployment-linux-rpm:
           filters:
             branches:
-              only: test-deployment-windows
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
           requires:
             - test-assembly-linux-rpm
       - test-assembly-docker:
           filters:
             branches:
-              only: master
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
       - sync-dependencies:
           filters:
             branches:
-              only: master
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
           requires:
             - build
             - test-common
@@ -353,10 +375,16 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-deployment-linux-apt
+            - test-deployment-linux-rpm
+            - test-assembly-docker
       - release-approval:
           filters:
             branches:
-              only: master
+              only: test-deployment-windows # TODO: revert back to master before merging the PR
           requires:
             - sync-dependencies
 
