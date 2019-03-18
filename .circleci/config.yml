@@ -146,11 +146,9 @@ jobs:
     steps:
       - checkout
       - install-bazel-linux-mac
-      - run:
-          command: |
-            bazel build //:assemble-mac-zip
-            unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
-            nohup bazel-genfiles/grakn-core-all-mac/grakn server start
+      - run: bazel build //:assemble-mac-zip
+      - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
+      - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
@@ -170,11 +168,9 @@ jobs:
     steps:
       - checkout
       - install-bazel-linux
-      - run:
-          command: |
-            bazel build //:assemble-linux-targz
-            tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
-            nohup bazel-genfiles/grakn-core-all-linux/grakn server start
+      - run: bazel build //:assemble-linux-targz
+      - run: tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
+      - run: nohup bazel-genfiles/grakn-core-all-linux/grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
 
@@ -184,10 +180,8 @@ jobs:
     steps:
       - checkout
       - install-bazel-linux
-      - run:
-          command: |
-            echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
-            echo VERSION=$(cat VERSION)
+      - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
+      - run: echo VERSION=$(cat VERSION)
       - run: bazel build //bin:assemble-apt
       - run: bazel build //server:assemble-apt
       - run: bazel build //console:assemble-apt
@@ -217,14 +211,12 @@ jobs:
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
+      - run: mv ~/circleci-workspace/VERSION VERSION
       - run:
-          command: |
-            mv ~/circleci-workspace/VERSION VERSION
-            cat VERSION
-      - run:
-          command: |
-            sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
-            sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
+          name: Showing the version of the package which will be deployed
+          command: cat VERSION
+      - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
+      - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
@@ -236,11 +228,11 @@ jobs:
       - checkout
       - install-bazel-linux
       - run: sudo apt install rpm
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+      - run: sed -i -e 's/-/_/g' VERSION
       - run:
-          command: |
-            echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
-            sed -i -e 's/-/_/g' VERSION
-            cat VERSION
+          name: Showing the version of the package which will be deployed
+          command: cat VERSION
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
