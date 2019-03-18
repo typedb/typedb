@@ -168,18 +168,19 @@ try:
 
     lprint('[Remote]: unpacking Grakn')
     ssh(' && '.join([
-        'cd repo',
-        'unzip bazel-genfiles/grakn-core-all-windows.zip -d bazel-genfiles/'
+        'cd repo/bazel-genfiles',
+        'mkdir "a directory with whitespace"',
+        'unzip grakn-core-all-windows.zip -d "a directory with whitespace"',
     ]), instance_ip, 'circleci', instance_password)
 
     lprint('[Remote]: starting Grakn')
     ssh(' && '.join([
         'refreshenv',
-        'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
+        'cd /Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/',
         'grakn server start',
         'cd /Users/circleci/repo',
         'bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no',
-        'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
+        'cd /Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/',
         'grakn server stop'
     ]), instance_ip, 'circleci', instance_password)
 
