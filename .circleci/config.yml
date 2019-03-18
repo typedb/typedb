@@ -153,14 +153,14 @@ jobs:
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
 # TODO: add after fixing the python issue regarding missing bdist_wheel
-#  test-assembly-windows-zip:
-#    machine: true
-#    working_directory: ~/grakn
-#    steps:
-#      - checkout
-#      - run:
-#          command: test/assembly/windows/windows-zip.py
-#          no_output_timeout: 20m
+  test-assembly-windows-zip:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run:
+          command: test/assembly/windows/windows-zip.py
+          no_output_timeout: 20m
 
   test-assembly-linux-targz:
     machine: true
@@ -286,93 +286,93 @@ jobs:
 workflows:
   grakn-core:
     jobs:
-      - build:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-common:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-console:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-server:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration-reasoner:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration-analytics:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-end-to-end:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-assembly-mac-zip:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-#      - test-assembly-windows-zip:
+#      - build:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-common:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-console:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-server:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration-reasoner:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration-analytics:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-end-to-end:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-assembly-mac-zip:
 #          filters:
 #            branches:
 #              only: test-deployment # TODO: change back to master before merging the PR
-      - test-assembly-linux-targz:
+      - test-assembly-windows-zip:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-      - test-assembly-apt:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-      - test-deployment-apt:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-          requires:
-            - test-assembly-apt
-      - test-assembly-rpm:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-      - test-deployment-rpm:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-          requires:
-            - test-assembly-rpm
-      - test-assembly-docker:
-          filters:
-            branches:
-              only: test-deployment # TODO: change back to master before merging the PR
-      - sync-dependencies:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - release-approval:
-          filters:
-            branches:
-              only: master
-          requires:
-            - sync-dependencies
+              only: test-deployment-windows # TODO: change back to master before merging the PR
+#      - test-assembly-linux-targz:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#      - test-assembly-apt:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#      - test-deployment-apt:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#          requires:
+#            - test-assembly-apt
+#      - test-assembly-rpm:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#      - test-deployment-rpm:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#          requires:
+#            - test-assembly-rpm
+#      - test-assembly-docker:
+#          filters:
+#            branches:
+#              only: test-deployment # TODO: change back to master before merging the PR
+#      - sync-dependencies:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#      - release-approval:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - sync-dependencies
 
   grakn-core-release:
     jobs:
