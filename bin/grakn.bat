@@ -52,8 +52,8 @@ goto exiterror
 
 :startconsole
 
+set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\console\services\lib\*"
 if exist .\console\services\lib\grakn-core-console-*.jar (
-  set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\console\services\lib\*"
   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%\%GRAKN_CONFIG%" -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.console.GraknConsole %*
   goto exit
 ) else (
@@ -64,8 +64,8 @@ if exist .\console\services\lib\grakn-core-console-*.jar (
 
 :startserver
 
+set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\server\services\lib\*"
 if exist .\server\services\lib\grakn-core-server-*.jar (
-  set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\server\services\lib\*"
   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%\%GRAKN_CONFIG%" -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.daemon.GraknDaemon %*
   goto exit
 ) else (
