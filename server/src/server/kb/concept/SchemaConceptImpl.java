@@ -143,7 +143,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //noinspection unchecked
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
-            //Clear Global Cache
+            //Clear Transaction Cache
             vertex().tx().cache().remove(this);
 
             //Clear internal caching

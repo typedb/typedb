@@ -46,7 +46,7 @@ public class KeyspaceCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     // Concept cache
-    private final Cache<Label, SchemaConcept> cachedTypes;
+//    private final Cache<Label, SchemaConcept> cachedTypes;
 
     // Label cache
     private final Map<Label, LabelId> cachedLabels;
@@ -55,10 +55,10 @@ public class KeyspaceCache {
         cachedLabels = new ConcurrentHashMap<>();
 
         int cacheTimeout = config.getProperty(ConfigKey.SESSION_CACHE_TIMEOUT_MS);
-        cachedTypes = CacheBuilder.newBuilder()
-                .maximumSize(1000)
-                .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
-                .build();
+//        cachedTypes = CacheBuilder.newBuilder()
+//                .maximumSize(1000)
+//                .expireAfterAccess(cacheTimeout, TimeUnit.MILLISECONDS)
+//                .build();
     }
 
     /**
@@ -70,13 +70,13 @@ public class KeyspaceCache {
         try {
             lock.writeLock().lock();
 
-            Map<Label, SchemaConcept> cachedSchemaSnapshot = getCachedTypes();
+//            Map<Label, SchemaConcept> cachedSchemaSnapshot = getCachedTypes();
             Map<Label, LabelId> cachedLabelsSnapshot = getCachedLabels();
 
             //Read central cache into transactionCache cloning only base concepts. Sets clones later
-            for (SchemaConcept type : cachedSchemaSnapshot.values()) {
-                transactionCache.cacheConcept(type);
-            }
+//            for (SchemaConcept type : cachedSchemaSnapshot.values()) {
+//                transactionCache.cacheConcept(type);
+//            }
 
             //Load Labels Separately. We do this because the TypeCache may have expired.
             cachedLabelsSnapshot.forEach(transactionCache::cacheLabel);
@@ -91,9 +91,9 @@ public class KeyspaceCache {
      * @param label The label of the type to cache
      * @param type  The type to cache
      */
-    void cacheType(Label label, SchemaConcept type) {
-        cachedTypes.put(label, type);
-    }
+//    void cacheType(Label label, SchemaConcept type) {
+//        cachedTypes.put(label, type);
+//    }
 
     /**
      * Caches a label so we can map type labels to type ids. This is necesssary so we can make fast
@@ -121,7 +121,7 @@ public class KeyspaceCache {
 
                 //Clear the cache
                 cachedLabels.clear();
-                cachedTypes.invalidateAll();
+//                cachedTypes.invalidateAll();
 
                 //Add a new one
                 cachedLabels.putAll(transactionCache.getLabelCache());
@@ -132,8 +132,8 @@ public class KeyspaceCache {
         }
 
         //Flush All The Internal TransactionOLTP Caches
-        transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
-                -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
+//        transactionCache.getSchemaConceptCache().values().forEach(schemaConcept
+//                -> SchemaConceptImpl.from(schemaConcept).txCacheFlush());
     }
 
     /**
@@ -150,11 +150,12 @@ public class KeyspaceCache {
      *
      * @return an immutable copy of the cached schema.
      */
-    public Map<Label, SchemaConcept> getCachedTypes() {
-        return ImmutableMap.copyOf(cachedTypes.asMap());
-    }
+//    public Map<Label, SchemaConcept> getCachedTypes() {
+//        return ImmutableMap.copyOf(cachedTypes.asMap());
+//    }
 
     public boolean isEmpty(){
-        return cachedLabels.isEmpty() && (cachedTypes.size()==0);
+        return cachedLabels.isEmpty();
+        //&& (cachedTypes.size()==0);
     }
 }

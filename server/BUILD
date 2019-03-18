@@ -194,7 +194,7 @@ deploy_maven(
 )
 
 assemble_apt(
-    name = "assemble-apt",
+    name = "assemble-linux-apt",
     package_name = "grakn-core-server",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (server)",
@@ -228,12 +228,12 @@ assemble_apt(
 
 deploy_apt(
     name = "deploy-apt",
-    target = ":assemble-apt",
+    target = ":assemble-linux-apt",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 
 assemble_rpm(
-    name = "assemble-rpm",
+    name = "assemble-linux-rpm",
     package_name = "grakn-core-server",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
@@ -263,6 +263,6 @@ assemble_rpm(
 
 deploy_rpm(
     name = "deploy-rpm",
-    target = ":assemble-rpm",
+    target = ":assemble-linux-rpm",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )

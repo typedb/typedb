@@ -1,26 +1,26 @@
 @echo off
-REM 
+REM
 REM GRAKN.AI - THE KNOWLEDGE GRAPH
 REM Copyright (C) 2018 Grakn Labs Ltd
-REM 
+REM
 REM This program is free software: you can redistribute it and/or modify
 REM it under the terms of the GNU Affero General Public License as
 REM published by the Free Software Foundation, either version 3 of the
 REM License, or (at your option) any later version.
-REM 
+REM
 REM This program is distributed in the hope that it will be useful,
 REM but WITHOUT ANY WARRANTY; without even the implied warranty of
 REM MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 REM GNU Affero General Public License for more details.
-REM 
+REM
 REM You should have received a copy of the GNU Affero General Public License
 REM along with this program.  If not, see <https://www.gnu.org/licenses/>.
-REM 
+REM
 
 SET "GRAKN_HOME=%cd%"
 
 
-SET GRAKN_CONFIG="conf\grakn.properties"
+SET "GRAKN_CONFIG=conf\grakn.properties"
 
 where java >NUL 2>NUL
 if %ERRORLEVEL% GEQ 1 (
@@ -52,9 +52,10 @@ goto exiterror
 
 :startconsole
 
-if exist .\services\lib\core.console-*.jar (
-  set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\client;%GRAKN_HOME%\services\lib\*"
-  java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.console.GraknConsole %*
+set "G_CP=%GRAKN_HOME%\console\services\lib\*;%GRAKN_HOME%\conf\"
+if exist .\console\services\lib\libconsole.jar (
+  java -cp %G_CP% -Dgrakn.dir=%GRAKN_HOME% -Dgrakn.conf=%GRAKN_HOME%\%GRAKN_CONFIG% -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.console.GraknConsole %*
+  REM throw exit code if the java command failed
   goto exit
 ) else (
   echo Grakn Core Console is not included in this Grakn distribution^.
@@ -64,14 +65,15 @@ if exist .\services\lib\core.console-*.jar (
 
 :startserver
 
-if exist .\services\lib\core.server-*.jar (
-   set "G_CP=%GRAKN_HOME%\conf\;%GRAKN_HOME%\services\grakn\server;%GRAKN_HOME%\services\lib\*"
-   java -cp "%G_CP%" -Dgrakn.dir="%GRAKN_HOME%" -Dgrakn.conf="%GRAKN_HOME%/%GRAKN_CONFIG%" -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.daemon.GraknDaemon %*
-   goto exit
+set "G_CP=%GRAKN_HOME%\server\services\lib\*;%GRAKN_HOME%\conf\"
+if exist .\server\services\lib\libserver.jar (
+  java -cp %G_CP% -Dgrakn.dir=%GRAKN_HOME% -Dgrakn.conf=%GRAKN_HOME%\%GRAKN_CONFIG% -Dserver.javaopts="%SERVER_JAVAOPTS%" grakn.core.daemon.GraknDaemon %*
+  REM throw exit code if the java command failed
+  goto exit
 ) else (
-   echo Grakn Core Server is not included in this Grakn distribution^.
-   echo You may want to install Grakn Core Server or Grakn Core ^(all^)^.
-   goto exiterror
+  echo Grakn Core Server is not included in this Grakn distribution^.
+  echo You may want to install Grakn Core Server or Grakn Core ^(all^)^.
+  goto exiterror
 )
 
 :exit

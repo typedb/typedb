@@ -18,6 +18,7 @@
 
 package grakn.core.server.session.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.concept.Concept;
@@ -146,13 +147,6 @@ public class TransactionCache {
      */
     public Map<ConceptId, Long> getShardingCount() {
         return shardingCount;
-    }
-
-    /**
-     * @return All the types currently cached in the transaction. Used for
-     */
-    Map<Label, SchemaConcept> getSchemaConceptCache() {
-        return schemaConceptCache;
     }
 
     /**
@@ -343,6 +337,18 @@ public class TransactionCache {
         conceptCache.clear();
         schemaConceptCache.clear();
         labelCache.clear();
+    }
+
+
+
+    @VisibleForTesting
+    Map<ConceptId, Concept> getConceptCache() {
+        return conceptCache;
+    }
+
+    @VisibleForTesting
+    Map<Label, SchemaConcept> getSchemaConceptCache() {
+        return schemaConceptCache;
     }
 
 }
