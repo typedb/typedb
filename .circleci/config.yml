@@ -19,7 +19,7 @@
 
 version: 2.1
 commands:
-  install-bazel:
+  install-bazel-linux:
     steps:
       - run:
           name: Install bazel and RBE credential
@@ -62,7 +62,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - install-rpm
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
@@ -73,7 +73,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
@@ -82,7 +82,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - install-rpm
       - run-bazel-rbe:
           command: bazel test //console/... --test_output=errors
@@ -92,7 +92,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - install-rpm
       - run-bazel-rbe:
           command: bazel test //server/... --test_output=errors
@@ -102,7 +102,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run-bazel-rbe:
           command: bazel test //test-integration/server/... --test_output=errors
       - run-bazel-rbe:
@@ -115,7 +115,7 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - install-bazel
+    - install-bazel-linux
     - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
     - run-bazel-rbe:
         command: bazel test //test-integration/graql/reasoner/... --test_output=errors
@@ -125,7 +125,7 @@ jobs:
     working_directory: ~/grakn
     steps:
     - checkout
-    - install-bazel
+    - install-bazel-linux
     - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
     - run-bazel-rbe:
         command: bazel test //test-integration/graql/analytics/... --test_output=errors
@@ -135,7 +135,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run-bazel-rbe:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
@@ -145,7 +145,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel-mac
+      - install-bazel-linux-mac
       - run:
           command: |
             bazel build //:assemble-mac-zip
@@ -169,7 +169,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run:
           command: |
             bazel build //:assemble-linux-targz
@@ -183,7 +183,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run:
           command: |
             echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
@@ -213,7 +213,7 @@ jobs:
       - checkout
       - attach_workspace:
           at: ~/circleci-workspace
-      - install-bazel
+      - install-bazel-linux
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
@@ -234,7 +234,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run: sudo apt install rpm
       - run:
           command: |
@@ -261,14 +261,14 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run: .circleci/test/assembly/docker.py
 
   sync-dependencies:
     machine: true
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run: |
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
@@ -280,7 +280,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run: bazel run @graknlabs_build_tools//ci:release-approval
 
   release-github-draft:
@@ -288,7 +288,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - install-bazel
+      - install-bazel-linux
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
   release-cleanup:
