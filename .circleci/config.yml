@@ -321,39 +321,39 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
 #      - test-assembly-windows-zip:
 #          filters:
 #            branches:
-#              only: test-deployment # TODO: change back to master before merging the PR
+#              only: master
       - test-assembly-linux-targz:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
       - test-assembly-linux-apt:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
       - test-deployment-apt:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
           requires:
             - test-assembly-linux-apt
       - test-assembly-linux-rpm:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
       - test-deployment-rpm:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
           requires:
             - test-assembly-linux-rpm
       - test-assembly-docker:
           filters:
             branches:
-              only: test-deployment # TODO: change back to master before merging the PR
+              only: master
       - sync-dependencies:
           filters:
             branches:
