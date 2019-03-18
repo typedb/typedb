@@ -112,7 +112,7 @@ instance_name = 'circleci-{}-{}'.format(
 
 lprint('Generating bootup script for instance [{}]'.format(instance_name))
 with tempfile.NamedTemporaryFile(suffix='.ps1') as powershell_script:
-    with open('.circleci/test/assembly/windows-zip/setup-template.ps1') as template:
+    with open('test/assembly/windows/setup-template.ps1') as template:
         powershell_script.write(template.read().replace('INSTANCE_PASSWORD', instance_password).encode())
         powershell_script.flush()
 
