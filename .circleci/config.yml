@@ -159,7 +159,7 @@ jobs:
 #    steps:
 #      - checkout
 #      - run:
-#          command: .circleci/test/assembly/windows-zip/windows-zip.py
+#          command: .circleci/test/assembly/windows/windows-zip.py
 #          no_output_timeout: 20m
 
   test-assembly-linux-targz:
@@ -212,9 +212,7 @@ jobs:
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
       - run: mv ~/circleci-workspace/VERSION VERSION
-      - run:
-          name: Showing the version of the package which will be deployed
-          command: cat VERSION
+      - run: cat VERSION
       - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
