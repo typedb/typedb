@@ -1,9 +1,9 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "test-deployment",
-    test_class = "TestDeployment",
-    srcs = ["TestDeployment.java"],
+    name = "grakn-application-test",
+    test_class = "GraknApplicationTest",
+    srcs = ["GraknApplicationTest.java"],
     deps = [
         "//common:common",
         "@graknlabs_client_java//:client-java",
@@ -16,6 +16,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":test-deployment"
+        ":grakn-application-test"
     ],
 )

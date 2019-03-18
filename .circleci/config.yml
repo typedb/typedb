@@ -149,7 +149,7 @@ jobs:
       - run: bazel build //:assemble-mac-zip
       - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
       - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
-      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
 # TODO: add after fixing the python issue regarding missing bdist_wheel
@@ -159,7 +159,7 @@ jobs:
 #    steps:
 #      - checkout
 #      - run:
-#          command: .circleci/test/assembly/windows/windows-zip.py
+#          command: test/assembly/windows/windows-zip.py
 #          no_output_timeout: 20m
 
   test-assembly-linux-targz:
@@ -171,7 +171,7 @@ jobs:
       - run: bazel build //:assemble-linux-targz
       - run: tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
       - run: nohup bazel-genfiles/grakn-core-all-linux/grakn server start
-      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
 
   test-assembly-apt:
@@ -190,7 +190,7 @@ jobs:
       - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
-      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
@@ -216,7 +216,7 @@ jobs:
       - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
-      - run: bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
 
   test-assembly-rpm:
@@ -241,7 +241,7 @@ jobs:
     working_directory: ~/grakn
     steps:
       - checkout
-      - run: .circleci/test/deployment/rpm.py
+      - run: test/deployment/rpm.py
 
   test-assembly-docker:
     machine: true
@@ -249,7 +249,7 @@ jobs:
     steps:
       - checkout
       - install-bazel-linux
-      - run: .circleci/test/assembly/docker.py
+      - run: test/assembly/docker.py
 
   sync-dependencies:
     machine: true

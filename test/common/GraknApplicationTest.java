@@ -9,7 +9,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 
-public class TestDeployment {
+public class GraknApplicationTest {
     private GraknClient graknClient;
 
     @Before

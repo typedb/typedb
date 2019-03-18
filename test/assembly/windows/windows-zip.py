@@ -172,7 +172,7 @@ try:
         'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
         'grakn server start',
         'cd /Users/circleci/repo',
-        'bazel test //test-deployment:test-deployment --test_output=streamed --spawn_strategy=standalone --cache_test_results=no',
+        'bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no',
         'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
         'grakn server stop'
     ]), instance_ip, 'circleci', instance_password)

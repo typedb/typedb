@@ -24,7 +24,7 @@ while sp.call(['curl', '--output', '/dev/null', '--silent', '--head', '--fail', 
 print()
 
 print('Running the test...')
-sp.check_call(['bazel', 'test', '//test-deployment:test-deployment', '--test_output=streamed',
+sp.check_call(['bazel', 'test', '//test/common:grakn-application-test', '--test_output=streamed',
                           '--spawn_strategy=standalone', '--cache_test_results=no'])
 
 print('Stopping the container...')
