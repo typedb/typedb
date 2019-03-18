@@ -182,6 +182,7 @@ jobs:
       - install-bazel-linux
       - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
       - run: echo VERSION=$(cat VERSION)
+      - run: cat VERSION
       - run: bazel build //bin:assemble-apt
       - run: bazel build //server:assemble-apt
       - run: bazel build //console:assemble-apt
@@ -228,9 +229,7 @@ jobs:
       - run: sudo apt install rpm
       - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
       - run: sed -i -e 's/-/_/g' VERSION
-      - run:
-          name: Showing the version of the package which will be deployed
-          command: cat VERSION
+      - run: cat VERSION
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
