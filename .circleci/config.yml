@@ -174,7 +174,7 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
 
-  test-assembly-apt:
+  test-assembly-linux-apt:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -183,9 +183,9 @@ jobs:
       - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
       - run: echo VERSION=$(cat VERSION)
       - run: cat VERSION
-      - run: bazel build //bin:assemble-apt
-      - run: bazel build //server:assemble-apt
-      - run: bazel build //console:assemble-apt
+      - run: bazel build //bin:assemble-linux-apt
+      - run: bazel build //server:assemble-linux-apt
+      - run: bazel build //console:assemble-linux-apt
       - run: sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
       - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
       - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
@@ -220,7 +220,7 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
 
-  test-assembly-rpm:
+  test-assembly-linux-rpm:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -330,7 +330,7 @@ workflows:
           filters:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
-      - test-assembly-apt:
+      - test-assembly-linux-apt:
           filters:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
@@ -339,8 +339,8 @@ workflows:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
           requires:
-            - test-assembly-apt
-      - test-assembly-rpm:
+            - test-assembly-linux-apt
+      - test-assembly-linux-rpm:
           filters:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
@@ -349,7 +349,7 @@ workflows:
             branches:
               only: test-deployment # TODO: change back to master before merging the PR
           requires:
-            - test-assembly-rpm
+            - test-assembly-linux-rpm
       - test-assembly-docker:
           filters:
             branches:
