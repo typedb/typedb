@@ -241,9 +241,6 @@ jobs:
             echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
             sed -i -e 's/-/_/g' VERSION
             cat VERSION
-      - run: bazel build //bin:assemble-rpm
-      - run: bazel build //server:assemble-rpm
-      - run: bazel build //console:assemble-rpm
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
