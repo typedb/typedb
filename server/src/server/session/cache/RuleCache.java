@@ -18,20 +18,26 @@
 
 package grakn.core.server.session.cache;
 
+import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing is expensive when large number of rules present).
@@ -42,6 +48,14 @@ public class RuleCache {
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
     private final TransactionOLTP tx;
+
+    private Set<Type> absentTypes = new HashSet<>();
+    private Set<Type> checkedTypes = new HashSet<>();
+    private Set<Rule> fruitlessRules = new HashSet<>();
+    private Set<Rule> checkedRules = new HashSet<>();
+
+    private final AtomicEquivalence atomEquiv = AtomicEquivalence.AlphaEquivalence;
+    private Map<Equivalence.Wrapper<Atom>, Set<InferenceRule>> applicableRules = new HashMap<>();
 
     public RuleCache(TransactionOLTP tx) {
         this.tx = tx;
@@ -76,9 +90,9 @@ public class RuleCache {
      * @return relevant part (direct only or subs) of the type hierarchy of a type
      */
     private Set<Type> getTypes(Type type, boolean direct) {
-        Set<Type> types = direct ? Sets.newHashSet(type) : type.subs().collect(Collectors.toSet());
+        Set<Type> types = direct ? Sets.newHashSet(type) : type.subs().collect(toSet());
         return type.isImplicit() ?
-                types.stream().flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label())))).collect(Collectors.toSet()) :
+                types.stream().flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label())))).collect(toSet()) :
                 types;
     }
 
@@ -88,6 +102,23 @@ public class RuleCache {
      */
     public Stream<Rule> getRulesWithType(Type type) {
         return getRulesWithType(type, false);
+    }
+
+    public Set<Type> absentTypes(Set<Type> types){ return Sets.intersection(absentTypes, types);}
+
+    public Set<InferenceRule> getApplicableRules(Atom atom) {
+        Equivalence.Wrapper<Atom> wrappedAtom = atomEquiv.wrap(atom);
+        Set<InferenceRule> match = applicableRules.get(wrappedAtom);
+        if (match != null) return match;
+
+        Set<Rule> possibleRules = atom.getPotentialRules().collect(toSet());
+        Set<InferenceRule> applicableRules = possibleRules.stream()
+                .map(rule -> tx.ruleCache().getRule(rule, () -> new InferenceRule(rule, tx)))
+                .filter(atom::isRuleApplicable)
+                .map(r -> r.rewrite(atom))
+                .collect(toSet());
+        this.applicableRules.put(wrappedAtom, applicableRules);
+        return applicableRules;
     }
 
     /**
@@ -103,7 +134,34 @@ public class RuleCache {
 
         return getTypes(type, direct).stream()
                 .flatMap(SchemaConcept::thenRules)
+                .filter(this::checkRule)
                 .peek(rule -> ruleMap.put(type, rule));
+    }
+
+    /**
+     *
+     * @param rule to be checked for matchability
+     * @return true if rule is matchable (can provide answers)
+     */
+    private boolean checkRule(Rule rule){
+        if (fruitlessRules.contains(rule)) return false;
+        if (checkedRules.contains(rule)) return true;
+        checkedRules.add(rule);
+        Set<Type> types = rule.whenTypes()
+                .filter(t -> !checkedTypes.contains(t))
+                .collect(toSet());
+        Set<Type> absentTs = types.stream()
+                .filter(t -> {
+                    checkedTypes.add(t);
+                    return !t.instances().findFirst().isPresent();
+                })
+                .filter(t -> !t.thenRules().anyMatch(this::checkRule))
+                .collect(toSet());
+        absentTs.forEach(absentT -> {
+            absentT.whenRules().forEach(r -> fruitlessRules.add(r));
+            absentTypes.add(absentT);
+        });
+        return absentTs.isEmpty();
     }
 
     /**
@@ -127,5 +185,10 @@ public class RuleCache {
     public void clear() {
         ruleMap.clear();
         ruleConversionMap.clear();
+        absentTypes.clear();
+        checkedTypes.clear();
+        checkedRules.clear();
+        fruitlessRules.clear();
+        applicableRules.clear();
     }
 }

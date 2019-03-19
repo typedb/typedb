@@ -64,8 +64,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
-    private Set<InferenceRule> applicableRules = null;
-
     public RelationAtom toRelationAtom() {
         throw GraqlQueryException.illegalAtomConversion(this, RelationAtom.class);
     }
@@ -203,7 +201,12 @@ public abstract class Atom extends AtomicBase {
      */
     public Set<Variable> getRoleExpansionVariables() { return new HashSet<>();}
 
-    private boolean isRuleApplicable(InferenceRule child) {
+    /**
+     *
+     * @param child
+     * @return
+     */
+    public boolean isRuleApplicable(InferenceRule child) {
         return (getIdPredicate(getVarName()) == null
                 || child.redefinesType()
                 || child.appendsRolePlayers())
@@ -228,15 +231,7 @@ public abstract class Atom extends AtomicBase {
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
     public Stream<InferenceRule> getApplicableRules() {
-        if (applicableRules == null) {
-            applicableRules = new HashSet<>();
-            getPotentialRules()
-                    .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
-                    .filter(this::isRuleApplicable)
-                    .map(r -> r.rewrite(this))
-                    .forEach(applicableRules::add);
-        }
-        return applicableRules.stream();
+        return tx().ruleCache().getApplicableRules(this).stream();
     }
 
     /**
