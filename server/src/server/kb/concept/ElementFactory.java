@@ -145,16 +145,15 @@ public final class ElementFactory {
     }
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
-        Schema.BaseType type;
-
-        try {
-            type = getBaseType(vertexElement);
-        } catch (IllegalStateException e) {
-            throw TemporaryWriteException.indexOverlap(vertexElement.element(), e);
-        }
 
         ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
         if (!tx.cache().isConceptCached(conceptId)) {
+            Schema.BaseType type;
+            try {
+                type = getBaseType(vertexElement);
+            } catch (IllegalStateException e) {
+                throw TemporaryWriteException.indexOverlap(vertexElement.element(), e);
+            }
             Concept concept;
             switch (type) {
                 case RELATION:
