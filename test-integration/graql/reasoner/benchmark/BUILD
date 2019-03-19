@@ -68,6 +68,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
+        ":rule-scaling-it",
         ":benchmark-big-it",
         ":benchmark-small-it",
     ],

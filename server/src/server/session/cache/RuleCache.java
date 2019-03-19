@@ -109,6 +109,7 @@ public class RuleCache {
 
     public Set<Type> absentTypes(Set<Type> types){ return Sets.intersection(absentTypes, types);}
 
+    /*
     public Set<InferenceRule> getApplicableRules(Atom atom) {
         Equivalence.Wrapper<ReasonerAtomicQuery> wrappedAtom = atomEquiv.wrap(ReasonerQueries.atomic(atom));
         Set<InferenceRule> match = applicableRules.get(wrappedAtom);
@@ -123,6 +124,7 @@ public class RuleCache {
         this.applicableRules.put(wrappedAtom, applicableRules);
         return applicableRules;
     }
+    */
 
     /**
      * @param type   for which rules containing it in the head are sought
