@@ -59,7 +59,7 @@ public class KeyspaceManager {
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
         this.graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph);
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, null);
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 

@@ -90,6 +90,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -126,6 +127,7 @@ public class TransactionOLTP implements Transaction {
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
+    private ReadWriteLock readWriteLock;
 
     public static class Builder implements Transaction.Builder {
 
@@ -145,7 +147,8 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ReadWriteLock readWriteLock) {
+        this.readWriteLock = readWriteLock;
 
         createdInCurrentThread.set(true);
 
@@ -175,9 +178,11 @@ public class TransactionOLTP implements Transaction {
         executeLockingMethod(() -> {
             try {
                 LOG.trace("Graph is valid. Committing graph . . . ");
-                synchronized (janusGraph) {
-                    janusTransaction.commit();
-                }
+
+                readWriteLock.writeLock().lock();
+                janusTransaction.commit();
+                readWriteLock.writeLock().unlock();
+
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
@@ -397,10 +402,9 @@ public class TransactionOLTP implements Transaction {
         Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
 
         if (vertices.hasNext()) {
-            //TODO change this to be more elegant and only block if a commit is occurring
-            synchronized (janusGraph) {
-            }
+            readWriteLock.readLock().lock();
             Vertex vertex = vertices.next();
+            readWriteLock.readLock().unlock();
             return Optional.of(factory().buildConcept(vertex));
         } else {
             return Optional.empty();
