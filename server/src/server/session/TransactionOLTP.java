@@ -19,7 +19,6 @@
 package grakn.core.server.session;
 
 import brave.ScopedSpan;
-import brave.Span;
 import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
@@ -91,6 +90,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -98,9 +98,9 @@ import java.util.stream.Stream;
 
 /**
  * A TransactionOLTP using JanusGraph as a vendor backend.
- *
+ * <p>
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
- *
+ * <p>
  * With this vendor some issues to be aware of:
  * 2. Clearing the graph explicitly closes the connection as well.
  */
@@ -110,6 +110,8 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
+    private final ReadWriteLock graphLock;
+
 
     // Caches
     private final RuleCache ruleCache;
@@ -135,6 +137,7 @@ public class TransactionOLTP implements Transaction {
         Builder(SessionImpl session) {
             this.session = session;
         }
+
         @Override
         public TransactionOLTP read() {
             return session.transaction(Transaction.Type.READ);
@@ -146,7 +149,8 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ReadWriteLock graphLock) {
+        this.graphLock = graphLock;
 
         createdInCurrentThread.set(true);
 
@@ -175,18 +179,35 @@ public class TransactionOLTP implements Transaction {
     private void commitTransactionInternal() {
         executeLockingMethod(() -> {
             try {
-                LOG.trace("Graph is valid. Committing graph . . . ");
+                LOG.trace("Graph is valid. Committing graph...");
+                // Serialise all the commits to the same Janus graph
+                // (the lock is associated to a specific graph)
+                graphLock.writeLock().lock();
                 janusTransaction.commit();
+
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
+            } finally {
+                graphLock.writeLock().unlock();
             }
             return null;
         });
     }
 
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId... conceptIds) {
-        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptIds));
+    public VertexElement addVertexElement(Schema.BaseType baseType) {
+        return executeLockingMethod(() -> factory().addVertexElement(baseType));
+    }
+
+    /**
+     * This is only used when reifying a Relation
+     *
+     * @param baseType  Concept BaseType which will become the VertexLabel
+     * @param conceptId ConceptId to be set on the vertex
+     * @return just created Vertex
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
+        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptId));
     }
 
     /**
@@ -281,7 +302,9 @@ public class TransactionOLTP implements Transaction {
         return executor(infer).compute(query);
     }
 
-    public RuleCache ruleCache() { return ruleCache;}
+    public RuleCache ruleCache() {
+        return ruleCache;
+    }
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -381,15 +404,24 @@ public class TransactionOLTP implements Transaction {
      * @return A concept with the matching key and value
      */
     //----------------------------------------------General Functionality-----------------------------------------------
-    public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
+    public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
+        T concept = null;
 
         if (vertices.hasNext()) {
-            Vertex vertex = vertices.next();
-            return Optional.of(factory().buildConcept(vertex));
-        } else {
-            return Optional.empty();
+            Vertex vertex;
+            // Get read lock before accessing graph so that if a commit is occurring, we wait
+            // Without lock, when inserting a lot of attributes this traversal might return ghost vertices
+            graphLock.readLock().lock();
+            try {
+                vertex = vertices.next();
+            } finally {
+                graphLock.readLock().unlock();
+            }
+            concept = factory().buildConcept(vertex);
         }
+
+        return concept;
     }
 
     @Override
@@ -454,7 +486,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public EntityType putEntityType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
-                                v -> factory().buildEntityType(v, getMetaEntityType()));
+                v -> factory().buildEntityType(v, getMetaEntityType()));
     }
 
     /**
@@ -529,12 +561,12 @@ public class TransactionOLTP implements Transaction {
     @Override
     public RelationType putRelationType(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
-                                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     public RelationType putRelationTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, true,
-                                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     /**
@@ -546,16 +578,15 @@ public class TransactionOLTP implements Transaction {
     @Override
     public Role putRole(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, false,
-                                v -> factory().buildRole(v, getMetaRole()));
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     public Role putRoleTypeImplicit(Label label) {
         return putSchemaConcept(label, Schema.BaseType.ROLE, true,
-                                v -> factory().buildRole(v, getMetaRole()));
+                v -> factory().buildRole(v, getMetaRole()));
     }
 
     /**
-     *
      * @param label    A unique label for the AttributeType
      * @param dataType The data type of the AttributeType.
      *                 Supported types include: DataType.STRING, DataType.LONG, DataType.DOUBLE, and DataType.BOOLEAN
@@ -571,7 +602,7 @@ public class TransactionOLTP implements Transaction {
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                                                          v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
+                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -594,7 +625,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
-                                     v -> factory().buildRule(v, getMetaRule(), when, then));
+                v -> factory().buildRule(v, getMetaRule(), when, then));
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
         if (rule.then() != null) {
@@ -612,7 +643,7 @@ public class TransactionOLTP implements Transaction {
     //------------------------------------ Lookup
 
     /**
-     * @param id A unique identifier for the Concept in the graph.
+     * @param id  A unique identifier for the Concept in the graph.
      * @param <T>
      * @return The Concept with the provided id or null if no such Concept exists.
      * @throws TransactionException if the graph is closed
@@ -628,7 +659,7 @@ public class TransactionOLTP implements Transaction {
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
-                return this.<T>getConcept(Schema.VertexProperty.ID, id.getValue()).orElse(null);
+                return this.getConcept(Schema.VertexProperty.ID, id.getValue());
             }
         });
     }
@@ -657,7 +688,7 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
         if (!id.isValid()) return null;
-        return this.<T>getConcept(Schema.VertexProperty.LABEL_ID, id.getValue()).orElse(null);
+        return this.getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
 
     /**
@@ -769,6 +800,7 @@ public class TransactionOLTP implements Transaction {
     public void close() {
         close(ErrorMessage.TX_CLOSED.getMessage(keyspace()));
     }
+
     /**
      * Close the transaction without committing
      */
@@ -875,7 +907,9 @@ public class TransactionOLTP implements Transaction {
 
             Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
 
-            if (span != null)  { span.finish(); }
+            if (span != null) {
+                span.finish();
+            }
 
             return logs;
         }

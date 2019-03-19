@@ -30,6 +30,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Grakn Server's internal {@link SessionImpl} Factory
@@ -63,6 +65,7 @@ public class SessionFactory {
         JanusGraph graph;
         KeyspaceCache cache;
         KeyspaceCacheContainer cacheContainer;
+        ReadWriteLock graphLock;
 
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
@@ -70,17 +73,19 @@ public class SessionFactory {
         try {
             // If keyspace reference already in cache, retrieve open graph and keyspace cache
             if (keyspaceCacheMap.containsKey(keyspace)) {
-                graph = keyspaceCacheMap.get(keyspace).graph();
-                cache = keyspaceCacheMap.get(keyspace).cache();
                 cacheContainer = keyspaceCacheMap.get(keyspace);
+                graph = cacheContainer.graph();
+                cache = cacheContainer.cache();
+                graphLock = cacheContainer.graphLock();
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 cache = new KeyspaceCache(config);
-                cacheContainer = new KeyspaceCacheContainer(cache, graph);
+                graphLock = new ReentrantReadWriteLock();
+                cacheContainer = new KeyspaceCacheContainer(cache, graph, graphLock);
                 keyspaceCacheMap.put(keyspace, cacheContainer);
             }
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph);
+            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
@@ -152,11 +157,15 @@ public class SessionFactory {
         private JanusGraph graph;
         // Keep track of sessions so that if a user deletes a keyspace we make sure to invalidate all associated sessions
         private List<SessionImpl> sessions;
+        // All the sessions connecting to the same keyspace will lock on the graphLock when committing
+        // (we are forcing serialised commits to avoid clashes with JanusGraph indices)
+        private ReadWriteLock graphLock;
 
-        KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph) {
+        KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
-            sessions = new ArrayList<>();
+            this.sessions = new ArrayList<>();
+            this.graphLock = graphLock;
         }
 
         public KeyspaceCache cache() {
@@ -178,6 +187,8 @@ public class SessionFactory {
         void invalidateSessions() {
             sessions.forEach(SessionImpl::invalidate);
         }
+
+        ReadWriteLock graphLock() { return graphLock; }
 
         public JanusGraph graph() {
             return graph;

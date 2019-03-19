@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 /**
@@ -59,7 +60,7 @@ public class KeyspaceManager {
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
         KeyspaceCache keyspaceCache = new KeyspaceCache(config);
         this.graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph);
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, new ReentrantReadWriteLock());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 

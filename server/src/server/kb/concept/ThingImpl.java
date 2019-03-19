@@ -68,8 +68,11 @@ import static java.util.stream.Collectors.toSet;
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
     private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
-        Optional<Type> type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
-        return type.orElseThrow(() -> TransactionException.missingType(id())).label();
+        Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
+        if (type == null){
+            throw TransactionException.missingType(id());
+        }
+        return type.label();
     });
 
     private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
