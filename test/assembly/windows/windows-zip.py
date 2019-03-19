@@ -112,7 +112,7 @@ instance_name = 'circleci-{}-{}'.format(
 
 lprint('Generating bootup script for instance [{}]'.format(instance_name))
 with tempfile.NamedTemporaryFile(suffix='.ps1') as powershell_script:
-    with open('.circleci/test/assembly/windows-zip/setup-template.ps1') as template:
+    with open('test/assembly/windows/setup-template.ps1') as template:
         powershell_script.write(template.read().replace('INSTANCE_PASSWORD', instance_password).encode())
         powershell_script.flush()
 
@@ -145,6 +145,12 @@ try:
         'SETX PATH "%PATH%;C:\\tools\\msys64\\usr\\bin"'
     ]), instance_ip, 'circleci', instance_password)
 
+    lprint('[Remote]: installing python dependencies')
+    ssh(' && '.join([
+        'set PYTHONIOENCODING=UTF-8',
+        'pip install wheel'
+    ]), instance_ip, 'circleci', instance_password)
+
     lprint('[Remote] Cloning grakn')
     ssh(' && '.join([
         'refreshenv',
@@ -162,18 +168,19 @@ try:
 
     lprint('[Remote]: unpacking Grakn')
     ssh(' && '.join([
-        'cd repo',
-        'unzip bazel-genfiles/grakn-core-all-windows.zip -d bazel-genfiles/'
+        'cd repo/bazel-genfiles',
+        'mkdir "a directory with whitespace"',
+        'unzip grakn-core-all-windows.zip -d "a directory with whitespace"',
     ]), instance_ip, 'circleci', instance_password)
 
     lprint('[Remote]: starting Grakn')
     ssh(' && '.join([
         'refreshenv',
-        'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
+        'cd /Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/',
         'grakn server start',
         'cd /Users/circleci/repo',
         'bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no',
-        'cd /Users/circleci/repo/bazel-genfiles/grakn-core-all-windows/',
+        'cd /Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/',
         'grakn server stop'
     ]), instance_ip, 'circleci', instance_password)
 

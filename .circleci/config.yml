@@ -16,7 +16,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-
 version: 2.1
 commands:
   install-bazel-linux:
@@ -44,7 +43,6 @@ commands:
 
             # Install RBE credential
             bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-
   install-rpm:
     steps:
       - run: sudo apt update && sudo apt install rpm -y
@@ -152,15 +150,14 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
 
-# TODO: add after fixing the python issue regarding missing bdist_wheel
-#  test-assembly-windows-zip:
-#    machine: true
-#    working_directory: ~/grakn
-#    steps:
-#      - checkout
-#      - run:
-#          command: test/assembly/windows/windows-zip.py
-#          no_output_timeout: 20m
+  test-assembly-windows-zip:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - checkout
+      - run:
+          command: test/assembly/windows/windows-zip.py
+          no_output_timeout: 20m
 
   test-assembly-linux-targz:
     machine: true
@@ -196,12 +193,13 @@ jobs:
       - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
           paths:
-            - VERSION
+            - VERSION.apt
 
-  test-deployment-apt:
+  test-deployment-linux-apt:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -212,7 +210,7 @@ jobs:
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: mv ~/circleci-workspace/VERSION VERSION
+      - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
       - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
@@ -233,13 +231,21 @@ jobs:
       - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
       - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: cp VERSION VERSION.rpm
+      - persist_to_workspace:
+          root: ~/grakn
+          paths:
+            - VERSION.rpm
 
 
-  test-deployment-rpm:
+  test-deployment-linux-rpm:
     machine: true
     working_directory: ~/grakn
     steps:
       - checkout
+      - attach_workspace:
+          at: ~/circleci-workspace
+      - run: mv ~/circleci-workspace/VERSION.rpm VERSION
       - run: test/deployment/rpm.py
 
   test-assembly-docker:
@@ -322,10 +328,10 @@ workflows:
           filters:
             branches:
               only: master
-#      - test-assembly-windows-zip:
-#          filters:
-#            branches:
-#              only: master
+      - test-assembly-windows-zip:
+          filters:
+            branches:
+              only: master
       - test-assembly-linux-targz:
           filters:
             branches:
@@ -334,7 +340,8 @@ workflows:
           filters:
             branches:
               only: master
-      - test-deployment-apt:
+
+      - test-deployment-linux-apt:
           filters:
             branches:
               only: master
@@ -344,7 +351,7 @@ workflows:
           filters:
             branches:
               only: master
-      - test-deployment-rpm:
+      - test-deployment-linux-rpm:
           filters:
             branches:
               only: master
@@ -367,6 +374,12 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-deployment-linux-apt
+            - test-deployment-linux-rpm
+            - test-assembly-docker
       - release-approval:
           filters:
             branches:
