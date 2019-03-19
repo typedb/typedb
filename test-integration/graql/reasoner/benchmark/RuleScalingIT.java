@@ -153,7 +153,7 @@ public class RuleScalingIT {
                     "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;" +
                     "$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation;" +
                     "$r has inferredAttribute $value;" +
-                    "$r has anotherInferredAttribute $anotherValue;" +
+                    "$r has anothe rInferredAttribute $anotherValue;" +
                     "(someRole: $anotherLink, anotherRole: $index) isa indexingRelation;" +
                     "get;";
             List<ConceptMap> answers = executeQuery(query, tx);

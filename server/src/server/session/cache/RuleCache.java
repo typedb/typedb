@@ -26,6 +26,9 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
@@ -54,8 +57,8 @@ public class RuleCache {
     private Set<Rule> fruitlessRules = new HashSet<>();
     private Set<Rule> checkedRules = new HashSet<>();
 
-    private final AtomicEquivalence atomEquiv = AtomicEquivalence.AlphaEquivalence;
-    private Map<Equivalence.Wrapper<Atom>, Set<InferenceRule>> applicableRules = new HashMap<>();
+    private final ReasonerQueryEquivalence atomEquiv = ReasonerQueryEquivalence.AlphaEquivalence;
+    private Map<Equivalence.Wrapper<ReasonerAtomicQuery>, Set<InferenceRule>> applicableRules = new HashMap<>();
 
     public RuleCache(TransactionOLTP tx) {
         this.tx = tx;
@@ -107,7 +110,7 @@ public class RuleCache {
     public Set<Type> absentTypes(Set<Type> types){ return Sets.intersection(absentTypes, types);}
 
     public Set<InferenceRule> getApplicableRules(Atom atom) {
-        Equivalence.Wrapper<Atom> wrappedAtom = atomEquiv.wrap(atom);
+        Equivalence.Wrapper<ReasonerAtomicQuery> wrappedAtom = atomEquiv.wrap(ReasonerQueries.atomic(atom));
         Set<InferenceRule> match = applicableRules.get(wrappedAtom);
         if (match != null) return match;
 
