@@ -21,14 +21,14 @@ commands:
   install-bazel-linux-rbe:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
-      - run: sh ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
+      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
-      - run: sh ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
+      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
 
   install-bazel-mac:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
-      - run: sh ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
+      - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
 
   install-rpm:
     steps:
@@ -39,7 +39,7 @@ commands:
       command:
         type: string
     steps:
-      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
 
 jobs:
   build:
