@@ -327,44 +327,44 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
       - test-assembly-linux-targz:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
       - test-assembly-linux-apt:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
 
       - test-deployment-linux-apt:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
           requires:
             - test-assembly-linux-apt
       - test-assembly-linux-rpm:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
       - test-deployment-linux-rpm:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
           requires:
             - test-assembly-linux-rpm
       - test-assembly-docker:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
       - sync-dependencies:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
           requires:
             - build
             - test-common
@@ -383,7 +383,7 @@ workflows:
       - release-approval:
           filters:
             branches:
-              only: master
+              only: bazel-deploy-supply-credential-from-envvar # TODO: revert back to master before merging the PR
           requires:
             - sync-dependencies
 
