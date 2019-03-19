@@ -167,7 +167,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Override
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-        return vertex().tx().<Attribute<D>>getConcept(Schema.VertexProperty.INDEX, index).orElse(null);
+        return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**

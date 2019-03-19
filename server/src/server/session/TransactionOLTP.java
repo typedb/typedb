@@ -98,9 +98,9 @@ import java.util.stream.Stream;
 
 /**
  * A TransactionOLTP using JanusGraph as a vendor backend.
- *
+ * <p>
  * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
- *
+ * <p>
  * With this vendor some issues to be aware of:
  * 2. Clearing the graph explicitly closes the connection as well.
  */
@@ -110,6 +110,8 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
+    private final ReadWriteLock graphLock;
+
 
     // Caches
     private final RuleCache ruleCache;
@@ -127,7 +129,6 @@ public class TransactionOLTP implements Transaction {
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
-    private ReadWriteLock readWriteLock;
 
     public static class Builder implements Transaction.Builder {
 
@@ -136,6 +137,7 @@ public class TransactionOLTP implements Transaction {
         Builder(SessionImpl session) {
             this.session = session;
         }
+
         @Override
         public TransactionOLTP read() {
             return session.transaction(Transaction.Type.READ);
@@ -147,8 +149,8 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ReadWriteLock readWriteLock) {
-        this.readWriteLock = readWriteLock;
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ReadWriteLock graphLock) {
+        this.graphLock = graphLock;
 
         createdInCurrentThread.set(true);
 
@@ -177,15 +179,17 @@ public class TransactionOLTP implements Transaction {
     private void commitTransactionInternal() {
         executeLockingMethod(() -> {
             try {
-                LOG.trace("Graph is valid. Committing graph . . . ");
-
-                readWriteLock.writeLock().lock();
+                LOG.trace("Graph is valid. Committing graph...");
+                // Serialise all the commits to the same Janus graph
+                // (the lock is associated to a specific graph)
+                graphLock.writeLock().lock();
                 janusTransaction.commit();
-                readWriteLock.writeLock().unlock();
 
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
+            } finally {
+                graphLock.writeLock().unlock();
             }
             return null;
         });
@@ -298,7 +302,9 @@ public class TransactionOLTP implements Transaction {
         return executor(infer).compute(query);
     }
 
-    public RuleCache ruleCache() { return ruleCache;}
+    public RuleCache ruleCache() {
+        return ruleCache;
+    }
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -398,17 +404,24 @@ public class TransactionOLTP implements Transaction {
      * @return A concept with the matching key and value
      */
     //----------------------------------------------General Functionality-----------------------------------------------
-    public <T extends Concept> Optional<T> getConcept(Schema.VertexProperty key, Object value) {
+    public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
+        T concept = null;
 
         if (vertices.hasNext()) {
-            readWriteLock.readLock().lock();
-            Vertex vertex = vertices.next();
-            readWriteLock.readLock().unlock();
-            return Optional.of(factory().buildConcept(vertex));
-        } else {
-            return Optional.empty();
+            Vertex vertex;
+            // Get read lock before accessing graph so that if a commit is occurring, we wait
+            // Without lock, when inserting a lot of attributes this traversal might return ghost vertices
+            graphLock.readLock().lock();
+            try {
+                vertex = vertices.next();
+            } finally {
+                graphLock.readLock().unlock();
+            }
+            concept = factory().buildConcept(vertex);
         }
+
+        return concept;
     }
 
     @Override
@@ -646,7 +659,7 @@ public class TransactionOLTP implements Transaction {
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
-                return this.<T>getConcept(Schema.VertexProperty.ID, id.getValue()).orElse(null);
+                return this.getConcept(Schema.VertexProperty.ID, id.getValue());
             }
         });
     }
@@ -675,7 +688,7 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
         if (!id.isValid()) return null;
-        return this.<T>getConcept(Schema.VertexProperty.LABEL_ID, id.getValue()).orElse(null);
+        return this.getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
 
     /**
@@ -787,6 +800,7 @@ public class TransactionOLTP implements Transaction {
     public void close() {
         close(ErrorMessage.TX_CLOSED.getMessage(keyspace()));
     }
+
     /**
      * Close the transaction without committing
      */
@@ -893,7 +907,9 @@ public class TransactionOLTP implements Transaction {
 
             Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
 
-            if (span != null)  { span.finish(); }
+            if (span != null) {
+                span.finish();
+            }
 
             return logs;
         }
