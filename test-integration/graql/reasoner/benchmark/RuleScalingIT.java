@@ -40,7 +40,7 @@ public class RuleScalingIT {
 
     @Test
     public void ruleScaling() {
-        final int N = 75;
+        final int N = 60;
         final int populatedChains = 3;
         SessionImpl session = server.sessionWithNewKeyspace();
 
