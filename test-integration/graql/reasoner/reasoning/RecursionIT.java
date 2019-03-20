@@ -132,18 +132,26 @@ public class RecursionIT {
             try (TransactionOLTP tx = session.transaction().write()) {
                 String ancestorVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$X has name 'a'; $Y has name $name; get $Y;";
                 String explicitAncestorQuery = "match $Y has name $name;{$name == 'd';} or {$name == 'g';}; get $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false), tx.execute(Graql.parse(ancestorVariant).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false),
+                        tx.execute(Graql.parse(ancestorVariant).asGet()));
 
                 String noRoleAncestorQuery = "match ($X, $Y) isa Ancestor-friend;$X has name 'a'; get $Y;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false), tx.execute(Graql.parse(noRoleAncestorQuery).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorQuery).asGet(), false),
+                        tx.execute(Graql.parse(noRoleAncestorQuery).asGet()));
 
                 String ancestorFriendVariant = "match (ancestor: $X, ancestor-friend: $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
                 String explicitAncestorFriendQuery = "match $X has name $name;" +
                         "{$name == 'a';} or {$name == 'b';} or {$name == 'c';}; get $X;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false), tx.execute(Graql.parse(ancestorFriendVariant).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false),
+                        tx.execute(Graql.parse(ancestorFriendVariant).asGet()));
 
                 String noRoleAncestorFriendQuery = "match ($X, $Y) isa Ancestor-friend;$Y has name 'd'; get $X;";
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false), tx.execute(Graql.parse(noRoleAncestorFriendQuery).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitAncestorFriendQuery).asGet(), false),
+                        tx.execute(Graql.parse(noRoleAncestorFriendQuery).asGet()));
             }
         }
     }
