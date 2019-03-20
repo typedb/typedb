@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.base.Equivalence;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -28,7 +27,6 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
