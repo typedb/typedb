@@ -97,7 +97,11 @@ public class RuleCache {
         return getRulesWithType(type, false, true);
     }
 
-    public Set<Type> absentTypes(Set<Type> types){ return Sets.intersection(absentTypes, types);}
+    /**
+     * @param types to check
+     * @return true if any of the provided types is absent - doesn't have instances
+     */
+    public boolean absentTypes(Set<Type> types){ return !Sets.intersection(absentTypes, types).isEmpty();}
 
     /**
      * @param type   for which rules containing it in the head are sought

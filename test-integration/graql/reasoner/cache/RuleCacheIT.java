@@ -30,9 +30,12 @@ import grakn.core.server.session.cache.RuleCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -42,6 +45,7 @@ import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
@@ -128,11 +132,21 @@ public class RuleCacheIT {
         }
     }
 
+    @Test
+    public void whenFetchingRules_fruitlessRulesAreNotReturned(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            Type description = tx.getType(Label.of("description"));
+            Set<Rule> filteredRules = description.thenRules()
+                    .filter(r -> tx.stream(Graql.match(r.when())).findFirst().isPresent())
+                    .collect(Collectors.toSet());
+            Set<Rule> fetchedRules = tx.ruleCache().getRulesWithType(description).collect(Collectors.toSet());
+            //NB:db lookup filters more aggressively, hence we check for containment
+            assertTrue(fetchedRules.containsAll(filteredRules));
 
-    private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parsePattern(patternString)
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+            //even though rules are filtered, the type has instances
+            assertTrue(!fetchedRules.isEmpty());
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+        }
     }
+
 }

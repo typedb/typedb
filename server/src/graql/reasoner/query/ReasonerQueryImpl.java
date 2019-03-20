@@ -541,8 +541,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
         if(!this.isRuleResolvable()) {
             Set<Type> queryTypes = new HashSet<>(this.getVarTypeMap().values());
-            Set<Type> absentTypes = tx.ruleCache().absentTypes(queryTypes);
-            boolean fruitless = !absentTypes.isEmpty();
+            boolean fruitless = tx.ruleCache().absentTypes(queryTypes);
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
                 dbIterator = tx.stream(getQuery(), false)
