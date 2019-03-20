@@ -102,7 +102,7 @@ public class RuleCache {
      * @return true if any of the provided types is absent - doesn't have instances
      */
     public boolean absentTypes(Set<Type> types) {
-        return types.stream().noneMatch(this::typeHasInstances);
+        return types.stream().anyMatch(t -> !typeHasInstances(t));
     }
 
     /**
@@ -136,7 +136,10 @@ public class RuleCache {
         checkedTypes.add(type);
         boolean instancePresent = type.instances().findFirst().isPresent()
                 || type.thenRules().anyMatch(this::checkRule);
-        if (!instancePresent) absentTypes.add(type);
+        if (!instancePresent){
+            absentTypes.add(type);
+            type.whenRules().forEach(r -> fruitlessRules.add(r));
+        }
         return instancePresent;
     }
 
@@ -149,11 +152,11 @@ public class RuleCache {
         if (fruitlessRules.contains(rule)) return false;
         if (checkedRules.contains(rule)) return true;
         checkedRules.add(rule);
-        return !rule.whenTypes()
-                .filter(t -> !checkedTypes.contains(t))
-                .filter(t -> !typeHasInstances(t))
-                .peek(t -> t.whenRules().forEach(r -> fruitlessRules.add(r)))
-                .findFirst().isPresent();
+        return rule.whenTypes()
+                //.filter(t -> !checkedTypes.contains(t))
+                .allMatch(this::typeHasInstances);
+                //.peek(t ->
+                //.findFirst().isPresent();
     }
 
     /**

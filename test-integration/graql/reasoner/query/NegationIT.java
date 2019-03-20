@@ -72,11 +72,13 @@ public class NegationIT {
     public static void loadContext(){
         negationSession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
+        /*
         recipeSession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
         reachabilitySession = server.sessionWithNewKeyspace();
         ReachabilityGraph reachability = new ReachabilityGraph(reachabilitySession);
         reachability.load(3);
+        */
     }
 
     @AfterClass
@@ -375,7 +377,7 @@ public class NegationIT {
             EntityType specificType = tx.getEntityType(specificTypeLabel);
 
             List<ConceptMap> fullAnswers = tx.execute(Graql.parse("match $x has attribute $r;get;").asGet());
-            List<ConceptMap> answersWithoutSpecifcTypeAndValue = tx.execute(Graql.<GraqlGet>parse(
+            List<ConceptMap> answersWithoutSpecificTypeAndValue = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r;" +
                             "not {$x isa " + specificTypeLabel + ";};" +
@@ -389,7 +391,7 @@ public class NegationIT {
                     .collect(toList());
             assertCollectionsNonTriviallyEqual(
                     expectedAnswers,
-                    answersWithoutSpecifcTypeAndValue
+                    answersWithoutSpecificTypeAndValue
             );
         }
     }
