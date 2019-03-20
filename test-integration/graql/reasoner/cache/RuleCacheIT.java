@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.rule.InferenceRule;
@@ -28,14 +29,10 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.RuleCache;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlGet;
-import graql.lang.statement.Statement;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -146,6 +143,18 @@ public class RuleCacheIT {
             //even though rules are filtered, the type has instances
             assertTrue(!fetchedRules.isEmpty());
             assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+        }
+    }
+
+    @Test
+    public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
+            assertTrue(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
+
+            singleRoleEntity.create();
+
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
         }
     }
 

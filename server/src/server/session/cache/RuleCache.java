@@ -101,7 +101,18 @@ public class RuleCache {
      * @param types to check
      * @return true if any of the provided types is absent - doesn't have instances
      */
-    public boolean absentTypes(Set<Type> types){ return !Sets.intersection(absentTypes, types).isEmpty();}
+    public boolean absentTypes(Set<Type> types) {
+        return types.stream().noneMatch(this::typeHasInstances);
+    }
+
+    /**
+     * acknowledge addition of an instance of specific type
+     * @param type
+     */
+    public void ackTypeInstance(Type type){
+        checkedTypes.add(type);
+        absentTypes.remove(type);
+    }
 
     /**
      * @param type   for which rules containing it in the head are sought
@@ -121,6 +132,15 @@ public class RuleCache {
                 .peek(rule -> ruleMap.put(type, rule));
     }
 
+    private boolean typeHasInstances(Type type){
+        if (checkedTypes.contains(type)) return !absentTypes.contains(type);
+        checkedTypes.add(type);
+        boolean instancePresent = type.instances().findFirst().isPresent()
+                || type.thenRules().anyMatch(this::checkRule);
+        if (!instancePresent) absentTypes.add(type);
+        return instancePresent;
+    }
+
     /**
      *
      * @param rule to be checked for matchability
@@ -130,21 +150,11 @@ public class RuleCache {
         if (fruitlessRules.contains(rule)) return false;
         if (checkedRules.contains(rule)) return true;
         checkedRules.add(rule);
-        Set<Type> types = rule.whenTypes()
+        return !rule.whenTypes()
                 .filter(t -> !checkedTypes.contains(t))
-                .collect(toSet());
-        Set<Type> absentTs = types.stream()
-                .filter(t -> {
-                    checkedTypes.add(t);
-                    return !t.instances().findFirst().isPresent();
-                })
-                .filter(t -> !t.thenRules().anyMatch(this::checkRule))
-                .collect(toSet());
-        absentTs.forEach(absentT -> {
-            absentT.whenRules().forEach(r -> fruitlessRules.add(r));
-            absentTypes.add(absentT);
-        });
-        return absentTs.isEmpty();
+                .filter(t -> !typeHasInstances(t))
+                .peek(t -> t.whenRules().forEach(r -> fruitlessRules.add(r)))
+                .findFirst().isPresent();
     }
 
     /**
