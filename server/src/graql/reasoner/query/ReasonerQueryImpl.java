@@ -540,10 +540,15 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         Iterator<QueryStateBase> subGoalIterator;
 
         if(!this.isRuleResolvable()) {
-            dbIterator = tx.stream(getQuery(), false)
-                    .map(ans -> ans.explain(new JoinExplanation(this.getPattern(), this.splitToPartialAnswers(ans))))
-                    .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
-                    .iterator();
+            Set<Type> queryTypes = new HashSet<>(this.getVarTypeMap().values());
+            boolean fruitless = tx.ruleCache().absentTypes(queryTypes);
+            if (fruitless) dbIterator = Collections.emptyIterator();
+            else {
+                dbIterator = tx.stream(getQuery(), false)
+                        .map(ans -> ans.explain(new JoinExplanation(this.getPattern(), this.splitToPartialAnswers(ans))))
+                        .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
+                        .iterator();
+            }
             subGoalIterator = Collections.emptyIterator();
         } else {
             dbIterator = Collections.emptyIterator();

@@ -1,111 +1,107 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "atomic-type-inference-it",
-    srcs = ["AtomicTypeInferenceIT.java"],
-    test_class = "grakn.core.graql.reasoner.atomic.AtomicTypeInferenceIT",
+    name = "type-inference-it",
+    size = "medium",
+    srcs = ["TypeInferenceIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:type-inference"],
+    test_class = "grakn.core.graql.reasoner.atomic.TypeInferenceIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
-    resources = ["//test-integration/graql/reasoner/resources:type-inference"],
-    size = "medium",
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
     name = "atomic-unification-it",
+    size = "medium",
     srcs = ["AtomicUnificationIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicUnificationIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
-    resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    size = "medium",
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
-    name = "atomic-rule-applicability-it",
-    srcs = ["AtomicRuleApplicabilityIT.java"],
-    test_class = "grakn.core.graql.reasoner.atomic.AtomicRuleApplicabilityIT",
+    name = "rule-applicability-it",
+    size = "medium",
+    srcs = ["RuleApplicabilityIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:reified-resource-applicability",
+        "//test-integration/graql/reasoner/resources:resource-applicability",
+        "//test-integration/graql/reasoner/resources:rule-applicability",
+    ],
+    test_class = "grakn.core.graql.reasoner.atomic.RuleApplicabilityIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
-    resources = ["//test-integration/graql/reasoner/resources:resource-applicability",
-                 "//test-integration/graql/reasoner/resources:rule-applicability",
-                 "//test-integration/graql/reasoner/resources:reified-resource-applicability"],
-    size = "medium",
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
-    name = "atomic-role-inference-it",
-    srcs = ["AtomicRoleInferenceIT.java"],
-    test_class = "grakn.core.graql.reasoner.atomic.AtomicRoleInferenceIT",
-    deps = [
-        "//concept:concept",
-        "//server:server",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
-    resources = ["//test-integration/graql/reasoner/resources:role-inference",
-                     "//test-integration/graql/reasoner/resources:rule-applicability",
-                     "//test-integration/graql/reasoner/resources:generic-schema"],
+    name = "role-inference-it",
     size = "medium",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["RoleInferenceIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:generic-schema",
+        "//test-integration/graql/reasoner/resources:role-inference",
+        "//test-integration/graql/reasoner/resources:rule-applicability",
+    ],
+    test_class = "grakn.core.graql.reasoner.atomic.RoleInferenceIT",
+    deps = [
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "atomic-equivalence-it",
+    size = "medium",
     srcs = ["AtomicEquivalenceIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicEquivalenceIT",
     deps = [
-            "@graknlabs_graql//java:graql",
-            "//server:server",
-            "//test-integration/rule:grakn-test-server",
-            "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-            "//dependencies/maven/artifacts/com/google/guava:guava"
-        ],
-    resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    size = "medium",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":atomic-type-inference-it",
+        ":atomic-equivalence-it",
         ":atomic-unification-it",
-        ":atomic-rule-applicability-it",
-        ":atomic-role-inference-it",
-        ":atomic-equivalence-it"
+        ":type-inference-it",
+        ":rule-applicability-it",
+        ":role-inference-it",
     ],
 )

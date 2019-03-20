@@ -63,7 +63,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
-public class AtomicTypeInferenceIT {
+public class TypeInferenceIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -72,7 +72,7 @@ public class AtomicTypeInferenceIT {
 
     private static void loadFromFile(String fileName, SessionImpl session){
         try {
-            InputStream inputStream = AtomicTypeInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
+            InputStream inputStream = TypeInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);

@@ -1,6 +1,6 @@
 define
 
-entity1 sub entity,
+someEntity sub entity,
     plays resource-owner,
     has res-string,
     has res-double,
@@ -29,7 +29,7 @@ resource-relation sub relation,
 
 rule-1 sub rule,
 when {
-    $x isa entity1;
+    $x isa someEntity;
     $y 'value' isa res-string;
 },
 then {
@@ -38,7 +38,7 @@ then {
 
 rule-2 sub rule,
 when {
-    $x isa entity1;
+    $x isa someEntity;
     $y 3.14 isa res-double;
 },
 then {
@@ -47,7 +47,7 @@ then {
 
 rule-3 sub rule,
 when {
-    $x isa entity1;
+    $x isa someEntity;
     $y 123 isa res-long;
 },
 then {
@@ -56,9 +56,17 @@ then {
 
 rule-4 sub rule,
 when {
-    $x isa entity1;
+    $x isa someEntity;
     $y 'true' isa res-boolean;
 },
 then {
     (resource-owner: $x, resource-value: $y) isa resource-relation;
 };
+
+
+insert
+$x isa someEntity,
+    has res-long 2000,
+    has res-boolean true,
+    has res-double 3.14,
+    has res-string 'value';
