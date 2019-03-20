@@ -76,6 +76,13 @@ public abstract class SemanticCache<
 
     UnifierType semanticUnifier(){ return UnifierType.RULE;}
 
+    @Override
+    public void clear(){
+        super.clear();
+        families.clear();
+        parents.clear();
+    }
+
     /**
      * Propagate ALL answers between entries provided they satisfy the corresponding semantic difference.
      *
@@ -203,6 +210,11 @@ public abstract class SemanticCache<
                 .filter(parent -> childGround || isDBComplete(keyToQuery(parent)))
                 .map(this::keyToQuery)
                 .map(this::getEntry)
+                .peek(e -> {
+                    if (e == null){
+                        System.out.println();
+                    }
+                })
                 .forEach(parentMatch -> {
                     ReasonerAtomicQuery parent = parentMatch.query();
                     boolean newAnswers = propagateAnswers(parentMatch, childMatch, inferred || isComplete(parent));
