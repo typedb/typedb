@@ -22,14 +22,14 @@ def graknlabs_graql():
      git_repository(
          name = "graknlabs_graql",
          remote = "https://github.com/graknlabs/graql",
-         commit = "b0a7a7488a51fedf82a905febef2c9421594193e",
+         commit = "b49e668ab5064df8dcf06d8f30a6f784cccabc4b",
      )
 
 def graknlabs_client_java():
      git_repository(
          name = "graknlabs_client_java",
          remote = "https://github.com/graknlabs/client-java",
-         commit = "ec2470f7f051981c0127579f4cd03e1ffd529f1b",
+         commit = "35a50ea31942daef539c3db57a2479f024bc902c",
      )
 
 def graknlabs_build_tools():

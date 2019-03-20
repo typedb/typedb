@@ -17,7 +17,7 @@
 #
 
 package(default_visibility = ["//visibility:__subpackages__"])
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -136,6 +136,7 @@ assemble_maven(
     name = "assemble-maven",
     target = ":console",
     package = "console",
+    version_file = "//:VERSION",
 )
 
 deploy_maven(
