@@ -113,7 +113,6 @@ public class TransactionOLTP implements Transaction {
     private final ElementFactory elementFactory;
 
     // Caches
-    private final MultilevelSemanticCache queryCache;
     private final RuleCache ruleCache;
     private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
@@ -159,7 +158,6 @@ public class TransactionOLTP implements Transaction {
 
         this.elementFactory = new ElementFactory(this, janusGraph);
 
-        this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
 
         this.keyspaceCache = keyspaceCache;
@@ -285,8 +283,6 @@ public class TransactionOLTP implements Transaction {
     }
 
     public RuleCache ruleCache() { return ruleCache;}
-
-    public MultilevelSemanticCache queryCache(){ return queryCache;}
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -839,7 +835,6 @@ public class TransactionOLTP implements Transaction {
             this.closedReason = closedReason;
             this.isTxOpen = false;
             ruleCache().clear();
-            queryCache().clear();
         }
     }
 

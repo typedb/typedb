@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.session.TransactionOLTP;
@@ -35,9 +36,11 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
     final private Iterator<Conjunction<Pattern>> conjIterator;
     private Iterator<ConceptMap> answerIterator;
     private final TransactionOLTP tx;
+    private final MultilevelSemanticCache cache;
 
     public DisjunctionIterator(MatchClause matchClause, TransactionOLTP tx){
         this.tx = tx;
+        this.cache = new MultilevelSemanticCache();
 
         this.conjIterator = matchClause.getPatterns().getNegationDNF().getPatterns().stream().iterator();
         answerIterator = conjunctionIterator(conjIterator.next(), tx);
@@ -51,7 +54,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
                 || (query.isPositive() && !query.isRuleResolvable());
         return doNotResolve?
                 tx.stream(Graql.match(conj), false).iterator() :
-                new ResolutionIterator(query, new HashSet<>(), tx.queryCache(), query.requiresReiteration());
+                new ResolutionIterator(query, new HashSet<>(), cache, query.requiresReiteration());
     }
 
     @Override
@@ -60,7 +63,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
     }
 
     /**
-     * check whether answers available, if answers not fully computed compute more answers
+     * check whether answers available, if answers not fully computed, compute more answers
      * @return true if answers available
      */
     @Override

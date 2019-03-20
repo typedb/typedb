@@ -19,22 +19,19 @@
 package grakn.core.graql.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashSet;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.Stack;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
