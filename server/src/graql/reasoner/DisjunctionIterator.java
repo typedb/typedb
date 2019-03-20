@@ -68,7 +68,11 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
     @Override
     public boolean hasNext() {
         if (answerIterator.hasNext()) return true;
-        if (conjIterator.hasNext()) answerIterator = conjunctionIterator(conjIterator.next(), tx);
-        return answerIterator.hasNext();
+
+        while(conjIterator.hasNext()){
+            answerIterator = conjunctionIterator(conjIterator.next(), tx);
+            if (answerIterator.hasNext()) return true;
+        }
+        return false;
     }
 }
