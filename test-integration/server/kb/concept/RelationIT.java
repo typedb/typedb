@@ -22,6 +22,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -36,6 +37,11 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlGet;
+import graql.lang.query.GraqlInsert;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -344,6 +350,51 @@ public class RelationIT {
         expectedException.expect(InvalidKBException.class);
         expectedException.expectMessage(containsString(ErrorMessage.VALIDATION_RELATION_WITH_NO_ROLE_PLAYERS.getMessage(relation.id(), relation.type().label())));
 
+        tx.commit();
+    }
+
+
+    @Test
+    public void whenDeletingInferredRelationship_NoErrorIsThrow() {
+        /*
+        The exact behavior is up for debate, but at the very least we should not
+        throw an exception when deleting an inferred concept, otherwise there is no way to delete
+        concrete instances from a mix of inferred and concrete concepts.
+        */
+
+        String schema = "define " +
+                "person sub entity, plays mother, plays sister, plays son, plays nephew, plays aunt; " +
+                "motherhood sub relation, relates mother, relates son;" +
+                "sisterhood sub relation, relates sister;" +
+                "aunthood sub relation, relates aunt, relates nephew, has number;" +
+                "number sub attribute, datatype long;" +
+                "auntie-rule sub rule, " +
+                "when { " +
+                "$mother isa person; " +
+                "$sister isa person; " +
+                "$son isa person; " +
+                "(sister: $mother, sister: $sister) isa sisterhood; " +
+                "(mother: $mother, son: $son) isa motherhood; " +
+                "}, then {" +
+                "(aunt: $sister, nephew: $son) isa aunthood; };";
+
+        // create the schema with the rule
+        GraqlDefine define = Graql.parse(schema).asDefine();
+        tx.execute(define);
+
+        // insert some data that triggers the rule
+        GraqlInsert insert = Graql.parse( "insert $m isa person; $s isa person; $d isa person; " +
+                "(sister: $m, sister: $s) isa sisterhood; " +
+                "(mother: $m, son: $d) isa motherhood;").asInsert();
+        tx.execute(insert);
+        tx.commit();
+
+        // try to delete the inferred relationship
+        tx = session.transaction().write();
+        GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r;").asDelete();
+        List<ConceptSet> deletedConcepts = tx.execute(delete);
+
+        // normally throws on commit
         tx.commit();
     }
 }
