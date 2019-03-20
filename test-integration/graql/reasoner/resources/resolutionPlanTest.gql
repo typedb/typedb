@@ -19,7 +19,7 @@ yetAnotherEntity sub baseEntity;
 
 #Relations
 
-relation0 sub relation,
+someRelation sub relation,
     relates someRole,
     relates otherRole;
 
@@ -48,7 +48,7 @@ anotherDerivedResource sub attribute, datatype string;
 
 simple-relation-rule
 when {
-(someRole: $x, otherRole: $y) isa relation0;},
+(someRole: $x, otherRole: $y) isa someRelation;},
 then {
 (someRole: $x, otherRole: $y) isa derivedRelation;};
 
@@ -76,5 +76,7 @@ $x has anotherDerivedResource $r;
 
 insert
 
-$x isa someEntity;
+$x isa someEntity, has resource 'someValue';
 $y isa someOtherEntity;
+(someRole: $x, otherRole: $y) isa someRelation;
+(someRole: $x, otherRole: $y) isa anotherRelation;

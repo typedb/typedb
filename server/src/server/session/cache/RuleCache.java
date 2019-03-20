@@ -18,21 +18,13 @@
 
 package grakn.core.server.session.cache;
 
-import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -52,13 +44,11 @@ public class RuleCache {
     private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
     private final TransactionOLTP tx;
 
+    //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
     private Set<Type> checkedTypes = new HashSet<>();
     private Set<Rule> fruitlessRules = new HashSet<>();
     private Set<Rule> checkedRules = new HashSet<>();
-
-    private final ReasonerQueryEquivalence atomEquiv = ReasonerQueryEquivalence.AlphaEquivalence;
-    private Map<Equivalence.Wrapper<ReasonerAtomicQuery>, Set<InferenceRule>> applicableRules = new HashMap<>();
 
     public RuleCache(TransactionOLTP tx) {
         this.tx = tx;
@@ -108,23 +98,6 @@ public class RuleCache {
     }
 
     public Set<Type> absentTypes(Set<Type> types){ return Sets.intersection(absentTypes, types);}
-
-    /*
-    public Set<InferenceRule> getApplicableRules(Atom atom) {
-        Equivalence.Wrapper<ReasonerAtomicQuery> wrappedAtom = atomEquiv.wrap(ReasonerQueries.atomic(atom));
-        Set<InferenceRule> match = applicableRules.get(wrappedAtom);
-        if (match != null) return match;
-
-        Set<Rule> possibleRules = atom.getPotentialRules().collect(toSet());
-        Set<InferenceRule> applicableRules = possibleRules.stream()
-                .map(rule -> tx.ruleCache().getRule(rule, () -> new InferenceRule(rule, tx)))
-                .filter(atom::isRuleApplicable)
-                .map(r -> r.rewrite(atom))
-                .collect(toSet());
-        this.applicableRules.put(wrappedAtom, applicableRules);
-        return applicableRules;
-    }
-    */
 
     /**
      * @param type   for which rules containing it in the head are sought
@@ -195,6 +168,5 @@ public class RuleCache {
         checkedTypes.clear();
         checkedRules.clear();
         fruitlessRules.clear();
-        applicableRules.clear();
     }
 }
