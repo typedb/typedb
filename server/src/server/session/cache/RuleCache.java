@@ -94,7 +94,7 @@ public class RuleCache {
      * @return rules containing specified type in the head
      */
     public Stream<Rule> getRulesWithType(Type type) {
-        return getRulesWithType(type, false, true);
+        return getRulesWithType(type, false);
     }
 
     /**
@@ -119,8 +119,7 @@ public class RuleCache {
      * @param direct way of assessing isa edges
      * @return rules containing specified type in the head
      */
-    public Stream<Rule> getRulesWithType(Type type, boolean direct, boolean useCache) {
-        if (!useCache) return getTypes(type, direct).stream().flatMap(SchemaConcept::thenRules);
+    public Stream<Rule> getRulesWithType(Type type, boolean direct) {
         if (type == null) return getRules();
 
         Set<Rule> match = ruleMap.get(type);

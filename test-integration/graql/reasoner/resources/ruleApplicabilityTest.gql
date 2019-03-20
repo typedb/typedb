@@ -218,5 +218,8 @@ $y isa anotherTwoRoleEntity;
 $z isa anotherTwoRoleEntity;
 $u isa anotherTwoRoleEntity;
 
-(someRole: $y, subRole: $z) isa binary;
+$v isa singleRoleEntity, has resource-string 'someValue';
+$w isa twoRoleEntity, has resource-long 2000;
+
+(someRole: $y, subRole: $z) isa binary, has description 'someDescription';
 (someRole: $z, subRole: $u) isa binary;

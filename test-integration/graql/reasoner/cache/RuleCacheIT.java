@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Rule;
@@ -150,6 +151,9 @@ public class RuleCacheIT {
     public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
         try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
+
+            singleRoleEntity.instances().forEach(Concept::delete);
+
             assertTrue(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
 
             singleRoleEntity.create();

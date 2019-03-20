@@ -215,24 +215,22 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
      */
-    public Stream<Rule> getPotentialRules(boolean useRuleCache) {
+    public Stream<Rule> getPotentialRules() {
         boolean isDirect = getPattern().getProperties(IsaProperty.class).findFirst()
                 .map(IsaProperty::isExplicit).orElse(false);
 
         return getPossibleTypes().stream()
-                .flatMap(type -> tx().ruleCache().getRulesWithType(type, isDirect, useRuleCache))
+                .flatMap(type -> tx().ruleCache().getRulesWithType(type, isDirect))
                 .distinct();
     }
-
-    public Stream<Rule> getPotentialRules(){ return getPotentialRules(true);}
 
     /**
      * @return set of applicable rules - does detailed (slow) check for applicability
      */
-    public Stream<InferenceRule> getApplicableRules(boolean useRuleCache) {
+    public Stream<InferenceRule> getApplicableRules() {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
-            getPotentialRules(useRuleCache)
+            getPotentialRules()
                     .map(rule -> tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
@@ -240,8 +238,6 @@ public abstract class Atom extends AtomicBase {
         }
         return applicableRules.stream();
     }
-
-    public Stream<InferenceRule> getApplicableRules() { return getApplicableRules(true);}
 
     /**
      * @return true if the atom requires materialisation in order to be referenced
