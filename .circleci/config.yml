@@ -222,7 +222,6 @@ jobs:
           paths:
             - VERSION.rpm
 
-
   test-deployment-linux-rpm:
     machine: true
     working_directory: ~/grakn

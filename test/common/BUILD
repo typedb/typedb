@@ -2,7 +2,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "grakn-application-test",
-    test_class = "GraknApplicationTest",
+    test_class = "grakn.core.test.common.GraknApplicationTest",
     srcs = ["GraknApplicationTest.java"],
     deps = [
         "//common:common",
