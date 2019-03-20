@@ -106,8 +106,8 @@ public class RuleCache {
     }
 
     /**
-     * acknowledge addition of an instance of specific type
-     * @param type
+     * acknowledge addition of an instance of a specific type
+     * @param type to be acked
      */
     public void ackTypeInstance(Type type){
         checkedTypes.add(type);

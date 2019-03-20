@@ -23,7 +23,11 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
+import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
@@ -68,14 +72,45 @@ public class RuleApplicabilityIT {
     private static SessionImpl resourceApplicabilitySession;
     private static SessionImpl reifiedResourceApplicabilitySession;
 
+    private static Thing putEntityWithResource(TransactionOLTP tx, EntityType type, Label resource, Object value) {
+        Thing inst = type.create();
+        putResource(inst, tx.getSchemaConcept(resource), value);
+        return inst;
+    }
+
+    private static <T> void putResource(Thing thing, AttributeType<T> attributeType, T value) {
+        Attribute attributeInstance = attributeType.create(value);
+        thing.has(attributeInstance);
+    }
+
     @BeforeClass
     public static void loadContext(){
-        ruleApplicabilitySession = server.sessionWithNewKeyspace();
-        loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySession);
         resourceApplicabilitySession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"resourceApplicabilityTest.gql", resourceApplicabilitySession);
         reifiedResourceApplicabilitySession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"reifiedResourceApplicabilityTest.gql", reifiedResourceApplicabilitySession);
+
+
+        ruleApplicabilitySession = server.sessionWithNewKeyspace();
+        loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySession);
+
+        //add extra data so that all rules can be possibly triggered
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+
+            EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
+            EntityType twoRoleEntity = tx.getEntityType("twoRoleEntity");
+            Thing x = putEntityWithResource(tx, singleRoleEntity, Label.of("resource-string"), "someValue");
+            Thing y = putEntityWithResource(tx, twoRoleEntity, Label.of("resource-long"), 2000L);
+
+            Role someRole = tx.getRole("someRole");
+            Role subRole = tx.getRole("subRole");
+            tx.getRelationType("binary")
+                    .create()
+                    .assign(someRole, x)
+                    .assign(subRole, y)
+                    .has(tx.getAttributeType("description").create("someDescription"));
+            tx.commit();
+        }
     }
 
     @AfterClass
