@@ -120,7 +120,7 @@ public class QueryExecutor {
 
     /**
      * @param commonVars     set of variables of interest
-     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @param graqlTraversal graql traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
     public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
