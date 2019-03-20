@@ -48,7 +48,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
-public class AtomicRoleInferenceIT {
+public class RoleInferenceIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -59,7 +59,7 @@ public class AtomicRoleInferenceIT {
 
     private static void loadFromFile(String fileName, SessionImpl session){
         try {
-            InputStream inputStream = AtomicRoleInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
+            InputStream inputStream = RoleInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             TransactionOLTP tx = session.transaction().write();
             Graql.parseList(s).forEach(tx::execute);

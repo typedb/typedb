@@ -40,7 +40,7 @@ public class RuleScalingIT {
 
     @Test
     public void ruleScaling() {
-        final int N = 100;
+        final int N = 75;
         final int populatedChains = 3;
         SessionImpl session = server.sessionWithNewKeyspace();
 
@@ -153,7 +153,7 @@ public class RuleScalingIT {
                     "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;" +
                     "$r (someRole: $link, anotherRole: $anotherLink) isa inferredRelation;" +
                     "$r has inferredAttribute $value;" +
-                    "$r has anothe rInferredAttribute $anotherValue;" +
+                    "$r has anotherInferredAttribute $anotherValue;" +
                     "(someRole: $anotherLink, anotherRole: $index) isa indexingRelation;" +
                     "get;";
             List<ConceptMap> answers = executeQuery(query, tx);

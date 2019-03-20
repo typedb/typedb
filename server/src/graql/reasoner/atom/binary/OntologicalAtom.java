@@ -51,10 +51,10 @@ public abstract class OntologicalAtom extends TypeAtom {
     public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
 
     @Override
-    public Stream<Rule> getPotentialRules(){ return Stream.empty();}
+    public Stream<Rule> getPotentialRules(boolean useCache){ return Stream.empty();}
 
     @Override
-    public Stream<InferenceRule> getApplicableRules() { return Stream.empty();}
+    public Stream<InferenceRule> getApplicableRules(boolean useCache) { return Stream.empty();}
 
     @Override
     public Set<String> validateAsRuleHead(Rule rule) {
