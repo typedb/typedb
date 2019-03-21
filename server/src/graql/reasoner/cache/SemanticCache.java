@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -137,8 +139,10 @@ public abstract class SemanticCache<
 
     private Set<QE> getParents(ReasonerAtomicQuery child){
         Set<QE> parents = this.parents.get(queryToKey(child));
-        if (!parents.isEmpty()) return parents;
-        return computeParents(child);
+        if (parents.isEmpty()) parents = computeParents(child);
+        return parents.stream()
+                .filter(parent -> child.subsumes(keyToQuery(parent)))
+                .collect(toSet());
     }
 
     private Set<QE> getChildren(ReasonerAtomicQuery parent){
@@ -146,7 +150,7 @@ public abstract class SemanticCache<
         Set<QE> children = new HashSet<>();
         family.stream()
                 .map(this::keyToQuery)
-                .filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
+                //.filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
                 .filter(potentialChild -> potentialChild.subsumes(parent))
                 .map(this::queryToKey)
                 .forEach(children::add);
@@ -185,7 +189,7 @@ public abstract class SemanticCache<
         Set<QE> computedParents = new HashSet<>();
         family.stream()
                 .map(this::keyToQuery)
-                .filter(parent -> !unifierType().equivalence().equivalent(child, parent))
+                //.filter(parent -> !unifierType().equivalence().equivalent(child, parent))
                 .filter(child::subsumes)
                 .map(this::queryToKey)
                 .peek(computedParents::add)
@@ -280,6 +284,8 @@ public abstract class SemanticCache<
         );
     }
 
+    private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
+
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
@@ -308,9 +314,9 @@ public abstract class SemanticCache<
 
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
-        boolean fetchFromParent = !parents.isEmpty()
-                && parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)));
+        boolean fetchFromParent = parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)));
         if (fetchFromParent){
+            LOG.trace("Query Cache miss: {} with fetch from parents {}", query, parents);
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
             return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
         }
