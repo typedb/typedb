@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
@@ -29,7 +28,6 @@ import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -68,9 +66,6 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import java.util.ArrayList;
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -82,6 +77,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -506,7 +502,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());
         Set<IdPredicate> subs = new HashSet<>();
-        Set<ReasonerAtomicQuery> partialQueries = new HashSet<>();
+        Map<ReasonerAtomicQuery, ReasonerAtomicQuery> queryMap = new HashMap<>();
         for (ReasonerAtomicQuery query : queries) {
             Set<Variable> vars = query.getVarNames();
             Conjunction<Statement> conjunction =
@@ -518,15 +514,18 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                             subs.stream().filter(sub -> vars.contains(sub.getVarName())).collect(Collectors.toSet())
                     )).statements()
             );
-            partialQueries.add(ReasonerQueries.atomic(conjunction, tx()));
+            queryMap.put(query, ReasonerQueries.atomic(conjunction, tx()));
             query.getVarNames().stream()
                     .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
                     .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
                     .forEach(subs::add);
         }
-        return partialQueries.stream()
-                .filter(ReasonerQueryImpl::isRuleResolvable)
-                .allMatch(q -> tx().queryCache().isComplete(q));
+        return queryMap.entrySet().stream()
+                .filter(e -> e.getKey().isRuleResolvable())
+                .allMatch(e ->
+                        Objects.nonNull(e.getKey().getAtom().getSchemaConcept())
+                                && tx().queryCache().isComplete(e.getValue())
+                );
     }
 
     @Override
