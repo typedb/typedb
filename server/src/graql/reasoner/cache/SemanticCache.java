@@ -134,8 +134,10 @@ public abstract class SemanticCache<
 
     private Set<QE> getParents(ReasonerAtomicQuery child){
         Set<QE> parents = this.parents.get(queryToKey(child));
-        if (!parents.isEmpty()) return parents;
-        return computeParents(child);
+        if (parents.isEmpty()) parents = computeParents(child);
+        return parents.stream()
+                .filter(parent -> child.subsumes(keyToQuery(parent)))
+                .collect(toSet());
     }
 
     private Set<QE> getFamily(ReasonerAtomicQuery query){

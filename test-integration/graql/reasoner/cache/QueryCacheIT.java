@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
@@ -42,6 +43,7 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertFalse;
@@ -164,6 +166,62 @@ public class QueryCacheIT {
             assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
 
             assertEquals(cacheAnswers, cache.getEntry(childQuery).cachedElement().getAll());
+        }
+    }
+
+    @Test
+    public void whenGettingAndMatchDoesntExist_cachedParentAvailableButNotParentOfTheQuery_answersFetchedFromDB(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+
+            ConceptId id = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
+
+            ConceptId dConcept = tx.stream(Graql.<GraqlGet>parse("match $d isa subSubRoleEntity, has resource 'd';get;")).iterator().next().get("d").id();
+            ConceptId sConcept = tx.stream(Graql.<GraqlGet>parse("match $s isa subSubRoleEntity, has resource 's';get;")).iterator().next().get("s").id();
+
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y) isa binary;" +
+                            "$y id '" + dConcept.getValue() + "';" +
+                    "};",
+                    tx), tx);
+
+            //record parent, mark the answers to be explained by a rule so that we can distinguish them
+            tx.execute(parentQuery.getQuery(), false).stream()
+                    .map(ans -> ans.explain(new RuleExplanation(parentQuery.getPattern(), ConceptId.of("someRule"))))
+                    .forEach(ans -> cache.record(parentQuery, ans));
+            cache.ackDBCompleteness(parentQuery);
+
+            //fetch a query that subsumes parent
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y) isa binary;" +
+                            "$x id '" + id.getValue() + "';" +
+                            "$y id '" + dConcept.getValue() + "';" +
+                            "};",
+                    tx), tx);
+
+            Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
+            assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), cacheAnswers);
+
+            assertNotNull(cache.getEntry(childQuery));
+            cacheAnswers.forEach(ans -> assertTrue(ans.explanation().isRuleExplanation()));
+
+            //fetch a different query, the child should have no parents in the cache so the answer needs to be fetched from the db
+            childQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y) isa binary;" +
+                            "$x id '" + id.getValue() + "';" +
+                            "$y id '" + sConcept.getValue() + "';" +
+                            "};",
+                    tx), tx);
+
+            cacheAnswers = cache.getAnswers(childQuery);
+            assertTrue(!cacheAnswers.isEmpty());
+            assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), cacheAnswers);
+
+            assertNull(cache.getEntry(childQuery));
+            cacheAnswers.forEach(ans -> assertTrue(ans.explanation().isLookupExplanation()));
         }
     }
 
