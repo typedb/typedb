@@ -67,7 +67,7 @@ public class WriteExecutor {
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Variable, Concept> concepts = new HashMap<>();
 
-    // A set of concepts to be deleted at the end of a write exeuction
+    // A set of concepts to be deleted at the end of a write execution
     private final Set<Concept> conceptsToDelete = new HashSet<>();
 
     // A mutable map of concepts "under construction" that require more information before they can be built

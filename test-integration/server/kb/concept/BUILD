@@ -90,6 +90,8 @@ java_test(
          "//common:common",
          "//concept:concept",
          "//server:server",
+         "//api:api",
+         "@graknlabs_graql//java:graql",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",

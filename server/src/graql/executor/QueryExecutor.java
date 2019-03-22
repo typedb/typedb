@@ -40,6 +40,7 @@ import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -259,10 +260,17 @@ public class QueryExecutor {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         conceptsToDelete.forEach(concept -> {
+            // a concept is either a schema concept or a thing
             if (concept.isSchemaConcept()) {
                 throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+            } else if (concept.isThing()) {
+                // if it's not inferred, we can delete it
+                if (!concept.asThing().isInferred()) {
+                    concept.delete();
+                }
+            } else {
+                throw GraknServerException.create("Unhandled concept type isn't a schema concept or a thing");
             }
-            concept.delete();
         });
 
         // TODO: return deleted Concepts instead of ConceptIds

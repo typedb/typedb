@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -74,7 +74,7 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scala-library", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/scala-lang:scalap", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/sharegov:mjson", # PREVIOUSLY UNDECLARED
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -186,6 +186,7 @@ assemble_maven(
     name = "assemble-maven",
     target = ":server",
     package = "server",
+    version_file = "//:VERSION",
 )
 
 deploy_maven(
@@ -194,7 +195,7 @@ deploy_maven(
 )
 
 assemble_apt(
-    name = "assemble-apt",
+    name = "assemble-linux-apt",
     package_name = "grakn-core-server",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (server)",
@@ -228,12 +229,12 @@ assemble_apt(
 
 deploy_apt(
     name = "deploy-apt",
-    target = ":assemble-apt",
+    target = ":assemble-linux-apt",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 
 assemble_rpm(
-    name = "assemble-rpm",
+    name = "assemble-linux-rpm",
     package_name = "grakn-core-server",
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
@@ -263,6 +264,6 @@ assemble_rpm(
 
 deploy_rpm(
     name = "deploy-rpm",
-    target = ":assemble-rpm",
+    target = ":assemble-linux-rpm",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )

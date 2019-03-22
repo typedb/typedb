@@ -111,9 +111,8 @@ public abstract class AtomicBase implements Atomic {
     /**
      * @return TransactionOLTP this atomic is defined in
      */
-    protected TransactionOLTP tx(){
-        // TODO: This cast is unsafe - ReasonerQuery should return an TransactionImpl
-        return (TransactionOLTP) getParentQuery().tx();
+    public TransactionOLTP tx(){
+        return getParentQuery().tx();
     }
 
     @Override

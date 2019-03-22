@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 
 java_grpc_compile(
     name = "protocol-java-src",
@@ -48,6 +48,7 @@ assemble_maven(
     name = "assemble-maven",
     target = ":protocol-java",
     package = "protocol",
+    version_file = "//:VERSION",
 )
 
 deploy_maven(
