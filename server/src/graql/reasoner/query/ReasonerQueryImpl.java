@@ -40,7 +40,6 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.cache.Index;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.plan.GraqlTraversalPlanner;
@@ -63,7 +62,6 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
@@ -116,8 +114,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeeddedGraknTx
-        this(Collections.singletonList(atom), (TransactionOLTP) /*TODO anything but this*/ atom.getParentQuery().tx());
+        this(Collections.singletonList(atom), atom.getParentQuery().tx());
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
