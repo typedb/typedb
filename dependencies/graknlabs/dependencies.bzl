@@ -29,8 +29,8 @@ def graknlabs_client_java():
     # TODO: update to graknlabs/client-java before merging the PR
      git_repository(
          name = "graknlabs_client_java",
-         remote = "https://github.com/lolski/client-java",
-         commit = "429aff03dfd5bdb7d7f6357ce5a65c8dfe4d044b",
+         remote = "https://github.com/graknlabs/client-java",
+         commit = "32015cc11e24215e12854eaa098d3fbce97ecbe9",
      )
 
 def graknlabs_build_tools():
