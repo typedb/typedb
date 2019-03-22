@@ -112,7 +112,11 @@ public abstract class SemanticCache<
     final private Set<ReasonerAtomicQuery> dbCompleteQueries = new HashSet<>();
     final private Set<QE> dbCompleteEntries = new HashSet<>();
 
-    private boolean isDBComplete(ReasonerAtomicQuery query){
+    /**
+     * @param query to check
+     * @return true if this query is db complete - cache contains all db answers for this query
+     */
+    public boolean isDBComplete(ReasonerAtomicQuery query){
         return dbCompleteEntries.contains(queryToKey(query))
                 || dbCompleteQueries.contains(query);
     }
@@ -125,17 +129,12 @@ public abstract class SemanticCache<
         }
     }
 
-    private void ackDBCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
-        if (dbCompleteQueries.contains(parent)) dbCompleteQueries.add(query);
-        if (dbCompleteEntries.contains(queryToKey(parent))){
-            dbCompleteEntries.add(queryToKey(query));
-        }
-    }
-
     private Set<QE> getParents(ReasonerAtomicQuery child){
         Set<QE> parents = this.parents.get(queryToKey(child));
-        if (!parents.isEmpty()) return parents;
-        return computeParents(child);
+        if (parents.isEmpty()) parents = computeParents(child);
+        return parents.stream()
+                .filter(parent -> child.subsumes(keyToQuery(parent)))
+                .collect(toSet());
     }
 
     private Set<QE> getFamily(ReasonerAtomicQuery query){
@@ -181,16 +180,15 @@ public abstract class SemanticCache<
         ReasonerAtomicQuery child = childMatch.query();
         boolean[] newAnswersFound = {false};
         boolean childGround = child.isGround();
-        parents.get(queryToKey(child))
-                .stream()
-                //allow for partial propagation (propagation when parents are not complete) if query ground
-                .filter(parent -> childGround || isDBComplete(keyToQuery(parent)))
-                .map(this::keyToQuery)
-                .map(this::getEntry)
-                .forEach(parentMatch -> {
+        getParents(target)
+                .forEach(parent -> {
+                    boolean parentDbComplete = isDBComplete(keyToQuery(parent));
+                    if (parentDbComplete || childGround){
+                        CacheEntry<ReasonerAtomicQuery, SE> parentMatch = getEntry(keyToQuery(parent));
                         boolean newAnswers = propagateAnswers(parentMatch, childMatch, inferred);
                         newAnswersFound[0] = newAnswers;
-                        ackDBCompletenessFromParent(target, parentMatch.query());
+                        if (parentDbComplete || newAnswers) ackDBCompleteness(target);
+                    }
                 });
         return newAnswersFound[0];
     }
@@ -278,8 +276,9 @@ public abstract class SemanticCache<
 
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
-        boolean fetchFromParent = !parents.isEmpty()
-                && parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)));
+        boolean fetchFromParent = parents.stream().anyMatch(p ->
+                query.isGround() || isDBComplete(keyToQuery(p))
+        );
         if (fetchFromParent){
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
             return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
