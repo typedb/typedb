@@ -543,12 +543,12 @@ public class QueryCacheIT {
             //record all partial queries
             query.getAtoms(RelationAtom.class)
                     .map(ReasonerQueries::atomic)
-                    .forEach(q -> q.resolve(new HashSet<>(), tx.queryCache(), q.requiresReiteration()).collect(Collectors.toSet()));
+                    .forEach(q -> q.resolve(new HashSet<>(),  q.requiresReiteration()).collect(Collectors.toSet()));
 
             Set<ConceptMap> preFetchCache = getCacheContent(tx);
 
             assertTrue(query.isCacheComplete());
-            Set<ConceptMap> answers = query.resolve(new HashSet<>(), tx.queryCache(), query.requiresReiteration()).collect(toSet());
+            Set<ConceptMap> answers = query.resolve(new HashSet<>(), query.requiresReiteration()).collect(toSet());
             assertEquals(preFetchCache, getCacheContent(tx));
         }
     }

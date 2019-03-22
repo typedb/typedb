@@ -30,7 +30,6 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
@@ -44,7 +43,6 @@ import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -351,12 +349,12 @@ public class CompositeQuery implements ResolvableQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return resolve(new HashSet<>(), new MultilevelSemanticCache(), this.requiresReiteration());
+        return resolve(new HashSet<>(), this.requiresReiteration());
     }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate){
-        return new ResolutionIterator(this, subGoals, cache, reiterate).hasStream();
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
+        return new ResolutionIterator(this, subGoals, reiterate).hasStream();
     }
 
     @Override
@@ -387,9 +385,9 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
         return isPositive()?
-                getConjunctiveQuery().subGoal(sub, u, parent, subGoals, cache) :
-                new CompositeState(this, sub, u, parent, subGoals, cache);
+                getConjunctiveQuery().subGoal(sub, u, parent, subGoals) :
+                new CompositeState(this, sub, u, parent, subGoals);
     }
 }

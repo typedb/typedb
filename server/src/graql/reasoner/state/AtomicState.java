@@ -47,14 +47,12 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
                 ConceptMap sub,
                 Unifier u,
                 QueryStateBase parent,
-                Set<ReasonerAtomicQuery> subGoals,
-                MultilevelSemanticCache cache) {
+                Set<ReasonerAtomicQuery> subGoals) {
         super(ReasonerQueries.atomic(query, sub),
               sub,
               u,
               parent,
-              subGoals,
-              cache);
+              subGoals);
     }
 
     @Override
@@ -91,17 +89,17 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
      * @return cache unifier if any
      */
     private MultiUnifier getCacheUnifier() {
-        if (cacheUnifier == null) this.cacheUnifier = getCache().getCacheUnifier(getQuery());
+        if (cacheUnifier == null) this.cacheUnifier = getQuery().tx().queryCache().getCacheUnifier(getQuery());
         return cacheUnifier;
     }
 
     private ConceptMap recordAnswer(ReasonerAtomicQuery query, ConceptMap answer) {
         if (answer.isEmpty()) return answer;
         if (cacheEntry == null) {
-            cacheEntry = getCache().record(query, answer, cacheEntry, null);
+            cacheEntry = getQuery().tx().queryCache().record(query, answer, cacheEntry, null);
             return answer;
         }
-        getCache().record(query, answer, cacheEntry, getCacheUnifier());
+        getQuery().tx().queryCache().record(query, answer, cacheEntry, getCacheUnifier());
         return answer;
     }
 
@@ -120,7 +118,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        MultilevelSemanticCache cache = getCache();
+        MultilevelSemanticCache cache = getQuery().tx().queryCache();
 
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);

@@ -21,7 +21,6 @@ package grakn.core.graql.reasoner.state;
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
@@ -65,15 +64,14 @@ public class NeqComplementState extends QueryStateBase {
                               ConceptMap sub,
                               Unifier u,
                               QueryStateBase parent,
-                              Set<ReasonerAtomicQuery> subGoals,
-                              MultilevelSemanticCache cache) {
-        super(sub, u, parent, subGoals, cache);
+                              Set<ReasonerAtomicQuery> subGoals) {
+        super(sub, u, parent, subGoals);
         ResolvableQuery query = ReasonerQueries.resolvable(q, sub);
         this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
         this.neqPredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
                 .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        this.complementState = query.neqPositive().subGoal(sub, u, this, subGoals, cache);
+        this.complementState = query.neqPositive().subGoal(sub, u, this, subGoals);
     }
 
     @Override

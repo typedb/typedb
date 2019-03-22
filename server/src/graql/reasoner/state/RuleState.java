@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -41,9 +40,9 @@ public class RuleState extends QueryStateBase{
     private final InferenceRule rule;
     private final Iterator<ResolutionState> bodyIterator;
 
-    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, MultilevelSemanticCache cache) {
-        super(sub, unifier, parent, visitedSubGoals, cache);
-        this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals, cache));
+    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
+        super(sub, unifier, parent, visitedSubGoals);
+        this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals));
         this.rule = rule;
     }
 

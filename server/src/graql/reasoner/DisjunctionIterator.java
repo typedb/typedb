@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 package grakn.core.graql.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
@@ -60,7 +59,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
         return doNotResolve?
                 tx.stream(Graql.match(conj), false).iterator() :
-                new ResolutionIterator(query, new HashSet<>(), tx.queryCache(), query.requiresReiteration());
+                new ResolutionIterator(query, new HashSet<>(), query.requiresReiteration());
     }
 
     @Override

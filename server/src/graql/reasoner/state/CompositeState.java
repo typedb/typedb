@@ -66,10 +66,10 @@ public class CompositeState extends QueryStateBase {
     private final CompositeQuery query;
     private final Set<ResolvableQuery> complements;
 
-    public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
-        super(sub, u, parent, subGoals, cache);
+    public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals) {
+        super(sub, u, parent, subGoals);
         this.query = query.withSubstitution(sub);
-        this.baseConjunctionState = query.getConjunctiveQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals(), getCache());
+        this.baseConjunctionState = query.getConjunctiveQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals());
         this.complements = query.getComplementQueries();
     }
 
@@ -87,7 +87,7 @@ public class CompositeState extends QueryStateBase {
 
         boolean isNegationSatisfied = complements.stream()
                 .map(q -> ReasonerQueries.resolvable(q, answer))
-                .noneMatch(q -> q.resolve(getVisitedSubGoals(), getCache(), q.requiresReiteration()).findFirst().isPresent());
+                .noneMatch(q -> q.resolve(getVisitedSubGoals(), q.requiresReiteration()).findFirst().isPresent());
 
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :

@@ -48,7 +48,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final ResolvableQuery query;
     private final Set<ConceptMap> answers = new HashSet<>();
 
-    private final MultilevelSemanticCache cache;
     private final Stack<ResolutionState> states = new Stack<>();
 
     private Set<ReasonerAtomicQuery> toComplete = new HashSet<>();
@@ -58,11 +57,10 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate){
+    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
         this.query = q;
         this.reiterationRequired = reiterate;
-        this.cache = cache;
-        states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals, cache));
+        states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
 
     private void markForCompletion(ResolutionState state){
@@ -120,13 +118,13 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (dAns != 0 || iter == 0) {
                 LOG.debug("iter: {} answers: {} dAns = {}", iter, answers.size(), dAns);
                 iter++;
-                states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>(), cache));
+                states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>()));
                 oldAns = answers.size();
                 return hasNext();
             }
         }
 
-        toComplete.forEach(cache::ackCompleteness);
+        toComplete.forEach(query.tx().queryCache()::ackCompleteness);
 
         return false;
     }
