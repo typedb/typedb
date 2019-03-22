@@ -158,16 +158,16 @@ public class GraqlTraversalPlanner {
 
         atoms.stream()
                 .filter(atom -> atom instanceof OntologicalAtom)
-                .forEach(atom -> atomList.add(atom));
+                .forEach(atomList::add);
 
         fragments.stream()
-                .map(fragment -> fragment.varProperty())
-                .filter(property -> Objects.nonNull(property))
-                .filter(property -> properties.contains(property))
+                .map(Fragment::varProperty)
+                .filter(Objects::nonNull)
+                .filter(properties::contains)
                 .distinct()
                 .flatMap(property -> propertyMap.get(property).stream())
                 .distinct()
-                .forEach(atom -> atomList.add(atom));
+                .forEach(atomList::add);
 
         //add any unlinked items (disconnected and indexed for instance)
         propertyMap.values().stream()

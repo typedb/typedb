@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.Concept;
+import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
@@ -80,19 +81,27 @@ public class QueryIT {
             try (TransactionOLTP tx = session.transaction().write()) {
 
                 Role someRole = tx.putRole("someRole");
-                tx.putRelationType("relation0")
-                        .relates(someRole);
+                Entity entity = tx.putEntityType("genericEntity")
+                        .plays(someRole)
+                        .create();
+
+                tx.putRelationType("someRelation")
+                        .relates(someRole)
+                        .create()
+                        .assign(someRole, entity);
+
                 RelationType inferredBase = tx.putRelationType("inferredBase")
                         .relates(someRole);
+                inferredBase
+                        .create()
+                        .assign(someRole, entity);
                 tx.putRelationType("inferred")
                         .relates(someRole).sup(inferredBase);
-                tx.putEntityType("genericEntity")
-                        .plays(someRole);
 
                 tx.putRule("rule1",
                         Graql.parsePattern(
                                 "{" +
-                                        "($x, $y) isa relation0; " +
+                                        "($x, $y) isa someRelation; " +
                                         "($y, $z) isa inferredBase;" +
                                         "};"
                         ),
@@ -116,8 +125,9 @@ public class QueryIT {
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             try (TransactionOLTP tx = session.transaction().write()) {
 
-                tx.putEntityType("genericEntity");
+                tx.putEntityType("genericEntity").create();
                 EntityType baseEntity = tx.putEntityType("baseEntity");
+                baseEntity.create();
                 tx.putEntityType("subEntity").sup(baseEntity);
 
                 tx.putRule("rule1",

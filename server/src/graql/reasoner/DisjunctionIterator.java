@@ -29,6 +29,8 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.MatchClause;
 import java.util.HashSet;
 import java.util.Iterator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DisjunctionIterator extends ReasonerQueryIterator {
 
@@ -36,8 +38,12 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
     private Iterator<ConceptMap> answerIterator;
     private final TransactionOLTP tx;
 
+    private static final Logger LOG = LoggerFactory.getLogger(DisjunctionIterator.class);
+
     public DisjunctionIterator(MatchClause matchClause, TransactionOLTP tx){
         this.tx = tx;
+        //clear cache for now so that it only applies to this disjunction
+        tx.queryCache().clear();
 
         this.conjIterator = matchClause.getPatterns().getNegationDNF().getPatterns().stream().iterator();
         answerIterator = conjunctionIterator(conjIterator.next(), tx);
@@ -49,6 +55,9 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
         boolean doNotResolve = query.getAtoms().isEmpty()
                 || (query.isPositive() && !query.isRuleResolvable());
+
+        LOG.trace("Resolving conjunctive query ({}): {}", doNotResolve, query);
+
         return doNotResolve?
                 tx.stream(Graql.match(conj), false).iterator() :
                 new ResolutionIterator(query, new HashSet<>(), tx.queryCache(), query.requiresReiteration());
@@ -60,7 +69,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
     }
 
     /**
-     * check whether answers available, if answers not fully computed compute more answers
+     * check whether answers available, if answers not fully computed, compute more answers
      * @return true if answers available
      */
     @Override

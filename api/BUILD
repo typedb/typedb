@@ -17,8 +17,8 @@
 #
 #
 
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 
 java_library(
     name = "api",
@@ -41,6 +41,7 @@ assemble_maven(
     name = "assemble-maven",
     target = ":api",
     package = "api",
+    version_file = "//:VERSION",
 )
 
 deploy_maven(

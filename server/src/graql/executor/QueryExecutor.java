@@ -40,6 +40,7 @@ import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -98,17 +99,6 @@ public class QueryExecutor {
         this.transaction = transaction;
     }
 
-    private Stream<ConceptMap> resolveConjunction(Conjunction<Pattern> conj, TransactionOLTP tx){
-        ResolvableQuery query = ReasonerQueries.resolvable(conj, tx).rewrite();
-        query.checkValid();
-
-        boolean doNotResolve = query.getAtoms().isEmpty()
-                || (query.isPositive() && !query.isRuleResolvable());
-        return doNotResolve?
-                tx.stream(Graql.match(conj), false) :
-                new ResolutionIterator(query, new HashSet<>(), tx.queryCache(), query.requiresReiteration()).hasStream();
-    }
-
     public Stream<ConceptMap> match(MatchClause matchClause) {
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
@@ -121,13 +111,7 @@ public class QueryExecutor {
                 return traversal(matchClause.getPatterns().variables(), graqlTraversal);
             }
 
-            Iterator<Conjunction<Pattern>> conjIt = matchClause.getPatterns().getNegationDNF().getPatterns().iterator();
-            Stream<ConceptMap> answerStream = Stream.empty();
-            while (conjIt.hasNext()) {
-                answerStream = Stream.concat(answerStream, resolveConjunction(conjIt.next(), transaction));
-            }
-
-            //Stream<ConceptMap> answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
+            Stream<ConceptMap> answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
             return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
         } catch (GraqlQueryException e) {
             System.err.println(e.getMessage());
@@ -137,7 +121,7 @@ public class QueryExecutor {
 
     /**
      * @param commonVars     set of variables of interest
-     * @param graqlTraversal gral traversal corresponding to the provided pattern
+     * @param graqlTraversal graql traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
     public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
@@ -276,10 +260,17 @@ public class QueryExecutor {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
 
         conceptsToDelete.forEach(concept -> {
+            // a concept is either a schema concept or a thing
             if (concept.isSchemaConcept()) {
                 throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+            } else if (concept.isThing()) {
+                // if it's not inferred, we can delete it
+                if (!concept.asThing().isInferred()) {
+                    concept.delete();
+                }
+            } else {
+                throw GraknServerException.create("Unhandled concept type isn't a schema concept or a thing");
             }
-            concept.delete();
         });
 
         // TODO: return deleted Concepts instead of ConceptIds

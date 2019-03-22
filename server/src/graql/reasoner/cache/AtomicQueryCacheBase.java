@@ -77,4 +77,14 @@ public abstract class AtomicQueryCacheBase<
             dbCompleteEntries.add(queryToKey(query));
         }
     }
+
+    @Override
+    public void clear(){
+        super.clear();
+        dbCompleteQueries.clear();
+        dbCompleteEntries.clear();
+
+        completeQueries.clear();
+        completeEntries.clear();
+    }
 }

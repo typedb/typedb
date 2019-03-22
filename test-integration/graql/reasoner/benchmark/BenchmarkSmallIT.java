@@ -210,7 +210,6 @@ public class BenchmarkSmallIT {
 
         assertEquals(executeQuery(query, tx, "full").size(), answers);
         assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
-        assertEquals(executeQuery(query, tx, "full").size(), answers);
 
         executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
         executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);

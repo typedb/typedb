@@ -35,7 +35,6 @@ graknlabs_build_tools()
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
 graknlabs_bazel_distribution()
 
-
 ###########################
 # Load Bazel dependencies #
 ###########################

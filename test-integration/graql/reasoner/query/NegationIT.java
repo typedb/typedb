@@ -54,6 +54,7 @@ import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 
@@ -375,7 +376,7 @@ public class NegationIT {
             EntityType specificType = tx.getEntityType(specificTypeLabel);
 
             List<ConceptMap> fullAnswers = tx.execute(Graql.parse("match $x has attribute $r;get;").asGet());
-            List<ConceptMap> answersWithoutSpecifcTypeAndValue = tx.execute(Graql.<GraqlGet>parse(
+            List<ConceptMap> answersWithoutSpecificTypeAndValue = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "$x has attribute $r;" +
                             "not {$x isa " + specificTypeLabel + ";};" +
@@ -389,7 +390,7 @@ public class NegationIT {
                     .collect(toList());
             assertCollectionsNonTriviallyEqual(
                     expectedAnswers,
-                    answersWithoutSpecifcTypeAndValue
+                    answersWithoutSpecificTypeAndValue
             );
         }
     }
@@ -570,13 +571,13 @@ public class NegationIT {
     public void testStratifiedProgram(){
         try (TransactionOLTP tx = reachabilitySession.transaction().write()) {
             List<ConceptMap> indirectLinksWithOrigin = tx.execute(
-                    Graql.<GraqlGet>parse("match " +
+                        Graql.<GraqlGet>parse("match " +
                                 "(from: $x, to: $y) isa unreachable;" +
                                 "$x has index 'a';" +
                                 "get;"
-                    ));
+                        ));
 
-            List<ConceptMap> expected = tx.execute(
+            Set<ConceptMap> expected = tx.stream(
                     Graql.<GraqlGet>parse(
                                 "match " +
                                         "$x has index 'a';" +
@@ -587,7 +588,8 @@ public class NegationIT {
                                         "{$y has index 'cc';} or " +
                                         "{$y has index 'dd';};" +
                                         "get;"
-                    ));
+                    )).collect(toSet());
+
             assertCollectionsNonTriviallyEqual(expected, indirectLinksWithOrigin);
         }
     }
