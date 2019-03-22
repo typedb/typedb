@@ -492,7 +492,11 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     private static String PLACEHOLDER_ID = "placeholder_id";
 
-    private boolean isCacheComplete(){
+    /**
+     *
+     * @return
+     */
+    public boolean isCacheComplete(){
         //TODO sort out properly
         if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
