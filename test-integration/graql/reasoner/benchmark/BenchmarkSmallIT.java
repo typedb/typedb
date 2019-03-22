@@ -202,8 +202,6 @@ public class BenchmarkSmallIT {
         transitivityChainGraph.load(N);
         TransactionOLTP tx = session.transaction().write();
 
-        
-
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GraqlGet query = Graql.parse(queryString).asGet();
 

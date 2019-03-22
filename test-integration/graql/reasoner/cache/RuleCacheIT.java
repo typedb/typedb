@@ -19,7 +19,9 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.rule.InferenceRule;
@@ -28,9 +30,8 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.RuleCache;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.statement.Statement;
+import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.AfterClass;
@@ -42,6 +43,7 @@ import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
@@ -128,11 +130,36 @@ public class RuleCacheIT {
         }
     }
 
+    @Test
+    public void whenFetchingRules_fruitlessRulesAreNotReturned(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            Type description = tx.getType(Label.of("description"));
+            Set<Rule> filteredRules = description.thenRules()
+                    .filter(r -> tx.stream(Graql.match(r.when())).findFirst().isPresent())
+                    .collect(Collectors.toSet());
+            Set<Rule> fetchedRules = tx.ruleCache().getRulesWithType(description).collect(Collectors.toSet());
+            //NB:db lookup filters more aggressively, hence we check for containment
+            assertTrue(fetchedRules.containsAll(filteredRules));
 
-    private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parsePattern(patternString)
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+            //even though rules are filtered, the type has instances
+            assertTrue(!fetchedRules.isEmpty());
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+        }
     }
+
+    @Test
+    public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
+
+            singleRoleEntity.instances().forEach(Concept::delete);
+
+            assertTrue(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
+
+            singleRoleEntity.create();
+
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
+        }
+    }
+
 }
