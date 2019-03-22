@@ -50,6 +50,7 @@ assemble_maven(
     target = ":daemon",
     package = "daemon",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

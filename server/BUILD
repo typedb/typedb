@@ -187,6 +187,7 @@ assemble_maven(
     target = ":server",
     package = "server",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(
