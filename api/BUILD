@@ -42,6 +42,7 @@ assemble_maven(
     target = ":api",
     package = "api",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(
