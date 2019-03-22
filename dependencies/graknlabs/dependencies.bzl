@@ -19,14 +19,14 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_graql():
+    # TODO: update to graknlabs/graql before merging the PR
      git_repository(
          name = "graknlabs_graql",
-         remote = "https://github.com/graknlabs/graql",
-         commit = "173065956dd6f8c73d0fb9694dd702ec9768cc42",
+         remote = "https://github.com/lolski/graql",
+         commit = "360af308df6b36edf5c22459f59475a9ba91ce6d",
      )
 
 def graknlabs_client_java():
-    # TODO: update to graknlabs/client-java before merging the PR
      git_repository(
          name = "graknlabs_client_java",
          remote = "https://github.com/graknlabs/client-java",

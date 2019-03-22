@@ -322,11 +322,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
-      - deploy-maven-test
-#       TODO: enable before merging to master
-#          filters:
-#            branches:
-#              only: master
+      - deploy-maven-test:
+          filters:
+            branches:
+              only: deploy-maven-test  # TODO: replace with master before merging the PR
       - test-assembly-mac-zip:
           filters:
             branches:
