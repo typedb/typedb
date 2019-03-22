@@ -170,7 +170,7 @@ public class QueryCacheIT {
     }
 
     @Test
-    public void whenGettingAndMatchDoesntExist_cachedParentAvailableButNotParentOfTheQuery_answersFetchedFromDB(){
+    public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreEquivalent_answersFetchedFromDB(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
@@ -189,6 +189,8 @@ public class QueryCacheIT {
             tx.execute(parentQuery.getQuery(), false).stream()
                     .map(ans -> ans.explain(new RuleExplanation(parentQuery.getPattern(), ConceptId.of("someRule"))))
                     .forEach(ans -> cache.record(parentQuery, ans));
+
+            //NB: WE ACK COMPLETENESS
             cache.ackDBCompleteness(parentQuery);
 
             //fetch a query that subsumes parent
@@ -205,6 +207,7 @@ public class QueryCacheIT {
 
             assertNotNull(cache.getEntry(childQuery));
             childAnswers.forEach(ans -> assertTrue(ans.explanation().isRuleExplanation()));
+            assertTrue(cache.isDBComplete(childQuery));
 
             //fetch a different query, the query is structurally equivalent to the child query but
             //should have no parents in the cache so the answer needs to be fetched from the db
@@ -219,13 +222,15 @@ public class QueryCacheIT {
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
             assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
+            //should be false cause there is no parent and we do not ack it explicitly
+            assertFalse(cache.isDBComplete(anotherChildQuery));
 
             anotherChildAnswers.forEach(ans -> assertTrue(ans.explanation().isLookupExplanation()));
         }
     }
 
     @Test
-    public void whenGettingAndMatchDoesntExist_cachedParentAvailableButNotParentOfTheQuery_childQueriesAreNotEquivalent_answersFetchedFromDB(){
+    public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreNotEquivalent_answersFetchedFromDB(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
@@ -233,20 +238,6 @@ public class QueryCacheIT {
             ConceptId mConcept = tx.stream(Graql.<GraqlGet>parse("match $m isa subSubRoleEntity, has resource 'm';get;")).iterator().next().get("m").id();
             ConceptId dConcept = tx.stream(Graql.<GraqlGet>parse("match $d isa subSubRoleEntity, has resource 'd';get;")).iterator().next().get("d").id();
             ConceptId sConcept = tx.stream(Graql.<GraqlGet>parse("match $s isa subSubRoleEntity, has resource 's';get;")).iterator().next().get("s").id();
-
-            /*
-            (baseRole1: $b, subRole2: $f, subSubRole3: $m) isa ternary;
-(baseRole1: $f, subRole2: $f, subSubRole3: $m) isa ternary;
-
-(subRole1: $f, subRole2: $m, subSubRole3: $d) isa ternary;
-(subRole1: $f, subRole2: $f, subSubRole3: $d) isa ternary;
-
-(subRole1: $f, subSubRole2: $m, subSubRole3: $d) isa ternary;
-(subRole1: $m, subSubRole2: $m, subSubRole3: $d) isa ternary;
-
-(subSubRole1: $m, subSubRole2: $d, subSubRole3: $s) isa ternary;
-(subSubRole1: $m, subSubRole2: $m, subSubRole3: $s) isa ternary;
-             */
 
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(
                     "{" +
@@ -274,6 +265,7 @@ public class QueryCacheIT {
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
 
             assertNotNull(cache.getEntry(childQuery));
+            assertTrue(cache.isDBComplete(childQuery));
 
             //fetch a different query that is not structurally equivalent to the child query,
             //consequently the query should have no parents in the cache so the answer needs to be fetched from the db
@@ -290,6 +282,65 @@ public class QueryCacheIT {
             assertTrue(!anotherChildAnswers.isEmpty());
             assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
             assertNull(cache.getEntry(anotherChildQuery));
+            assertFalse(cache.isDBComplete(anotherChildQuery));
+        }
+    }
+
+    @Test
+    public void whenGettingAndMatchDoesntExist_prospectiveParentNotComplete_childQueriesAreNotEquivalent_answersFetchedFromDB(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+
+            ConceptId fConcept = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
+            ConceptId mConcept = tx.stream(Graql.<GraqlGet>parse("match $m isa subSubRoleEntity, has resource 'm';get;")).iterator().next().get("m").id();
+            ConceptId dConcept = tx.stream(Graql.<GraqlGet>parse("match $d isa subSubRoleEntity, has resource 'd';get;")).iterator().next().get("d").id();
+            ConceptId sConcept = tx.stream(Graql.<GraqlGet>parse("match $s isa subSubRoleEntity, has resource 's';get;")).iterator().next().get("s").id();
+
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
+                            "$z id '" + dConcept.getValue() + "';" +
+                            "};",
+                    tx), tx);
+
+            //record parent, mark the answers to be explained by a rule so that we can distinguish them
+            tx.execute(parentQuery.getQuery(), false).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
+                    .forEach(ans -> cache.record(parentQuery, ans));
+
+            //fetch a query that subsumes parent
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
+                            "$x id '" + fConcept.getValue() + "';" +
+                            "$z id '" + dConcept.getValue() + "';" +
+                            "};",
+                    tx), tx);
+
+            Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
+            assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
+
+            //since the parent is incomplete, no new entry will be created
+            assertNull(cache.getEntry(childQuery));
+            assertFalse(cache.isDBComplete(childQuery));
+
+            //Fetch a different query that is not structurally equivalent to the child query.
+            //The query has no entry in the cache but has a parent though, and although it is not dbComplete this query is ground so answers
+            //should be fetched from parent and the query should be dbComplete acked.
+            ReasonerAtomicQuery anotherChildQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
+                            "$x id '" + fConcept.getValue() + "';" +
+                            "$y id '" + mConcept.getValue() + "';" +
+                            "$z id '" + dConcept.getValue() + "';" +
+                            "};",
+                    tx), tx);
+
+            Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
+            assertTrue(!anotherChildAnswers.isEmpty());
+            assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
+            assertNotNull(cache.getEntry(anotherChildQuery));
+            assertTrue(cache.isDBComplete(anotherChildQuery));
         }
     }
 

@@ -112,7 +112,11 @@ public abstract class SemanticCache<
     final private Set<ReasonerAtomicQuery> dbCompleteQueries = new HashSet<>();
     final private Set<QE> dbCompleteEntries = new HashSet<>();
 
-    private boolean isDBComplete(ReasonerAtomicQuery query){
+    /**
+     * @param query to check
+     * @return true if this query is db complete - cache contains all db answers for this query
+     */
+    public boolean isDBComplete(ReasonerAtomicQuery query){
         return dbCompleteEntries.contains(queryToKey(query))
                 || dbCompleteQueries.contains(query);
     }
@@ -124,7 +128,7 @@ public abstract class SemanticCache<
             dbCompleteEntries.add(queryToKey(query));
         }
     }
-    
+
     private Set<QE> getParents(ReasonerAtomicQuery child){
         Set<QE> parents = this.parents.get(queryToKey(child));
         if (parents.isEmpty()) parents = computeParents(child);
@@ -272,8 +276,9 @@ public abstract class SemanticCache<
 
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
-        boolean fetchFromParent = !parents.isEmpty()
-                && parents.stream().anyMatch(p -> isDBComplete(keyToQuery(p)));
+        boolean fetchFromParent = parents.stream().anyMatch(p ->
+                query.isGround() || isDBComplete(keyToQuery(p))
+        );
         if (fetchFromParent){
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
             return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
