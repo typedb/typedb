@@ -128,13 +128,11 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: |
-          echo $CIRCLE_SHA1 > VERSION
-          cat VERSION
-      - run: bazel run //api:deploy-maven -- snapshot $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //protocol:deploy-maven -- snapshot $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //concept:deploy-maven -- snapshot $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //common:deploy-maven -- snapshot $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: echo $CIRCLE_SHA1
+      - run: bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //protocol:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
 
   test-assembly-mac-zip:
     macos:
