@@ -86,7 +86,7 @@ java_library(
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
-    tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:server:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 
 )
