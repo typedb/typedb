@@ -37,6 +37,6 @@ def graknlabs_build_tools():
     # TODO: update to graknlabs/build-tools before merging the PR
     git_repository(
         name = "graknlabs_build_tools",
-        remote = "https://github.com/graknlabs/build-tools",
+        remote = "https://github.com/lolski/build-tools",
         commit = "532c8cfae971138449d1ec4f2399b061a978ef82", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
