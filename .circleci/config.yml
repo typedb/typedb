@@ -187,9 +187,9 @@ jobs:
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
-      - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-apt
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-apt
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-apt
       - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
@@ -225,9 +225,9 @@ jobs:
       - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
       - run: sed -i -e 's/-/_/g' VERSION
       - run: cat VERSION
-      - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-rpm
       - run: cp VERSION VERSION.rpm
       - persist_to_workspace:
           root: ~/grakn

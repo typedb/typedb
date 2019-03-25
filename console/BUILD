@@ -50,7 +50,7 @@ java_library(
     visibility = ["//console/test:__subpackages__"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
-    tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:console:{pom_version}"],
 )
 
 checkstyle_test(

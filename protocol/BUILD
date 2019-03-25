@@ -41,7 +41,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
     ],
-    tags = ["maven_coordinates=grakn.core:protocol:{pom_version}", "checkstyle_ignore"],
+    tags = ["maven_coordinates=io.grakn.core:protocol:{pom_version}", "checkstyle_ignore"],
 )
 
 assemble_maven(
