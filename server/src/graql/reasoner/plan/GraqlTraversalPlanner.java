@@ -126,7 +126,7 @@ public class GraqlTraversalPlanner {
      * @param subs extra substitutions in the form of id predicates
      * @return conjunctive pattern composed of atoms + their constraints + subs
      */
-    private static Conjunction<Pattern> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
+    public static Conjunction<Pattern> atomsToPattern(List<Atom> atoms, Set<IdPredicate> subs){
         return Graql.and(
                 Stream.concat(
                         atoms.stream().flatMap(at -> Stream.concat(Stream.of(at), at.getNonSelectableConstraints())),
@@ -158,16 +158,16 @@ public class GraqlTraversalPlanner {
 
         atoms.stream()
                 .filter(atom -> atom instanceof OntologicalAtom)
-                .forEach(atom -> atomList.add(atom));
+                .forEach(atomList::add);
 
         fragments.stream()
-                .map(fragment -> fragment.varProperty())
-                .filter(property -> Objects.nonNull(property))
-                .filter(property -> properties.contains(property))
+                .map(Fragment::varProperty)
+                .filter(Objects::nonNull)
+                .filter(properties::contains)
                 .distinct()
                 .flatMap(property -> propertyMap.get(property).stream())
                 .distinct()
-                .forEach(atom -> atomList.add(atom));
+                .forEach(atomList::add);
 
         //add any unlinked items (disconnected and indexed for instance)
         propertyMap.values().stream()

@@ -27,11 +27,14 @@ baseRole3 sub role;
 subRole3 sub baseRole3;
 subSubRole3 sub subRole3;
 
+symmetricRole sub role;
+
 #Entities
 #simple vertical hierarchy
 
 baseEntity sub entity,
     has resource,
+    plays symmetricRole,
     plays baseRole1,
     plays baseRole2,
     plays baseRole3,
@@ -54,6 +57,12 @@ subSubRoleEntity sub subRoleEntity,
 
 baseRelation sub relation, abstract,
     has resource;
+
+binary-symmetric sub baseRelation,
+    relates symmetricRole;
+
+binary-trans sub baseRelation,
+    relates symmetricRole;
 
 binary sub baseRelation,
     relates baseRole1,
@@ -87,6 +96,24 @@ resource sub attribute, datatype string,
 resource-long sub attribute, datatype long,
     plays baseRole1,
     plays baseRole2;
+
+
+binarySymmetricity sub rule,
+when {
+    (baseRole1: $x, baseRole2: $y) isa binary;
+},
+then {
+    (symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;
+};
+
+binaryTransitivity sub rule,
+when {
+    (symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;
+    (symmetricRole: $y, symmetricRole: $z) isa binary-symmetric;
+},
+then {
+    (symmetricRole: $y, symmetricRole: $z) isa binary-trans;
+};
 
 insert
 

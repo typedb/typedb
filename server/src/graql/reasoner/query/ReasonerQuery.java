@@ -46,7 +46,7 @@ public interface ReasonerQuery{
     ReasonerQuery conjunction(ReasonerQuery q);
 
     /**
-     * @return {@link Transaction} associated with this reasoner query
+     * @return tx associated with this reasoner query
      */
     @CheckReturnValue
     TransactionOLTP tx();

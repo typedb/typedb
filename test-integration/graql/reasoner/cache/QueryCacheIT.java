@@ -22,10 +22,12 @@ import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -33,7 +35,9 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -64,7 +68,6 @@ public class QueryCacheIT {
         loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
     }
 
-
     @AfterClass
     public static void closeSession() {
         genericSchemaSession.close();
@@ -75,7 +78,7 @@ public class QueryCacheIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
 
             //mock answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -110,8 +113,8 @@ public class QueryCacheIT {
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id '" + mConcept.id().getValue() + "';" +
                             "$y id '" + sConcept.id().getValue() + "';" +
-                            "};"
-                    , tx), tx);
+                            "};"),
+                    tx);
 
             //mock a specific answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -120,7 +123,7 @@ public class QueryCacheIT {
                     new LookupExplanation(childQuery.getPattern())
             );
 
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
 
             //record parent
             tx.execute(parentQuery.getQuery()).stream()
@@ -140,7 +143,7 @@ public class QueryCacheIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
             Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
 
@@ -153,7 +156,7 @@ public class QueryCacheIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
             //record parent
             tx.execute(parentQuery.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
@@ -161,7 +164,7 @@ public class QueryCacheIT {
             cache.ackDBCompleteness(parentQuery);
 
             //retrieve child
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
             Set<ConceptMap> cacheAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery()).collect(toSet()), cacheAnswers);
 
@@ -182,8 +185,8 @@ public class QueryCacheIT {
                     "{" +
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$y id '" + dConcept.getValue() + "';" +
-                    "};",
-                    tx), tx);
+                    "};"),
+                    tx);
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
@@ -199,8 +202,8 @@ public class QueryCacheIT {
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id '" + id.getValue() + "';" +
                             "$y id '" + dConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
@@ -216,8 +219,8 @@ public class QueryCacheIT {
                             "(baseRole1: $x, baseRole2: $y) isa binary;" +
                             "$x id '" + id.getValue() + "';" +
                             "$y id '" + sConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
@@ -243,8 +246,8 @@ public class QueryCacheIT {
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$z id '" + dConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
@@ -258,8 +261,8 @@ public class QueryCacheIT {
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id '" + fConcept.getValue() + "';" +
                             "$z id '" + dConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
@@ -275,8 +278,8 @@ public class QueryCacheIT {
                             "$x id '" + mConcept.getValue() + "';" +
                             "$y id '" + mConcept.getValue() + "';" +
                             "$z id '" + sConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
@@ -300,8 +303,8 @@ public class QueryCacheIT {
                     "{" +
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$z id '" + dConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             //record parent, mark the answers to be explained by a rule so that we can distinguish them
             tx.execute(parentQuery.getQuery(), false).stream()
@@ -314,8 +317,8 @@ public class QueryCacheIT {
                             "(baseRole1: $x, baseRole2: $y, baseRole3: $z) isa ternary;" +
                             "$x id '" + fConcept.getValue() + "';" +
                             "$z id '" + dConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             Set<ConceptMap> childAnswers = cache.getAnswers(childQuery);
             assertEquals(tx.stream(childQuery.getQuery(), false).collect(toSet()), childAnswers);
@@ -333,8 +336,8 @@ public class QueryCacheIT {
                             "$x id '" + fConcept.getValue() + "';" +
                             "$y id '" + mConcept.getValue() + "';" +
                             "$z id '" + dConcept.getValue() + "';" +
-                            "};",
-                    tx), tx);
+                            "};"),
+                    tx);
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
             assertTrue(!anotherChildAnswers.isEmpty());
@@ -349,7 +352,7 @@ public class QueryCacheIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
             //record
             tx.execute(query.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(query.getPattern())))
@@ -369,7 +372,7 @@ public class QueryCacheIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
             //record
             tx.execute(query.getQuery()).stream()
                     .map(ans -> ans.explain(new LookupExplanation(query.getPattern())))
@@ -397,7 +400,7 @@ public class QueryCacheIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
             //record parent
             tx.stream(parentQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
@@ -414,8 +417,8 @@ public class QueryCacheIT {
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id '" + fConcept.id().getValue() + "';" +
                             "$y id '" + sConcept.id().getValue() + "';" +
-                            "};"
-                    , tx), tx);
+                            "};"),
+                    tx);
             tx.stream(preChildQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(preChildQuery.getPattern())))
                     .forEach(ans -> cache.record(preChildQuery, ans));
@@ -426,8 +429,8 @@ public class QueryCacheIT {
                     "(subRole1: $x, subRole2: $y) isa binary;" +
                                 "$x id '" + mConcept.id().getValue() + "';" +
                                 "$y id '" + sConcept.id().getValue() + "';" +
-                            "};"
-                    , tx), tx);
+                            "};"),
+                    tx);
 
             //mock a specific answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -455,8 +458,8 @@ public class QueryCacheIT {
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id '" + mConcept.id().getValue() + "';" +
-                            "};"
-                    , tx), tx);
+                            "};"),
+                    tx);
 
             //mock a specific answer
             ConceptMap specificAnswer = new ConceptMap(ImmutableMap.of(
@@ -476,13 +479,13 @@ public class QueryCacheIT {
                     "{" +
                             "(subRole1: $x, subRole2: $y) isa binary;" +
                             "$x id '" + fConcept.id().getValue() + "';" +
-                            "};"
-                    , tx), tx);
+                            "};")
+                    , tx);
             tx.stream(preChildQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(preChildQuery.getPattern())))
                     .forEach(ans -> cache.record(preChildQuery, ans));
 
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;", tx), tx);
+            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
             //record parent
             tx.stream(parentQuery.getQuery())
                     .map(ans -> ans.explain(new LookupExplanation(parentQuery.getPattern())))
@@ -504,7 +507,61 @@ public class QueryCacheIT {
         }
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx) {
+    @Test
+    public void whenExecutingSameQueryTwice_secondTimeWeFetchResultFromCache(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = new MultilevelSemanticCache();
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
+            //record parent
+            Set<ConceptMap> answers = tx.execute(query.getQuery()).stream()
+                    .map(ans -> ans.explain(new LookupExplanation(query.getPattern())))
+                    .peek(ans -> cache.record(query, ans))
+                    .collect(toSet());
+            cache.ackCompleteness(query);
+
+            CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> match = cache.getEntry(query);
+
+            assertNotNull(match);
+            assertEquals(answers, match.cachedElement().getAll());
+        }
+    }
+
+    @Test
+    public void whenExecutingConjunctionWithPartialQueriesComplete_weExploitCache(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(
+                    "{" +
+                            "$x isa baseEntity;" +
+                            "$link isa baseEntity;" +
+                            "(baseRole1: $x, baseRole2: $link) isa ternary;" +
+                            "(baseRole2: $link, baseRole2: $y) isa ternary;" +
+                            "(symmetricRole: $y, symmetricRole: $z) isa binary-symmetric;" +
+                            "(symmetricRole: $z, symmetricRole: $w) isa binary-trans;" +
+                            "};"
+            ), tx);
+
+            //record all partial queries
+            query.getAtoms(RelationAtom.class)
+                    .map(ReasonerQueries::atomic)
+                    .forEach(q -> q.resolve(new HashSet<>(),  q.requiresReiteration()).collect(Collectors.toSet()));
+
+            Set<ConceptMap> preFetchCache = getCacheContent(tx);
+
+            assertTrue(query.isCacheComplete());
+            Set<ConceptMap> answers = query.resolve(new HashSet<>(), query.requiresReiteration()).collect(toSet());
+            assertEquals(preFetchCache, getCacheContent(tx));
+        }
+    }
+
+    private Set<ConceptMap> getCacheContent(TransactionOLTP tx){
+        return tx.queryCache().queries().stream()
+                .map(q -> tx.queryCache().getEntry(q))
+                .flatMap(e -> e.cachedElement().getAll().stream())
+                .collect(toSet());
+    }
+
+
+    private Conjunction<Statement> conjunction(String patternString) {
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

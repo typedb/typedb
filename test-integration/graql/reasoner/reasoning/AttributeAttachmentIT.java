@@ -223,7 +223,7 @@ public class AttributeAttachmentIT {
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void derivingAttributeWithSpecificValue() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-                        String queryString = "match $x has derived-resource-string 'value'; get;";
+            String queryString = "match $x has derived-resource-string 'value'; get;";
             String queryString2 = "match $x has derived-resource-string $r; get;";
             GraqlGet query = Graql.parse(queryString).asGet();
             GraqlGet query2 = Graql.parse(queryString2).asGet();

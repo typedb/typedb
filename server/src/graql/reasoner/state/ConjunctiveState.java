@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
@@ -36,9 +35,8 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
                             ConceptMap sub,
                             Unifier u,
                             QueryStateBase parent,
-                            Set<ReasonerAtomicQuery> visitedSubGoals,
-                            MultilevelSemanticCache cache) {
-        super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals, cache);
+                            Set<ReasonerAtomicQuery> visitedSubGoals) {
+        super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals);
     }
 
     @Override

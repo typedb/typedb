@@ -849,7 +849,8 @@ public abstract class RelationAtom extends IsaAtomBase {
                     .forEach(rp -> {
                         Statement roleTypeVar = rp.getRole().orElse(null);
                         String rl = roleTypeVar != null ? roleTypeVar.getType().orElse(null) : null;
-                        if (roleLabel != null && roleLabel.equals(Label.of(rl))) {
+                        if (roleLabel != null &&
+                                ( rl == null || roleLabel.equals(Label.of(rl))) ) {
                             roleRelationPlayerMap.put(role, rp);
                         }
                     });
