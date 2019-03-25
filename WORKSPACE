@@ -29,6 +29,9 @@ graknlabs_graql()
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
 
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_benchmark")
+graknlabs_benchmark()
+
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools")
 graknlabs_build_tools()
 
@@ -90,6 +93,14 @@ antlr_dependencies()
 load("@graknlabs_graql//dependencies/maven:dependencies.bzl",
 graknlabs_graql_maven_dependencies = "maven_dependencies")
 graknlabs_graql_maven_dependencies()
+
+
+###########################
+# Load Benchmark dependencies #
+###########################
+load("@graknlabs_benchmark//dependencies/maven:dependencies.bzl",
+graknlabs_benchmark_maven_dependencies = "maven_dependencies")
+graknlabs_benchmark_maven_dependencies()
 
 
 #######################################
