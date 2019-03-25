@@ -41,9 +41,10 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/grakn/benchmark:lib",
+
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",

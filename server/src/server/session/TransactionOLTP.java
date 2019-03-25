@@ -19,7 +19,7 @@
 package grakn.core.server.session;
 
 import brave.ScopedSpan;
-import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
@@ -874,8 +874,8 @@ public class TransactionOLTP implements Transaction {
 
         /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
         ScopedSpan span = null;
-        if (ServerTracingInstrumentation.tracingActive()) {
-            span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs validate");
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("commitWithLogs validate");
         }
 
         checkMutationAllowed();
@@ -887,7 +887,7 @@ public class TransactionOLTP implements Transaction {
 
         if (span != null) {
             span.finish();
-            span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs commit");
+            span = ServerTracing.startScopedChildSpan("commitWithLogs commit");
         }
 
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
@@ -902,7 +902,7 @@ public class TransactionOLTP implements Transaction {
 
             if (span != null) {
                 span.finish();
-                span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs create log");
+                span = ServerTracing.startScopedChildSpan("commitWithLogs create log");
             }
 
             Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
