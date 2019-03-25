@@ -20,8 +20,6 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
@@ -62,17 +60,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
 
-    private void markForCompletion(ResolutionState state){
-        if (state.isQueryState()){
-            ReasonerQueryImpl query = state.asQueryState().getQuery();
-            if (query.isAtomic()){
-                toComplete.add(
-                        ReasonerQueries.atomic(query.selectAtoms().iterator().next())
-                );
-            }
-        }
-    }
-
     private ConceptMap findNextAnswer(){
         while(!states.isEmpty()) {
             ResolutionState state = states.pop();
@@ -83,7 +70,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return state.getSubstitution();
             }
 
-            markForCompletion(state);
+            state.completionQueries().forEach(toComplete::add);
+
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);

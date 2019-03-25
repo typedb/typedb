@@ -50,12 +50,6 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
 
-    @Override
-    public boolean isQueryState(){ return true;}
-
-    @Override
-    public QueryState<? extends ReasonerQueryImpl> asQueryState(){ return this; }
-
     /**
      * @return query corresponding to this query state
      */

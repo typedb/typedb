@@ -33,6 +33,7 @@ import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
@@ -84,6 +85,9 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         }
         return recordAnswer(query, answer);
     }
+
+    @Override
+    public Stream<ReasonerAtomicQuery> completionQueries(){ return Stream.of(getQuery());}
 
     /**
      * @return cache unifier if any
