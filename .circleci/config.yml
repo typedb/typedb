@@ -122,6 +122,18 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
+  deploy-maven-test:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo $CIRCLE_SHA1
+      - run: bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //protocol:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+
   test-assembly-mac-zip:
     macos:
       xcode: "9.0"
@@ -308,6 +320,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-core-release-branch
+      - deploy-maven-test:
+          filters:
+            branches:
+              only: master
       - test-assembly-mac-zip:
           filters:
             branches:
@@ -324,7 +340,6 @@ workflows:
           filters:
             branches:
               only: master
-
       - test-deployment-linux-apt:
           filters:
             branches:
