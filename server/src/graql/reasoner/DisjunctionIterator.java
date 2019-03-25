@@ -31,6 +31,18 @@ import java.util.Iterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Iterator to handle execution of disjunctions.
+ * We compose the disjunction into DNF - a collection of conjunctions. Then the disjunction iterator works as follows:
+ *
+ * - we define an answer iterator which corresponds to the iterator of the currently processed conjunction
+ * - if we run out of answers in the answer iterator, we reinitialise it with the iterator of the next conjunction
+ * - we do that until we run out of both answers in the answer iterator and conjunctions in the DNF
+ *
+ * NB: currently we clear the cache at the beginning of processing to ensure it is reused only in the context of a single
+ * disjunction
+ *
+ */
 public class DisjunctionIterator extends ReasonerQueryIterator {
 
     final private Iterator<Conjunction<Pattern>> conjIterator;

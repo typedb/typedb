@@ -25,8 +25,19 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * @param <QE>
- * @param <SE>
+ *
+ * Base class for query caches for atomic queries.
+ * Implements the acking behaviour for queries:
+ *
+ * - DB completeness - a query is marked as DB complete if we are sure that the cache contains all the DB (persisted)
+ * answers to that query
+ *
+ * - completeness - a query is marked as complete if we are sure that the cache contains all the answers (including inferred)
+ * to that query. A complete query is also DB complete.
+ *
+ * @param <QE> cache entry query type
+ * @param <SE> cache entry storage type
+ *
  */
 public abstract class AtomicQueryCacheBase<
         QE,
@@ -60,20 +71,6 @@ public abstract class AtomicQueryCacheBase<
         if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
             dbCompleteQueries.add(query);
         } else {
-            dbCompleteEntries.add(queryToKey(query));
-        }
-    }
-
-    void ackCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
-        if (completeQueries.contains(parent)) completeQueries.add(query);
-        if (completeEntries.contains(queryToKey(parent))){
-            completeEntries.add(queryToKey(query));
-        }
-    }
-
-    void ackDBCompletenessFromParent(ReasonerAtomicQuery query, ReasonerAtomicQuery parent){
-        if (dbCompleteQueries.contains(parent)) dbCompleteQueries.add(query);
-        if (dbCompleteEntries.contains(queryToKey(parent))){
             dbCompleteEntries.add(queryToKey(query));
         }
     }
