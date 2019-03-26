@@ -283,19 +283,21 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: |
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
-          --source grakn@$CIRCLE_SHA1 \
-          --targets \
-          client-java:master client-python:master client-nodejs:master \
-          workbase:master docs:development examples:development
+# TODO: revert
+#      - run: |
+#          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
+#          --source grakn@$CIRCLE_SHA1 \
+#          --targets \
+#          client-java:master client-python:master client-nodejs:master \
+#          workbase:master docs:development examples:development
 
   release-approval:
     machine: true
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run @graknlabs_build_tools//ci:release-approval
+# TODO: revert
+#      - run: bazel run @graknlabs_build_tools//ci:release-approval
 
   release-github-draft:
     machine: true
@@ -349,7 +351,7 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - build
             - test-common
@@ -362,7 +364,7 @@ workflows:
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - build
             - test-common
@@ -375,7 +377,7 @@ workflows:
       - test-assembly-linux-targz:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - build
             - test-common
@@ -388,7 +390,7 @@ workflows:
       - test-assembly-linux-apt:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - build
             - test-common
@@ -401,7 +403,7 @@ workflows:
       - test-assembly-linux-rpm:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - build
             - test-common
@@ -414,7 +416,7 @@ workflows:
       - test-assembly-docker:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - build
             - test-common
@@ -427,7 +429,7 @@ workflows:
       - deploy-maven-test:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -438,7 +440,7 @@ workflows:
       - deploy-apt-test:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -449,7 +451,7 @@ workflows:
       - deploy-rpm-test:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
@@ -460,19 +462,19 @@ workflows:
       - test-deployment-linux-apt:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - deploy-apt-test
       - test-deployment-linux-rpm:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - deploy-rpm-test
       - sync-dependencies:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - deploy-maven-test
             - test-deployment-linux-apt
@@ -480,7 +482,7 @@ workflows:
       - release-approval:
           filters:
             branches:
-              only: master
+              only: ci-fix-sync-dependency # TODO: revert
           requires:
             - sync-dependencies
 
