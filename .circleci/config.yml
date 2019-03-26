@@ -305,6 +305,30 @@ jobs:
       - checkout
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
+  deploy-apt:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo 'deploy apt'
+
+  deploy-rpm:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo 'deploy rpm'
+
+  deploy-maven:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo 'deploy maven'
+
   release-cleanup:
     machine: true
     steps:
@@ -490,9 +514,36 @@ workflows:
           filters:
             branches:
               only: grakn-core-release-branch
+      - deploy-approval:
+          type: approval
+          requires:
+            - deploy-github
+          filters:
+            branches:
+              only: grakn-core-release-branch
+      - deploy-apt:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+          requires:
+            - deploy-approval
+      - deploy-rpm:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+          requires:
+            - deploy-approval
+      - deploy-maven:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+          requires:
+            - deploy-approval
       - release-cleanup:
           filters:
             branches:
               only: grakn-core-release-branch
           requires:
-            - deploy-github
+            - deploy-apt
+            - deploy-rpm
+            - deploy-maven
