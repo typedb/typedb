@@ -321,6 +321,14 @@ jobs:
       - checkout
       - run: echo 'deploy rpm'
 
+  deploy-brew:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo 'deploy brew'
+
   deploy-maven:
     machine: true
     working_directory: ~/grakn
@@ -528,6 +536,12 @@ workflows:
           requires:
             - deploy-approval
       - deploy-rpm:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+          requires:
+            - deploy-approval
+      - deploy-brew:
           filters:
             branches:
               only: grakn-core-release-branch
