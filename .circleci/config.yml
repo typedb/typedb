@@ -297,7 +297,7 @@ jobs:
       - checkout
       - run: bazel run @graknlabs_build_tools//ci:release-approval
 
-  release-github-draft:
+  deploy-github:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -486,7 +486,7 @@ workflows:
 
   grakn-core-release:
     jobs:
-      - release-github-draft:
+      - deploy-github:
           filters:
             branches:
               only: grakn-core-release-branch
@@ -495,4 +495,4 @@ workflows:
             branches:
               only: grakn-core-release-branch
           requires:
-            - release-github-draft
+            - deploy-github
