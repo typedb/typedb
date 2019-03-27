@@ -31,14 +31,14 @@ deploy_github(
     release_description = "//:RELEASE_TEMPLATE.md",
     targets = [
         ":assemble-mac-zip",
-        "//server:assemble-mac-zip",
-        "//console:assemble-mac-zip",
-        ":assemble-windows-zip",
-        "//server:assemble-windows-zip",
-        "//console:assemble-windows-zip",
-        ":assemble-linux-targz",
-        "//server:assemble-linux-targz",
-        "//console:assemble-linux-targz"
+#        "//server:assemble-mac-zip",
+#        "//console:assemble-mac-zip",
+#        ":assemble-windows-zip",
+#        "//server:assemble-windows-zip",
+#        "//console:assemble-windows-zip",
+#        ":assemble-linux-targz",
+#        "//server:assemble-linux-targz",
+#        "//console:assemble-linux-targz"
     ],
     version_file = "//:VERSION"
 )
