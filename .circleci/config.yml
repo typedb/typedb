@@ -311,7 +311,10 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: echo 'deploy apt'
+      - run: cat VERSION
+      - run: DEPLOYMENT_REPO_TYPE=release DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-apt
+      - run: DEPLOYMENT_REPO_TYPE=release DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-apt
+      - run: DEPLOYMENT_REPO_TYPE=release DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-apt
 
   deploy-rpm:
     machine: true
@@ -319,7 +322,11 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: echo 'deploy rpm'
+      - run: sudo apt install rpm
+      - run: cat VERSION
+      - run: DEPLOYMENT_REPO_TYPE=release DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=release DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=release DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-rpm
 
   deploy-brew:
     machine: true
@@ -335,7 +342,11 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: echo 'deploy maven'
+      - run: cat VERSION
+      - run: bazel run //api:deploy-maven -- release $(cat VERSION) $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //protocol:deploy-maven -- release $(cat VERSION) $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //concept:deploy-maven -- release $(cat VERSION) $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //common:deploy-maven -- release $(cat VERSION) $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
 
   release-cleanup:
     machine: true
