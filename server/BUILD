@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -41,9 +41,10 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/grakn/benchmark:lib",
+
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
@@ -86,7 +87,7 @@ java_library(
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
-    tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:server:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 
 )
@@ -186,6 +187,8 @@ assemble_maven(
     name = "assemble-maven",
     target = ":server",
     package = "server",
+    version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

@@ -82,4 +82,8 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
         return tx.executor().traversal(query.getPattern().variables(), traversal)
                 .map(a -> a.explain(new LookupExplanation(query.getPattern())));
     }
+
+    public void clear(){
+        structCache.clear();
+    }
 }

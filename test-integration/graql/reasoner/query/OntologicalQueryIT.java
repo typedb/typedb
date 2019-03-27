@@ -185,7 +185,7 @@ public class OntologicalQueryIT {
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(tx.getEntityType("noRoleEntity").subs().flatMap(EntityType::instances).count(), answers.size());
-            assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.parse(queryString).asGet(), false));
+            assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(queryString).asGet(), false), answers);
         }
     }
 
@@ -243,7 +243,7 @@ public class OntologicalQueryIT {
             String queryString = "match $x isa $type; $type relates someRole; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
-            assertCollectionsNonTriviallyEqual(answers, tx.execute(Graql.parse(queryString).asGet(), false));
+            assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(queryString).asGet(), false), answers);
             List<ConceptMap> relations = tx.execute(Graql.parse("match $x isa relation;get;").asGet(), false);
             //plus extra 3 cause there are 3 binary relations which are not extra counted as reifiable-relations
             assertEquals(relations.stream().filter(ans -> !ans.get("x").asRelation().type().isImplicit()).count() + 3, answers.size());

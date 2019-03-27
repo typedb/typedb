@@ -19,6 +19,8 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import java.util.stream.Stream;
 
 /**
  *
@@ -62,6 +64,11 @@ public abstract class ResolutionState {
     public boolean isTopState(){
         return parentState == null;
     }
+
+    /**
+     * @return stream of queries to be acked for completion when processing is finished
+     */
+    public Stream<ReasonerAtomicQuery> completionQueries(){ return Stream.empty();}
 
     /**
      * @return parent state of this state

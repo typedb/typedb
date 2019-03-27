@@ -18,7 +18,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
 
 jarjar_library(
@@ -29,13 +29,15 @@ jarjar_library(
         "//common/http",
         "//common/util"
     ],
-    tags = ["maven_coordinates=grakn.core:common:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:common:{pom_version}"],
 )
 
 assemble_maven(
     name = "assemble-maven",
     target = ":common",
     package = "common",
+    version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

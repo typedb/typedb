@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["VERSION"], visibility = ["//visibility:public"])
+exports_files(["VERSION", "deployment.properties"], visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum")
@@ -28,7 +28,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 deploy_github(
     name = "deploy-github-zip",
     target = ":assemble-mac-zip",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "//:deployment.properties",
     version_file = "//:VERSION"
 )
 
@@ -130,19 +130,4 @@ container_push(
     format = "Docker",
     registry = "index.docker.io",
     repository = "graknlabs/grakn-core",
-)
-
-# When a Bazel build or test is executed with RBE, it will be executed using the following platform.
-# The platform is based on the standard rbe_ubuntu1604 from @bazel_toolchains,
-# but with an additional setting dockerNetwork = standard because our tests need network access
-platform(
-    name = "rbe-platform",
-    parents = ["@bazel_toolchains//configs/ubuntu16_04_clang/1.1:rbe_ubuntu1604"],
-    remote_execution_properties = """
-        {PARENT_REMOTE_EXECUTION_PROPERTIES}
-        properties: {
-          name: "dockerNetwork"
-          value: "standard"
-        }
-        """,
 )

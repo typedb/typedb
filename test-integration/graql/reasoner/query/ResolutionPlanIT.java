@@ -123,7 +123,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$x isa someEntity;" +
                 "$y isa resource;$y 'value';" +
-                "$z isa relation0;" +
+                "$z isa someRelation;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
@@ -135,7 +135,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$x isa someEntity;$x id 'V123';" +
                 "$y isa resource;" +
-                "$z isa relation0;" +
+                "$z isa someRelation;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
@@ -145,7 +145,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSubbedRelationsOverNonSubbedOnes() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w id 'sampleId';" +
@@ -154,7 +154,7 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation0", tx)
+                getAtomOfType(query, "someRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -164,14 +164,14 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSubbedResolvableRelationsOverNonSubbedNonResolvableOnes() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "$z id 'sampleId';" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "derivedRelation", tx),
-                getAtomOfType(query, "relation0", tx)
+                getAtomOfType(query, "someRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -181,7 +181,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseMostSubbedRelations() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$z id 'sampleId';" +
@@ -191,7 +191,7 @@ public class ResolutionPlanIT {
         ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation0", tx)
+                getAtomOfType(query, "someRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -203,12 +203,12 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseNonResolvableRelations_OnlyAtomicQueriesPresent() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
-                getAtomOfType(query, "relation0", tx),
+                getAtomOfType(query, "someRelation", tx),
                 getAtomOfType(query, "derivedRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
@@ -221,7 +221,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseNonResolvableRelations_SandwichedResolvableRelation() {
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "};";
@@ -234,7 +234,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverRelations(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$w has resource 'test';" +
@@ -244,7 +244,7 @@ public class ResolutionPlanIT {
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation0", tx)
+                getAtomOfType(query, "someRelation", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
         checkPlanSanity(query);
@@ -272,7 +272,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverNonSpecific(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
                 "$x has anotherResource $r;" +
@@ -283,7 +283,7 @@ public class ResolutionPlanIT {
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
-                getAtomOfType(query, "relation0", tx),
+                getAtomOfType(query, "someRelation", tx),
                 getAtomOfType(query, "anotherResource", tx)
         );
         checkOptimalAtomPlanProduced(query, correctPlan);
@@ -316,7 +316,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$start id 'someSampleId';" +
                 "$end id 'anotherSampleId';" +
-                "(someRole: $link, otherRole: $start) isa relation0;" +
+                "(someRole: $link, otherRole: $start) isa someRelation;" +
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherRelation;" +
                 "$link isa someEntity;" +
@@ -346,7 +346,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$start id 'someSampleId';" +
                 "$end id 'anotherSampleId';" +
-                "(someRole: $link, otherRole: $start) isa relation0;" +
+                "(someRole: $link, otherRole: $start) isa someRelation;" +
                 "(someRole: $anotherlink, otherRole: $link) isa anotherRelation;" +
                 "(someRole: $end, otherRole: $anotherlink) isa derivedRelation;" +
                 "$link isa someEntity;" +
@@ -382,7 +382,7 @@ public class ResolutionPlanIT {
                 "$start has anotherResource 'someValue';" +
                 "$start has resource $res;" +
                 "$end has resource $res;" +
-                "(someRole: $link, otherRole: $start) isa relation0;" +
+                "(someRole: $link, otherRole: $start) isa someRelation;" +
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherDerivedRelation;" +
                 "};";
@@ -417,7 +417,7 @@ public class ResolutionPlanIT {
         Concept concept = tx.stream(Graql.match(var("x").isa("baseEntity")).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
         String basePatternString =
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                         "$x has resource 'this';" +
                         "$y has anotherResource 'that';";
 
@@ -443,11 +443,11 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
-                "(someRole:$z, otherRole: $w) isa relation0;" +
+                "(someRole:$z, otherRole: $w) isa someRelation;" +
                 "(someRole:$w, otherRole: $u) isa anotherRelation;" +
-                "(someRole:$u, otherRole: $v) isa relation0;" +
+                "(someRole:$u, otherRole: $v) isa someRelation;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
@@ -457,10 +457,10 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureConnectednessPreservedWhenRelationsWithSameTypesPresent_longerChain(){
         String queryString = "{" +
-                "(someRole:$x, otherRole: $y) isa relation0;" +
+                "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "(someRole:$w, otherRole: $u) isa relation0;" +
+                "(someRole:$w, otherRole: $u) isa someRelation;" +
                 "(someRole:$u, otherRole: $v) isa anotherRelation;" +
                 "(someRole:$v, otherRole: $q) isa yetAnotherRelation;"+
                 "};";
@@ -480,7 +480,7 @@ public class ResolutionPlanIT {
 
         String basePatternString =
                 "($a, $b) isa derivedRelation;" +
-                        "($b, $c) isa relation0;" +
+                        "($b, $c) isa someRelation;" +
                         "($c, $d) isa anotherDerivedRelation;" +
 
                         "($d, $e) isa anotherRelation;" +
@@ -518,7 +518,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureBranchedQueryChainsWithResolvableRelationsDoNotProduceDisconnectedPlans_anotherVariant(){
         String basePatternString =
-                "($a, $b) isa relation0;" +
+                "($a, $b) isa someRelation;" +
                         "($b, $g) isa anotherRelation;" +
 
                         "($b, $c) isa derivedRelation;" +
@@ -553,7 +553,7 @@ public class ResolutionPlanIT {
                 "$a isa baseEntity;" +
                 "($a, $b) isa derivedRelation; $b isa someEntity;" +
                 "$c isa baseEntity;" +
-                "($c, $d) isa relation0; $d isa someOtherEntity;" +
+                "($c, $d) isa someRelation; $d isa someOtherEntity;" +
                 "$e isa baseEntity;" +
                 "($e, $f) isa anotherRelation; $f isa yetAnotherEntity;" +
                 "};";
@@ -569,11 +569,11 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$a isa baseEntity;" +
                 "($a, $b) isa derivedRelation; $b isa someEntity;" +
-                "($b, $c) isa relation0; $c isa someEntity;" +
+                "($b, $c) isa someRelation; $c isa someEntity;" +
                 "($c, $d) isa anotherRelation; $d isa someOtherEntity;" +
 
                 "$e isa baseEntity;" +
-                "($e, $f) isa relation0; $f isa baseEntity;" +
+                "($e, $f) isa someRelation; $f isa baseEntity;" +
                 "($f, $g) isa anotherRelation; $g isa yetAnotherEntity;" +
                 "($g, $h) isa derivedRelation; $h isa yetAnotherEntity;" +
                 "};";
@@ -633,10 +633,10 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "$f has resource 'value'; $f isa someEntity;" +
                 "($e, $f) isa derivedRelation; $e isa someOtherEntity;" +
-                "($a, $b) isa relation0; $a isa baseEntity;" +
+                "($a, $b) isa someRelation; $a isa baseEntity;" +
                 "($b, $c) isa anotherRelation; $b isa someEntity;" +
                 "($c, $d) isa yetAnotherRelation; $c isa someOtherEntity;" +
-                "($d, $e) isa relation0; $d isa yetAnotherEntity;" +
+                "($d, $e) isa someRelation; $d isa yetAnotherEntity;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);

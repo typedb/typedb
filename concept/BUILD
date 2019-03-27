@@ -18,7 +18,7 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
@@ -34,7 +34,7 @@ java_library(
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
-    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:concept:{pom_version}"],
 )
 
 
@@ -42,6 +42,8 @@ assemble_maven(
     name = "assemble-maven",
     target = ":concept",
     package = "concept",
+    version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

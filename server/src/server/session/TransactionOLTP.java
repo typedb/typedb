@@ -19,7 +19,7 @@
 package grakn.core.server.session;
 
 import brave.ScopedSpan;
-import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
@@ -41,6 +41,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
@@ -114,6 +115,7 @@ public class TransactionOLTP implements Transaction {
 
 
     // Caches
+    private final MultilevelSemanticCache queryCache;
     private final RuleCache ruleCache;
     private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
@@ -161,6 +163,7 @@ public class TransactionOLTP implements Transaction {
 
         this.elementFactory = new ElementFactory(this, janusGraph);
 
+        this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
 
         this.keyspaceCache = keyspaceCache;
@@ -305,6 +308,8 @@ public class TransactionOLTP implements Transaction {
     public RuleCache ruleCache() {
         return ruleCache;
     }
+
+    public MultilevelSemanticCache queryCache(){ return queryCache;}
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -866,6 +871,7 @@ public class TransactionOLTP implements Transaction {
             this.closedReason = closedReason;
             this.isTxOpen = false;
             ruleCache().clear();
+            queryCache().clear();
         }
     }
 
@@ -874,8 +880,8 @@ public class TransactionOLTP implements Transaction {
 
         /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
         ScopedSpan span = null;
-        if (ServerTracingInstrumentation.tracingActive()) {
-            span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs validate");
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("commitWithLogs validate");
         }
 
         checkMutationAllowed();
@@ -887,7 +893,7 @@ public class TransactionOLTP implements Transaction {
 
         if (span != null) {
             span.finish();
-            span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs commit");
+            span = ServerTracing.startScopedChildSpan("commitWithLogs commit");
         }
 
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
@@ -902,7 +908,7 @@ public class TransactionOLTP implements Transaction {
 
             if (span != null) {
                 span.finish();
-                span = ServerTracingInstrumentation.createScopedChildSpan("commitWithLogs create log");
+                span = ServerTracing.startScopedChildSpan("commitWithLogs create log");
             }
 
             Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));

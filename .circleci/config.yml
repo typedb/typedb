@@ -18,31 +18,18 @@
 
 version: 2.1
 commands:
-  install-bazel-linux:
+  install-bazel-linux-rbe:
     steps:
-      - run:
-          name: Install bazel and RBE credential
-          command: |
-            # Install bazel
-            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-linux-x86_64.sh
-            chmod +x bazel-0.20.0-installer-linux-x86_64.sh
-            sudo ./bazel-0.20.0-installer-linux-x86_64.sh
-
-            # Install RBE credential
-            bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
+      - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
+      - run: bash ./install-bazel-rbe.sh && rm ./install-bazel-rbe.sh
 
   install-bazel-mac:
     steps:
-      - run:
-          name: Install bazel and RBE credential
-          command: |
-            # Install bazel
-            curl -OL https://github.com/bazelbuild/bazel/releases/download/0.20.0/bazel-0.20.0-installer-darwin-x86_64.sh
-            chmod +x bazel-0.20.0-installer-darwin-x86_64.sh
-            sudo ./bazel-0.20.0-installer-darwin-x86_64.sh
+      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
+      - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
 
-            # Install RBE credential
-            bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
   install-rpm:
     steps:
       - run: sudo apt update && sudo apt install rpm -y
@@ -50,18 +37,18 @@ commands:
   run-bazel-rbe:
     parameters:
       command:
-          type: string
+        type: string
     steps:
-      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe << parameters.command >>
+      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
 
 jobs:
   build:
     machine: true
     working_directory: ~/grakn
     steps:
-      - checkout
-      - install-bazel-linux
+      - install-bazel-linux-rbe
       - install-rpm
+      - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel build //...
@@ -70,8 +57,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
@@ -79,9 +66,9 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - checkout
-      - install-bazel-linux
+      - install-bazel-linux-rbe
       - install-rpm
+      - checkout
       - run-bazel-rbe:
           command: bazel test //console/... --test_output=errors
 
@@ -89,9 +76,9 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - checkout
-      - install-bazel-linux
+      - install-bazel-linux-rbe
       - install-rpm
+      - checkout
       - run-bazel-rbe:
           command: bazel test //server/... --test_output=errors
 
@@ -99,8 +86,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run-bazel-rbe:
           command: bazel test //test-integration/server/... --test_output=errors
       - run-bazel-rbe:
@@ -112,28 +99,26 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - install-bazel-linux
-    - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-    - run-bazel-rbe:
-        command: bazel test //test-integration/graql/reasoner/... --test_output=errors
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
     working_directory: ~/grakn
     steps:
-    - checkout
-    - install-bazel-linux
-    - run: bazel run @graknlabs_build_tools//ci:install-bazel-rbe-credential
-    - run-bazel-rbe:
-        command: bazel test //test-integration/graql/analytics/... --test_output=errors
+      - install-bazel-linux-rbe
+      - checkout
+      - run-bazel-rbe:
+          command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run-bazel-rbe:
           command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
@@ -142,8 +127,8 @@ jobs:
       xcode: "9.0"
     working_directory: ~/grakn
     steps:
-      - checkout
       - install-bazel-mac
+      - checkout
       - run: bazel build //:assemble-mac-zip
       - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
       - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
@@ -163,8 +148,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run: bazel build //:assemble-linux-targz
       - run: tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
       - run: nohup bazel-genfiles/grakn-core-all-linux/grakn server start
@@ -175,11 +160,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
-      - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
-      - run: echo VERSION=$(cat VERSION)
-      - run: cat VERSION
       - run: bazel build //bin:assemble-linux-apt
       - run: bazel build //server:assemble-linux-apt
       - run: bazel build //console:assemble-linux-apt
@@ -190,23 +172,91 @@ jobs:
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
-      - run: bazel run //bin:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //console:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //server:deploy-apt -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+
+  test-assembly-linux-rpm:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: sudo apt install rpm
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+      - run: sed -i -e 's/-/_/g' VERSION
+      - run: cat VERSION
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-rpm
+      - run: cp VERSION VERSION.rpm
+      - persist_to_workspace:
+          root: ~/grakn
+          paths:
+            - VERSION.rpm
+
+  test-assembly-docker:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: test/assembly/docker.py
+
+  deploy-maven-test:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo $CIRCLE_SHA1
+      - run: bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //protocol:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+      - run: bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1 $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
+
+  deploy-apt-test:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION
+      - run: echo VERSION=$(cat VERSION)
+      - run: cat VERSION
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-apt
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-apt
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-apt
       - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
           paths:
             - VERSION.apt
 
+  deploy-rpm-test:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: sudo apt install rpm
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
+      - run: sed -i -e 's/-/_/g' VERSION
+      - run: cat VERSION
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //bin:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //server:deploy-rpm
+      - run: DEPLOYMENT_REPO_TYPE=test DEPLOYMENT_USERNAME=$REPO_GRAKN_USERNAME DEPLOYMENT_PASSWORD=$REPO_GRAKN_PASSWORD bazel run //console:deploy-rpm
+      - run: cp VERSION VERSION.rpm
+      - persist_to_workspace:
+          root: ~/grakn
+          paths:
+            - VERSION.rpm
+
   test-deployment-linux-apt:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
       - attach_workspace:
           at: ~/circleci-workspace
-      - install-bazel-linux
       - run: echo "deb [ arch=all ] https://repo.grakn.ai/repository/test-deb/ trusty main" | sudo tee -a /etc/apt/sources.list.d/grakn-core.list
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
@@ -218,26 +268,6 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
 
-  test-assembly-linux-rpm:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - install-bazel-linux
-      - run: sudo apt install rpm
-      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION
-      - run: sed -i -e 's/-/_/g' VERSION
-      - run: cat VERSION
-      - run: bazel run //bin:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //server:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: bazel run //console:deploy-rpm -- test $REPO_GRAKN_USERNAME $REPO_GRAKN_PASSWORD
-      - run: cp VERSION VERSION.rpm
-      - persist_to_workspace:
-          root: ~/grakn
-          paths:
-            - VERSION.rpm
-
-
   test-deployment-linux-rpm:
     machine: true
     working_directory: ~/grakn
@@ -248,39 +278,31 @@ jobs:
       - run: mv ~/circleci-workspace/VERSION.rpm VERSION
       - run: test/deployment/rpm.py
 
-  test-assembly-docker:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - checkout
-      - install-bazel-linux
-      - run: test/assembly/docker.py
-
   sync-dependencies:
     machine: true
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run: |
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           client-java:master client-python:master client-nodejs:master \
           workbase:master docs:development examples:development
-  
+
   release-approval:
     machine: true
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run: bazel run @graknlabs_build_tools//ci:release-approval
 
   release-github-draft:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
-      - install-bazel-linux
       - run: bazel run //:deploy-github-zip -- ${GRABL_CREDENTIAL}
 
   release-cleanup:
@@ -328,40 +350,16 @@ workflows:
           filters:
             branches:
               only: master
+          requires:
+            - build
+            - test-common
+            - test-console
+            - test-server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
       - test-assembly-windows-zip:
-          filters:
-            branches:
-              only: master
-      - test-assembly-linux-targz:
-          filters:
-            branches:
-              only: master
-      - test-assembly-linux-apt:
-          filters:
-            branches:
-              only: master
-
-      - test-deployment-linux-apt:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-linux-apt
-      - test-assembly-linux-rpm:
-          filters:
-            branches:
-              only: master
-      - test-deployment-linux-rpm:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-linux-rpm
-      - test-assembly-docker:
-          filters:
-            branches:
-              only: master
-      - sync-dependencies:
           filters:
             branches:
               only: master
@@ -374,12 +372,111 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
+      - test-assembly-linux-targz:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
+            - test-common
+            - test-console
+            - test-server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
+      - test-assembly-linux-apt:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
+            - test-common
+            - test-console
+            - test-server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
+      - test-assembly-linux-rpm:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
+            - test-common
+            - test-console
+            - test-server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
+      - test-assembly-docker:
+          filters:
+            branches:
+              only: master
+          requires:
+            - build
+            - test-common
+            - test-console
+            - test-server
+            - test-integration
+            - test-integration-reasoner
+            - test-integration-analytics
+            - test-end-to-end
+      - deploy-maven-test:
+          filters:
+            branches:
+              only: master
+          requires:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
+            - test-assembly-linux-apt
+            - test-assembly-linux-rpm
+            - test-assembly-docker
+      - deploy-apt-test:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-assembly-linux-apt
+            - test-assembly-linux-rpm
+            - test-assembly-docker
+      - deploy-rpm-test:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-assembly-linux-apt
+            - test-assembly-linux-rpm
+            - test-assembly-docker
+      - test-deployment-linux-apt:
+          filters:
+            branches:
+              only: master
+          requires:
+            - deploy-apt-test
+      - test-deployment-linux-rpm:
+          filters:
+            branches:
+              only: master
+          requires:
+            - deploy-rpm-test
+      - sync-dependencies:
+          filters:
+            branches:
+              only: master
+          requires:
+            - deploy-maven-test
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
-            - test-assembly-docker
       - release-approval:
           filters:
             branches:

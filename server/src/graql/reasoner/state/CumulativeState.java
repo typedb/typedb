@@ -20,13 +20,11 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -48,15 +46,14 @@ public class CumulativeState extends QueryStateBase{
                            ConceptMap sub,
                            Unifier u,
                            QueryStateBase parent,
-                           Set<ReasonerAtomicQuery> subGoals,
-                           MultilevelSemanticCache cache) {
-        super(sub, u, parent, subGoals, cache);
+                           Set<ReasonerAtomicQuery> subGoals) {
+        super(sub, u, parent, subGoals);
         this.subQueries = new LinkedList<>(qs);
 
         this.query = subQueries.getFirst();
         //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
         this.feederStateIterator = !subQueries.isEmpty()?
-                subQueries.removeFirst().subGoals(sub, u, this, subGoals, cache).iterator() :
+                subQueries.removeFirst().subGoals(sub, u, this, subGoals).iterator() :
                 Collections.emptyIterator();
     }
 
@@ -78,7 +75,7 @@ public class CumulativeState extends QueryStateBase{
 
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
-        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals(), getCache());
+        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
     }
 
     @Override

@@ -19,7 +19,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@stackb_rules_proto//java:java_grpc_compile.bzl", "java_grpc_compile")
-load("//dependencies/maven:rules.bzl", "assemble_maven", "deploy_maven")
+load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 
 java_grpc_compile(
     name = "protocol-java-src",
@@ -41,13 +41,15 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
     ],
-    tags = ["maven_coordinates=grakn.core:protocol:{pom_version}", "checkstyle_ignore"],
+    tags = ["maven_coordinates=io.grakn.core:protocol:{pom_version}", "checkstyle_ignore"],
 )
 
 assemble_maven(
     name = "assemble-maven",
     target = ":protocol-java",
     package = "protocol",
+    version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(
