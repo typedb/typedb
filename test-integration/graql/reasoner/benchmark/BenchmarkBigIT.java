@@ -380,7 +380,7 @@ public class BenchmarkBigIT {
             for(int i=0; i < 8; i++) {
                 CompletableFuture<Void> asyncMatch = CompletableFuture.supplyAsync(() -> {
                     try (GraknClient.Transaction tx = session.transaction().read()) {
-                        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
+                        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + new Random().nextInt(N) + ";";
                         String queryString = "match " + queryPattern + " get;";
                         executeQuery(queryString, tx, "full");
                     }
