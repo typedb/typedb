@@ -136,7 +136,8 @@ assemble_targz(
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(
@@ -158,7 +159,8 @@ assemble_zip(
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(
@@ -180,7 +182,8 @@ assemble_zip(
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_maven(
