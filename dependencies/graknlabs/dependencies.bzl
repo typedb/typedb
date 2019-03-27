@@ -40,8 +40,9 @@ def graknlabs_benchmark():
     )
 
 def graknlabs_build_tools():
+    # TODO: revert lolski to graknlabs
     git_repository(
         name = "graknlabs_build_tools",
-        remote = "https://github.com/graknlabs/build-tools",
-        commit = "7667b49963eb7d4ab6d23075f54c84291f89fa70", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+        remote = "https://github.com/lolski/build-tools",
+        commit = "091b394b428ce27292e6e5c1541ec2a5ab0bd13b", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
