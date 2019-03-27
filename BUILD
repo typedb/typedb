@@ -140,6 +140,6 @@ container_push(
     image = ":assemble-docker",
     format = "Docker",
     registry = "index.docker.io",
-    repository = "graknlabs/grakn-core",
+    repository = "lolski/grakn-core", # TODO: revert to graknlabs
     tag = "$(version)"
 )
