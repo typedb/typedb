@@ -586,4 +586,6 @@ workflows:
           requires:
             - deploy-apt
             - deploy-rpm
+            - deploy-brew
+            - deploy-docker
             - deploy-maven
