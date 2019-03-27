@@ -342,7 +342,7 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-  #      - run: echo 'docker login'
+  #      - run: echo 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD hub.docker.com'
   #      - run: echo 'deploy-docker'
 
   deploy-maven:
