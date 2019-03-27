@@ -23,11 +23,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.client.GraknClient;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
@@ -41,9 +44,14 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static graql.lang.Graql.var;
@@ -357,6 +365,31 @@ public class BenchmarkBigIT {
                 assertEquals(1, executeQuery(subbedQueryString2, tx, "second argument bound").size());
                  assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size());
             }
+        }
+    }
+
+    @Test
+    public void whenQueryingConcurrently_reasonerDoesNotThrowException() throws ExecutionException, InterruptedException {
+        final int N = 20;
+        System.out.println(new Object() {}.getClass().getEnclosingMethod().getName());
+        loadRuleChainData(N);
+
+        try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
+            ExecutorService executor = Executors.newFixedThreadPool(8);
+            List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+            for(int i=0; i < 8; i++) {
+                CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                    try (GraknClient.Transaction tx = session.transaction().read()) {
+                        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
+                        String queryString = "match " + queryPattern + " get;";
+                        executeQuery(queryString, tx, "full");
+                    }
+                    return null;
+                }, executor);
+                asyncInsertions.add(asyncInsert);
+            }
+
+            CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[] {})).get();
         }
     }
 
