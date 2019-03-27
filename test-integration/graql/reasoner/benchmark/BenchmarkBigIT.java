@@ -376,9 +376,9 @@ public class BenchmarkBigIT {
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
             ExecutorService executor = Executors.newFixedThreadPool(8);
-            List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+            List<CompletableFuture<Void>> asyncMatches = new ArrayList<>();
             for(int i=0; i < 8; i++) {
-                CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                CompletableFuture<Void> asyncMatch = CompletableFuture.supplyAsync(() -> {
                     try (GraknClient.Transaction tx = session.transaction().read()) {
                         String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                         String queryString = "match " + queryPattern + " get;";
@@ -386,10 +386,10 @@ public class BenchmarkBigIT {
                     }
                     return null;
                 }, executor);
-                asyncInsertions.add(asyncInsert);
+                asyncMatches.add(asyncMatch);
             }
 
-            CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[] {})).get();
+            CompletableFuture.allOf(asyncMatches.toArray(new CompletableFuture[] {})).get();
         }
     }
 
