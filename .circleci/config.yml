@@ -336,6 +336,14 @@ jobs:
       - checkout
 #      - run: bazel run //:deploy-brew release
 
+  deploy-docker:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+  #      - run: echo 'deploy-docker'
+
   deploy-maven:
     machine: true
     working_directory: ~/grakn
@@ -467,17 +475,6 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
-      - deploy-maven-test:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-linux-apt
-            - test-assembly-linux-rpm
-            - test-assembly-docker
       - deploy-apt-test:
           filters:
             branches:
@@ -490,6 +487,17 @@ workflows:
             - test-assembly-linux-rpm
             - test-assembly-docker
       - deploy-rpm-test:
+          filters:
+            branches:
+              only: master
+          requires:
+            - test-assembly-mac-zip
+            - test-assembly-windows-zip
+            - test-assembly-linux-targz
+            - test-assembly-linux-apt
+            - test-assembly-linux-rpm
+            - test-assembly-docker
+      - deploy-maven-test:
           filters:
             branches:
               only: master
@@ -553,6 +561,12 @@ workflows:
           requires:
             - deploy-approval
       - deploy-brew:
+          filters:
+            branches:
+              only: grakn-core-release-branch
+          requires:
+            - deploy-approval
+      - deploy-docker:
           filters:
             branches:
               only: grakn-core-release-branch
