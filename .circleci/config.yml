@@ -342,8 +342,8 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-  #      - run: echo 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD hub.docker.com'
-  #      - run: echo 'deploy-docker'
+      - run: docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD hub.docker.com
+      - run: bazel run --define version=$(cat VERSION) //:deploy-docker
 
   deploy-maven:
     machine: true

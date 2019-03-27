@@ -141,4 +141,5 @@ container_push(
     format = "Docker",
     registry = "index.docker.io",
     repository = "graknlabs/grakn-core",
+    tag = "$(version)"
 )
