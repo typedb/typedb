@@ -124,6 +124,19 @@ assemble_zip(
     visibility = ["//visibility:public"]
 )
 
+assemble_rpm(
+    name = "assemble-linux-rpm",
+    package_name = "grakn-core-all",
+    version_file = "//:VERSION",
+    spec_file = "//config/rpm:grakn-core-all.spec",
+)
+
+deploy_rpm(
+    name = "deploy-rpm",
+    target = ":assemble-linux-rpm",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+)
+
 container_image(
     name = "assemble-docker",
     base = "@openjdk_image//image",

@@ -222,14 +222,14 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt install rpm
-      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && sed -i -e 's/-/_/g' VERSION && cat VERSION
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run //bin:deploy-rpm -- snapshot
           bazel run //server:deploy-rpm -- snapshot
           bazel run //console:deploy-rpm -- snapshot
-        # bazel run //:deploy-rpm -- snapshot  TODO: we need to deploy grakn-server-all for RPM
+          bazel run //:deploy-rpm -- snapshot
       - run: cp VERSION VERSION.rpm
       - persist_to_workspace:
           root: ~/grakn
