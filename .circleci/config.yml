@@ -208,7 +208,7 @@ jobs:
           bazel run //bin:deploy-apt -- snapshot
           bazel run //console:deploy-apt -- snapshot
           bazel run //server:deploy-apt -- snapshot
-        # bazel run //:deploy-apt -- snapshot  TODO: we need to deploy grakn-server-all for APT
+          bazel run //:deploy-apt -- snapshot
       - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
