@@ -222,7 +222,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt install rpm
-      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && sed -i -e 's/-/_/g' VERSION && cat VERSION
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
