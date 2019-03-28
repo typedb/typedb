@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["VERSION", "deployment.properties"], visibility = ["//visibility:public"])
+exports_files(["VERSION", "deployment.properties", "RELEASE_TEMPLATE.md"], visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum")
@@ -27,6 +27,8 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 deploy_github(
     name = "deploy-github",
+    deployment_properties = "//:deployment.properties",
+    release_description = "//:RELEASE_TEMPLATE.md",
     targets = [
         ":assemble-linux-targz",
         ":assemble-mac-zip",
@@ -38,7 +40,6 @@ deploy_github(
         "//server:assemble-mac-zip",
         "//server:assemble-windows-zip",
     ],
-    deployment_properties = "//:deployment.properties",
     version_file = "//:VERSION"
 )
 
@@ -153,4 +154,5 @@ container_push(
     format = "Docker",
     registry = "index.docker.io",
     repository = "graknlabs/grakn-core",
+#    tag = "$(version)" # TODO: enable once we fixed the issue with having to always pass the variable during bazel build
 )
