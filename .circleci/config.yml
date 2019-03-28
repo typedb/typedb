@@ -334,7 +334,7 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run //:deploy-brew release
+      - run: bazel run //:deploy-brew -- release
 
   deploy-docker:
     machine: true

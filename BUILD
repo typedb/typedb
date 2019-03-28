@@ -25,6 +25,7 @@ load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
+# TODO: enable most distributions
 deploy_github(
     name = "deploy-github-zip",
     deployment_properties = "//:deployment.properties",
