@@ -18,16 +18,19 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
-load("@com_github_google_bazel_common//tools/jarjar:jarjar.bzl", "jarjar_library")
 
-jarjar_library(
-    name="common",
-    jars = [
-        "//common/exception",
-        "//common/config",
-        "//common/http",
-        "//common/util"
+java_library(
+    name = "common",
+    srcs = glob(["**/*.java"], exclude=["templates/**", "**/test/**"]) + [
+        "//common/templates/util:grakn-version"
+    ],
+    deps = [
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
     tags = ["maven_coordinates=io.grakn.core:common:{pom_version}"],
 )
@@ -43,4 +46,9 @@ assemble_maven(
 deploy_maven(
     name = "deploy-maven",
     target = ":assemble-maven",
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [":common"],
 )
