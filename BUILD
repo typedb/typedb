@@ -26,8 +26,18 @@ load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 deploy_github(
-    name = "deploy-github-zip",
-    target = ":assemble-mac-zip",
+    name = "deploy-github",
+    targets = [
+        ":assemble-linux-targz",
+        ":assemble-mac-zip",
+        ":assemble-windows-zip",
+        "//console:assemble-linux-targz",
+        "//console:assemble-mac-zip",
+        "//console:assemble-windows-zip",
+        "//server:assemble-linux-targz",
+        "//server:assemble-mac-zip",
+        "//server:assemble-windows-zip",
+    ],
     deployment_properties = "//:deployment.properties",
     version_file = "//:VERSION"
 )
