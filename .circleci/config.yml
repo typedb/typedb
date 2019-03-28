@@ -249,7 +249,6 @@ jobs:
       - run: sudo apt update
       - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
-      - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo apt install grakn-core-all=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
