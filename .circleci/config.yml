@@ -330,7 +330,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run //:deploy-brew -- release
+      - run: |
+          export DEPLOY_BREW_TOKEN=$GRABL_CREDENTIAL
+          bazel run //:deploy-brew -- release
 
   deploy-docker:
     machine: true

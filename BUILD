@@ -30,15 +30,16 @@ deploy_github(
     deployment_properties = "//:deployment.properties",
     release_description = "//:RELEASE_TEMPLATE.md",
     targets = [
-        ":assemble-linux-targz",
+        # TODO: enable before merging
+#        ":assemble-linux-targz",
         ":assemble-mac-zip",
-        ":assemble-windows-zip",
-        "//console:assemble-linux-targz",
-        "//console:assemble-mac-zip",
-        "//console:assemble-windows-zip",
-        "//server:assemble-linux-targz",
-        "//server:assemble-mac-zip",
-        "//server:assemble-windows-zip",
+#        ":assemble-windows-zip",
+#        "//console:assemble-linux-targz",
+#        "//console:assemble-mac-zip",
+#        "//console:assemble-windows-zip",
+#        "//server:assemble-linux-targz",
+#        "//server:assemble-mac-zip",
+#        "//server:assemble-windows-zip",
     ],
     version_file = "//:VERSION"
 )
@@ -46,7 +47,7 @@ deploy_github(
 deploy_brew(
     name = "deploy-brew",
     checksum = "//:checksum",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "//:deployment.properties",
     formula = "//config/brew:grakn-core.rb",
     version_file = "//:VERSION"
 )
