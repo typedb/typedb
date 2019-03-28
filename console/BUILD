@@ -156,7 +156,7 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-core-bin"
+      "grakn-core-bin (={version})"
     ],
     files = {
         "//server:conf/logback.xml": "console/conf/logback.xml",
