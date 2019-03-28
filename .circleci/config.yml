@@ -250,7 +250,7 @@ jobs:
       - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
       - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
-      # - run: sudo apt install grakn-core-all=$(cat VERSION)  TODO: we need to install grakn-core-all, which installs the rests
+      - run: sudo apt install grakn-core-all=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -308,6 +308,7 @@ jobs:
           bazel run //bin:deploy-apt -- release
           bazel run //console:deploy-apt -- release
           bazel run //server:deploy-apt -- release
+          bazel run //:deploy-apt -- release
 
   deploy-rpm:
     machine: true
@@ -323,6 +324,7 @@ jobs:
           bazel run //bin:deploy-rpm -- release
           bazel run //server:deploy-rpm -- release
           bazel run //console:deploy-rpm -- release
+          bazel run //:deploy-rpm -- release
 
   deploy-brew:
     machine: true
