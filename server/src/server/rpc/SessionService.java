@@ -248,6 +248,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 }
             }
 
+            // just in case there's a trailing span, let's close it
+            if (ServerTracing.tracingActive()) {
+                ServerTracing.currentSpan().finish();
+            }
+
             threadExecutor.shutdown();
         }
 
