@@ -47,7 +47,7 @@ deploy_github(
 deploy_brew(
     name = "deploy-brew",
     checksum = "//:checksum",
-    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    deployment_properties = "//:deployment.properties",
     formula = "//config/brew:grakn-core.rb",
     version_file = "//:VERSION"
 )
