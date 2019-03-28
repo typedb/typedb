@@ -229,7 +229,7 @@ jobs:
           bazel run //bin:deploy-rpm -- snapshot
           bazel run //server:deploy-rpm -- snapshot
           bazel run //console:deploy-rpm -- snapshot
-        # bazel run //:deploy-rpm -- snapshot  TODO: we need to deploy grakn-server-all for RPM
+          bazel run //:deploy-rpm -- snapshot
       - run: cp VERSION VERSION.rpm
       - persist_to_workspace:
           root: ~/grakn
