@@ -25,21 +25,20 @@ load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
-# TODO: enable most distributions
 deploy_github(
     name = "deploy-github",
     deployment_properties = "//:deployment.properties",
     release_description = "//:RELEASE_TEMPLATE.md",
     targets = [
         ":assemble-mac-zip",
-#        "//server:assemble-mac-zip",
-#        "//console:assemble-mac-zip",
-#        ":assemble-windows-zip",
-#        "//server:assemble-windows-zip",
-#        "//console:assemble-windows-zip",
-#        ":assemble-linux-targz",
-#        "//server:assemble-linux-targz",
-#        "//console:assemble-linux-targz"
+        "//server:assemble-mac-zip",
+        "//console:assemble-mac-zip",
+        ":assemble-windows-zip",
+        "//server:assemble-windows-zip",
+        "//console:assemble-windows-zip",
+        ":assemble-linux-targz",
+        "//server:assemble-linux-targz",
+        "//console:assemble-linux-targz"
     ],
     version_file = "//:VERSION"
 )
@@ -141,6 +140,6 @@ container_push(
     image = ":assemble-docker",
     format = "Docker",
     registry = "index.docker.io",
-    repository = "lolski/grakn-core", # TODO: revert to graknlabs
-#    tag = "$(version)" # TODO: enable
+    repository = "graknlabs/grakn-core",
+#    tag = "$(version)" # TODO: enable once we fixed the issue with having to always pass the variable during bazel build
 )
