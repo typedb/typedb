@@ -236,7 +236,11 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query) {
-        // TODO span
+        ScopedSpan span = null;
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
+        }
+
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
@@ -248,7 +252,12 @@ public class QueryExecutor {
             }
         }
 
-        // TODO span
+        if (span != null) {
+            span.finish();
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
+        }
+
+        Stream<ConceptMap> answerStream;
         if (query.match() != null) {
             MatchClause match = query.match();
             Set<Variable> matchVars = match.getSelectedNames();
@@ -258,12 +267,18 @@ public class QueryExecutor {
             projectedVars.retainAll(insertVars);
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
-            return answers.map(answer -> WriteExecutor
+            answerStream = answers.map(answer -> WriteExecutor
                     .create(transaction, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            return Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
+            answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
         }
+
+        if (span != null) {
+            span.finish();
+        }
+
+        return answerStream;
     }
 
     @SuppressWarnings("unchecked") // All attribute values are comparable data types
