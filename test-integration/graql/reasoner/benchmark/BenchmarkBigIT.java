@@ -23,11 +23,14 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.client.GraknClient;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
@@ -41,9 +44,14 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static graql.lang.Graql.var;
@@ -59,25 +67,25 @@ public class BenchmarkBigIT {
 
     @Before
     public void randomiseKeyspace() {
-        this.keyspace = "a"+ UUID.randomUUID().toString().replaceAll("-", "");
+        this.keyspace = "a" + UUID.randomUUID().toString().replaceAll("-", "");
     }
 
-    private void loadOntology(String fileName, GraknClient.Session session){
+    private void loadOntology(String fileName, GraknClient.Session session) {
         try {
-            InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/"+fileName);
+            InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/" + fileName);
             String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
             GraknClient.Transaction tx = session.transaction().write();
             tx.execute(Graql.parse(s).asDefine());
             tx.commit();
-        } catch (Exception e){
+        } catch (Exception e) {
             System.err.println(e);
             throw new RuntimeException(e);
         }
     }
 
-    private void loadEntities(String entityLabel, int N, GraknClient.Session session){
-        try(GraknClient.Transaction transaction = session.transaction().write()){
-            for(int i = 0 ; i < N ;i++){
+    private void loadEntities(String entityLabel, int N, GraknClient.Session session) {
+        try (GraknClient.Transaction transaction = session.transaction().write()) {
+            for (int i = 0; i < N; i++) {
                 GraqlInsert entityInsert = Graql.insert(new Statement(new Variable().asUserDefined()).isa(entityLabel));
                 transaction.execute(entityInsert);
             }
@@ -86,8 +94,8 @@ public class BenchmarkBigIT {
     }
 
     private void loadRandomisedRelationInstances(String entityLabel, String fromRoleLabel, String toRoleLabel,
-                                                 String relationLabel, int N, GraknClient.Session session){
-        try(GraknClient.Transaction transaction = session.transaction().write()) {
+                                                 String relationLabel, int N, GraknClient.Session session) {
+        try (GraknClient.Transaction transaction = session.transaction().write()) {
             Statement entity = new Statement(new Variable().asUserDefined());
             ConceptId[] instances = transaction.stream(Graql.match(entity.isa(entityLabel)).get())
                     .map(ans -> ans.get(entity.var()).id())
@@ -123,7 +131,7 @@ public class BenchmarkBigIT {
 
     private void loadJoinData(int N) {
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
-            final int M = N/5;
+            final int M = N / 5;
             loadOntology("multiJoin.gql", session);
             loadEntities("genericEntity", M, session);
             loadRandomisedRelationInstances("genericEntity", "fromRole", "toRole", "C2", M, session);
@@ -134,7 +142,7 @@ public class BenchmarkBigIT {
         }
     }
 
-    private void loadTransitivityData(int N){
+    private void loadTransitivityData(int N) {
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
             loadOntology("linearTransitivity.gql", session);
             loadEntities("a-entity", N, session);
@@ -142,7 +150,7 @@ public class BenchmarkBigIT {
         }
     }
 
-    private void loadRuleChainData(int N){
+    private void loadRuleChainData(int N) {
         String entityLabel = "genericEntity";
         String attributeLabel = "index";
         String baseRelationLabel = "relation1";
@@ -201,7 +209,7 @@ public class BenchmarkBigIT {
             }
 
             //insert N + 1 entities
-            loadEntities(entityLabel, N+1, session);
+            loadEntities(entityLabel, N + 1, session);
 
             try (GraknClient.Transaction transaction = session.transaction().write()) {
                 Statement entityVar = new Statement(new Variable().asUserDefined());
@@ -221,7 +229,7 @@ public class BenchmarkBigIT {
                         )
                 );
 
-                for(int i = 1; i < instances.length; i++){
+                for (int i = 1; i < instances.length; i++) {
                     Statement fromRolePlayer = new Statement(new Variable().asUserDefined());
                     Statement toRolePlayer = new Statement(new Variable().asUserDefined());
 
@@ -250,14 +258,15 @@ public class BenchmarkBigIT {
      * Data arranged randomly with N number of db relation instances.
      */
     @Test
-    public void testRandomSetLinearTransitivity()  {
+    public void testRandomSetLinearTransitivity() {
         final int N = 200;
         final int limit = 100;
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
         loadTransitivityData(N);
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
-            try(GraknClient.Transaction tx = session.transaction().read()) {
+            try (GraknClient.Transaction tx = session.transaction().read()) {
                 ConceptId entityId = tx.getEntityType("a-entity").instances().findFirst().get().id();
                 String queryPattern = "(P-from: $x, P-to: $y) isa P;";
                 String queryString = "match " + queryPattern + " get;";
@@ -281,25 +290,26 @@ public class BenchmarkBigIT {
     /**
      * Scalable multi-join test defined as a non-recursive tree of binary joins,
      * which is expressed using the following inference rules:
-     *
+     * <p>
      * a(X,Y)  :- b1(X,Z), b2(Z,Y).
      * b1(X,Y) :- c1(X,Z), c2(Z,Y).
      * b2(X,Y) :- c3(X,Z), c4(Z,Y).
      * c1(X,Y) :- d1(X,Z), d2(Z,Y).
-     *
+     * <p>
      * The base relations, c2, c3, c4, d1 and d2 are randomly generated
      * with 1/5 * N instances (reaching a total of N instances) each defined over 1/5 * N entities.
      * The query is based on the final derived predicate.
      */
     @Test
-    public void testMultiJoin()  {
+    public void testMultiJoin() {
         final int N = 100;
         final int limit = 100;
-        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
         loadJoinData(N);
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
-            try(GraknClient.Transaction tx = session.transaction().read()) {
+            try (GraknClient.Transaction tx = session.transaction().read()) {
                 ConceptId entityId = tx.getEntityType("genericEntity").instances().findFirst().get().id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa A;";
                 String queryString = "match " + queryPattern + " get;";
@@ -324,22 +334,23 @@ public class BenchmarkBigIT {
 
     /**
      * Scalability test defined in terms of number of rules in the system. Creates a simple rule chain based on join operation on two relations:
-     *
+     * <p>
      * R_i(x, y) := R_1(x, z), R_{i-1}(z, y);    i e [2, N],
-     *
+     * <p>
      * initialised with a chain of N x base relation R_1instances.
-     *
+     * <p>
      * The rules are defined in such a way that relation R_j spans j hops of base relations and has (N + 1 - j) instances.
      * Consequently R_N has a single instance linking the first and last entities in the base relation chain.
      */
     @Test
     public void testJoinRuleChain() {
         final int N = 20; // TODO: Increase this number again to > 100, once we fix issue #4545
-        System.out.println(new Object() {}.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
-            try(GraknClient.Transaction tx = session.transaction().read()) {
+            try (GraknClient.Transaction tx = session.transaction().read()) {
                 ConceptId firstId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index 'first';get;").asGet())).get("x").id();
                 ConceptId lastId = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index '" + N + "';get;").asGet())).get("x").id();
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
@@ -355,12 +366,39 @@ public class BenchmarkBigIT {
                 assertEquals(1, executeQuery(queryString, tx, "full").size());
                 assertEquals(1, executeQuery(subbedQueryString, tx, "first argument bound").size());
                 assertEquals(1, executeQuery(subbedQueryString2, tx, "second argument bound").size());
-                 assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size());
+                assertEquals(1, executeQuery(limitedQueryString, tx, "limit ").size());
             }
         }
     }
 
-    private List<ConceptMap> executeQuery(String queryString, GraknClient.Transaction transaction, String msg){
+    @Test
+    public void whenQueryingConcurrently_reasonerDoesNotThrowException() throws ExecutionException, InterruptedException {
+        final int N = 20;
+        System.out.println(new Object() {
+        }.getClass().getEnclosingMethod().getName());
+        loadRuleChainData(N);
+
+        try (GraknClient.Session session = new GraknClient(server.grpcUri().toString()).session(keyspace)) {
+            ExecutorService executor = Executors.newFixedThreadPool(8);
+            List<CompletableFuture<Void>> asyncMatches = new ArrayList<>();
+            for (int i = 0; i < 8; i++) {
+                CompletableFuture<Void> asyncMatch = CompletableFuture.supplyAsync(() -> {
+                    try (GraknClient.Transaction tx = session.transaction().read()) {
+                        int randomRelation = new Random().nextInt(N - 1);
+                        String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + (randomRelation + 1) + ";";
+                        String queryString = "match " + queryPattern + " get;";
+                        executeQuery(queryString, tx, "full");
+                    }
+                    return null;
+                }, executor);
+                asyncMatches.add(asyncMatch);
+            }
+
+            CompletableFuture.allOf(asyncMatches.toArray(new CompletableFuture[]{})).get();
+        }
+    }
+
+    private List<ConceptMap> executeQuery(String queryString, GraknClient.Transaction transaction, String msg) {
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = transaction.execute(Graql.parse(queryString).asGet());
         final long answerTime = System.currentTimeMillis() - startTime;

@@ -27,7 +27,7 @@ load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
 # TODO: enable most distributions
 deploy_github(
-    name = "deploy-github-zip",
+    name = "deploy-github",
     deployment_properties = "//:deployment.properties",
     release_description = "//:RELEASE_TEMPLATE.md",
     targets = [
@@ -142,5 +142,5 @@ container_push(
     format = "Docker",
     registry = "index.docker.io",
     repository = "lolski/grakn-core", # TODO: revert to graknlabs
-    tag = "$(version)"
+#    tag = "$(version)" # TODO: enable
 )
