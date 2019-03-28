@@ -920,6 +920,10 @@ public class TransactionOLTP implements Transaction {
             return logs;
         }
 
+        if (span != null) {
+            span.finish();
+        }
+
 
         return Optional.empty();
     }

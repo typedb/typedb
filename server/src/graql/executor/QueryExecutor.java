@@ -18,9 +18,11 @@
 
 package grakn.core.graql.executor;
 
+import brave.ScopedSpan;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
@@ -100,23 +102,66 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
+
+        ScopedSpan span = null;
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.match validate pattern");
+        }
+
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.properties().forEach(property -> validateProperty(property, statement));
         }
 
+        if (span != null) {
+            span.finish();
+            span = ServerTracing.startScopedChildSpan("QueryExecturo.match create stream");
+        }
+
+        Stream<ConceptMap> answerStream;
         try {
             if (!infer) {
+                // time to create the traversal plan
+                ScopedSpan subSpan = null;
+                if (span != null) {
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
+                }
                 GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
-                return traversal(matchClause.getPatterns().variables(), graqlTraversal);
-            }
 
-            Stream<ConceptMap> answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
-            return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
+
+                // time to convert plan into a answer stream
+                if (subSpan != null) {
+                    subSpan.finish();
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
+                }
+                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+
+                // close this subSpan
+                if (subSpan != null) {
+                    subSpan.finish();
+                }
+            } else {
+
+                ScopedSpan subSpan = null;
+                if (span != null) {
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
+                }
+                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+
+                if (subSpan != null) {
+                    subSpan.finish();
+                }
+            }
         } catch (GraqlQueryException e) {
             System.err.println(e.getMessage());
-            return Stream.empty();
+            answerStream = Stream.empty();
         }
+
+        if (span != null) {
+            span.finish();
+        }
+        return answerStream;
     }
 
     /**
@@ -191,6 +236,7 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query) {
+        // TODO span
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
@@ -202,6 +248,7 @@ public class QueryExecutor {
             }
         }
 
+        // TODO span
         if (query.match() != null) {
             MatchClause match = query.match();
             Set<Variable> matchVars = match.getSelectedNames();
