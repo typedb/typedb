@@ -115,7 +115,7 @@ public class QueryExecutor {
 
         if (span != null) {
             span.finish();
-            span = ServerTracing.startScopedChildSpan("QueryExecturo.match create stream");
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
         }
 
         Stream<ConceptMap> answerStream;
