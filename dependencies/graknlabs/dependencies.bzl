@@ -40,7 +40,7 @@ def graknlabs_benchmark():
     )
 
 def graknlabs_build_tools():
-    # TODO: revert to graknlabs
+#     TODO: revert to graknlabs
 #    native.local_repository(
 #            name = "graknlabs_build_tools",
 #            path = "/Users/lolski/grakn.ai/build-tools"
@@ -48,5 +48,5 @@ def graknlabs_build_tools():
     git_repository(
         name = "graknlabs_build_tools",
         remote = "https://github.com/lolski/build-tools",
-        commit = "a5f5fd30824f115742827676a7ffff7794a86762", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+        commit = "3afec47086a5b7f19d5cf8b93e2163320b0a1391", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
