@@ -295,7 +295,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN_GRABL
-          bazel run //:deploy-github
+          bazel run //:deploy-github-test # TODO: revert
 
   deploy-apt:
     machine: true
@@ -336,7 +336,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN_GRABL
-          bazel run //:deploy-brew -- release
+          bazel run //:deploy-brew-test -- release # TODO: revert
 
   deploy-docker:
     machine: true
@@ -370,212 +370,232 @@ jobs:
       - run: git push --delete origin grakn-core-release-branch
 
 workflows:
-  grakn-core:
-    jobs:
-      - build:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-common:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-console:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-server:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration-reasoner:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-integration-analytics:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-end-to-end:
-          filters:
-            branches:
-              ignore: grakn-core-release-branch
-      - test-assembly-mac-zip:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-windows-zip:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-linux-targz:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-linux-apt:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-docker:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - deploy-maven-snapshot:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-linux-apt
-            - test-assembly-docker
-      - deploy-apt-snapshot:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-linux-apt
-            - test-assembly-docker
-      - deploy-rpm-snapshot:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-linux-apt
-            - test-assembly-docker
-      - test-deployment-linux-apt:
-          filters:
-            branches:
-              only: master
-          requires:
-            - deploy-apt-snapshot
-      - test-deployment-linux-rpm:
-          filters:
-            branches:
-              only: master
-          requires:
-            - deploy-rpm-snapshot
-      - sync-dependencies:
-          filters:
-            branches:
-              only: master
-          requires:
-            - deploy-maven-snapshot
-            - test-deployment-linux-apt
-            - test-deployment-linux-rpm
-      - release-approval:
-          filters:
-            branches:
-              only: master
-          requires:
-            - sync-dependencies
-
-  grakn-core-release:
+  deploy-brew:
     jobs:
       - deploy-github:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: deploy-brew # TODO: revert
       - deploy-approval:
           type: approval
           requires:
             - deploy-github
           filters:
             branches:
-              only: grakn-core-release-branch
-      - deploy-apt:
-          filters:
-            branches:
-              only: grakn-core-release-branch
-          requires:
-            - deploy-approval
-      - deploy-rpm:
-          filters:
-            branches:
-              only: grakn-core-release-branch
-          requires:
-            - deploy-approval
+              only: deploy-brew # TODO: revert
       - deploy-brew:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: deploy-brew # TODO: revert
           requires:
             - deploy-approval
-      - deploy-docker:
-          filters:
-            branches:
-              only: grakn-core-release-branch
-          requires:
-            - deploy-approval
-      - deploy-maven:
-          filters:
-            branches:
-              only: grakn-core-release-branch
-          requires:
-            - deploy-approval
-      - release-cleanup:
-          filters:
-            branches:
-              only: grakn-core-release-branch
-          requires:
-            - deploy-apt
-            - deploy-rpm
-            - deploy-brew
-            - deploy-docker
-            - deploy-maven
+
+#  grakn-core:
+#    jobs:
+#      - build:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-common:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-console:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-server:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration-reasoner:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-integration-analytics:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-end-to-end:
+#          filters:
+#            branches:
+#              ignore: grakn-core-release-branch
+#      - test-assembly-mac-zip:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#      - test-assembly-windows-zip:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#      - test-assembly-linux-targz:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#      - test-assembly-linux-apt:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#      - test-assembly-docker:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - build
+#            - test-common
+#            - test-console
+#            - test-server
+#            - test-integration
+#            - test-integration-reasoner
+#            - test-integration-analytics
+#            - test-end-to-end
+#      - deploy-maven-snapshot:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - test-assembly-mac-zip
+#            - test-assembly-windows-zip
+#            - test-assembly-linux-targz
+#            - test-assembly-linux-apt
+#            - test-assembly-docker
+#      - deploy-apt-snapshot:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - test-assembly-mac-zip
+#            - test-assembly-windows-zip
+#            - test-assembly-linux-targz
+#            - test-assembly-linux-apt
+#            - test-assembly-docker
+#      - deploy-rpm-snapshot:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - test-assembly-mac-zip
+#            - test-assembly-windows-zip
+#            - test-assembly-linux-targz
+#            - test-assembly-linux-apt
+#            - test-assembly-docker
+#      - test-deployment-linux-apt:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - deploy-apt-snapshot
+#      - test-deployment-linux-rpm:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - deploy-rpm-snapshot
+#      - sync-dependencies:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - deploy-maven-snapshot
+#            - test-deployment-linux-apt
+#            - test-deployment-linux-rpm
+#      - release-approval:
+#          filters:
+#            branches:
+#              only: master
+#          requires:
+#            - sync-dependencies
+#
+#  grakn-core-release:
+#    jobs:
+#      - deploy-github:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#      - deploy-approval:
+#          type: approval
+#          requires:
+#            - deploy-github
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#      - deploy-apt:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#          requires:
+#            - deploy-approval
+#      - deploy-rpm:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#          requires:
+#            - deploy-approval
+#      - deploy-brew:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#          requires:
+#            - deploy-approval
+#      - deploy-docker:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#          requires:
+#            - deploy-approval
+#      - deploy-maven:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#          requires:
+#            - deploy-approval
+#      - release-cleanup:
+#          filters:
+#            branches:
+#              only: grakn-core-release-branch
+#          requires:
+#            - deploy-apt
+#            - deploy-rpm
+#            - deploy-brew
+#            - deploy-docker
+#            - deploy-maven

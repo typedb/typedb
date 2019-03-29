@@ -25,35 +25,36 @@ load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
-#deploy_github(
-#    name = "deploy-github-test",
-#    deployment_properties = "//:deployment.properties",
-#    release_description = "//:RELEASE_TEMPLATE.md",
-#    archive = ":assemble-versioned-test-zip-tar",
-#    version_file = "//:VERSION"
-#)
-#
-#deploy_brew(
-#    name = "deploy-brew",
-#    checksum = "//:versioned-test-zip-checksum",
-#    deployment_properties = "//:deployment.properties",
-#    formula = "//config/brew:grakn-core.rb",
-#    version_file = "//:VERSION"
-#)
-# checksum(
-#    name = "versioned-test-zip-checksum",
-#    archive = ":assemble-versioned-test-zip",
-#)
+deploy_github(
+    name = "deploy-github-test",
+    deployment_properties = "//:deployment.properties",
+    release_description = "//:RELEASE_TEMPLATE.md",
+    archive = ":test-versioned-zip-tar",
+    version_file = "//:VERSION"
+)
+
+deploy_brew(
+    name = "deploy-brew-test",
+    checksum = "//:test-checksum",
+    deployment_properties = "//:deployment.properties",
+    formula = "//config/brew:grakn-core.rb",
+    version_file = "//:VERSION"
+)
+
+checksum(
+    name = "test-checksum",
+    archive = ":test-versioned-zip",
+)
 
 assemble_versioned(
-    name = "assemble-versioned-test-zip-tar",
+    name = "test-versioned-zip-tar",
     targets = [":assemble-test-zip", ":assemble-test-targz"],
     version_file = "//:VERSION"
 )
 
 
 assemble_versioned(
-    name = "assemble-versioned-test-zip",
+    name = "test-versioned-zip",
     targets = [":assemble-test-zip"],
     version_file = "//:VERSION"
 )
@@ -75,7 +76,7 @@ assemble_zip(
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
     },
-    output_filename = "test",
+    output_filename = "grakn-core-all-mac",
     visibility = ["//visibility:public"]
 )
 
@@ -96,7 +97,7 @@ assemble_targz(
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
     },
-    output_filename = "test",
+    output_filename = "grakn-core-all-linux",
     visibility = ["//visibility:public"]
 )
 # TODO: enable before merging
@@ -162,7 +163,7 @@ assemble_targz(
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
     },
-    output_filename = "grakn-core-all-linux",
+    output_filename = "grakn-core-all-linux-2", # TODO: revert
     visibility = ["//visibility:public"]
 )
 
@@ -185,7 +186,7 @@ assemble_zip(
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
     },
-    output_filename = "grakn-core-all-mac",
+    output_filename = "grakn-core-all-mac-2", # TODO: revert
     visibility = ["//visibility:public"]
 )
 
