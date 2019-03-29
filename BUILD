@@ -19,20 +19,72 @@
 exports_files(["VERSION", "deployment.properties", "RELEASE_TEMPLATE.md"], visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
 load("@graknlabs_bazel_distribution//github:rules.bzl", "deploy_github")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@io_bazel_rules_docker//container:image.bzl", "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", "container_push")
 
-deploy_github(
-    name = "deploy-github",
-    deployment_properties = "//:deployment.properties",
-    release_description = "//:RELEASE_TEMPLATE.md",
-    targets = [
-        # TODO: enable before merging
+assemble_versioned(
+    name = "assemble-test-versioned-all",
+    targets = [":assemble-test-zip", ":assemble-test-targz"],
+    version_file = "//:VERSION"
+)
+
+
+assemble_versioned(
+    name = "assemble-test-versioned-zip",
+    targets = [":assemble-test-zip"],
+    version_file = "//:VERSION"
+)
+
+assemble_zip(
+    name = "assemble-test-zip",
+    targets = [],
+    additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+    },
+    empty_directories = [
+        "server/db/cassandra",
+    ],
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+    },
+    output_filename = "test",
+    visibility = ["//visibility:public"]
+)
+
+assemble_targz(
+    name = "assemble-test-targz",
+    targets = [],
+    additional_files = {
+        "//server:conf/logback.xml": "conf/logback.xml",
+        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+    },
+    empty_directories = [
+        "server/db/cassandra",
+    ],
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+    },
+    output_filename = "test",
+    visibility = ["//visibility:public"]
+)
+# TODO: enable before merging
+#assemble_versioned(
+#    name = "assemble-versioned-all",
+#    targets = [
 #        ":assemble-linux-targz",
-        ":assemble-mac-zip",
+#        ":assemble-mac-zip",
 #        ":assemble-windows-zip",
 #        "//console:assemble-linux-targz",
 #        "//console:assemble-mac-zip",
@@ -40,22 +92,36 @@ deploy_github(
 #        "//server:assemble-linux-targz",
 #        "//server:assemble-mac-zip",
 #        "//server:assemble-windows-zip",
-    ],
-    version_file = "//:VERSION"
-)
+#    ],
+#    version_file = "//:VERSION",
+#)
 
-deploy_brew(
-    name = "deploy-brew",
-    checksum = "//:checksum",
-    deployment_properties = "//:deployment.properties",
-    formula = "//config/brew:grakn-core.rb",
-    version_file = "//:VERSION"
-)
+#assemble_versioned(
+#    name = "assemble-versioned-mac",
+#    targets = [":assemble-mac-zip"],
+#    version_file = "//:VERSION"
+#)
 
-checksum(
-    name = "checksum",
-    target = ":assemble-mac-zip"
-)
+#checksum(
+#    name = "checksum-mac",
+#    archive = ":assemble-versioned-mac",
+#)
+#
+#deploy_github(
+#    name = "deploy-github",
+#    deployment_properties = "//:deployment.properties",
+#    release_description = "//:RELEASE_TEMPLATE.md",
+#    archive = ":assemble-versioned-all",
+#    version_file = "//:VERSION"
+#)
+#
+#deploy_brew(
+#    name = "deploy-brew",
+#    checksum = "//:checksum-mac",
+#    deployment_properties = "//:deployment.properties",
+#    formula = "//config/brew:grakn-core.rb",
+#    version_file = "//:VERSION"
+#)
 
 assemble_targz(
     name = "assemble-linux-targz",
@@ -174,6 +240,6 @@ container_push(
     image = ":assemble-docker",
     format = "Docker",
     registry = "index.docker.io",
-    repository = "graknlabs/grakn-core",
+    repository = "lolski/grakn-core",
     tag_file = "//:VERSION"
 )
