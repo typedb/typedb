@@ -271,6 +271,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
+          export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN_GRABL
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
@@ -282,7 +283,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run @graknlabs_build_tools//ci:release-approval
+      - run: |
+          export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN_GRABL
+          bazel run @graknlabs_build_tools//ci:release-approval
 
   deploy-github:
     machine: true
