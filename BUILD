@@ -44,7 +44,7 @@ assemble_targz(
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
     },
-    output_filename = "grakn-core-all-linux-2", # TODO: revert
+    output_filename = "grakn-core-all-linux",
     visibility = ["//visibility:public"]
 )
 
@@ -67,7 +67,7 @@ assemble_zip(
         "server/services/cassandra/cassandra.yaml": "0777",
         "server/db/cassandra": "0777",
     },
-    output_filename = "grakn-core-all-mac-2", # TODO: revert
+    output_filename = "grakn-core-all-mac",
     visibility = ["//visibility:public"]
 )
 
@@ -153,7 +153,7 @@ deploy_github(
 deploy_brew(
     name = "deploy-brew",
     checksum = "//:checksum-mac",
-    deployment_properties = "//:deployment.properties",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
     formula = "//config/brew:grakn-core.rb",
     version_file = "//:VERSION"
 )
@@ -185,6 +185,6 @@ container_push(
     image = ":assemble-docker",
     format = "Docker",
     registry = "index.docker.io",
-    repository = "lolski/grakn-core",
+    repository = "graknlabs/grakn-core",
     tag_file = "//:VERSION"
 )

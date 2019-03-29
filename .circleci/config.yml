@@ -295,7 +295,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN_GRABL
-          bazel run //:deploy-github-test # TODO: revert
+          bazel run //:deploy-github
 
   deploy-apt:
     machine: true
@@ -336,7 +336,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN_GRABL
-          bazel run //:deploy-brew-test -- release # TODO: revert
+          bazel run //:deploy-brew -- release
 
   deploy-docker:
     machine: true
