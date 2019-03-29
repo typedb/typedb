@@ -291,7 +291,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          export DEPLOY_GITHUB_TOKEN=$GRABL_CREDENTIAL
+          export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN_GRABL
           bazel run //:deploy-github
 
   deploy-apt:
@@ -331,7 +331,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run //:deploy-brew -- release
+      - run: |
+          export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN_GRABL
+          bazel run //:deploy-brew -- release
 
   deploy-docker:
     machine: true
@@ -339,8 +341,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-      - run: bazel run --define version=$(cat VERSION) //:deploy-docker
+      - run: |
+          docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
+          bazel run //:deploy-docker
 
   deploy-maven:
     machine: true
