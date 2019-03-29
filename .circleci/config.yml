@@ -367,7 +367,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: git push --delete origin grakn-core-release-branch
+      - run: git push --delete origin grakn-release-branch
 
 workflows:
   grakn-core:
@@ -375,35 +375,35 @@ workflows:
       - build:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-common:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-console:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-server:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-integration:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-integration-reasoner:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-integration-analytics:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-end-to-end:
           filters:
             branches:
-              ignore: grakn-core-release-branch
+              ignore: grakn-release-branch
       - test-assembly-mac-zip:
           filters:
             branches:
@@ -531,48 +531,48 @@ workflows:
       - deploy-github:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
       - deploy-approval:
           type: approval
           requires:
             - deploy-github
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
       - deploy-apt:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
           requires:
             - deploy-approval
       - deploy-rpm:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
           requires:
             - deploy-approval
       - deploy-brew:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
           requires:
             - deploy-approval
       - deploy-docker:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
           requires:
             - deploy-approval
       - deploy-maven:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
           requires:
             - deploy-approval
       - release-cleanup:
           filters:
             branches:
-              only: grakn-core-release-branch
+              only: grakn-release-branch
           requires:
             - deploy-apt
             - deploy-rpm
