@@ -207,7 +207,7 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-core-bin"
+      "grakn-core-bin (={version})"
     ],
     archives = [":server-deps"],
     installation_dir = "/opt/grakn/core/",

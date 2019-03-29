@@ -133,9 +133,29 @@ assemble_rpm(
     spec_file = "//config/rpm:grakn-core-all.spec",
 )
 
+
+assemble_apt(
+    name = "assemble-linux-apt",
+    package_name = "grakn-core-all",
+    maintainer = "Grakn Labs <community@grakn.ai>",
+    description = "Grakn Core (all)",
+    version_file = "//:VERSION",
+    depends = [
+        "openjdk-8-jre",
+        "grakn-core-server (={version})",
+        "grakn-core-console (={version})",
+    ],
+)
+
 deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
+    deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+)
+
+deploy_apt(
+    name = "deploy-apt",
+    target = ":assemble-linux-apt",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
 )
 

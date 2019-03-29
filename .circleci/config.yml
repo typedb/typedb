@@ -208,7 +208,7 @@ jobs:
           bazel run //bin:deploy-apt -- snapshot
           bazel run //console:deploy-apt -- snapshot
           bazel run //server:deploy-apt -- snapshot
-        # bazel run //:deploy-apt -- snapshot  TODO: we need to deploy grakn-server-all for APT
+          bazel run //:deploy-apt -- snapshot
       - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
@@ -249,8 +249,7 @@ jobs:
       - run: sudo apt update
       - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
-      - run: sudo apt install grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
-      # - run: sudo apt install grakn-core-all=$(cat VERSION)  TODO: we need to install grakn-core-all, which installs the rests
+      - run: sudo apt install grakn-core-all=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -272,6 +271,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
+          export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN_GRABL
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
@@ -283,7 +283,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run @graknlabs_build_tools//ci:release-approval
+      - run: |
+          export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN_GRABL
+          bazel run @graknlabs_build_tools//ci:release-approval
 
   deploy-github:
     machine: true
@@ -292,7 +294,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          export DEPLOY_GITHUB_TOKEN=$GRABL_CREDENTIAL
+          export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN_GRABL
           bazel run //:deploy-github
 
   deploy-apt:
@@ -308,6 +310,7 @@ jobs:
           bazel run //bin:deploy-apt -- release
           bazel run //console:deploy-apt -- release
           bazel run //server:deploy-apt -- release
+          bazel run //:deploy-apt -- release
 
   deploy-rpm:
     machine: true
@@ -323,6 +326,7 @@ jobs:
           bazel run //bin:deploy-rpm -- release
           bazel run //server:deploy-rpm -- release
           bazel run //console:deploy-rpm -- release
+          bazel run //:deploy-rpm -- release
 
   deploy-brew:
     machine: true
@@ -331,7 +335,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          export DEPLOY_BREW_TOKEN=$GRABL_CREDENTIAL
+          export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN_GRABL
           bazel run //:deploy-brew -- release
 
   deploy-docker:
@@ -340,8 +344,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
-      - run: bazel run --define version=$(cat VERSION) //:deploy-docker
+      - run: |
+          docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
+          bazel run //:deploy-docker
 
   deploy-maven:
     machine: true
