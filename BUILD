@@ -185,6 +185,6 @@ container_push(
     image = ":assemble-docker",
     format = "Docker",
     registry = "index.docker.io",
-    repository = "graknlabs/grakn-core",
+    repository = "graknlabs/grakn",
     tag_file = "//:VERSION"
 )
