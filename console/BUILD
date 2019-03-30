@@ -77,7 +77,7 @@ java_deps(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    output_filename = "grakn-core-console",
+    output_filename = "grakn-core-console-linux",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
     empty_directories = [
         "console/db/cassandra",
