@@ -18,6 +18,7 @@
 
 package grakn.core.graql.executor;
 
+import brave.ScopedSpan;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -28,6 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -227,15 +229,37 @@ public class WriteExecutor {
     ConceptMap write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
+        // time to execute writers for properties
+        ScopedSpan span = null;
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("WriteExecutor.write execute writers");
+        }
+
         for (Writer writer : sortedWriters()) {
             writer.execute(this);
+        }
+
+        // time to delete concepts marked for deletion
+        if (span != null) {
+            span.finish();
+            span = ServerTracing.startScopedChildSpan("WriteExecutor.write delete concepts");
         }
 
         for (Concept concept : conceptsToDelete) {
             concept.delete();
         }
 
+        // time to build concepts
+        if (span != null) {
+            span.finish();
+            span = ServerTracing.startScopedChildSpan("WriteExecutor.write build concepts for answer");
+        }
+
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
+
+        if (span != null) {
+            span.finish();
+        }
 
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 

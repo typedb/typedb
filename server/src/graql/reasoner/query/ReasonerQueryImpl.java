@@ -40,7 +40,6 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.cache.Index;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.plan.GraqlTraversalPlanner;
@@ -63,7 +62,6 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.Collection;
@@ -116,8 +114,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     ReasonerQueryImpl(Atom atom) {
-        // TODO: This cast is unsafe - ReasonerQuery should return an EmbeeddedGraknTx
-        this(Collections.singletonList(atom), (TransactionOLTP) /*TODO anything but this*/ atom.getParentQuery().tx());
+        this(Collections.singletonList(atom), atom.getParentQuery().tx());
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
@@ -492,7 +489,11 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     private static String PLACEHOLDER_ID = "placeholder_id";
 
-    private boolean isCacheComplete(){
+    /**
+     *
+     * @return
+     */
+    public boolean isCacheComplete(){
         //TODO sort out properly
         if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
@@ -534,19 +535,19 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Stream<ConceptMap> resolve() {
-        return resolve(new HashSet<>(), new MultilevelSemanticCache(), this.requiresReiteration());
+        return resolve(new HashSet<>(), this.requiresReiteration());
     }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate){
-        return new ResolutionIterator(this, subGoals, cache, reiterate).hasStream();
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
+        return new ResolutionIterator(this, subGoals, reiterate).hasStream();
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
         return isNeqPositive() ?
-                new ConjunctiveState(this, sub, u, parent, subGoals, cache) :
-                new NeqComplementState(this, sub, u, parent, subGoals, cache);
+                new ConjunctiveState(this, sub, u, parent, subGoals) :
+                new NeqComplementState(this, sub, u, parent, subGoals);
     }
 
     /**
@@ -554,12 +555,11 @@ public class ReasonerQueryImpl implements ResolvableQuery {
      * @param u unifier with parent state
      * @param parent parent state
      * @param subGoals set of visited sub goals
-     * @param cache query cache
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
+    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
         return getQueryStream(sub)
-                .map(q -> q.subGoal(sub, u, parent, subGoals, cache));
+                .map(q -> q.subGoal(sub, u, parent, subGoals));
     }
 
     /**
@@ -580,10 +580,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     /**
      * @param parent parent state
      * @param subGoals set of visited sub goals
-     * @param cache query cache
      * @return query state iterator (db iter + unifier + state iter) for this query
      */
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
         Iterator<AnswerState> dbIterator;
         Iterator<QueryStateBase> subGoalIterator;
 
@@ -602,7 +601,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             dbIterator = Collections.emptyIterator();
 
             ResolutionQueryPlan queryPlan = new ResolutionQueryPlan(this);
-            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals, cache));
+            subGoalIterator = Iterators.singletonIterator(new CumulativeState(queryPlan.queries(), new ConceptMap(), parent.getUnifier(), parent, subGoals));
         }
         return Iterators.concat(dbIterator, subGoalIterator);
     }

@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
@@ -37,24 +36,17 @@ public abstract class QueryStateBase extends ResolutionState {
 
     private final Unifier unifier;
     private final Set<ReasonerAtomicQuery> visitedSubGoals;
-    private final MultilevelSemanticCache cache;
 
-    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache) {
+    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals) {
         super(sub, parent);
         this.unifier = u;
         this.visitedSubGoals = subGoals;
-        this.cache = cache;
     }
 
     /**
      * @return set of already visited subGoals (atomic queries)
      */
     Set<ReasonerAtomicQuery> getVisitedSubGoals(){ return visitedSubGoals;}
-
-    /**
-     * @return query cache
-     */
-    MultilevelSemanticCache getCache(){ return cache;}
 
     /**
      * @return unifier of this state with parent state

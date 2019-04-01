@@ -41,9 +41,10 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/grakn/benchmark:lib",
+
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
@@ -86,7 +87,7 @@ java_library(
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
-    tags = ["maven_coordinates=grakn.core:server:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:server:{pom_version}"],
     javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
 
 )
@@ -118,7 +119,7 @@ java_deps(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    output_filename = "grakn-core-server",
+    output_filename = "grakn-core-server-linux",
     targets = [":server-deps", "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
@@ -135,7 +136,8 @@ assemble_targz(
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(
@@ -157,7 +159,8 @@ assemble_zip(
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(
@@ -179,7 +182,8 @@ assemble_zip(
       "server/services/cassandra/cassandra.yaml": "0777",
       "server/db/cassandra": "0777",
       "server/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_maven(
@@ -187,6 +191,7 @@ assemble_maven(
     target = ":server",
     package = "server",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(
@@ -202,7 +207,7 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-core-bin"
+      "grakn-core-bin (={version})"
     ],
     archives = [":server-deps"],
     installation_dir = "/opt/grakn/core/",

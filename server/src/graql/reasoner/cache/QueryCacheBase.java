@@ -26,6 +26,7 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 
 import graql.lang.statement.Variable;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
@@ -88,6 +89,9 @@ public abstract class QueryCacheBase<
 
     @Override
     public boolean contains(Q query) { return getEntry(query) != null; }
+
+    @Override
+    public Set<Q> queries(){ return cache.keySet().stream().map(this::keyToQuery).collect(Collectors.toSet());}
 
     /**
      * @param query to find unifier for

@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 
 /**
@@ -28,17 +27,15 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 public class CacheCompletionState extends ResolutionState {
 
     final private ReasonerAtomicQuery query;
-    final private MultilevelSemanticCache cache;
 
-    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent, MultilevelSemanticCache cache) {
+    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent) {
         super(sub, parent);
         this.query = query;
-        this.cache = cache;
     }
 
     @Override
     public ResolutionState generateSubGoal() {
-        cache.ackDBCompleteness(query);
+        query.tx().queryCache().ackDBCompleteness(query);
         return null;
     }
 

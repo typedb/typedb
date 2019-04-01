@@ -18,9 +18,11 @@
 
 package grakn.core.graql.executor;
 
+import brave.ScopedSpan;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
@@ -37,14 +39,9 @@ import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.reasoner.DisjunctionIterator;
-import grakn.core.graql.reasoner.ResolutionIterator;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
@@ -63,8 +60,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -100,23 +95,65 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
+
+        ScopedSpan span = null;
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.match validate pattern");
+        }
+
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.properties().forEach(property -> validateProperty(property, statement));
         }
 
+        if (span != null) {
+            span.finish();
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
+        }
+
+        Stream<ConceptMap> answerStream;
         try {
             if (!infer) {
+                // time to create the traversal plan
+                ScopedSpan subSpan = null;
+                if (span != null) {
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
+                }
                 GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
-                return traversal(matchClause.getPatterns().variables(), graqlTraversal);
-            }
 
-            Stream<ConceptMap> answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
-            return answerStream.map(result -> result.project(matchClause.getSelectedNames()));
+                // time to convert plan into a answer stream
+                if (subSpan != null) {
+                    subSpan.finish();
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
+                }
+                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+
+                // close this subSpan
+                if (subSpan != null) {
+                    subSpan.finish();
+                }
+            } else {
+
+                ScopedSpan subSpan = null;
+                if (span != null) {
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
+                }
+                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+
+                if (subSpan != null) {
+                    subSpan.finish();
+                }
+            }
         } catch (GraqlQueryException e) {
             System.err.println(e.getMessage());
-            return Stream.empty();
+            answerStream = Stream.empty();
         }
+
+        if (span != null) {
+            span.finish();
+        }
+        return answerStream;
     }
 
     /**
@@ -191,6 +228,11 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query) {
+        ScopedSpan span = null;
+        if (ServerTracing.tracingActive()) {
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
+        }
+
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(toImmutableList());
@@ -202,6 +244,12 @@ public class QueryExecutor {
             }
         }
 
+        if (span != null) {
+            span.finish();
+            span = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
+        }
+
+        Stream<ConceptMap> answerStream;
         if (query.match() != null) {
             MatchClause match = query.match();
             Set<Variable> matchVars = match.getSelectedNames();
@@ -211,12 +259,18 @@ public class QueryExecutor {
             projectedVars.retainAll(insertVars);
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
-            return answers.map(answer -> WriteExecutor
+            answerStream = answers.map(answer -> WriteExecutor
                     .create(transaction, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            return Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
+            answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
         }
+
+        if (span != null) {
+            span.finish();
+        }
+
+        return answerStream;
     }
 
     @SuppressWarnings("unchecked") // All attribute values are comparable data types

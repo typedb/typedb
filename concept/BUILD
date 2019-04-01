@@ -34,7 +34,7 @@ java_library(
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
-    tags = ["maven_coordinates=grakn.core:concept:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:concept:{pom_version}"],
 )
 
 
@@ -43,6 +43,7 @@ assemble_maven(
     target = ":concept",
     package = "concept",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

@@ -29,6 +29,9 @@ graknlabs_graql()
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_client_java")
 graknlabs_client_java()
 
+load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_benchmark")
+graknlabs_benchmark()
+
 load("//dependencies/graknlabs:dependencies.bzl", "graknlabs_build_tools")
 graknlabs_build_tools()
 
@@ -92,6 +95,14 @@ graknlabs_graql_maven_dependencies = "maven_dependencies")
 graknlabs_graql_maven_dependencies()
 
 
+###########################
+# Load Benchmark dependencies #
+###########################
+load("@graknlabs_benchmark//dependencies/maven:dependencies.bzl",
+graknlabs_benchmark_maven_dependencies = "maven_dependencies")
+graknlabs_benchmark_maven_dependencies()
+
+
 #######################################
 # Load compiler dependencies for GRPC #
 #######################################
@@ -137,3 +148,10 @@ container_pull(
 # TODO: Figure out why this cannot be loaded at earlier at the top of the file
 load("@com_github_google_bazel_common//:workspace_defs.bzl", "google_common_workspace_rules")
 google_common_workspace_rules()
+
+
+# Generate a JSON document of commit hashes of all external workspace dependencies
+load("@graknlabs_build_tools//bazel:rules.bzl", "workspace_refs")
+workspace_refs(
+    name = "graknlabs_grakn_core_workspace_refs"
+)

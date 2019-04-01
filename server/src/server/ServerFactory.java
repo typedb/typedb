@@ -18,7 +18,7 @@
 
 package grakn.core.server;
 
-import grakn.benchmark.lib.serverinstrumentation.ServerTracingInstrumentation;
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
@@ -90,7 +90,7 @@ public class ServerFactory {
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         if (benchmark) {
-            ServerTracingInstrumentation.initInstrumentation("server-instrumentation");
+            ServerTracing.initInstrumentation("server-instrumentation");
         }
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)

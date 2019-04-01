@@ -41,7 +41,7 @@ java_library(
         "//dependencies/maven/artifacts/io/grpc:grpc-protobuf",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
     ],
-    tags = ["maven_coordinates=grakn.core:protocol:{pom_version}", "checkstyle_ignore"],
+    tags = ["maven_coordinates=io.grakn.core:protocol:{pom_version}", "checkstyle_ignore"],
 )
 
 assemble_maven(
@@ -49,6 +49,7 @@ assemble_maven(
     target = ":protocol-java",
     package = "protocol",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

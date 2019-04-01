@@ -50,7 +50,7 @@ java_library(
     visibility = ["//console/test:__subpackages__"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
-    tags = ["maven_coordinates=grakn.core:console:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:console:{pom_version}"],
 )
 
 checkstyle_test(
@@ -77,7 +77,7 @@ java_deps(
 
 assemble_targz(
     name = "assemble-linux-targz",
-    output_filename = "grakn-core-console",
+    output_filename = "grakn-core-console-linux",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
     empty_directories = [
         "console/db/cassandra",
@@ -91,7 +91,8 @@ assemble_targz(
       "console/services/cassandra/cassandra.yaml": "0777",
       "console/db/cassandra": "0777",
       "console/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(
@@ -110,7 +111,8 @@ assemble_zip(
       "console/services/cassandra/cassandra.yaml": "0777",
       "console/db/cassandra": "0777",
       "console/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_zip(
@@ -129,7 +131,8 @@ assemble_zip(
       "console/services/cassandra/cassandra.yaml": "0777",
       "console/db/cassandra": "0777",
       "console/db/queue": "0777",
-    }
+    },
+    visibility = ["//visibility:public"]
 )
 
 assemble_maven(
@@ -137,6 +140,7 @@ assemble_maven(
     target = ":console",
     package = "console",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(
@@ -152,7 +156,7 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-core-bin"
+      "grakn-core-bin (={version})"
     ],
     files = {
         "//server:conf/logback.xml": "console/conf/logback.xml",

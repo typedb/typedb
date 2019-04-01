@@ -42,7 +42,7 @@ java_library(
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",
     visibility = ["//server:__pkg__"],
-    tags = ["maven_coordinates=grakn.core:daemon:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:daemon:{pom_version}"],
 )
 
 assemble_maven(
@@ -50,6 +50,7 @@ assemble_maven(
     target = ":daemon",
     package = "daemon",
     version_file = "//:VERSION",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
 deploy_maven(

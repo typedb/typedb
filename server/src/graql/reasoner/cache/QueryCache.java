@@ -23,6 +23,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.utils.Pair;
 
+import java.util.Set;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
@@ -89,7 +90,6 @@ public interface QueryCache<
 
     Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
 
-
     /**
      * Query cache containment check
      *
@@ -97,6 +97,9 @@ public interface QueryCache<
      * @return true if cache contains the query
      */
     boolean contains(Q query);
+
+
+    Set<Q> queries();
 
     /**
      * Clear the cache

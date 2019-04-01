@@ -18,23 +18,30 @@
 
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
+def graknlabs_build_tools():
+    git_repository(
+        name = "graknlabs_build_tools",
+        remote = "https://github.com/graknlabs/build-tools",
+        commit = "d2be22150c8ca386162e0c49d3f82785a11e8d98", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+    )
+
 def graknlabs_graql():
      git_repository(
          name = "graknlabs_graql",
          remote = "https://github.com/graknlabs/graql",
-         commit = "b49e668ab5064df8dcf06d8f30a6f784cccabc4b",
+         tag = "1.0.0",
      )
 
 def graknlabs_client_java():
      git_repository(
          name = "graknlabs_client_java",
          remote = "https://github.com/graknlabs/client-java",
-         commit = "35a50ea31942daef539c3db57a2479f024bc902c",
+         commit = "324c7e52449202ad0e5bebb973928df776b6d694",
      )
 
-def graknlabs_build_tools():
-     git_repository(
-         name = "graknlabs_build_tools",
-         remote = "https://github.com/graknlabs/build-tools",
-         commit = "5cf26f1c385abd805fd7b8f843a433625d83a23d", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
-     )
+def graknlabs_benchmark():
+    git_repository(
+        name = "graknlabs_benchmark",
+        remote = "https://github.com/graknlabs/benchmark.git",
+        commit = "ceb5a2ebb71ee526d788fb4b17a104a6669d4b70" # keep in sync with protocol changes
+    )

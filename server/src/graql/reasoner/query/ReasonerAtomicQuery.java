@@ -29,7 +29,6 @@ import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
@@ -49,7 +48,6 @@ import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -189,11 +187,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache){
-        if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals, cache);
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+        if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
         return isNeqPositive()?
-                new AtomicState(this, sub, u, parent, subGoals, cache) :
-                new NeqComplementState(this, sub, u, parent, subGoals, cache);
+                new AtomicState(this, sub, u, parent, subGoals) :
+                new NeqComplementState(this, sub, u, parent, subGoals);
     }
 
     @Override
@@ -202,26 +200,26 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals, MultilevelSemanticCache cache) {
-        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = cache.getAnswerStreamWithUnifier(this);
+    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = tx().queryCache().getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 
         Iterator<ResolutionState> dbCompletionIterator =
-                Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null, cache));
+                Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null));
 
         Iterator<ResolutionState> subGoalIterator;
         //if this is ground and exists in the db then do not resolve further
         if(visitedSubGoals.contains(this)
-                || cache.isComplete(this)
+                || tx().queryCache().isComplete(this)
                 || (this.isGround() && dbIterator.hasNext())){
             subGoalIterator = Collections.emptyIterator();
         } else {
             visitedSubGoals.add(this);
             subGoalIterator = getRuleStream()
-                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals, cache))
+                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
                     .iterator();
         }
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);

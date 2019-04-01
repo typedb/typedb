@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -114,21 +113,19 @@ public interface ResolvableQuery extends ReasonerQuery {
     /**
      *
      * @param subGoals already visited subgoals
-     * @param cache query cache
      * @param reiterate true if reiteration should be performed
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache, boolean reiterate);
+    Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean reiterate);
 
     /**
      * @param sub partial substitution
      * @param u unifier with parent state
      * @param parent parent state
      * @param subGoals set of visited sub goals
-     * @param cache query cache
      * @return resolution subGoal formed from this query
      */
     @CheckReturnValue
-    ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals, MultilevelSemanticCache cache);
+    ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals);
 }
