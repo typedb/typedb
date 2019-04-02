@@ -54,9 +54,6 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
     public DisjunctionIterator(MatchClause matchClause, TransactionOLTP tx) {
         this.tx = tx;
-        //clear cache for now so that it only applies to this disjunction
-        tx.queryCache().clear();
-
 
         ScopedSpan span = null;
         if (ServerTracing.tracingActive()) {
