@@ -45,7 +45,6 @@ dependencies:
       version: "3.5.1"
       lang: java
       exclude:
-      - "io.dropwizard.metrics:metrics-core"
       - "io.netty:netty-handler"
 
   com.fasterxml.jackson.core:
@@ -251,7 +250,6 @@ dependencies:
       lang: java
       exclude:
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10" # PREVIOUSLY AVAILABLE
-      - "io.dropwizard.metrics:metrics-core" # PREVIOUSLY AVAILABLE
       - "io.netty:netty"
       - "javax.servlet:javax.servlet-api"
       - "log4j:log4j"
@@ -264,7 +262,6 @@ dependencies:
       lang: java
       exclude:
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10" # PREVIOUSLY AVAILABLE
-      - "io.dropwizard.metrics:metrics-core" # PREVIOUSLY AVAILABLE
       - "io.netty:netty"
       - "javax.servlet:javax.servlet-api"
       - "log4j:log4j"
@@ -309,7 +306,6 @@ dependencies:
       - "com.fasterxml.jackson.core:jackson-core"
       - "com.fasterxml.jackson.core:jackson-databind"
       - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "io.dropwizard.metrics:metrics-core"
       - "io.netty:netty"
       - "javax.servlet:javax.servlet-api"
     tinkergraph-gremlin:
@@ -317,13 +313,6 @@ dependencies:
       lang: java
       exclude:
       - "org.slf4j:slf4j-log4j12"
-
-  org.cassandraunit:
-    cassandra-unit:
-      version: "3.5.0.1"
-      lang: java
-      exclude:
-      - "org.slf4j:slf4j-api"
 
   org.codehaus.janino:
     janino:
@@ -348,18 +337,23 @@ dependencies:
       exclude:
       - "ch.qos.logback:logback-classic"
       - "com.boundary:high-scale-lib" # PREVIOUSLY AVAILABLE
-      - "com.codahale.metrics:metrics-core" # PREVIOUSLY AVAILABLE
       - "javax.servlet:javax.servlet-api"
       - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
       - "org.mortbay.jetty:servlet-api"
       - "org.mortbay.jetty:servlet-api-2.5"
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
+      - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
     janusgraph-core:
       version: "0.3.0"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
+      - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
       - "com.boundary:high-scale-lib" # PREVIOUSLY AVAILABLE
       - "javax.servlet:javax.servlet-api"
       - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"

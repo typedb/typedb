@@ -12,6 +12,7 @@ java_library(
         "//dependencies/maven/artifacts/com/twitter:chill-2-11",
         "//dependencies/maven/artifacts/com/twitter:chill-java",
         "//dependencies/maven/artifacts/commons-net:commons-net",
+        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-graphite",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-json",
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-jvm",

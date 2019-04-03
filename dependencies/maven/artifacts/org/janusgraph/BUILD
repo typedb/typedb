@@ -29,9 +29,6 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/carrotsearch:hppc",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-core",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-ganglia",
-        "//dependencies/maven/artifacts/com/codahale/metrics:metrics-graphite",
         "//dependencies/maven/artifacts/com/github/stephenc/high-scale-lib:high-scale-lib",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
