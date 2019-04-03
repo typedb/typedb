@@ -337,18 +337,23 @@ dependencies:
       exclude:
       - "ch.qos.logback:logback-classic"
       - "com.boundary:high-scale-lib" # PREVIOUSLY AVAILABLE
-      - "com.codahale.metrics:metrics-core" # PREVIOUSLY AVAILABLE
       - "javax.servlet:javax.servlet-api"
       - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
       - "org.mortbay.jetty:servlet-api"
       - "org.mortbay.jetty:servlet-api-2.5"
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
+      - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
     janusgraph-core:
       version: "0.3.0"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
+      - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
+      - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
       - "com.boundary:high-scale-lib" # PREVIOUSLY AVAILABLE
       - "javax.servlet:javax.servlet-api"
       - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
