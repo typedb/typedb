@@ -51,6 +51,9 @@ public class ValueFragment extends Fragment {
         this.operation = operation;
     }
 
+    /**
+     * Operation between two values
+     */
     private ValueExecutor.Operation<?, ?> predicate() {
         return operation;
     }

@@ -18,24 +18,14 @@
 
 package grakn.core.graql.gremlin;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.gremlin.fragment.Fragment;
-import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.gremlin.spanningtree.Arborescence;
 import grakn.core.graql.gremlin.spanningtree.ChuLiuEdmonds;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
@@ -46,8 +36,6 @@ import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.property.IsaProperty;
-import graql.lang.property.TypeProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.slf4j.Logger;
@@ -67,8 +55,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
+import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
 import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
-import static graql.lang.Graql.var;
 
 /**
  * Class for generating greedy traversal plans
@@ -115,7 +103,8 @@ public class GreedyTraversalPlan {
 
         // if role p[ayers' types are known, we can infer the types of the relation
         // then add a label fragment to the fragment set
-        inferRelationTypes(tx, allFragments);
+        Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
+        allFragments.addAll(inferredFragments);
 
         // it's possible that some (or all) fragments are disconnect
         // e.g. $x isa person; $y isa dog;
@@ -194,131 +183,6 @@ public class GreedyTraversalPlan {
         return plan;
     }
 
-    // infer type of relation type if we know the type of the role players
-    // add label fragment and isa fragment if we can infer any
-    private static void inferRelationTypes(TransactionOLTP tx, Set<Fragment> allFragments) {
-
-        Map<Variable, Type> labelVarTypeMap = getLabelVarTypeMap(tx, allFragments);
-        if (labelVarTypeMap.isEmpty()) return;
-
-        Multimap<Variable, Type> instanceVarTypeMap = getInstanceVarTypeMap(allFragments, labelVarTypeMap);
-
-        Multimap<Variable, Variable> relationRolePlayerMap = getRelationRolePlayerMap(allFragments, instanceVarTypeMap);
-        if (relationRolePlayerMap.isEmpty()) return;
-
-        // for each type, get all possible relation type it could be in
-        Multimap<Type, RelationType> relationMap = HashMultimap.create();
-        labelVarTypeMap.values().stream().distinct().forEach(
-                type -> addAllPossibleRelations(relationMap, type));
-
-        // inferred labels should be kept separately, even if they are already in allFragments set
-        Map<Label, Statement> inferredLabels = new HashMap<>();
-        relationRolePlayerMap.asMap().forEach((relationVar, rolePlayerVars) -> {
-
-            Set<Type> possibleRelationTypes = rolePlayerVars.stream()
-                    .filter(instanceVarTypeMap::containsKey)
-                    .map(rolePlayer -> getAllPossibleRelationTypes(
-                            instanceVarTypeMap.get(rolePlayer), relationMap))
-                    .reduce(Sets::intersection).orElse(Collections.emptySet());
-
-            //TODO: if possibleRelationTypes here is empty, the query will not match any data
-            if (possibleRelationTypes.size() == 1) {
-
-                Type relationType = possibleRelationTypes.iterator().next();
-                Label label = relationType.label();
-
-                // add label fragment if this label has not been inferred
-                if (!inferredLabels.containsKey(label)) {
-                    Statement labelVar = var();
-                    inferredLabels.put(label, labelVar);
-                    Fragment labelFragment = Fragments.label(new TypeProperty(label.getValue()), labelVar.var(), ImmutableSet.of(label));
-                    allFragments.add(labelFragment);
-                }
-
-                // finally, add inferred isa fragments
-                Statement labelVar = inferredLabels.get(label);
-                IsaProperty isaProperty = new IsaProperty(labelVar);
-                EquivalentFragmentSet isaEquivalentFragmentSet = EquivalentFragmentSets.isa(isaProperty,
-                        relationVar, labelVar.var(), relationType.isImplicit());
-                allFragments.addAll(isaEquivalentFragmentSet.fragments());
-            }
-        });
-    }
-
-    private static Multimap<Variable, Variable> getRelationRolePlayerMap(
-            Set<Fragment> allFragments, Multimap<Variable, Type> instanceVarTypeMap) {
-        // relation vars and its role player vars
-        Multimap<Variable, Variable> relationRolePlayerMap = HashMultimap.create();
-        allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
-                .forEach(fragment -> relationRolePlayerMap.put(fragment.start(), fragment.end()));
-
-        // find all the relation requiring type inference
-        Iterator<Variable> iterator = relationRolePlayerMap.keySet().iterator();
-        while (iterator.hasNext()) {
-            Variable relation = iterator.next();
-
-            // the relation should have at least 2 known role players so we can infer something useful
-            if (instanceVarTypeMap.containsKey(relation) ||
-                    relationRolePlayerMap.get(relation).size() < 2) {
-                iterator.remove();
-            } else {
-                int numRolePlayersHaveType = 0;
-                for (Variable rolePlayer : relationRolePlayerMap.get(relation)) {
-                    if (instanceVarTypeMap.containsKey(rolePlayer)) {
-                        numRolePlayersHaveType++;
-                    }
-                }
-                if (numRolePlayersHaveType < 2) {
-                    iterator.remove();
-                }
-            }
-        }
-        return relationRolePlayerMap;
-    }
-
-    // find all vars with direct or indirect out isa edges
-    private static Multimap<Variable, Type> getInstanceVarTypeMap(
-            Set<Fragment> allFragments, Map<Variable, Type> labelVarTypeMap) {
-        Multimap<Variable, Type> instanceVarTypeMap = HashMultimap.create();
-        int oldSize;
-        do {
-            oldSize = instanceVarTypeMap.size();
-            allFragments.stream()
-                    .filter(fragment -> labelVarTypeMap.containsKey(fragment.start()))
-                    .filter(fragment -> fragment instanceof InIsaFragment || fragment instanceof InSubFragment)
-                    .forEach(fragment -> instanceVarTypeMap.put(fragment.end(), labelVarTypeMap.get(fragment.start())));
-        } while (oldSize != instanceVarTypeMap.size());
-        return instanceVarTypeMap;
-    }
-
-    // find all vars representing types
-    private static Map<Variable, Type> getLabelVarTypeMap(TransactionOLTP tx, Set<Fragment> allFragments) {
-        Map<Variable, Type> labelVarTypeMap = new HashMap<>();
-        allFragments.stream()
-                .filter(LabelFragment.class::isInstance)
-                .forEach(fragment -> {
-                    // TODO: labels() should return ONE label instead of a set
-                    SchemaConcept schemaConcept = tx.getSchemaConcept(
-                            Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                    if (schemaConcept != null && !schemaConcept.isRole() && !schemaConcept.isRule()) {
-                        labelVarTypeMap.put(fragment.start(), schemaConcept.asType());
-                    }
-                });
-        return labelVarTypeMap;
-    }
-
-    private static Set<Type> getAllPossibleRelationTypes(
-            Collection<Type> instanceVarTypes, Multimap<Type, RelationType> relationMap) {
-
-        return instanceVarTypes.stream()
-                .map(rolePlayerType -> (Set<Type>) new HashSet<Type>(relationMap.get(rolePlayerType)))
-                .reduce(Sets::intersection).orElse(Collections.emptySet());
-    }
-
-    private static void addAllPossibleRelations(Multimap<Type, RelationType> relationMap, Type metaType) {
-        metaType.subs().forEach(type -> type.playing().flatMap(Role::relations)
-                .forEach(relationType -> relationMap.put(type, relationType)));
-    }
 
     // add unvisited node fragments to plan for each connected fragment set
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
@@ -399,13 +263,18 @@ public class GreedyTraversalPlan {
         connectedNodes.add(start);
 
         if (fragment.hasFixedFragmentCost()) {
-            // fragments that should be done right away
+            // fragments that are constant time access should be computed first
             plan.add(fragment);
-            double logInstanceCount = -1D;
-            Long shardCount = fragment.getShardCount(tx);
-            if (shardCount > 0) {
+
+            // set the weight of the node as a starting point based on log(number of this node)
+            double logInstanceCount;
+            if (fragment instanceof LabelFragment) {
+                // only LabelFragment (corresponding to type vertices) can be sharded
+                Long shardCount = ((LabelFragment) fragment).getShardCount(tx);
                 logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
                         Math.log(tx.shardingThreshold());
+            } else {
+                logInstanceCount = -1D;
             }
             nodesWithFixedCost.put(start, logInstanceCount);
             start.setFixedFragmentCost(fragment.fragmentCost());

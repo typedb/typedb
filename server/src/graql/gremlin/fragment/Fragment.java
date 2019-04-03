@@ -251,10 +251,6 @@ public abstract class Fragment {
         return this;
     }
 
-    public Long getShardCount(TransactionOLTP tx) {
-        return 0L;
-    }
-
     /**
      * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
      * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
