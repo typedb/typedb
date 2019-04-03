@@ -32,6 +32,7 @@ java_library(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    visibility = ["//visibility:public"],
     tags = ["maven_coordinates=io.grakn.core:common:{pom_version}"],
 )
 
