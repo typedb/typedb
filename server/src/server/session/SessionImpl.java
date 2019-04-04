@@ -100,7 +100,7 @@ public class SessionImpl implements Session {
         return new TransactionOLTP.Builder(this);
     }
 
-    TransactionOLTP transaction(Transaction.Type type) {
+    public TransactionOLTP transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
