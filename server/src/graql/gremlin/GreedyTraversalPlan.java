@@ -92,7 +92,6 @@ public class GreedyTraversalPlan {
     private static List<Fragment> planForConjunction(ConjunctionQuery query, TransactionOLTP tx) {
 
         final List<Fragment> plan = new ArrayList<>(); // this will be the final plan
-        final Map<NodeId, Node> allNodes = new HashMap<>(); // all the nodes in the spanning tree
 
         final Set<Node> connectedNodes = new HashSet<>();
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
@@ -100,6 +99,13 @@ public class GreedyTraversalPlan {
         // getting all the fragments from the conjunction query
         final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
+
+
+        // initialise all the nodes for the spanning tree
+        final Map<NodeId, Node> allNodes = new HashMap<>(); // all the nodes in the spanning tree
+        for (Fragment fragment : allFragments) {
+            fragment.getNodes().forEach(node -> allNodes.put(node.getNodeId(), node));
+        }
 
         // if role p[ayers' types are known, we can infer the types of the relation
         // then add a label fragment to the fragment set
@@ -130,7 +136,7 @@ public class GreedyTraversalPlan {
                     updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
 
                 } else if (fragment.hasFixedFragmentCost()) {
-                    Node node = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+                    Node node = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.start()));
                     if (fragment instanceof LabelFragment) {
                         Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
                         if (type != null && type.isImplicit()) {
@@ -176,6 +182,7 @@ public class GreedyTraversalPlan {
             }
             addUnvisitedNodeFragments(plan, allNodes, connectedNodes);
         });
+
 
         // add disconnected fragment set with no edge fragment
         addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
@@ -262,7 +269,7 @@ public class GreedyTraversalPlan {
                                                      Map<Node, Double> nodesWithFixedCost,
                                                      TransactionOLTP tx, Fragment fragment) {
 
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+        Node start = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.start()));
         connectedNodes.add(start);
 
         if (fragment.hasFixedFragmentCost()) {
@@ -290,9 +297,8 @@ public class GreedyTraversalPlan {
 
     private static void processFragmentWithDependencies(Map<NodeId, Node> allNodes, Fragment fragment) {
         // it's either neq or value fragment
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
-        Node other = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.dependencies().iterator().next(),
-                allNodes);
+        Node start = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.start()));
+        Node other = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
 
         start.getFragmentsWithDependency().add(fragment);
         other.getDependants().add(fragment);
@@ -312,9 +318,9 @@ public class GreedyTraversalPlan {
 
         Set<Fragment> validSubFragments = allFragments.stream().filter(fragment -> {
             if (fragment instanceof InSubFragment) {
-                Node superType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+                Node superType = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.start()));
                 if (nodesWithFixedCost.containsKey(superType) && nodesWithFixedCost.get(superType) > 0D) {
-                    Node subType = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes);
+                    Node subType = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.end()));
                     return !nodesWithFixedCost.containsKey(subType);
                 }
             }
@@ -324,8 +330,8 @@ public class GreedyTraversalPlan {
         if (!validSubFragments.isEmpty()) {
             validSubFragments.forEach(fragment -> {
                 // TODO: should decrease the weight of sub type after each level
-                nodesWithFixedCost.put(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.end(), allNodes),
-                        nodesWithFixedCost.get(Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes)));
+                nodesWithFixedCost.put(new Node(new NodeId(NodeId.NodeType.VAR, fragment.end())),
+                        nodesWithFixedCost.get(new Node(new NodeId(NodeId.NodeType.VAR, fragment.start()))));
             });
             // recursively process all the sub fragments
             processSubFragment(allNodes, nodesWithFixedCost, allFragments);
@@ -339,7 +345,7 @@ public class GreedyTraversalPlan {
         // ideally, this is where we update fragment cost after we get more info and statistics of the graph
         // however, for now, only shard count is available, which is used to infer number of instances of a type
         if (fragment instanceof InIsaFragment) {
-            Node type = Node.addIfAbsent(NodeId.NodeType.VAR, fragment.start(), allNodes);
+            Node type = allNodes.get(new NodeId(NodeId.NodeType.VAR, fragment.start()));
             if (nodesWithFixedCost.containsKey(type) && nodesWithFixedCost.get(type) > 0) {
                 fragment.setAccurateFragmentCost(nodesWithFixedCost.get(type));
             }

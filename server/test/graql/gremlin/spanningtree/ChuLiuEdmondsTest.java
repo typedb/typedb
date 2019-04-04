@@ -29,6 +29,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import graql.lang.statement.Variable;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -45,29 +46,44 @@ public class ChuLiuEdmondsTest {
     final static double NINF = Double.NEGATIVE_INFINITY;
 
     static Map<NodeId, Node> nodes = new HashMap<>();
-    static Node node0 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("0"), nodes);
-    static Node node1 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("1"), nodes);
-    static Node node2 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("2"), nodes);
-    static Node node3 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("3"), nodes);
-    static Node node4 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("4"), nodes);
-    static Node node5 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("5"), nodes);
-    static Node node6 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("6"), nodes);
-    static Node node7 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("7"), nodes);
-    static Node node8 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("8"), nodes);
-    static Node node9 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("9"), nodes);
-    static Node node10 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("10"), nodes);
+    static Node node0 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("0")));
+    static Node node1 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("1")));
+    static Node node2 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("2")));
+    static Node node3 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("3")));
+    static Node node4 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("4")));
+    static Node node5 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("5")));
+    static Node node6 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("6")));
+    static Node node7 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("7")));
+    static Node node8 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("8")));
+    static Node node9 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("9")));
+    static Node node10 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("10")));
+    static WeightedGraph graph;
 
-    final static WeightedGraph graph = SparseWeightedGraph.from(ImmutableList.of(
-            weighted(DirectedEdge.from(node0).to(node1), 5),
-            weighted(DirectedEdge.from(node0).to(node2), 1),
-            weighted(DirectedEdge.from(node0).to(node3), 1),
-            weighted(DirectedEdge.from(node1).to(node2), 11),
-            weighted(DirectedEdge.from(node1).to(node3), 4),
-            weighted(DirectedEdge.from(node2).to(node1), 10),
-            weighted(DirectedEdge.from(node2).to(node3), 5),
-            weighted(DirectedEdge.from(node3).to(node1), 9),
-            weighted(DirectedEdge.from(node3).to(node2), 8)
-    ));
+    @ClassRule
+    static void setupNodes() {
+        nodes.put(node0.getNodeId(), node0);
+        nodes.put(node1.getNodeId(), node1);
+        nodes.put(node2.getNodeId(), node2);
+        nodes.put(node3.getNodeId(), node3);
+        nodes.put(node4.getNodeId(), node4);
+        nodes.put(node5.getNodeId(), node5);
+        nodes.put(node6.getNodeId(), node6);
+        nodes.put(node7.getNodeId(), node7);
+        nodes.put(node8.getNodeId(), node8);
+        nodes.put(node9.getNodeId(), node9);
+        nodes.put(node10.getNodeId(), node10);
+        graph = SparseWeightedGraph.from(ImmutableList.of(
+                weighted(DirectedEdge.from(node0).to(node1), 5),
+                weighted(DirectedEdge.from(node0).to(node2), 1),
+                weighted(DirectedEdge.from(node0).to(node3), 1),
+                weighted(DirectedEdge.from(node1).to(node2), 11),
+                weighted(DirectedEdge.from(node1).to(node3), 4),
+                weighted(DirectedEdge.from(node2).to(node1), 10),
+                weighted(DirectedEdge.from(node2).to(node3), 5),
+                weighted(DirectedEdge.from(node3).to(node1), 9),
+                weighted(DirectedEdge.from(node3).to(node2), 8)
+        ));
+    }
 
     static void assertEdgesSumToScore(WeightedGraph originalEdgeWeights, Weighted<Arborescence<Node>> bestTree) {
         final Map<Node, Node> parentsMap = bestTree.val.getParents();

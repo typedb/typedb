@@ -29,7 +29,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,6 +58,15 @@ abstract class OutRelatesFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_ROLE_PLAYERS_PER_RELATION;
+    }
+
+    @Override
+    public Set<Node> getNodes() {
+        Node start = new Node(new NodeId(NodeId.NodeType.VAR, start()));
+        Node end = new Node(new NodeId(NodeId.NodeType.VAR, end()));
+        Node middle = new Node(new NodeId(NodeId.NodeType.RELATES, new HashSet<>(Arrays.asList(start(), end()))));
+        middle.setInvalidStartingPoint();
+        return new HashSet<>(Arrays.asList(start, end, middle));
     }
 
     @Override

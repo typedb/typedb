@@ -33,7 +33,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -133,6 +135,16 @@ public abstract class InIsaFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_INSTANCES_PER_TYPE;
+    }
+
+
+    @Override
+    public Set<Node> getNodes() {
+        Node start = new Node(new NodeId(NodeId.NodeType.VAR, start()));
+        Node end = new Node(new NodeId(NodeId.NodeType.VAR, end()));
+        Node middle = new Node(new NodeId(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end()))));
+        middle.setInvalidStartingPoint();
+        return new HashSet<>(Arrays.asList(start, end, middle));
     }
 
     @Override

@@ -35,6 +35,7 @@ import static com.google.common.collect.DiscreteDomain.integers;
 import static com.google.common.collect.Range.closedOpen;
 
 /**
+ * Used for testing
  */
 public class DenseWeightedGraph extends WeightedGraph {
     final private ArrayList<Node> nodes;

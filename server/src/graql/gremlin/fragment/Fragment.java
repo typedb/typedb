@@ -35,9 +35,11 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -144,6 +146,11 @@ public abstract class Fragment {
         return ImmutableSet.of();
     }
 
+    public Set<Node> getNodes() {
+        NodeId startNodeId = new NodeId(NodeId.NodeType.VAR, start());
+        return new HashSet<>(Arrays.asList(new Node(startNodeId)));
+    }
+
     /**
      * Convert the fragment to a set of weighted edges for query planning
      *
@@ -160,25 +167,15 @@ public abstract class Fragment {
                                                     Map<NodeId, Node> nodes,
                                                     Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
-        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(start(), end()), nodes);
-        middle.setInvalidStartingPoint();
+        // this call to `directedEdges` handles converting janus edges that the user cannot address
+        // (ie. not role edges), into edges with a middle node to force the query planner to traverse to this middle
+        // node that represents the actual Janus edge
+        // since the middle node cannot be addressed it does not have a variable, so we create a new ID for it
+        // as the combination of start() and end() with the type
 
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    final Set<Weighted<DirectedEdge>> directedEdges(Variable edge,
-                                                    Map<NodeId, Node> nodes,
-                                                    Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
-        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
-        middle.setInvalidStartingPoint();
+        Node start = nodes.get(new NodeId(NodeId.NodeType.VAR, start()));
+        Node end = nodes.get(new NodeId(NodeId.NodeType.VAR, end()));
+        Node middle = nodes.get(new NodeId(nodeType, Sets.newHashSet(start(), end())));
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
