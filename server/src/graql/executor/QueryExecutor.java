@@ -96,37 +96,32 @@ public class QueryExecutor {
         this.transaction = transaction;
     }
 
-    public Stream<ConceptMap> match(MatchClause matchClause) {
-
-        ScopedSpan span = null;
-        if (ServerTracing.tracingActive()) {
-            span = ServerTracing.startScopedChildSpan("QueryExecutor.match validate pattern");
-        }
-
+    public Stream<ConceptMap> match(MatchClause matchClause){
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.properties().forEach(property -> validateProperty(property, statement));
         }
 
-        if (span != null) {
-            span.finish();
+        ScopedSpan span = null;
+        if (ServerTracing.tracingActive()) {
             span = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
         }
 
         Stream<ConceptMap> answerStream;
         try {
             if (!infer) {
-                if (matchClause.getPatterns().getPatterns().stream().anyMatch(Pattern::isNegation)){
-                    throw GraqlQueryException.usingNegationWithReasoningOff(matchClause);
+                if (matchClause.getPatterns().getNegationDNF()
+                        .getPatterns().stream()
+                        .flatMap(p -> p.getPatterns().stream())
+                        .anyMatch(Pattern::isNegation)){
+                    throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
                 }
-
                 // time to create the traversal plan
                 ScopedSpan subSpan = null;
                 if (span != null) {
                     subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
                 }
                 GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
-
 
                 // time to convert plan into a answer stream
                 if (subSpan != null) {

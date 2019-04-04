@@ -30,10 +30,9 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import graql.lang.query.MatchClause;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 
@@ -180,14 +179,6 @@ public class GraqlQueryException extends GraknException {
         return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
     }
 
-    public static GraqlQueryException noTx() {
-        return new GraqlQueryException(ErrorMessage.NO_TX.getMessage());
-    }
-
-    public static GraqlQueryException multipleTxs() {
-        return new GraqlQueryException(ErrorMessage.MULTIPLE_TX.getMessage());
-    }
-
     public static GraqlQueryException nonPositiveLimit(long limit) {
         return new GraqlQueryException(NON_POSITIVE_LIMIT.getMessage(limit));
     }
@@ -232,10 +223,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
-    public static GraqlQueryException nonAtomicQuery(ReasonerQuery query) {
-        return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(query));
-    }
-
     public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery query) {
         return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(query));
     }
@@ -268,8 +255,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
 
-    public static GraqlQueryException usingNegationWithReasoningOff(MatchClause query) {
-        return new GraqlQueryException(ErrorMessage.USING_NEGATION_WITH_REASONING_OFF.getMessage(query));
+    public static GraqlQueryException usingNegationWithReasoningOff(Pattern pattern) {
+        return new GraqlQueryException(ErrorMessage.USING_NEGATION_WITH_REASONING_OFF.getMessage(pattern));
     }
 
     public static GraqlQueryException disjunctiveNegationBlock() {

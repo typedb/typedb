@@ -28,6 +28,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;

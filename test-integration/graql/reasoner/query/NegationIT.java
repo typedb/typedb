@@ -73,11 +73,13 @@ public class NegationIT {
     public static void loadContext(){
         negationSession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"negation.gql", negationSession);
+        /*
         recipeSession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath,"recipeTest.gql", recipeSession);
         reachabilitySession = server.sessionWithNewKeyspace();
         ReachabilityGraph reachability = new ReachabilityGraph(reachabilitySession);
         reachability.load(3);
+        */
     }
 
     @AfterClass
