@@ -376,6 +376,8 @@ dependencies:
       - "org.openrdf.sesame:sesame-rio-turtle"
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
+      - "org.janusgraph:janusgraph-hbase"
+      - "org.janusgraph:janusgraph-es"
 
   org.mockito:
     mockito-core:
