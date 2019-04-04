@@ -307,11 +307,6 @@ dependencies:
       exclude:
       - "org.slf4j:slf4j-log4j12"
 
-  org.codehaus.janino:
-    janino:
-      version: "2.7.8"
-      lang: java
-
   org.hamcrest:
     hamcrest-all:
       version: "1.3"
