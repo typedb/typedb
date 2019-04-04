@@ -183,11 +183,11 @@ public class NegationIT {
                     "{" +
                             "$x isa entity;" +
                             "not {" +
-                                "{$x has attribute 'value';}" +
+                                "$x has attribute 'value';" +
                             "};" +
                             "};"
             );
-            tx.execute(Graql.match(pattern));
+            tx.execute(Graql.match(pattern), false);
         }
     }
 
