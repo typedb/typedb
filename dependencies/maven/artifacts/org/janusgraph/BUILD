@@ -54,24 +54,6 @@ java_library(
 
 
 java_library(
-    name = "janusgraph-es",
-    exports = [
-        "//external:jar/org/janusgraph/janusgraph-es"
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/org/antlr:antlr-runtime",
-        "//dependencies/maven/artifacts/org/elasticsearch/client:elasticsearch-rest-client",
-        ":janusgraph-core"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
-    ]
-)
-
-
-
-java_library(
     name = "janusgraph-hadoop",
     exports = [
         "//external:jar/org/janusgraph/janusgraph-hadoop"
@@ -83,24 +65,10 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        ":janusgraph-core",
-        ":janusgraph-es",
-        ":janusgraph-hbase"
+        ":janusgraph-core"
     ],
     visibility = [
         "//visibility:public"
-    ]
-)
-
-
-
-java_library(
-    name = "janusgraph-hbase",
-    exports = [
-        "//external:jar/org/janusgraph/janusgraph-hbase"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
