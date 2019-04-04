@@ -30,6 +30,7 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
+import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -265,6 +266,10 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException unsafeNegationBlock(ResolvableQuery query) {
         return new GraqlQueryException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
+    }
+
+    public static GraqlQueryException usingNegationWithReasoningOff(MatchClause query) {
+        return new GraqlQueryException(ErrorMessage.USING_NEGATION_WITH_REASONING_OFF.getMessage(query));
     }
 
     public static GraqlQueryException disjunctiveNegationBlock() {

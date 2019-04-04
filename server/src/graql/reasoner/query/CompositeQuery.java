@@ -70,7 +70,7 @@ public class CompositeQuery implements ResolvableQuery {
     final private Set<ResolvableQuery> complementQueries;
     final private TransactionOLTP tx;
 
-    CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) {
+    CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) throws GraqlQueryException{
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
                         .filter(p -> !p.isNegation())

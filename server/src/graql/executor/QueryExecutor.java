@@ -42,6 +42,7 @@ import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
@@ -115,6 +116,10 @@ public class QueryExecutor {
         Stream<ConceptMap> answerStream;
         try {
             if (!infer) {
+                if (matchClause.getPatterns().getPatterns().stream().anyMatch(Pattern::isNegation)){
+                    throw GraqlQueryException.usingNegationWithReasoningOff(matchClause);
+                }
+
                 // time to create the traversal plan
                 ScopedSpan subSpan = null;
                 if (span != null) {
@@ -130,10 +135,7 @@ public class QueryExecutor {
                 }
                 answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
 
-                // close this subSpan
-                if (subSpan != null) {
-                    subSpan.finish();
-                }
+                if (subSpan != null) subSpan.finish();
             } else {
 
                 ScopedSpan subSpan = null;
@@ -143,18 +145,14 @@ public class QueryExecutor {
                 Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
                 answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
 
-                if (subSpan != null) {
-                    subSpan.finish();
-                }
+                if (subSpan != null) subSpan.finish();
             }
         } catch (GraqlQueryException e) {
             System.err.println(e.getMessage());
             answerStream = Stream.empty();
         }
 
-        if (span != null) {
-            span.finish();
-        }
+        if (span != null) span.finish();
         return answerStream;
     }
 
