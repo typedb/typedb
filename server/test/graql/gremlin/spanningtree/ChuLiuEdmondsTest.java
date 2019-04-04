@@ -57,10 +57,20 @@ public class ChuLiuEdmondsTest {
     static Node node8 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("8")));
     static Node node9 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("9")));
     static Node node10 = new Node(new NodeId(NodeId.NodeType.VAR, new Variable("10")));
-    static WeightedGraph graph;
+    static WeightedGraph graph = SparseWeightedGraph.from(ImmutableList.of(
+            weighted(DirectedEdge.from(node0).to(node1), 5),
+            weighted(DirectedEdge.from(node0).to(node2), 1),
+            weighted(DirectedEdge.from(node0).to(node3), 1),
+            weighted(DirectedEdge.from(node1).to(node2), 11),
+            weighted(DirectedEdge.from(node1).to(node3), 4),
+            weighted(DirectedEdge.from(node2).to(node1), 10),
+            weighted(DirectedEdge.from(node2).to(node3), 5),
+            weighted(DirectedEdge.from(node3).to(node1), 9),
+            weighted(DirectedEdge.from(node3).to(node2), 8)
+    ));
 
     @ClassRule
-    static void setupNodes() {
+    static void setupNodesMap() {
         nodes.put(node0.getNodeId(), node0);
         nodes.put(node1.getNodeId(), node1);
         nodes.put(node2.getNodeId(), node2);
@@ -72,17 +82,7 @@ public class ChuLiuEdmondsTest {
         nodes.put(node8.getNodeId(), node8);
         nodes.put(node9.getNodeId(), node9);
         nodes.put(node10.getNodeId(), node10);
-        graph = SparseWeightedGraph.from(ImmutableList.of(
-                weighted(DirectedEdge.from(node0).to(node1), 5),
-                weighted(DirectedEdge.from(node0).to(node2), 1),
-                weighted(DirectedEdge.from(node0).to(node3), 1),
-                weighted(DirectedEdge.from(node1).to(node2), 11),
-                weighted(DirectedEdge.from(node1).to(node3), 4),
-                weighted(DirectedEdge.from(node2).to(node1), 10),
-                weighted(DirectedEdge.from(node2).to(node3), 5),
-                weighted(DirectedEdge.from(node3).to(node1), 9),
-                weighted(DirectedEdge.from(node3).to(node2), 8)
-        ));
+
     }
 
     static void assertEdgesSumToScore(WeightedGraph originalEdgeWeights, Weighted<Arborescence<Node>> bestTree) {
@@ -101,10 +101,9 @@ public class ChuLiuEdmondsTest {
 
     @Test
     public void testNegativeWeightWithNodeObject() {
-        Map<NodeId, Node> nodes = new HashMap<>();
-        Node node0 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("0"), nodes);
-        Node node1 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("1"), nodes);
-        Node node2 = Node.addIfAbsent(NodeId.NodeType.VAR, new Variable("2"), nodes);
+        Node node0 = nodes.get(new NodeId(NodeId.NodeType.VAR, new Variable("0")));
+        Node node1 = nodes.get(new NodeId(NodeId.NodeType.VAR, new Variable("1")));
+        Node node2 = nodes.get(new NodeId(NodeId.NodeType.VAR, new Variable("2")));
         final WeightedGraph Isa = SparseWeightedGraph.from(ImmutableList.of(
                 weighted(DirectedEdge.from(node0).to(node1), -0.69),
                 weighted(DirectedEdge.from(node1).to(node2), 0),
