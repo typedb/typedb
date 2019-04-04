@@ -44,9 +44,6 @@ java_library(
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
-    ],
     visibility = ["//console/test:__subpackages__"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
