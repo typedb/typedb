@@ -50,6 +50,10 @@ public class NodeId {
         this(nodeType, Collections.singleton(var));
     }
 
+    public Set<Variable> getVars() {
+        return vars;
+    }
+
     @Override
     public int hashCode() {
         int result = nodeType == null ? 0 : nodeType.hashCode();
