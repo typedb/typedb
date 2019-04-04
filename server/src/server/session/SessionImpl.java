@@ -191,7 +191,7 @@ public class SessionImpl implements Session {
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
-    void setOnClose(Consumer<SessionImpl> onClose) {
+    public void setOnClose(Consumer<SessionImpl> onClose) {
         this.onClose = onClose;
     }
 
