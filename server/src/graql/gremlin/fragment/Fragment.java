@@ -152,9 +152,47 @@ public abstract class Fragment {
      * @return a set of edges
      */
     public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
+                                                     Map<Node, Map<Node, Fragment>> edges) {
         return Collections.emptySet();
     }
+
+    final Set<Weighted<DirectedEdge>> directedEdges(NodeId.NodeType nodeType,
+                                                    Map<NodeId, Node> nodes,
+                                                    Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
+        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(start(), end()), nodes);
+        middle.setInvalidStartingPoint();
+
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    final Set<Weighted<DirectedEdge>> directedEdges(Variable edge,
+                                                    Map<NodeId, Node> nodes,
+                                                    Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
+        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
+        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
+        middle.setInvalidStartingPoint();
+
+        addEdgeToFragmentMapping(middle, start, edgeToFragment);
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
+    }
+
+    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
+        if (!edgeToFragment.containsKey(child)) {
+            edgeToFragment.put(child, new HashMap<>());
+        }
+        edgeToFragment.get(child).put(parent, this);
+    }
+
 
     /**
      * @param traversal the traversal to extend with this Fragment
@@ -282,40 +320,4 @@ public abstract class Fragment {
         return str;
     }
 
-    final Set<Weighted<DirectedEdge>> directedEdges(NodeId.NodeType nodeType,
-                                                          Map<NodeId, Node> nodes,
-                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
-        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(start(), end()), nodes);
-        middle.setInvalidStartingPoint();
-
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    final Set<Weighted<DirectedEdge>> directedEdges(Variable edge,
-                                                          Map<NodeId, Node> nodes,
-                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
-        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
-        middle.setInvalidStartingPoint();
-
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        if (!edgeToFragment.containsKey(child)) {
-            edgeToFragment.put(child, new HashMap<>());
-        }
-        edgeToFragment.get(child).put(parent, this);
-    }
 }
