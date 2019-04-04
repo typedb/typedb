@@ -22,6 +22,7 @@ import com.google.auto.value.AutoValue;
 import grakn.core.common.exception.ErrorMessage;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Class for keys of properties in the file {@code grakn.properties}.
@@ -50,6 +51,8 @@ public abstract class ConfigKey<T> {
     public static final KeyParser<String> STRING = string -> string;
     public static final KeyParser<Integer> INT = Integer::parseInt;
     public static final KeyParser<Long> LONG = Long::parseLong;
+    public static final KeyParser<Boolean> BOOL = Boolean::parseBoolean;
+    public static final KeyParser<Path> PATH = Paths::get;
 
     public static final ConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final ConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
