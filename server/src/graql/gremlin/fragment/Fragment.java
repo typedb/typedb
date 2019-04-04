@@ -151,7 +151,7 @@ public abstract class Fragment {
      * @param edges a mapping from edge(child, parent) to its corresponding fragment
      * @return a set of edges
      */
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
                                                            Map<Node, Map<Node, Fragment>> edges) {
         return Collections.emptySet();
     }
@@ -282,7 +282,7 @@ public abstract class Fragment {
         return str;
     }
 
-    final Set<Weighted<DirectedEdge<Node>>> directedEdges(NodeId.NodeType nodeType,
+    final Set<Weighted<DirectedEdge>> directedEdges(NodeId.NodeType nodeType,
                                                           Map<NodeId, Node> nodes,
                                                           Map<Node, Map<Node, Fragment>> edgeToFragment) {
 
@@ -297,7 +297,7 @@ public abstract class Fragment {
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
-    final Set<Weighted<DirectedEdge<Node>>> directedEdges(Variable edge,
+    final Set<Weighted<DirectedEdge>> directedEdges(Variable edge,
                                                           Map<NodeId, Node> nodes,
                                                           Map<Node, Map<Node, Fragment>> edgeToFragment) {
 

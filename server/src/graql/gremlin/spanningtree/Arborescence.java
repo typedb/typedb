@@ -22,6 +22,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -64,8 +65,8 @@ public class Arborescence<V> {
         return Arborescence.of(ImmutableMap.<T, T>of());
     }
 
-    public boolean contains(DirectedEdge<V> e) {
-        final V dest = e.destination;
+    public boolean contains(DirectedEdge e) {
+        final Node dest = e.destination;
         return parents.containsKey(dest) && parents.get(dest).equals(e.source);
     }
 

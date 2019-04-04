@@ -136,7 +136,7 @@ public abstract class InIsaFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
                                                            Map<Node, Map<Node, Fragment>> edges) {
         return directedEdges(NodeId.NodeType.ISA, nodes, edges);
     }

@@ -147,12 +147,12 @@ public class GreedyTraversalPlan {
             });
 
             // convert fragments to a connected graph
-            Set<Weighted<DirectedEdge<Node>>> weightedGraph = buildWeightedGraph(
+            Set<Weighted<DirectedEdge>> weightedGraph = buildWeightedGraph(
                     allNodes, connectedNodes, edges, edgeFragmentSet);
 
             if (!weightedGraph.isEmpty()) {
                 // sparse graph for better performance
-                SparseWeightedGraph<Node> sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
+                SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
 
                 // selecting starting points
                 Collection<Node> startingNodes;
@@ -221,6 +221,9 @@ public class GreedyTraversalPlan {
 
         // process sub fragments here as we probably need to break the query tree
         processSubFragment(allNodes, nodesWithFixedCost, allFragments);
+
+
+        // TODO this could be implemented in a more readable way (ie using a graph + BFS etc.)
 
         final Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
         final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
@@ -343,12 +346,12 @@ public class GreedyTraversalPlan {
         }
     }
 
-    private static Set<Weighted<DirectedEdge<Node>>> buildWeightedGraph(Map<NodeId, Node> allNodes,
+    private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
                                                                         Set<Node> connectedNodes,
                                                                         Map<Node, Map<Node, Fragment>> edges,
                                                                         Set<Fragment> edgeFragmentSet) {
 
-        final Set<Weighted<DirectedEdge<Node>>> weightedGraph = new HashSet<>();
+        final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
         edgeFragmentSet.stream()
                 .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
                 // add each edge together with its weight

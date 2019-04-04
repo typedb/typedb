@@ -26,13 +26,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Add a weight to anything!
  *
- * @param <T> the type of object
+ * @param <DirectedEdge> the type of object
  */
-public class Weighted<T> implements Comparable<Weighted<T>> {
-    public final T val;
+public class Weighted<DirectedEdge> implements Comparable<Weighted<DirectedEdge>> {
+    public final DirectedEdge val;
     public final double weight;
 
-    public Weighted(T val, double weight) {
+    public Weighted(DirectedEdge val, double weight) {
         checkNotNull(val);
         this.val = val;
         this.weight = weight;
@@ -48,7 +48,7 @@ public class Weighted<T> implements Comparable<Weighted<T>> {
     /**
      * High weights first, use val.hashCode to break ties
      */
-    public int compareTo(Weighted<T> other) {
+    public int compareTo(Weighted<DirectedEdge> other) {
         return ComparisonChain.start()
                 .compare(other.weight, weight)
                 .compare(Objects.hashCode(other.val), Objects.hashCode(val))

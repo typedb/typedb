@@ -83,7 +83,7 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     }
 
     @Override
-    public final Set<Weighted<DirectedEdge<Node>>> directedEdges(
+    public final Set<Weighted<DirectedEdge>> directedEdges(
             Map<NodeId, Node> nodes, Map<Node, Map<Node, Fragment>> edges) {
         return directedEdges(edge(), nodes, edges);
     }

@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import grakn.core.graql.gremlin.spanningtree.datastructure.FibonacciQueue;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.util.Partition;
 
@@ -36,29 +37,28 @@ import java.util.Optional;
  * A priority queue of incoming edges for each strongly connected component that we haven't chosen
  * an incoming edge for yet.
  *
- * @param <V> the type of the nodes stored
  */
 
-class EdgeQueueMap<V> {
-    final Partition<V> partition;
-    public final Map<V, EdgeQueue<V>> queueByDestination;
+class EdgeQueueMap {
+    final Partition<Node> partition;
+    public final Map<Node, EdgeQueue> queueByDestination;
 
-    public static class EdgeQueue<V> {
-        private final V component;
-        public final FibonacciQueue<ExclusiveEdge<V>> edges;
-        private final Partition<V> partition;
+    public static class EdgeQueue {
+        private final Node component;
+        public final FibonacciQueue<ExclusiveEdge> edges;
+        private final Partition<Node> partition;
 
-        private EdgeQueue(V component, Partition<V> partition) {
+        private EdgeQueue(Node component, Partition<Node> partition) {
             this.component = component;
             this.edges = FibonacciQueue.create(Collections.reverseOrder()); // highest weight edges first
             this.partition = partition;
         }
 
-        public static <T> EdgeQueue<T> create(T component, Partition<T> partition) {
-            return new EdgeQueue<>(component, partition);
+        public static EdgeQueue create(Node component, Partition<Node> partition) {
+            return new EdgeQueue(component, partition);
         }
 
-        public void addEdge(ExclusiveEdge<V> exclusiveEdge) {
+        public void addEdge(ExclusiveEdge exclusiveEdge) {
             // only add if source is external to SCC
             if (partition.componentOf(exclusiveEdge.edge.source).equals(component)) return;
             edges.add(exclusiveEdge);
@@ -67,9 +67,9 @@ class EdgeQueueMap<V> {
         /**
          * Always breaks ties in favor of edges in bestArborescence
          */
-        public Optional<ExclusiveEdge<V>> popBestEdge(Arborescence<V> bestArborescence) {
+        public Optional<ExclusiveEdge> popBestEdge(Arborescence<Node> bestArborescence) {
             if (edges.isEmpty()) return Optional.empty();
-            final LinkedList<ExclusiveEdge<V>> candidates = Lists.newLinkedList();
+            final LinkedList<ExclusiveEdge> candidates = Lists.newLinkedList();
             do {
                 candidates.addFirst(edges.poll());
             } while (!edges.isEmpty()
@@ -77,7 +77,7 @@ class EdgeQueueMap<V> {
                     && !bestArborescence.contains(candidates.getFirst().edge));   // break if we've found one in `bestArborescence`
             // at this point all edges in `candidates` have equal weight, and if one of them is in `bestArborescence`
             // it will be first
-            final ExclusiveEdge<V> bestEdge = candidates.removeFirst();
+            final ExclusiveEdge bestEdge = candidates.removeFirst();
 //            edges.addAll(candidates); // add back all the edges we looked at but didn't pick
             edges.addAll(candidates);
             return Optional.of(bestEdge);
@@ -85,44 +85,44 @@ class EdgeQueueMap<V> {
     }
 
     @AutoValue
-    abstract static class QueueAndReplace<V> {
-        abstract EdgeQueue<V> queue();
-        abstract Weighted<DirectedEdge<V>> replace();
+    abstract static class QueueAndReplace {
+        abstract EdgeQueue queue();
+        abstract Weighted<DirectedEdge> replace();
 
-        static <V> QueueAndReplace<V> of(EdgeQueueMap.EdgeQueue<V> queue, Weighted<DirectedEdge<V>> replace) {
-            return new AutoValue_EdgeQueueMap_QueueAndReplace<>(queue, replace);
+        static QueueAndReplace of(EdgeQueueMap.EdgeQueue queue, Weighted<DirectedEdge> replace) {
+            return new AutoValue_EdgeQueueMap_QueueAndReplace(queue, replace);
         }
     }
 
-    EdgeQueueMap(Partition<V> partition) {
+    EdgeQueueMap(Partition<Node> partition) {
         this.partition = partition;
         this.queueByDestination = Maps.newHashMap();
     }
 
-    public void addEdge(Weighted<DirectedEdge<V>> edge) {
-        final V destination = partition.componentOf(edge.val.destination);
+    public void addEdge(Weighted<DirectedEdge> edge) {
+        final Node destination = partition.componentOf(edge.val.destination);
         if (!queueByDestination.containsKey(destination)) {
             queueByDestination.put(destination, EdgeQueue.create(destination, partition));
         }
-        final List<DirectedEdge<V>> replaces = Lists.newLinkedList();
+        final List<DirectedEdge> replaces = Lists.newLinkedList();
         queueByDestination.get(destination).addEdge(ExclusiveEdge.of(edge.val, replaces, edge.weight));
     }
 
     /**
      * Always breaks ties in favor of edges in best
      */
-    public Optional<ExclusiveEdge<V>> popBestEdge(V component, Arborescence<V> best) {
+    public Optional<ExclusiveEdge> popBestEdge(Node component, Arborescence<Node> best) {
         if (!queueByDestination.containsKey(component)) return Optional.empty();
         return queueByDestination.get(component).popBestEdge(best);
     }
 
-    public EdgeQueue merge(V component, Iterable<QueueAndReplace<V>> queuesToMerge) {
-        final EdgeQueue<V> result = EdgeQueue.create(component, partition);
-        for (QueueAndReplace<V> queueAndReplace : queuesToMerge) {
-            final EdgeQueue<V> queue = queueAndReplace.queue();
-            final Weighted<DirectedEdge<V>> replace = queueAndReplace.replace();
-            for (ExclusiveEdge<V> wEdgeAndExcluded : queue.edges) {
-                final List<DirectedEdge<V>> replaces = wEdgeAndExcluded.excluded;
+    public EdgeQueue merge(Node component, Iterable<QueueAndReplace> queuesToMerge) {
+        final EdgeQueue result = EdgeQueue.create(component, partition);
+        for (QueueAndReplace queueAndReplace : queuesToMerge) {
+            final EdgeQueue queue = queueAndReplace.queue();
+            final Weighted<DirectedEdge> replace = queueAndReplace.replace();
+            for (ExclusiveEdge wEdgeAndExcluded : queue.edges) {
+                final List<DirectedEdge> replaces = wEdgeAndExcluded.excluded;
                 replaces.add(replace.val);
                 result.addEdge(ExclusiveEdge.of(
                         wEdgeAndExcluded.edge,
