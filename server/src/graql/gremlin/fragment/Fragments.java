@@ -24,7 +24,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.executor.property.ValueExecutor;
-import grakn.core.graql.printer.StringPrinter;
+import grakn.core.concept.printer.StringPrinter;
 import grakn.core.server.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
