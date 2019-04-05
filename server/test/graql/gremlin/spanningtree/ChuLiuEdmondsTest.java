@@ -29,7 +29,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import graql.lang.statement.Variable;
-import org.junit.ClassRule;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -69,7 +69,7 @@ public class ChuLiuEdmondsTest {
             weighted(DirectedEdge.from(node3).to(node2), 8)
     ));
 
-    @ClassRule
+    @BeforeClass
     public static void setupNodesMap() {
         nodes.put(node0.getNodeId(), node0);
         nodes.put(node1.getNodeId(), node1);
