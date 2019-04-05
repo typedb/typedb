@@ -40,7 +40,8 @@ java_library(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all", # NEEDS TO GO
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-    ]
+    ],
+    visibility = ["//visibility:public"],
 )
 
 checkstyle_test(
