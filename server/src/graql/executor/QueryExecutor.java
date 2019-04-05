@@ -108,43 +108,38 @@ public class QueryExecutor {
         }
 
         Stream<ConceptMap> answerStream;
-        try {
-            if (!infer) {
-                if (matchClause.getPatterns().getNegationDNF()
-                        .getPatterns().stream()
-                        .flatMap(p -> p.getPatterns().stream())
-                        .anyMatch(Pattern::isNegation)){
-                    throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
-                }
-                // time to create the traversal plan
-                ScopedSpan subSpan = null;
-                if (span != null) {
-                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
-                }
-                GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
-
-                // time to convert plan into a answer stream
-                if (subSpan != null) {
-                    subSpan.finish();
-                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
-                }
-                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
-
-                if (subSpan != null) subSpan.finish();
-            } else {
-
-                ScopedSpan subSpan = null;
-                if (span != null) {
-                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
-                }
-                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
-                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
-
-                if (subSpan != null) subSpan.finish();
+        if (!infer) {
+            if (matchClause.getPatterns().getNegationDNF()
+                    .getPatterns().stream()
+                    .flatMap(p -> p.getPatterns().stream())
+                    .anyMatch(Pattern::isNegation)){
+                throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
             }
-        } catch (GraqlQueryException e) {
-            System.err.println(e.getMessage());
-            answerStream = Stream.empty();
+            // time to create the traversal plan
+            ScopedSpan subSpan = null;
+            if (span != null) {
+                subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
+            }
+            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+
+            // time to convert plan into a answer stream
+            if (subSpan != null) {
+                subSpan.finish();
+                subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
+            }
+            answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+
+            if (subSpan != null) subSpan.finish();
+        } else {
+            ScopedSpan subSpan = null;
+            if (span != null) {
+                subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
+            }
+
+            Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+            answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+
+            if (subSpan != null) subSpan.finish();
         }
 
         if (span != null) span.finish();
