@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.GraknVersion;
 import grakn.core.console.GraknConsole;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import io.grpc.Status;
@@ -313,11 +314,9 @@ public class GraknConsoleIT {
 
     @Test
     public void when_rollback_expect_transactionIsCancelled() {
-        String[] result = runConsoleSessionWithoutExpectingErrors("define E sub entity;\nrollback\nmatch $x type E; get;\n").split("\n");
+        Response response = runConsoleSession("define E sub entity;\nrollback\nmatch $x type E; get;\n");
 
-        // Make sure there are no results for get query
-        assertThat(result[result.length - 2], endsWith("> match $x type E; get;"));
-        assertThat(result[result.length - 1], endsWith("> "));
+        assertTrue(response.err().contains("label 'E' not found"));
     }
 
     @Test
