@@ -111,9 +111,10 @@ public class GreedyTraversalPlan {
             nodes.forEach(node -> allNodes.put(node.getNodeId(), node));
             connectedNodes.addAll(nodes);
             if (fragment.hasFixedFragmentCost()) {
-// don't add things to the plan first thing
+
 // add indexed, fast operations to the plan immediately
 // plan.add(fragment);
+
                 // a single indexed node (eg. label, value etc.) therefore cannot be an edge, so must be a single node
                 Node startNode = nodes.iterator().next();
                 // TODO why are there two costs here? One in the map for the node and a different one via fragmentCost?
@@ -124,13 +125,11 @@ public class GreedyTraversalPlan {
 
 
         allFragments.forEach(fragment -> {
-            if (fragment.end() == null) {
+            if (fragment.end() == null && fragment.dependencies().isEmpty()) {
                 // process fragments that are have fixed cost
                 Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                if (fragment.dependencies().isEmpty()) {
-                    //fragments that should be done when a node has been visited
-                    start.getFragmentsWithoutDependency().add(fragment);
-                }
+                //fragments that should be done when a node has been visited
+                start.getFragmentsWithoutDependency().add(fragment);
             }
             if (!fragment.dependencies().isEmpty()) {
                 // process fragments that have ordering dependencies
@@ -151,7 +150,7 @@ public class GreedyTraversalPlan {
             }
         });
         // process sub fragments here as we probably need to break the query tree
-        processSubFragment(allNodes, nodesWithFixedCost, allFragments);
+        updateSubsReachableByIndex(allNodes, nodesWithFixedCost, allFragments);
 
 
         // it's possible that some (or all) fragments are disconnect
@@ -301,9 +300,9 @@ public class GreedyTraversalPlan {
 
 
     // if in-sub starts from an indexed supertype, update the fragment cost of in-isa starting from the subtypes
-    private static void processSubFragment(Map<NodeId, Node> allNodes,
-                                           Map<Node, Double> nodesWithFixedCost,
-                                           Set<Fragment> allFragments) {
+    private static void updateSubsReachableByIndex(Map<NodeId, Node> allNodes,
+                                                   Map<Node, Double> nodesWithFixedCost,
+                                                   Set<Fragment> allFragments) {
 
         Set<Fragment> validSubFragments = allFragments.stream().filter(fragment -> {
             if (fragment instanceof InSubFragment) {
@@ -323,7 +322,7 @@ public class GreedyTraversalPlan {
                         nodesWithFixedCost.get(new Node(NodeId.of(NodeId.NodeType.VAR, fragment.start()))));
             });
             // recursively process all the sub fragments
-            processSubFragment(allNodes, nodesWithFixedCost, allFragments);
+            updateSubsReachableByIndex(allNodes, nodesWithFixedCost, allFragments);
         }
     }
 
