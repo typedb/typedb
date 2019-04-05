@@ -100,17 +100,16 @@ public class GreedyTraversalPlan {
         final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
 
+        // if role p[ayers' types are known, we can infer the types of the relation
+        // then add a label fragment to the fragment set
+        Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
+        allFragments.addAll(inferredFragments);
 
         // initialise all the nodes for the spanning tree
         final Map<NodeId, Node> allNodes = new HashMap<>(); // all the nodes in the spanning tree
         for (Fragment fragment : allFragments) {
             fragment.getNodes().forEach(node -> allNodes.put(node.getNodeId(), node));
         }
-
-        // if role p[ayers' types are known, we can infer the types of the relation
-        // then add a label fragment to the fragment set
-        Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
-        allFragments.addAll(inferredFragments);
 
         // it's possible that some (or all) fragments are disconnect
         // e.g. $x isa person; $y isa dog;
