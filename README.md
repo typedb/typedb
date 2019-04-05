@@ -39,9 +39,7 @@ With the expressivity of the schema, inference through OLTP and distributed algo
 
 ## Download and Running Grakn Core
 
-To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need:
-1. Java 8 (OpenJDK or Oracle Java)
-2. If running on Windows version prior to 10, please make sure to have [Visual Studio C++ Runtime for Visual Studio 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48145) installed
+To run Grakn Core (which you can download from the [Download Centre](https://grakn.ai/download) or [GitHub Releases](https://github.com/graknlabs/grakn/releases)), you need to have Java 8 (OpenJDK or Oracle Java) installed.
 
 You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-and-run) to help your installation.
 
@@ -69,7 +67,7 @@ Outputs to: `bazel-genfiles/grakn-core-all-windows.zip`
 
 ## Contributions
 
-Grakn Core is built using various state-of-the-art open-source Graph and Distributed Computing frameworks: [ANTLR](http://www.antlr.org), [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io), [JanusGraph](http://janusgraph.org), and [RocksDB](https://rocksdb.org). Thank you!
+Grakn Core is built using various state-of-the-art open-source Graph and Distributed Computing frameworks: [ANTLR](http://www.antlr.org), [Apache Cassandra](http://cassandra.apache.org), [Apache Hadoop](https://hadoop.apache.org), [Apache Spark](http://spark.apache.org), [Apache TinkerPop](http://tinkerpop.apache.org), [Bazel](https://bazel.build), [GRPC](https://grpc.io) and [JanusGraph](http://janusgraph.org). Thank you!
 
 ## Licensing
 
