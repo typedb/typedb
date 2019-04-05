@@ -50,7 +50,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2018 Grakn Labs Limited\n\n";
+            "Copyright (C) 2019 Grakn Labs Limited\n\n";
 
     private static final String EDITOR = "editor";
     private static final String COMMIT = "commit";
