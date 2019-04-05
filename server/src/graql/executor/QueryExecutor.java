@@ -97,64 +97,53 @@ public class QueryExecutor {
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
 
-        ScopedSpan span = null;
-        if (ServerTracing.tracingActive()) {
-            span = ServerTracing.startScopedChildSpan("QueryExecutor.match validate pattern");
-        }
+
+        int validatePatternSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match validate pattern");
+
 
         //validatePattern
         for (Statement statement : matchClause.getPatterns().statements()) {
             statement.properties().forEach(property -> validateProperty(property, statement));
         }
 
-        if (span != null) {
-            span.finish();
-            span = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
-        }
+        ServerTracing.closeScopedChildSpan(validatePatternSpanId);
+
+
+        int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
+
 
         Stream<ConceptMap> answerStream;
         try {
             if (!infer) {
                 // time to create the traversal plan
-                ScopedSpan subSpan = null;
-                if (span != null) {
-                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
-                }
+
+                int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
+
                 GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
 
+                ServerTracing.closeScopedChildSpan(createTraversalSpanId);
 
                 // time to convert plan into a answer stream
-                if (subSpan != null) {
-                    subSpan.finish();
-                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
-                }
+                int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
+
                 answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
 
-                // close this subSpan
-                if (subSpan != null) {
-                    subSpan.finish();
-                }
+                ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
             } else {
 
-                ScopedSpan subSpan = null;
-                if (span != null) {
-                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
-                }
+                int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+
                 Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
                 answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
 
-                if (subSpan != null) {
-                    subSpan.finish();
-                }
+                ServerTracing.closeScopedChildSpan(disjunctionSpanId);
             }
         } catch (GraqlQueryException e) {
             System.err.println(e.getMessage());
             answerStream = Stream.empty();
         }
 
-        if (span != null) {
-            span.finish();
-        }
+        ServerTracing.closeScopedChildSpan(createStreamSpanId);
         return answerStream;
     }
 
@@ -230,10 +219,8 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query) {
-        ScopedSpan span = null;
-        if (ServerTracing.tracingActive()) {
-            span = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
-        }
+        int createExecSpanId= ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
+
 
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
@@ -246,10 +233,10 @@ public class QueryExecutor {
             }
         }
 
-        if (span != null) {
-            span.finish();
-            span = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
-        }
+        ServerTracing.closeScopedChildSpan(createExecSpanId);
+
+        int answerStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
+
 
         Stream<ConceptMap> answerStream;
         if (query.match() != null) {
@@ -268,9 +255,7 @@ public class QueryExecutor {
             answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
         }
 
-        if (span != null) {
-            span.finish();
-        }
+        ServerTracing.closeScopedChildSpan(answerStreamSpanId);
 
         return answerStream;
     }

@@ -304,21 +304,21 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
             /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
 
-            ScopedSpan span = null;
-            if (ServerTracing.tracingActive()) {
-                span = ServerTracing.startScopedChildSpan("Parsing Graql Query");
-            }
+
+            int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
+
             GraqlQuery query = Graql.parse(request.getQuery());
 
-            if (span != null) {
-                span.finish();
-                span = ServerTracing.startScopedChildSpan("Creating query stream");
-            }
+            ServerTracing.closeScopedChildSpan(parseQuerySpanId);
+
+
+            int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
 
             Stream<Transaction.Res> responseStream = tx().stream(query, request.getInfer().equals(Transaction.Query.INFER.TRUE)).map(ResponseBuilder.Transaction.Iter::query);
             Transaction.Res response = ResponseBuilder.Transaction.queryIterator(iterators.add(responseStream.iterator()));
 
-            if (span != null) { span.finish(); }
+            ServerTracing.closeScopedChildSpan(createStreamSpanId);
+
             onNextResponse(response);
         }
 
