@@ -72,7 +72,6 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
     private Iterator<ConceptMap> conjunctionIterator(Conjunction<Pattern> conj, TransactionOLTP tx) {
         ResolvableQuery query = ReasonerQueries.resolvable(conj, tx).rewrite();
-        query.checkValid();
 
         boolean doNotResolve = query.getAtoms().isEmpty()
                 || (query.isPositive() && !query.isRuleResolvable());

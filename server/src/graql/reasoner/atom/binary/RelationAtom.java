@@ -77,6 +77,7 @@ import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
 
+import java.util.Optional;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -165,15 +166,28 @@ public abstract class RelationAtom extends IsaAtomBase {
     @Override
     public Class<? extends VarProperty> getVarPropertyClass(){ return RelationProperty.class;}
 
+    private void checkPattern(){
+        getPattern().getProperties(RelationProperty.class)
+                .flatMap(p -> p.relationPlayers().stream())
+                .map(RelationProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
+                .map(Statement::getType).flatMap(CommonUtil::optionalToStream)
+                .map(Label::of)
+                .forEach(roleId -> {
+                    SchemaConcept schemaConcept = tx().getSchemaConcept(roleId);
+                    if (schemaConcept == null || !schemaConcept.isRole()) {
+                        throw GraqlQueryException.invalidRoleLabel(roleId);
+                    }
+                });
+    }
+
     @Override
     public void checkValid(){
         super.checkValid();
-        getRoleLabels().stream()
-                .filter(label -> tx().getRole(label.getValue()) == null)
-                .findFirst()
-                .ifPresent(label -> {
-                    throw GraqlQueryHandledException.labelNotFound(label);
-                });
+        SchemaConcept type = getSchemaConcept();
+        if (type != null && !type.isRelationType()){
+            throw GraqlQueryException.relationWithNonRelationType(type.label());
+        }
+        checkPattern();
     }
 
     @Override
@@ -532,14 +546,15 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     private Stream<Role> getExplicitRoles() {
         ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-        TransactionOLTP graph = parent.tx();
+        TransactionOLTP tx = parent.tx();
 
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(Statement::getType)
                 .flatMap(CommonUtil::optionalToStream)
-                .map(label -> graph.getSchemaConcept(Label.of(label)));
+                .map(tx::getRole)
+                .filter(Objects::nonNull);
     }
 
     @Override
@@ -737,7 +752,9 @@ public abstract class RelationAtom extends IsaAtomBase {
         TransactionOLTP graph = getParentQuery().tx();
         Role metaRole = graph.getMetaRole();
         List<RelationProperty.RolePlayer> allocatedRelationPlayers = new ArrayList<>();
-        RelationType relType = getSchemaConcept() != null? getSchemaConcept().asRelationType() : null;
+        SchemaConcept schemaConcept = getSchemaConcept();
+        RelationType relType = null;
+        if (schemaConcept != null && schemaConcept.isRelationType()) relType = schemaConcept.asRelationType();
 
         //explicit role types from castings
         List<RelationProperty.RolePlayer> inferredRelationPlayers = new ArrayList<>();

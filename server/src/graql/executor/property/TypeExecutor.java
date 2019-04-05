@@ -54,7 +54,7 @@ public class TypeExecutor implements PropertyExecutor.Referrable {
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(Label.of(property.name()));
-        if (schemaConcept == null) throw GraqlQueryHandledException.labelNotFound(Label.of(property.name()));
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(Label.of(property.name()));
         return IdPredicate.create(var.asUserDefined(), Label.of(property.name()), parent);
     }
 

@@ -50,7 +50,4 @@ public class GraqlQueryHandledException extends GraknException {
         return new GraqlQueryHandledException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
     }
 
-    public static GraqlQueryHandledException labelNotFound(Label label) {
-        return new GraqlQueryHandledException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
-    }
 }

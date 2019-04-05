@@ -70,12 +70,20 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(String.format(formatString, args));
     }
 
-    public static GraqlQueryException idNotFound(ConceptId id) {
-        return new GraqlQueryException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
-    }
-
     public static GraqlQueryException labelNotFound(Label label) {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
+    }
+
+    public static GraqlQueryException attributeWithNonAttributeType(Label attributeType) {
+        return new GraqlQueryException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
+    }
+
+    public static GraqlQueryException relationWithNonRelationType(Label label) {
+        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
+    }
+
+    public static GraqlQueryException invalidRoleLabel(Label label) {
+        return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(label, label));
     }
 
     public static GraqlQueryException kCoreOnRelationType(Label label) {
@@ -100,14 +108,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException cannotGetInstancesOfNonType(Label label) {
         return GraqlQueryException.create("%s is not a type and so does not have instances", label);
-    }
-
-    public static GraqlQueryException notARelationType(Label label) {
-        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
-    }
-
-    public static GraqlQueryException notARoleType(Label roleId) {
-        return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
     }
 
     public static GraqlQueryException insertPredicate() {

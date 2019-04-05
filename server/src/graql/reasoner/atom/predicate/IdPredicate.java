@@ -22,6 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlQueryHandledException;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
@@ -67,7 +68,7 @@ public class IdPredicate extends Predicate<ConceptId> {
 
     private static Statement createIdVar(Variable varName, Label label, TransactionOLTP graph) {
         SchemaConcept schemaConcept = graph.getSchemaConcept(label);
-        if (schemaConcept == null) throw GraqlQueryHandledException.labelNotFound(label);
+        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(label);
         return new Statement(varName).id(schemaConcept.id().getValue());
     }
 

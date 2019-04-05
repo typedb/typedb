@@ -96,6 +96,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
+        //NB: we only check for validity when conversion from pattern is involved
+        checkValid();
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){
