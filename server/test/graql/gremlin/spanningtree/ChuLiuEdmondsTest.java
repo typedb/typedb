@@ -70,7 +70,7 @@ public class ChuLiuEdmondsTest {
     ));
 
     @ClassRule
-    static void setupNodesMap() {
+    public static void setupNodesMap() {
         nodes.put(node0.getNodeId(), node0);
         nodes.put(node1.getNodeId(), node1);
         nodes.put(node2.getNodeId(), node2);
