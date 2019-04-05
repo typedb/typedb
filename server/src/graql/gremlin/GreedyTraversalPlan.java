@@ -102,19 +102,62 @@ public class GreedyTraversalPlan {
         allFragments.addAll(inferredFragments);
 
         // initialise all the nodes for the spanning tree
-        final Map<NodeId, Node> allNodes = new HashMap<>(); // all the nodes in the spanning tree
+        final Map<NodeId, Node> allNodes = new HashMap<>();
+        final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
+        final Set<Node> connectedNodes = new HashSet<>();
+
         for (Fragment fragment : allFragments) {
-            fragment.getNodes().forEach(node -> allNodes.put(node.getNodeId(), node));
+            Set<Node> nodes = fragment.getNodes();
+            nodes.forEach(node -> allNodes.put(node.getNodeId(), node));
+            connectedNodes.addAll(nodes);
+            if (fragment.hasFixedFragmentCost()) {
+// don't add things to the plan first thing
+// add indexed, fast operations to the plan immediately
+// plan.add(fragment);
+                // a single indexed node (eg. label, value etc.) therefore cannot be an edge, so must be a single node
+                Node startNode = nodes.iterator().next();
+                // TODO why are there two costs here? One in the map for the node and a different one via fragmentCost?
+                nodesWithFixedCost.put(startNode, getLogInstanceCount(tx, fragment));
+                startNode.setFixedFragmentCost(fragment.fragmentCost());
+            }
         }
 
-        final Set<Node> connectedNodes = new HashSet<>();
-        final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
+
+        allFragments.forEach(fragment -> {
+            if (fragment.end() == null) {
+                // process fragments that are have fixed cost
+                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+                if (fragment.dependencies().isEmpty()) {
+                    //fragments that should be done when a node has been visited
+                    start.getFragmentsWithoutDependency().add(fragment);
+                }
+            }
+            if (!fragment.dependencies().isEmpty()) {
+                // process fragments that have ordering dependencies
+
+                // it's either neq or value fragment
+                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+                Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
+
+                start.getFragmentsWithDependency().add(fragment);
+                other.getDependants().add(fragment);
+
+                // check whether it's value fragment
+                if (fragment instanceof ValueFragment) {
+                    // as value fragment is not symmetric, we need to add it again
+                    other.getFragmentsWithDependency().add(fragment);
+                    start.getDependants().add(fragment);
+                }
+            }
+        });
+        // process sub fragments here as we probably need to break the query tree
+        processSubFragment(allNodes, nodesWithFixedCost, allFragments);
+
 
         // it's possible that some (or all) fragments are disconnect
         // e.g. $x isa person; $y isa dog;
         // these are valid conjunctions and useful when inserting new data
-        Collection<Set<Fragment>> connectedFragmentSets =
-                getConnectedFragmentSets(plan, allFragments, allNodes, connectedNodes,  nodesWithFixedCost, tx);
+        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
 
         // generate plan for each connected set of fragments
         // since each set is independent, order of the set doesn't matter
@@ -181,7 +224,6 @@ public class GreedyTraversalPlan {
             addUnvisitedNodeFragments(plan, allNodes, connectedNodes);
         });
 
-
         // add disconnected fragment set with no edge fragment
         addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
         LOG.trace("Greedy Plan = {}", plan);
@@ -195,7 +237,7 @@ public class GreedyTraversalPlan {
                                                   Collection<Node> connectedNodes) {
 
         Set<Node> nodeWithFragment = connectedNodes.stream()
-                // make sure the fragment either have no dependency or dependencies have been dealt with
+                // make sure the fragment either has no dependency or dependencies have been dealt with
                 .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
                         !node.getFragmentsWithDependencyVisited().isEmpty())
                 .collect(Collectors.toSet());
@@ -209,25 +251,7 @@ public class GreedyTraversalPlan {
     }
 
     // return a collection of set, in each set, all the fragments are connected
-    private static Collection<Set<Fragment>> getConnectedFragmentSets(
-            List<Fragment> plan, Set<Fragment> allFragments,
-            Map<NodeId, Node> allNodes, Set<Node> connectedNodes,
-            Map<Node, Double> nodesWithFixedCost, TransactionOLTP tx) {
-
-        allFragments.forEach(fragment -> {
-            if (fragment.end() == null) {
-                processFragmentWithFixedCost(plan, allNodes, connectedNodes, nodesWithFixedCost, tx, fragment);
-            }
-
-            if (!fragment.dependencies().isEmpty()) {
-                processFragmentWithDependencies(allNodes, fragment);
-            }
-        });
-
-        // process sub fragments here as we probably need to break the query tree
-        processSubFragment(allNodes, nodesWithFixedCost, allFragments);
-
-
+    private static Collection<Set<Fragment>> getConnectedFragmentSets(Set<Fragment> allFragments) {
         // TODO this could be implemented in a more readable way (ie using a graph + BFS etc.)
 
         final Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
@@ -261,53 +285,20 @@ public class GreedyTraversalPlan {
         return fragmentSetMap.values();
     }
 
-    private static void processFragmentWithFixedCost(List<Fragment> plan,
-                                                     Map<NodeId, Node> allNodes,
-                                                     Set<Node> connectedNodes,
-                                                     Map<Node, Double> nodesWithFixedCost,
-                                                     TransactionOLTP tx, Fragment fragment) {
-
-        Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-        connectedNodes.add(start);
-
-        if (fragment.hasFixedFragmentCost()) {
-            // fragments that are constant time access should be computed first
-            plan.add(fragment);
-
-            // set the weight of the node as a starting point based on log(number of this node)
-            double logInstanceCount;
-            if (fragment instanceof LabelFragment) {
-                // only LabelFragment (corresponding to type vertices) can be sharded
-                Long shardCount = ((LabelFragment) fragment).getShardCount(tx);
-                logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
-                        Math.log(tx.shardingThreshold());
-            } else {
-                logInstanceCount = -1D;
-            }
-            nodesWithFixedCost.put(start, logInstanceCount);
-            start.setFixedFragmentCost(fragment.fragmentCost());
-
-        } else if (fragment.dependencies().isEmpty()) {
-            //fragments that should be done when a node has been visited
-            start.getFragmentsWithoutDependency().add(fragment);
+    private static double getLogInstanceCount(TransactionOLTP tx, Fragment fragment) {
+        // set the weight of the node as a starting point based on log(number of this node)
+        double logInstanceCount;
+        if (fragment instanceof LabelFragment) {
+            // only LabelFragment (corresponding to type vertices) can be sharded
+            Long shardCount = ((LabelFragment) fragment).getShardCount(tx);
+            logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
+                    Math.log(tx.shardingThreshold());
+        } else {
+            logInstanceCount = -1D;
         }
+        return logInstanceCount;
     }
 
-    private static void processFragmentWithDependencies(Map<NodeId, Node> allNodes, Fragment fragment) {
-        // it's either neq or value fragment
-        Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-        Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
-
-        start.getFragmentsWithDependency().add(fragment);
-        other.getDependants().add(fragment);
-
-        // check whether it's value fragment
-        if (fragment instanceof ValueFragment) {
-            // as value fragment is not symmetric, we need to add it again
-            other.getFragmentsWithDependency().add(fragment);
-            start.getDependants().add(fragment);
-        }
-    }
 
     // if in-sub starts from an indexed supertype, update the fragment cost of in-isa starting from the subtypes
     private static void processSubFragment(Map<NodeId, Node> allNodes,
@@ -356,14 +347,10 @@ public class GreedyTraversalPlan {
                                                                         Set<Fragment> edgeFragmentSet) {
 
         final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
+        // add each edge together with its weight
         edgeFragmentSet.stream()
                 .flatMap(fragment -> fragment.directedEdges(allNodes, edges).stream())
-                // add each edge together with its weight
-                .forEach(weightedDirectedEdge -> {
-                    weightedGraph.add(weightedDirectedEdge);
-                    connectedNodes.add(weightedDirectedEdge.val.destination);
-                    connectedNodes.add(weightedDirectedEdge.val.source);
-                });
+                .forEach(weightedDirectedEdge -> weightedGraph.add(weightedDirectedEdge));
         return weightedGraph;
     }
 
