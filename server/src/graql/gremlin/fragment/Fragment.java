@@ -146,8 +146,15 @@ public abstract class Fragment {
         return ImmutableSet.of();
     }
 
+    /**
+     * When building the query plan spanning tree, every fragment has a start defined with a variable
+     * Some fragments are actually edges in JanusGraph (such as isa, sub, etc.)
+     * These require another variable for the end() variable, and to force the MST algorithm to
+     * traverse these JanusGraph edges too, we insert a fake middle node representing the edge
+     * @return
+     */
     public Set<Node> getNodes() {
-        NodeId startNodeId = new NodeId(NodeId.NodeType.VAR, start());
+        NodeId startNodeId = NodeId.of(NodeId.NodeType.VAR, start());
         return new HashSet<>(Arrays.asList(new Node(startNodeId)));
     }
 
@@ -173,9 +180,9 @@ public abstract class Fragment {
         // since the middle node cannot be addressed it does not have a variable, so we create a new ID for it
         // as the combination of start() and end() with the type
 
-        Node start = nodes.get(new NodeId(NodeId.NodeType.VAR, start()));
-        Node end = nodes.get(new NodeId(NodeId.NodeType.VAR, end()));
-        Node middle = nodes.get(new NodeId(nodeType, Sets.newHashSet(start(), end())));
+        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node middle = nodes.get(NodeId.of(nodeType, Sets.newHashSet(start(), end())));
 
         addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(

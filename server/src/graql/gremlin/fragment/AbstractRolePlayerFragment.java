@@ -89,9 +89,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
 
     @Override
     public Set<Node> getNodes() {
-        Node start = new Node(new NodeId(NodeId.NodeType.VAR, start()));
-        Node end = new Node(new NodeId(NodeId.NodeType.VAR, end()));
-        Node middle = new Node(new NodeId(NodeId.NodeType.VAR, edge()));
+        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node middle = new Node(NodeId.of(NodeId.NodeType.VAR, edge()));
         middle.setInvalidStartingPoint();
         return new HashSet<>(Arrays.asList(start, end, middle));
     }
@@ -103,9 +103,9 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
         // this is a somewhat special case, where the middle node being converted to a vertex
         // may be addressed by a variable
 
-        Node start = nodes.get(new NodeId(NodeId.NodeType.VAR, start()));
-        Node end = nodes.get(new NodeId(NodeId.NodeType.VAR, end()));
-        Node middle = nodes.get(new NodeId(NodeId.NodeType.VAR, edge()));
+        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node middle = nodes.get(NodeId.of(NodeId.NodeType.VAR, edge()));
         middle.setInvalidStartingPoint();
 
         if (!edges.containsKey(middle)) {

@@ -41,13 +41,17 @@ public class NodeId {
     private final NodeType nodeType;
     private final Set<Variable> vars;
 
-    public NodeId(NodeType nodeType, Set<Variable> vars) {
+    private NodeId(NodeType nodeType, Set<Variable> vars) {
         this.nodeType = nodeType;
         this.vars = vars;
     }
 
-    public NodeId(NodeType nodeType, Variable var) {
-        this(nodeType, Collections.singleton(var));
+    public static NodeId of(NodeType nodeType, Set<Variable> vars) {
+        return new NodeId(nodeType, vars);
+    }
+
+    public static NodeId of(NodeType nodeType, Variable var) {
+        return new NodeId(nodeType, Collections.singleton(var));
     }
 
     public Set<Variable> getVars() {
