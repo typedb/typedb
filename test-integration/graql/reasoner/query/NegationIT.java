@@ -29,7 +29,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryHandledException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
@@ -88,7 +88,7 @@ public class NegationIT {
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(
@@ -98,7 +98,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenExecutingUnboundNegationPattern_exceptionIsThrown () {
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(
@@ -108,7 +108,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(
@@ -126,7 +126,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenExecutingIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(
@@ -144,7 +144,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenNegationBlockContainsDisjunction_exceptionIsThrown(){
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(
@@ -160,7 +160,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenExecutingNegationBlockContainingDisjunction_exceptionIsThrown () {
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(
@@ -176,7 +176,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlQueryHandledException.class)
+    @Test (expected = GraqlQueryException.class)
     public void whenExecutingNegationQueryWithReasoningOff_exceptionIsThrown () {
         try(TransactionOLTP tx = negationSession.transaction().write()) {
             Pattern pattern = Graql.parsePattern(

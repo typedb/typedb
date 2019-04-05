@@ -41,6 +41,8 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.VarProperty;
 import graql.lang.query.GraqlCompute;
@@ -55,6 +57,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -98,18 +101,9 @@ public class QueryExecutor {
 
         Stream<ConceptMap> answerStream;
         try {
-            //validatePattern
-            matchClause.getPatterns().getNegationDNF()
-                    .getPatterns()
-                    .forEach(pattern -> ReasonerQueries.composite(pattern, transaction).checkValid());
+            validateClause(matchClause);
 
             if (!infer) {
-                if (matchClause.getPatterns().getNegationDNF()
-                        .getPatterns().stream()
-                        .flatMap(p -> p.getPatterns().stream())
-                        .anyMatch(Pattern::isNegation)){
-                    throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
-                }
                 // time to create the traversal plan
                 ScopedSpan subSpan = null;
                 if (span != null) {
@@ -142,6 +136,22 @@ public class QueryExecutor {
 
         if (span != null) span.finish();
         return answerStream;
+    }
+
+    private void validateClause(MatchClause matchClause){
+        Disjunction<Conjunction<Pattern>> negationDNF = matchClause.getPatterns().getNegationDNF();
+        negationDNF.getPatterns().stream()
+                .flatMap(p -> p.statements().stream())
+                .map(p -> Graql.and(Collections.singleton(p)))
+                .forEach(pattern -> ReasonerQueries.createWithoutRoleInference(pattern, transaction).checkValid());
+        if (!infer) {
+            boolean containsNegation = negationDNF.getPatterns().stream()
+                    .flatMap(p -> p.getPatterns().stream())
+                    .anyMatch(Pattern::isNegation);
+            if (containsNegation){
+                throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
+            }
+        }
     }
 
     /**

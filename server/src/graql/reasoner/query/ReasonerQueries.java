@@ -78,6 +78,10 @@ public class ReasonerQueries {
         return q.withSubstitution(sub).inferTypes();
     }
 
+    public static ReasonerQueryImpl createWithoutRoleInference(Conjunction<Statement> pattern, TransactionOLTP tx) {
+        return new ReasonerQueryImpl(pattern, tx);
+    }
+
     /**
      * create a reasoner query from a conjunctive pattern with types inferred
      * @param pattern conjunctive pattern defining the query
