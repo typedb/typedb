@@ -35,6 +35,7 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryHandledException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.GreedyTraversalPlan;
@@ -108,38 +109,42 @@ public class QueryExecutor {
         }
 
         Stream<ConceptMap> answerStream;
-        if (!infer) {
-            if (matchClause.getPatterns().getNegationDNF()
-                    .getPatterns().stream()
-                    .flatMap(p -> p.getPatterns().stream())
-                    .anyMatch(Pattern::isNegation)){
-                throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
-            }
-            // time to create the traversal plan
-            ScopedSpan subSpan = null;
-            if (span != null) {
-                subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
-            }
-            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+        try {
+            if (!infer) {
+                if (matchClause.getPatterns().getNegationDNF()
+                        .getPatterns().stream()
+                        .flatMap(p -> p.getPatterns().stream())
+                        .anyMatch(Pattern::isNegation)){
+                    throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
+                }
+                // time to create the traversal plan
+                ScopedSpan subSpan = null;
+                if (span != null) {
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", span.context());
+                }
+                GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
 
-            // time to convert plan into a answer stream
-            if (subSpan != null) {
-                subSpan.finish();
-                subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
+                // time to convert plan into a answer stream
+                if (subSpan != null) {
+                    subSpan.finish();
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", span.context());
+                }
+                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+
+                if (subSpan != null) subSpan.finish();
+            } else {
+
+                ScopedSpan subSpan = null;
+                if (span != null) {
+                    subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
+                }
+                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+
+                if (subSpan != null) subSpan.finish();
             }
-            answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
-
-            if (subSpan != null) subSpan.finish();
-        } else {
-            ScopedSpan subSpan = null;
-            if (span != null) {
-                subSpan = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", span.context());
-            }
-
-            Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
-            answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
-
-            if (subSpan != null) subSpan.finish();
+        } catch (GraqlQueryHandledException e) {
+            answerStream = Stream.empty();
         }
 
         if (span != null) span.finish();
@@ -407,7 +412,7 @@ public class QueryExecutor {
                 .flatMap(CommonUtil::optionalToStream)
                 .forEach(type -> {
                     if (transaction.getSchemaConcept(Label.of(type)) == null) {
-                        throw GraqlQueryException.labelNotFound(Label.of(type));
+                        throw GraqlQueryHandledException.labelNotFound(Label.of(type));
                     }
                 });
     }
@@ -425,7 +430,7 @@ public class QueryExecutor {
         Label type = Label.of(varProperty.type());
         SchemaConcept schemaConcept = transaction.getSchemaConcept(type);
         if (schemaConcept == null) {
-            throw GraqlQueryException.labelNotFound(type);
+            throw GraqlQueryHandledException.labelNotFound(type);
         }
         if (!schemaConcept.isAttributeType()) {
             throw GraqlQueryException.mustBeAttributeType(type);

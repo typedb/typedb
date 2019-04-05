@@ -25,6 +25,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryHandledException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
@@ -79,7 +80,7 @@ public abstract class Binary extends Atom {
     public SchemaConcept getSchemaConcept(){
         if (type == null && getTypeId() != null) {
             SchemaConcept concept = tx().getConcept(getTypeId());
-            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
+            if (concept == null) throw GraqlQueryHandledException.idNotFound(getTypeId());
             type = concept;
         }
         return type;
