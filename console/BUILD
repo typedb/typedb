@@ -30,13 +30,12 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//common:common",
+        "//concept",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
-        "//server:server", # NEEDS TO GO
+
 
         # External dependencies
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
         "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
