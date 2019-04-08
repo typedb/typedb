@@ -30,9 +30,9 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 
@@ -78,6 +78,18 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }
 
+    public static GraqlQueryException attributeWithNonAttributeType(Label attributeType) {
+        return new GraqlQueryException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
+    }
+
+    public static GraqlQueryException relationWithNonRelationType(Label label) {
+        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
+    }
+
+    public static GraqlQueryException invalidRoleLabel(Label label) {
+        return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(label, label));
+    }
+
     public static GraqlQueryException kCoreOnRelationType(Label label) {
         return create("cannot compute coreness of relation type %s.", label.getValue());
     }
@@ -100,14 +112,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException cannotGetInstancesOfNonType(Label label) {
         return GraqlQueryException.create("%s is not a type and so does not have instances", label);
-    }
-
-    public static GraqlQueryException notARelationType(Label label) {
-        return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
-    }
-
-    public static GraqlQueryException notARoleType(Label roleId) {
-        return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(roleId, roleId));
     }
 
     public static GraqlQueryException insertPredicate() {
@@ -179,14 +183,6 @@ public class GraqlQueryException extends GraknException {
         return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
     }
 
-    public static GraqlQueryException noTx() {
-        return new GraqlQueryException(ErrorMessage.NO_TX.getMessage());
-    }
-
-    public static GraqlQueryException multipleTxs() {
-        return new GraqlQueryException(ErrorMessage.MULTIPLE_TX.getMessage());
-    }
-
     public static GraqlQueryException nonPositiveLimit(long limit) {
         return new GraqlQueryException(NON_POSITIVE_LIMIT.getMessage(limit));
     }
@@ -231,10 +227,6 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
     }
 
-    public static GraqlQueryException nonAtomicQuery(ReasonerQuery query) {
-        return new GraqlQueryException(ErrorMessage.NON_ATOMIC_QUERY.getMessage(query));
-    }
-
     public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery query) {
         return new GraqlQueryException(ErrorMessage.NON_GROUND_NEQ_PREDICATE.getMessage(query));
     }
@@ -265,6 +257,10 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException unsafeNegationBlock(ResolvableQuery query) {
         return new GraqlQueryException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
+    }
+
+    public static GraqlQueryException usingNegationWithReasoningOff(Pattern pattern) {
+        return new GraqlQueryException(ErrorMessage.USING_NEGATION_WITH_REASONING_OFF.getMessage(pattern));
     }
 
     public static GraqlQueryException disjunctiveNegationBlock() {

@@ -28,6 +28,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -38,6 +39,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -67,6 +69,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -520,11 +523,22 @@ public class GraqlDefineIT {
         ));
     }
 
+    private boolean schemaObjectsExist(Statement... vars){
+        boolean exist = true;
+        try {
+            for (Statement var : vars) {
+                exist = !tx.execute(Graql.match(var)).isEmpty();
+                if (!exist) break;
+            }
+        } catch(GraqlQueryException e){
+            exist = false;
+        }
+        return exist;
+    }
+
     private void assertDefine(Statement... vars) {
         // Make sure vars don't exist
-        for (Statement var : vars) {
-            assertNotExists(tx, var);
-        }
+        assertFalse(schemaObjectsExist(vars));
 
         // Define all vars
         tx.execute(Graql.define(vars));
@@ -538,8 +552,6 @@ public class GraqlDefineIT {
         tx.execute(Graql.undefine(vars));
 
         // Make sure vars don't exist
-        for (Statement var : vars) {
-            assertNotExists(tx, var);
-        }
+        assertFalse(schemaObjectsExist(vars));
     }
 }

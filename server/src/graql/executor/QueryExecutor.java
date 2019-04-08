@@ -23,9 +23,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -33,18 +31,18 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.GreedyTraversalPlan;
 import grakn.core.graql.reasoner.DisjunctionIterator;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
-import graql.lang.property.HasAttributeProperty;
-import graql.lang.property.IsaProperty;
-import graql.lang.property.RelationProperty;
+import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Disjunction;
+import graql.lang.pattern.Pattern;
 import graql.lang.property.VarProperty;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -56,24 +54,23 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
@@ -97,54 +94,57 @@ public class QueryExecutor {
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
 
-
-        int validatePatternSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match validate pattern");
-
-
-        //validatePattern
-        for (Statement statement : matchClause.getPatterns().statements()) {
-            statement.properties().forEach(property -> validateProperty(property, statement));
-        }
-
-        ServerTracing.closeScopedChildSpan(validatePatternSpanId);
-
-
         int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
 
 
         Stream<ConceptMap> answerStream;
-        try {
-            if (!infer) {
-                // time to create the traversal plan
 
-                int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
+        validateClause(matchClause);
 
-                GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+        if (!infer) {
+            // time to create the traversal plan
 
-                ServerTracing.closeScopedChildSpan(createTraversalSpanId);
+            int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
 
-                // time to convert plan into a answer stream
-                int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
+            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
 
-                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+            ServerTracing.closeScopedChildSpan(createTraversalSpanId);
 
-                ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
-            } else {
+            // time to convert plan into a answer stream
+            int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
 
-                int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+            answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
 
-                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
-                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+            ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
+        } else {
 
-                ServerTracing.closeScopedChildSpan(disjunctionSpanId);
-            }
-        } catch (GraqlQueryException e) {
-            System.err.println(e.getMessage());
-            answerStream = Stream.empty();
+            int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+
+            Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+            answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+
+            ServerTracing.closeScopedChildSpan(disjunctionSpanId);
         }
 
         ServerTracing.closeScopedChildSpan(createStreamSpanId);
         return answerStream;
+    }
+
+    //TODO this should go into MatchClause
+    private void validateClause(MatchClause matchClause){
+        Disjunction<Conjunction<Pattern>> negationDNF = matchClause.getPatterns().getNegationDNF();
+        negationDNF.getPatterns().stream()
+                .flatMap(p -> p.statements().stream())
+                .map(p -> Graql.and(Collections.singleton(p)))
+                .forEach(pattern -> ReasonerQueries.createWithoutRoleInference(pattern, transaction).checkValid());
+        if (!infer) {
+            boolean containsNegation = negationDNF.getPatterns().stream()
+                    .flatMap(p -> p.getPatterns().stream())
+                    .anyMatch(Pattern::isNegation);
+            if (containsNegation){
+                throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
+            }
+        }
     }
 
     /**
@@ -388,70 +388,5 @@ public class QueryExecutor {
     public Stream<ConceptSet> compute(GraqlCompute.Cluster query) {
         if (query.getException().isPresent()) throw query.getException().get();
         return new ComputeExecutor(transaction).stream(query);
-    }
-
-    private void validateProperty(VarProperty varProperty, Statement statement) {
-        if (varProperty instanceof IsaProperty) {
-            validateIsaProperty((IsaProperty) varProperty);
-        } else if (varProperty instanceof HasAttributeProperty) {
-            validateHasAttributeProperty((HasAttributeProperty) varProperty);
-        } else if (varProperty instanceof RelationProperty) {
-            validateRelationProperty((RelationProperty) varProperty, statement);
-        }
-
-        varProperty.statements()
-                .map(Statement::getType)
-                .flatMap(CommonUtil::optionalToStream)
-                .forEach(type -> {
-                    if (transaction.getSchemaConcept(Label.of(type)) == null) {
-                        throw GraqlQueryException.labelNotFound(Label.of(type));
-                    }
-                });
-    }
-
-    private void validateIsaProperty(IsaProperty varProperty) {
-        varProperty.type().getType().ifPresent(type -> {
-            SchemaConcept theSchemaConcept = transaction.getSchemaConcept(Label.of(type));
-            if (theSchemaConcept != null && !theSchemaConcept.isType()) {
-                throw GraqlQueryException.cannotGetInstancesOfNonType(Label.of(type));
-            }
-        });
-    }
-
-    private void validateHasAttributeProperty(HasAttributeProperty varProperty) {
-        Label type = Label.of(varProperty.type());
-        SchemaConcept schemaConcept = transaction.getSchemaConcept(type);
-        if (schemaConcept == null) {
-            throw GraqlQueryException.labelNotFound(type);
-        }
-        if (!schemaConcept.isAttributeType()) {
-            throw GraqlQueryException.mustBeAttributeType(type);
-        }
-    }
-
-    private void validateRelationProperty(RelationProperty varProperty, Statement statement) {
-        Set<Label> roleTypes = varProperty.relationPlayers().stream()
-                .map(RelationProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
-                .map(Statement::getType).flatMap(CommonUtil::optionalToStream)
-                .map(Label::of).collect(toSet());
-
-        Optional<Label> maybeLabel = statement.getProperty(IsaProperty.class)
-                .map(IsaProperty::type).flatMap(Statement::getType).map(Label::of);
-
-        maybeLabel.ifPresent(label -> {
-            SchemaConcept schemaConcept = transaction.getSchemaConcept(label);
-
-            if (schemaConcept == null || !schemaConcept.isRelationType()) {
-                throw GraqlQueryException.notARelationType(label);
-            }
-        });
-
-        // Check all role types exist
-        roleTypes.forEach(roleId -> {
-            SchemaConcept schemaConcept = transaction.getSchemaConcept(roleId);
-            if (schemaConcept == null || !schemaConcept.isRole()) {
-                throw GraqlQueryException.notARoleType(roleId);
-            }
-        });
     }
 }

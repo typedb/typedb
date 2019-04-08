@@ -246,11 +246,7 @@ public abstract class SemanticCache<
             //NB: this indexes answer according to all indices in the set
             multiUnifier
                     .apply(answer)
-                    .peek(ans -> {
-                        if (!ans.vars().equals(cacheVars)){
-                            throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery, ans);
-                        }
-                    })
+                    .peek(ans -> validateAnswer(ans, equivalentQuery, cacheVars))
                     .forEach(answerSet::add);
             return match;
         }
