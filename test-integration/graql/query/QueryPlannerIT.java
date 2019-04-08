@@ -40,6 +40,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static graql.lang.Graql.and;
@@ -292,7 +293,18 @@ public class QueryPlannerIT {
     }
 
     @Test
+    @Ignore
     public void avoidImplicitTypes() {
+        /*
+        TODO when we disable mandatory Reification, we can re-enable this test and ensure it works
+
+        Idea is: originally, the query planner could start at high priority starting nodes (non-implicit labels),
+        low priority starting nodes (implicit labels which may represent edges instead of vertices), or worst case any
+        valid node.
+
+        This test ensures that we don't use implicit nodes as starting points if it can be avoided. Since we appear
+        to always reify, this test is irrelevant & relevant query planner code (`lowPriorityStartingNodes`) has been removed
+         */
         Pattern pattern;
         ImmutableList<Fragment> plan;
 

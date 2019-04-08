@@ -112,7 +112,7 @@ public class GreedyTraversalPlan {
             if (fragment.hasFixedFragmentCost()) {
 // add indexed, fast operations to the plan immediately TODO figure out if this is the right call
 // plan.add(fragment);
-                // a single indexed node (eg. label, value etc.) therefore cannot be an edge, so must be a single node
+                // a single indexed node (eg. label, value etc.) therefore cannot be an edge, so must correspond to a single node
                 Node startNode = nodes.iterator().next();
                 nodesWithFixedCost.put(startNode, getLogInstanceCount(tx, fragment));
                 startNode.setFixedFragmentCost(fragment.fragmentCost());
@@ -132,7 +132,7 @@ public class GreedyTraversalPlan {
         // generate plan for each connected set of fragments
         // since each set is independent, order of the set doesn't matter
         connectedFragmentSets.forEach(fragmentSet -> {
-            // from a start Node to an end Node, the Fragment that is used for that
+            // from a start Node to an end Node, the Fragment that corresponds to that traversal step
             final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
             // fragments that represent Janus edges
             final Set<Fragment> edgeFragmentSet = new HashSet<>();
