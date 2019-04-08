@@ -39,6 +39,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -521,13 +522,21 @@ public class GraqlDefineIT {
         ));
     }
 
+    private boolean schemaObjectsNotExist(Statement... vars){
+        boolean exist = false;
+        try {
+            for (Statement var : vars) {
+                tx.execute(Graql.match(var));
+            }
+        } catch(GraqlQueryException e){
+            exist = true;
+        }
+        return exist;
+    }
+
     private void assertDefine(Statement... vars) {
         // Make sure vars don't exist
-        for (Statement var : vars) {
-            try {
-                assertNotExists(tx, var);
-            } catch(GraqlQueryException e){}
-        }
+        assertTrue(schemaObjectsNotExist(vars));
 
         // Define all vars
         tx.execute(Graql.define(vars));
@@ -541,10 +550,6 @@ public class GraqlDefineIT {
         tx.execute(Graql.undefine(vars));
 
         // Make sure vars don't exist
-        for (Statement var : vars) {
-            try {
-                assertNotExists(tx, var);
-            } catch(GraqlQueryException e){}
-        }
+        assertTrue(schemaObjectsNotExist(vars));
     }
 }
