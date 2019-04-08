@@ -99,37 +99,38 @@ public class QueryExecutor {
 
         Stream<ConceptMap> answerStream;
 
-            validateClause(matchClause);
+        validateClause(matchClause);
 
-            if (!infer) {
-                // time to create the traversal plan
+        if (!infer) {
+            // time to create the traversal plan
 
-                int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
+            int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
 
-                GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
 
-                ServerTracing.closeScopedChildSpan(createTraversalSpanId);
+            ServerTracing.closeScopedChildSpan(createTraversalSpanId);
 
-                // time to convert plan into a answer stream
-                int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
+            // time to convert plan into a answer stream
+            int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
 
-                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+            answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
 
-                ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
-            } else {
+            ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
+        } else {
 
-                int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+            int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
 
-                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
-                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+            Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+            answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
 
-                ServerTracing.closeScopedChildSpan(disjunctionSpanId);
-            }
+            ServerTracing.closeScopedChildSpan(disjunctionSpanId);
+        }
 
         ServerTracing.closeScopedChildSpan(createStreamSpanId);
         return answerStream;
     }
 
+    //TODO this should go into MatchClause
     private void validateClause(MatchClause matchClause){
         Disjunction<Conjunction<Pattern>> negationDNF = matchClause.getPatterns().getNegationDNF();
         negationDNF.getPatterns().stream()

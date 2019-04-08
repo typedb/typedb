@@ -69,6 +69,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -522,21 +523,22 @@ public class GraqlDefineIT {
         ));
     }
 
-    private boolean schemaObjectsNotExist(Statement... vars){
-        boolean exist = false;
+    private boolean schemaObjectsExist(Statement... vars){
+        boolean exist = true;
         try {
             for (Statement var : vars) {
-                tx.execute(Graql.match(var));
+                exist = !tx.execute(Graql.match(var)).isEmpty();
+                if (!exist) break;
             }
         } catch(GraqlQueryException e){
-            exist = true;
+            exist = false;
         }
         return exist;
     }
 
     private void assertDefine(Statement... vars) {
         // Make sure vars don't exist
-        assertTrue(schemaObjectsNotExist(vars));
+        assertFalse(schemaObjectsExist(vars));
 
         // Define all vars
         tx.execute(Graql.define(vars));
@@ -550,6 +552,6 @@ public class GraqlDefineIT {
         tx.execute(Graql.undefine(vars));
 
         // Make sure vars don't exist
-        assertTrue(schemaObjectsNotExist(vars));
+        assertFalse(schemaObjectsExist(vars));
     }
 }
