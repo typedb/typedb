@@ -21,7 +21,6 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -61,7 +60,6 @@ import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 
 /**
  * Class for generating greedy traversal plans
- *
  */
 public class GreedyTraversalPlan {
 
@@ -134,36 +132,18 @@ public class GreedyTraversalPlan {
         // generate plan for each connected set of fragments
         // since each set is independent, order of the set doesn't matter
         connectedFragmentSets.forEach(fragmentSet -> {
-
+            // from a start Node to an end Node, the Fragment that is used for that
             final Map<Node, Map<Node, Fragment>> edges = new HashMap<>();
-
-            final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
-            final Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
+            // fragments that represent Janus edges
             final Set<Fragment> edgeFragmentSet = new HashSet<>();
 
-            fragmentSet.forEach(fragment -> {
+            // save the fragments corresponding to edges, and updates some costs if we can via shard count
+            for (Fragment fragment : fragmentSet) {
                 if (fragment.end() != null) {
                     edgeFragmentSet.add(fragment);
-                    // when we are have more info from the cache, e.g. instance count,
-                    // we can have a better estimate on the cost of the fragment
                     updateFragmentCost(allNodes, nodesWithFixedCost, fragment);
-
-                } else if (fragment.hasFixedFragmentCost()) {
-                    Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                    if (fragment instanceof LabelFragment) {
-                        Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                        if (type != null && type.isImplicit()) {
-                            // implicit types have low priority because their instances may be edges
-                            lowPriorityStartingNodeSet.add(node);
-                        } else {
-                            // other labels/types are the ideal starting point as they are indexed
-                            highPriorityStartingNodeSet.add(node);
-                        }
-                    } else {
-                        highPriorityStartingNodeSet.add(node);
-                    }
                 }
-            });
+            }
 
             // convert fragments to a connected graph
             Set<Weighted<DirectedEdge>> weightedGraph = buildWeightedGraph(allNodes, edges, edgeFragmentSet);
@@ -171,18 +151,7 @@ public class GreedyTraversalPlan {
             if (!weightedGraph.isEmpty()) {
                 // sparse graph for better performance
                 SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-
-                // selecting starting points
-                Collection<Node> startingNodes;
-                if (!highPriorityStartingNodeSet.isEmpty()) {
-                    startingNodes = highPriorityStartingNodeSet;
-                } else if (!lowPriorityStartingNodeSet.isEmpty()) {
-                    startingNodes = lowPriorityStartingNodeSet;
-                } else {
-                    // if all else fails, use any valid nodes
-                    startingNodes = sparseWeightedGraph.getNodes().stream()
-                            .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
-                }
+                Set<Node> startingNodes = chooseStartingNodes(fragmentSet, allNodes, tx, sparseWeightedGraph);
 
                 // find the minimum spanning tree for each root
                 // then get the tree with minimum weight
@@ -199,6 +168,41 @@ public class GreedyTraversalPlan {
         addUnvisitedNodeFragments(plan, allNodes, allNodes.values());
         LOG.trace("Greedy Plan = {}", plan);
         return plan;
+    }
+
+    private static Set<Node> chooseStartingNodes(Set<Fragment> fragmentSet,  Map<NodeId, Node> allNodes, TransactionOLTP tx, SparseWeightedGraph sparseWeightedGraph) {
+        final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
+        final Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
+
+        fragmentSet.forEach(fragment -> {
+            if (fragment.hasFixedFragmentCost()) {
+                Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+                if (fragment instanceof LabelFragment) {
+                    Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
+                    if (type != null && type.isImplicit()) {
+                        // implicit types have low priority because their instances may be edges
+                        lowPriorityStartingNodeSet.add(node);
+                    } else {
+                        // other labels/types are the ideal starting point as they are indexed
+                        highPriorityStartingNodeSet.add(node);
+                    }
+                } else {
+                    highPriorityStartingNodeSet.add(node);
+                }
+            }
+        });
+
+        Set<Node> startingNodes;
+        if (!highPriorityStartingNodeSet.isEmpty()) {
+            startingNodes = highPriorityStartingNodeSet;
+        } else if (!lowPriorityStartingNodeSet.isEmpty()) {
+            startingNodes = lowPriorityStartingNodeSet;
+        } else {
+            // if all else fails, use any valid nodes
+            startingNodes = sparseWeightedGraph.getNodes().stream()
+                    .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
+        }
+        return startingNodes;
     }
 
     private static void buildDependenciesBetweenNodes(Set<Fragment> allFragments, Map<NodeId, Node> allNodes) {
@@ -342,8 +346,8 @@ public class GreedyTraversalPlan {
     }
 
     private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
-                                                                        Map<Node, Map<Node, Fragment>> edges,
-                                                                        Set<Fragment> edgeFragmentSet) {
+                                                                  Map<Node, Map<Node, Fragment>> edges,
+                                                                  Set<Fragment> edgeFragmentSet) {
 
         final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
         // add each edge together with its weight
@@ -474,7 +478,7 @@ public class GreedyTraversalPlan {
 
     @Nullable
     private static Fragment getEdgeFragment(Node node, Arborescence<Node> arborescence,
-                                                      Map<Node, Map<Node, Fragment>> edgeToFragment) {
+                                            Map<Node, Map<Node, Fragment>> edgeToFragment) {
         if (edgeToFragment.containsKey(node) &&
                 edgeToFragment.get(node).containsKey(arborescence.getParents().get(node))) {
             return edgeToFragment.get(node).get(arborescence.getParents().get(node));
