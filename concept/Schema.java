@@ -16,11 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb;
+package grakn.core.concept;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -32,15 +29,10 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import graql.lang.Graql;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
-import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
-import static grakn.core.common.util.Collections.map;
-import static grakn.core.common.util.Collections.tuple;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -143,7 +135,7 @@ public final class Schema {
         ATTRIBUTE(Attribute.class),
 
         //Internal
-        SHARD(Vertex.class),
+        SHARD(String.class),
         CONCEPT(Concept.class);//No concept actually has this base type. This is used to prevent string hardcoding
 
         private final Class classType;
@@ -179,16 +171,6 @@ public final class Schema {
 
         private final Class dataType;
 
-        private static Map<AttributeType.DataType, VertexProperty> dataTypeVertexProperty = map(
-                tuple(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
-                tuple(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
-                tuple(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
-                tuple(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
-                tuple(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
-                tuple(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
-                tuple(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
-        );
-
         VertexProperty(Class dataType) {
             this.dataType = dataType;
         }
@@ -198,10 +180,6 @@ public final class Schema {
             return dataType;
         }
 
-        // TODO: This method feels out of place
-        public static VertexProperty ofDataType(AttributeType.DataType dataType) {
-            return dataTypeVertexProperty.get(dataType);
-        }
     }
 
     /**

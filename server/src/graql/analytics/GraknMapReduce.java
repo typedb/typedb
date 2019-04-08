@@ -21,7 +21,7 @@ package grakn.core.graql.analytics;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.LabelId;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

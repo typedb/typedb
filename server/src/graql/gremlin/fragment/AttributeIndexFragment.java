@@ -27,7 +27,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
+import static grakn.core.concept.Schema.VertexProperty.INDEX;
 
 @AutoValue
 abstract class AttributeIndexFragment extends Fragment {

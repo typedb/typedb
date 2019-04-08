@@ -39,7 +39,7 @@ import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.Schema;
 import graql.lang.property.IdProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;

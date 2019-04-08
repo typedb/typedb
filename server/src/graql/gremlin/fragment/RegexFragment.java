@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.server.kb.Schema.VertexProperty.REGEX;
+import static grakn.core.concept.Schema.VertexProperty.REGEX;
 
 @AutoValue
 abstract class RegexFragment extends Fragment {

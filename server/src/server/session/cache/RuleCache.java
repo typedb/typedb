@@ -23,7 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.HashMap;
 import java.util.HashSet;

@@ -21,6 +21,9 @@ package grakn.core.concept.type;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 
+import grakn.core.concept.Schema;
+import java.time.ZoneId;
+import java.util.function.Function;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -227,20 +230,58 @@ public interface AttributeType<D> extends Type {
      * @param <D> The data type.
      */
     class DataType<D> {
-        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class);
-        public static final DataType<LocalDateTime> DATE = new DataType<>(LocalDateTime.class);
-        public static final DataType<Double> DOUBLE = new DataType<>(Double.class);
-        public static final DataType<Float> FLOAT = new DataType<>(Float.class);
-        public static final DataType<Integer> INTEGER = new DataType<>(Integer.class);
-        public static final DataType<Long> LONG = new DataType<>(Long.class);
-        public static final DataType<String> STRING = new DataType<>(String.class);
+        public static final DataType<String> STRING = new DataType<>(
+                String.class,
+                Schema.VertexProperty.VALUE_STRING,
+                (v) -> v
+        );
+
+        public static final DataType<Boolean> BOOLEAN = new DataType<>(
+                Boolean.class,
+                Schema.VertexProperty.VALUE_BOOLEAN,
+                (v) -> v
+        );
+
+        public static final DataType<Integer> INTEGER = new DataType<>(
+                Integer.class,
+                Schema.VertexProperty.VALUE_INTEGER,
+                (v) -> v
+        );
+
+        public static final DataType<Long> LONG = new DataType<>(
+                Long.class,
+                Schema.VertexProperty.VALUE_LONG,
+                (v) -> v
+        );
+
+        public static final DataType<Double> DOUBLE = new DataType<>(
+                Double.class,
+                Schema.VertexProperty.VALUE_DOUBLE,
+                (v) -> v
+        );
+
+        public static final DataType<Float> FLOAT = new DataType<>(
+                Float.class,
+                Schema.VertexProperty.VALUE_FLOAT,
+                (v) -> v
+        );
+
+        public static final DataType<LocalDateTime> DATE = new DataType<>(
+                LocalDateTime.class,
+                Schema.VertexProperty.VALUE_DATE,
+                (d) -> d.atZone(ZoneId.of("Z")).toInstant().toEpochMilli()
+        );
 
         private static final List<DataType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
         private final Class<D> dataClass;
+        private final Schema.VertexProperty vertexProperty;
+        private final Function<D, Object> persistedValueSupplier;
 
-        private DataType(Class<D> dataClass) {
+        private DataType(Class<D> dataClass, Schema.VertexProperty vertexProperty, Function<D, Object> persistedValueProvider) {
             this.dataClass = dataClass;
+            this.vertexProperty = vertexProperty;
+            this.persistedValueSupplier = persistedValueProvider;
         }
 
         @CheckReturnValue
@@ -253,6 +294,11 @@ public interface AttributeType<D> extends Type {
             return dataClass.getName();
         }
 
+        @CheckReturnValue
+        public Schema.VertexProperty getVertexProperty(){
+            return vertexProperty;
+        }
+
         @Override
         public String toString() {
             return name();
@@ -261,6 +307,17 @@ public interface AttributeType<D> extends Type {
         @CheckReturnValue
         public static List<DataType<?>> values() {
             return values;
+        }
+
+        /**
+         * Converts the provided value into the data type and format that will be persisted.
+         *
+         * @param value The value to be converted
+         * @return The String representation of the value
+         */
+        @CheckReturnValue
+        public Object getPersistedValue(D value){
+            return persistedValueSupplier.apply(value);
         }
 
         @SuppressWarnings("unchecked")
