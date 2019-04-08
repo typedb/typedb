@@ -99,7 +99,7 @@ public class QueryExecutor {
 
 
         Stream<ConceptMap> answerStream;
-        try {
+        
             validateClause(matchClause);
 
             if (!infer) {
@@ -126,9 +126,6 @@ public class QueryExecutor {
 
                 ServerTracing.closeScopedChildSpan(disjunctionSpanId);
             }
-        } catch (GraqlQueryHandledException e) {
-            answerStream = Stream.empty();
-        }
 
         ServerTracing.closeScopedChildSpan(createStreamSpanId);
         return answerStream;
