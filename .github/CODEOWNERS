@@ -5,3 +5,7 @@
 /console/   @haikalpribadi
 /daemon/    @haikalpribadi  @lolski
 /protocol/  @haikalpribadi  @marco-scoppetta
+
+
+/dependencies/graknlabs/  @haikalpribadi
+/dependencies/maven/      @haikalpribadi @marco-scoppetta @lolski
