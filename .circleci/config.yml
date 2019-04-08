@@ -129,7 +129,8 @@ jobs:
     steps:
       - install-bazel-mac
       - checkout
-      - run: bazel build //:assemble-mac-zip
+      - run-bazel-rbe:
+          command: bazel build //:assemble-mac-zip
       - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
       - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -150,7 +151,8 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel build //:assemble-linux-targz
+      - run-bazel-rbe:
+          command: bazel build //:assemble-linux-targz
       - run: tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
       - run: nohup bazel-genfiles/grakn-core-all-linux/grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -162,9 +164,12 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel build //bin:assemble-linux-apt
-      - run: bazel build //server:assemble-linux-apt
-      - run: bazel build //console:assemble-linux-apt
+      - run-bazel-rbe:
+          command: bazel build //bin:assemble-linux-apt
+      - run-bazel-rbe:
+          command: bazel build //server:assemble-linux-apt
+      - run-bazel-rbe:
+          command: bazel build //console:assemble-linux-apt
       - run: sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
       - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
       - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb

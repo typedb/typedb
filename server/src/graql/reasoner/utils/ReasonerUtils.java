@@ -124,10 +124,10 @@ public class ReasonerUtils {
                                 .forEach(vp -> {
                                     Statement innerStatement = vp.operation().innerStatement();
                                     if (innerStatement != null){
-                                        if (searchVar[0] != null) throw new IllegalStateException("bla");
+                                        if (searchVar[0] != null) throw new IllegalStateException("Invalid variable to search for.");
                                         else searchVar[0] = innerStatement.var();
                                     } else {
-                                        if (predicate[0] != null) throw new IllegalStateException("bla");
+                                        if (predicate[0] != null) throw new IllegalStateException("Invalid variable to search for.");
                                         else predicate[0] = vp.operation();
                                     }
                                 })

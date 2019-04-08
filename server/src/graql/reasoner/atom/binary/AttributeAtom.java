@@ -31,6 +31,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -190,6 +191,15 @@ public abstract class AttributeAtom extends Binary{
         if (!(at instanceof AttributeAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
         AttributeAtom that = (AttributeAtom) at;
         return predicateBindingsEquivalent(this.getAttributeVariable(), that.getAttributeVariable(), that, equiv);
+    }
+
+    @Override
+    public void checkValid(){
+        super.checkValid();
+        SchemaConcept type = getSchemaConcept();
+        if (type != null && !type.isAttributeType()) {
+            throw GraqlQueryException.attributeWithNonAttributeType(type.label());
+        }
     }
 
     @Override

@@ -4,7 +4,6 @@ java_library(
         "//external:jar/org/apache/zookeeper/zookeeper"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/io/netty:netty",
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/log4j:log4j",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"

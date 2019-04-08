@@ -403,18 +403,12 @@ public class SubsumptionIT {
         ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
         UnifierType unifierType = UnifierType.SUBSUMPTIVE;
-
-        if(subsumes != child.subsumes(parent)){
-            System.out.println("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n");
-        }
-        //assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));
+        
+        assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         if (subsumes){
             boolean queriesEquivalent = child.isEquivalent(parent);
-            if (queriesEquivalent != parent.subsumes(child)){
-                System.out.println("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n");
-            }
-            //assertEquals("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n", queriesEquivalent, parent.subsumes(child));
+            assertEquals("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n", queriesEquivalent, parent.subsumes(child));
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
             if (queriesEquivalent) assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }

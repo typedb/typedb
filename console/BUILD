@@ -30,22 +30,18 @@ java_library(
     deps = [
         # Grakn Core dependencies
         "//common:common",
+        "//concept",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
-        "//server:server", # NEEDS TO GO
+
 
         # External dependencies
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
         "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-    ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino", # Needed to avoid Logback error
     ],
     visibility = ["//console/test:__subpackages__"],
     resources = ["LICENSE"],

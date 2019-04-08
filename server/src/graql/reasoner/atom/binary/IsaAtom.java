@@ -25,10 +25,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
@@ -96,6 +98,15 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() {
         return IsaProperty.class;
+    }
+
+    @Override
+    public void checkValid(){
+        super.checkValid();
+        SchemaConcept type = getSchemaConcept();
+        if (type != null && !type.isType()) {
+            throw GraqlQueryException.cannotGetInstancesOfNonType(type.label());
+        }
     }
 
     //NB: overriding as these require a derived property

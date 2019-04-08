@@ -18,7 +18,6 @@
 
 package grakn.core.server.session;
 
-import brave.ScopedSpan;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
@@ -879,10 +878,9 @@ public class TransactionOLTP implements Transaction {
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
 
         /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
-        ScopedSpan span = null;
-        if (ServerTracing.tracingActive()) {
-            span = ServerTracing.startScopedChildSpan("commitWithLogs validate");
-        }
+
+        int validateSpanId = ServerTracing.startScopedChildSpan("commitWithLogs validate");
+
 
         checkMutationAllowed();
         validateGraph();
@@ -891,10 +889,9 @@ public class TransactionOLTP implements Transaction {
         Map<String, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
-        if (span != null) {
-            span.finish();
-            span = ServerTracing.startScopedChildSpan("commitWithLogs commit");
-        }
+        ServerTracing.closeScopedChildSpan(validateSpanId);
+
+        int commitSpanId = ServerTracing.startScopedChildSpan("commitWithLogs commit");
 
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
         // force serialized updates, keeping Janus and our KeyspaceCache in sync
@@ -903,27 +900,19 @@ public class TransactionOLTP implements Transaction {
             transactionCache.flushToKeyspaceCache();
         }
 
+        ServerTracing.closeScopedChildSpan(commitSpanId);
+
         //If we have logs to commit get them and add them
         if (logsExist) {
 
-            if (span != null) {
-                span.finish();
-                span = ServerTracing.startScopedChildSpan("commitWithLogs create log");
-            }
+            int createLogSpanId = ServerTracing.startScopedChildSpan("commitWithLogs create log");
 
             Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
 
-            if (span != null) {
-                span.finish();
-            }
+            ServerTracing.closeScopedChildSpan(createLogSpanId);
 
             return logs;
         }
-
-        if (span != null) {
-            span.finish();
-        }
-
 
         return Optional.empty();
     }

@@ -37,7 +37,6 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",

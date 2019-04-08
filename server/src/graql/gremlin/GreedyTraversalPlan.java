@@ -21,6 +21,7 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;

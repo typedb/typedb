@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.printer;
+package grakn.core.concept.printer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
