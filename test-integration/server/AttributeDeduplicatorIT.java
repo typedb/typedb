@@ -23,7 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.deduplicator.AttributeDeduplicator;
 import grakn.core.server.deduplicator.KeyspaceIndexPair;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;

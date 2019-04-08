@@ -43,9 +43,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.concept.Schema.ImplicitType.KEY;
-import static grakn.core.concept.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.concept.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.server.kb.Schema.ImplicitType.KEY;
+import static grakn.core.server.kb.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.server.kb.Schema.ImplicitType.KEY_VALUE;
 import static graql.lang.Graql.var;
 
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {

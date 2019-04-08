@@ -33,7 +33,7 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.concept.Schema.EdgeLabel.RELATES;
+import static grakn.core.server.kb.Schema.EdgeLabel.RELATES;
 
 @AutoValue
 abstract class InRelatesFragment extends Fragment {

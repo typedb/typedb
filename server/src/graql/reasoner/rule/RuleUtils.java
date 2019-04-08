@@ -30,7 +30,7 @@ import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.Comparator;
 import java.util.HashSet;

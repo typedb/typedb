@@ -24,7 +24,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

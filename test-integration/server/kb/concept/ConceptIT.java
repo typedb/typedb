@@ -25,7 +25,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;

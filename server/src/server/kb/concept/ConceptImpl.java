@@ -21,7 +21,7 @@ package grakn.core.server.kb.concept;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.cache.Cacheable;

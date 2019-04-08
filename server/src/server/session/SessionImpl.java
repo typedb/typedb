@@ -26,7 +26,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;

@@ -29,7 +29,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
