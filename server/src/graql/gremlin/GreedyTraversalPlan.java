@@ -111,47 +111,19 @@ public class GreedyTraversalPlan {
             nodes.forEach(node -> allNodes.put(node.getNodeId(), node));
             connectedNodes.addAll(nodes);
             if (fragment.hasFixedFragmentCost()) {
-
-// add indexed, fast operations to the plan immediately
+// add indexed, fast operations to the plan immediately TODO figure out if this is the right call
 // plan.add(fragment);
-
                 // a single indexed node (eg. label, value etc.) therefore cannot be an edge, so must be a single node
                 Node startNode = nodes.iterator().next();
-                // TODO why are there two costs here? One in the map for the node and a different one via fragmentCost?
                 nodesWithFixedCost.put(startNode, getLogInstanceCount(tx, fragment));
                 startNode.setFixedFragmentCost(fragment.fragmentCost());
             }
         }
 
+        buildDependenciesBetweenNodes(allFragments, allNodes);
 
-        allFragments.forEach(fragment -> {
-            if (fragment.end() == null && fragment.dependencies().isEmpty()) {
-                // process fragments that are have fixed cost
-                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                //fragments that should be done when a node has been visited
-                start.getFragmentsWithoutDependency().add(fragment);
-            }
-            if (!fragment.dependencies().isEmpty()) {
-                // process fragments that have ordering dependencies
-
-                // it's either neq or value fragment
-                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
-
-                start.getFragmentsWithDependency().add(fragment);
-                other.getDependants().add(fragment);
-
-                // check whether it's value fragment
-                if (fragment instanceof ValueFragment) {
-                    // as value fragment is not symmetric, we need to add it again
-                    other.getFragmentsWithDependency().add(fragment);
-                    start.getDependants().add(fragment);
-                }
-            }
-        });
         // process sub fragments here as we probably need to break the query tree
         updateSubsReachableByIndex(allNodes, nodesWithFixedCost, allFragments);
-
 
         // it's possible that some (or all) fragments are disconnect
         // e.g. $x isa person; $y isa dog;
@@ -193,8 +165,7 @@ public class GreedyTraversalPlan {
             });
 
             // convert fragments to a connected graph
-            Set<Weighted<DirectedEdge>> weightedGraph = buildWeightedGraph(
-                    allNodes, connectedNodes, edges, edgeFragmentSet);
+            Set<Weighted<DirectedEdge>> weightedGraph = buildWeightedGraph(allNodes, edges, edgeFragmentSet);
 
             if (!weightedGraph.isEmpty()) {
                 // sparse graph for better performance
@@ -229,6 +200,36 @@ public class GreedyTraversalPlan {
         return plan;
     }
 
+    private static void buildDependenciesBetweenNodes(Set<Fragment> allFragments, Map<NodeId, Node> allNodes) {
+        // build dependencies between nodes
+        // TODO extract this out of the Node objects themselves
+        allFragments.forEach(fragment -> {
+            if (fragment.end() == null && fragment.dependencies().isEmpty()) {
+                // process fragments that are have fixed cost
+                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+                //fragments that should be done when a node has been visited
+                start.getFragmentsWithoutDependency().add(fragment);
+            }
+            if (!fragment.dependencies().isEmpty()) {
+                // process fragments that have ordering dependencies
+
+                // it's either neq or value fragment
+                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+                Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
+
+                start.getFragmentsWithDependency().add(fragment);
+                other.getDependants().add(fragment);
+
+                // check whether it's value fragment
+                if (fragment instanceof ValueFragment) {
+                    // as value fragment is not symmetric, we need to add it again
+                    other.getFragmentsWithDependency().add(fragment);
+                    start.getDependants().add(fragment);
+                }
+            }
+        });
+    }
+
 
     // add unvisited node fragments to plan for each connected fragment set
     private static void addUnvisitedNodeFragments(List<Fragment> plan,
@@ -252,7 +253,6 @@ public class GreedyTraversalPlan {
     // return a collection of set, in each set, all the fragments are connected
     private static Collection<Set<Fragment>> getConnectedFragmentSets(Set<Fragment> allFragments) {
         // TODO this could be implemented in a more readable way (ie using a graph + BFS etc.)
-
         final Map<Integer, Set<Variable>> varSetMap = new HashMap<>();
         final Map<Integer, Set<Fragment>> fragmentSetMap = new HashMap<>();
         final int[] index = {0};
@@ -341,7 +341,6 @@ public class GreedyTraversalPlan {
     }
 
     private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
-                                                                        Set<Node> connectedNodes,
                                                                         Map<Node, Map<Node, Fragment>> edges,
                                                                         Set<Fragment> edgeFragmentSet) {
 
