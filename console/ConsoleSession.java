@@ -22,7 +22,7 @@ import com.google.common.base.StandardSystemProperty;
 import grakn.client.GraknClient;
 import grakn.core.common.exception.GraknException;
 import grakn.core.console.exception.GraknConsoleException;
-import grakn.core.graql.printer.Printer;
+import grakn.core.concept.printer.Printer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import jline.console.ConsoleReader;
@@ -50,7 +50,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2018 Grakn Labs Limited\n\n";
+            "Copyright (C) 2019 Grakn Labs Limited\n\n";
 
     private static final String EDITOR = "editor";
     private static final String COMMIT = "commit";

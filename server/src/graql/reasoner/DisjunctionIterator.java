@@ -58,16 +58,13 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
         tx.queryCache().clear();
 
 
-        ScopedSpan span = null;
-        if (ServerTracing.tracingActive()) {
-            span = ServerTracing.startScopedChildSpan("DisjunctionIterator() create DNF, conjunction iterator");
-        }
+
+        int conjunctionIterSpanId = ServerTracing.startScopedChildSpan("DisjunctionIterator() create DNF, conjunction iterator");
+
         this.conjIterator = matchClause.getPatterns().getNegationDNF().getPatterns().stream().iterator();
         answerIterator = conjunctionIterator(conjIterator.next(), tx);
 
-        if (span != null) {
-            span.finish();
-        }
+        ServerTracing.closeScopedChildSpan(conjunctionIterSpanId);
     }
 
     private Iterator<ConceptMap> conjunctionIterator(Conjunction<Pattern> conj, TransactionOLTP tx) {

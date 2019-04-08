@@ -18,8 +18,6 @@
 
 package grakn.core.console;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import grakn.client.GraknClient;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
@@ -31,7 +29,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -136,10 +133,6 @@ public class GraknConsole {
      * Invocation from bash script './grakn console'
      */
     public static void main(String[] args) {
-        // Disable logging for Grakn console as we only use System.out
-        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.OFF);
-
         try {
             GraknConsole console = new GraknConsole(Arrays.copyOfRange(args, 1, args.length), System.out, System.err);
             console.run();

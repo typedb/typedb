@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.printer.StringPrinter;
+import grakn.core.concept.printer.StringPrinter;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

@@ -33,7 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.Map;
 
-import static grakn.core.graql.printer.StringPrinter.conceptId;
+import static grakn.core.concept.printer.StringPrinter.conceptId;
 
 @AutoValue
 abstract class IdFragment extends Fragment {
