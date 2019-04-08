@@ -21,7 +21,7 @@ package grakn.core.server.kb.concept;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
 import javax.annotation.Nullable;

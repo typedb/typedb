@@ -31,7 +31,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 

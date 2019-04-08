@@ -22,7 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
