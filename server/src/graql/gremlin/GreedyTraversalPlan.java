@@ -151,7 +151,7 @@ public class GreedyTraversalPlan {
             if (!weightedGraph.isEmpty()) {
                 // sparse graph for better performance
                 SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-                Set<Node> startingNodes = chooseStartingNodes(fragmentSet, allNodes, tx, sparseWeightedGraph);
+                Set<Node> startingNodes = chooseStartingNodes(fragmentSet, allNodes, sparseWeightedGraph);
 
                 // find the minimum spanning tree for each root
                 // then get the tree with minimum weight
@@ -170,35 +170,21 @@ public class GreedyTraversalPlan {
         return plan;
     }
 
-    private static Set<Node> chooseStartingNodes(Set<Fragment> fragmentSet,  Map<NodeId, Node> allNodes, TransactionOLTP tx, SparseWeightedGraph sparseWeightedGraph) {
+    private static Set<Node> chooseStartingNodes(Set<Fragment> fragmentSet,  Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
         final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
-        final Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.forEach(fragment -> {
             if (fragment.hasFixedFragmentCost()) {
                 Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                if (fragment instanceof LabelFragment) {
-                    Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
-                    if (type != null && type.isImplicit()) {
-                        // implicit types have low priority because their instances may be edges
-                        lowPriorityStartingNodeSet.add(node);
-                    } else {
-                        // other labels/types are the ideal starting point as they are indexed
-                        highPriorityStartingNodeSet.add(node);
-                    }
-                } else {
-                    highPriorityStartingNodeSet.add(node);
-                }
+                highPriorityStartingNodeSet.add(node);
             }
         });
 
         Set<Node> startingNodes;
         if (!highPriorityStartingNodeSet.isEmpty()) {
             startingNodes = highPriorityStartingNodeSet;
-        } else if (!lowPriorityStartingNodeSet.isEmpty()) {
-            startingNodes = lowPriorityStartingNodeSet;
         } else {
-            // if all else fails, use any valid nodes
+            // if we have no good starting points, use any valid nodes
             startingNodes = sparseWeightedGraph.getNodes().stream()
                     .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
         }
