@@ -96,7 +96,7 @@ public class QueryBuilderIT {
         assertNotExists(tx, var().has("title", "123"));
     }
 
-    @Test
+    @Test (expected = GraqlQueryException.class)
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
         tx.execute(Graql.define(type("yes").sub("entity")));
 

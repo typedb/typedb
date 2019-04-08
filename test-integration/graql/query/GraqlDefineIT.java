@@ -28,6 +28,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlQueryHandledException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -523,7 +524,9 @@ public class GraqlDefineIT {
     private void assertDefine(Statement... vars) {
         // Make sure vars don't exist
         for (Statement var : vars) {
-            assertNotExists(tx, var);
+            try {
+                assertNotExists(tx, var);
+            } catch(GraqlQueryException e){}
         }
 
         // Define all vars
@@ -539,7 +542,9 @@ public class GraqlDefineIT {
 
         // Make sure vars don't exist
         for (Statement var : vars) {
-            assertNotExists(tx, var);
+            try {
+                assertNotExists(tx, var);
+            } catch(GraqlQueryException e){}
         }
     }
 }
