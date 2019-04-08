@@ -70,6 +70,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(String.format(formatString, args));
     }
 
+    public static GraqlQueryException idNotFound(ConceptId id) {
+        return new GraqlQueryException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
+    }
+
     public static GraqlQueryException labelNotFound(Label label) {
         return new GraqlQueryException(ErrorMessage.LABEL_NOT_FOUND.getMessage(label));
     }

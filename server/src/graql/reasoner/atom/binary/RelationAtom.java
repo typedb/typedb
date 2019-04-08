@@ -42,7 +42,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryHandledException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -846,7 +846,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                     IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
                     if (rolePredicate != null){
                         Role r = graph.getConcept(rolePredicate.getPredicate());
-                        if (r == null) throw GraqlQueryHandledException.idNotFound(rolePredicate.getPredicate());
+                        if (r == null) throw GraqlQueryException.idNotFound(rolePredicate.getPredicate());
                         role = r;
                     }
                 }

@@ -32,7 +32,6 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryHandledException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.GreedyTraversalPlan;
@@ -99,7 +98,7 @@ public class QueryExecutor {
 
 
         Stream<ConceptMap> answerStream;
-        
+
             validateClause(matchClause);
 
             if (!infer) {

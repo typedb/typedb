@@ -24,7 +24,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryHandledException;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
