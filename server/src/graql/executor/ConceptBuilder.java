@@ -31,7 +31,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;

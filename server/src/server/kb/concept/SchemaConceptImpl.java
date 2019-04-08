@@ -24,7 +24,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;

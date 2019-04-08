@@ -25,7 +25,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;

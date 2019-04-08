@@ -27,7 +27,7 @@ import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
@@ -156,7 +156,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
             // Compare to a given value
             AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
-            Schema.VertexProperty property = dataType.getVertexProperty();
+            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
             traversal.has(property.name(), predicate());
             return traversal;
         }
@@ -515,7 +515,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 private static final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_VAR = varPredicates();
                 private static final java.lang.String[] VALUE_PROPERTIES = AttributeType.DataType.values().stream()
-                        .map(AttributeType.DataType::getVertexProperty).distinct()
+                        .map(Schema.VertexProperty::ofDataType).distinct()
                         .map(Enum::name).toArray(java.lang.String[]::new);
 
                 Variable(Graql.Token.Comparator comparator, Statement value) {

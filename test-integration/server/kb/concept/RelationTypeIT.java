@@ -26,7 +26,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;

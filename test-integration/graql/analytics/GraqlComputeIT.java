@@ -33,7 +33,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.concept.Schema;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
