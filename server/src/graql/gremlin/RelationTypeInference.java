@@ -141,7 +141,7 @@ public class RelationTypeInference {
 
     private static Multimap<Variable, Variable> getRelationRolePlayerMap(
             Set<Fragment> allFragments, Multimap<Variable, Type> instanceVarTypeMap) {
-        // relation vars and its role player vars
+        // get all relation vars and its role player vars
         Multimap<Variable, Variable> relationRolePlayerMap = HashMultimap.create();
         allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
                 .forEach(fragment -> relationRolePlayerMap.put(fragment.start(), fragment.end()));
@@ -167,29 +167,6 @@ public class RelationTypeInference {
                     }
                 });
 
-        // find all the relation requiring type inference
-        Iterator<Variable> iterator = relationRolePlayerMap.keySet().iterator();
-        while (iterator.hasNext()) {
-            Variable relation = iterator.next();
-
-            // the relation should have at least 2 known role players so we can infer something useful
-            if (instanceVarTypeMap.containsKey(relation) ||
-                    relationRolePlayerMap.get(relation).size() < 2) {
-                iterator.remove();
-            } else {
-                int numRolePlayersHaveType = 0;
-                for (Variable rolePlayer : relationRolePlayerMap.get(relation)) {
-                    if (instanceVarTypeMap.containsKey(rolePlayer)) {
-                        numRolePlayersHaveType++;
-                    }
-                }
-                if (numRolePlayersHaveType < 2) {
-                    iterator.remove();
-                }
-            }
-        }
-
-        assert inferrableRelationsRolePlayerMap.size() == relationRolePlayerMap.size() : "New alg doesn't work";
         return relationRolePlayerMap;
     }
 
