@@ -25,29 +25,37 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 
-public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialiser<DESERIALISED, SERIALISED> {
+public abstract class TypeConverter<DESERIALISED>  extends Serialiser<DESERIALISED, Object> {
 
-    private static Map<AttributeType.DataType<?>, Serialiser<?, ?>> converters = ImmutableMap.<AttributeType.DataType<?>, Serialiser<?, ?>>builder()
-            .put(AttributeType.DataType.BOOLEAN, BOOLEAN)
+    private static Map<AttributeType.DataType<?>, TypeConverter<?>> converters = ImmutableMap.<AttributeType.DataType<?>, TypeConverter<?>>builder()
+            .put(AttributeType.DataType.BOOLEAN, new Default<Boolean>())
             .put(AttributeType.DataType.DATE, new DateConverter())
             .put(AttributeType.DataType.DOUBLE, new DoubleConverter())
             .put(AttributeType.DataType.FLOAT, new FloatConverter())
             .put(AttributeType.DataType.INTEGER, new IntegerConverter())
             .put(AttributeType.DataType.LONG, new LongConverter())
-            .put(AttributeType.DataType.STRING, STRING)
+            .put(AttributeType.DataType.STRING, new Default<String>())
             .build();
 
 
-    public static <DESERIALISED> Serialiser<DESERIALISED, Object> of(AttributeType.DataType<DESERIALISED> dataType) {
-        Serialiser<?, ?> converter = converters.get(dataType);
+    public static <DESERIALISED> TypeConverter<DESERIALISED> of(AttributeType.DataType<DESERIALISED> dataType) {
+        TypeConverter<?> converter = converters.get(dataType);
         if (converter == null){
             throw new UnsupportedOperationException("Unsupported DataType: " + dataType.toString());
         }
-        return (Serialiser<DESERIALISED, Object>) converter;
+        return (TypeConverter<DESERIALISED>) converter;
 
     }
 
-    public static class DateConverter extends Serialiser<LocalDateTime, Object> {
+    public static class Default<DESERIALISED> extends TypeConverter<DESERIALISED>{
+        @Override
+        public Object serialise(DESERIALISED value) { return value; }
+
+        @Override
+        public DESERIALISED deserialise(Object value) { return (DESERIALISED) value;}
+    }
+
+    public static class DateConverter extends TypeConverter<LocalDateTime> {
         @Override
         public Object serialise(LocalDateTime value) {
             return value.atZone(ZoneId.of("Z")).toInstant().toEpochMilli();
@@ -61,7 +69,7 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
         }
     }
 
-    public static class DoubleConverter extends Serialiser<Double, Object> {
+    public static class DoubleConverter extends TypeConverter<Double> {
         @Override
         public Double deserialise(Object value) {
             if (value instanceof Number){
@@ -76,7 +84,7 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
         }
     }
 
-    public static class FloatConverter extends Serialiser<Float, Object> {
+    public static class FloatConverter extends TypeConverter<Float> {
         @Override
         public Float deserialise(Object value) {
             if (value instanceof Number){
@@ -91,7 +99,7 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
         }
     }
 
-    public static class IntegerConverter extends Serialiser<Integer, Object> {
+    public static class IntegerConverter extends TypeConverter<Integer> {
         @Override
         public Integer deserialise(Object value) {
             if (value instanceof Number) {
@@ -107,7 +115,7 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
         }
     }
 
-    public static class LongConverter extends Serialiser<Long, Object> {
+    public static class LongConverter extends TypeConverter<Long> {
         @Override
         public Long deserialise(Object value) {
             if (value instanceof Number) {
