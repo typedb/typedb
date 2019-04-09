@@ -9,6 +9,7 @@ public interface Keyspace extends Comparable<Keyspace > {
     String name();
 
     static boolean isValidName(String name) {
+        System.out.println("nice change marco, well done");
         return Pattern.matches("[a-z_][a-z_0-9]*", name) && name.length() <= MAX_LENGTH;
     }
 
