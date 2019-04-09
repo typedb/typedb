@@ -55,70 +55,77 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
- * This rule starts Cassandra and Grakn Server concurrently.
- * It makes sure that both processes bind to random and unused ports.
- * It allows all the integration tests to run concurrently on the same machine.
+ * This rule is a test server rule which starts Cassandra and Grakn Core Server on random, unused ports.
+ * It allowing multiple test server instances to run concurrently.
+ * It enables all of the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
-    private static final Path SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
-    private static final Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+    private static final Path DEFAULT_SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
+    private static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
+    // Grakn Core Server
     private final Path serverConfigPath;
-    private final Path cassandraConfigPath;
     private Config serverConfig;
-    private Path dataDirTmp;
     private Server graknServer;
+    private int grpcPort;
     private KeyspaceManager keyspaceStore;
+    private SessionFactory sessionFactory;
+    private Path dataDirTmp;
 
+    // Cassandra
+    private final Path originalCassandraConfigPath;
+    private File updatedCassandraConfigPath;
     private int storagePort;
     private int rpcPort;
     private int nativeTransportPort;
-    private int grpcPort;
 
-    private SessionFactory sessionFactory;
 
     public GraknTestServer() {
-        this(SERVER_CONFIG_PATH, CASSANDRA_CONFIG_PATH);
+        this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH);
     }
 
     public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath) {
         System.setProperty("java.security.manager", "nottodaypotato");
         this.serverConfigPath = serverConfigPath;
-        this.cassandraConfigPath = cassandraConfigPath;
+        this.originalCassandraConfigPath = cassandraConfigPath;
     }
 
     @Override
     protected void before() {
         try {
-            //Start Cassandra with random ports
+
+            // Start Cassandra
             System.out.println("Starting Grakn Storage...");
             generateCassandraRandomPorts();
-            File cassandraConfig = buildCassandraConfigWithRandomPorts();
-            System.setProperty("cassandra.config", "file:" + cassandraConfig.getAbsolutePath());
+            updatedCassandraConfigPath = buildCassandraConfigWithRandomPorts();
+            System.setProperty("cassandra.config", "file:" + updatedCassandraConfigPath.getAbsolutePath());
             System.setProperty("cassandra-foreground", "true");
+            System.out.println("cassandraConfig.getAbsolutePath() = " + updatedCassandraConfigPath.getAbsolutePath());
             GraknStorage.main(new String[]{});
             System.out.println("Grakn Storage started");
 
-            //Start Grakn server
+            //Start Grakn Core Server
             grpcPort = findUnusedLocalPort();
             dataDirTmp = Files.createTempDirectory("db-for-test");
             serverConfig = createTestConfig(dataDirTmp.toString());
-            System.out.println("Starting Grakn Server...");
-
+            System.out.println("Starting Grakn Core Server...");
             graknServer = createServer();
             graknServer.start();
-            System.out.println("Grakn Server started");
+            System.out.println("Grakn Core Server started");
         } catch (IOException e) {
-            throw new RuntimeException("Cannot start Grakn Server", e);
+            throw new RuntimeException("Cannot start Grakn Core Server", e);
         }
     }
 
     @Override
     protected void after() {
         try {
+            System.out.println("XXX after");
             keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
+            System.out.println("XXX Deleting " + updatedCassandraConfigPath.getAbsolutePath());
+            updatedCassandraConfigPath.delete();
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
         }
@@ -126,8 +133,13 @@ public class GraknTestServer extends ExternalResource {
 
 
     // Getters
+
     public SimpleURI grpcUri() {
         return new SimpleURI(serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME), serverConfig.getProperty(ConfigKey.GRPC_PORT));
+    }
+
+    public int nativeTransportPort() {
+        return nativeTransportPort;
     }
 
     public SessionImpl sessionWithNewKeyspace() {
@@ -148,6 +160,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     //Cassandra Helpers
+
     private void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
@@ -155,7 +168,7 @@ public class GraknTestServer extends ExternalResource {
     }
 
     private File buildCassandraConfigWithRandomPorts() throws IOException {
-        byte[] bytes = Files.readAllBytes(cassandraConfigPath);
+        byte[] bytes = Files.readAllBytes(originalCassandraConfigPath);
         String configString = new String(bytes, StandardCharsets.UTF_8);
 
         configString = configString + "\nstorage_port: " + storagePort;
@@ -177,7 +190,8 @@ public class GraknTestServer extends ExternalResource {
         }
     }
 
-    //Server helpers
+    // Grakn Core Server helpers
+
     private Config createTestConfig(String dataDir) throws FileNotFoundException {
         InputStream testConfig = new FileInputStream(serverConfigPath.toFile());
 
