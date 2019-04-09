@@ -49,6 +49,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import static graql.lang.Graql.rel;
 import static graql.lang.Graql.var;
 
 public class RelationTypeInference {
@@ -145,6 +146,27 @@ public class RelationTypeInference {
         allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
                 .forEach(fragment -> relationRolePlayerMap.put(fragment.start(), fragment.end()));
 
+        Multimap<Variable, Variable> inferrableRelationsRolePlayerMap = HashMultimap.create();
+
+        allFragments.stream()
+                .filter(OutRolePlayerFragment.class::isInstance)
+                .filter(fragment -> ! instanceVarTypeMap.containsKey(fragment.start())) // filter out known rel types
+                .forEach(fragment -> {
+                    Variable relation = fragment.start();
+
+                    // the relation should have at least 2 known role players so we can infer something useful
+                    int numRolePlayersHaveType = 0;
+                    for (Variable rolePlayer : relationRolePlayerMap.get(relation)) {
+                        if (instanceVarTypeMap.containsKey(rolePlayer)) {
+                            numRolePlayersHaveType++;
+                        }
+                    }
+
+                    if (numRolePlayersHaveType >= 2) {
+                        inferrableRelationsRolePlayerMap.put(relation, fragment.end());
+                    }
+                });
+
         // find all the relation requiring type inference
         Iterator<Variable> iterator = relationRolePlayerMap.keySet().iterator();
         while (iterator.hasNext()) {
@@ -166,6 +188,8 @@ public class RelationTypeInference {
                 }
             }
         }
+
+        assert inferrableRelationsRolePlayerMap.size() == relationRolePlayerMap.size() : "New alg doesn't work";
         return relationRolePlayerMap;
     }
 

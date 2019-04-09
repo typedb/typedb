@@ -18,10 +18,8 @@
 
 package grakn.core.graql.gremlin;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.concept.type.Type;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -97,7 +95,7 @@ public class GreedyTraversalPlan {
         final Set<Fragment> allFragments = query.getEquivalentFragmentSets().stream()
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
 
-        // if role p[ayers' types are known, we can infer the types of the relation, adding label fragments
+        // if role players' types are known, we can infer the types of the relation, adding label fragments
         Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
         allFragments.addAll(inferredFragments);
 
@@ -197,7 +195,7 @@ public class GreedyTraversalPlan {
         // TODO extract this out of the Node objects themselves
         allFragments.forEach(fragment -> {
             if (fragment.end() == null && fragment.dependencies().isEmpty()) {
-                // process fragments that are have fixed cost
+                // process fragments that have fixed cost
                 Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
                 //fragments that should be done when a node has been visited
                 start.getFragmentsWithoutDependency().add(fragment);

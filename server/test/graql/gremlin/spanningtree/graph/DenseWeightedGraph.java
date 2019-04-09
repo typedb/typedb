@@ -16,14 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.gremlin.spanningtree.datastructure;
+package grakn.core.graql.gremlin.spanningtree.graph;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.WeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 
 import java.util.ArrayList;
