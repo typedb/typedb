@@ -60,24 +60,24 @@ import java.util.UUID;
  * It enables all of the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
-    private static final Path DEFAULT_SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
-    private static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+    protected static final Path DEFAULT_SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
+    protected static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
     // Grakn Core Server
-    private final Path serverConfigPath;
-    private Config serverConfig;
-    private Server graknServer;
-    private int grpcPort;
-    private KeyspaceManager keyspaceStore;
-    private SessionFactory sessionFactory;
-    private Path dataDirTmp;
+    protected final Path serverConfigPath;
+    protected Config serverConfig;
+    protected Server graknServer;
+    protected int grpcPort;
+    protected KeyspaceManager keyspaceStore;
+    protected SessionFactory sessionFactory;
+    protected Path dataDirTmp;
 
     // Cassandra
-    private final Path originalCassandraConfigPath;
-    private File updatedCassandraConfigPath;
-    private int storagePort;
-    private int rpcPort;
-    private int nativeTransportPort;
+    protected final Path originalCassandraConfigPath;
+    protected File updatedCassandraConfigPath;
+    protected int storagePort;
+    protected int rpcPort;
+    protected int nativeTransportPort;
 
 
     public GraknTestServer() {
@@ -93,7 +93,6 @@ public class GraknTestServer extends ExternalResource {
     @Override
     protected void before() {
         try {
-
             // Start Cassandra
             System.out.println("Starting Grakn Storage...");
             generateCassandraRandomPorts();
@@ -104,7 +103,7 @@ public class GraknTestServer extends ExternalResource {
             GraknStorage.main(new String[]{});
             System.out.println("Grakn Storage started");
 
-            //Start Grakn Core Server
+            // Start Grakn Core Server
             grpcPort = findUnusedLocalPort();
             dataDirTmp = Files.createTempDirectory("db-for-test");
             serverConfig = createTestConfig(dataDirTmp.toString());
@@ -159,15 +158,15 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory;
     }
 
-    //Cassandra Helpers
+    // Cassandra Helpers
 
-    private void generateCassandraRandomPorts() throws IOException {
+    protected void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
         rpcPort = findUnusedLocalPort();
     }
 
-    private File buildCassandraConfigWithRandomPorts() throws IOException {
+    protected File buildCassandraConfigWithRandomPorts() throws IOException {
         byte[] bytes = Files.readAllBytes(originalCassandraConfigPath);
         String configString = new String(bytes, StandardCharsets.UTF_8);
 
@@ -184,7 +183,7 @@ public class GraknTestServer extends ExternalResource {
         return copyName.toFile();
     }
 
-    private static int findUnusedLocalPort() throws IOException {
+    protected static int findUnusedLocalPort() throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             return serverSocket.getLocalPort();
         }
@@ -192,7 +191,7 @@ public class GraknTestServer extends ExternalResource {
 
     // Grakn Core Server helpers
 
-    private Config createTestConfig(String dataDir) throws FileNotFoundException {
+    protected Config createTestConfig(String dataDir) throws FileNotFoundException {
         InputStream testConfig = new FileInputStream(serverConfigPath.toFile());
 
         Config config = Config.read(testConfig);
@@ -232,5 +231,4 @@ public class GraknTestServer extends ExternalResource {
         return ServerFactory.createServer(id, serverRPC,
                                           lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
-
 }
