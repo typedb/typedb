@@ -158,7 +158,12 @@ public abstract class Fragment {
     }
 
     /**
-     * TODO
+     * Some fragments represent Edges in JanusGraph. Similar to `getNodes()`, a fake node is added
+     * in the middle for the query planning step. These middle nodes are connected with a directed edge uniquely to another node -
+     * this directed edge is therefore the mapping from (node,node) directed edge to the Fragment. This is used to
+     * convert the fake middle node back into a Fragment after query planning is complete.
+     * For pairs of nodes we may have two edges (node1, node2) and (node2, node1). These stem from the two
+     * fragments that are `Equivalent` in EquivalentFragmentSet - directionality is used to disambiguate which choice to use
      * @param nodes
      * @return
      */

@@ -87,7 +87,7 @@ public abstract class OutSubFragment extends Fragment {
     @Override
     public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
         Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end()))));
+        Node middle = new Node(NodeId.of(NodeId.NodeType.SUB, new HashSet<>(Arrays.asList(start(), end()))));
         // directed edge: middle -> start
         return new Pair<>(middle, start);
     }
