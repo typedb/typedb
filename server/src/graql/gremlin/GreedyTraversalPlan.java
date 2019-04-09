@@ -101,20 +101,19 @@ public class GreedyTraversalPlan {
         Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
         allFragments.addAll(inferredFragments);
 
-
-        // it's possible that some (or all) fragments are disconnected
-        // e.g. $x isa person; $y isa dog;
-        // these are valid conjunctions
-        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
-
-        // TODO handling building the dependencies in each connected subgraph doesn't work very easily, because dependencies can step across disconnected fragment sets
+        // TODO handling building the dependencies in each connected subgraph doesn't work, because dependencies can step across disconnected fragment sets
         Map<NodeId, Node> allNodes = new HashMap<>();
         allFragments.forEach(fragment -> {
             Set<Node> fragmentNodes = fragment.getNodes();
             fragmentNodes.forEach(node -> allNodes.put(node.getNodeId(), node));
         });
-        // build the dependencies between nodes for use in the outer scope as well
+        // build the dependencies between nodes for use between disconnected fragment sets too
         buildDependenciesBetweenNodes(allFragments, allNodes);
+
+        // it's possible that some (or all) fragments are disconnected
+        // e.g. $x isa person; $y isa dog;
+        // these are valid conjunctions
+        Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
 
         // build a query plan for each query subgraph (connected fragment set) separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
@@ -125,36 +124,38 @@ public class GreedyTraversalPlan {
             }
 
             // collect the mapping from directed bedge back to fragments -- inverse operation of creating virtual middle nodes
-            Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
-            for (Fragment fragment: connectedFragments) {
-                Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
-                if (middleNodeDirectedEdge != null) {
-                    middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.getKey(), new HashMap<>());
-                    middleNodeFragmentMapping.get(middleNodeDirectedEdge.getKey()).put(middleNodeDirectedEdge.getValue(), fragment);
-                }
-            }
+            Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, nodes);
 
             // compute a minimum spanning tree, if we can
-            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, nodes);
-            // if we have a valid tree, perform the greedy traversal
+            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, nodes, tx);
             if (subgraphArborescence != null) {
+                // NOTE this requires allNodes to handle dependencies across disconnected sets
                 List<Fragment> subplan = greedyTraversal(subgraphArborescence, allNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
             }
-            // add the unvisited node fragments
+
+            // NOTE this requires allNodes to handle dependencies across disconnected sets
             List<Fragment> subplan = addUnvisitedNodeFragments(allNodes, nodes.values());
             plan.addAll(subplan);
         }
         plan.addAll(addUnvisitedNodeFragments(allNodes, allNodes.values()));
-
 
         LOG.trace("Greedy Plan = {}", plan);
         return plan;
     }
 
 
-    private static Arborescence<Node> computeArborescence(Set<Fragment> fragments, Map<NodeId, Node> nodes) {
+    private static Arborescence<Node> computeArborescence(Set<Fragment> fragments, Map<NodeId, Node> nodes, TransactionOLTP tx) {
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
+
+        fragments.forEach(fragment -> {
+            if (fragment.hasFixedFragmentCost()) {
+                NodeId startNodeId = Iterators.getOnlyElement(fragment.getNodes().iterator()).getNodeId();
+                Node startNode = nodes.get(startNodeId);
+                nodesWithFixedCost.put(startNode, getLogInstanceCount(tx, fragment));
+                startNode.setFixedFragmentCost(fragment.fragmentCost());
+            }
+        });
 
         // process sub fragments here as we probably need to break the query tree
         updateSubsReachableByIndex(nodes, nodesWithFixedCost, fragments);
@@ -164,6 +165,7 @@ public class GreedyTraversalPlan {
 
         // save the fragments corresponding to edges, and updates some costs if we can via shard count
         for (Fragment fragment : fragments) {
+
             if (fragment.end() != null) {
                 edgeFragmentSet.add(fragment);
                 updateFragmentCost(nodes, nodesWithFixedCost, fragment);
@@ -191,8 +193,19 @@ public class GreedyTraversalPlan {
         }
     }
 
+    private static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
+        Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
+        for (Fragment fragment : connectedFragments) {
+            Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
+            if (middleNodeDirectedEdge != null) {
+                middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.getKey(), new HashMap<>());
+                middleNodeFragmentMapping.get(middleNodeDirectedEdge.getKey()).put(middleNodeDirectedEdge.getValue(), fragment);
+            }
+        }
+        return middleNodeFragmentMapping;
+    }
 
-    private static Set<Node> chooseStartingNodes(Set<Fragment> fragmentSet,  Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
+    private static Set<Node> chooseStartingNodes(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
         final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.forEach(fragment -> {
@@ -372,7 +385,7 @@ public class GreedyTraversalPlan {
                                                   Map<NodeId, Node> nodes,
                                                   Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
 
-        List<Fragment> plan= new LinkedList<>();
+        List<Fragment> plan = new LinkedList<>();
 
         Map<Node, Set<Node>> edgesParentToChild = new HashMap<>();
         arborescence.getParents().forEach((child, parent) -> {
