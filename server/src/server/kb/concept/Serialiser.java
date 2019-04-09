@@ -76,7 +76,7 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
         }
     }
 
-    public static class Date extends Serialiser<LocalDateTime, Long> {
+    public static class Date extends Serialiser<java.time.LocalDateTime, Long> {
 
         @Override
         public java.lang.Long serialise(LocalDateTime value) {

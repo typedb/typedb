@@ -55,6 +55,7 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
 
         @Override
         public LocalDateTime deserialise(Object value) {
+            if (value instanceof LocalDateTime) return (LocalDateTime) value;
             if (value instanceof Long) return LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value), ZoneId.of("Z"));
             throw new ClassCastException();
         }
