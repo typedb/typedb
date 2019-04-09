@@ -20,9 +20,8 @@ package grakn.core.server.kb.concept;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.type.AttributeType;
-import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Map;
 
 public abstract class ValueConverter<SOURCE, TARGET>{
@@ -57,9 +56,8 @@ public abstract class ValueConverter<SOURCE, TARGET>{
         @Override
         public LocalDateTime convert(Object value) {
             if (value instanceof LocalDateTime) return (LocalDateTime) value;
-            else if (value instanceof Long) {
-                LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value), ZoneId.of("Z"));
-            }
+            else if (value instanceof LocalDate) return ((LocalDate) value).atStartOfDay();
+            //NB: we are not able to parse ZonedDateTime correctly so leaving that for now
             throw new ClassCastException();
         }
     }

@@ -27,6 +27,9 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -113,8 +116,20 @@ public class TypeConversionIT {
     }
 
     @Test
-    public void whenAddressingDateAsLong_ConversionHappens(){
-        Pattern pattern = Graql.var("x").val(10000000L).isa("resource-date");
+    public void whenAddressingDateAsLocalDate_ConversionHappens(){
+        LocalDate now = LocalDate.now();
+
+        Pattern pattern = Graql.parsePattern("$x " + now + " isa resource-date;");
+        verifyWrite(session,pattern);
+        //TODO verifyRead(session, pattern);
+        cleanup(session, pattern);
+    }
+
+    @Test
+    public void whenAddressingDateAsLocalDateTime_ConversionHappens(){
+        LocalDateTime now = LocalDateTime.now();
+
+        Pattern pattern = Graql.parsePattern("$x " + now + " isa resource-date;");
         verifyWrite(session,pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
@@ -133,7 +148,7 @@ public class TypeConversionIT {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void whenAddressingDateAsNonLong_exceptionIsThrown() throws TransactionException{
+    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws TransactionException{
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("resource-date");
         expectedException.expect(TransactionException.class);
