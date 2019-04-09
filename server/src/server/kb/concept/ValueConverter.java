@@ -52,11 +52,15 @@ public abstract class ValueConverter<SOURCE, TARGET>{
         public TARGET convert(SOURCE value) { return (TARGET) value;}
     }
 
-    public static class DateConverter extends ValueConverter<Long, LocalDateTime> {
+    public static class DateConverter extends ValueConverter<Object, LocalDateTime> {
 
         @Override
-        public LocalDateTime convert(Long value) {
-            return LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneId.of("Z"));
+        public LocalDateTime convert(Object value) {
+            if (value instanceof LocalDateTime) return (LocalDateTime) value;
+            else if (value instanceof Long) {
+                LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value), ZoneId.of("Z"));
+            }
+            throw new ClassCastException();
         }
     }
 
