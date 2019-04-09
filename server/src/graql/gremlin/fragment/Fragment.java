@@ -35,11 +35,9 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -155,7 +153,7 @@ public abstract class Fragment {
      */
     public Set<Node> getNodes() {
         NodeId startNodeId = NodeId.of(NodeId.NodeType.VAR, start());
-        return new HashSet<>(Arrays.asList(new Node(startNodeId)));
+        return Collections.singleton(new Node(startNodeId));
     }
 
     /**

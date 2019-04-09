@@ -18,6 +18,7 @@
 
 package grakn.core.graql.gremlin;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.concept.type.Type;
@@ -113,7 +114,7 @@ public class GreedyTraversalPlan {
 // add indexed, fast operations to the plan immediately TODO figure out if this is the right call
 // plan.add(fragment);
                 // a single indexed node (eg. label, value etc.) therefore cannot be an edge, so must correspond to a single node
-                Node startNode = nodes.iterator().next();
+                Node startNode = Iterators.getOnlyElement(nodes.iterator());
                 nodesWithFixedCost.put(startNode, getLogInstanceCount(tx, fragment));
                 startNode.setFixedFragmentCost(fragment.fragmentCost());
             }
@@ -206,7 +207,7 @@ public class GreedyTraversalPlan {
 
                 // it's either neq or value fragment
                 Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
+                Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, Iterators.getOnlyElement(fragment.dependencies().iterator())));
 
                 start.getFragmentsWithDependency().add(fragment);
                 other.getDependants().add(fragment);

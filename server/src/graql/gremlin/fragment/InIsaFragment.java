@@ -20,6 +20,7 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
@@ -144,7 +145,7 @@ public abstract class InIsaFragment extends Fragment {
         Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
         Node middle = new Node(NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end()))));
         middle.setInvalidStartingPoint();
-        return new HashSet<>(Arrays.asList(start, end, middle));
+        return Sets.newHashSet(start, end, middle);
     }
 
     @Override
