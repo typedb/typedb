@@ -167,7 +167,7 @@ public class RelationTypeInference {
                     }
                 });
 
-        return relationRolePlayerMap;
+        return inferrableRelationsRolePlayerMap;
     }
 
     private static void addAllPossibleRelations(Multimap<Type, RelationType> relationMap, Type metaType) {
