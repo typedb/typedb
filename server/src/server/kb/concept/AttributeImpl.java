@@ -54,7 +54,7 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
         D deserialised;
         try {
-            deserialised = TypeConverter.of(type.dataType()).deserialise(value);
+            deserialised = ValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
             throw TransactionException.invalidAttributeValue(value, type.dataType());
         }

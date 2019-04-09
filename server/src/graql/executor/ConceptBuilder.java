@@ -395,6 +395,11 @@ public class ConceptBuilder {
         } else if (type.isRelationType()) {
             return type.asRelationType().create();
         } else if (type.isAttributeType()) {
+            Object use = use(VALUE);
+
+
+            AttributeType<Object> objectAttributeType = type.asAttributeType();
+            type.asAttributeType().create(use);
             return type.asAttributeType().create(use(VALUE));
         } else if (type.label().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
