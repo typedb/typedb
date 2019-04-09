@@ -120,6 +120,15 @@ public class TypeConversionIT {
         cleanup(session, pattern);
     }
 
+    @Test
+    public void whenAddressingLongAsConvertibleDouble_exceptionIsThrown() throws TransactionException{
+        double value = 10.0;
+        Pattern pattern = Graql.var("x").val(value).isa("resource-long");
+        verifyWrite(session,pattern);
+        //TODO verifyRead(session, pattern);
+        cleanup(session, pattern);
+    }
+
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
