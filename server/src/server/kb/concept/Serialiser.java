@@ -18,17 +18,18 @@
 
 package grakn.core.server.kb.concept;
 
+import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.type.AttributeType;
-
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
 
 public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
     public static final Serialiser<Boolean, Boolean> BOOLEAN = new Default<>();
-    public static final Serialiser<Double, Double> DOUBLE = new Default<>();
     public static final Serialiser<Float, Float> FLOAT = new Default<>();
+    public static final Serialiser<Double, Double> DOUBLE = new Default<>();
     public static final Serialiser<Integer, Integer> INTEGER = new Default<>();
     public static final Serialiser<Long, Long> LONG = new Default<>();
     public static final Serialiser<String, String> STRING = new Default<>();
@@ -40,33 +41,26 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
     public abstract DESERIALISED deserialise(SERIALISED value);
 
+    private static Map<AttributeType.DataType<?>, Serialiser<?, ?>> serialisers = ImmutableMap.<AttributeType.DataType<?>, Serialiser<?, ?>>builder()
+            .put(AttributeType.DataType.BOOLEAN, BOOLEAN)
+            .put(AttributeType.DataType.DATE, DATE)
+            .put(AttributeType.DataType.DOUBLE, DOUBLE)
+            .put(AttributeType.DataType.FLOAT, FLOAT)
+            .put(AttributeType.DataType.INTEGER, INTEGER)
+            .put(AttributeType.DataType.LONG, LONG)
+            .put(AttributeType.DataType.STRING, STRING)
+            .build();
+
+
     // TODO: This method should not be needed if all usage of this class is
     //       accessed via the constant properties defined above.
     public static <DESERIALISED> Serialiser<DESERIALISED, ?> of(AttributeType.DataType<DESERIALISED> dataType) {
-        if (dataType.equals(AttributeType.DataType.BOOLEAN)) {
-            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Boolean>();
-
-        } else if (dataType.equals(AttributeType.DataType.DATE)) {
-            return (Serialiser<DESERIALISED, ?>) new Serialiser.Date();
-
-        } else if (dataType.equals(AttributeType.DataType.DOUBLE)) {
-            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Double>();
-
-        } else if (dataType.equals(AttributeType.DataType.FLOAT)) {
-            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Double>();
-
-        } else if (dataType.equals(AttributeType.DataType.INTEGER)) {
-            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Integer>();
-
-        } else if (dataType.equals(AttributeType.DataType.LONG)) {
-            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.Long>();
-
-        } else if (dataType.equals(AttributeType.DataType.STRING)) {
-            return (Serialiser<DESERIALISED, ?>) new Default<java.lang.String>();
-
-        } else {
+        Serialiser<?, ?> serialiser = serialisers.get(dataType);
+        if (serialiser == null){
             throw new UnsupportedOperationException("Unsupported DataType: " + dataType.toString());
         }
+        return (Serialiser<DESERIALISED, ?>) serialiser;
+
     }
 
     public static class Default<VALUE> extends Serialiser<VALUE, VALUE> {
@@ -78,15 +72,11 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
         @Override
         public VALUE deserialise(VALUE value) {
-            return value;
+            return  value;
         }
     }
 
     public static class Date extends Serialiser<LocalDateTime, Long> {
-
-        Date() {
-            super();
-        }
 
         @Override
         public java.lang.Long serialise(LocalDateTime value) {
@@ -94,10 +84,11 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
         }
 
         @Override
-        public LocalDateTime deserialise(java.lang.Long value) {
+        public LocalDateTime deserialise(Long value) {
             if (value == null) return null;
             return LocalDateTime.ofInstant(Instant.ofEpochMilli(value), ZoneId.of("Z"));
         }
     }
+
 }
 
