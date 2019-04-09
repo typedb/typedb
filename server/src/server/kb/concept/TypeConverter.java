@@ -20,6 +20,7 @@ package grakn.core.server.kb.concept;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.type.AttributeType;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
@@ -46,25 +47,20 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
 
     }
 
-    public static class DateConverter extends Serialiser<Long, Object> {
-
+    public static class DateConverter extends Serialiser<LocalDateTime, Object> {
         @Override
-        public Object serialise(Long value) {
-            return value;
+        public Object serialise(LocalDateTime value) {
+            return value.atZone(ZoneId.of("Z")).toInstant().toEpochMilli();
         }
 
         @Override
-        public Long deserialise(Object value) {
-            if (value instanceof Long) return (Long) value;
-            else if (value instanceof LocalDateTime) {
-                return ((LocalDateTime) value).atZone(ZoneId.of("Z")).toInstant().toEpochMilli();
-            }
+        public LocalDateTime deserialise(Object value) {
+            if (value instanceof Long) return LocalDateTime.ofInstant(Instant.ofEpochMilli((Long) value), ZoneId.of("Z"));
             throw new ClassCastException();
         }
     }
 
     public static class DoubleConverter extends Serialiser<Double, Object> {
-
         @Override
         public Double deserialise(Object value) {
             if (value instanceof Number){
@@ -80,7 +76,6 @@ public abstract class TypeConverter<DESERIALISED, SERIALISED>  extends Serialise
     }
 
     public static class FloatConverter extends Serialiser<Float, Object> {
-
         @Override
         public Float deserialise(Object value) {
             if (value instanceof Number){
