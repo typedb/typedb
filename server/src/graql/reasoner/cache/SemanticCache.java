@@ -279,10 +279,12 @@ public abstract class SemanticCache<
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
+        boolean queryGround = query.isGround();
 
         if (match != null) {
             boolean answersToGroundQuery = false;
-            if (query.isGround()) {
+            boolean queryDBComplete = isDBComplete(query);
+            if (queryGround) {
                 boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
                 if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
             }
@@ -291,7 +293,7 @@ public abstract class SemanticCache<
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
 
             //if db complete or we found answers to ground query via propagation we don't need to hit the database
-            if (isDBComplete(query) || answersToGroundQuery) return cachePair;
+            if (queryDBComplete || answersToGroundQuery) return cachePair;
 
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
@@ -305,7 +307,7 @@ public abstract class SemanticCache<
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
         boolean fetchFromParent = parents.stream().anyMatch(p ->
-                query.isGround() || isDBComplete(keyToQuery(p))
+                queryGround || isDBComplete(keyToQuery(p))
         );
         if (fetchFromParent){
             LOG.trace("Query Cache miss: {} with fetch from parents {}", query, parents);

@@ -35,6 +35,9 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierComparison;
+import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import graql.lang.pattern.Pattern;
@@ -226,5 +229,11 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return this.rewriteWithTypeVariable(parentAtom);
+    }
+
+    @Override
+    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+        if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
+        return super.getUnifier(parentAtom, unifierType);
     }
 }

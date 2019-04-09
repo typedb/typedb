@@ -179,10 +179,6 @@ public abstract class Binary extends Atom {
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
-        if (!(parentAtom instanceof Binary)) {
-            throw GraqlQueryException.unificationAtomIncompatibility();
-        }
-
         boolean inferTypes = unifierType.inferTypes();
         Variable childVarName = this.getVarName();
         Variable parentVarName = parentAtom.getVarName();

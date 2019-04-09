@@ -39,6 +39,7 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierComparison;
@@ -144,7 +145,12 @@ public abstract class AttributeAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom(){
-        return IsaAtom.create(getAttributeVariable(), new Variable(), getTypeId(), false, getParentQuery());
+        //TODO add value predicates
+        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), new Variable(), getTypeId(), false, getParentQuery());
+        Set<Statement> patterns = new HashSet<>();
+        ReasonerQueries.atomic(isaAtom).getPattern().getPatterns().stream().flatMap(p -> p.statements().stream()).forEach(patterns::add);
+        getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
+        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toIsaAtom();
     }
 
     @Override
