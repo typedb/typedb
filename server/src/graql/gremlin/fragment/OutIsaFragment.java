@@ -31,7 +31,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -76,7 +78,16 @@ public abstract class OutIsaFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
+    public Set<Node> getNodes() {
+        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node middle = new Node(NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end()))));
+        middle.setInvalidStartingPoint();
+        return new HashSet<>(Arrays.asList(start, end, middle));
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
                                                            Map<Node, Map<Node, Fragment>> edges) {
         return directedEdges(NodeId.NodeType.ISA, nodes, edges);
     }

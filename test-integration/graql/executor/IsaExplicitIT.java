@@ -46,6 +46,7 @@ import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
@@ -125,7 +126,7 @@ public class IsaExplicitIT {
 
         Assert.assertEquals(9, plan.size());
         // 3 labels: thingy1, thingy1 and related
-        assertThat(plan, contains(
+        assertThat(plan, containsInAnyOrder(
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
@@ -165,7 +166,7 @@ public class IsaExplicitIT {
 
         Assert.assertEquals(9, plan.size());
         // 3 labels: thingy1, thingy1 and related
-        assertThat(plan, contains(
+        assertThat(plan, containsInAnyOrder(
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
@@ -187,7 +188,7 @@ public class IsaExplicitIT {
 
         Assert.assertEquals(10, plan.size());
         // 3 labels: thingy, thingy and related
-        assertThat(plan, contains(
+        assertThat(plan, containsInAnyOrder(
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),

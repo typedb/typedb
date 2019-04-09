@@ -35,50 +35,45 @@ import static com.google.common.collect.DiscreteDomain.integers;
 import static com.google.common.collect.Range.closedOpen;
 
 /**
- * @param <V> the type of the nodes stored
+ * Used for testing
  */
-public class DenseWeightedGraph<V> extends WeightedGraph<V> {
-    final private ArrayList<V> nodes;
-    final private Map<V, Integer> indexOf;
+public class DenseWeightedGraph extends WeightedGraph {
+    final private ArrayList<Node> nodes;
+    final private Map<Node, Integer> indexOf;
     final private double[][] weights;
 
-    private DenseWeightedGraph(ArrayList<V> nodes, Map<V, Integer> indexOf, double[][] weights) {
+    private DenseWeightedGraph(ArrayList<Node> nodes, Map<Node, Integer> indexOf, double[][] weights) {
         this.nodes = nodes;
         this.indexOf = indexOf;
         this.weights = weights;
     }
 
-    public static <V> DenseWeightedGraph<V> from(Iterable<V> nodes, double[][] weights) {
-        final ArrayList<V> nodeList = Lists.newArrayList(nodes);
+    public static DenseWeightedGraph from(Iterable<Node> nodes, double[][] weights) {
+        final ArrayList<Node> nodeList = Lists.newArrayList(nodes);
         Preconditions.checkArgument(nodeList.size() == weights.length);
-        final Map<V, Integer> indexOf = Maps.newHashMap();
+        final Map<Node, Integer> indexOf = Maps.newHashMap();
         for (int i = 0; i < nodeList.size(); i++) {
             indexOf.put(nodeList.get(i), i);
         }
-        return new DenseWeightedGraph<>(nodeList, indexOf, weights);
-    }
-
-    public static DenseWeightedGraph<Integer> from(double[][] weights) {
-        final Set<Integer> nodes = ContiguousSet.create(closedOpen(0, weights.length), integers());
-        return DenseWeightedGraph.from(nodes, weights);
+        return new DenseWeightedGraph(nodeList, indexOf, weights);
     }
 
     @Override
-    public Collection<V> getNodes() {
+    public Collection<Node> getNodes() {
         return nodes;
     }
 
     @Override
-    public double getWeightOf(V source, V dest) {
+    public double getWeightOf(Node source, Node dest) {
         if (!indexOf.containsKey(source) || !indexOf.containsKey(dest)) return Double.NEGATIVE_INFINITY;
         return weights[indexOf.get(source)][indexOf.get(dest)];
     }
 
     @Override
-    public Collection<Weighted<DirectedEdge<V>>> getIncomingEdges(V destinationNode) {
+    public Collection<Weighted<DirectedEdge>> getIncomingEdges(Node destinationNode) {
         if (!indexOf.containsKey(destinationNode)) return Collections.emptySet();
         final int dest = indexOf.get(destinationNode);
-        List<Weighted<DirectedEdge<V>>> results = Lists.newArrayList();
+        List<Weighted<DirectedEdge>> results = Lists.newArrayList();
         for (int src = 0; src < nodes.size(); src++) {
             results.add(Weighted.weighted(DirectedEdge.from(nodes.get(src)).to(destinationNode), weights[src][dest]));
         }

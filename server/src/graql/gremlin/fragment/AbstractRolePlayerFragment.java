@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
@@ -33,11 +34,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.fragment.Fragments.displayOptionalTypeLabels;
+import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -83,9 +88,34 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     }
 
     @Override
-    public final Set<Weighted<DirectedEdge<Node>>> directedEdges(
-            Map<NodeId, Node> nodes, Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(edge(), nodes, edges);
+    public Set<Node> getNodes() {
+        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node middle = new Node(NodeId.of(NodeId.NodeType.VAR, edge()));
+        middle.setInvalidStartingPoint();
+        return new HashSet<>(Arrays.asList(start, end, middle));
+    }
+
+    @Override
+    public final Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
+                                                           Map<Node, Map<Node, Fragment>> edges) {
+
+        // this is a somewhat special case, where the middle node being converted to a vertex
+        // may be addressed by a variable
+
+        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node middle = nodes.get(NodeId.of(NodeId.NodeType.VAR, edge()));
+        middle.setInvalidStartingPoint();
+
+        if (!edges.containsKey(middle)) {
+            edges.put(middle, new HashMap<>());
+        }
+        edges.get(middle).put(start, this);
+
+        return Sets.newHashSet(
+                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
+                weighted(DirectedEdge.from(middle).to(end), 0));
     }
 
     static void applyLabelsToTraversal(

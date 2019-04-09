@@ -27,32 +27,29 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * @param <V> the type of the nodes stored
- */
-public class SparseWeightedGraph<V> extends WeightedGraph<V> {
-    final private Set<V> nodes;
-    final private Map<V, Map<V, Weighted<DirectedEdge<V>>>> incomingEdges;
+public class SparseWeightedGraph extends WeightedGraph {
+    final private Set<Node> nodes;
+    final private Map<Node, Map<Node, Weighted<DirectedEdge>>> incomingEdges;
 
-    private SparseWeightedGraph(Set<V> nodes, Map<V, Map<V, Weighted<DirectedEdge<V>>>> incomingEdges) {
+    private SparseWeightedGraph(Set<Node> nodes, Map<Node, Map<Node, Weighted<DirectedEdge>>> incomingEdges) {
         this.nodes = nodes;
         this.incomingEdges = incomingEdges;
     }
 
-    public static <T> SparseWeightedGraph<T> from(Iterable<T> nodes, Iterable<Weighted<DirectedEdge<T>>> edges) {
-        final Map<T, Map<T, Weighted<DirectedEdge<T>>>> incomingEdges = Maps.newHashMap();
-        for (Weighted<DirectedEdge<T>> edge : edges) {
+    public static SparseWeightedGraph from(Iterable<Node> nodes, Iterable<Weighted<DirectedEdge>> edges) {
+        final Map<Node, Map<Node, Weighted<DirectedEdge>>> incomingEdges = Maps.newHashMap();
+        for (Weighted<DirectedEdge> edge : edges) {
             if (!incomingEdges.containsKey(edge.val.destination)) {
                 incomingEdges.put(edge.val.destination, Maps.newHashMap());
             }
             incomingEdges.get(edge.val.destination).put(edge.val.source, edge);
         }
-        return new SparseWeightedGraph<>(ImmutableSet.copyOf(nodes), incomingEdges);
+        return new SparseWeightedGraph(ImmutableSet.copyOf(nodes), incomingEdges);
     }
 
-    public static <T> SparseWeightedGraph<T> from(Iterable<Weighted<DirectedEdge<T>>> edges) {
-        final Set<T> nodes = Sets.newHashSet();
-        for (Weighted<DirectedEdge<T>> edge : edges) {
+    public static  SparseWeightedGraph from(Iterable<Weighted<DirectedEdge>> edges) {
+        final Set<Node> nodes = Sets.newHashSet();
+        for (Weighted<DirectedEdge> edge : edges) {
             nodes.add(edge.val.source);
             nodes.add(edge.val.destination);
         }
@@ -60,20 +57,20 @@ public class SparseWeightedGraph<V> extends WeightedGraph<V> {
     }
 
     @Override
-    public Collection<V> getNodes() {
+    public Collection<Node> getNodes() {
         return nodes;
     }
 
     @Override
-    public double getWeightOf(V source, V dest) {
+    public double getWeightOf(Node source, Node dest) {
         if (!incomingEdges.containsKey(dest)) return Double.NEGATIVE_INFINITY;
-        final Map<V, Weighted<DirectedEdge<V>>> inEdges = incomingEdges.get(dest);
+        final Map<Node, Weighted<DirectedEdge>> inEdges = incomingEdges.get(dest);
         if (!inEdges.containsKey(source)) return Double.NEGATIVE_INFINITY;
         return inEdges.get(source).weight;
     }
 
     @Override
-    public Collection<Weighted<DirectedEdge<V>>> getIncomingEdges(V destinationNode) {
+    public Collection<Weighted<DirectedEdge>> getIncomingEdges(Node destinationNode) {
         if (!incomingEdges.containsKey(destinationNode)) return ImmutableSet.of();
         return incomingEdges.get(destinationNode).values();
     }

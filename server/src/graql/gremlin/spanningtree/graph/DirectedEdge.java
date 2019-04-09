@@ -29,34 +29,30 @@ import java.util.Set;
 /**
  * An edge in a directed graph.
  *
- * @param <V> the type of the node
  */
-public class DirectedEdge<V> {
-    public final V source;
-    public final V destination;
+public class DirectedEdge {
+    public final Node source;
+    public final Node destination;
 
-    public DirectedEdge(V source, V destination) {
+    public DirectedEdge(Node source, Node destination) {
         this.source = source;
         this.destination = destination;
     }
 
-    /**
-     * @param <V> the type of the node
-     */
-    public static class EdgeBuilder<V> {
-        public final V source;
+    public static class EdgeBuilder {
+        public final Node source;
 
-        private EdgeBuilder(V source) {
+        private EdgeBuilder(Node source) {
             this.source = source;
         }
 
-        public DirectedEdge<V> to(V destination) {
-            return new DirectedEdge<>(source, destination);
+        public DirectedEdge to(Node destination) {
+            return new DirectedEdge(source, destination);
         }
     }
 
-    public static <T> EdgeBuilder<T> from(T source) {
-        return new EdgeBuilder<>(source);
+    public static EdgeBuilder from(Node source) {
+        return new EdgeBuilder(source);
     }
 
     @Override
@@ -82,19 +78,19 @@ public class DirectedEdge<V> {
 
     //// Edge Predicates
 
-    public static <T> Predicate<DirectedEdge<T>> hasDestination(final T node) {
+    public static Predicate<DirectedEdge> hasDestination(final Node node) {
         return input -> {
             assert input != null;
             return input.destination.equals(node);
         };
     }
 
-    public static <T> Predicate<DirectedEdge<T>> competesWith(final Set<DirectedEdge<T>> required) {
-        final ImmutableMap.Builder<T, T> requiredSourceByDestinationBuilder = ImmutableMap.builder();
-        for (DirectedEdge<T> edge : required) {
+    public static Predicate<DirectedEdge> competesWith(final Set<DirectedEdge> required) {
+        final ImmutableMap.Builder<Node, Node> requiredSourceByDestinationBuilder = ImmutableMap.builder();
+        for (DirectedEdge edge : required) {
             requiredSourceByDestinationBuilder.put(edge.destination, edge.source);
         }
-        final Map<T, T> requiredSourceByDest = requiredSourceByDestinationBuilder.build();
+        final Map<Node, Node> requiredSourceByDest = requiredSourceByDestinationBuilder.build();
         return input -> {
             assert input != null;
             return (requiredSourceByDest.containsKey(input.destination) &&
@@ -102,14 +98,14 @@ public class DirectedEdge<V> {
         };
     }
 
-    public static <T> Predicate<DirectedEdge<T>> isAutoCycle() {
+    public static Predicate<DirectedEdge> isAutoCycle() {
         return input -> {
             assert input != null;
             return input.source.equals(input.destination);
         };
     }
 
-    public static <T> Predicate<DirectedEdge<T>> isIn(final Set<DirectedEdge<T>> banned) {
+    public static Predicate<DirectedEdge> isIn(final Set<DirectedEdge> banned) {
         return input -> banned.contains(input);
     }
 }

@@ -22,6 +22,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * The unique id of a node.
@@ -41,13 +42,21 @@ public class NodeId {
     private final NodeType nodeType;
     private final Set<Variable> vars;
 
-    public NodeId(NodeType nodeType, Set<Variable> vars) {
+    private NodeId(NodeType nodeType, Set<Variable> vars) {
         this.nodeType = nodeType;
         this.vars = vars;
     }
 
-    public NodeId(NodeType nodeType, Variable var) {
-        this(nodeType, Collections.singleton(var));
+    public static NodeId of(NodeType nodeType, Set<Variable> vars) {
+        return new NodeId(nodeType, vars);
+    }
+
+    public static NodeId of(NodeType nodeType, Variable var) {
+        return new NodeId(nodeType, Collections.singleton(var));
+    }
+
+    public Set<Variable> getVars() {
+        return vars;
     }
 
     @Override
@@ -70,6 +79,7 @@ public class NodeId {
 
     @Override
     public String toString() {
-        return nodeType + vars.toString();
+        String varNames = vars.stream().map(var -> var.symbol()).collect(Collectors.joining(","));
+        return nodeType + varNames;
     }
 }

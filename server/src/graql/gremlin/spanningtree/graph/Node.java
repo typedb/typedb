@@ -43,24 +43,12 @@ public class Node {
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
-    private Node(NodeId nodeId) {
+    public Node(NodeId nodeId) {
         this.nodeId = nodeId;
     }
 
-    public static Node addIfAbsent(NodeId.NodeType nodeType, Variable var, Map<NodeId, Node> nodes) {
-        NodeId nodeId = new NodeId(nodeType, var);
-        if (!nodes.containsKey(nodeId)) {
-            nodes.put(nodeId, new Node(nodeId));
-        }
-        return nodes.get(nodeId);
-    }
-
-    public static Node addIfAbsent(NodeId.NodeType nodeType, Set<Variable> vars, Map<NodeId, Node> nodes) {
-        NodeId nodeId = new NodeId(nodeType, vars);
-        if (!nodes.containsKey(nodeId)) {
-            nodes.put(nodeId, new Node(nodeId));
-        }
-        return nodes.get(nodeId);
+    public NodeId getNodeId() {
+        return nodeId;
     }
 
     public Set<Fragment> getFragmentsWithoutDependency() {

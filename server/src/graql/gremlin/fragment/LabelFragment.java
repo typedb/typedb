@@ -79,7 +79,6 @@ public abstract class LabelFragment extends Fragment {
         return true;
     }
 
-    @Override
     public Long getShardCount(TransactionOLTP tx) {
         return labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
