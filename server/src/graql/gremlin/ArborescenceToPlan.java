@@ -17,7 +17,7 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.NodesUtil.nodeToPlanFragments;
 
-public class GreedyTreeToPlan {
+public class ArborescenceToPlan {
 
     // standard tree traversal from the root node
     // always visit the branch/node with smaller cost

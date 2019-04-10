@@ -102,31 +102,31 @@ public class GreedyTraversalPlan {
         Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
         allFragments.addAll(inferredFragments);
 
-        ImmutableMap<NodeId, Node> allNodes = buildNodesWithDependencies(allFragments);
+        // convert fragments into nodes - some fragments create virtual middle nodes to ensure the Janus edge is traversed
+        ImmutableMap<NodeId, Node> queryGraphNodes = buildNodesWithDependencies(allFragments);
 
         // it's possible that some (or all) fragments are disconnected, e.g. $x isa person; $y isa dog;
-        // these are valid conjunctions, but plan separately for them
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
 
-        // build a query plan for each query subgraph (connected fragment set) separately
+        // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
             // collect the mapping from directed bedge back to fragments -- inverse operation of creating virtual middle nodes
-            Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, allNodes);
+            Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
 
-            // compute a minimum spanning tree, if we can
-            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, allNodes, tx);
+            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes, tx);
             if (subgraphArborescence != null) {
-                List<Fragment> subplan = GreedyTreeToPlan.greedyTraversal(subgraphArborescence, allNodes, middleNodeFragmentMapping);
+                List<Fragment> subplan = ArborescenceToPlan.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
             }
 
+            // find and include all the nodes not touched in the MST in the plan
             Set<Node> connectedNodes = connectedFragments.stream()
                     .flatMap(fragment -> fragment.getNodes().stream())
-                    .map(node -> allNodes.get(node.getNodeId()))
+                    .map(node -> queryGraphNodes.get(node.getNodeId()))
                     .collect(Collectors.toSet());
-            plan.addAll(fragmentsForUnvisitedNodes(allNodes, connectedNodes));
+            plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, connectedNodes));
         }
-        plan.addAll(fragmentsForUnvisitedNodes(allNodes, allNodes.values()));
+        plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values()));
 
         LOG.trace("Greedy Plan = {}", plan);
         return plan;
@@ -184,6 +184,17 @@ public class GreedyTraversalPlan {
         } else {
             return null;
         }
+    }
+
+    private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
+                                                                  Set<Fragment> edgeFragmentSet) {
+
+        final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
+        // add each edge together with its weight
+        edgeFragmentSet.stream()
+                .flatMap(fragment -> fragment.directedEdges(allNodes).stream())
+                .forEach(weightedDirectedEdge -> weightedGraph.add(weightedDirectedEdge));
+        return weightedGraph;
     }
 
     private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
@@ -301,17 +312,6 @@ public class GreedyTraversalPlan {
             // recursively process all the sub fragments
             updateFixedCostSubsReachableByIndex(allNodes, nodesWithFixedCost, fragments);
         }
-    }
-
-    private static Set<Weighted<DirectedEdge>> buildWeightedGraph(Map<NodeId, Node> allNodes,
-                                                                  Set<Fragment> edgeFragmentSet) {
-
-        final Set<Weighted<DirectedEdge>> weightedGraph = new HashSet<>();
-        // add each edge together with its weight
-        edgeFragmentSet.stream()
-                .flatMap(fragment -> fragment.directedEdges(allNodes).stream())
-                .forEach(weightedDirectedEdge -> weightedGraph.add(weightedDirectedEdge));
-        return weightedGraph;
     }
 
 }

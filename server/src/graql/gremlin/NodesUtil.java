@@ -76,7 +76,7 @@ public class NodesUtil {
         });
     }
 
-    // adding a node's fragments to plan, updating dependants' dependency map
+    // convert a Node to a sub-plan, updating dependants' dependency map
     static List<Fragment> nodeToPlanFragments(Node node, Map<NodeId, Node> nodes, boolean visited) {
         List<Fragment> subplan = new LinkedList<>();
         if (!visited) {
