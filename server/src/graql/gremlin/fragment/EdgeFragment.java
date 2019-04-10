@@ -33,7 +33,8 @@ import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 /**
  * Fragments that represent JanusGraph edges have some different properties when it comes to query planning
  * Most importantly, they create a virtual middle node in the Query Planner. Each subtype of EdgeFragment
- * has it's own definiton of the middle node's ID, which is a required
+ * has it's own definiton of the middle node's ID. However, they all have the same implementation of
+ * methods to do with building the Query Planning Graph
  */
 public abstract class EdgeFragment extends Fragment {
 

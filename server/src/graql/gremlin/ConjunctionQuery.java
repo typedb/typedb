@@ -132,11 +132,6 @@ class ConjunctionQuery {
             traversals.addAll(newTraversals);
         });
 
-        if (!traversals.isEmpty()) {
-            return traversals.stream();
-        } else {
-            // If this variable has no properties, only confirm that it is not internal and nothing else.
-            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(null, start));
-        }
+        return traversals.stream();
     }
 }
