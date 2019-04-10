@@ -182,22 +182,7 @@ public abstract class Fragment {
     }
 
 
-    final Set<Weighted<DirectedEdge>> directedEdges(NodeId.NodeType nodeType, Map<NodeId, Node> nodes) {
 
-        // this call to `directedEdges` handles converting janus edges that the user cannot address
-        // (ie. not role edges), into edges with a middle node to force the query planner to traverse to this middle
-        // node that represents the actual Janus edge
-        // since the middle node cannot be addressed it does not have a variable, so we create a new ID for it
-        // as the combination of start() and end() with the type
-
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
-        Node middle = nodes.get(NodeId.of(nodeType, Sets.newHashSet(start(), end())));
-
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
 
 
     /**

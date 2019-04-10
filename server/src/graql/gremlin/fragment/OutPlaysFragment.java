@@ -40,7 +40,7 @@ import java.util.Set;
 import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
-abstract class OutPlaysFragment extends Fragment {
+abstract class OutPlaysFragment extends EdgeFragment {
 
     @Override
     public abstract Variable end();
@@ -84,15 +84,7 @@ abstract class OutPlaysFragment extends Fragment {
     }
 
     @Override
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.PLAYS, new HashSet<>(Arrays.asList(start(), end()))));
-        // directed edge: middle -> start
-        return new Pair<>(middle, start);
-    }
-
-    @Override
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
-        return directedEdges(NodeId.NodeType.PLAYS, nodes);
+    NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeType.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
     }
 }

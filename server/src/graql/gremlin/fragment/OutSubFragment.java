@@ -42,7 +42,7 @@ import java.util.Set;
  */
 
 @AutoValue
-public abstract class OutSubFragment extends Fragment {
+public abstract class OutSubFragment extends EdgeFragment {
     @Override
     public abstract Variable end();
 
@@ -85,15 +85,7 @@ public abstract class OutSubFragment extends Fragment {
     }
 
     @Override
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.SUB, new HashSet<>(Arrays.asList(start(), end()))));
-        // directed edge: middle -> start
-        return new Pair<>(middle, start);
-    }
-
-    @Override
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
-        return directedEdges(NodeId.NodeType.SUB, nodes);
+    NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeType.SUB, new HashSet<>(Arrays.asList(start(), end())));
     }
 }
