@@ -46,7 +46,6 @@ public class NodesUtil {
             }
         }
         return middleNodeFragmentMapping;
-
     }
 
     static ImmutableMap<NodeId, Node> buildNodesWithDependencies(Set<Fragment> fragments) {
