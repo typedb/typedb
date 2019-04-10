@@ -33,17 +33,17 @@ public class NodesUtil {
 
     static ImmutableMap<NodeId, Node> buildNodesWithDependencies(Set<Fragment> fragments) {
         // TODO handling building the dependencies in each connected subgraph doesn't work, because dependencies can step across disconnected fragment sets
-        ImmutableMap.Builder<NodeId, Node> nodeBuilder = ImmutableMap.builder();
+        Map<NodeId, Node> nodes = new HashMap<>();
 
         fragments.forEach(fragment ->
-                fragment.getNodes().forEach(node -> nodeBuilder.put(node.getNodeId(), node))
+                fragment.getNodes().forEach(node -> nodes.put(node.getNodeId(), node))
         );
 
-        ImmutableMap<NodeId, Node> nodes = nodeBuilder.build();
+        ImmutableMap<NodeId, Node> immutableNodes = ImmutableMap.copyOf(nodes);
 
         // build the dependencies between nodes for use between disconnected fragment sets too
-        buildDependenciesBetweenNodes(fragments, nodes);
-        return nodes;
+        buildDependenciesBetweenNodes(fragments, immutableNodes);
+        return immutableNodes;
     }
 
     private static void buildDependenciesBetweenNodes(Set<Fragment> allFragments, Map<NodeId, Node> allNodes) {
