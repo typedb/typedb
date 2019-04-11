@@ -190,6 +190,9 @@ dependencies:
       - "ch.qos.logback:logback-classic"
       - "ch.qos.logback:logback-core"
       - "it.unimi.dsi:fastutil"
+      - "com.addthis.metrics:reporter-config3" # include this if we need to debug cassandra
+      - "org.eclipse.jdt.core.compiler:ecj"
+
     cassandra-thrift:
       version: "3.11.3"
       lang: java
