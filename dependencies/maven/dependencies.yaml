@@ -78,13 +78,6 @@ dependencies:
       processorClasses:
       - "com.google.auto.value.processor.AutoValueProcessor"
 
-  com.google.cloud.bigtable:
-    bigtable-hbase-1.0:
-      version: "0.9.5.1"
-      lang: java
-      exclude:
-      - "org.apache.hadoop:hadoop-common"
-
   com.google.code.findbugs:
     annotations:
       version: "3.0.1"
@@ -187,11 +180,6 @@ dependencies:
   junit:
     junit:
       version: "4.12"
-      lang: java
-
-  net.lingala.zip4j:
-    zip4j:
-      version: "1.3.2"
       lang: java
 
   org.apache.cassandra:
@@ -373,25 +361,9 @@ dependencies:
       version: "2.6.4"
       lang: java
 
-  org.openjdk.jmh:
-    jmh-core:
-      version: "1.19"
-      lang: java
-    jmh-generator-annprocess:
-      version: "1.19"
-      lang: java
-
   org.scala-lang:
     scala-library:
       version: "2.11.8"
-      lang: java
-    scalap:
-      version: "2.11.0"
-      lang: java
-
-  org.sharegov:
-    mjson:
-      version: "1.4.0"
       lang: java
 
   org.slf4j:
@@ -402,9 +374,6 @@ dependencies:
       version: "1.7.20"
       lang: java
     log4j-over-slf4j:
-      version: "1.7.20"
-      lang: java
-    slf4j-simple:
       version: "1.7.20"
       lang: java
 
