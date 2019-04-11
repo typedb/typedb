@@ -73,7 +73,7 @@ class ConjunctionQuery {
         // Get all variable names mentioned in non-starting fragments
         Set<Variable> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
-                .filter(fragment -> !fragment.isStartingFragment())
+                .filter(fragment -> !fragment.validStartIfDisconnected())
                 .flatMap(fragment -> fragment.vars().stream())
                 .collect(toImmutableSet());
 
@@ -85,10 +85,14 @@ class ConjunctionQuery {
 
         Set<Variable> validNames = Sets.difference(names, dependencies);
 
+        /*
+        Interesting here: NotInternalFragment is introduced for every fragment
+         */
+
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
                 .filter(set -> set.stream().anyMatch(
-                        fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.start())
+                        fragment -> !fragment.validStartIfDisconnected() || !validNames.contains(fragment.start())
                 ))
                 .collect(toSet());
 

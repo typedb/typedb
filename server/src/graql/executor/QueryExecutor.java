@@ -33,7 +33,7 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.server.exception.GraknServerException;
@@ -95,7 +95,6 @@ public class QueryExecutor {
 
         int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
 
-
         Stream<ConceptMap> answerStream;
 
         validateClause(matchClause);
@@ -105,7 +104,7 @@ public class QueryExecutor {
 
             int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
 
-            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+            GraqlTraversal graqlTraversal = TraversalPlanner.createTraversal(matchClause.getPatterns(), transaction);
 
             ServerTracing.closeScopedChildSpan(createTraversalSpanId);
 
@@ -117,7 +116,7 @@ public class QueryExecutor {
             ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
         } else {
 
-            int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+            int disjunctionSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
 
             Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
             answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
@@ -131,7 +130,17 @@ public class QueryExecutor {
 
     //TODO this should go into MatchClause
     private void validateClause(MatchClause matchClause){
+
         Disjunction<Conjunction<Pattern>> negationDNF = matchClause.getPatterns().getNegationDNF();
+
+        List<Statement> statementsWithoutProperties = negationDNF.getPatterns().stream()
+                .flatMap(p -> p.statements().stream())
+                .filter(statement -> statement.properties().size() == 0)
+                .collect(toList());
+        if (statementsWithoutProperties.size() != 0) {
+            throw GraqlQueryException.matchWithoutAnyProperties(statementsWithoutProperties.get(0));
+        }
+
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
                 .map(p -> Graql.and(Collections.singleton(p)))

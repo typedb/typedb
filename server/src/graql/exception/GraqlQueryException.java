@@ -90,6 +90,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(label, label));
     }
 
+    public static GraqlQueryException matchWithoutAnyProperties(Statement statement) {
+        return create("Require statement to have at least one property: `%s`", statement);
+    }
+
     public static GraqlQueryException kCoreOnRelationType(Label label) {
         return create("cannot compute coreness of relation type %s.", label.getValue());
     }
@@ -172,6 +176,8 @@ public class GraqlQueryException extends GraknException {
     public static GraqlQueryException insertNoExpectedProperty(String property, Statement var) {
         return create("missing expected property `%s` in `%s`", property, var);
     }
+
+
 
     /**
      * Thrown when attempting to insert a concept that already exists.

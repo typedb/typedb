@@ -29,6 +29,7 @@ java_test(
         "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "@graknlabs_graql//java:graql",
     ],
 )
