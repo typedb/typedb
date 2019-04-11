@@ -30,6 +30,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
@@ -70,6 +71,8 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
@@ -85,6 +88,7 @@ public class QueryExecutor {
 
     private final boolean infer;
     private final TransactionOLTP transaction;
+    private static final Logger LOG = LoggerFactory.getLogger(QueryExecutor.class);
 
     public QueryExecutor(TransactionOLTP transaction, boolean infer) {
         this.infer = infer;
@@ -95,34 +99,39 @@ public class QueryExecutor {
 
         int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
 
-
         Stream<ConceptMap> answerStream;
 
-        validateClause(matchClause);
+        try {
+            validateClause(matchClause);
 
-        if (!infer) {
-            // time to create the traversal plan
+            if (!infer) {
+                // time to create the traversal plan
 
-            int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
+                int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
 
-            GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
+                GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(matchClause.getPatterns(), transaction);
 
-            ServerTracing.closeScopedChildSpan(createTraversalSpanId);
+                ServerTracing.closeScopedChildSpan(createTraversalSpanId);
 
-            // time to convert plan into a answer stream
-            int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
+                // time to convert plan into a answer stream
+                int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
 
-            answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
 
-            ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
-        } else {
+                ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
+            } else {
 
-            int disjunctionSpanId= ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+                int disjunctionSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
 
-            Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
-            answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
+                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
 
-            ServerTracing.closeScopedChildSpan(disjunctionSpanId);
+                ServerTracing.closeScopedChildSpan(disjunctionSpanId);
+            }
+        }
+        catch(GraqlCheckedException e){
+            LOG.info(e.getMessage());
+            answerStream = Stream.empty();
         }
 
         ServerTracing.closeScopedChildSpan(createStreamSpanId);
