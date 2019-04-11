@@ -24,6 +24,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -70,8 +71,15 @@ abstract class InRelatesFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(NodeId.NodeType.RELATES, nodes, edges);
+    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node middle = new Node(NodeId.of(NodeId.NodeType.RELATES, new HashSet<>(Arrays.asList(start(), end()))));
+        // directed edge: middle -> start
+        return new Pair<>(middle, start);
+    }
+
+    @Override
+    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
+        return directedEdges(NodeId.NodeType.RELATES, nodes);
     }
 }

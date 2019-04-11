@@ -26,6 +26,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
@@ -97,8 +98,15 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     }
 
     @Override
-    public final Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
+    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node middle = nodes.get(NodeId.of(NodeId.NodeType.VAR, edge()));
+        // directed edge: middle -> start
+        return new Pair<>(middle, start);
+    }
+
+    @Override
+    public final Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
 
         // this is a somewhat special case, where the middle node being converted to a vertex
         // may be addressed by a variable
@@ -107,11 +115,6 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
         Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
         Node middle = nodes.get(NodeId.of(NodeId.NodeType.VAR, edge()));
         middle.setInvalidStartingPoint();
-
-        if (!edges.containsKey(middle)) {
-            edges.put(middle, new HashMap<>());
-        }
-        edges.get(middle).put(start, this);
 
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),

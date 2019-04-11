@@ -19,7 +19,6 @@
 package grakn.core.graql.gremlin.spanningtree.graph;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
@@ -29,10 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-
-import static com.google.common.collect.DiscreteDomain.integers;
-import static com.google.common.collect.Range.closedOpen;
 
 /**
  * Used for testing

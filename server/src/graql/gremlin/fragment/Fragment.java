@@ -26,6 +26,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -157,20 +158,31 @@ public abstract class Fragment {
     }
 
     /**
+     * Some fragments represent Edges in JanusGraph. Similar to `getNodes()`, a fake node is added
+     * in the middle for the query planning step. These middle nodes are connected with a directed edge uniquely to another node -
+     * this directed edge is therefore the mapping from (node,node) directed edge to the Fragment. This is used to
+     * convert the fake middle node back into a Fragment after query planning is complete.
+     * For pairs of nodes we may have two edges (node1, node2) and (node2, node1). These stem from the two
+     * fragments that are `Equivalent` in EquivalentFragmentSet - directionality is used to disambiguate which choice to use
+     * @param nodes
+     * @return
+     */
+    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+        return null;
+    }
+
+    /**
      * Convert the fragment to a set of weighted edges for query planning
      *
      * @param nodes all nodes in the query
-     * @param edges a mapping from edge(child, parent) to its corresponding fragment
      * @return a set of edges
      */
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
-                                                     Map<Node, Map<Node, Fragment>> edges) {
+    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
         return Collections.emptySet();
     }
 
-    final Set<Weighted<DirectedEdge>> directedEdges(NodeId.NodeType nodeType,
-                                                    Map<NodeId, Node> nodes,
-                                                    Map<Node, Map<Node, Fragment>> edgeToFragment) {
+
+    final Set<Weighted<DirectedEdge>> directedEdges(NodeId.NodeType nodeType, Map<NodeId, Node> nodes) {
 
         // this call to `directedEdges` handles converting janus edges that the user cannot address
         // (ie. not role edges), into edges with a middle node to force the query planner to traverse to this middle
@@ -182,17 +194,9 @@ public abstract class Fragment {
         Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
         Node middle = nodes.get(NodeId.of(nodeType, Sets.newHashSet(start(), end())));
 
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
         return Sets.newHashSet(
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
                 weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        if (!edgeToFragment.containsKey(child)) {
-            edgeToFragment.put(child, new HashMap<>());
-        }
-        edgeToFragment.get(child).put(parent, this);
     }
 
 

@@ -20,161 +20,159 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "graql-get-it",
-    test_class = "grakn.core.graql.query.GraqlGetIT",
+    size = "medium",
     srcs = ["GraqlGetIT.java"],
+    test_class = "grakn.core.graql.query.GraqlGetIT",
     deps = [
-        "//common:common",
-        "//concept:concept",
-        "//server:server",
+        "//common",
+        "//concept",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
-
         "@graknlabs_graql//java:graql",
     ],
-    size = "medium"
 )
 
 java_test(
     name = "graql-define-it",
-    test_class = "grakn.core.graql.query.GraqlDefineIT",
+    size = "medium",
     srcs = ["GraqlDefineIT.java"],
+    test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
-        "//common:common",
-        "//concept:concept",
-        "//server:server",
+        "//common",
+        "//concept",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    size = "medium"
 )
 
 java_test(
     name = "graql-delete-it",
-    test_class = "grakn.core.graql.query.GraqlDeleteIT",
+    size = "medium",
     srcs = ["GraqlDeleteIT.java"],
+    test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
-        "//common:common",
-        "//concept:concept",
-        "//server:server",
+        "//common",
+        "//concept",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
     ],
-    size = "medium"
 )
 
 java_test(
     name = "graql-insert-it",
-    test_class = "grakn.core.graql.query.GraqlInsertIT",
+    size = "medium",
     srcs = ["GraqlInsertIT.java"],
+    test_class = "grakn.core.graql.query.GraqlInsertIT",
     deps = [
-        "//common:common",
-        "//concept:concept",
-        "//server:server",
+        "//common",
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-
     ],
-    size = "medium"
 )
 
 java_test(
     name = "graql-undefine-it",
-    test_class = "grakn.core.graql.query.GraqlUndefineIT",
+    size = "large",
     srcs = ["GraqlUndefineIT.java"],
+    test_class = "grakn.core.graql.query.GraqlUndefineIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-
     ],
-    size = "large"
+)
+
+java_test(
+    name = "type-conversion-it",
+    size = "medium",
+    srcs = ["TypeConversionIT.java"],
+    test_class = "grakn.core.graql.query.TypeConversionIT",
+    deps = [
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "query-builder-it",
-    test_class = "grakn.core.graql.query.QueryBuilderIT",
+    size = "medium",
     srcs = ["QueryBuilderIT.java"],
+    test_class = "grakn.core.graql.query.QueryBuilderIT",
     deps = [
-        "@graknlabs_graql//java:graql",
-        "//server:server",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "medium"
 )
 
 java_test(
     name = "query-admin-it",
-    test_class = "grakn.core.graql.query.QueryAdminIT",
+    size = "medium",
     srcs = ["QueryAdminIT.java"],
+    test_class = "grakn.core.graql.query.QueryAdminIT",
     deps = [
-        "@graknlabs_graql//java:graql",
-        "//server:server",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "medium"
 )
 
 java_test(
     name = "query-error-it",
-    test_class = "grakn.core.graql.query.QueryErrorIT",
+    size = "medium",
     srcs = ["QueryErrorIT.java"],
+    test_class = "grakn.core.graql.query.QueryErrorIT",
     deps = [
-        "//common:common",
-        "//concept:concept",
-        "//server:server",
+        "//common",
+        "//concept",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-
     ],
-    size = "medium"
 )
 
 java_test(
     name = "query-planner-it",
-    test_class = "grakn.core.graql.query.QueryPlannerIT",
+    size = "medium",
     srcs = ["QueryPlannerIT.java"],
+    test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-
     ],
-    size = "medium"
 )
 
 checkstyle_test(
@@ -188,6 +186,7 @@ checkstyle_test(
         ":query-builder-it",
         ":query-admin-it",
         ":query-error-it",
-        ":query-planner-it"
-    ]
+        ":query-planner-it",
+        ":type-conversion-it",
+    ],
 )
