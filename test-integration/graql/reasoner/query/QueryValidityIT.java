@@ -75,28 +75,28 @@ public class QueryValidityIT {
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentConceptId_emptyResultReturned() throws GraqlQueryException{
+    @Test
+    public void whenQueryingForInexistentConceptId_emptyResultReturned(){
         String queryString = "match $x id 'V1337'; $y id 'V456'; ($x, $y); get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentEntityTypeId_emptyResultReturned() throws GraqlQueryException{
+    @Test
+    public void whenQueryingForInexistentEntityTypeId_emptyResultReturned(){
         String queryString = "match $x isa $type; $type id 'V1337'; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentRelationTypeId_emptyResultReturned() throws GraqlQueryException{
+    @Test
+    public void whenQueryingForInexistentRelationTypeId_emptyResultReturned(){
         String queryString = "match ($x, $y) isa $type; $type id 'V1337'; get;";
         String queryString2 = "match $r ($x, $y) isa $type; $r id 'V1337'; get;";
         assertThat(tx.execute(Graql.parse(queryString).asGet()), empty());
         assertThat(tx.execute(Graql.parse(queryString2).asGet()), empty());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentResourceId_emptyResultReturned() throws GraqlQueryException{
+    @Test
+    public void whenQueryingForInexistentResourceId_emptyResultReturned(){
         String queryString = "match $x has name $y; $x id 'V1337'; get;";
         String queryString2 = "match $x has name $y; $y id 'V1337'; get;";
         String queryString3 = "match $x has name $y via $r; $r id 'V1337'; get;";
