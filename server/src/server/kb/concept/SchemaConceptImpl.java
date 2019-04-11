@@ -35,8 +35,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
-
 /**
  * Schema Specific Concept
  * Allows you to create schema or ontological elements.
@@ -185,7 +183,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     @SuppressWarnings("unchecked")
     private Stream<T> nextSubLevel(T root) {
         return Stream.concat(Stream.of(root),
-                             SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
+                SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
     }
 
     /**
@@ -298,7 +296,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     @Override
     public String innerToString() {
         String message = super.innerToString();
-        message = message + " - Label [" + label() + "] - Abstract [" + isAbstract() + "] ";
+        message = message + " - Label [" + label() + "] ";
         return message;
     }
 }

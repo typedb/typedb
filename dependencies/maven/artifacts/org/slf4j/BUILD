@@ -51,18 +51,3 @@ java_library(
 )
 
 
-
-java_library(
-    name = "slf4j-simple",
-    exports = [
-        "//external:jar/org/slf4j/slf4j-simple"
-    ],
-    runtime_deps = [
-        ":slf4j-api"
-    ],
-    visibility = [
-        "//visibility:public"
-    ]
-)
-
-
