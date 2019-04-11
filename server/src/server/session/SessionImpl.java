@@ -71,12 +71,23 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, graphLock, new HadoopGraphFactory(config, keyspace));
+    }
+
+    /**
+     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * using provided Grakn configuration.
+     *
+     * @param keyspace to which keyspace the session should be bound to
+     * @param config   config to be used.
+     */
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, HadoopGraphFactory hadoopGraphFactory) {
         this.keyspace = keyspace;
         this.config = config;
         this.graphLock = graphLock;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
-        this.hadoopGraphFactory = new HadoopGraphFactory(this);
+        this.hadoopGraphFactory = hadoopGraphFactory;
         // Open Janus Graph
         this.graph = graph;
 
