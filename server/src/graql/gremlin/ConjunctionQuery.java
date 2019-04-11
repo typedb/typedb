@@ -85,10 +85,6 @@ class ConjunctionQuery {
 
         Set<Variable> validNames = Sets.difference(names, dependencies);
 
-        /*
-        Interesting here: NotInternalFragment is introduced for every fragment
-         */
-
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
                 .filter(set -> set.stream().anyMatch(
@@ -136,6 +132,11 @@ class ConjunctionQuery {
             traversals.addAll(newTraversals);
         });
 
-        return traversals.stream();
+        if (!traversals.isEmpty()) {
+            return traversals.stream();
+        } else {
+            // If this variable has no properties, only confirm that it is not internal and nothing else.
+            return Stream.of(EquivalentFragmentSets.notInternalFragmentSet(null, start));
+        }
     }
 }

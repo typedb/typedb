@@ -44,7 +44,7 @@ abstract class NotInternalFragment extends Fragment {
     }
 
     @Override
-    public boolean isStartingFragment() {
+    public boolean validStartIfDisconnected() {
         return true;
     }
 

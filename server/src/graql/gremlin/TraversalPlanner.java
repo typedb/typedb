@@ -63,11 +63,11 @@ import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 /**
  * Class for generating greedy traversal plans
  */
-public class GreedyTraversalPlan {
+public class TraversalPlanner {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(GreedyTraversalPlan.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
 
-    /**
+    /**```
      * Create a traversal plan.
      *
      * @param pattern a pattern to find a query plan for
@@ -115,7 +115,7 @@ public class GreedyTraversalPlan {
 
             Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes, tx);
             if (subgraphArborescence != null) {
-                List<Fragment> subplan = ArborescenceToPlan.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
+                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
             }
 

@@ -182,9 +182,6 @@ public abstract class Fragment {
     }
 
 
-
-
-
     /**
      * @param traversal the traversal to extend with this Fragment
      * @param tx     the graph to execute the traversal on
@@ -249,7 +246,7 @@ public abstract class Fragment {
      * A starting fragment is a fragment that can start a traversal.
      * If any other fragment is present that refers to the same variable, the starting fragment can be omitted.
      */
-    public boolean isStartingFragment() {
+    public boolean validStartIfDisconnected() {
         return false;
     }
 
