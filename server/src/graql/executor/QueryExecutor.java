@@ -316,9 +316,19 @@ public class QueryExecutor {
             if (concept.isSchemaConcept()) {
                 throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
             } else if (concept.isThing()) {
-                // if it's not inferred, we can delete it
-                if (!concept.asThing().isInferred()) {
-                    concept.delete();
+                try {
+                    // if it's not inferred, we can delete it
+                    if (!concept.asThing().isInferred()) {
+                        concept.delete();
+                    }
+                } catch (IllegalStateException janusVertexDeleted) {
+                    if (janusVertexDeleted.getMessage().contains("was removed")) {
+                        // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
+                        // With the ordering of deletes, this edge case should only be hit when relations play roles in relations
+                        LOG.debug("Trying to deleted concept that was already removed", janusVertexDeleted);
+                    } else {
+                        throw janusVertexDeleted;
+                    }
                 }
             } else {
                 throw GraknServerException.create("Unhandled concept type isn't a schema concept or a thing");
