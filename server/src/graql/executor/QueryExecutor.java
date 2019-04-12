@@ -323,7 +323,7 @@ public class QueryExecutor {
                     }
                 } catch (IllegalStateException janusVertexDeleted) {
                     if (janusVertexDeleted.getMessage().contains("was removed")) {
-                        // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
+                        // Tinkerpop throws this exception if we try to operate (including check `isInferred()`) on a vertex that was already deleted
                         // With the ordering of deletes, this edge case should only be hit when relations play roles in relations
                         LOG.debug("Trying to deleted concept that was already removed", janusVertexDeleted);
                     } else {
