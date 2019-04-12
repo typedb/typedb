@@ -307,6 +307,7 @@ public class QueryExecutor {
         // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
         List<Concept> conceptsToDelete = answers
                 .flatMap(answer -> answer.concepts().stream())
+                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it here
                 .sorted(Comparator.comparing(concept -> !concept.isRelation()))
                 .collect(Collectors.toList());
 
