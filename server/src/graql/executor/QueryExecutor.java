@@ -30,6 +30,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Relation;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.PropertyExecutor;
@@ -304,9 +305,10 @@ public class QueryExecutor {
 
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
-        Set<Concept> conceptsToDelete = answers
+        List<Concept> conceptsToDelete = answers
                 .flatMap(answer -> answer.concepts().stream())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
+                .collect(Collectors.toList());
 
         conceptsToDelete.forEach(concept -> {
             // a concept is either a schema concept or a thing
