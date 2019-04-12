@@ -131,7 +131,7 @@ public class QueryExecutor {
             }
         }
         catch(GraqlCheckedException e){
-            LOG.info(e.getMessage());
+            LOG.debug(e.getMessage());
             answerStream = Stream.empty();
         }
 
