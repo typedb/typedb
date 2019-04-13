@@ -47,12 +47,16 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     private final VertexElement vertexElement;
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
-        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+        Object currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
+        //ConceptId currentShardId = ConceptId.of(vertex().property(Schema.VertexProperty.CURRENT_SHARD));
+        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().hasId(currentShardId).next();
         return vertex().tx().factory().buildShard(shardVertex);
     });
     private final Cache<Long> shardCount = Cache.createSessionCache(this, Cacheable.number(), () -> shards().count());
-    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
+    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(),
+            //() -> ConceptId.of(vertex().property(Schema.VertexProperty.ID))
+            () -> Schema.conceptId(vertex().element())
+    );
 
     ConceptImpl(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
@@ -192,6 +196,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     public void createShard() {
         VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
+        //store current shard id as a property of the type
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
 

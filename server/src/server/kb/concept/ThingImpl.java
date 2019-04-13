@@ -246,7 +246,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                hasId(Schema.elementId(id())).
                 union(shortcutTraversal, attributeEdgeTraversal).toStream().
                 map(vertex -> vertex().tx().buildConcept(vertex));
     }
@@ -262,7 +262,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     private Stream<Relation> reifiedRelations(Role... roles) {
         GraphTraversal<Vertex, Vertex> traversal = vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue());
+                hasId(Schema.elementId(id()));
+                //has(Schema.VertexProperty.ID.name(), id().getValue());
 
         if (roles.length == 0) {
             traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());

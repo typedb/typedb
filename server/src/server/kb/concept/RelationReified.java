@@ -116,13 +116,15 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
         GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), this.id().getValue()).
+                hasId(Schema.elementId(this.id())).
+                //has(Schema.VertexProperty.ID.name(), this.id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
-                has(Schema.VertexProperty.ID.name(), toThing.id()).
+                hasId(Schema.elementId(toThing.id())).
+                //has(Schema.VertexProperty.ID.name(), toThing.id()).
                 select("edge");
 
         if (traversal.hasNext()) {
@@ -153,7 +155,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                hasId(Schema.elementId(id())).
+                //has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).

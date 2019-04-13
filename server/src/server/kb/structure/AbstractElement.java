@@ -41,22 +41,20 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  *            Schema.EdgeProperty
  */
 public abstract class AbstractElement<E extends Element, P extends Enum> {
-    private final String prefix;
     private final E element;
     private final TransactionOLTP tx;
 
-    AbstractElement(TransactionOLTP tx, E element, String prefix) {
+    AbstractElement(TransactionOLTP tx, E element) {
         this.tx = tx;
         this.element = element;
-        this.prefix = prefix;
     }
 
     public E element() {
         return element;
     }
 
-    public ElementId id() {
-        return ElementId.of(prefix + element().id());
+    public Object id() {
+        return element().id();
     }
 
     /**

@@ -29,7 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
     public EdgeElement(TransactionOLTP graknGraph, Edge e) {
-        super(graknGraph, e, Schema.PREFIX_EDGE);
+        super(graknGraph, e);
     }
 
     /**
