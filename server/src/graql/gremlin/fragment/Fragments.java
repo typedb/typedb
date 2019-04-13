@@ -222,7 +222,8 @@ public class Fragments {
     static <T> GraphTraversal<T, Vertex> isVertex(GraphTraversal<T, ? extends Element> traversal) {
         // This cast is safe because we filter only to vertices
         //noinspection unchecked
-        return (GraphTraversal<T, Vertex>) traversal.has(Schema.VertexProperty.ID.name());
+        //return (GraphTraversal<T, Vertex>) traversal.has(Schema.VertexProperty.ID.name());
+        return (GraphTraversal<T, Vertex>) traversal.filter(e -> e.get() instanceof Vertex);//.hasLabel(Schema.EdgeLabel.ATTRIBUTE.name());
     }
 
     /**
@@ -231,7 +232,8 @@ public class Fragments {
     static <T> GraphTraversal<T, Edge> isEdge(GraphTraversal<T, ? extends Element> traversal) {
         // This cast is safe because we filter only to edges
         //noinspection unchecked
-        return (GraphTraversal<T, Edge>) traversal.hasNot(Schema.VertexProperty.ID.name());
+        //return (GraphTraversal<T, Edge>) traversal.hasNot(Schema.VertexProperty.ID.name());
+        return (GraphTraversal<T, Edge>) traversal.filter(e -> e.get() instanceof Edge);
     }
 
     static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {

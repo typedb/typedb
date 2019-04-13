@@ -185,6 +185,7 @@ public class BenchmarkSmallIT {
         final int N = 10000;
 
         Pattern pattern = Graql.parsePattern("{$x isa person; $x has identifier $r;};");
+        //Pattern pattern = Graql.parsePattern("{$x isa person;};");
         Set<Variable> vars = pattern.variables();
 
         try(SessionImpl session = prepareSession(N)) {
@@ -195,11 +196,11 @@ public class BenchmarkSmallIT {
                 //System.out.println("traversal:\n" + traversal.getGraphTraversal(tx, vars));
 
                 //generic query
-                /*
-                long start = System.currentTimeMillis();
-                //List<ConceptMap> answers = tx.execute(Graql.match(pattern), false);
-                System.out.println("exec time via graql; " + (System.currentTimeMillis() - start));
 
+                long start = System.currentTimeMillis();
+                List<ConceptMap> answers = tx.execute(Graql.match(pattern), false);
+                System.out.println("exec time via graql; " + (System.currentTimeMillis() - start));
+                /*
                 start = System.currentTimeMillis();
                 tx.getEntityType("person").instances()
                 .forEach(person -> {
@@ -212,7 +213,7 @@ public class BenchmarkSmallIT {
 
                 printTimes();
                 */
-                //assertEquals(N, answers.size());
+                assertEquals(N, answers.size());
             }
         }
 /*
