@@ -44,11 +44,13 @@ public class OutPlaysFragmentTest {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 
+        GraphTraversal<Object, Vertex> expected = __.V()
+                .filter(e -> e.get() instanceof Vertex)
+                .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())),
+                        __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.out(SUB.getLabel())).emit())
+                .unfold()
+                .out(PLAYS.getLabel());
         // Make sure we check this is a vertex, then traverse upwards subs once and plays
-        assertThat(traversal, is(__.V()
-                .has(Schema.VertexProperty.ID.name())
-                .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.out(SUB.getLabel())).emit()).unfold()
-                .out(PLAYS.getLabel())
-        ));
+        assertThat(traversal, is(expected));
     }
 }

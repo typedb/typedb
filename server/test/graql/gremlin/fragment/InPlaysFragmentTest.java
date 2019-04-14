@@ -46,7 +46,6 @@ public class InPlaysFragmentTest {
 
         // Make sure we check this is a vertex, then traverse plays and downwards subs once
         assertThat(traversal, is(__.V()
-                .has(Schema.VertexProperty.ID.name())
                 .in(PLAYS.getLabel())
                 .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.in(SUB.getLabel())).emit()).unfold()
         ));

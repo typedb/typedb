@@ -313,7 +313,7 @@ public final class ElementFactory {
         Objects.requireNonNull(conceptId);
         Vertex vertex = graph.addVertex(baseType.name());
         String newConceptId = conceptId.getValue();
-        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
+        //vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
         tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
