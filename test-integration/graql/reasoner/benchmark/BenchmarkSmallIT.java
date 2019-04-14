@@ -102,22 +102,22 @@ public class BenchmarkSmallIT {
         System.out.println("    AttributeTypeImpl.fetchAttributeTime: " + AttributeTypeImpl.fetchAttributeTime);
         System.out.println("attachAttributeTime: " + attachAttributeTime);
         System.out.println();
-
+*/
 
 
         System.out.println("addInstance::instanceAdditions: " + TypeImpl.instanceAdditions);
         System.out.println("addInstance::preCheckTime: " + TypeImpl.preCheckTime);
         System.out.println("addInstance::cacheTime: " + TypeImpl.cacheCheckTime);
         System.out.println("addInstance::addVertexElementTime: " + TypeImpl.addVertexElementTime);
-        System.out.println("    ElementFactory.addVertexTime: " + ElementFactory.addVertexTime);
-        System.out.println("    ElementFactory.assignVertexIdTime: " + ElementFactory.assignVertexIdTime);
-        System.out.println("    ElementFactory.vertexAdditions: " + ElementFactory.vertexAdditions);
+        //System.out.println("    ElementFactory.addVertexTime: " + ElementFactory.addVertexTime);
+        //System.out.println("    ElementFactory.assignVertexIdTime: " + ElementFactory.assignVertexIdTime);
+        //System.out.println("    ElementFactory.vertexAdditions: " + ElementFactory.vertexAdditions);
         System.out.println("addInstance::produceInstanceTime: " + TypeImpl.produceInstanceTime);
-        System.out.println("    ThingImpl.setTypeTime: " + ThingImpl.setTypeTime);
-        System.out.println("    AbstractElement.getPropertyTime: " + AbstractElement.getPropertyTime);
+        //System.out.println("    ThingImpl.setTypeTime: " + ThingImpl.setTypeTime);
+        //System.out.println("    AbstractElement.getPropertyTime: " + AbstractElement.getPropertyTime);
         System.out.println();
 
- */
+
         System.out.println("openTxTime: " + openTxTime);
         System.out.println("schemaTime: " + schemaTime);
         System.out.println("commitTime: " + commitTime);

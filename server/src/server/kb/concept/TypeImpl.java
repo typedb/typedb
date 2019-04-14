@@ -83,6 +83,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return (TypeImpl<X, Y>) type;
     }
 
+    public static long addVertexElementTime = 0;
+    public static long produceInstanceTime = 0;
+    public static long preCheckTime = 0;
+    public static long cacheCheckTime = 0;
+    public static long instanceAdditions = 0;
+
     /**
      * Utility method used to create an instance of this type
      *
@@ -91,17 +97,30 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @return A new instance
      */
     V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred) {
+        long start = System.currentTimeMillis();
         preCheckForInstanceCreation();
 
         if (isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
+        preCheckTime += System.currentTimeMillis() - start;
 
+        start = System.currentTimeMillis();
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
+        addVertexElementTime += System.currentTimeMillis() - start;
+
+        instanceAdditions++;
+
+        start = System.currentTimeMillis();
         vertex().tx().ruleCache().ackTypeInstance(this);
         if (!Schema.MetaSchema.isMetaLabel(label())) {
             vertex().tx().cache().addedInstance(id());
             if (isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
+        cacheCheckTime += System.currentTimeMillis() - start;
+
+        start = System.currentTimeMillis();
         V instance = producer.apply(instanceVertex, getThis());
+        produceInstanceTime += System.currentTimeMillis() - start;
+
         assert instance != null : "producer should never return null";
         return instance;
     }
