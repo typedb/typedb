@@ -299,6 +299,7 @@ public final class ElementFactory {
         return new VertexElement(tx, vertex);
     }
 
+    public static long assignVertexIdPropertyTime = 0;
     /**
      * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
      * @param baseType   The Schema.BaseType
@@ -310,7 +311,10 @@ public final class ElementFactory {
     public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
         Objects.requireNonNull(conceptId);
         Vertex vertex = graph.addVertex(baseType.name());
+
+        long start = System.currentTimeMillis();
         vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
+        assignVertexIdPropertyTime += System.currentTimeMillis() - start;
         tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }

@@ -110,7 +110,7 @@ public class BenchmarkSmallIT {
         System.out.println("addInstance::cacheTime: " + TypeImpl.cacheCheckTime);
         System.out.println("addInstance::addVertexElementTime: " + TypeImpl.addVertexElementTime);
         //System.out.println("    ElementFactory.addVertexTime: " + ElementFactory.addVertexTime);
-        //System.out.println("    ElementFactory.assignVertexIdTime: " + ElementFactory.assignVertexIdTime);
+        System.out.println("    ElementFactory.assignVertexIdPropertyTime: " + ElementFactory.assignVertexIdPropertyTime);
         //System.out.println("    ElementFactory.vertexAdditions: " + ElementFactory.vertexAdditions);
         System.out.println("addInstance::produceInstanceTime: " + TypeImpl.produceInstanceTime);
         //System.out.println("    ThingImpl.setTypeTime: " + ThingImpl.setTypeTime);

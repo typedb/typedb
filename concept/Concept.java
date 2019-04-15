@@ -53,7 +53,7 @@ public interface Concept {
     @CheckReturnValue
     ConceptId id();
 
-    Object elementId();
+    default Object elementId(){ return id();}
 
     //------------------------------------- Other ---------------------------------
 
