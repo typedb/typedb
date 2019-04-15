@@ -54,9 +54,23 @@ public class NodesUtil {
 
         // build in a map using a map to squash duplicates
         Map<NodeId, Node> nodes = new HashMap<>();
-        fragments.forEach(fragment ->
-                fragment.getNodes().forEach(node -> nodes.put(node.getNodeId(), node))
-        );
+
+        for (Fragment fragment : fragments) {
+            Set<Node> fragmentNodes = fragment.getNodes();
+            for (Node node : fragmentNodes) {
+                NodeId nodeId = node.getNodeId();
+                nodes.merge(nodeId, node, (node1, node2) -> {
+                    // TODO choose the node that is NOT a valid starting point if either is not
+                    // otherwise it doesn't matter
+                    // key point: if any fragment indicates a node is not a valid starting point, it never is!
+                    return null;
+                })
+            }
+        }
+
+//        fragments.forEach(fragment ->
+//                fragment.getNodes().forEach(node -> nodes.put(node.getNodeId(), node))
+//        );
 
         // convert to immutable map
         ImmutableMap<NodeId, Node> immutableNodes = ImmutableMap.copyOf(nodes);
