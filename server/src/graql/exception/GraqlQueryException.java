@@ -35,6 +35,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
+import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static grakn.core.common.exception.ErrorMessage.INSERT_RECURSIVE;
@@ -92,6 +93,10 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException matchWithoutAnyProperties(Statement statement) {
         return create("Require statement to have at least one property: `%s`", statement);
+    }
+
+    public static GraqlQueryException unboundComparisonVariables(Set<Variable> unboundVariables) {
+        return GraqlQueryException.create("Variables used in comparisons cannot be unbounded %s", unboundVariables.toString());
     }
 
     public static GraqlQueryException kCoreOnRelationType(Label label) {

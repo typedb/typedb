@@ -20,6 +20,8 @@ package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
@@ -36,6 +38,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -268,13 +271,34 @@ public class PatternIT {
         assertFalse(result1.isEmpty());
 
         Set<Concept> result2 = tx.stream(Graql.match(
-                var("x").isa("movie").has("title", var("y")),
-                var("y")).get("x"))
+                var("x").isa("movie").has("title", var("y"))).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(result2.isEmpty());
 
         result2.removeAll(result1);
         assertEquals(1, result2.size());
+    }
+
+
+    @Test
+    public void testStatementsWithoutPropertyThrows() {
+        // empty `match $x; get;` not allowed
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage("Require statement to have at least one property");
+        List<ConceptMap> answers = tx.execute(Graql.match(var("x")).get());
+    }
+
+    @Test
+    public void testUnboundComparisonThrows() {
+        // value comparison
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage("Variables used in comparisons cannot be unbound");
+        List<ConceptMap> answers = tx.execute(Graql.match(var("x").neq(var("y"))).get());
+
+        // concept comparison
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage("Variables used in comparisons cannot be unbound");
+        answers = tx.execute(Graql.match( var("y").not("x")).get());
     }
 
     private void assertExceptionThrown(Consumer<String> consumer, String varName) {

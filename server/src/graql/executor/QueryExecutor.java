@@ -35,7 +35,9 @@ import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
+import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -53,6 +55,11 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,10 +73,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
@@ -129,10 +132,11 @@ public class QueryExecutor {
     }
 
     //TODO this should go into MatchClause
-    private void validateClause(MatchClause matchClause){
+    private void validateClause(MatchClause matchClause) {
 
         Disjunction<Conjunction<Pattern>> negationDNF = matchClause.getPatterns().getNegationDNF();
 
+        // assert none of the statements have no properties (eg. `match $x; get;`)
         List<Statement> statementsWithoutProperties = negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
                 .filter(statement -> statement.properties().size() == 0)
@@ -140,6 +144,8 @@ public class QueryExecutor {
         if (statementsWithoutProperties.size() != 0) {
             throw GraqlQueryException.matchWithoutAnyProperties(statementsWithoutProperties.get(0));
         }
+
+        validateComparisons(negationDNF);
 
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
@@ -149,8 +155,35 @@ public class QueryExecutor {
             boolean containsNegation = negationDNF.getPatterns().stream()
                     .flatMap(p -> p.getPatterns().stream())
                     .anyMatch(Pattern::isNegation);
-            if (containsNegation){
+            if (containsNegation) {
                 throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
+            }
+        }
+    }
+
+    public void validateComparisons(Disjunction<Conjunction<Pattern>> negationDNF) {
+        // comparisons (ValueProperty and NotEqual, similar to !== and !=) must only use variables that are also used outside of comparisons
+
+        // we convert to reasoner representation of queries because they utilise a standard format
+        // and are much simpler to query for the usage of specific variables
+        for (Conjunction<Pattern> conjunction : negationDNF.getPatterns()) {
+            ResolvableQuery resolvable = ReasonerQueries.resolvable(conjunction, transaction);
+
+            Set<Variable> variablesInComparisons = resolvable.getAtoms(NeqPredicate.class)
+                    .flatMap(predicate -> predicate.getVarNames().stream())
+                    .collect(toSet());
+
+            Set<Variable> variablesNotInComparisons = resolvable.getAtoms().stream()
+                    .filter(predicate -> ! (predicate instanceof NeqPredicate))
+                    .flatMap(predicate -> predicate.getVarNames().stream())
+                    .collect(toSet());
+
+            // remove the variables not in comparisons and only keep those that are defined in the query and not auto generated
+            Set<Variable> unboundComparisonVariables = Sets.difference(variablesInComparisons, variablesNotInComparisons);
+            Set<Variable> unboundOriginalComparisonVariables = Sets.intersection(unboundComparisonVariables, conjunction.variables());
+
+            if (unboundOriginalComparisonVariables.size() != 0) {
+                throw GraqlQueryException.unboundComparisonVariables(unboundComparisonVariables);
             }
         }
     }
@@ -227,7 +260,7 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> insert(GraqlInsert query) {
-        int createExecSpanId= ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
+        int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
 
 
         Collection<Statement> statements = query.statements().stream()
@@ -362,7 +395,7 @@ public class QueryExecutor {
 
     public Stream<AnswerGroup<Numeric>> get(GraqlGet.Group.Aggregate query) {
         return get(get(query.group().query()), query.group().var(),
-                     answers -> AggregateExecutor.aggregate(answers, query.method(), query.var())
+                answers -> AggregateExecutor.aggregate(answers, query.method(), query.var())
         ).stream();
     }
 
