@@ -288,7 +288,6 @@ public final class ElementFactory {
         Vertex vertex = graph.addVertex(baseType.name());
         String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
-        tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 
@@ -303,7 +302,6 @@ public final class ElementFactory {
         Vertex vertex = graph.addVertex(baseType.name());
         String newConceptId = conceptId.getValue();
         vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
-        tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 }

@@ -36,7 +36,7 @@ public interface CacheOwner {
     }
 
     /**
-     * @return all the caches beloning to the CacheOwner
+     * @return all the caches belonging to the CacheOwner
      */
     Collection<Cache> caches();
 
@@ -52,12 +52,5 @@ public interface CacheOwner {
      */
     default void registerCache(Cache cache) {
         caches().add(cache);
-    }
-
-    /**
-     * Flushes the internal transaction caches so they can refresh with persisted graph
-     */
-    default void txCacheFlush() {
-        caches().forEach(Cache::flush);
     }
 }
