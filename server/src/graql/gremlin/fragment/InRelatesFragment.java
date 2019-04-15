@@ -62,15 +62,6 @@ abstract class InRelatesFragment extends EdgeFragment {
     }
 
     @Override
-    public Set<Node> getNodes() {
-        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.RELATES, new HashSet<>(Arrays.asList(start(), end()))));
-        middle.setInvalidStartingPoint();
-        return Sets.newHashSet(start, end, middle);
-    }
-
-    @Override
     NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.NodeType.RELATES, new HashSet<>(Arrays.asList(start(), end())));
     }

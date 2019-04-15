@@ -52,12 +52,12 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
 
         return Fragments.union(traversal, ImmutableSet.of(
-                reifiedRelationTraversal(graph, vars),
-                edgeRelationTraversal(graph, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID, vars),
-                edgeRelationTraversal(graph, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID, vars)
+                reifiedRelationTraversal(tx, vars),
+                edgeRelationTraversal(tx, Direction.OUT, RELATION_ROLE_OWNER_LABEL_ID, vars),
+                edgeRelationTraversal(tx, Direction.IN, RELATION_ROLE_VALUE_LABEL_ID, vars)
         ));
     }
 

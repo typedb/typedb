@@ -145,13 +145,13 @@ public class PatternIT {
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertFalse(resultSet1.isEmpty());
 
-        Set<Statement> varSet11 = Sets.newHashSet(var("x"));
+        Set<Statement> varSet11 = Sets.newHashSet(var("x").isa("thing"));
         varSet11.addAll(varSet1);
         Set<Concept> resultSet11 = tx.stream(Graql.match(varSet11).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
 
-        varSet11.add(var("z"));
+        varSet11.add(var("z").isa("thing"));
         resultSet11 = tx.stream(Graql.match(varSet11).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertEquals(resultSet11, resultSet1);
@@ -181,7 +181,7 @@ public class PatternIT {
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertEquals(resultSet2, conj);
 
-        conj = tx.stream(Graql.match(or(var("x"), var("x"))).get("x"))
+        conj = tx.stream(Graql.match(or(var("x").isa("thing"), var("x").isa("thing"))).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertTrue(conj.size() > 1);
     }
@@ -232,7 +232,7 @@ public class PatternIT {
         resultSet2.addAll(resultSet1);
         assertEquals(resultSet2, conj);
 
-        conj = tx.stream(Graql.match(or(var("x"), var("x"))).get("x"))
+        conj = tx.stream(Graql.match(or(var("x").isa("thing"), var("x").isa("thing"))).get("x"))
                 .map(ans -> ans.get("x")).collect(Collectors.toSet());
         assertTrue(conj.size() > 1);
     }
