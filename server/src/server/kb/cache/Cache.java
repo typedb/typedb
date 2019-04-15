@@ -39,16 +39,13 @@ public class Cache<V> {
 
     //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
     private final ThreadLocal<V> valueTx = new ThreadLocal<>();
-    //Flag indicating if this Cache should be flushed into the Session cache upon being disposed of
-    private final boolean isSessionCache;
     //Flag indicating if this Cache can be cleared.
     // If this is false then the owner object must be deleted and garabe collected for the cache to die
     private final boolean isClearable;
     //Globally bound value which has already been persisted and acts as a shared component cache
     private Optional<V> valueGlobal = Optional.empty();
 
-    private Cache(CacheOwner owner, Cacheable<V> cacheable, boolean isSessionCache, boolean isClearable, Supplier<V> databaseReader) {
-        this.isSessionCache = isSessionCache;
+    private Cache(CacheOwner owner, Cacheable<V> cacheable, boolean isClearable, Supplier<V> databaseReader) {
         this.isClearable = isClearable;
         this.cacheable = cacheable;
         this.databaseReader = databaseReader;
@@ -59,14 +56,14 @@ public class Cache<V> {
      * Creates a Cache that will only exist within the context of a TransactionOLTP
      */
     public static Cache createTxCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
-        return new Cache(owner, cacheable, false, true, databaseReader);
+        return new Cache(owner, cacheable, true, databaseReader);
     }
 
     /**
      * Creates a Cache that will only flush to a central shared cache then the TransactionOLTP is disposed off
      */
     public static Cache createSessionCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
-        return new Cache(owner, cacheable, true, true, databaseReader);
+        return new Cache(owner, cacheable, true, databaseReader);
     }
 
     /**
@@ -74,7 +71,7 @@ public class Cache<V> {
      * When creating these types of Caches the only way to get rid of them is to remove the owner ConceptImpl
      */
     public static Cache createPersistentCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
-        return new Cache(owner, cacheable, true, false, databaseReader);
+        return new Cache(owner, cacheable, false, databaseReader);
     }
 
     /**
@@ -132,14 +129,4 @@ public class Cache<V> {
         }
     }
 
-    /**
-     * Takes the current value in the transaction cache if it is present and puts it in the valueGlobal reference so
-     * that it can be accessed via all transactions.
-     */
-    public void flush() {
-        if (isSessionCache && isPresent()) {
-            V newValue = get();
-            if (!valueGlobal.isPresent() || !valueGlobal.get().equals(newValue)) valueGlobal = Optional.of(get());
-        }
-    }
 }
