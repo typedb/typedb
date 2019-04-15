@@ -166,7 +166,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                 flatMap(type -> {
                     //Traversal is used here to take advantage of vertex centric index
                     return vertex().tx().getTinkerTraversal().V().
-                            hasId(Schema.elementId(type.id())).
+                            hasId(type.elementId()).
                             //has(Schema.VertexProperty.ID.name(), type.id().getValue()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).

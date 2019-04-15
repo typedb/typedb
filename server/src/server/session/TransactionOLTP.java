@@ -208,8 +208,8 @@ public class TransactionOLTP implements Transaction {
      * @param conceptId ConceptId to be set on the vertex
      * @return just created Vertex
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
-        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptId));
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
+        return executeLockingMethod(() -> factory().addVertexElementWithEdgeIdProperty(baseType, conceptId));
     }
 
     /**

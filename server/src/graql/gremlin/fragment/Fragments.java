@@ -223,7 +223,7 @@ public class Fragments {
         // This cast is safe because we filter only to vertices
         //noinspection unchecked
         //return (GraphTraversal<T, Vertex>) traversal.has(Schema.VertexProperty.ID.name());
-        return (GraphTraversal<T, Vertex>) traversal.filter(e -> e.get() instanceof Vertex);//.hasLabel(Schema.EdgeLabel.ATTRIBUTE.name());
+        return (GraphTraversal<T, Vertex>) traversal.filter(e -> e.get() instanceof Vertex);
     }
 
     /**

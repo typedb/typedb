@@ -67,6 +67,9 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
         return vertexElement;
     }
 
+    @Override
+    public Object elementId() { return vertex().id(); }
+
     @SuppressWarnings("unchecked")
     <X extends Concept> X getThis() {
         return (X) this;

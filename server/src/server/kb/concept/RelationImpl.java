@@ -59,6 +59,9 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
         return (RelationImpl) relation;
     }
 
+    @Override
+    public Object elementId() { return vertex().id(); }
+
     /**
      * Gets the RelationReified if the Relation has been reified.
      * To reify the Relation you use RelationImpl.reify().

@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
@@ -71,7 +72,12 @@ abstract class IdFragment extends Fragment {
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {
-        return __.hasId(id().getValue().substring(1));
+        return Fragments.union(
+                ImmutableSet.of(
+                    __.hasId(Schema.elementId(id())),
+                    __.has(Schema.VertexProperty.EDGE_RELATION_ID.name(), id().getValue())
+                )
+        );
     }
 
     @Override

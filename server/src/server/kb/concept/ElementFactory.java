@@ -34,6 +34,7 @@ import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
+import javax.annotation.Nullable;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -294,9 +295,6 @@ public final class ElementFactory {
      */
     public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = graph.addVertex(baseType.name());
-
-        //String newConceptId = Schema.conceptId(vertex).getValue();
-        //vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
         tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
@@ -309,11 +307,10 @@ public final class ElementFactory {
      *
      * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
         Objects.requireNonNull(conceptId);
         Vertex vertex = graph.addVertex(baseType.name());
-        String newConceptId = conceptId.getValue();
-        //vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
+        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
         tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }

@@ -177,6 +177,8 @@ public final class Schema {
         //Unique Properties
         SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
 
+        EDGE_RELATION_ID(String.class),
+
         //Other Properties
         THING_TYPE_LABEL_ID(Integer.class),
         IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_INFERRED(Boolean.class),

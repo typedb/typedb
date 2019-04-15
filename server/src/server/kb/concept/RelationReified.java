@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
@@ -70,6 +71,16 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     }
 
     @Override
+    public ConceptId id(){
+        if (type().isImplicit()){
+            return ConceptId.of(
+                    vertex().element().value(Schema.VertexProperty.EDGE_RELATION_ID.name())
+            );
+        }
+        return Schema.conceptId(vertex().element());
+    }
+
+    @Override
     public Map<Role, Set<Thing>> allRolePlayers() {
         HashMap<Role, Set<Thing>> roleMap = new HashMap<>();
 
@@ -116,14 +127,14 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
         GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                hasId(Schema.elementId(this.id())).
+                hasId(this.elementId()).
                 //has(Schema.VertexProperty.ID.name(), this.id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
-                hasId(Schema.elementId(toThing.id())).
+                hasId(toThing.elementId()).
                 //has(Schema.VertexProperty.ID.name(), toThing.id()).
                 select("edge");
 
@@ -155,7 +166,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
-                hasId(Schema.elementId(id())).
+                hasId(elementId()).
                 //has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue()).
