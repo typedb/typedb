@@ -53,10 +53,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
         return vertex().tx().factory().buildShard(shardVertex);
     });
     private final Cache<Long> shardCount = Cache.createSessionCache(this, Cacheable.number(), () -> shards().count());
-    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(),
-            //() -> ConceptId.of(vertex().property(Schema.VertexProperty.ID))
-            () -> Schema.conceptId(vertex().element())
-    );
+    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> Schema.conceptId(vertex().element()));
 
     ConceptImpl(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
