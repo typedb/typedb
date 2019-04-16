@@ -25,13 +25,11 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -44,27 +42,21 @@ import java.util.stream.Stream;
  * This wraps up a Relation as a EdgeElement. It is used to represent any binary Relation.
  * This also includes the ability to automatically reify a RelationEdge into a RelationReified.
  */
-public class RelationEdge implements RelationStructure, CacheOwner {
-    private final Set<Cache> registeredCaches = new HashSet<>();
+public class RelationEdge implements RelationStructure {
     private final Logger LOG = LoggerFactory.getLogger(RelationEdge.class);
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationType> relationType = Cache.create(this, () ->
+    private final Cache<RelationType> relationType = new Cache<>(() ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = Cache.create(this, () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> ownerRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = Cache.create(this, () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> valueRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = Cache.create(this, () ->
-            edge().tx().factory().<Thing>buildConcept(edge().source())
-    );
-
-    private final Cache<Thing> value = Cache.create(this, () ->
-            edge().tx().factory().<Thing>buildConcept(edge().target())
-    );
+    private final Cache<Thing> owner = new Cache<>(() -> edge().tx().factory().buildConcept(edge().source()));
+    private final Cache<Thing> value = new Cache<>(() -> edge().tx().factory().buildConcept(edge().target()));
 
     private RelationEdge(EdgeElement edgeElement) {
         this.edgeElement = edgeElement;
@@ -183,10 +175,5 @@ public class RelationEdge implements RelationStructure, CacheOwner {
         return "ID [" + id() + "] Type [" + type().label() + "] Roles and Role Players: \n" +
                 "Role [" + ownerRole().label() + "] played by [" + owner().id() + "] \n" +
                 "Role [" + valueRole().label() + "] played by [" + value().id() + "] \n";
-    }
-
-    @Override
-    public Collection<Cache> caches() {
-        return registeredCaches;
     }
 }
