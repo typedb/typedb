@@ -300,8 +300,6 @@ public class TransactionCache {
 
     //--------------------------------------- TransactionOLTP Specific Meta Data -------------------------------------------
     public void closeTx() {
-        //Clear Concept Caches
-        conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedThings.clear();
