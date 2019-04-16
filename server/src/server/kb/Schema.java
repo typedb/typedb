@@ -175,8 +175,7 @@ public final class Schema {
      */
     public enum VertexProperty {
         //Unique Properties
-        SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
-
+        SCHEMA_LABEL(String.class), INDEX(String.class), LABEL_ID(Integer.class),
         EDGE_RELATION_ID(String.class),
 
         //Other Properties

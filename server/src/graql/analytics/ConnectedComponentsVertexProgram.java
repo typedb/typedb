@@ -68,7 +68,7 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
     @Override
     public void safeExecute(final Vertex vertex, Messenger<String> messenger, final Memory memory) {
         if (memory.isInitialIteration()) {
-            String id = vertex.value(Schema.VertexProperty.ID.name());
+            String id = vertex.id().toString();
             vertex.property(CLUSTER_LABEL, id);
             messenger.sendMessage(messageScopeIn, id);
             messenger.sendMessage(messageScopeOut, id);

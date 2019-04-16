@@ -18,6 +18,7 @@
 
 package grakn.core.graql.analytics;
 
+import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -74,7 +75,8 @@ public class Utility {
         if (vertex == null) return false;
 
         try {
-            return vertex.property(Schema.VertexProperty.ID.name()).isPresent();
+            return Sets.newHashSet(Schema.BaseType.values()).contains(Schema.BaseType.valueOf(vertex.label()));
+            //return vertex.property(Schema.VertexProperty.ID.name()).isPresent();
         } catch (IllegalStateException e) {
             return false;
         }
@@ -135,12 +137,5 @@ public class Utility {
             }
         }
         return null;
-    }
-
-    /**
-     * Get the id of given vertex.
-     */
-    static String getVertexId(Vertex vertex) {
-        return vertex.value(Schema.VertexProperty.ID.name());
     }
 }

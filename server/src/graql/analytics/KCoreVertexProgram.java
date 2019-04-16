@@ -132,7 +132,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                 vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                 Iterators.size(messenger.receiveMessages()) >= memory.<Long>get(K)) {
-            String id = vertex.value(Schema.VertexProperty.ID.name());
+            String id = vertex.id().toString();
 
             // coreness query doesn't require id
             if (persistId) {
@@ -164,7 +164,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     static void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger,
                                          Memory memory, boolean persistMessageCount) {
         if (vertex.property(K_CORE_LABEL).isPresent()) {
-            String id = vertex.value(Schema.VertexProperty.ID.name());
+            String id = vertex.id().toString();
             long messageCount = (long) getMessageCountExcludeSelf(messenger, id);
             if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
                 messageCount += vertex.<Long>value(IMPLICIT_MESSAGE_COUNT);

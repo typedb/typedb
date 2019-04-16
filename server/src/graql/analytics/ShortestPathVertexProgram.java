@@ -113,7 +113,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     @Override
     public void safeExecute(Vertex vertex, Messenger<VertexMessage> messenger, final Memory memory) {
-        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+        String vertexId = vertex.id().toString();
+                //this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
 
         if (source(vertex)) {
             if (memory.isInitialIteration()) {
@@ -286,13 +287,15 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     private boolean source(Vertex vertex) {
         String source = (String) persistentProperties.get(sourceId);
-        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+        String vertexId = vertex.id().toString();
+        //this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
         return source.equals(vertexId);
     }
 
     private boolean destination(Vertex vertex) {
         String source = (String) persistentProperties.get(destinationId);
-        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+        String vertexId = vertex.id().toString();
+        //this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
         return source.equals(vertexId);
     }
 
