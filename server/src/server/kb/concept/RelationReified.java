@@ -128,14 +128,12 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //Checking if the edge exists
         GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
                 hasId(this.elementId()).
-                //has(Schema.VertexProperty.ID.name(), this.id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
                 hasId(ConceptVertex.from(toThing).elementId()).
-                //has(Schema.VertexProperty.ID.name(), toThing.id()).
                 select("edge");
 
         if (traversal.hasNext()) {
@@ -167,7 +165,6 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
                 hasId(elementId()).
-                //has(Schema.VertexProperty.ID.name(), id().getValue()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).

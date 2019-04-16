@@ -263,7 +263,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private Stream<Relation> reifiedRelations(Role... roles) {
         GraphTraversal<Vertex, Vertex> traversal = vertex().tx().getTinkerTraversal().V().
                 hasId(elementId());
-                //has(Schema.VertexProperty.ID.name(), id().getValue());
 
         if (roles.length == 0) {
             traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());

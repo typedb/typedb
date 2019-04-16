@@ -167,7 +167,6 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                     //Traversal is used here to take advantage of vertex centric index
                     return vertex().tx().getTinkerTraversal().V().
                             hasId(ConceptVertex.from(type).elementId()).
-                            //has(Schema.VertexProperty.ID.name(), type.id().getValue()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
