@@ -20,46 +20,26 @@ package grakn.core.graql.reasoner.benchmark;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.executor.QueryExecutor;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
-import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.concept.AttributeTypeImpl;
-import grakn.core.server.kb.concept.ElementFactory;
-import grakn.core.server.kb.concept.ThingImpl;
-import grakn.core.server.kb.concept.TypeImpl;
-import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
-import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -68,361 +48,6 @@ public class BenchmarkSmallIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-
-
-    public static long putEntityTypeTime = 0;
-    public static long putAttributeTypeTime = 0;
-    public static long createEntityTime = 0;
-    public static long createAttributeTime = 0;
-    public static long attachAttributeTime = 0;
-    public static long commitTime = 0;
-    public static long writeTime = 0;
-    public static long insertTime = 0;
-    public static long openTxTime = 0;
-    public static long schemaTime = 0;
-
-    void zeroWriteTimes(){
-        putEntityTypeTime = 0;
-        putAttributeTypeTime = 0;
-        createEntityTime = 0;
-        createAttributeTime = 0;
-        attachAttributeTime = 0;
-        commitTime = 0;
-        writeTime = 0;
-    }
-
-
-    public void printWriteTimes(){
-        /*
-        System.out.println();
-        System.out.println("putEntityTypeTime: " + putEntityTypeTime);
-        System.out.println("putAttributeTypeTime: " + putAttributeTypeTime);
-        System.out.println("createEntityTime: " + createEntityTime);
-        System.out.println("createAttributeTime: " + createAttributeTime);
-        System.out.println("    AttributeTypeImpl.fetchAttributeTime: " + AttributeTypeImpl.fetchAttributeTime);
-        System.out.println("attachAttributeTime: " + attachAttributeTime);
-        System.out.println();
-*/
-
-
-        System.out.println("addInstance::instanceAdditions: " + TypeImpl.instanceAdditions);
-        System.out.println("addInstance::preCheckTime: " + TypeImpl.preCheckTime);
-        System.out.println("addInstance::cacheTime: " + TypeImpl.cacheCheckTime);
-        System.out.println("addInstance::addVertexElementTime: " + TypeImpl.addVertexElementTime);
-        //System.out.println("    ElementFactory.addVertexTime: " + ElementFactory.addVertexTime);
-        System.out.println("    ElementFactory.assignVertexIdPropertyTime: " + ElementFactory.assignVertexIdPropertyTime);
-        //System.out.println("    ElementFactory.vertexAdditions: " + ElementFactory.vertexAdditions);
-        System.out.println("addInstance::produceInstanceTime: " + TypeImpl.produceInstanceTime);
-        //System.out.println("    ThingImpl.setTypeTime: " + ThingImpl.setTypeTime);
-        //System.out.println("    AbstractElement.getPropertyTime: " + AbstractElement.getPropertyTime);
-        System.out.println();
-
-
-        System.out.println("openTxTime: " + openTxTime);
-        System.out.println("schemaTime: " + schemaTime);
-        System.out.println("commitTime: " + commitTime);
-       // System.out.println("    validateTime: " + TransactionOLTP.validationTime);
-       // System.out.println("    cacheFlushTime: " + TransactionOLTP.cacheFlushTime);
-        System.out.println("insertTime: " + insertTime);
-        System.out.println("writeTime: " + writeTime);
-        System.out.println();
-    }
-
-
-    private SessionImpl prepareSession(int N){
-        SessionImpl session = server.sessionWithNewKeyspace();
-
-        long start0 = System.currentTimeMillis();
-        try(TransactionOLTP tx = session.transaction().write()) {
-            AttributeType<String> attributeType = tx.putAttributeType("identifier", AttributeType.DataType.STRING);
-            tx.putEntityType("person").has(attributeType);
-            tx.commit();
-        }
-        schemaTime += System.currentTimeMillis() - start0;
-        int commitPeriod = 100;
-        TransactionOLTP tx = session.transaction().write();
-        for (int i = 1 ; i <= N ; i++){
-            long start = System.currentTimeMillis();
-            long insertStart = System.currentTimeMillis();
-
-            AttributeType<String> attributeType = tx.getAttributeType("identifier");
-            putAttributeTypeTime += System.currentTimeMillis() - start;
-
-            start = System.currentTimeMillis();
-            EntityType personType = tx.getEntityType("person");
-            putEntityTypeTime += System.currentTimeMillis() - start;
-
-            start = System.currentTimeMillis();
-            Entity person = personType.create();
-            createEntityTime += System.currentTimeMillis() - start;
-
-            start = System.currentTimeMillis();
-            Attribute<String> attribute = attributeType.create(String.valueOf(i));
-            createAttributeTime += System.currentTimeMillis() - start;
-
-            start = System.currentTimeMillis();
-            person.has(attribute);
-            attachAttributeTime += System.currentTimeMillis() - start;
-            insertTime += System.currentTimeMillis() - insertStart;
-
-            start = System.currentTimeMillis();
-            if (i % commitPeriod == 0 || i == N){
-                tx.commit();
-                tx.close();
-                if ( i != N){
-                    long start2 = System.currentTimeMillis();
-                    tx = session.transaction().write();
-                    openTxTime += System.currentTimeMillis() - start2;
-                }
-            }
-            commitTime += System.currentTimeMillis() - start;
-        }
-        writeTime += System.currentTimeMillis() - start0;
-        return session;
-    }
-    @Test
-    public void testAttributes() {
-        final int N = 10000;
-
-        Pattern pattern = Graql.parsePattern("{$x isa person; $x has identifier $r;};");
-        //Pattern pattern = Graql.parsePattern("{$x isa person;};");
-        Set<Variable> vars = pattern.variables();
-
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                printWriteTimes();
-                //GraqlTraversal traversal = GreedyTraversalPlan.createTraversal(pattern, tx);
-                //System.out.println("traversal:\n" + traversal.fragments());
-                //System.out.println("traversal:\n" + traversal.getGraphTraversal(tx, vars));
-
-                //generic query
-                long start = System.currentTimeMillis();
-                List<ConceptMap> answers = tx.execute(Graql.match(pattern), false);
-                System.out.println("exec time via graql; " + (System.currentTimeMillis() - start));
-                /*
-                start = System.currentTimeMillis();
-                tx.getEntityType("person").instances()
-                .forEach(person -> {
-                            Conjunction<?> idPattern = Graql.and(pattern, Graql.var("x").id(person.id().getValue()));
-                            List<ConceptMap> ans = tx.execute(Graql.match(idPattern), false);
-                            assertEquals(1, ans.size());
-                        }
-                        );
-                System.out.println("id exec time via graql; " + (System.currentTimeMillis() - start));
-
-                printTimes();
-                */
-                assertEquals(N, answers.size());
-            }
-        }
-/*
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-
-                zeroTimes();
-
-                GraqlTraversal traversal = GreedyTraversalPlan.createTraversal(pattern, tx);
-
-                long start = System.currentTimeMillis();
-                List<ConceptMap> answers =  traversalToAnswers(traversal.getGraphTraversal(tx, vars), tx, vars);
-                System.out.println("exec time from graql traversal; " + (System.currentTimeMillis() - start));
-                printTimes();
-                assertEquals(N, answers.size());
-            }
-        }
-
-
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                long start = System.currentTimeMillis();
-
-                zeroTimes();
-                GraphTraversal<Vertex, Map<String, Element>> test = tx.getTinkerTraversal().V()
-                        .has(Schema.VertexProperty.LABEL_ID.name(), tx.convertToId(Label.of("person")).getValue())
-                        .in(SHARD.getLabel()).in(ISA.getLabel()).as("§x")
-                        .out(ATTRIBUTE.getLabel()).as("§r")
-                        .out(ISA.getLabel()).out(SHARD.getLabel())
-                        .has(Schema.VertexProperty.LABEL_ID.name(), tx.convertToId(Label.of("identifier")).getValue())
-                        .select("§x", "§r");
-
-                System.out.println("manual traversal:\n" + test);
-                List<ConceptMap> answers = traversalToAnswers(test, tx, vars);
-
-                System.out.println("shortcut-edge-optimised time; " + (System.currentTimeMillis() - start));
-                printTimes();
-
-                assertEquals(N, answers.size());
-            }
-        }
-
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                long start = System.currentTimeMillis();
-
-                zeroTimes();
-
-                String typeName = Schema.VertexProperty.THING_TYPE_LABEL_ID.name();
-                Label person = Label.of("person");
-                Label identifier = Label.of("identifier");
-                Integer personId = tx.convertToId(person).getValue();
-                Integer identifierId = tx.convertToId(identifier).getValue();
-
-                GraphTraversal<Vertex, Map<String, Element>> test = tx.getTinkerTraversal().V()
-                        .has(typeName, personId)
-                        .as("§x")
-                        .out(ATTRIBUTE.getLabel())
-                        .as("§r")
-                        .has(typeName, identifierId)
-                        .select("§x", "§r");
-                List<ConceptMap> answers = traversalToAnswers(test, tx, vars);
-
-                System.out.println("isa-optimised time; " + (System.currentTimeMillis() - start));
-                printTimes();
-
-                assertEquals(N, answers.size());
-            }
-        }
-
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                long start = System.currentTimeMillis();
-
-                zeroTimes();
-
-                String typeName = Schema.VertexProperty.THING_TYPE_LABEL_ID.name();
-                Label person = Label.of("person");
-                Label identifier = Label.of("identifier");
-                //Integer personId = tx.convertToId(Label.of("person")).getValue();
-                //Integer identifierId = tx.convertToId(Label.of("identifier")).getValue();
-                ConceptId personId = tx.getSchemaConcept(person).id();
-                ConceptId identifierId = tx.getSchemaConcept(identifier).id();
-                Long janusPersonId = Long.valueOf(personId.getValue().replace("V", ""));
-                Long janusIdentifierId = Long.valueOf(identifierId.getValue().replace("V", ""));
-
-                GraphTraversal<Vertex, Map<String, Element>> test = tx.getTinkerTraversal().V()
-                        .hasId(janusPersonId)
-                        .in(SHARD.getLabel()).in(ISA.getLabel()).as("§x")
-                        .as("§x")
-                        .out(ATTRIBUTE.getLabel())
-                        .as("§r")
-                        .out(ISA.getLabel()).out(SHARD.getLabel())
-                        .hasId(janusIdentifierId)
-                        .select("§x", "§r");
-                List<ConceptMap> answers = traversalToAnswers(test, tx, vars);
-
-                System.out.println("janus-id optimised time; " + (System.currentTimeMillis() - start));
-                printTimes();
-
-                assertEquals(N, answers.size());
-            }
-        }
-        */
-/*
-
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                long start = System.currentTimeMillis();
-                GraphTraversal<Vertex, Vertex> test = tx.getTinkerTraversal().V()
-                        //.in(ATTRIBUTE.getLabel())
-                        .has(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())
-                        .as("§x")
-                        .select("§x");
-                List<Concept> answers = test.toStream()
-                        .map(vertex -> (Concept) tx.buildConcept(vertex))
-                        .collect(Collectors.toList());
-
-                System.out.println("get all vertices time; " + (System.currentTimeMillis() - start));
-                printTimes();
-
-                assertEquals(2*N, answers.size());
-            }
-        }
-
-        try(SessionImpl session = prepareSession(N)) {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                long start = System.currentTimeMillis();
-                GraphTraversal<Vertex, Vertex> test = tx.getTinkerTraversal().V()
-                        //.in(ATTRIBUTE.getLabel())
-                        //.has(Schema.VertexProperty.THING_TYPE_LABEL_ID.name())
-                        .as("§x")
-                        .select("§x");
-                List<Vertex> answers = test.toStream()
-                        .filter(v -> v.property(Schema.VertexProperty.THING_TYPE_LABEL_ID.name()) != null)
-                        .collect(Collectors.toList());
-
-                System.out.println("get all vertices time; " + (System.currentTimeMillis() - start));
-
-                assertEquals(2*N, answers.size());
-            }
-        }
-        */
-    }
-
-    /*
-    private void zeroTimes(){
-        zeroWriteTimes();
-        DisjunctionIterator.resolvabilityCheckTime = 0;
-        QueryExecutor.validateClauseTime = 0;
-        GreedyTraversalPlan.planTime = 0;
-        TransactionOLTP.buildConceptTime = 0;
-        ElementFactory.buildVertexElementTime = 0;
-        ElementFactory.buildConceptFromVElementTime = 0;
-        ElementFactory.baseTypeRetrieveTime = 0;
-        ElementFactory.baseTypeValueOfTime = 0;
-        ElementFactory.baseTypeCalls = 0;
-        ElementFactory.getCachedConceptTime = 0;
-        ElementFactory.getVertexLabel = 0;
-        ElementFactory.getConceptIdTime = 0;
-    }
-
-    private void printTimes(){
-        printWriteTimes();
-
-        System.out.println("DisjunctionIterator.resolvabilityCheckTime: " + DisjunctionIterator.resolvabilityCheckTime);
-        System.out.println("QueryExecutor.validateClauseTime: " + QueryExecutor.validateClauseTime);
-        System.out.println("GreedyTraversalPlan.planTime: " + GreedyTraversalPlan.planTime);
-        System.out.println("TransactionOLTP.buildConceptTime: " + TransactionOLTP.buildConceptTime);
-        System.out.println("ElementFactory.buildVertexElementTime: " + ElementFactory.buildVertexElementTime);
-        System.out.println("ElementFactory.buildConceptFromVertexTime: " + ElementFactory.buildConceptFromVertexTime);
-        System.out.println("ElementFactory.buildConceptFromVElementTime: " + ElementFactory.buildConceptFromVElementTime);
-        System.out.println("ElementFactory.getConceptIdTime: " + ElementFactory.getConceptIdTime);
-        System.out.println("ElementFactory.getVertexLabel: " + ElementFactory.getVertexLabel);
-        System.out.println("ElementFactory.getCachedConceptTime: " + ElementFactory.getCachedConceptTime);
-        System.out.println("ElementFactory.baseTypeRetrieveTime: " + ElementFactory.baseTypeRetrieveTime);
-        System.out.println("ElementFactory.baseTypeValueOfTime: " + ElementFactory.baseTypeValueOfTime);
-        System.out.println("ElementFactory.baseTypeCalls: " + ElementFactory.baseTypeCalls);
-        System.out.println();
-    }
-    */
-
-    private List<ConceptMap> traversalToAnswers(GraphTraversal<Vertex, Map<String, Element>> traversal, TransactionOLTP tx, Set<Variable> vars){
-        return traversal
-                .toStream()
-                .map(elements -> createAnswer(vars, elements, tx))
-                .distinct()
-                .sequential()
-                .map(ConceptMap::new)
-                .collect(Collectors.toList());
-    }
-    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements, TransactionOLTP tx) {
-        Map<Variable, Concept> map = new HashMap<>();
-        for (Variable var : vars) {
-            Element element = elements.get(var.symbol());
-            if (element == null) {
-                throw GraqlQueryException.unexpectedResult(var);
-            } else {
-                Concept result;
-                if (element instanceof Vertex) {
-                    result = tx.buildConcept((Vertex) element);
-                } else {
-                    result = tx.buildConcept((Edge) element);
-                }
-                Concept concept = result;
-                map.put(var, concept);
-            }
-        }
-        return map;
-    }
 
 
     /**
@@ -568,7 +193,7 @@ public class BenchmarkSmallIT {
      */
     @Test
     public void testTransitiveChain()  {
-        int N = 400;
+        int N = 100;
         int limit = 10;
         int answers = (N+1)*N/2;
         SessionImpl session = server.sessionWithNewKeyspace();
@@ -577,16 +202,16 @@ public class BenchmarkSmallIT {
         transitivityChainGraph.load(N);
         TransactionOLTP tx = session.transaction().write();
 
-        //String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
-        //GraqlGet query = Graql.parse(queryString).asGet();
+        String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
+        GraqlGet query = Graql.parse(queryString).asGet();
 
         String queryString2 = "match (Q-from: $x, Q-to: $y) isa Q;$x has index 'a'; get;";
         GraqlGet query2 = Graql.parse(queryString2).asGet();
 
-        //assertEquals(executeQuery(query, tx, "full").size(), answers);
+        assertEquals(executeQuery(query, tx, "full").size(), answers);
         assertEquals(executeQuery(query2, tx, "With specific resource").size(), N);
 
-        //executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
+        executeQuery(query.match().get().limit(limit), tx, "limit " + limit);
         executeQuery(query2.match().get().limit(limit), tx, "limit " + limit);
         tx.close();
         session.close();
@@ -628,7 +253,7 @@ public class BenchmarkSmallIT {
         //results @N = 35 396900   ?        ?      ?     76 s
         transitivityMatrixGraph.load(N, N);
         TransactionOLTP tx = session.transaction().write();
-
+        
 
         //full result
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
@@ -688,7 +313,7 @@ public class BenchmarkSmallIT {
         //results @N = 50  2304    8s    / 1s
         //results @N = 100 9604  loading takes ages
         TransactionOLTP tx = session.transaction().write();
-
+        
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GraqlGet query = Graql.parse(queryString).asGet();
 
