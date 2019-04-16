@@ -148,6 +148,7 @@ public class KeyspaceManager {
         Stopwatch timer = Stopwatch.createStarted();
         try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
+                LOG.info("System schema is already loaded");
                 return;
             }
             LOG.info("Loading schema");
