@@ -295,7 +295,6 @@ public final class ElementFactory {
      */
     public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = graph.addVertex(baseType.name());
-        tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 
@@ -311,11 +310,9 @@ public final class ElementFactory {
     public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
         Objects.requireNonNull(conceptId);
         Vertex vertex = graph.addVertex(baseType.name());
-
         long start = System.currentTimeMillis();
         vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
         assignVertexIdPropertyTime += System.currentTimeMillis() - start;
-        tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 }
