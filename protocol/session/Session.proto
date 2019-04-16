@@ -38,10 +38,7 @@ message Session {
     message Open {
         message Req {
             map<string, string> metadata = 1000;
-            /* Fields ignored in the open-source version. */
-            string username = 1;
-            string password = 2;
-            string Keyspace = 3;
+            string Keyspace = 1;
         }
         message Res {
             string sessionId = 1;
@@ -120,6 +117,9 @@ message Transaction {
         message Req {
             string sessionId = 1;
             Type type = 2;
+            /* Fields ignored in the open-source version. */
+            string username = 3;
+            string password = 4;
         }
         message Res {}
 
