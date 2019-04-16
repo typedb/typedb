@@ -34,7 +34,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
@@ -66,16 +65,16 @@ import static java.util.stream.Collectors.toSet;
  *            For example EntityType or RelationType
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {
+    private final Cache<Label> cachedInternalType = Cache.create(this, () -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
-        if (type == null){
+        if (type == null) {
             throw TransactionException.missingType(id());
         }
         return type.label();
     });
 
-    private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+    private final Cache<V> cachedType = Cache.create(this, () -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
                 flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
