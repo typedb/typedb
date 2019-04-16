@@ -98,7 +98,6 @@ public class RelationEdge implements RelationStructure, CacheOwner {
     @Override
     public ConceptId id() {
         return Schema.conceptId(edge().element());
-        //return ConceptId.of(edge().id().getValue());
     }
 
     @Override

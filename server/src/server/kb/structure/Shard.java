@@ -52,7 +52,6 @@ public class Shard {
      */
     public Object id() {
         return vertex().id();
-        //return vertex().property(Schema.VertexProperty.ID);
     }
 
     /**

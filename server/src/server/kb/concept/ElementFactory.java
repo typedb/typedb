@@ -73,13 +73,11 @@ public final class ElementFactory {
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
-        //ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
         ConceptId conceptId = Schema.conceptId(element.element());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
     private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder) {
-        //ConceptId conceptId = ConceptId.of(element.id().getValue());
         ConceptId conceptId = Schema.conceptId(element.element());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
@@ -148,10 +146,8 @@ public final class ElementFactory {
     }
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
-
-        //ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
-        //Concept cachedConcept = tx.cache().getCachedConcept(conceptId);
-        Concept cachedConcept = null;
+        ConceptId conceptId = Schema.conceptId(vertexElement.element());
+        Concept cachedConcept = tx.cache().getCachedConcept(conceptId);
 
         if (cachedConcept == null) {
             Schema.BaseType type;
@@ -196,7 +192,6 @@ public final class ElementFactory {
             return (X) concept;
         }
         return (X) cachedConcept;
-        //return tx.cache().getCachedConcept(conceptId);
     }
 
     /**
@@ -213,7 +208,6 @@ public final class ElementFactory {
     public <X extends Concept> X buildConcept(EdgeElement edgeElement) {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
-        //ConceptId conceptId = ConceptId.of(edgeElement.id().toString());
         ConceptId conceptId = Schema.conceptId(edgeElement.element());
         if (!tx.cache().isConceptCached(conceptId)) {
             Concept concept;

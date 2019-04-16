@@ -48,7 +48,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
         Object currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        //ConceptId currentShardId = ConceptId.of(vertex().property(Schema.VertexProperty.CURRENT_SHARD));
         Vertex shardVertex = vertex().tx().getTinkerTraversal().V().hasId(currentShardId).next();
         return vertex().tx().factory().buildShard(shardVertex);
     });
@@ -63,9 +62,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     public VertexElement vertex() {
         return vertexElement;
     }
-
-    @Override
-    public Object elementId() { return vertex().id(); }
 
     @SuppressWarnings("unchecked")
     <X extends Concept> X getThis() {

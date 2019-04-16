@@ -31,8 +31,6 @@ import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 import static grakn.core.server.kb.Schema.EdgeLabel.SUB;
 import static grakn.core.server.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class InPlaysFragmentTest {
 
@@ -45,7 +43,6 @@ public class InPlaysFragmentTest {
     public void testApplyTraversalFollowsSubsDownwards() {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
-        //.stream().filter(type::isInstance)
 
         GraphTraversal<Object, Object> expected = __.V()
                 .filter(e -> e.get() instanceof Edge)
