@@ -290,7 +290,7 @@ public class PatternIT {
 
     @Test
     public void testValueComparisonDoesNotFail() {
-        tx.execute(Graql.match(var("x").neq("100")).get());
+        tx.execute(Graql.match(var("x").neq(100)).get());
     }
 
     @Test
