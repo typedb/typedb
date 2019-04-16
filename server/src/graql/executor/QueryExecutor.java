@@ -35,15 +35,15 @@ import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
-import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.property.NeqProperty;
+import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -65,6 +65,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -145,7 +146,7 @@ public class QueryExecutor {
             throw GraqlQueryException.matchWithoutAnyProperties(statementsWithoutProperties.get(0));
         }
 
-        validateComparisons(negationDNF);
+        validateVarVarComparisons(negationDNF);
 
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
@@ -161,30 +162,36 @@ public class QueryExecutor {
         }
     }
 
-    public void validateComparisons(Disjunction<Conjunction<Pattern>> negationDNF) {
-        // comparisons (ValueProperty and NotEqual, similar to !== and !=) must only use variables that are also used outside of comparisons
+    public void validateVarVarComparisons(Disjunction<Conjunction<Pattern>> negationDNF) {
+        // comparisons between two variables (ValueProperty and NotEqual, similar to !== and !=)
+        // must only use variables that are also used outside of comparisons
 
-        // we convert to reasoner representation of queries because they utilise a standard format
-        // and are much simpler to query for the usage of specific variables
-        for (Conjunction<Pattern> conjunction : negationDNF.getPatterns()) {
-            ResolvableQuery resolvable = ReasonerQueries.resolvable(conjunction, transaction);
-
-            Set<Variable> variablesInComparisons = resolvable.getAtoms(NeqPredicate.class)
-                    .flatMap(predicate -> predicate.getVarNames().stream())
-                    .collect(toSet());
-
-            Set<Variable> variablesNotInComparisons = resolvable.getAtoms().stream()
-                    .filter(predicate -> ! (predicate instanceof NeqPredicate))
-                    .flatMap(predicate -> predicate.getVarNames().stream())
-                    .collect(toSet());
-
-            // remove the variables not in comparisons and only keep those that are defined in the query and not auto generated
-            Set<Variable> unboundComparisonVariables = Sets.difference(variablesInComparisons, variablesNotInComparisons);
-            Set<Variable> unboundOriginalComparisonVariables = Sets.intersection(unboundComparisonVariables, conjunction.variables());
-
-            if (unboundOriginalComparisonVariables.size() != 0) {
-                throw GraqlQueryException.unboundComparisonVariables(unboundComparisonVariables);
+        // collect variables used in comparisons between two variables
+        // and collect variables used outside of two-variable comparisons (variable to value is OK)
+        Set<Statement> statements = negationDNF.statements();
+        Set<Variable> varVarComparisons = new HashSet<>();
+        Set<Variable> notVarVarComparisons = new HashSet<>();
+        for (Statement stmt : statements) {
+            if (stmt.hasProperty(NeqProperty.class)) {
+                varVarComparisons.add(stmt.var());
+                varVarComparisons.add(stmt.getProperty(NeqProperty.class).get().statement().var());
+            } else if (stmt.hasProperty(ValueProperty.class)) {
+                ValueProperty valueProperty = stmt.getProperty(ValueProperty.class).get();
+                if (valueProperty.operation().hasVariable()) {
+                    varVarComparisons.add(stmt.var());
+                    varVarComparisons.add(valueProperty.operation().innerStatement().var());
+                } else {
+                    notVarVarComparisons.add(stmt.var());
+                }
+            } else {
+                notVarVarComparisons.addAll(stmt.variables());
             }
+        }
+
+        // ensure variables used in var-var comparisons are used elsewhere too
+        Set<Variable> unboundComparisonVariables = Sets.difference(varVarComparisons, notVarVarComparisons);
+        if (! unboundComparisonVariables.isEmpty()) {
+            throw GraqlQueryException.unboundComparisonVariables(unboundComparisonVariables);
         }
     }
 
