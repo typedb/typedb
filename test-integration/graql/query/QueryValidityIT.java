@@ -16,13 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.graql.query;
 
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import graql.lang.exception.GraqlException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -47,7 +48,14 @@ public class QueryValidityIT {
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", genericSchemaSession);
+        tx = genericSchemaSession.transaction().write();
+        tx.execute(Graql.parse("define " +
+                "anotherRole sub role;" +
+                "someRel sub relation, relates anotherRole; " +
+                "anotherNoRoleEntity sub entity, plays role1;" +
+                "binary sub relation, relates role1;" +
+                "name sub attribute, datatype string;").asDefine());
+        tx.commit();
         tx = genericSchemaSession.transaction().write();
     }
 
@@ -142,14 +150,15 @@ public class QueryValidityIT {
     }
 
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForRelationWithNonRoleRoles_Throws() throws GraqlQueryException{
-        String queryString = "match (entity: $x, entity: $y) isa relation; get;";
+    public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlQueryException{
+        String queryString = "match (rola: $x, rola: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
+    // this should be caught at the parser level
     @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlQueryException{
-        String queryString = "match (rola: $x, rola: $y) isa relation; get;";
+    public void whenQueryingForRelationWithNonRoleRoles_Throws() throws GraqlException {
+        String queryString = "match (entity: $x, entity: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 }
