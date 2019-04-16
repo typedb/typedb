@@ -33,4 +33,6 @@ public interface ConceptVertex {
     }
 
     VertexElement vertex();
+
+    default Object elementId(){ return vertex().id();}
 }

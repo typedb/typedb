@@ -134,7 +134,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
-                hasId(toThing.elementId()).
+                hasId(ConceptVertex.from(toThing).elementId()).
                 //has(Schema.VertexProperty.ID.name(), toThing.id()).
                 select("edge");
 

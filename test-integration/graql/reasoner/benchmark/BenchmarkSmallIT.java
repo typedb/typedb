@@ -196,7 +196,6 @@ public class BenchmarkSmallIT {
                 //System.out.println("traversal:\n" + traversal.getGraphTraversal(tx, vars));
 
                 //generic query
-
                 long start = System.currentTimeMillis();
                 List<ConceptMap> answers = tx.execute(Graql.match(pattern), false);
                 System.out.println("exec time via graql; " + (System.currentTimeMillis() - start));
