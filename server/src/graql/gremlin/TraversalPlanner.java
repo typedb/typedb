@@ -111,32 +111,39 @@ public class TraversalPlanner {
         // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
             // collect the mapping from directed bedge back to fragments -- inverse operation of creating virtual middle nodes
-            Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
 
+            // one of two cases - either we have a connected graph with more than 1 node, which is used to compute a MST
+            // or we only have 1 node
             Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes, tx);
             if (subgraphArborescence != null) {
+                Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
                 List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
+            } else {
+                // find and include all the nodes not touched in the MST in the plan
+                Set<Node> connectedNodes = connectedFragments.stream()
+                        .flatMap(fragment -> fragment.getNodes().stream())
+                        .map(node -> queryGraphNodes.get(node.getNodeId()))
+                        .collect(Collectors.toSet());
+                assert connectedNodes.size() == 1;
+                Node singleNode = Iterators.getOnlyElement(connectedNodes.iterator());
+                plan.addAll(nodeToPlanFragments(singleNode, queryGraphNodes, false));
+//                plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, connectedNodes));
             }
-
-            // find and include all the nodes not touched in the MST in the plan
-            Set<Node> connectedNodes = connectedFragments.stream()
-                    .flatMap(fragment -> fragment.getNodes().stream())
-                    .map(node -> queryGraphNodes.get(node.getNodeId()))
-                    .collect(Collectors.toSet());
-            plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, connectedNodes));
         }
-        plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values()));
+        List<Fragment> remainingFragments = fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values());
+        assert remainingFragments.size() == 0;
+        plan.addAll(remainingFragments);
 
         LOG.trace("Greedy Plan = {}", plan);
         return plan;
     }
 
 
-    private static Arborescence<Node> computeArborescence(Set<Fragment> fragments, ImmutableMap<NodeId, Node> nodes, TransactionOLTP tx) {
+    private static Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes, TransactionOLTP tx) {
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
-        fragments.forEach(fragment -> {
+        connectedFragments.forEach(fragment -> {
             if (fragment.hasFixedFragmentCost()) {
                 NodeId startNodeId = Iterators.getOnlyElement(fragment.getNodes().iterator()).getNodeId();
                 Node startNode = nodes.get(startNodeId);
@@ -146,13 +153,13 @@ public class TraversalPlanner {
         });
 
         // update cost of reaching subtypes from an indexed supertyp
-        updateFixedCostSubsReachableByIndex(nodes, nodesWithFixedCost, fragments);
+        updateFixedCostSubsReachableByIndex(nodes, nodesWithFixedCost, connectedFragments);
 
         // fragments that represent Janus edges
         final Set<Fragment> edgeFragmentSet = new HashSet<>();
 
         // save the fragments corresponding to edges, and updates some costs if we can via shard count
-        for (Fragment fragment : fragments) {
+        for (Fragment fragment : connectedFragments) {
             if (fragment.end() != null) {
                 edgeFragmentSet.add(fragment);
                 // update the cost of an `InIsa` Fragment if we have some estimated cost
@@ -171,7 +178,7 @@ public class TraversalPlanner {
         if (!weightedGraph.isEmpty()) {
             // sparse graph for better performance
             SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-            Set<Node> startingNodes = chooseStartingNodeSet(fragments, nodes, sparseWeightedGraph);
+            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph);
 
             // find the minimum spanning tree for each root
             // then get the tree with minimum weight
