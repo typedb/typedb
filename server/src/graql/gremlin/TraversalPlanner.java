@@ -125,7 +125,7 @@ public class TraversalPlanner {
                         .map(node -> queryGraphNodes.get(node.getNodeId()))
                         .collect(Collectors.toSet());
                if (unhandledNodes.size() != 1) {
-                   throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size()));
+                   throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
                }
                plan.addAll(nodeToPlanFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes, false));
             }
