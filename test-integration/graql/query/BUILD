@@ -204,6 +204,7 @@ checkstyle_test(
         ":query-admin-it",
         ":query-error-it",
         ":query-planner-it",
+        ":query-validity-it",
         ":type-conversion-it",
     ],
 )
