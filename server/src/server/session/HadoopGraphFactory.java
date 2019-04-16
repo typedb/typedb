@@ -75,13 +75,6 @@ public class HadoopGraphFactory {
             graph = (HadoopGraph) GraphFactory.open(config.properties());
         }
 
-        System.out.println("XXX - HadoopGraphFactory.getGraph - " +
-                "username = " +
-               config.getProperty(ConfigKey.key("storage.username")) + " / " +config.getProperty(ConfigKey.key("cassandra.username")) +
-                ", password = " +
-               config.getProperty(ConfigKey.key("storage.password")) + " / " +config.getProperty(ConfigKey.key("cassandra.password"))
-        );
-
         return graph;
     }
 
@@ -95,18 +88,6 @@ public class HadoopGraphFactory {
         // Values
         String keyspaceValue = keyspace.name();
         String hostnameValue = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
-
-//        System.out.println("XXX");
-//        session.config().properties().keySet().stream().forEach(k ->
-//                System.out.println(k + " -> " + session.config().properties().getProperty((String) k)));
-//        System.out.println("XXX");
-
-        System.out.println("XXX - KGMSSessionFactory.session - " +
-                "username = " +
-                config.getProperty(ConfigKey.key("storage.username")) + " / " +config.getProperty(ConfigKey.key("cassandra.username")) +
-                ", password = " +
-                config.getProperty(ConfigKey.key("storage.password")) + " / " +config.getProperty(ConfigKey.key("cassandra.password"))
-        );
 
         config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
         config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceValue);
