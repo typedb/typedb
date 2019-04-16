@@ -52,7 +52,7 @@ public class NodesUtil {
         // NOTE handling building the dependencies in each connected subgraph doesn't work,
         //  because dependencies can step across disconnected fragment sets, eg  `$x; $y; $x == $y`
 
-        // build in a map using a map to squash duplicates
+        // build a map to squash duplicates
         Map<NodeId, Node> nodes = new HashMap<>();
 
         for (Fragment fragment : fragments) {
@@ -60,17 +60,16 @@ public class NodesUtil {
             for (Node node : fragmentNodes) {
                 NodeId nodeId = node.getNodeId();
                 nodes.merge(nodeId, node, (node1, node2) -> {
-                    // TODO choose the node that is NOT a valid starting point if either is not
-                    // otherwise it doesn't matter
                     // key point: if any fragment indicates a node is not a valid starting point, it never is!
-                    return null;
-                })
+                    if (!node1.isValidStartingPoint()) {
+                        return node1;
+                    } else {
+                        // either node2 is a valid starting point or it doesn't matter
+                        return node2;
+                    }
+                });
             }
         }
-
-//        fragments.forEach(fragment ->
-//                fragment.getNodes().forEach(node -> nodes.put(node.getNodeId(), node))
-//        );
 
         // convert to immutable map
         ImmutableMap<NodeId, Node> immutableNodes = ImmutableMap.copyOf(nodes);

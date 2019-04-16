@@ -47,6 +47,7 @@ import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerIT {
@@ -290,6 +291,20 @@ public class QueryPlannerIT {
         assertEquals(2L, plan.stream().filter(LabelFragment.class::isInstance).count());
         assertEquals(2L, plan.stream()
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
+    }
+
+    @Test
+    public void noIndexedStartNodeGeneratesValidPlans() {
+        // a pattern without a indexed starting point so any of X, Y, Z,
+        Pattern pattern = and(
+                var().rel("role1", x).rel("role2", z),
+                var().rel("role1", y).rel("role2", z)
+        );
+        for (int i = 0; i < 20; i++) {
+            // ensure that any (for now) chosen randomly starting point still generates full traversals with all required fragments
+            ImmutableList<Fragment> plan = getPlan(pattern);
+            assertEquals(6, plan.size());
+        }
     }
 
     @Test
