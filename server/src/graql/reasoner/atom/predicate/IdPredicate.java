@@ -22,6 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -108,7 +109,7 @@ public class IdPredicate extends Predicate<ConceptId> {
     public void checkValid() {
         ConceptId conceptId = getPredicate();
         if (tx().getConcept(conceptId) == null) {
-            throw GraqlQueryException.idNotFound(conceptId);
+            throw GraqlCheckedException.idNotFound(conceptId);
         }
     }
 

@@ -26,7 +26,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
-import grakn.core.server.kb.cache.Cacheable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -42,14 +41,14 @@ public class Casting implements CacheOwner {
     private final Set<Cache> registeredCaches = new HashSet<>();
     private final EdgeElement edgeElement;
 
-    private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Role> cachedRole = Cache.create(this, () ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Thing> cachedInstance = Cache.create(this, () ->
             edge().tx().factory().<Thing>buildConcept(edge().target()));
-    private final Cache<Relation> cachedRelation = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Relation> cachedRelation = Cache.create(this, () ->
             edge().tx().factory().<Thing>buildConcept(edge().source()));
 
-    private final Cache<RelationType> cachedRelationType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+    private final Cache<RelationType> cachedRelationType = Cache.create(this, () -> {
         if (cachedRelation.isPresent()) {
             return cachedRelation.get().type();
         } else {

@@ -80,7 +80,7 @@ public class SessionFactory {
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
                 graph = janusGraphFactory.openGraph(keyspace.name());
-                cache = new KeyspaceCache(config);
+                cache = new KeyspaceCache();
                 graphLock = new ReentrantReadWriteLock();
                 cacheContainer = new KeyspaceCacheContainer(cache, graph, graphLock);
                 keyspaceCacheMap.put(keyspace, cacheContainer);

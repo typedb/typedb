@@ -26,7 +26,6 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -34,8 +33,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
 
 /**
  * Schema Specific Concept
@@ -48,11 +45,11 @@ import static scala.tools.scalap.scalax.rules.scalasig.NoSymbol.isAbstract;
  *            For example an EntityType or RelationType or Role
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, Cacheable.label(), () -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
-    private final Cache<LabelId> cachedLabelId = Cache.createSessionCache(this, Cacheable.labelId(), () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
-    private final Cache<T> cachedSuperType = Cache.createSessionCache(this, Cacheable.concept(), () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final Cache<Set<T>> cachedDirectSubTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private final Cache<Boolean> cachedIsImplicit = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, () -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final Cache<LabelId> cachedLabelId = Cache.create(this, () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = Cache.create(this, () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = Cache.create(this, () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = Cache.create(this, () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     SchemaConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -140,7 +137,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             deleteNode();
 
             //Update neighbouring caches
-            //noinspection unchecked
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
             //Clear Transaction Cache
@@ -182,10 +178,9 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @param root The current SchemaConcept
      * @return All the sub children of the root. Effectively calls  the cache SchemaConceptImpl#cachedDirectSubTypes recursively
      */
-    @SuppressWarnings("unchecked")
     private Stream<T> nextSubLevel(T root) {
         return Stream.concat(Stream.of(root),
-                             SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
+                SchemaConceptImpl.<T>from(root).cachedDirectSubTypes.get().stream().flatMap(this::nextSubLevel));
     }
 
     /**
@@ -298,7 +293,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     @Override
     public String innerToString() {
         String message = super.innerToString();
-        message = message + " - Label [" + label() + "] - Abstract [" + isAbstract() + "] ";
+        message = message + " - Label [" + label() + "] ";
         return message;
     }
 }

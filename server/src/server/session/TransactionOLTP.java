@@ -813,7 +813,6 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        transactionCache.refreshKeyspaceCache();
         closeTransaction(closeMessage);
     }
 

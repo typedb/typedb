@@ -4,7 +4,6 @@ java_library(
         "//external:jar/org/apache/cassandra/cassandra-all"
     ],
     runtime_deps = [
-        "//dependencies/maven/artifacts/com/addthis/metrics:reporter-config3",
         "//dependencies/maven/artifacts/com/boundary:high-scale-lib",
         "//dependencies/maven/artifacts/com/clearspring/analytics:stream",
         "//dependencies/maven/artifacts/com/github/ben-manes/caffeine:caffeine",
@@ -32,7 +31,6 @@ java_library(
         "//dependencies/maven/artifacts/org/caffinitas/ohc:ohc-core-j8",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",
-        "//dependencies/maven/artifacts/org/eclipse/jdt/core/compiler:ecj",
         "//dependencies/maven/artifacts/org/fusesource:sigar",
         "//dependencies/maven/artifacts/org/jctools:jctools-core",
         "//dependencies/maven/artifacts/org/mindrot:jbcrypt",

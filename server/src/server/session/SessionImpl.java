@@ -56,7 +56,7 @@ public class SessionImpl implements Session {
 
     private final KeyspaceImpl keyspace;
     private final Config config;
-    private ReadWriteLock graphLock;
+    private final ReadWriteLock graphLock;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private Consumer<SessionImpl> onClose;
@@ -87,9 +87,9 @@ public class SessionImpl implements Session {
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
         }
-        // If keyspace cache is empty, copy schema concepts in it.
+        // If keyspace cache is empty, copy schema concept labels in it.
         if (keyspaceCache.isEmpty()) {
-            copySchemaConceptsToKeyspaceCache(tx);
+            copySchemaConceptLabelsToKeyspaceCache(tx);
         }
         tx.commit();
 
@@ -142,11 +142,11 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Copy all Schema Concepts to current KeyspaceCache
+     * Copy schema concepts labels to current KeyspaceCache
      *
      * @param tx
      */
-    private void copySchemaConceptsToKeyspaceCache(TransactionOLTP tx) {
+    private void copySchemaConceptLabelsToKeyspaceCache(TransactionOLTP tx) {
         copyToCache(tx.getMetaConcept());
         copyToCache(tx.getMetaRole());
         copyToCache(tx.getMetaRule());
@@ -161,11 +161,12 @@ public class SessionImpl implements Session {
         return keyspaceCache;
     }
 
+    /**
+     * Copy schema concept and all its subs labels to keyspace cache
+     * @param schemaConcept
+     */
     private void copyToCache(SchemaConcept schemaConcept) {
-        schemaConcept.subs().forEach(concept -> {
-            keyspaceCache.cacheLabel(concept.label(), concept.labelId());
-//            keyspaceCache.cacheType(concept.label(), concept);
-        });
+        schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
     }
 
     private boolean keyspaceHasBeenInitialised(TransactionOLTP tx) {
