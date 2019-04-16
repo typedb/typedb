@@ -43,6 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * Encapsulates The Relation as a VertexElement
@@ -73,9 +74,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Override
     public ConceptId id(){
         if (type().isImplicit()){
-            return ConceptId.of(
-                    vertex().element().value(Schema.VertexProperty.EDGE_RELATION_ID.name())
-            );
+            VertexProperty<Object> edgeId = vertex().element().property(Schema.VertexProperty.EDGE_RELATION_ID.name());
+            if (edgeId.isPresent()) return ConceptId.of(edgeId.value().toString());
         }
         return Schema.conceptId(vertex().element());
     }
