@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.exception.GraqlException;
@@ -70,10 +72,12 @@ class ConjunctionQuery {
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
                 statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(toImmutableSet());
 
-        // Get all variable names mentioned in non-starting fragments
+        // Get all variable names mentioned in non-starting, non-comparing fragments (these should have vars bound elsewhere too)
         Set<Variable> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
-                .filter(fragment -> !fragment.validStartIfDisconnected())
+                .filter(fragment -> !fragment.validStartIfDisconnected()
+                                && !(fragment instanceof ValueFragment)
+                                && !(fragment instanceof NeqFragment))
                 .flatMap(fragment -> fragment.vars().stream())
                 .collect(toImmutableSet());
 

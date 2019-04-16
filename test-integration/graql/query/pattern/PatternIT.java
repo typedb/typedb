@@ -290,6 +290,7 @@ public class PatternIT {
 
     @Test
     public void testValueComparisonDoesNotFail() {
+        // this case can throw [SHARD] errors if not handled correctly - unbound variable may cause issues
         tx.execute(Graql.match(var("x").neq(100)).get());
     }
 
