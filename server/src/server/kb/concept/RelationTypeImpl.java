@@ -24,7 +24,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -38,7 +37,7 @@ import java.util.stream.Stream;
  * They are used to model and categorise n-ary relations.
  */
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private final Cache<Set<Role>> cachedRelates = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Role>> cachedRelates = Cache.create(this, () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);

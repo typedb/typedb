@@ -26,7 +26,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.cache.CacheOwner;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import org.slf4j.Logger;
@@ -50,20 +49,20 @@ public class RelationEdge implements RelationStructure, CacheOwner {
     private final Logger LOG = LoggerFactory.getLogger(RelationEdge.class);
     private final EdgeElement edgeElement;
 
-    private final Cache<RelationType> relationType = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<RelationType> relationType = Cache.create(this, () ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> ownerRole = Cache.create(this, () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = Cache.createTxCache(this, Cacheable.concept(), () -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> valueRole = Cache.create(this, () -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Thing> owner = Cache.create(this, () ->
             edge().tx().factory().<Thing>buildConcept(edge().source())
     );
 
-    private final Cache<Thing> value = Cache.createTxCache(this, Cacheable.concept(), () ->
+    private final Cache<Thing> value = Cache.create(this, () ->
             edge().tx().factory().<Thing>buildConcept(edge().target())
     );
 

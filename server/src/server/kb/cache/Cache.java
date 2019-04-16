@@ -19,7 +19,6 @@
 package grakn.core.server.kb.cache;
 
 import javax.annotation.Nullable;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -27,51 +26,39 @@ import java.util.function.Supplier;
  * An internal cached object which hits the database only when it needs to.
  * This is used to cache the components of ontological concepts. i.e. the fields of Type,
  * RelationType, and Role.
+ * The Cache object is transaction bound as it's associate to a Concept.
  *
  * @param <V> The object it is caching
  */
 public class Cache<V> {
     //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
-
-    //Use to copy the cached value safely
-    private final Cacheable<V> cacheable;
-
-    //Transaction bound. If this is not set it does not yet exist in the scope of the transaction.
-    private final ThreadLocal<V> valueTx = new ThreadLocal<>();
+    private V cacheValue = null;
     //Flag indicating if this Cache can be cleared.
-    // If this is false then the owner object must be deleted and garabe collected for the cache to die
+    // If this is false then the owner object must be deleted and garbage collected for the cache to die
     private final boolean isClearable;
-    //Globally bound value which has already been persisted and acts as a shared component cache
-    private Optional<V> valueGlobal = Optional.empty();
+    private boolean valueRetrieved;
 
-    private Cache(CacheOwner owner, Cacheable<V> cacheable, boolean isClearable, Supplier<V> databaseReader) {
+    private Cache(CacheOwner owner, boolean isClearable, Supplier<V> databaseReader) {
         this.isClearable = isClearable;
-        this.cacheable = cacheable;
         this.databaseReader = databaseReader;
+        this.valueRetrieved = false;
         owner.registerCache(this);
     }
 
     /**
      * Creates a Cache that will only exist within the context of a TransactionOLTP
      */
-    public static Cache createTxCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
-        return new Cache(owner, cacheable, true, databaseReader);
-    }
-
-    /**
-     * Creates a Cache that will only flush to a central shared cache then the TransactionOLTP is disposed off
-     */
-    public static Cache createSessionCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
-        return new Cache(owner, cacheable, true, databaseReader);
+    public static Cache create(CacheOwner owner, Supplier databaseReader) {
+        return new Cache(owner, true, databaseReader);
     }
 
     /**
      * Creates a session level Cache which cannot be cleared.
      * When creating these types of Caches the only way to get rid of them is to remove the owner ConceptImpl
      */
-    public static Cache createPersistentCache(CacheOwner owner, Cacheable cacheable, Supplier databaseReader) {
-        return new Cache(owner, cacheable, false, databaseReader);
+    public static Cache createPersistentCache(CacheOwner owner, Supplier databaseReader) {
+        return new Cache(owner, false, databaseReader);
     }
 
     /**
@@ -81,16 +68,11 @@ public class Cache<V> {
      */
     @Nullable
     public V get() {
-        V value = valueTx.get();
-
-        if (value != null) return value;
-        if (valueGlobal.isPresent()) value = cacheable.copy(valueGlobal.get());
-        if (value == null) value = databaseReader.get();
-        if (value == null) return null;
-
-        valueTx.set(value);
-
-        return valueTx.get();
+        if (!valueRetrieved) {
+            cacheValue = databaseReader.get();
+            valueRetrieved = true;
+        }
+        return cacheValue;
     }
 
     /**
@@ -98,24 +80,26 @@ public class Cache<V> {
      */
     public void clear() {
         if (isClearable) {
-            valueTx.remove();
+            cacheValue = null;
+            valueRetrieved = false;
         }
     }
 
     /**
-     * Explicitly set the cache to a provided value
+     * Explicitly set the cache to a provided value.
      *
      * @param value the value to be cached
      */
     public void set(@Nullable V value) {
-        valueTx.set(value);
+        cacheValue = value;
+        valueRetrieved = true;
     }
 
     /**
-     * @return true if there is anything stored in the cache
+     * @return true if a value has been retrieve and save into the current cache
      */
     public boolean isPresent() {
-        return valueTx.get() != null || valueGlobal.isPresent();
+        return valueRetrieved;
     }
 
     /**
