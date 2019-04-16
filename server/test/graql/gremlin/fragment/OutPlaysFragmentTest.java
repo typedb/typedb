@@ -29,6 +29,7 @@ import org.junit.Test;
 import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 import static grakn.core.server.kb.Schema.EdgeLabel.SUB;
 import static grakn.core.server.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -52,6 +53,7 @@ public class OutPlaysFragmentTest {
                 .unfold()
                 .out(PLAYS.getLabel());
         // Make sure we check this is a vertex, then traverse upwards subs once and plays
-        assertThat(traversal, is(equalTo(expected)));
+        // NB: we are using lambda filter steps now and these are not comparable
+        assertEquals(expected.toString(), traversal.toString());
     }
 }
