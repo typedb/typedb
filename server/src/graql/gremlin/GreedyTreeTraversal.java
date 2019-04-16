@@ -64,7 +64,7 @@ public class GreedyTreeTraversal {
 
             assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
 
-            // add edge fragment first, then node fragmentwhenQueryingForRelationWithNonRoleRoles_Throwss
+            // add edge fragment first, then node fragment
             Fragment fragment = getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent);
             if (fragment != null) plan.add(fragment);
 

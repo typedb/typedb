@@ -68,7 +68,7 @@ public class TraversalPlanner {
 
     protected static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
 
-    /**```
+    /**
      * Create a traversal plan.
      *
      * @param pattern a pattern to find a query plan for
@@ -134,7 +134,7 @@ public class TraversalPlanner {
         // this shouldn't be necessary, but we keep it just in case of an edge case that we haven't thought of
         List<Fragment> remainingFragments = fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values());
         if (remainingFragments.size() > 0) {
-            LOG.error("Expected all fragments to be handled, but found these: " + remainingFragments);
+            LOG.warn("Expected all fragments to be handled, but found these: " + remainingFragments);
             plan.addAll(remainingFragments);
         }
 
