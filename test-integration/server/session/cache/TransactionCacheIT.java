@@ -196,18 +196,4 @@ public class TransactionCacheIT {
         List<String> cachedSchemaConceptLabels = schemaConceptCache.values().stream().map(schemaConcept -> schemaConcept.label().toString()).collect(Collectors.toList());
         assertThat(cachedSchemaConceptLabels, containsInAnyOrder( "entity", "thing"));
     }
-
-    @Test
-    public void whenDeleteSchemaConcept_TheConceptIsNotUsableAnymore() {
-        // define and insert a concept
-        EntityType person = tx.putEntityType("person");
-
-        TransactionCache transactionCache = tx.cache();
-
-        person.delete();
-
-        String marco = person.label().getValue();
-        System.out.println(marco);
-
-    }
 }
