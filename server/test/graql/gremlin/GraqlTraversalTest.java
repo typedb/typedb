@@ -280,7 +280,7 @@ public class GraqlTraversalTest {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern, tx);
+        return TraversalPlanner.createTraversal(pattern, tx);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {

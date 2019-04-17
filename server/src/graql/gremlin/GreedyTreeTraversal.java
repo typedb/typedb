@@ -35,7 +35,7 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.NodesUtil.nodeToPlanFragments;
 
-public class ArborescenceToPlan {
+public class GreedyTreeTraversal {
 
     // standard tree traversal from the root node
     // always visit the branch/node with smaller cost
@@ -64,7 +64,7 @@ public class ArborescenceToPlan {
 
             assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
 
-            // add edge fragment first, then node fragments
+            // add edge fragment first, then node fragment
             Fragment fragment = getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent);
             if (fragment != null) plan.add(fragment);
 

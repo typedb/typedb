@@ -25,7 +25,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptId;
 import grakn.core.graql.gremlin.GraqlTraversal;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Resolution planner using {@link GreedyTraversalPlan} to establish optimal resolution order..
+ * Resolution planner using {@link TraversalPlanner} to establish optimal resolution order..
  */
 public class GraqlTraversalPlanner {
 
@@ -56,7 +56,7 @@ public class GraqlTraversalPlanner {
      *
      * Refined plan procedure:
      * - establish a list of starting atom candidates based on their substitutions
-     * - create a plan using {@link GreedyTraversalPlan}
+     * - create a plan using {@link TraversalPlanner}
      * - if the graql plan picks an atom that is not a candidate
      *   - pick an optimal candidate
      *   - call the procedure on atoms with removed candidate
@@ -151,7 +151,7 @@ public class GraqlTraversalPlanner {
                 .forEach(atom -> atom.getVarProperties().forEach(property -> propertyMap.put(property, atom)));
         Set<VarProperty> properties = propertyMap.keySet();
 
-        GraqlTraversal graqlTraversal = GreedyTraversalPlan.createTraversal(queryPattern, tx);
+        GraqlTraversal graqlTraversal = TraversalPlanner.createTraversal(queryPattern, tx);
         ImmutableList<Fragment> fragments = Iterables.getOnlyElement(graqlTraversal.fragments());
 
         List<Atom> atomList = new ArrayList<>();

@@ -22,7 +22,7 @@ import com.google.common.base.Equivalence;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.gremlin.GraqlTraversal;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
@@ -76,7 +76,7 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
                     .map(a -> a.explain(new LookupExplanation(query.getPattern())));
         }
 
-        GraqlTraversal traversal = GreedyTraversalPlan.createTraversal(query.getPattern(), tx);
+        GraqlTraversal traversal = TraversalPlanner.createTraversal(query.getPattern(), tx);
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
         return tx.executor().traversal(query.getPattern().variables(), traversal)

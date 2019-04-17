@@ -24,7 +24,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
@@ -47,6 +47,7 @@ import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerIT {
@@ -293,6 +294,20 @@ public class QueryPlannerIT {
     }
 
     @Test
+    public void noIndexedStartNodeGeneratesValidPlans() {
+        // a pattern without a indexed starting point so any of X, Y, Z,
+        Pattern pattern = and(
+                var().rel("role1", x).rel("role2", z),
+                var().rel("role1", y).rel("role2", z)
+        );
+        for (int i = 0; i < 20; i++) {
+            // ensure that any (for now) chosen randomly starting point still generates full traversals with all required fragments
+            ImmutableList<Fragment> plan = getPlan(pattern);
+            assertEquals(6, plan.size());
+        }
+    }
+
+    @Test
     @Ignore
     public void avoidImplicitTypes() {
         /*
@@ -457,6 +472,6 @@ public class QueryPlannerIT {
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern, tx).fragments().iterator().next();
+        return TraversalPlanner.createTraversal(pattern, tx).fragments().iterator().next();
     }
 }

@@ -41,7 +41,7 @@ import java.util.Set;
 import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
-abstract class InPlaysFragment extends Fragment {
+abstract class InPlaysFragment extends EdgeFragment {
 
     @Override
     public abstract Variable end();
@@ -76,24 +76,8 @@ abstract class InPlaysFragment extends Fragment {
     }
 
     @Override
-    public Set<Node> getNodes() {
-        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.PLAYS, new HashSet<>(Arrays.asList(start(), end()))));
-        middle.setInvalidStartingPoint();
-        return Sets.newHashSet(start, end, middle);
+    NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeType.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
     }
 
-    @Override
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.PLAYS, new HashSet<>(Arrays.asList(start(), end()))));
-        // directed edge: middle -> start
-        return new Pair<>(middle, start);
-    }
-
-    @Override
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
-        return directedEdges(NodeId.NodeType.PLAYS, nodes);
-    }
 }
