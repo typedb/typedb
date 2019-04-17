@@ -65,14 +65,6 @@ import static java.util.stream.Collectors.toSet;
  *            For example EntityType or RelationType
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = new Cache<>(() -> {
-        int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
-        Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
-        if (type == null) {
-            throw TransactionException.missingType(id());
-        }
-        return type.label();
-    });
 
     private final Cache<V> cachedType = new Cache<>(() -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
@@ -379,17 +371,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
-     */
-    Label getInternalType() {
-        return cachedInternalType.get();
-    }
-
-    /**
-     * @param type The type of this concept
+     * @param type Set property on vertex that stores Type label - this is needed by Analytics
      */
     private void setInternalType(Type type) {
-        cachedInternalType.set(type.label());
         vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID, type.labelId().getValue());
     }
 
