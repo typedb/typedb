@@ -76,7 +76,6 @@ public class Utility {
 
         try {
             return Sets.newHashSet(Schema.BaseType.values()).contains(Schema.BaseType.valueOf(vertex.label()));
-            //return vertex.property(Schema.VertexProperty.ID.name()).isPresent();
         } catch (IllegalStateException e) {
             return false;
         }

@@ -287,14 +287,12 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
     private boolean source(Vertex vertex) {
         Object source = persistentProperties.get(sourceId);
         Object vertexId = vertex.id();
-        //this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
         return source.toString().equals(vertexId.toString());
     }
 
     private boolean destination(Vertex vertex) {
-        Object source = (String) persistentProperties.get(destinationId);
+        Object source = persistentProperties.get(destinationId);
         Object vertexId = vertex.id();
-        //this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
         return source.toString().equals(vertexId.toString());
     }
 

@@ -56,7 +56,6 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean>
 
     public ConnectedComponentVertexProgram(ConceptId sourceId) {
         this.persistentProperties.put(SOURCE, Schema.elementId(sourceId));
-        //this.persistentProperties.put(SOURCE, sourceId.getValue());
     }
 
     @Override
