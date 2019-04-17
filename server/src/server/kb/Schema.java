@@ -56,6 +56,10 @@ public final class Schema {
         throw new UnsupportedOperationException();
     }
 
+    public static ConceptId conceptIdFromVertexId(Object vertexId){
+        return ConceptId.of(PREFIX_VERTEX + vertexId);
+    }
+
     public static ConceptId conceptId(Element element){
         String prefix = element instanceof Edge? PREFIX_EDGE : PREFIX_VERTEX;
         return ConceptId.of(prefix + element.id().toString());
