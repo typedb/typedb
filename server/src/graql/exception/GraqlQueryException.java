@@ -21,7 +21,6 @@ package grakn.core.graql.exception;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
@@ -33,6 +32,7 @@ import grakn.core.graql.reasoner.query.ResolvableQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
 import java.util.Set;
@@ -55,11 +55,11 @@ public class GraqlQueryException extends GraknException {
     private final String NAME = "GraqlQueryException";
 
     private GraqlQueryException(String error) {
-        super(error);
+        super(error, null, false, false);
     }
 
     private GraqlQueryException(String error, Exception cause) {
-        super(error, cause);
+        super(error, cause, false, false);
     }
 
     @Override
