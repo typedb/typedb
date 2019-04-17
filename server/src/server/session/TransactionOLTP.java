@@ -666,6 +666,8 @@ public class TransactionOLTP implements Transaction {
                 }
 
                 T concept = getConcept(getTinkerTraversal().V(Schema.elementId(id)));
+                //if the concept doesn't exists, it is possible we are referring to a ReifiedRelation which
+                //uses an its previous EdgeRelation as an id so property must be fetched
                 return concept == null?
                         this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue()) :
                         concept;

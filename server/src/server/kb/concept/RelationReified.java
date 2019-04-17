@@ -73,6 +73,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
     @Override
     public ConceptId id(){
+        //if this is implicit, it's possible than we reified it - the concept id of the edge relation is contained in the property
         if (type().isImplicit()){
             VertexProperty<Object> edgeId = vertex().element().property(Schema.VertexProperty.EDGE_RELATION_ID.name());
             if (edgeId.isPresent()) return ConceptId.of(edgeId.value().toString());
