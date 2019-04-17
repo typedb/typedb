@@ -62,7 +62,6 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
-        "@org-apache-tinkerpop-gremlin-core//jar"
     ],
 )
 
