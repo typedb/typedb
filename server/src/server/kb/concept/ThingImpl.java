@@ -65,7 +65,7 @@ import static java.util.stream.Collectors.toSet;
  *            For example EntityType or RelationType
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = Cache.create(this, () -> {
+    private final Cache<Label> cachedInternalType = new Cache<>(() -> {
         int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
         Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
         if (type == null) {
@@ -74,7 +74,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.label();
     });
 
-    private final Cache<V> cachedType = Cache.create(this, () -> {
+    private final Cache<V> cachedType = new Cache<>(() -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
                 flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
@@ -205,19 +205,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
         if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
 
-        Set<Label> attributeHierachyLabels = completeAttributeTypes.stream()
+        Set<Label> attributeHierarchyLabels = completeAttributeTypes.stream()
                 .flatMap(t -> (Stream<AttributeType>) t.subs())
                 .map(SchemaConcept::label)
                 .collect(toSet());
 
         Set<Integer> ownerRoleIds = implicitLabelsToIds(
-                attributeHierachyLabels,
+                attributeHierarchyLabels,
                 Sets.newHashSet(
                         Schema.ImplicitType.HAS_OWNER,
                         Schema.ImplicitType.KEY_OWNER
                 ));
         Set<Integer> valueRoleIds = implicitLabelsToIds(
-                attributeHierachyLabels,
+                attributeHierarchyLabels,
                 Sets.newHashSet(
                         Schema.ImplicitType.HAS_VALUE,
                         Schema.ImplicitType.KEY_VALUE

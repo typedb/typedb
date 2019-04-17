@@ -131,21 +131,6 @@ java_test(
     ],
 )
 
-java_test(
-    name = "query-validity-it",
-    size = "medium",
-    srcs = ["QueryValidityIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
-    test_class = "grakn.core.graql.reasoner.query.QueryValidityIT",
-    deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
 
 java_test(
     name = "ontological-query-it",
@@ -234,7 +219,6 @@ checkstyle_test(
         ":explanation-it",
         ":negation-it",
         ":query-unification-it",
-        ":query-validity-it",
         ":query-it",
         ":ontological-query-it",
         ":resolution-plan-it",

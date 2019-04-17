@@ -24,7 +24,6 @@ import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.reasoner.utils.Pair;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -36,28 +35,29 @@ import java.util.stream.Collectors;
 
 public class NodesUtil {
 
-    static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
-        Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
-        for (Fragment fragment : connectedFragments) {
-            Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
-            if (middleNodeDirectedEdge != null) {
-                middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.getKey(), new HashMap<>());
-                middleNodeFragmentMapping.get(middleNodeDirectedEdge.getKey()).put(middleNodeDirectedEdge.getValue(), fragment);
-            }
-        }
-        return middleNodeFragmentMapping;
-
-    }
 
     static ImmutableMap<NodeId, Node> buildNodesWithDependencies(Set<Fragment> fragments) {
         // NOTE handling building the dependencies in each connected subgraph doesn't work,
         //  because dependencies can step across disconnected fragment sets, eg  `$x; $y; $x == $y`
 
-        // build in a map using a map to squash duplicates
+        // build a map to squash duplicates
         Map<NodeId, Node> nodes = new HashMap<>();
-        fragments.forEach(fragment ->
-                fragment.getNodes().forEach(node -> nodes.put(node.getNodeId(), node))
-        );
+
+        for (Fragment fragment : fragments) {
+            Set<Node> fragmentNodes = fragment.getNodes();
+            for (Node node : fragmentNodes) {
+                NodeId nodeId = node.getNodeId();
+                nodes.merge(nodeId, node, (node1, node2) -> {
+                    // key point: if any fragment indicates a node is not a valid starting point, it never is!
+                    if (!node1.isValidStartingPoint()) {
+                        return node1;
+                    } else {
+                        // either node2 is a valid starting point or it doesn't matter
+                        return node2;
+                    }
+                });
+            }
+        }
 
         // convert to immutable map
         ImmutableMap<NodeId, Node> immutableNodes = ImmutableMap.copyOf(nodes);
@@ -130,4 +130,5 @@ public class NodesUtil {
 
         return subplan;
     }
+
 }

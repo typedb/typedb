@@ -34,31 +34,11 @@ public class Cache<V> {
     //If no cache can produce the data then the database is read
     private final Supplier<V> databaseReader;
     private V cacheValue = null;
-    //Flag indicating if this Cache can be cleared.
-    // If this is false then the owner object must be deleted and garbage collected for the cache to die
-    private final boolean isClearable;
     private boolean valueRetrieved;
 
-    private Cache(CacheOwner owner, boolean isClearable, Supplier<V> databaseReader) {
-        this.isClearable = isClearable;
+    public Cache(Supplier<V> databaseReader) {
         this.databaseReader = databaseReader;
         this.valueRetrieved = false;
-        owner.registerCache(this);
-    }
-
-    /**
-     * Creates a Cache that will only exist within the context of a TransactionOLTP
-     */
-    public static Cache create(CacheOwner owner, Supplier databaseReader) {
-        return new Cache(owner, true, databaseReader);
-    }
-
-    /**
-     * Creates a session level Cache which cannot be cleared.
-     * When creating these types of Caches the only way to get rid of them is to remove the owner ConceptImpl
-     */
-    public static Cache createPersistentCache(CacheOwner owner, Supplier databaseReader) {
-        return new Cache(owner, false, databaseReader);
     }
 
     /**
@@ -73,16 +53,6 @@ public class Cache<V> {
             valueRetrieved = true;
         }
         return cacheValue;
-    }
-
-    /**
-     * Clears the cache.
-     */
-    public void clear() {
-        if (isClearable) {
-            cacheValue = null;
-            valueRetrieved = false;
-        }
     }
 
     /**

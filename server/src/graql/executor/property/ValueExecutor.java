@@ -63,7 +63,10 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return ImmutableSet.of(EquivalentFragmentSets.value(property, var, operation));
+        return ImmutableSet.of(
+                EquivalentFragmentSets.notInternalFragmentSet(property, var),
+                EquivalentFragmentSets.value(property, var, operation)
+        );
     }
 
     @Override

@@ -29,6 +29,7 @@ java_test(
         "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -175,6 +176,22 @@ java_test(
     ],
 )
 
+
+java_test(
+    name = "query-validity-it",
+    size = "medium",
+    srcs = ["QueryValidityIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.query.QueryValidityIT",
+    deps = [
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
@@ -187,6 +204,7 @@ checkstyle_test(
         ":query-admin-it",
         ":query-error-it",
         ":query-planner-it",
+        ":query-validity-it",
         ":type-conversion-it",
     ],
 )

@@ -45,11 +45,11 @@ import java.util.stream.Stream;
  *            For example an EntityType or RelationType or Role
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final Cache<Label> cachedLabel = Cache.createPersistentCache(this, () -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
-    private final Cache<LabelId> cachedLabelId = Cache.create(this, () -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
-    private final Cache<T> cachedSuperType = Cache.create(this, () -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final Cache<Set<T>> cachedDirectSubTypes = Cache.create(this, () -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private final Cache<Boolean> cachedIsImplicit = Cache.create(this, () -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final Cache<Label> cachedLabel = new Cache<>(() -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final Cache<LabelId> cachedLabelId = new Cache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final Cache<T> cachedSuperType = new Cache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     SchemaConceptImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -138,12 +138,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
             //Update neighbouring caches
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
-
-            //Clear Transaction Cache
-            vertex().tx().cache().remove(this);
-
-            //Clear internal caching
-            txCacheClear();
 
             //clear rule cache
             vertex().tx().ruleCache().clear();

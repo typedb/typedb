@@ -35,6 +35,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
+import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static grakn.core.common.exception.ErrorMessage.INSERT_RECURSIVE;
@@ -84,6 +85,14 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidRoleLabel(Label label) {
         return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(label, label));
+    }
+
+    public static GraqlQueryException matchWithoutAnyProperties(Statement statement) {
+        return create("Require statement to have at least one property: `%s`", statement);
+    }
+
+    public static GraqlQueryException unboundComparisonVariables(Set<Variable> unboundVariables) {
+        return GraqlQueryException.create("Variables used in comparisons cannot be unbounded %s", unboundVariables.toString());
     }
 
     public static GraqlQueryException kCoreOnRelationType(Label label) {
@@ -168,6 +177,8 @@ public class GraqlQueryException extends GraknException {
     public static GraqlQueryException insertNoExpectedProperty(String property, Statement var) {
         return create("missing expected property `%s` in `%s`", property, var);
     }
+
+
 
     /**
      * Thrown when attempting to insert a concept that already exists.
