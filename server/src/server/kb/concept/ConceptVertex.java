@@ -32,7 +32,13 @@ public interface ConceptVertex {
         return (ConceptVertex) concept;
     }
 
+    /**
+     * @return corresponding Janus vertex
+     */
     VertexElement vertex();
 
+    /**
+     * @return the id of the Janus vertex
+     */
     default Object elementId(){ return vertex().id();}
 }
