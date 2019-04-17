@@ -208,8 +208,8 @@ public class TransactionOLTP implements Transaction {
      * @param conceptId ConceptId to be set on the vertex
      * @return just created Vertex
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
-        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptId));
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
+        return executeLockingMethod(() -> factory().addVertexElementWithEdgeIdProperty(baseType, conceptId));
     }
 
     /**
@@ -409,9 +409,11 @@ public class TransactionOLTP implements Transaction {
      */
     //----------------------------------------------General Functionality-----------------------------------------------
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
-        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
-        T concept = null;
+        return getConcept(getTinkerTraversal().V().has(key.name(), value));
+    }
 
+    private <T extends Concept> T getConcept(Iterator<Vertex> vertices) {
+        T concept = null;
         if (vertices.hasNext()) {
             Vertex vertex;
             // Get read lock before accessing graph so that if a commit is occurring, we wait
@@ -424,7 +426,6 @@ public class TransactionOLTP implements Transaction {
             }
             concept = factory().buildConcept(vertex);
         }
-
         return concept;
     }
 
@@ -663,7 +664,13 @@ public class TransactionOLTP implements Transaction {
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
-                return this.getConcept(Schema.VertexProperty.ID, id.getValue());
+
+                T concept = getConcept(getTinkerTraversal().V(Schema.elementId(id)));
+                //if the concept doesn't exists, it is possible we are referring to a ReifiedRelation which
+                //uses an its previous EdgeRelation as an id so property must be fetched
+                return concept == null?
+                        this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue()) :
+                        concept;
             }
         });
     }

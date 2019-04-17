@@ -344,7 +344,7 @@ class ComputeExecutor {
         Multimap<ConceptId, ConceptId> pathsAsEdgeList = HashMultimap.create();
         Map<String, Set<String>> resultFromMemory = result.memory().get(ShortestPathVertexProgram.SHORTEST_PATH);
         resultFromMemory.forEach((id, idSet) -> idSet.forEach(id2 -> {
-            pathsAsEdgeList.put(ConceptId.of(id), ConceptId.of(id2));
+            pathsAsEdgeList.put(Schema.conceptIdFromVertexId(id), Schema.conceptIdFromVertexId(id2));
         }));
 
         List<List<ConceptId>> paths;
@@ -544,8 +544,8 @@ class ComputeExecutor {
     /**
      * Helper method to get list of all shortest paths
      *
-     * @param resultGraph
-     * @param fromID
+     * @param resultGraph edge map
+     * @param fromID starting vertex
      * @return
      */
     private List<List<ConceptId>> getComputePathResultList(Multimap<ConceptId, ConceptId> resultGraph, ConceptId fromID) {
