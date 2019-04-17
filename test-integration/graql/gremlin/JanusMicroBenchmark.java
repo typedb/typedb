@@ -17,6 +17,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.server.kb.Schema.EdgeLabel.ATTRIBUTE;
+import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
+import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
 import static graql.lang.Graql.var;
 
 /**
@@ -38,7 +42,7 @@ import static graql.lang.Graql.var;
 public class JanusMicroBenchmark {
     public static final GraknTestServer server = new GraknTestServer();
 
-    private void defineSchema(SessionImpl session) {
+    private static void defineSchema(SessionImpl session) {
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +
                     "age sub attribute, datatype long; " +
@@ -50,16 +54,16 @@ public class JanusMicroBenchmark {
         }
     }
 
-    private String randomString() {
+    private static String randomString() {
         return java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 10);
     }
 
-    private Long randomLong() {
+    private static Long randomLong() {
         Random random = new Random();
         return random.nextLong();
     }
 
-    private void insert(SessionImpl session, int size, int ownersPerAge, int ownersPerName) {
+    private static void insert(SessionImpl session, int size, int ownersPerAge, int ownersPerName) {
         String nameAttr = "";
         long ageAttr = 0;
         for (int i = 0; i < size; i++) {
@@ -82,14 +86,14 @@ public class JanusMicroBenchmark {
         }
     }
 
-    private SessionImpl newSession(int initialSize, int ownersPerAge, int ownersPerName) {
+    private static SessionImpl newSession(int initialSize, int ownersPerAge, int ownersPerName) {
         SessionImpl session = server.sessionWithNewKeyspace();
         defineSchema(session);
         insert(session, initialSize, ownersPerAge, ownersPerName);
         return session;
     }
 
-    private List<ConceptMap> traversalToAnswers(GraphTraversal<Vertex, Map<String, Element>> traversal, TransactionOLTP tx, Set<Variable> vars) {
+    private static List<ConceptMap> traversalToAnswers(GraphTraversal<Vertex, Map<String, Element>> traversal, TransactionOLTP tx, Set<Variable> vars) {
         return traversal
                 .toStream()
                 .map(elements -> createAnswer(vars, elements, tx))
@@ -99,7 +103,7 @@ public class JanusMicroBenchmark {
                 .collect(Collectors.toList());
     }
 
-    private Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements, TransactionOLTP tx) {
+    private static Map<Variable, Concept> createAnswer(Set<Variable> vars, Map<String, Element> elements, TransactionOLTP tx) {
         Map<Variable, Concept> map = new HashMap<>();
         for (Variable var : vars) {
             Element element = elements.get(var.symbol());
@@ -117,6 +121,19 @@ public class JanusMicroBenchmark {
             }
         }
         return map;
+    }
+
+    @Test
+    public static void testNotPropertyVersusHasProperty() {
+        SessionImpl session = newSession(2000, 50, 25);
+
+        try (TransactionOLTP tx = session.transaction().read()) {
+            GraphTraversal<Vertex, Vertex> traversal = tx.getTinkerTraversal().V()
+                    .has(SHARD.name());
+            traversal.toStream().collect(Collectors.toList());
+        }
+
+
     }
 
     //                GraphTraversal<Vertex, Map<String, Element>> test = tx.getTinkerTraversal().V()
