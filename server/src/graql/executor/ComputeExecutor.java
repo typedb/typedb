@@ -544,8 +544,8 @@ class ComputeExecutor {
     /**
      * Helper method to get list of all shortest paths
      *
-     * @param resultGraph
-     * @param fromID
+     * @param resultGraph edge map
+     * @param fromID starting vertex
      * @return
      */
     private List<List<ConceptId>> getComputePathResultList(Multimap<ConceptId, ConceptId> resultGraph, ConceptId fromID) {
