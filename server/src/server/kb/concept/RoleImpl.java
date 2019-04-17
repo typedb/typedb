@@ -40,8 +40,8 @@ import java.util.stream.Stream;
  * 2. It is special in that it is unique to RelationTypes.
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
-    private final Cache<Set<Type>> cachedDirectPlayedByTypes = Cache.create(this, () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final Cache<Set<RelationType>> cachedRelationTypes = Cache.create(this, () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RoleImpl(VertexElement vertexElement) {
         super(vertexElement);

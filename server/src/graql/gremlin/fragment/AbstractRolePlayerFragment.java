@@ -51,7 +51,7 @@ import static java.util.stream.Collectors.toSet;
  * {@link OutRolePlayerFragment}.
  *
  */
-public abstract class AbstractRolePlayerFragment extends Fragment {
+public abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     static final Variable RELATION_EDGE = reservedVar("RELATION_EDGE");
     static final Variable RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
@@ -89,37 +89,10 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
     }
 
     @Override
-    public Set<Node> getNodes() {
-        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.VAR, edge()));
-        middle.setInvalidStartingPoint();
-        return new HashSet<>(Arrays.asList(start, end, middle));
+    NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeType.VAR, edge());
     }
 
-    @Override
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node middle = nodes.get(NodeId.of(NodeId.NodeType.VAR, edge()));
-        // directed edge: middle -> start
-        return new Pair<>(middle, start);
-    }
-
-    @Override
-    public final Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
-
-        // this is a somewhat special case, where the middle node being converted to a vertex
-        // may be addressed by a variable
-
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
-        Node middle = nodes.get(NodeId.of(NodeId.NodeType.VAR, edge()));
-        middle.setInvalidStartingPoint();
-
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
 
     static void applyLabelsToTraversal(
             GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,

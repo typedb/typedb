@@ -32,6 +32,8 @@ import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -56,16 +58,15 @@ import java.util.stream.Collectors;
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
 import static grakn.core.graql.gremlin.NodesUtil.nodeToPlanFragments;
-import static grakn.core.graql.gremlin.NodesUtil.virtualMiddleNodeToFragmentMapping;
 import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
 import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 
 /**
  * Class for generating greedy traversal plans
  */
-public class GreedyTraversalPlan {
+public class TraversalPlanner {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(GreedyTraversalPlan.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
 
     /**
      * Create a traversal plan.
@@ -110,33 +111,42 @@ public class GreedyTraversalPlan {
 
         // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
-            // collect the mapping from directed bedge back to fragments -- inverse operation of creating virtual middle nodes
-            Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
-
+            // one of two cases - either we have a connected graph > 1 node, which is used to compute a MST, OR exactly 1 node
             Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes, tx);
             if (subgraphArborescence != null) {
-                List<Fragment> subplan = ArborescenceToPlan.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
+                // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
+                Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
+                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
+            } else {
+                // find and include all the nodes not touched in the MST in the plan
+               Set<Node> unhandledNodes = connectedFragments.stream()
+                        .flatMap(fragment -> fragment.getNodes().stream())
+                        .map(node -> queryGraphNodes.get(node.getNodeId()))
+                        .collect(Collectors.toSet());
+               if (unhandledNodes.size() != 1) {
+                   throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
+               }
+               plan.addAll(nodeToPlanFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes, false));
             }
-
-            // find and include all the nodes not touched in the MST in the plan
-            Set<Node> connectedNodes = connectedFragments.stream()
-                    .flatMap(fragment -> fragment.getNodes().stream())
-                    .map(node -> queryGraphNodes.get(node.getNodeId()))
-                    .collect(Collectors.toSet());
-            plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, connectedNodes));
         }
-        plan.addAll(fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values()));
+
+        // this shouldn't be necessary, but we keep it just in case of an edge case that we haven't thought of
+        List<Fragment> remainingFragments = fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values());
+        if (remainingFragments.size() > 0) {
+            LOG.warn("Expected all fragments to be handled, but found these: " + remainingFragments);
+            plan.addAll(remainingFragments);
+        }
 
         LOG.trace("Greedy Plan = {}", plan);
         return plan;
     }
 
 
-    private static Arborescence<Node> computeArborescence(Set<Fragment> fragments, ImmutableMap<NodeId, Node> nodes, TransactionOLTP tx) {
+    private static Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes, TransactionOLTP tx) {
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
-        fragments.forEach(fragment -> {
+        connectedFragments.forEach(fragment -> {
             if (fragment.hasFixedFragmentCost()) {
                 NodeId startNodeId = Iterators.getOnlyElement(fragment.getNodes().iterator()).getNodeId();
                 Node startNode = nodes.get(startNodeId);
@@ -146,13 +156,13 @@ public class GreedyTraversalPlan {
         });
 
         // update cost of reaching subtypes from an indexed supertyp
-        updateFixedCostSubsReachableByIndex(nodes, nodesWithFixedCost, fragments);
+        updateFixedCostSubsReachableByIndex(nodes, nodesWithFixedCost, connectedFragments);
 
         // fragments that represent Janus edges
         final Set<Fragment> edgeFragmentSet = new HashSet<>();
 
         // save the fragments corresponding to edges, and updates some costs if we can via shard count
-        for (Fragment fragment : fragments) {
+        for (Fragment fragment : connectedFragments) {
             if (fragment.end() != null) {
                 edgeFragmentSet.add(fragment);
                 // update the cost of an `InIsa` Fragment if we have some estimated cost
@@ -171,7 +181,7 @@ public class GreedyTraversalPlan {
         if (!weightedGraph.isEmpty()) {
             // sparse graph for better performance
             SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-            Set<Node> startingNodes = chooseStartingNodeSet(fragments, nodes, sparseWeightedGraph);
+            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph);
 
             // find the minimum spanning tree for each root
             // then get the tree with minimum weight
@@ -312,6 +322,18 @@ public class GreedyTraversalPlan {
             // recursively process all the sub fragments
             updateFixedCostSubsReachableByIndex(allNodes, nodesWithFixedCost, fragments);
         }
+    }
+
+    static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
+        Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
+        for (Fragment fragment : connectedFragments) {
+            Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
+            if (middleNodeDirectedEdge != null) {
+                middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.getKey(), new HashMap<>());
+                middleNodeFragmentMapping.get(middleNodeDirectedEdge.getKey()).put(middleNodeDirectedEdge.getValue(), fragment);
+            }
+        }
+        return middleNodeFragmentMapping;
     }
 
 }

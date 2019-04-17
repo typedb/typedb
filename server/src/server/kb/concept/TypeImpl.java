@@ -52,10 +52,10 @@ import java.util.stream.Stream;
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
-    private final Cache<Boolean> cachedIsAbstract = Cache.create(this, () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
     //This cache is different in order to keep track of which plays are required
-    private final Cache<Map<Role, Boolean>> cachedDirectPlays = Cache.create(this, () -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {

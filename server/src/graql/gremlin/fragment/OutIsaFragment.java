@@ -48,7 +48,7 @@ import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
  */
 
 @AutoValue
-public abstract class OutIsaFragment extends Fragment {
+public abstract class OutIsaFragment extends EdgeFragment {
 
     @Override
     public abstract Variable end();
@@ -88,16 +88,8 @@ public abstract class OutIsaFragment extends Fragment {
     }
 
     @Override
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node middle = new Node(NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end()))));
-        // directed edge: middle -> start
-        return new Pair<>(middle, start);
-    }
-
-    @Override
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
-        return directedEdges(NodeId.NodeType.ISA, nodes);
+    NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
 
     @Override

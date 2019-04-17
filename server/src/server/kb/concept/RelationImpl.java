@@ -26,11 +26,8 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.structure.VertexElement;
 
-import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -41,7 +38,7 @@ import java.util.stream.Stream;
  * Encapsulates relations between Thing
  * A relation which is an instance of a RelationType defines how instances may relate to one another.
  */
-public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
+public class RelationImpl implements Relation, ConceptVertex {
     private RelationStructure relationStructure;
 
     private RelationImpl(RelationStructure relationStructure) {
@@ -74,7 +71,7 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     /**
      * Reifys and returns the RelationReified
      */
-    public RelationReified reify() {
+    private RelationReified reify() {
         if (relationStructure.isReified()) return relationStructure.reify();
 
         //Get the role players to transfer
@@ -229,11 +226,6 @@ public class RelationImpl implements Relation, ConceptVertex, CacheOwner {
     @Override
     public VertexElement vertex() {
         return reify().vertex();
-    }
-
-    @Override
-    public Collection<Cache> caches() {
-        return structure().caches();
     }
 
     public Relation attributeInferred(Attribute attribute) {
