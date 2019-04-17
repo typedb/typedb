@@ -19,10 +19,14 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "micro-benchmark",
-    size = "small",
+    name = "janus-micro-benchmark",
+    size = "large",
     srcs = ["JanusMicroBenchmark.java"],
-    test_class = "grakn.core.graql.gremlin.MicroBenchmark",
+    test_class = "grakn.core.graql.gremlin.JanusMicroBenchmark",
+    classpath_resources = [ "//test-integration/resources:logback-test"],
+    data = [
+        "//test-integration/resources:cassandra-embedded-no-caches",
+        "//test-integration/resources:grakn-properties-no-caches"],
     deps = [
         "//common",
         "//concept",
@@ -37,6 +41,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":micro-benchmark",
+        ":janus-micro-benchmark",
     ],
 )
