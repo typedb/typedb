@@ -139,7 +139,7 @@ public class RelationEdge implements RelationStructure {
         return result.stream();
     }
 
-    public Role ownerRole() {
+    private Role ownerRole() {
         return ownerRole.get();
     }
 
@@ -147,7 +147,7 @@ public class RelationEdge implements RelationStructure {
         return owner.get();
     }
 
-    public Role valueRole() {
+    private Role valueRole() {
         return valueRole.get();
     }
 

@@ -63,6 +63,15 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         super(vertexElement, type);
     }
 
+    @Override
+    public void delete() {
+        //TODO remove this once we fix the whole relation hierarchy
+        // removing the owner as it is the real concept that gets cached.
+        // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
+        vertex().tx().cache().getNewRelations().remove(owner);
+        super.delete();
+    }
+
     public static RelationReified get(VertexElement vertexElement) {
         return new RelationReified(vertexElement);
     }
