@@ -19,6 +19,7 @@
 package grakn.core.server.kb;
 
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -34,6 +35,8 @@ import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.cache.TransactionCache;
+import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
@@ -43,6 +46,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -359,6 +363,42 @@ public class TransactionIT {
         assertThat(no, containsInAnyOrder(yes, entity, thing));
         assertThat(tx.sups(entity).collect(toSet()), containsInAnyOrder(entity, thing));
         assertThat(tx.sups(thing).collect(toSet()), containsInAnyOrder(thing));
+    }
+
+
+    @Test
+    public void insertAndDeleteRelationInSameTransaction_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
+        tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
+        tx.commit();
+        tx = session.transaction().write();
+        String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
+        tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
+        tx.commit();
+
+        tx = session.transaction().write();
+        List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
+        assertEquals(2, rolePlayersResult.size());
+        List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
+        assertEquals(0, relationResult.size());
+    }
+
+    @Test
+    public void insertAndDeleteSameRelationInDifferentTransactions_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
+        tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
+        tx.commit();
+        tx = session.transaction().write();
+        String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
+        tx.commit();
+        tx = session.transaction().write();
+        tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
+        tx.commit();
+
+
+        tx = session.transaction().write();
+        List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
+        assertEquals(2, rolePlayersResult.size());
+        List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
+        assertEquals(0, relationResult.size());
     }
 
 }

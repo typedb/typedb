@@ -253,13 +253,6 @@ public class EntityIT {
     }
 
     @Test
-    public void whenAddingEntity_EnsureInternalTypeIsTheSameAsRealType(){
-        EntityType et = tx.putEntityType("et");
-        EntityImpl e = (EntityImpl) et.create();
-        assertEquals(et.label(), e.getInternalType());
-    }
-
-    @Test
     public void whenCreatingAnInferredEntity_EnsureMarkedAsInferred(){
         EntityTypeImpl et = EntityTypeImpl.from(tx.putEntityType("et"));
         Entity entity = et.create();

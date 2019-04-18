@@ -98,20 +98,38 @@ public final class ElementFactory {
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(VertexElement vertex, RelationType type) {
-        return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
-    }
 
-    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
+
+    /**
+     * Used to build a RelationEdge by ThingImpl when it needs to connect itself with an attribute (implicit relation)
+     */
+    RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
         return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge)));
     }
 
+    /**
+     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
+     */
     RelationImpl buildRelation(EdgeElement edge) {
         return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge)));
     }
 
+    /**
+     * Used by RelationEdge when it needs to reify a relation.
+     * Used by this factory when need to build an explicit relation
+     * @return ReifiedRelation
+     */
     RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
         return RelationReified.create(vertex, type);
+    }
+
+    /**
+     * Used by RelationTypeImpl to create a new instance of RelationImpl
+     * first build a ReifiedRelation and then inject it to RelationImpl
+     * @return
+     */
+    RelationImpl buildRelation(VertexElement vertex, RelationType type) {
+        return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
