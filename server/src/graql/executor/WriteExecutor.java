@@ -18,7 +18,6 @@
 
 package grakn.core.graql.executor;
 
-import brave.ScopedSpan;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
