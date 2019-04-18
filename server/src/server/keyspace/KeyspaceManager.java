@@ -48,7 +48,7 @@ public class KeyspaceManager {
     // This will eventually be configurable and obtained the same way the factory is obtained
     // from Server. For now, we just make sure Server and Core use the same system keyspace name.
     // If there is a more natural home for this constant, feel free to put it there!
-    public static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
+    private static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
     private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
     private final static KeyspaceImpl SYSTEM_KB_KEYSPACE = KeyspaceImpl.of("graknsystem");
 
@@ -148,7 +148,7 @@ public class KeyspaceManager {
         Stopwatch timer = Stopwatch.createStarted();
         try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
-                LOG.info("System schema is already loaded");
+                LOG.info("System schema has been previously loaded");
                 return;
             }
             LOG.info("Loading schema");

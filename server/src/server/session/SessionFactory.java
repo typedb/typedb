@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
-    protected final JanusGraphFactory janusGraphFactory;
+    private final JanusGraphFactory janusGraphFactory;
     protected final KeyspaceManager keyspaceManager;
     protected Config config;
     protected final LockManager lockManager;
