@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner;
 
-import brave.ScopedSpan;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerQueries;

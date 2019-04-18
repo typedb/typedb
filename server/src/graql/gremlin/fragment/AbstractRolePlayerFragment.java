@@ -19,14 +19,9 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
@@ -35,15 +30,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.fragment.Fragments.displayOptionalTypeLabels;
-import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 import static java.util.stream.Collectors.toSet;
 
 /**

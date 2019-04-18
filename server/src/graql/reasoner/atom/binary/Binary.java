@@ -26,7 +26,6 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;

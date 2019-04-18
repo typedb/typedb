@@ -19,7 +19,6 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
@@ -38,11 +37,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
