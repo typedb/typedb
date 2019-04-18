@@ -19,10 +19,8 @@
 package grakn.core.graql.gremlin.spanningtree.graph;
 
 import grakn.core.graql.gremlin.fragment.Fragment;
-import graql.lang.statement.Variable;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 /**

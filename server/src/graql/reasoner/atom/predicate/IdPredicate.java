@@ -24,7 +24,6 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.server.session.TransactionOLTP;

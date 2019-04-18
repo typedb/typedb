@@ -29,7 +29,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
