@@ -28,8 +28,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(TransactionOLTP transaction, Edge e) {
-        super(transaction, e, Schema.PREFIX_EDGE);
+    public EdgeElement(TransactionOLTP tx, Edge e) {
+        super(tx, e);
     }
 
     /**

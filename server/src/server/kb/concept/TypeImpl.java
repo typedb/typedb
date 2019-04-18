@@ -95,11 +95,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         if (isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
 
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
+
         vertex().tx().ruleCache().ackTypeInstance(this);
         if (!Schema.MetaSchema.isMetaLabel(label())) {
             vertex().tx().cache().addedInstance(id());
             if (isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
+
         V instance = producer.apply(instanceVertex, getThis());
         assert instance != null : "producer should never return null";
         return instance;

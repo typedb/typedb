@@ -19,6 +19,7 @@
 package grakn.core.server.kb;
 
 import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
 import grakn.core.concept.thing.Attribute;
@@ -32,6 +33,8 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import graql.lang.Graql;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.CheckReturnValue;
@@ -51,6 +54,19 @@ public final class Schema {
 
     private Schema() {
         throw new UnsupportedOperationException();
+    }
+
+    public static ConceptId conceptIdFromVertexId(Object vertexId){
+        return ConceptId.of(PREFIX_VERTEX + vertexId);
+    }
+
+    public static ConceptId conceptId(Element element){
+        String prefix = element instanceof Edge? PREFIX_EDGE : PREFIX_VERTEX;
+        return ConceptId.of(prefix + element.id().toString());
+    }
+
+    public static String elementId(ConceptId conceptId){
+        return conceptId.getValue().substring(1);
     }
 
     /**
@@ -163,7 +179,8 @@ public final class Schema {
      */
     public enum VertexProperty {
         //Unique Properties
-        SCHEMA_LABEL(String.class), INDEX(String.class), ID(String.class), LABEL_ID(Integer.class),
+        SCHEMA_LABEL(String.class), INDEX(String.class), LABEL_ID(Integer.class),
+        EDGE_RELATION_ID(String.class),
 
         //Other Properties
         THING_TYPE_LABEL_ID(Integer.class),

@@ -43,7 +43,6 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -78,7 +77,6 @@ import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
 
-import java.util.Optional;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -1064,6 +1062,8 @@ public abstract class RelationAtom extends IsaAtomBase {
         RelationType relationType = getSchemaConcept().asRelationType();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
+
+        //NB: if the relation is implicit, it will created as a reified relation
 
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
         Relation relation = substitution.containsVar(getVarName())?

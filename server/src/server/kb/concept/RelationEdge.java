@@ -88,14 +88,14 @@ public class RelationEdge implements RelationStructure {
 
     @Override
     public ConceptId id() {
-        return ConceptId.of(edge().id().getValue());
+        return Schema.conceptId(edge().element());
     }
 
     @Override
     public RelationReified reify() {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
-        VertexElement relationVertex = edge().tx().addVertexElement(Schema.BaseType.RELATION, id());
+        VertexElement relationVertex = edge().tx().addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, id());
         RelationReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge

@@ -50,8 +50,8 @@ public class Shard {
     /**
      * @return The id of this shard. Strings are used because shards are looked up via the string index.
      */
-    public String id() {
-        return vertex().property(Schema.VertexProperty.ID);
+    public Object id() {
+        return vertex().id();
     }
 
     /**

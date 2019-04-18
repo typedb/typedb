@@ -36,7 +36,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.kb.concept.RuleImpl;
 import grakn.core.server.kb.concept.SchemaConceptImpl;

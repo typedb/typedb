@@ -65,7 +65,7 @@ public class ClusterMemberMapReduce extends GraknMapReduce<Set<ConceptId>> {
         if (vertex.property((String) persistentProperties.get(CLUSTER_LABEL)).isPresent()) {
             String clusterPropertyKey = (String) persistentProperties.get(CLUSTER_LABEL);
             String clusterId = vertex.value(clusterPropertyKey);
-            ConceptId conceptId = ConceptId.of(vertex.value(Schema.VertexProperty.ID.name()));
+            ConceptId conceptId = Schema.conceptId(vertex);
             Set<ConceptId> cluster = Collections.singleton(conceptId);
 
             emitter.emit(clusterId, cluster);
