@@ -20,7 +20,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "janus-micro-benchmark",
-    size = "large",
+    size = "enormous",
     srcs = ["JanusMicroBenchmark.java"],
     test_class = "grakn.core.graql.gremlin.JanusMicroBenchmark",
     classpath_resources = [ "//test-integration/resources:logback-test"],
