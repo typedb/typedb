@@ -191,12 +191,11 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
 
         try (TransactionOLTP tx = session.transaction().read()) {
-            //clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
-            //assertEquals(1, clusterList.size());
-            //assertEquals(7, clusterList.iterator().next().set().size()); // 4 entities, 3 assertions
+            clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
+            assertEquals(1, clusterList.size());
+            assertEquals(7, clusterList.iterator().next().set().size()); // 4 entities, 3 assertions
 
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(entityId1.getValue())).attributes(true));
-            List<Object> collect = clusterList.iterator().next().set().stream().map(tx::getConcept).collect(Collectors.toList());
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size());
 
