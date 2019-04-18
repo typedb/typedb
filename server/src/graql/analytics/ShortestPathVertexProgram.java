@@ -74,8 +74,8 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
     }
 
     public ShortestPathVertexProgram(ConceptId source, ConceptId destination) {
-        persistentProperties.put(sourceId, source.getValue());
-        persistentProperties.put(destinationId, destination.getValue());
+        persistentProperties.put(sourceId, Schema.elementId(source));
+        persistentProperties.put(destinationId, Schema.elementId(destination));
     }
 
     @Override
@@ -113,7 +113,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     @Override
     public void safeExecute(Vertex vertex, Messenger<VertexMessage> messenger, final Memory memory) {
-        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
+        String vertexId = vertex.id().toString();
 
         if (source(vertex)) {
             if (memory.isInitialIteration()) {
@@ -236,7 +236,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     private Map<String, Set<String>> recordShortestPath_AndMarkBroadcasted(Vertex vertex, Memory memory, String vertexId, List<MessageFromDestination> destMsgs, long pathLength) {
         Map<String, Set<String>> msg = new HashMap<>(Collections.singletonMap(vertexId,
-                destMsgs.stream().map(e -> e.vertexId()).collect(Collectors.toSet())));
+                destMsgs.stream().map(MessageFromDestination::vertexId).collect(Collectors.toSet())));
         memory.add(SHORTEST_PATH, msg);
         memory.add(shortestPathLength, pathLength);
         set(vertex, shortestPathRecordedAndBroadcasted, true);
@@ -246,7 +246,7 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
 
     private void markBroadcasted_TerminateAtTheEndOfThisIeration(Vertex vertex, Memory memory, String vertexId, List<MessageFromSource> incomingSourceMsg, long pathLength) {
         Map<String, Set<String>> msg = new HashMap<>(Collections.singletonMap(vertexId,
-                incomingSourceMsg.stream().map(e -> e.vertexId()).collect(Collectors.toSet())));
+                incomingSourceMsg.stream().map(MessageFromSource::vertexId).collect(Collectors.toSet())));
         // memory.add(SHORTEST_PATH, msg); do not record
         memory.add(shortestPathLength, pathLength);
         set(vertex, shortestPathRecordedAndBroadcasted, true);
@@ -285,15 +285,15 @@ public class ShortestPathVertexProgram extends GraknVertexProgram<ShortestPathVe
     }
 
     private boolean source(Vertex vertex) {
-        String source = (String) persistentProperties.get(sourceId);
-        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
-        return source.equals(vertexId);
+        Object source = persistentProperties.get(sourceId);
+        Object vertexId = vertex.id();
+        return source.toString().equals(vertexId.toString());
     }
 
     private boolean destination(Vertex vertex) {
-        String source = (String) persistentProperties.get(destinationId);
-        String vertexId = this.<String>get(vertex, Schema.VertexProperty.ID.name()).get();
-        return source.equals(vertexId);
+        Object source = persistentProperties.get(destinationId);
+        Object vertexId = vertex.id();
+        return source.toString().equals(vertexId.toString());
     }
 
     private List<VertexMessage> messages(Messenger<VertexMessage> messenger) {

@@ -34,6 +34,7 @@ import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
+import javax.annotation.Nullable;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -72,12 +73,12 @@ public final class ElementFactory {
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
-        ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
+        ConceptId conceptId = Schema.conceptId(element.element());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
     private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder) {
-        ConceptId conceptId = ConceptId.of(element.id().getValue());
+        ConceptId conceptId = Schema.conceptId(element.element());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
@@ -145,9 +146,10 @@ public final class ElementFactory {
     }
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
+        ConceptId conceptId = Schema.conceptId(vertexElement.element());
+        Concept cachedConcept = tx.cache().getCachedConcept(conceptId);
 
-        ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
-        if (!tx.cache().isConceptCached(conceptId)) {
+        if (cachedConcept == null) {
             Schema.BaseType type;
             try {
                 type = getBaseType(vertexElement);
@@ -187,8 +189,9 @@ public final class ElementFactory {
                     throw TransactionException.unknownConcept(type.name());
             }
             tx.cache().cacheConcept(concept);
+            return (X) concept;
         }
-        return tx.cache().getCachedConcept(conceptId);
+        return (X) cachedConcept;
     }
 
     /**
@@ -205,7 +208,7 @@ public final class ElementFactory {
     public <X extends Concept> X buildConcept(EdgeElement edgeElement) {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
-        ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
+        ConceptId conceptId = Schema.conceptId(edgeElement.element());
         if (!tx.cache().isConceptCached(conceptId)) {
             Concept concept;
             switch (label) {
@@ -286,22 +289,24 @@ public final class ElementFactory {
      */
     public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = graph.addVertex(baseType.name());
-        String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
-        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
         return new VertexElement(tx, vertex);
     }
 
+    public static long assignVertexIdPropertyTime = 0;
     /**
      * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
      * @param baseType   The Schema.BaseType
      * @param conceptId the ConceptId to set as the new ConceptId
      * @return a new VertexElement
+     *
+     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
         Objects.requireNonNull(conceptId);
         Vertex vertex = graph.addVertex(baseType.name());
-        String newConceptId = conceptId.getValue();
-        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
+        long start = System.currentTimeMillis();
+        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
+        assignVertexIdPropertyTime += System.currentTimeMillis() - start;
         return new VertexElement(tx, vertex);
     }
 }

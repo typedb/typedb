@@ -41,7 +41,7 @@ import java.util.stream.StreamSupport;
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
     public VertexElement(TransactionOLTP graknTx, Vertex element) {
-        super(graknTx, element, Schema.PREFIX_VERTEX);
+        super(graknTx, element);
     }
 
     /**
@@ -70,9 +70,10 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      */
     public EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type) {
         GraphTraversal<Vertex, Edge> traversal = tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                hasId(id()).
                 outE(type.getLabel()).as("edge").otherV().
-                has(Schema.VertexProperty.ID.name(), to.id().getValue()).select("edge");
+                hasId(to.id())
+                .select("edge");
 
         if (!traversal.hasNext()) {
             return addEdge(to, type);

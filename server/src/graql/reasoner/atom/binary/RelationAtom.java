@@ -1065,6 +1065,8 @@ public abstract class RelationAtom extends IsaAtomBase {
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 
+        //NB: if the relation is implicit, it will created as a reified relation
+
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
         Relation relation = substitution.containsVar(getVarName())?
                 substitution.get(getVarName()).asRelation() :
