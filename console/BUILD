@@ -43,7 +43,7 @@ java_library(
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    visibility = ["//console/test:__subpackages__"],
+    visibility = ["//visibility:public"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
     tags = ["maven_coordinates=io.grakn.core:console:{pom_version}"],
