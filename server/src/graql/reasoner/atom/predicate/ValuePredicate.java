@@ -54,7 +54,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
     }
 
     public static ValuePredicate neq(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
-        Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
+        Variable predicateVar = var != null? var : Graql.var().var().asReturnedVar();
         ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
         return create(varName, op, parent);
     }

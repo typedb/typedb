@@ -47,11 +47,11 @@ public class IdPredicate extends Predicate<ConceptId> {
     }
 
     public static IdPredicate create(Variable varName, Label label, ReasonerQuery parent) {
-        return create(createIdVar(varName.asUserDefined(), label, parent.tx()), parent);
+        return create(createIdVar(varName.asReturnedVar(), label, parent.tx()), parent);
     }
 
     public static IdPredicate create(Variable varName, ConceptId id, ReasonerQuery parent) {
-        return create(createIdVar(varName.asUserDefined(), id), parent);
+        return create(createIdVar(varName.asReturnedVar(), id), parent);
     }
 
     private static IdPredicate create(IdPredicate a, ReasonerQuery parent) {

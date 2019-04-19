@@ -263,7 +263,7 @@ public class WriteExecutor {
             allConcepts.put(var, concepts.get(equivalentVars.componentOf(var)));
         }
 
-        Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isUserDefinedName);
+        Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
         return new ConceptMap(namedConcepts);
     }
 

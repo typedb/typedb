@@ -87,8 +87,8 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
 
         for (LabelFragmentSet labelSet : labelFragments) {
 
-            boolean hasUserDefinedVar = labelSet.var().isUserDefinedName();
-            if (hasUserDefinedVar) continue;
+            boolean hasReturnedVarVar = labelSet.var().isReturned();
+            if (hasReturnedVarVar) continue;
 
             boolean existsInGraph = labelSet.labels().stream().anyMatch(label -> graph.getSchemaConcept(label) != null);
             if (!existsInGraph) continue;

@@ -211,7 +211,7 @@ public class QueryExecutor {
      * @return resulting answer stream
      */
     public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
-        Set<Variable> vars = Sets.filter(commonVars, Variable::isUserDefinedName);
+        Set<Variable> vars = Sets.filter(commonVars, Variable::isReturned);
 
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
 

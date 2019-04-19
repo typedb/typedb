@@ -39,7 +39,7 @@ public class NeqValuePredicate extends NeqPredicate {
     }
 
     public static NeqValuePredicate create(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
-        Variable predicateVar = var != null? var : Graql.var().var().asUserDefined();
+        Variable predicateVar = var != null? var : Graql.var().var().asReturnedVar();
         ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
         Statement pattern = new Statement(varName).operation(op);
         return new NeqValuePredicate(varName, predicateVar, value, pattern, parent);
@@ -47,7 +47,7 @@ public class NeqValuePredicate extends NeqPredicate {
 
     public static NeqValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
         Statement innerStatement = op.innerStatement();
-        Variable var = innerStatement != null? innerStatement.var() : Graql.var().var().asUserDefined();
+        Variable var = innerStatement != null? innerStatement.var() : Graql.var().var().asReturnedVar();
         Object value = var == null? op.value() : null;
         return create(varName, var, value, parent);
     }

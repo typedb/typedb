@@ -90,8 +90,8 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                Statement fromVar = new Statement(new Variable().asUserDefined());
-                Statement toVar = new Statement(new Variable().asUserDefined());
+                Statement fromVar = new Statement(new Variable().asReturnedVar());
+                Statement toVar = new Statement(new Variable().asReturnedVar());
                 Statement rulePattern = Graql
                         .type("rule" + i)
                         .when(

@@ -53,7 +53,7 @@ public abstract class AtomicBase implements Atomic {
 
     boolean containsVar(Variable name){ return getVarNames().contains(name);}
 
-    public boolean isUserDefined(){ return getVarName().isUserDefinedName();}
+    public boolean isUserDefined(){ return getVarName().isReturned();}
 
     /**
      * @return set of predicates relevant to this atomic
@@ -93,7 +93,7 @@ public abstract class AtomicBase implements Atomic {
     @Override
     public Set<Variable> getVarNames(){
         Variable varName = getVarName();
-        return varName.isUserDefinedName()? Sets.newHashSet(varName) : Collections.emptySet();
+        return varName.isReturned()? Sets.newHashSet(varName) : Collections.emptySet();
     }
 
     protected Pattern createCombinedPattern(){ return getPattern();}
