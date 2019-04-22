@@ -49,8 +49,8 @@ import static grakn.core.common.util.Collections.tuple;
  * A type enum which restricts the types of links/concepts which can be created
  */
 public final class Schema {
-    public final static String PREFIX_VERTEX = "V";
-    public final static String PREFIX_EDGE = "E";
+    private final static String PREFIX_VERTEX = "V";
+    private final static String PREFIX_EDGE = "E";
 
     private Schema() {
         throw new UnsupportedOperationException();
@@ -67,6 +67,10 @@ public final class Schema {
 
     public static String elementId(ConceptId conceptId){
         return conceptId.getValue().substring(1);
+    }
+
+    public static boolean isEdgeId(ConceptId conceptId){
+        return conceptId.getValue().startsWith(Schema.PREFIX_EDGE);
     }
 
     /**
