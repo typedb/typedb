@@ -660,7 +660,7 @@ public class TransactionOLTP implements Transaction {
             if (transactionCache.isConceptCached(id)) {
                 return transactionCache.getCachedConcept(id);
             } else {
-                if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
+                if (Schema.isEdgeId(id)) {
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
@@ -676,7 +676,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     private <T extends Concept> Optional<T> getConceptEdge(ConceptId id) {
-        String edgeId = id.getValue().substring(1);
+        String edgeId = Schema.elementId(id);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
             return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));

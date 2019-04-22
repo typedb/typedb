@@ -206,7 +206,7 @@ public class AttributeIT {
 
         RelationStructure relationStructure = RelationImpl.from(Iterables.getOnlyElement(entity.relations().collect(toSet()))).structure();
         assertThat(relationStructure, instanceOf(RelationEdge.class));
-        assertTrue("Edge Relation id not starting with [" + Schema.PREFIX_EDGE + "]", relationStructure.id().getValue().startsWith(Schema.PREFIX_EDGE));
+        assertTrue("Edge Relation id not starting with edge prefix", Schema.isEdgeId(relationStructure.id()));
         assertEquals(entity, attribute.owner());
         assertThat(entity.attributes().collect(toSet()), containsInAnyOrder(attribute));
     }
