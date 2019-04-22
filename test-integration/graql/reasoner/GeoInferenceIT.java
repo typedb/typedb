@@ -181,11 +181,11 @@ public class GeoInferenceIT {
             Concept europe = getConcept(tx, "name", "Europe");
             String queryString = "match " +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                    "$y id '" + poland.id().getValue() + "'; get;";
+                    "$y id " + poland.id().getValue() + "; get;";
 
             String queryString2 = "match " +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                    "$y id '" + europe.id().getValue() + "'; get;";
+                    "$y id " + europe.id().getValue() + "; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             answers.forEach(ans -> assertEquals(2, ans.size()));
@@ -207,12 +207,12 @@ public class GeoInferenceIT {
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($x, $y) isa is-located-in;" +
-                    "$y id '" + masovia.id().getValue() + "'; get;";
+                    "$y id " + masovia.id().getValue() + "; get;";
 
             String queryString2 = "match " +
                     "{ (geo-entity: $x, entity-location: $y) isa is-located-in; } or " +
                     "{ (geo-entity: $y, entity-location: $x) isa is-located-in; };" +
-                    "$y id '" + masovia.id().getValue() + "'; get;";
+                    "$y id " + masovia.id().getValue() + "; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             answers.forEach(ans -> assertEquals(2, ans.size()));
@@ -230,7 +230,7 @@ public class GeoInferenceIT {
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($r1: $x, $r2: $y) isa is-located-in;" +
-                    "$y id '" + masovia.id().getValue() + "'; get;";
+                    "$y id " + masovia.id().getValue() + "; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
@@ -281,7 +281,7 @@ public class GeoInferenceIT {
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "$x ($r1: $x1, $r2: $x2) isa is-located-in;" +
-                    "$x2 id '" + masovia.id().getValue() + "'; get;";
+                    "$x2 id " + masovia.id().getValue() + "; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(20, answers.size());
@@ -323,7 +323,7 @@ public class GeoInferenceIT {
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($x, $r2: $y) isa is-located-in;" +
-                    "$y id '" + masovia.id().getValue() + "'; get;";
+                    "$y id " + masovia.id().getValue() + "; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 

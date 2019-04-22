@@ -132,9 +132,9 @@ public class AtomicUnificationIT {
     @Test
     public void testUnification_RelationWithMetaRolesAndIds(){
         Concept instance = tx.execute(Graql.parse("match $x isa subRoleEntity; get;").asGet()).iterator().next().get("x");
-        String relation = "{ (role: $x, role: $y) isa binary; $y id '" + instance.id().getValue() + "'; };";
-        String relation2 = "{ (role: $z, role: $v) isa binary; $z id '" + instance.id().getValue() + "'; };";
-        String relation3 = "{ (role: $z, role: $v) isa binary; $v id '" + instance.id().getValue() + "'; };";
+        String relation = "{ (role: $x, role: $y) isa binary; $y id " + instance.id().getValue() + "; };";
+        String relation2 = "{ (role: $z, role: $v) isa binary; $z id " + instance.id().getValue() + "; };";
+        String relation3 = "{ (role: $z, role: $v) isa binary; $v id " + instance.id().getValue() + "; };";
 
         exactUnification(relation, relation2, true, true, tx);
         exactUnification(relation, relation3, true, true, tx);
@@ -258,8 +258,8 @@ public class AtomicUnificationIT {
     public void testUnification_VariousTypeAtoms(){
         String type = "{ $x isa baseRoleEntity; };";
         String type2 = "{ $y isa baseRoleEntity; };";
-        String userDefinedType = "{ $y isa $x;$x type 'baseRoleEntity'; };";
-        String userDefinedType2 = "{ $u isa $v;$v type 'baseRoleEntity'; };";
+        String userDefinedType = "{ $y isa $x;$x type baseRoleEntity; };";
+        String userDefinedType2 = "{ $u isa $v;$v type baseRoleEntity; };";
 
         exactUnification(type, type2, true, true, tx);
         exactUnification(userDefinedType, userDefinedType2, true, true, tx);
@@ -316,7 +316,7 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery resourceQuery2 = ReasonerQueries.atomic(conjunction(resource2, tx), tx);
         ReasonerAtomicQuery resourceQuery3 = ReasonerQueries.atomic(conjunction(resource3, tx), tx);
 
-        String type = "{ $x isa resource;$x id '" + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "'; };";
+        String type = "{ $x isa resource;$x id " + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "; };";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, tx), tx);
         Atom typeAtom = typeQuery.getAtom();
 
@@ -405,14 +405,14 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{($r1: $x1, $r2: $x2) isa binary;" +
-                                "$r1 type 'subRole1';" +
-                                "$r2 type 'subSubRole2'; };"
+                                "$r1 type subRole1;" +
+                                "$r2 type subSubRole2; };"
                         , tx), tx);
         ReasonerAtomicQuery parentQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{ ($R1: $x, $R2: $y) isa binary;" +
-                                "$R1 type 'subRole1';" +
-                                "$R2 type 'subSubRole2'; };"
+                                "$R1 type subRole1;" +
+                                "$R2 type subSubRole2; };"
                         , tx), tx);
         exactUnification(parentQuery, childQuery, true, true);
         exactUnification(baseQuery, parentQuery, true, true);
@@ -429,14 +429,14 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery childQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{ ($r1: $x1, $r2: $x2); " +
-                                "$r1 type 'subRole1';" +
-                                "$r2 type 'subSubRole2'; };"
+                                "$r1 type subRole1;" +
+                                "$r2 type subSubRole2; };"
                         , tx), tx);
         ReasonerAtomicQuery parentQuery = ReasonerQueries
                 .atomic(conjunction(
                         "{ ($R1: $x, $R2: $y); " +
-                                "$R1 type 'subRole1';" +
-                                "$R2 type 'subSubRole2'; };"
+                                "$R1 type subRole1;" +
+                                "$R2 type subSubRole2; };"
                         , tx), tx);
         exactUnification(parentQuery, childQuery, true, true);
         exactUnification(baseQuery, parentQuery, true, true);

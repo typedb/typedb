@@ -271,10 +271,10 @@ public class BenchmarkBigIT {
                 String queryPattern = "(P-from: $x, P-to: $y) isa P;";
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " + queryPattern +
-                        " $x id '" + entityId.getValue() + "';" +
+                        " $x id " + entityId.getValue() + ";" +
                         " get;";
                 String subbedQueryString2 = "match " + queryPattern +
-                        " $y id '" + entityId.getValue() + "';" +
+                        " $y id " + entityId.getValue() + ";" +
                         " get;";
                 String limitedQueryString = "match " + queryPattern +
                         " get; limit " + limit + ";";
@@ -315,11 +315,11 @@ public class BenchmarkBigIT {
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " +
                         queryPattern +
-                        " $x id '" + entityId.getValue() + "';" +
+                        " $x id " + entityId.getValue() + ";" +
                         " get;";
                 String subbedQueryString2 = "match " +
                         queryPattern +
-                        " $y id '" + entityId.getValue() + "';" +
+                        " $y id " + entityId.getValue() + ";" +
                         " get;";
                 String limitedQueryString = "match " + queryPattern +
                         " get; limit " + limit + ";";
@@ -356,10 +356,10 @@ public class BenchmarkBigIT {
                 String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
                 String queryString = "match " + queryPattern + " get;";
                 String subbedQueryString = "match " + queryPattern +
-                        "$x id '" + firstId.getValue() + "';" +
+                        "$x id " + firstId.getValue() + ";" +
                         "get;";
                 String subbedQueryString2 = "match " + queryPattern +
-                        "$y id '" + lastId.getValue() + "';" +
+                        "$y id " + lastId.getValue() + ";" +
                         "get;";
                 String limitedQueryString = "match " + queryPattern +
                         "get; limit 1;";
