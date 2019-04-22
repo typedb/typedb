@@ -40,11 +40,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class SessionFactory {
     private final JanusGraphFactory janusGraphFactory;
-    private final KeyspaceManager keyspaceManager;
-    private Config config;
-    private final LockManager lockManager;
+    protected final KeyspaceManager keyspaceManager;
+    protected Config config;
+    protected final LockManager lockManager;
 
-    private final Map<KeyspaceImpl, KeyspaceCacheContainer> keyspaceCacheMap;
+    protected final Map<KeyspaceImpl, KeyspaceCacheContainer> keyspaceCacheMap;
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceManager, Config config) {
         this.janusGraphFactory = janusGraphFactory;
@@ -80,7 +80,7 @@ public class SessionFactory {
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
                 graph = janusGraphFactory.openGraph(keyspace.name());
-                cache = new KeyspaceCache(config);
+                cache = new KeyspaceCache();
                 graphLock = new ReentrantReadWriteLock();
                 cacheContainer = new KeyspaceCacheContainer(cache, graph, graphLock);
                 keyspaceCacheMap.put(keyspace, cacheContainer);
@@ -122,7 +122,7 @@ public class SessionFactory {
      *
      * @param session SessionImpl that is being closed
      */
-    private void onSessionClose(SessionImpl session) {
+    protected void onSessionClose(SessionImpl session) {
         Lock lock = lockManager.getLock(getLockingKey(session.keyspace()));
         lock.lock();
         try {
@@ -142,7 +142,7 @@ public class SessionFactory {
         }
     }
 
-    private static String getLockingKey(KeyspaceImpl keyspace) {
+    protected static String getLockingKey(KeyspaceImpl keyspace) {
         return "/keyspace-lock/" + keyspace.name();
     }
 
@@ -150,7 +150,7 @@ public class SessionFactory {
     /**
      * Helper class used to hold in memory a reference to a graph together with its schema cache and a reference to all sessions open to the graph.
      */
-    private class KeyspaceCacheContainer {
+    protected class KeyspaceCacheContainer {
 
         private KeyspaceCache keyspaceCache;
         // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
@@ -161,7 +161,7 @@ public class SessionFactory {
         // (we are forcing serialised commits to avoid clashes with JanusGraph indices)
         private ReadWriteLock graphLock;
 
-        KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
+        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.sessions = new ArrayList<>();
@@ -176,7 +176,7 @@ public class SessionFactory {
             return sessions.size();
         }
 
-        void addSessionReference(SessionImpl session) {
+        public void addSessionReference(SessionImpl session) {
             sessions.add(session);
         }
 
@@ -188,7 +188,7 @@ public class SessionFactory {
             sessions.forEach(SessionImpl::invalidate);
         }
 
-        ReadWriteLock graphLock() { return graphLock; }
+        public ReadWriteLock graphLock() { return graphLock; }
 
         public JanusGraph graph() {
             return graph;

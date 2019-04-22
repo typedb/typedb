@@ -20,10 +20,8 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
@@ -47,7 +44,7 @@ import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
  */
 
 @AutoValue
-public abstract class OutIsaFragment extends Fragment {
+public abstract class OutIsaFragment extends EdgeFragment {
 
     @Override
     public abstract Variable end();
@@ -87,9 +84,8 @@ public abstract class OutIsaFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(NodeId.NodeType.ISA, nodes, edges);
+    NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
 
     @Override

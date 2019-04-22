@@ -45,7 +45,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -140,33 +139,33 @@ public class RelationTypeInference {
 
     private static Multimap<Variable, Variable> getRelationRolePlayerMap(
             Set<Fragment> allFragments, Multimap<Variable, Type> instanceVarTypeMap) {
-        // relation vars and its role player vars
+        // get all relation vars and its role player vars
         Multimap<Variable, Variable> relationRolePlayerMap = HashMultimap.create();
         allFragments.stream().filter(OutRolePlayerFragment.class::isInstance)
                 .forEach(fragment -> relationRolePlayerMap.put(fragment.start(), fragment.end()));
 
-        // find all the relation requiring type inference
-        Iterator<Variable> iterator = relationRolePlayerMap.keySet().iterator();
-        while (iterator.hasNext()) {
-            Variable relation = iterator.next();
+        Multimap<Variable, Variable> inferrableRelationsRolePlayerMap = HashMultimap.create();
 
-            // the relation should have at least 2 known role players so we can infer something useful
-            if (instanceVarTypeMap.containsKey(relation) ||
-                    relationRolePlayerMap.get(relation).size() < 2) {
-                iterator.remove();
-            } else {
-                int numRolePlayersHaveType = 0;
-                for (Variable rolePlayer : relationRolePlayerMap.get(relation)) {
-                    if (instanceVarTypeMap.containsKey(rolePlayer)) {
-                        numRolePlayersHaveType++;
+        allFragments.stream()
+                .filter(OutRolePlayerFragment.class::isInstance)
+                .filter(fragment -> ! instanceVarTypeMap.containsKey(fragment.start())) // filter out known rel types
+                .forEach(fragment -> {
+                    Variable relation = fragment.start();
+
+                    // the relation should have at least 2 known role players so we can infer something useful
+                    int numRolePlayersHaveType = 0;
+                    for (Variable rolePlayer : relationRolePlayerMap.get(relation)) {
+                        if (instanceVarTypeMap.containsKey(rolePlayer)) {
+                            numRolePlayersHaveType++;
+                        }
                     }
-                }
-                if (numRolePlayersHaveType < 2) {
-                    iterator.remove();
-                }
-            }
-        }
-        return relationRolePlayerMap;
+
+                    if (numRolePlayersHaveType >= 2) {
+                        inferrableRelationsRolePlayerMap.put(relation, fragment.end());
+                    }
+                });
+
+        return inferrableRelationsRolePlayerMap;
     }
 
     private static void addAllPossibleRelations(Multimap<Type, RelationType> relationMap, Type metaType) {

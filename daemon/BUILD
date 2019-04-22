@@ -40,7 +40,7 @@ java_library(
     ],
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",
-    visibility = ["//server:__pkg__"],
+    visibility = ["//visibility:public"],
     tags = ["maven_coordinates=io.grakn.core:daemon:{pom_version}"],
 )
 

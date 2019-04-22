@@ -55,7 +55,7 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean>
     }
 
     public ConnectedComponentVertexProgram(ConceptId sourceId) {
-        this.persistentProperties.put(SOURCE, sourceId.getValue());
+        this.persistentProperties.put(SOURCE, Schema.elementId(sourceId));
     }
 
     @Override
@@ -77,12 +77,12 @@ public class ConnectedComponentVertexProgram extends GraknVertexProgram<Boolean>
     @Override
     public void safeExecute(final Vertex vertex, Messenger<Boolean> messenger, final Memory memory) {
         if (memory.isInitialIteration()) {
-            if (vertex.<String>value(Schema.VertexProperty.ID.name()).equals(persistentProperties.get(SOURCE))) {
-                update(vertex, messenger, memory, (String) persistentProperties.get(SOURCE));
+            if (vertex.id().toString().equals(persistentProperties.get(SOURCE))) {
+                update(vertex, messenger, memory, persistentProperties.get(SOURCE).toString());
             }
         } else {
             if (messenger.receiveMessages().hasNext() && !vertex.property(CLUSTER_LABEL).isPresent()) {
-                update(vertex, messenger, memory, (String) persistentProperties.get(SOURCE));
+                update(vertex, messenger, memory, persistentProperties.get(SOURCE).toString());
             }
         }
     }

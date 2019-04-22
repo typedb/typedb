@@ -16,26 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.exception;
+package grakn.core.graql.exception;
 
-/**
- * Root Grakn Exception
- * Encapsulates any exception which is thrown by the Grakn stack.
- * This includes failures server side, failed graph mutations, and failed querying attempts
- */
-public abstract class GraknException extends RuntimeException {
+import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.ConceptId;
+import graql.lang.exception.GraqlException;
 
-    protected GraknException(String error) {
+public class GraqlCheckedException extends GraqlException {
+
+    private GraqlCheckedException(String error) {
         super(error);
     }
 
-    protected GraknException(String error, Exception e) {
-        super(error, e);
+    public static GraqlCheckedException idNotFound(ConceptId id) {
+        return new GraqlCheckedException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
     }
-
-    protected GraknException(String error, Exception e, boolean enableSuppression, boolean writableStackTrace) {
-        super(error, e, enableSuppression, writableStackTrace);
-    }
-
-    public abstract String getName();
 }

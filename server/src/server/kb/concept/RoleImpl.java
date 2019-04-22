@@ -24,7 +24,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -41,8 +40,8 @@ import java.util.stream.Stream;
  * 2. It is special in that it is unique to RelationTypes.
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
-    private final Cache<Set<Type>> cachedDirectPlayedByTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final Cache<Set<RelationType>> cachedRelationTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RoleImpl(VertexElement vertexElement) {
         super(vertexElement);

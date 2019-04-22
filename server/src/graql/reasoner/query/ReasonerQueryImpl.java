@@ -27,7 +27,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -441,7 +441,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             HashMap<Variable, Concept> answerMap = new HashMap<>();
             predicates.forEach(p -> {
                 Concept concept = tx().getConcept(p.getPredicate());
-                if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                if (concept == null) throw GraqlCheckedException.idNotFound(p.getPredicate());
                 answerMap.put(p.getVarName(), concept);
             });
             substitution = new ConceptMap(answerMap);
@@ -455,7 +455,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 .flatMap(RelationAtom::getRolePredicates)
                 .forEach(p -> {
                     Concept concept = tx().getConcept(p.getPredicate());
-                    if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                    if (concept == null) throw GraqlCheckedException.idNotFound(p.getPredicate());
                     roleSub.put(p.getVarName(), concept);
                 });
         return new ConceptMap(roleSub);

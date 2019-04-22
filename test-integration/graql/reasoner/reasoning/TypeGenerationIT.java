@@ -81,9 +81,9 @@ public class TypeGenerationIT {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "typeDerivationRelationsWithDirect.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
-                String queryString = "match ($x, $y) isa derivedRelation; get;";
-                String queryString2 = "match ($x, $y) isa! derivedRelation; get;";
-                String queryString3 = "match ($x, $y) isa directDerivedRelation; get;";
+                String queryString = "match ($x) isa derivedRelation; get;";
+                String queryString2 = "match ($x) isa! derivedRelation; get;";
+                String queryString3 = "match ($x) isa directDerivedRelation; get;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                 List<ConceptMap> answers2 = tx.execute(Graql.parse(queryString2).asGet());
                 List<ConceptMap> answers3 = tx.execute(Graql.parse(queryString3).asGet());

@@ -59,7 +59,7 @@ public class DegreeDistributionMapReduce extends GraknMapReduce<Set<ConceptId>> 
                 vertexHasSelectedTypeId(vertex, selectedTypes)) {
             String degreePropertyKey = (String) persistentProperties.get(DegreeVertexProgram.DEGREE);
             Long centralityCount = vertex.value(degreePropertyKey);
-            ConceptId conceptId = ConceptId.of(vertex.value(Schema.VertexProperty.ID.name()));
+            ConceptId conceptId = Schema.conceptId(vertex);
 
             emitter.emit(centralityCount, Collections.singleton(conceptId));
         } else {

@@ -45,6 +45,7 @@ java_test(
 
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@graknlabs_graql//java:graql",
     ],
 )
 

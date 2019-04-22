@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
@@ -42,6 +43,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * Encapsulates The Relation as a VertexElement
@@ -61,12 +63,31 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         super(vertexElement, type);
     }
 
+    @Override
+    public void delete() {
+        //TODO remove this once we fix the whole relation hierarchy
+        // removing the owner as it is the real concept that gets cached.
+        // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
+        vertex().tx().cache().getNewRelations().remove(owner);
+        super.delete();
+    }
+
     public static RelationReified get(VertexElement vertexElement) {
         return new RelationReified(vertexElement);
     }
 
     public static RelationReified create(VertexElement vertexElement, RelationType type) {
         return new RelationReified(vertexElement, type);
+    }
+
+    @Override
+    public ConceptId id(){
+        //if this is implicit, it's possible than we reified it - the concept id of the edge relation is contained in the property
+        if (type().isImplicit()){
+            VertexProperty<Object> edgeId = vertex().element().property(Schema.VertexProperty.EDGE_RELATION_ID.name());
+            if (edgeId.isPresent()) return ConceptId.of(edgeId.value().toString());
+        }
+        return Schema.conceptId(vertex().element());
     }
 
     @Override
@@ -116,13 +137,13 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
         GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), this.id().getValue()).
+                hasId(this.elementId()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
                 as("edge").
                 inV().
-                has(Schema.VertexProperty.ID.name(), toThing.id()).
+                hasId(ConceptVertex.from(toThing).elementId()).
                 select("edge");
 
         if (traversal.hasNext()) {
@@ -153,7 +174,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
         return vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                hasId(elementId()).
                 outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue()).
                 has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).

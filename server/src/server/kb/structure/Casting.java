@@ -25,31 +25,22 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.CacheOwner;
-import grakn.core.server.kb.cache.Cacheable;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Represents An Thing Playing a Role
  * Wraps the Schema.EdgeLabel#ROLE_PLAYER Edge which contains the information unifying an Thing,
  * Relation and Role.
  */
-public class Casting implements CacheOwner {
-    private final Set<Cache> registeredCaches = new HashSet<>();
+public class Casting {
+
     private final EdgeElement edgeElement;
+    private final Cache<Role> cachedRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
+    private final Cache<Thing> cachedInstance = new Cache<>(() -> edge().tx().factory().buildConcept(edge().target()));
+    private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().tx().factory().buildConcept(edge().source()));
 
-    private final Cache<Role> cachedRole = Cache.createTxCache(this, Cacheable.concept(), () ->
-            edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = Cache.createTxCache(this, Cacheable.concept(), () ->
-            edge().tx().factory().<Thing>buildConcept(edge().target()));
-    private final Cache<Relation> cachedRelation = Cache.createTxCache(this, Cacheable.concept(), () ->
-            edge().tx().factory().<Thing>buildConcept(edge().source()));
-
-    private final Cache<RelationType> cachedRelationType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+    private final Cache<RelationType> cachedRelationType = new Cache<>(() -> {
         if (cachedRelation.isPresent()) {
             return cachedRelation.get().type();
         } else {
@@ -78,11 +69,6 @@ public class Casting implements CacheOwner {
 
     private EdgeElement edge() {
         return edgeElement;
-    }
-
-    @Override
-    public Collection<Cache> caches() {
-        return registeredCaches;
     }
 
     /**

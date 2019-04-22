@@ -24,7 +24,6 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -38,7 +37,7 @@ import java.util.stream.Stream;
  * They are used to model and categorise n-ary relations.
  */
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private final Cache<Set<Role>> cachedRelates = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Role>> cachedRelates = new Cache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RelationTypeImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -71,9 +70,9 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         return addRelation(true);
     }
 
-    public Relation addRelation(boolean isInferred) {
+    private Relation addRelation(boolean isInferred) {
         Relation relation = addInstance(Schema.BaseType.RELATION,
-                                            (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
+                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
         vertex().tx().cache().addNewRelation(relation);
         return relation;
     }
@@ -166,7 +165,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                 flatMap(type -> {
                     //Traversal is used here to take advantage of vertex centric index
                     return vertex().tx().getTinkerTraversal().V().
-                            has(Schema.VertexProperty.ID.name(), type.id().getValue()).
+                            hasId(ConceptVertex.from(type).elementId()).
                             in(Schema.EdgeLabel.SHARD.getLabel()).
                             in(Schema.EdgeLabel.ISA.getLabel()).
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).

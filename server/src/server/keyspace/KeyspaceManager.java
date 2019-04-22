@@ -58,7 +58,7 @@ public class KeyspaceManager {
     private final JanusGraph graph;
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
-        KeyspaceCache keyspaceCache = new KeyspaceCache(config);
+        KeyspaceCache keyspaceCache = new KeyspaceCache();
         this.graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
         this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, new ReentrantReadWriteLock());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
@@ -148,6 +148,7 @@ public class KeyspaceManager {
         Stopwatch timer = Stopwatch.createStarted();
         try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
             if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
+                LOG.info("System schema has been previously loaded");
                 return;
             }
             LOG.info("Loading schema");

@@ -32,7 +32,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.kb.cache.CacheOwner;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
 
@@ -77,35 +76,13 @@ public class TransactionCache {
     // The index and id are directly cached to prevent unneeded reads
     private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
 
-    //Transaction Specific Meta Data
-    private boolean writeOccurred = false;
-
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
-    }
-
-    /**
-     *
-     */
-    public void refreshKeyspaceCache() {
-        // This is used to prevent the keyspace cache from expiring its stored concept cache
-        // This method is NOT used to actually change things in the keyspace cache
-        if (!writeOccurred) {
-            keyspaceCache.readTxCache(this);
-        }
     }
 
     public void flushToKeyspaceCache() {
         // This method is used to actually flush to the keyspace cache
         keyspaceCache.readTxCache(this);
-    }
-
-    /**
-     * Notifies the cache that a write has occurred.
-     * This is later used to determine if it is safe to flush the transaction cache to the session cache or not.
-     */
-    public void writeOccurred() {
-        writeOccurred = true;
     }
 
     /**
@@ -322,8 +299,6 @@ public class TransactionCache {
 
     //--------------------------------------- TransactionOLTP Specific Meta Data -------------------------------------------
     public void closeTx() {
-        //Clear Concept Caches
-        conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedThings.clear();
@@ -338,7 +313,6 @@ public class TransactionCache {
         schemaConceptCache.clear();
         labelCache.clear();
     }
-
 
 
     @VisibleForTesting

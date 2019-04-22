@@ -23,36 +23,30 @@ import grakn.core.concept.ConceptId;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.CacheOwner;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Stream;
-
 
 /**
  * The base concept implementation.
  * A concept which can represent anything in the graph which wraps a TinkerPop vertex.
  * This class forms the basis of assuring the graph follows the Grakn object model.
  */
-public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner {
-    private final Set<Cache> registeredCaches = new HashSet<>();
+public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
+
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final Cache<Shard> currentShard = Cache.createTxCache(this, Cacheable.shard(), () -> {
-        String currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), currentShardId).next();
+    private final Cache<Shard> currentShard = new Cache<>(() -> {
+        Object currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().hasId(currentShardId).next();
         return vertex().tx().factory().buildShard(shardVertex);
     });
-    private final Cache<Long> shardCount = Cache.createSessionCache(this, Cacheable.number(), () -> shards().count());
-    private final Cache<ConceptId> conceptId = Cache.createPersistentCache(this, Cacheable.conceptId(), () -> ConceptId.of(vertex().property(Schema.VertexProperty.ID)));
+    private final Cache<Long> shardCount = new Cache<>(() -> shards().count());
+    private final Cache<ConceptId> conceptId = new Cache<>(() -> Schema.conceptId(vertex().element()));
 
     ConceptImpl(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
@@ -89,11 +83,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     public void deleteNode() {
         vertex().tx().cache().remove(this);
         vertex().delete();
-    }
-
-    @Override
-    public Collection<Cache> caches() {
-        return registeredCaches;
     }
 
     /**
@@ -192,6 +181,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex, CacheOwner 
     public void createShard() {
         VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);
         Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
+        //store current shard id as a property of the type
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
 

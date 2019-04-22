@@ -23,14 +23,14 @@ import grakn.core.server.kb.Schema;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 import static grakn.core.server.kb.Schema.EdgeLabel.SUB;
 import static grakn.core.server.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static junit.framework.TestCase.assertEquals;
 
 public class InPlaysFragmentTest {
 
@@ -44,11 +44,13 @@ public class InPlaysFragmentTest {
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 
-        // Make sure we check this is a vertex, then traverse plays and downwards subs once
-        assertThat(traversal, is(__.V()
-                .has(Schema.VertexProperty.ID.name())
+        GraphTraversal<Object, Object> expected = __.V()
+                .filter(e -> e.get() instanceof Edge)
                 .in(PLAYS.getLabel())
-                .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.in(SUB.getLabel())).emit()).unfold()
-        ));
+                .union(__.<Vertex>not(__.has(THING_TYPE_LABEL_ID.name())).not(__.hasLabel(Schema.BaseType.SHARD.name())), __.<Vertex>until(__.loops().is(Fragments.TRAVERSE_ALL_SUB_EDGES)).repeat(__.in(SUB.getLabel())).emit()).unfold();;
+
+        // Make sure we check this is a vertex, then traverse plays and downwards subs once
+        // NB: we are using lambda filter steps now and these are not comparable
+        assertEquals(expected.toString(), traversal.toString());
     }
 }

@@ -21,7 +21,6 @@ package grakn.core.graql.exception;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
@@ -33,8 +32,10 @@ import grakn.core.graql.reasoner.query.ResolvableQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.time.format.DateTimeParseException;
 import java.util.Collection;
+import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.INSERT_ABSTRACT_NOT_TYPE;
 import static grakn.core.common.exception.ErrorMessage.INSERT_RECURSIVE;
@@ -54,11 +55,11 @@ public class GraqlQueryException extends GraknException {
     private final String NAME = "GraqlQueryException";
 
     private GraqlQueryException(String error) {
-        super(error);
+        super(error, null, false, false);
     }
 
     private GraqlQueryException(String error, Exception cause) {
-        super(error, cause);
+        super(error, cause, false, false);
     }
 
     @Override
@@ -68,10 +69,6 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException create(String formatString, Object... args) {
         return new GraqlQueryException(String.format(formatString, args));
-    }
-
-    public static GraqlQueryException idNotFound(ConceptId id) {
-        return new GraqlQueryException(ErrorMessage.ID_NOT_FOUND.getMessage(id));
     }
 
     public static GraqlQueryException labelNotFound(Label label) {
@@ -88,6 +85,14 @@ public class GraqlQueryException extends GraknException {
 
     public static GraqlQueryException invalidRoleLabel(Label label) {
         return new GraqlQueryException(ErrorMessage.NOT_A_ROLE_TYPE.getMessage(label, label));
+    }
+
+    public static GraqlQueryException matchWithoutAnyProperties(Statement statement) {
+        return create("Require statement to have at least one property: `%s`", statement);
+    }
+
+    public static GraqlQueryException unboundComparisonVariables(Set<Variable> unboundVariables) {
+        return GraqlQueryException.create("Variables used in comparisons cannot be unbounded %s", unboundVariables.toString());
     }
 
     public static GraqlQueryException kCoreOnRelationType(Label label) {
@@ -172,6 +177,8 @@ public class GraqlQueryException extends GraknException {
     public static GraqlQueryException insertNoExpectedProperty(String property, Statement var) {
         return create("missing expected property `%s` in `%s`", property, var);
     }
+
+
 
     /**
      * Thrown when attempting to insert a concept that already exists.

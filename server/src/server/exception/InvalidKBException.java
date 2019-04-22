@@ -22,7 +22,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.session.TransactionOLTP;
 
 import java.util.List;
 
