@@ -106,7 +106,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         boolean isReified = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? new Statement(var.asUserDefined()) : new Statement(var);
+        Statement relVar = isReified ? new Statement(var.asReturnedVar()) : new Statement(var);
 
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -150,8 +150,8 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp != null && isaProp.isExplicit() ?
-                relVar.isaX(new Statement(typeVariable.asUserDefined())) :
-                relVar.isa(new Statement(typeVariable.asUserDefined()));
+                relVar.isaX(new Statement(typeVariable.asReturnedVar())) :
+                relVar.isa(new Statement(typeVariable.asReturnedVar()));
         return RelationAtom.create(relVar, typeVariable, predicateId, parent);
     }
 

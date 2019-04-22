@@ -132,14 +132,14 @@ public abstract class IsaAtom extends IsaAtomBase {
     public String toString(){
         String typeString = (getSchemaConcept() != null? getSchemaConcept().label() : "") + "(" + getVarName() + ")";
         return typeString +
-                (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
+                (getPredicateVariable().isReturned()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
                 getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
     protected Pattern createCombinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
+        if (getPredicateVariable().isReturned()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
                 new Statement(getVarName()).isa(new Statement(getPredicateVariable())) :
                 isDirect()?
@@ -219,7 +219,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), this.isDirect(), getParentQuery());
+        return create(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), this.isDirect(), getParentQuery());
     }
 
     @Override

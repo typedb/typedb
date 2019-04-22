@@ -153,7 +153,7 @@ public abstract class AttributeAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().label() + " " +
                 multiPredicateString +
-                (getRelationVariable().isUserDefinedName()? "(" + getRelationVariable() + ")" : "");
+                (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "");
     }
 
     @Override
@@ -277,7 +277,7 @@ public abstract class AttributeAtom extends Binary{
     public Set<Variable> getVarNames() {
         Set<Variable> varNames = super.getVarNames();
         varNames.add(getAttributeVariable());
-        if (getRelationVariable().isUserDefinedName()) varNames.add(getRelationVariable());
+        if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
         return varNames;
     }
 
@@ -297,14 +297,14 @@ public abstract class AttributeAtom extends Binary{
         //unify attribute vars
         Variable childAttributeVarName = this.getAttributeVariable();
         Variable parentAttributeVarName = parent.getAttributeVariable();
-        if (parentAttributeVarName.isUserDefinedName()){
+        if (parentAttributeVarName.isReturned()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childAttributeVarName, parentAttributeVarName)));
         }
 
         //unify relation vars
         Variable childRelationVarName = this.getRelationVariable();
         Variable parentRelationVarName = parent.getRelationVariable();
-        if (parentRelationVarName.isUserDefinedName()){
+        if (parentRelationVarName.isReturned()){
             unifier = unifier.merge(new UnifierImpl(ImmutableMap.of(childRelationVarName, parentRelationVarName)));
         }
 
@@ -377,14 +377,14 @@ public abstract class AttributeAtom extends Binary{
      * @return rewritten atom
      */
     private AttributeAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isUserDefinedName()) return rewriteWithRelationVariable();
+        if (parentAtom.isResource() && ((AttributeAtom) parentAtom).getRelationVariable().isReturned()) return rewriteWithRelationVariable();
         return this;
     }
 
     @Override
     public AttributeAtom rewriteWithRelationVariable(){
         Variable attributeVariable = getAttributeVariable();
-        Variable relationVariable = getRelationVariable().asUserDefined();
+        Variable relationVariable = getRelationVariable().asReturnedVar();
         Statement newVar = new Statement(getVarName())
                 .has(getSchemaConcept().label().getValue(), new Statement(attributeVariable), new Statement(relationVariable));
         return create(newVar, attributeVariable, relationVariable, getPredicateVariable(), getTypeId(), getMultiPredicate(), getParentQuery());
@@ -392,7 +392,7 @@ public abstract class AttributeAtom extends Binary{
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asUserDefined(), getTypeId(), getMultiPredicate(), getParentQuery());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable().asReturnedVar(), getTypeId(), getMultiPredicate(), getParentQuery());
     }
 
     @Override

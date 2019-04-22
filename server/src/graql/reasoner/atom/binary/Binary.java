@@ -128,7 +128,7 @@ public abstract class Binary extends Atom {
 
     private boolean equivalenceBase(Binary that){
         return (this.isUserDefined() == that.isUserDefined())
-                && (this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName())
+                && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId());
     }
@@ -167,8 +167,8 @@ public abstract class Binary extends Atom {
     @Override
     public Set<Variable> getVarNames() {
         Set<Variable> vars = new HashSet<>();
-        if (getVarName().isUserDefinedName()) vars.add(getVarName());
-        if (getPredicateVariable().isUserDefinedName()) vars.add(getPredicateVariable());
+        if (getVarName().isReturned()) vars.add(getVarName());
+        if (getPredicateVariable().isReturned()) vars.add(getPredicateVariable());
         return vars;
     }
 
@@ -201,10 +201,10 @@ public abstract class Binary extends Atom {
 
         Multimap<Variable, Variable> varMappings = HashMultimap.create();
 
-        if (parentVarName.isUserDefinedName()) {
+        if (parentVarName.isReturned()) {
             varMappings.put(childVarName, parentVarName);
         }
-        if (parentPredicateVarName.isUserDefinedName()) {
+        if (parentPredicateVarName.isReturned()) {
             varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
 

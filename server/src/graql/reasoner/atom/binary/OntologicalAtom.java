@@ -71,13 +71,13 @@ public abstract class OntologicalAtom extends TypeAtom {
 
     @Override
     public Atom rewriteWithTypeVariable() {
-        return createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery());
+        return createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), getParentQuery());
     }
 
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
-        return parentAtom.getPredicateVariable().isUserDefinedName()?
-                createSelf(getVarName(), getPredicateVariable().asUserDefined(), getTypeId(), getParentQuery()) :
+        return parentAtom.getPredicateVariable().isReturned()?
+                createSelf(getVarName(), getPredicateVariable().asReturnedVar(), getTypeId(), getParentQuery()) :
                 this;
     }
 
