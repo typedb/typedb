@@ -371,8 +371,8 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public Atom rewriteWithTypeVariable(Atom parentAtom) {
-        if (parentAtom.getPredicateVariable().isUserDefinedName()
-                && !this.getPredicateVariable().isUserDefinedName()
+        if (parentAtom.getPredicateVariable().isReturned()
+                && !this.getPredicateVariable().isReturned()
                 && this.getClass() == parentAtom.getClass()) {
             return rewriteWithTypeVariable();
         }
