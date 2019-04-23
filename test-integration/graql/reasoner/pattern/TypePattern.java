@@ -40,9 +40,9 @@ public class TypePattern extends QueryPattern {
                 "{ $xf isa " + metaType + "; };",
 
                 //6-8
-                "{ $x1a isa " + type + "; $x1a id '" + conceptId + "'; };",
-                "{ $x1b isa " + type + "; $x1b id '" + anotherConceptId + "'; };",
-                "{ $x1c isa $type1; $type1 type " + type + ";$x1c id '" + anotherConceptId + "'; };",
+                "{ $x1a isa " + type + "; $x1a id " + conceptId + "; };",
+                "{ $x1b isa " + type + "; $x1b id " + anotherConceptId + "; };",
+                "{ $x1c isa $type1; $type1 type " + type + ";$x1c id " + anotherConceptId + "; };",
 
                 //9-12
                 "{ $x2a isa " + type + "; $x2a == 'someValue'; };",
@@ -64,8 +64,8 @@ public class TypePattern extends QueryPattern {
                 //16-18
                 //TODO
                 //"{ $x5a isa resource ; $x5a != $f; };",
-                //"{ $x5b isa resource ; $x5b != $fb; $x5b id '" + resourceId + "'; };",
-                //"{ $x5c isa resource ; $x5c != $fc; $fc id '" + resourceId + "'; };"
+                //"{ $x5b isa resource ; $x5b != $fb; $x5b id " + resourceId + "; };",
+                //"{ $x5c isa resource ; $x5c != $fc; $fc id " + resourceId + "; };"
         );
     }
 
