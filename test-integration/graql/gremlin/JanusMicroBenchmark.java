@@ -567,11 +567,19 @@ public class JanusMicroBenchmark {
 
 
 
+    @Test
+    public void test() {
+
+    }
+
 
     /*
 
     - time to obtain vertices with a specific indexed property and how it relates to number of matches:
         sometimes it seems matching a property with a small number of hits is much slower than a large number of hits!
+
+    - writing a string property vs an int/long property
+    - reading a string property vs an int/long property
 
     - cost of filtering by property vs 1 edge traversal (eg. type label lookup vs 1 isa-edge traversal)
     - cost of filtering vertices on 1 property vs 2, 3, 4...
@@ -587,6 +595,7 @@ public class JanusMicroBenchmark {
 
     for subgraphing
     - using janus `subgraph` functionality versus doing a traversal from a node connecting everything in the subgraph directly
+    - retrieving a set of nodes with a property versus doing 1 hop from a highly connected node (best for small subgraphs)
 
      */
 }
