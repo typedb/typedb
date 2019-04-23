@@ -44,8 +44,6 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +51,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 
@@ -232,6 +231,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+        //in general this <= parent, so no specialisation viable
         if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
         return super.getUnifier(parentAtom, unifierType);
     }

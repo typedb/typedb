@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -29,18 +28,15 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
+import java.util.List;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
-import java.util.Set;
-
 import static java.util.stream.Collectors.toSet;
-import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 
 public class SubsumptionIT {
@@ -241,43 +237,43 @@ public class SubsumptionIT {
         }
     }
 
+    /**
+     * No subsumption relation possible in this case:
+     *
+     * Child:
+     * $x isa relation;
+     *
+     * Parent:
+     * $x ($y, $z) isa relation;
+     *
+     * Even though it looks like child specialises parent, parent describes a subset of all possible relations - ones that have
+     * at least two roleplayers. As a result, parent in general doesn't retain all the answers to child.
+     */
     @Test
     public void testSubsumption_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
-            int[][] subsumptionMatrix = new int[][]{
-                    //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19,20
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},//4
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},//7
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},//11
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},//15
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
-            };
 
             subsumption(
                     differentTypeRelationVariants.patterns(),
                     differentRelationVariantsWithRelationVariable.patterns(),
-                    subsumptionMatrix,
+                    QueryPattern.zeroMatrix(differentTypeRelationVariants.size(), differentRelationVariantsWithRelationVariable.size()),
+                    tx
+            );
+        }
+    }
+
+    @Test
+    public void testSubsumption_differentRelationVariantsWithRelationVariable_differentTypeRelationVariants(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
+            QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
+
+            subsumption(
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    differentTypeRelationVariants.patterns(),
+                    QueryPattern.zeroMatrix(differentRelationVariantsWithRelationVariable.size(), differentTypeRelationVariants.size()),
                     tx
             );
         }
@@ -388,39 +384,23 @@ public class SubsumptionIT {
         }
     }
 
-    @Test
-    public void pupa(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
-
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("{$x isa resource-long; $x == 'unattached';};"), tx);
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("$x has resource-long 'value';"), tx);
-
-            assertFalse(child.subsumes(parent));
-            assertFalse(parent.subsumes(child));
-            assertFalse(child.getAtom().isUnifiableWith(parent.getAtom()));
-            assertFalse(parent.getAtom().isUnifiableWith(child.getAtom()));
-        }
-    }
-
-    @Test
-    public void pupa2(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
-
-            /*
-            $x2a has resource $r2a; $r2a id 'V36984'; };
-            ->
-            $r2a isa resource; $r2a id 'V36984'; ($x2a, $r2a);
-             */
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("{ $x2a has resource $r2a; $r2a id 'V36984'; };"), tx);
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("{ $x1a isa resource; $x1a id 'V36984'; };"), tx);
-
-            assertFalse(child.subsumes(parent));
-            assertFalse(parent.subsumes(child));
-            assertTrue(child.getAtom().isUnifiableWith(parent.getAtom()));
-            assertFalse(parent.getAtom().isUnifiableWith(child.getAtom()));
-        }
-    }
-
+    /**
+     * No subsumption relation possible in this case:
+     *
+     * Child:
+     * $x isa resource;
+     *
+     * Parent:
+     * $x has resource $r;
+     *
+     * Equivalent to:
+     *
+     * $r isa resource; (resource-owner:$x, resource-value: $r) isa @...;
+     *
+     * Even though it looks like child specialises parent, parent describes connected attributes, whereas
+     * child describes all attributes including disconnected ones. As a result, parent in general doesn't retain
+     * all the answers to child.
+     */
     @Test
     public void testSubsumption_differentTypeResourceVariants_differentResourceVariants(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
@@ -442,61 +422,14 @@ public class SubsumptionIT {
             QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
             QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
 
-            int[][] subsumptionMatrix = new int[][]{
-                    //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//4
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//5
-
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//6
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//9
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//11
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//13
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//15
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//19
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//23
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//27
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//31
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
-            };
-
             subsumption(
                     differentResourceVariants.patterns(),
                     differentTypeVariants.patterns(),
-                    subsumptionMatrix,
+                    QueryPattern.zeroMatrix(differentResourceVariants.size(), differentTypeVariants.size()),
                     tx
             );
         }
     }
-
-
 
     private void subsumption(List<String> children, List<String> parents, int[][] resultMatrix, TransactionOLTP tx){
         int i = 0;
@@ -517,17 +450,11 @@ public class SubsumptionIT {
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
         UnifierType unifierType = UnifierType.SUBSUMPTIVE;
 
-        if (subsumes != child.subsumes(parent)){
-            System.out.println("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n");
-        }
-        //assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));
+        assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         if (subsumes){
             boolean queriesEquivalent = child.isEquivalent(parent);
-            if (queriesEquivalent != parent.subsumes(child)){
-                System.out.println("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n");
-            }
-            //assertEquals("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n", queriesEquivalent, parent.subsumes(child));
+            assertEquals("Unexpected inverse subsumption outcome: between the child - parent pair:\n" + parent + " :\n" + child + "\n", queriesEquivalent, parent.subsumes(child));
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
             if (queriesEquivalent) assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
