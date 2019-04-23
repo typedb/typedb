@@ -293,7 +293,9 @@ public abstract class AttributeAtom extends Binary{
             // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
             if (unifierType.equals(UnifierType.RULE)) {
                 if (parentAtom instanceof IsaAtom) return this.toIsaAtom().getUnifier(parentAtom, unifierType);
-                else if (parentAtom instanceof RelationAtom) return this.toRelationAtom().getUnifier(parentAtom, unifierType);
+                else if (parentAtom instanceof RelationAtom){
+                    return this.toRelationAtom().getUnifier(parentAtom, unifierType);
+                }
             }
             return UnifierImpl.nonExistent();
         }
