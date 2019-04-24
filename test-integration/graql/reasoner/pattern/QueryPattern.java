@@ -40,21 +40,22 @@ public abstract class QueryPattern {
     public abstract int[][] ruleMatrix();
 
     public static int[][] identity(int N){
-        int[][] matrix = new int[N][N];
-        for(int i = 0; i < N ; i++) {
-            for (int j = 0; j < N; j++) {
-                if (i == j) matrix[i][j] = 1;
-                else matrix[i][j] = 0;
-            }
-        }
-        return matrix;
+        return constantMatrix(N, N, 1);
+    }
+
+    public static int[][] identity(int N, int M){
+        return constantMatrix(N, M, 1);
     }
 
     public static int[][] zeroMatrix(int N, int M){
+        return constantMatrix(N, M, 0);
+    }
+
+    private static int[][] constantMatrix(int N, int M, int cons){
         int[][] matrix = new int[N][M];
         for(int i = 0; i < N ; i++) {
             for (int j = 0; j < M; j++) {
-                matrix[i][j] = 0;
+                matrix[i][j] = cons;
             }
         }
         return matrix;
