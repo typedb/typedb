@@ -66,7 +66,10 @@ public class GreedyTreeTraversal {
             assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
 
             // add fragments without dependencies first (eg. could be the index fragments)
-            plan.addAll(nodeFragmentsWithoutDependencies(nodeWithMinCost));
+            nodeFragmentsWithoutDependencies(nodeWithMinCost).forEach(fragment -> {
+                if (fragment.hasFixedFragmentCost()) { plan.add(0, fragment); }
+                else { plan.add(fragment); }
+            });
             nodeWithMinCost.getFragmentsWithoutDependency().clear();
 
             // add edge fragment first
@@ -74,7 +77,10 @@ public class GreedyTreeTraversal {
             if (fragment != null) plan.add(fragment);
 
             // add node's dependant fragments
-            plan.addAll(nodeVisitedDependenciesFragments(nodeWithMinCost, nodes));
+            nodeVisitedDependenciesFragments(nodeWithMinCost, nodes).forEach(frag -> {
+                if (frag.hasFixedFragmentCost()) { plan.add(0, frag); }
+                else { plan.add(fragment); }
+            });
 
             reachableNodes.remove(nodeWithMinCost);
             if (edgesParentToChild.containsKey(nodeWithMinCost)) {
