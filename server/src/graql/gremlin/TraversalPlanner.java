@@ -238,7 +238,7 @@ public class TraversalPlanner {
                         !node.getFragmentsWithDependencyVisited().isEmpty())
                 .collect(Collectors.toSet());
         while (!nodeWithFragment.isEmpty()) {
-            nodeWithFragment.forEach(node -> subplan.addAll(nodeToPlanFragments(node, allNodes, false)));
+            nodeWithFragment.forEach(node -> subplan.addAll(nodeVisitedDependenciesFragments(node, allNodes)));
             nodeWithFragment = connectedNodes.stream()
                     .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
                             !node.getFragmentsWithDependencyVisited().isEmpty())
