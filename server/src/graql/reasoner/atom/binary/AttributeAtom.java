@@ -38,24 +38,25 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -143,7 +144,11 @@ public abstract class AttributeAtom extends Binary{
      */
     @Override
     public IsaAtom toIsaAtom(){
-        return IsaAtom.create(getAttributeVariable(), new Variable(), getTypeId(), false, getParentQuery());
+        IsaAtom isaAtom = IsaAtom.create(getAttributeVariable(), new Variable(), getTypeId(), false, getParentQuery());
+        Set<Statement> patterns = new HashSet<>();
+        ReasonerQueries.atomic(isaAtom).getPattern().getPatterns().stream().flatMap(p -> p.statements().stream()).forEach(patterns::add);
+        getMultiPredicate().stream().map(Predicate::getPattern).forEach(patterns::add);
+        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toIsaAtom();
     }
 
     @Override
@@ -153,7 +158,8 @@ public abstract class AttributeAtom extends Binary{
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().label() + " " +
                 multiPredicateString +
-                (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "");
+                (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "") +
+                getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override
@@ -284,10 +290,14 @@ public abstract class AttributeAtom extends Binary{
     @Override
     public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
         if (!(parentAtom instanceof AttributeAtom)) {
-            if (parentAtom instanceof IsaAtom){ return this.toIsaAtom().getUnifier(parentAtom, unifierType); }
-            else {
-                throw GraqlQueryException.unificationAtomIncompatibility();
+            // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
+            if (unifierType.equals(UnifierType.RULE)) {
+                if (parentAtom instanceof IsaAtom) return this.toIsaAtom().getUnifier(parentAtom, unifierType);
+                else if (parentAtom instanceof RelationAtom){
+                    return this.toRelationAtom().getUnifier(parentAtom, unifierType);
+                }
             }
+            return UnifierImpl.nonExistent();
         }
 
         AttributeAtom parent = (AttributeAtom) parentAtom;
