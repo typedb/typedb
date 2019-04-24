@@ -154,7 +154,7 @@ public class GraqlComputeIT {
         queryList.add("compute cluster using k-core;");
         queryList.add("compute centrality using degree;");
         queryList.add("compute centrality using k-core;");
-        queryList.add("compute path from \"" + entityId1 + "\", to \"" + entityId4 + "\";");
+        queryList.add("compute path from " + entityId1 + ", to " + entityId4 + ";");
 
         List<?> result = queryList.parallelStream().map(query -> {
             try (TransactionOLTP tx = session.transaction().read()) {
@@ -277,7 +277,7 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
 
         try (TransactionOLTP tx = session.transaction().write()) {
-            GraqlCompute.Path query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';").asComputePath();
+            GraqlCompute.Path query = Graql.parse("compute path from " + entityId1 + ", to " + entityId2 + ";").asComputePath();
             List<ConceptList> paths = tx.execute(query);
 
             List<ConceptId> path = Collections.emptyList();
@@ -294,7 +294,7 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
 
         try (TransactionOLTP tx = session.transaction().write()) {
-            GraqlCompute.Path query = Graql.parse("compute path from '" + entityId1 + "', to '" + entityId2 + "';").asComputePath();
+            GraqlCompute.Path query = Graql.parse("compute path from " + entityId1 + ", to " + entityId2 + ";").asComputePath();
             List<ConceptList> paths = tx.execute(query);
             assertEquals(1, paths.size());
             List<String> result = paths.get(0).list().stream().map(ConceptId::getValue).collect(Collectors.toList());

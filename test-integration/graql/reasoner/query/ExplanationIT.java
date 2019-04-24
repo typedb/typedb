@@ -191,8 +191,8 @@ public class ExplanationIT {
             Concept europe = getConcept(tx, "name", "Europe");
             String queryString = "match " +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
-                    "$x id '" + polibuda.id() + "';" +
-                    "$y id '" + europe.id() + "'; get;";
+                    "$x id " + polibuda.id() + ";" +
+                    "$y id " + europe.id() + "; get;";
 
             GraqlGet query = Graql.parse(queryString);
             List<ConceptMap> answers = tx.execute(query);
@@ -215,8 +215,8 @@ public class ExplanationIT {
             String queryString = "match " +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "(geo-entity: $y, entity-location: $z) isa is-located-in;" +
-                    "$x id '" + polibuda.id() + "';" +
-                    "$z id '" + masovia.id() + "';" +
+                    "$x id " + polibuda.id() + ";" +
+                    "$z id " + masovia.id() + ";" +
                     "get $y;";
 
             GraqlGet query = Graql.parse(queryString);

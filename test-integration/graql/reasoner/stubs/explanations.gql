@@ -28,7 +28,7 @@ inferredRelation sub relation,
 
 #Resources
 
-"name" sub attribute, datatype string;
+name sub attribute, datatype string;
 
 rule-1 sub rule,
     when {
