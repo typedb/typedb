@@ -79,7 +79,7 @@ public class GreedyTreeTraversal {
             // add node's dependant fragments
             nodeVisitedDependenciesFragments(nodeWithMinCost, nodes).forEach(frag -> {
                 if (frag.hasFixedFragmentCost()) { plan.add(0, frag); }
-                else { plan.add(fragment); }
+                else { plan.add(frag); }
             });
 
             reachableNodes.remove(nodeWithMinCost);
