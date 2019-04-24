@@ -33,7 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.graql.gremlin.NodesUtil.nodeToPlanFragments;
+import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
+import static grakn.core.graql.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
 
 public class GreedyTreeTraversal {
 
@@ -64,11 +65,16 @@ public class GreedyTreeTraversal {
 
             assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
 
-            // add edge fragment first, then node fragment
+            // add fragments without dependencies first (eg. could be the index fragments)
+            plan.addAll(nodeFragmentsWithoutDependencies(nodeWithMinCost));
+            nodeWithMinCost.getFragmentsWithoutDependency().clear();
+
+            // add edge fragment first
             Fragment fragment = getEdgeFragment(nodeWithMinCost, arborescence, edgeFragmentChildToParent);
             if (fragment != null) plan.add(fragment);
 
-            plan.addAll(nodeToPlanFragments(nodeWithMinCost, nodes, true));
+            // add node's dependant fragments
+            plan.addAll(nodeVisitedDependenciesFragments(nodeWithMinCost, nodes));
 
             reachableNodes.remove(nodeWithMinCost);
             if (edgesParentToChild.containsKey(nodeWithMinCost)) {
