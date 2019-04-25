@@ -467,8 +467,8 @@ public class NegationIT {
             List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(
                     "match " +
                             "not {($x, $y) isa derived-binary;};" +
-                            "$x id '" + start.id().getValue() + "';" +
-                            "$y id '" + end.id().getValue() + "';" +
+                            "$x id " + start.id().getValue() + ";" +
+                            "$y id " + end.id().getValue() + ";" +
                             "get;"
             ));
             assertTrue(answers.isEmpty());

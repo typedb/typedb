@@ -100,16 +100,16 @@ public class TypeInferenceIT {
 
         //parent of all roles so all relations possible
         String patternString = "{ $x isa noRoleEntity; ($x, $y); };";
-        String subbedPatternString = "{ $x id '" + conceptId(tx, "noRoleEntity") + "';($x, $y); };";
+        String subbedPatternString = "{ $x id " + conceptId(tx, "noRoleEntity") + ";($x, $y); };";
 
         //SRE -> rel2
         //sub(SRE)=TRE -> rel3
         String patternString2 = "{ $x isa singleRoleEntity; ($x, $y); };";
-        String subbedPatternString2 = "{ $x id '" + conceptId(tx, "singleRoleEntity") + "';($x, $y); };";
+        String subbedPatternString2 = "{ $x id " + conceptId(tx, "singleRoleEntity") + ";($x, $y); };";
 
         //TRE -> rel3
         String patternString3 = "{ $x isa twoRoleEntity; ($x, $y); };";
-        String subbedPatternString3 = "{ $x id '" + conceptId(tx, "twoRoleEntity") + "';($x, $y); };";
+        String subbedPatternString3 = "{ $x id " + conceptId(tx, "twoRoleEntity") + ";($x, $y); };";
 
         List<Type> possibleTypes = Lists.newArrayList(
                 tx.getType(Label.of("anotherTwoRoleBinary")),
@@ -129,20 +129,20 @@ public class TypeInferenceIT {
         //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString = "{ $x isa singleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString = "{($x, $y);" +
-                "$x id '" + conceptId(tx, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
         //{rel2, rel3} ^ {rel1, rel2, rel3} = {rel2, rel3}
         String patternString2 = "{ $x isa twoRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString2 = "{($x, $y);" +
-                "$x id '" + conceptId(tx, "twoRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "twoRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
         //{rel1} ^ {rel1, rel2, rel3} = {rel1}
         String patternString3 = "{ $x isa yetAnotherSingleRoleEntity; ($x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString3 = "{($x, $y);" +
-                "$x id '" + conceptId(tx, "yetAnotherSingleRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "yetAnotherSingleRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
         List<Type> possibleTypes = Lists.newArrayList(
                 tx.getType(Label.of("anotherTwoRoleBinary")),
@@ -191,15 +191,15 @@ public class TypeInferenceIT {
         //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString = "{ (role2: $x, $y); $y isa singleRoleEntity; };";
         String subbedPatternString = "{(role2: $x, $y);" +
-                "$y id '" + conceptId(tx, "singleRoleEntity") + "';};";
+                "$y id " + conceptId(tx, "singleRoleEntity") + ";};";
         //{rel1, rel2, rel3} ^ {rel2, rel3}
         String patternString2 = "{ (role2: $x, $y); $y isa twoRoleEntity; };";
         String subbedPatternString2 = "{(role2: $x, $y);" +
-                "$y id '" + conceptId(tx, "twoRoleEntity") + "';};";
+                "$y id " + conceptId(tx, "twoRoleEntity") + ";};";
         //{rel1} ^ {rel1, rel2, rel3}
         String patternString3 = "{ (role1: $x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString3 = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") + "';};";
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") + ";};";
 
         List<Type> possibleTypes = Lists.newArrayList(
                 tx.getType(Label.of("anotherTwoRoleBinary")),
@@ -219,11 +219,11 @@ public class TypeInferenceIT {
         //{rel3} ^ {rel2, rel3}
         String patternString = "{ (subRole2: $x, $y); $y isa twoRoleEntity; };";
         String subbedPatternString = "{(subRole2: $x, $y);" +
-                "$y id '" + conceptId(tx, "twoRoleEntity") + "';};";
+                "$y id " + conceptId(tx, "twoRoleEntity") + ";};";
         //{rel3} ^ {rel1, rel2, rel3}
         String patternString2 = "{ (subRole2: $x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString2 = "{(subRole2: $x, $y);" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") + "';};";
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") + ";};";
 
         typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, tx);
         typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString2, subbedPatternString2, tx);
@@ -237,10 +237,10 @@ public class TypeInferenceIT {
         //{rel1} ^ {rel2}
         String patternString = "{ (role1: $x, $y); $y isa singleRoleEntity; };";
         String subbedPatternString = "{(role1: $x, $y);" +
-                "$y id '" + conceptId(tx, "singleRoleEntity") + "';};";
+                "$y id " + conceptId(tx, "singleRoleEntity") + ";};";
         String patternString2 = "{ (role1: $x, $y); $x isa singleRoleEntity; };";
         String subbedPatternString2 = "{(role1: $x, $y);" +
-                "$x id '" + conceptId(tx, "singleRoleEntity") + "';};";
+                "$x id " + conceptId(tx, "singleRoleEntity") + ";};";
 
         typeInference(Collections.emptyList(), patternString, subbedPatternString, tx);
         typeInference(Collections.emptyList(), patternString2, subbedPatternString2, tx);
@@ -253,8 +253,8 @@ public class TypeInferenceIT {
         //{rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{ $x isa singleRoleEntity;(role2: $x, $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString = "{(role2: $x, $y);" +
-                "$x id '" + conceptId(tx, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
         List<Type> possibleTypes = Lists.newArrayList(
                 tx.getType(Label.of("anotherTwoRoleBinary")),
@@ -271,14 +271,14 @@ public class TypeInferenceIT {
         //{rel1, rel2, rel3} ^ {rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{ $x isa threeRoleEntity;(subRole2: $x, role3: $y); $y isa threeRoleEntity; };";
         String subbedPatternString = "{(subRole2: $x, role3: $y);" +
-                "$x id '" + conceptId(tx, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "threeRoleEntity") + "';};";
+                "$x id " + conceptId(tx, "threeRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "threeRoleEntity") + ";};";
 
         //{rel1, rel2, rel3} ^ {rel1, rel2, rel3} ^ {rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString2 = "{ $x isa threeRoleEntity;(role2: $x, role3: $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString2 = "{(role2: $x, role3: $y);" +
-                "$x id '" + conceptId(tx, "threeRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "threeRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
         typeInference(Collections.singletonList(tx.getSchemaConcept(Label.of("threeRoleBinary"))), patternString, subbedPatternString, tx);
 
@@ -297,14 +297,14 @@ public class TypeInferenceIT {
         //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString = "{ $x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherTwoRoleEntity; };";
         String subbedPatternString = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(tx, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherTwoRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherTwoRoleEntity") +";};";
 
         //{rel2, rel3} ^ {rel1} ^ {rel1, rel2, rel3} ^ {rel1, rel2, rel3}
         String patternString2 = "{ $x isa singleRoleEntity;(role1: $x, role2: $y); $y isa anotherSingleRoleEntity; };";
         String subbedPatternString2 = "{(role1: $x, role2: $y);" +
-                "$x id '" + conceptId(tx, "singleRoleEntity") + "';" +
-                "$y id '" + conceptId(tx, "anotherSingleRoleEntity") +"';};";
+                "$x id " + conceptId(tx, "singleRoleEntity") + ";" +
+                "$y id " + conceptId(tx, "anotherSingleRoleEntity") +";};";
 
         typeInference(Collections.emptyList(), patternString, subbedPatternString, tx);
         typeInference(Collections.emptyList(), patternString2, subbedPatternString2, tx);

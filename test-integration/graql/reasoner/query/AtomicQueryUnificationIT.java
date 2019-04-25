@@ -26,6 +26,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
+import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -654,6 +655,38 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
+            QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
+
+            unification(
+                    differentTypeRelationVariants.patterns(),
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    QueryPattern.zeroMatrix(differentTypeRelationVariants.size(), differentRelationVariantsWithRelationVariable.size()),
+                    UnifierType.RULE,
+                    tx
+            );
+        }
+    }
+
+    @Test
+    public void testUnification_differentTypeResourceVariants_differentResourceVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
+            QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
+
+            unification(
+                    differentTypeVariants.patterns(),
+                    differentResourceVariants.patterns(),
+                    QueryPattern.zeroMatrix(differentTypeVariants.size(), differentResourceVariants.size()),
+                    UnifierType.RULE,
+                    tx
+            );
+        }
+    }
+
+    @Test
     public void testUnification_orthogonalityOfVariants_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             List<List<String>> queryTypes = Lists.newArrayList(
@@ -718,7 +751,6 @@ public class AtomicQueryUnificationIT {
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
-
             assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }

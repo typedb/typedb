@@ -42,16 +42,16 @@ public class AttributePattern extends QueryPattern {
                 "{ $xd has attribute 'someValue'; };",
 
                 //5-6
-                "{ $x1a has " + resource + " $r1a; $x1a id '" + entityId + "'; };",
-                "{ $x1b has " + resource + " $r1b; $x1b id '" + anotherEntityId + "'; };",
+                "{ $x1a has " + resource + " $r1a; $x1a id " + entityId + "; };",
+                "{ $x1b has " + resource + " $r1b; $x1b id " + anotherEntityId + "; };",
 
                 //7-8
-                "{ $x1c has " + resource + " 'someValue'; $x1c id '" + entityId + "'; };",
-                "{ $x1d has " + resource + " 'someOtherValue'; $x1d id '" + anotherEntityId + "'; };",
+                "{ $x1c has " + resource + " 'someValue'; $x1c id " + entityId + "; };",
+                "{ $x1d has " + resource + " 'someOtherValue'; $x1d id " + anotherEntityId + "; };",
 
                 //9-10
-                "{ $x2a has " + resource + " $r2a; $r2a id '" + resourceId + "'; };",
-                "{ $x2b has " + resource + " $r2b; $r2b id '" + anotherResourceId + "'; };",
+                "{ $x2a has " + resource + " $r2a; $r2a id " + resourceId + "; };",
+                "{ $x2b has " + resource + " $r2b; $r2b id " + anotherResourceId + "; };",
 
                 //11-14
                 "{ $x3a has " + resource + " 'someValue'; };",
@@ -91,7 +91,7 @@ public class AttributePattern extends QueryPattern {
 
                 //33-35
                 //contradiction between attribute concept and provided value
-                "{ $x8b has " + resource + " $r8b; $r8b id '" + anotherResourceId + "'; $r8b 'someValue'; };",
+                "{ $x8b has " + resource + " $r8b; $r8b id " + anotherResourceId + "; $r8b 'someValue'; };",
                 //contradicting value predicates
                 "{ $x8c isa " + type + "; $x8c has " + anotherResource + " $r8c; $r8c > 27; $r8c < 23; };"
 
@@ -100,9 +100,9 @@ public class AttributePattern extends QueryPattern {
                 //TODO
                 //18-22
                 //"{ $x6a has " + resource + " $r6a; $r6a != $r2_6a; };",
-                //"{ $x6b has " + resource + " $r6b; $r6b != $r2_6b; $r2_6b id '" + resourceId + "'; };",
+                //"{ $x6b has " + resource + " $r6b; $r6b != $r2_6b; $r2_6b id " + resourceId + "; };",
                 //"{ $x6c has " + resource + " $r6c; $x6c != $x2_6c; };",
-                //"{ $x6d has " + resource + " $r6d; $x6d != $x2_6d; $x2_6d id '" + resourceId + "'; };",
+                //"{ $x6d has " + resource + " $r6d; $x6d != $x2_6d; $x2_6d id " + resourceId + "; };",
                 //"{ $x6e has " + resource + " $r6e; $x6e != $r6e; };",
         );
     }

@@ -34,6 +34,9 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierComparison;
+import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import graql.lang.pattern.Pattern;
@@ -41,8 +44,6 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.common.util.CommonUtil.toImmutableList;
 
@@ -225,5 +227,12 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override
     public Atom rewriteToUserDefined(Atom parentAtom) {
         return this.rewriteWithTypeVariable(parentAtom);
+    }
+
+    @Override
+    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+        //in general this <= parent, so no specialisation viable
+        if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
+        return super.getUnifier(parentAtom, unifierType);
     }
 }

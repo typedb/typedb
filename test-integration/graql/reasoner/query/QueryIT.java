@@ -218,9 +218,9 @@ public class QueryIT {
     public void testAlphaEquivalence_nonMatchingTypes() {
         try(TransactionOLTP tx = geoSession.transaction().write()) {
             String polandId = getConcept(tx, "name", "Poland").id().getValue();
-            String patternString = "{ $y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
-            String patternString2 = "{ $x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
-            String patternString3 = "{ $y id '" + polandId + "'; $x isa city; (geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country; };";
+            String patternString = "{ $y id " + polandId + "; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
+            String patternString2 = "{ $x1 id " + polandId + "; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
+            String patternString3 = "{ $y id " + polandId + "; $x isa city; (geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country; };";
             String patternString4 = "{ $x isa city; (entity-location: $y1, geo-entity: $x) isa is-located-in; };";
             String patternString5 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in; };";
 
@@ -258,13 +258,13 @@ public class QueryIT {
     @Test
     public void testAlphaEquivalence_RelationsWithSubstitution(){
         try(TransactionOLTP tx = geoSession.transaction().write()) {
-            String patternString = "{ (role: $x, role: $y);$x id 'V666'; };";
-            String patternString2 = "{ (role: $x, role: $y);$y id 'V666'; };";
-            String patternString3 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V667'; };";
-            String patternString4 = "{ (role: $x, role: $y);$y id 'V666';$x id 'V667'; };";
-            String patternString5 = "{ (entity-location: $x, geo-entity: $y);$x id 'V666';$y id 'V667'; };";
-            String patternString6 = "{ (entity-location: $x, geo-entity: $y);$y id 'V666';$x id 'V667'; };";
-            String patternString7 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V666'; };";
+            String patternString = "{ (role: $x, role: $y);$x id V666; };";
+            String patternString2 = "{ (role: $x, role: $y);$y id V666; };";
+            String patternString3 = "{ (role: $x, role: $y);$x id V666;$y id V667; };";
+            String patternString4 = "{ (role: $x, role: $y);$y id V666;$x id V667; };";
+            String patternString5 = "{ (entity-location: $x, geo-entity: $y);$x id V666;$y id V667; };";
+            String patternString6 = "{ (entity-location: $x, geo-entity: $y);$y id V666;$x id V667; };";
+            String patternString7 = "{ (role: $x, role: $y);$x id V666;$y id V666; };";
             Conjunction<Statement> pattern = conjunction(patternString, tx);
             Conjunction<Statement> pattern2 = conjunction(patternString2, tx);
             Conjunction<Statement> pattern3 = conjunction(patternString3, tx);

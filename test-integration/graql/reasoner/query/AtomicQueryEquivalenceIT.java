@@ -245,19 +245,19 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationsWithSubstitution(){
-        String query = "{ (role: $x, role: $y);$x id 'V666'; };";
-        String queryb = "{ (role: $x, role: $y);$y id 'V666'; };";
+        String query = "{ (role: $x, role: $y);$x id V666; };";
+        String queryb = "{ (role: $x, role: $y);$y id V666; };";
 
         String query2 = "{ (role: $x, role: $y);$x != $y; };";
-        String query3 = "{ (role: $x, role: $y);$x != $y;$y id 'V667'; };";
+        String query3 = "{ (role: $x, role: $y);$x != $y;$y id V667; };";
 
-        String query4 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V667'; };";
-        String query4b = "{ (role: $x, role: $y);$y id 'V666';$x id 'V667'; };";
+        String query4 = "{ (role: $x, role: $y);$x id V666;$y id V667; };";
+        String query4b = "{ (role: $x, role: $y);$y id V666;$x id V667; };";
 
-        String query7 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V666'; };";
+        String query7 = "{ (role: $x, role: $y);$x id V666;$y id V666; };";
 
-        String query5 = "{ (baseRole1: $x, baseRole2: $y);$x id 'V666';$y id 'V667'; };";
-        String query6 = "{ (baseRole1: $x, baseRole2: $y);$y id 'V666';$x id 'V667'; };";
+        String query5 = "{ (baseRole1: $x, baseRole2: $y);$x id V666;$y id V667; };";
+        String query6 = "{ (baseRole1: $x, baseRole2: $y);$y id V666;$x id V667; };";
 
         ArrayList<String> queries = Lists.newArrayList(query, queryb, query2, query3, query4, query4b, query5, query6, query7);
 
@@ -291,17 +291,17 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationsWithSubstitution_differentRolesMapped(){
-        String query = "{ (baseRole1: $x, baseRole2: $y);$x id 'V666'; };";
-        String query2 = "{ (baseRole1: $x, baseRole2: $y);$x id 'V667'; };";
-        String query3 = "{ (baseRole1: $x, baseRole2: $y);$y id 'V666'; };";
-        String query4 = "{ (baseRole1: $x, baseRole2: $y);$y id 'V667'; };";
+        String query = "{ (baseRole1: $x, baseRole2: $y);$x id V666; };";
+        String query2 = "{ (baseRole1: $x, baseRole2: $y);$x id V667; };";
+        String query3 = "{ (baseRole1: $x, baseRole2: $y);$y id V666; };";
+        String query4 = "{ (baseRole1: $x, baseRole2: $y);$y id V667; };";
 
         String query5 = "{ (baseRole1: $x, baseRole2: $y);$x != $y; };";
         String query6 = "{ (baseRole1: $x, baseRole2: $y);$x != $x2; };";
-        String query7 = "{ (baseRole1: $x, baseRole2: $y);$x != $x2;$x2 id 'V667'; };";
+        String query7 = "{ (baseRole1: $x, baseRole2: $y);$x != $x2;$x2 id V667; };";
 
-        String query8 = "{ (baseRole1: $x, baseRole2: $y);$x id 'V666';$y id 'V667'; };";
-        String query9 = "{ (baseRole1: $x, baseRole2: $y);$y id 'V666';$x id 'V667'; };";
+        String query8 = "{ (baseRole1: $x, baseRole2: $y);$x id V666;$y id V667; };";
+        String query9 = "{ (baseRole1: $x, baseRole2: $y);$y id V666;$x id V667; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5, query6, query7, query9, query9);
 
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
@@ -374,13 +374,13 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_RelationsWithVariableAndSubstitution(){
-        String query = "{ $r (baseRole1: $x);$x id 'V666'; };";
-        String query2 = "{ $a (baseRole1: $x);$x id 'V667'; };";
-        String query3 = "{ $b (baseRole2: $y);$y id 'V666'; };";
+        String query = "{ $r (baseRole1: $x);$x id V666; };";
+        String query2 = "{ $a (baseRole1: $x);$x id V667; };";
+        String query3 = "{ $b (baseRole2: $y);$y id V666; };";
         String query4 = "{ $c (baseRole1: $a);$a != $b; };";
         String query4b = "{ $r (baseRole1: $x);$x != $y; };";
-        String query5 = "{ $e (baseRole1: $a);$a != $b;$b id 'V666'; };";
-        String query5b = "{ $r (baseRole1: $x);$x != $y;$y id 'V666'; };";
+        String query5 = "{ $e (baseRole1: $a);$a != $b;$b id V666; };";
+        String query5b = "{ $r (baseRole1: $x);$x != $y;$y id V666; };";
         ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query4b, query5, query5b);
 
         equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);

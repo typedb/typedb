@@ -24,6 +24,11 @@ import java.util.List;
 
 public abstract class QueryPattern {
 
+    @Override
+    public String toString(){
+        return String.join("\n", patterns());
+    }
+
     public abstract List<String> patterns();
 
     public abstract int size();
@@ -40,6 +45,16 @@ public abstract class QueryPattern {
             for (int j = 0; j < N; j++) {
                 if (i == j) matrix[i][j] = 1;
                 else matrix[i][j] = 0;
+            }
+        }
+        return matrix;
+    }
+
+    public static int[][] zeroMatrix(int N, int M){
+        int[][] matrix = new int[N][M];
+        for(int i = 0; i < N ; i++) {
+            for (int j = 0; j < M; j++) {
+                matrix[i][j] = 0;
             }
         }
         return matrix;

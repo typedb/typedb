@@ -144,6 +144,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){
         if (p == this) return MultiUnifierImpl.trivial();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
+
+        //NB: this is a defensive check and potentially expensive
         if (unifierType.equivalence() != null && !unifierType.equivalence().equivalent(p, this)) return MultiUnifierImpl.nonExistent();
 
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;

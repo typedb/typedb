@@ -145,20 +145,24 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     },
 
     /**
-     * Rule unifier, found between queries and rule heads, allows rule heads to be more specific than matched queries.
-     * Used in rule matching.
-     * <p>
+     * Rule unifier, found between queries and rule heads, allows rule heads to be more general than matched queries.
+     * Used in rule matching. The general condition of the child query C (rule head) and parent query P that needs to be satisfied is:
+     *
+     * C >= P,
+     *
+     * i. e. parent specialises the child.
+     *
      * If two queries are alpha-equivalent they are rule-unifiable.
      * Rule unification relaxes restrictions of exact unification in that it merely
      * requires an existence of a semantic overlap between the parent and child queries, i. e.
      * the answer set of the child and the parent queries need to have a non-zero intersection.
-     * <p>
+     *
      * For predicates it corresponds to changing the alpha-equivalence requirement to compatibility.
-     * <p>
      * As a result, two queries may be rule-unifiable and not alpha-equivalent, e.q.
-     * <p>
+     *
      * P: $x has age >= 10
      * Q: $x has age 10
+     *
      */
     RULE {
         @Override
@@ -217,16 +221,18 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      * Unifier type used to determine whether two queries are in a subsumption relation.
      * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE {@link UnifierType}.
-     * Defining queries Q and P and their respective answer sets A(Q) and A(P) we say that:
+     * Defining queries C and P and their respective answer sets A(C) and A(P) we say that a subsumptive unifier between child
+     * and parent exists if:
      *
-     * <p>
-     * Q subsumes P iff
-     * P >= Q (Q specialises P) iff
-     * A(Q) is a subset of A(P)
-     * <p>
+     * C <= P,
+     *
+     * i.e. C specialises P (C subsumes P) and A(C) is a subset of A(P).
+     *
+     * As a result, to relate it with the RULE unifier. We can say that if there exists a RULE unifier between child and
+     * parent, i. e. C >= P holds, then there exists a SUBSUMPTIVE unifier between parent and child.
      *
      * Subsumption relation is NOT symmetric in general. The only case when it is symmetric is when parent and child
-     * are alpha-equivalent.
+     * queries are alpha-equivalent.
      */
     SUBSUMPTIVE {
 
