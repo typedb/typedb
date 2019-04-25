@@ -60,7 +60,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean inferValues() { return false; }
 
         @Override
-        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
+        public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) {
             return parent.isDirect() == child.isDirect();
         }
 
@@ -112,7 +112,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean inferValues() { return false; }
 
         @Override
-        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
+        public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) {
             return parent.isDirect() == child.isDirect();
         }
 
@@ -175,7 +175,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean inferValues() { return true; }
 
         @Override
-        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) { return true; }
+        public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) { return true; }
 
         @Override
         public boolean typePlayability(ReasonerQuery query, Variable var, Type type) {
@@ -246,9 +246,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean inferValues() { return true; }
 
         @Override
-        public boolean typeExplicitenessCompatibility(Atomic parent, Atomic child) {
-            return !parent.isDirect()
-                    || (parent.isDirect() == child.isDirect());
+        public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) {
+            //we require equal directedness as we can't always check the type in the answer (e.g. if we have a relation without rel var)
+            return (parent.isDirect() == child.isDirect());
         }
 
         @Override

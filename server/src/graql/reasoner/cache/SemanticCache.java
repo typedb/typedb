@@ -188,7 +188,6 @@ public abstract class SemanticCache<
         Set<QE> computedParents = new HashSet<>();
         family.stream()
                 .map(this::keyToQuery)
-                //.filter(parent -> !unifierType().equivalence().equivalent(child, parent))
                 .filter(child::subsumes)
                 .map(this::queryToKey)
                 .peek(computedParents::add)
@@ -281,6 +280,7 @@ public abstract class SemanticCache<
         boolean queryGround = query.isGround();
 
         if (match != null) {
+            LOG.trace("Query Cache match: {}, size: {}", match.query(), match.cachedElement().size());
             boolean answersToGroundQuery = false;
             boolean queryDBComplete = isDBComplete(query);
             if (queryGround) {
