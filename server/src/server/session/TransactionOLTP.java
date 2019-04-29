@@ -869,8 +869,6 @@ public class TransactionOLTP implements Transaction {
     private void closeTransaction(String closedReason) {
         try {
             janusTransaction.close();
-        } catch (UnsupportedOperationException e) {
-            //Ignored for Tinker
         } finally {
             transactionCache.closeTx();
             this.closedReason = closedReason;

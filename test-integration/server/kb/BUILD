@@ -32,6 +32,24 @@ java_test(
 )
 
 java_test(
+    name = "concurrency-it",
+    size = "medium",
+    srcs = ["ConcurrencyIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.kb.ConcurrencyIT",
+    deps = [
+        "//common:common",
+        "//concept:concept",
+        "//server:server",
+        "//test-integration/rule:grakn-test-server",
+
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@graknlabs_graql//java:graql",
+    ]
+)
+
+java_test(
     name = "grakn-transaction-it",
     size = "medium",
     srcs = ["TransactionIT.java"],
