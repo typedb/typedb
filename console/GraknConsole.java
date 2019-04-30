@@ -105,6 +105,8 @@ public class GraknConsole {
         // Start a Console Session to load some Graql file(s)
         else if (commandLine.hasOption(FILE)) {
             try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
+                //Intercept Ctrl+C and gracefully terminate connection with server
+                Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 String[] paths = commandLine.getOptionValues(FILE);
                 List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(toImmutableList());
                 for (Path file : filePaths) consoleSession.load(file);
@@ -113,6 +115,8 @@ public class GraknConsole {
         // Start a live Console Session for the user to interact with Grakn
         else {
             try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
+                //Intercept Ctrl+C and gracefully terminate connection with server
+                Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 consoleSession.run();
             }
         }
