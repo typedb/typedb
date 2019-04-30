@@ -281,7 +281,8 @@ jobs:
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           client-java:master client-python:master client-nodejs:master \
-          workbase:master docs:development examples:development benchmark:master
+          workbase:master docs:development examples:development \
+          benchmark:master grakn-kgms:master
 
   release-approval:
     machine: true
