@@ -60,7 +60,7 @@ import java.util.UUID;
  * It enables all of the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
-    protected static final Path DEFAULT_SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
+    protected static final Path DEFAULT_SERVER_CONFIG_PATH = Paths.get("server/conf/grakn.properties");
     protected static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
     // Grakn Core Server
@@ -144,7 +144,7 @@ public class GraknTestServer extends ExternalResource {
         return session(randomKeyspace);
     }
 
-    public SessionImpl session(String keyspace){
+    public SessionImpl session(String keyspace) {
         return session(KeyspaceImpl.of(keyspace));
     }
 
@@ -152,7 +152,7 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory.session(keyspace);
     }
 
-    public SessionFactory sessionFactory(){
+    public SessionFactory sessionFactory() {
         return sessionFactory;
     }
 
@@ -225,7 +225,6 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
-        return ServerFactory.createServer(id, serverRPC,
-                                          lockManager, attributeDeduplicatorDaemon, keyspaceStore);
+        return ServerFactory.createServer(id, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 }

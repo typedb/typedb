@@ -51,8 +51,10 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -72,15 +74,29 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
     private final Map<String, SessionImpl> openSessions;
     private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    private Set<TransactionListener> transactionListenerSet;
 
     public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
         this.requestOpener = requestOpener;
         this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
         this.openSessions = new HashMap<>();
+        this.transactionListenerSet = new HashSet<>();
     }
 
+    /**
+     * Close all open transactions, sessions and connections with clients - this is invoked by JVM shutdown hook
+     */
+    public void shutdown(){
+        transactionListenerSet.forEach(transactionListener -> transactionListener.close(null));
+        transactionListenerSet.clear();
+        openSessions.values().forEach(SessionImpl::close);
+    }
+
+    @Override
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions);
+        TransactionListener transactionListener = new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions);
+        transactionListenerSet.add(transactionListener);
+        return transactionListener;
     }
 
     @Override
@@ -166,11 +182,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         @Override
         public void onError(Throwable t) {
+            transactionListenerSet.remove(this);
             close(t);
         }
 
         @Override
         public void onCompleted() {
+            transactionListenerSet.remove(this);
             close(null);
         }
 
@@ -413,7 +431,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
      * Contains a mutable map of iterators of Transaction.Res for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
-    public class Iterators {
+    class Iterators {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
 

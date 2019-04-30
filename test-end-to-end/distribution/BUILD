@@ -10,6 +10,7 @@ java_test(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "@graknlabs_client_java//:client-java",
     ],
     data = ["//:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
