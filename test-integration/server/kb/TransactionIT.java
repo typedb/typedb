@@ -37,6 +37,10 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlGet;
+import graql.lang.query.GraqlInsert;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
@@ -399,6 +403,36 @@ public class TransactionIT {
         assertEquals(2, rolePlayersResult.size());
         List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
         assertEquals(0, relationResult.size());
+    }
+
+    @Test
+    public void whenCommitingInferredConcepts_InferredConceptsAreNotPersisted(){
+        tx.execute(Graql.<GraqlDefine>parse(
+                    "define " +
+                            "name sub attribute, datatype string;" +
+                            "score sub attribute, datatype double;" +
+                            "person sub entity, has name, has score;" +
+                            "infer-attr sub rule," +
+                            "when {" +
+                            "  $p isa person, has score $s;" +
+                            "  $s > 0.0;" +
+                            "}, then {" +
+                            "  $p has name 'Ganesh';" +
+                            "};"
+            ));
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"));
+        tx.commit();
+
+        tx = session.transaction().read();
+        List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"), false);
+        assertTrue(answers.isEmpty());
     }
 
 }
