@@ -106,7 +106,7 @@ import java.util.stream.Stream;
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
-    final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    private final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     // Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
@@ -871,8 +871,6 @@ public class TransactionOLTP implements Transaction {
     private void closeTransaction(String closedReason) {
         try {
             janusTransaction.close();
-        } catch (UnsupportedOperationException e) {
-            //Ignored for Tinker
         } finally {
             transactionCache.closeTx();
             this.closedReason = closedReason;

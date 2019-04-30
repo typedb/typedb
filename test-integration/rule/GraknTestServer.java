@@ -56,11 +56,11 @@ import java.util.UUID;
 
 /**
  * This rule is a test server rule which starts Cassandra and Grakn Core Server on random, unused ports.
- * It allowing multiple test server instances to run concurrently.
+ * It allows multiple test server instances to run concurrently.
  * It enables all of the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
-    protected static final Path DEFAULT_SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
+    protected static final Path DEFAULT_SERVER_CONFIG_PATH = Paths.get("server/conf/grakn.properties");
     protected static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
     // Grakn Core Server
@@ -119,11 +119,9 @@ public class GraknTestServer extends ExternalResource {
     @Override
     protected void after() {
         try {
-            System.out.println("XXX after");
             keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
-            System.out.println("XXX Deleting " + updatedCassandraConfigPath.getAbsolutePath());
             updatedCassandraConfigPath.delete();
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
@@ -146,7 +144,7 @@ public class GraknTestServer extends ExternalResource {
         return session(randomKeyspace);
     }
 
-    public SessionImpl session(String keyspace){
+    public SessionImpl session(String keyspace) {
         return session(KeyspaceImpl.of(keyspace));
     }
 
@@ -154,7 +152,7 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory.session(keyspace);
     }
 
-    public SessionFactory sessionFactory(){
+    public SessionFactory sessionFactory() {
         return sessionFactory;
     }
 
@@ -217,8 +215,6 @@ public class GraknTestServer extends ExternalResource {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
 
         keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
-
-        // tx-factory
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, serverConfig);
 
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(sessionFactory);
@@ -229,7 +225,6 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
-        return ServerFactory.createServer(id, serverRPC,
-                                          lockManager, attributeDeduplicatorDaemon, keyspaceStore);
+        return ServerFactory.createServer(id, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
 }
