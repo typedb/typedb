@@ -40,14 +40,19 @@ public abstract class RelationPattern extends QueryPattern {
 
     private final List<Pattern> patterns;
 
-    public RelationPattern(Multimap<Label, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
-        ImmutableMultimap.Builder<Label, Pair<Label, List<ConceptId>>> builder = ImmutableMultimap.builder();
+    /**
+     *
+     * @param rpConf configuration of rolePlayers in the form (role, variable) -> (role player type)
+     * @param ids list of roleplayer ids
+     * @param relIds list of relation ids
+     */
+    protected RelationPattern(Multimap<Pair<Label, Variable>, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
+        ImmutableMultimap.Builder<Pair<Label, Variable>, Pair<Label, List<ConceptId>>> builder = ImmutableMultimap.builder();
         rpConf.forEach((key, value) -> builder.put(key, new Pair<>(value, ids)));
         this.patterns = generateRelationPatterns(
                 builder.build(),
                 relIds
         );
-
     }
 
     @Override
@@ -87,7 +92,7 @@ public abstract class RelationPattern extends QueryPattern {
      * @return list of generated patterns as strings
      */
     private static List<Pattern> generateRelationPatterns(
-            Multimap<Label, Pair<Label, List<ConceptId>>> spec,
+            Multimap<Pair<Label, Variable>, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
         Statement relationVar = !relationIds.isEmpty()? new Statement(new Variable().asReturnedVar()) : Graql.var();
         Statement[] basePattern = {relationVar};
@@ -95,8 +100,9 @@ public abstract class RelationPattern extends QueryPattern {
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
         Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            Statement rolePlayer = new Statement(new Variable().asReturnedVar());
-            Label role = entry.getKey();
+            Label role = entry.getKey().getKey();
+            Statement rolePlayer = new Statement(entry.getKey().getValue().asReturnedVar());
+
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();
             basePattern[0] = basePattern[0].rel(role.getValue(), rolePlayer);

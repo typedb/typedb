@@ -33,6 +33,11 @@ import java.util.function.BiFunction;
 public interface UnifierComparison {
 
     /**
+     * @return true if the unifier permits a multi-valued mapping (parent vars can have multiple corresponding child vars)
+     */
+    default boolean allowsNonInjectiveMappings(){ return true;}
+
+    /**
      * @return true if types should be inferred when computing unifier
      */
     boolean inferTypes();

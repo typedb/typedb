@@ -246,6 +246,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         public boolean inferValues() { return true; }
 
         @Override
+        public boolean allowsNonInjectiveMappings() { return false; }
+
+        @Override
         public boolean typeDirectednessCompatibility(Atomic parent, Atomic child) {
             //we require equal directedness as we can't always check the type in the answer (e.g. if we have a relation without rel var)
             return (parent.isDirect() == child.isDirect());

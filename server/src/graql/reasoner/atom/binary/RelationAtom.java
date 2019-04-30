@@ -1020,6 +1020,11 @@ public abstract class RelationAtom extends IsaAtomBase {
         } else {
             unifiers.add(baseUnifier);
         }
+
+        if (!unifierType.allowsNonInjectiveMappings()
+             && unifiers.stream().anyMatch(Unifier::isNonInjective) ){
+            return MultiUnifierImpl.nonExistent();
+        }
         return new MultiUnifierImpl(unifiers);
     }
 

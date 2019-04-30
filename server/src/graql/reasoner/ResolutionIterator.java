@@ -70,7 +70,9 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return state.getSubstitution();
             }
 
-            state.completionQueries().forEach(toComplete::add);
+            state.completionQueries()
+                    .peek(q -> LOG.trace("Marking query for completion: {} ", q))
+                    .forEach(toComplete::add);
 
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {

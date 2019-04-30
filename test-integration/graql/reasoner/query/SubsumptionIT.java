@@ -37,6 +37,7 @@ import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 
 public class SubsumptionIT {
@@ -177,6 +178,21 @@ public class SubsumptionIT {
                     subsumptionMatrix,
                     tx
             );
+        }
+    }
+    @Test
+    public void test() {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $y);"), tx);
+            ReasonerAtomicQuery child2 = ReasonerQueries.atomic(conjunction("{(baseRole1: $x, baseRole2: $y); $y id " + id + ";};"), tx);
+
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $x);"), tx);
+
+            assertFalse(child.subsumes(parent));
+            assertFalse(child2.subsumes(parent));
+            assertFalse(child.subsumes(parent));
+            assertFalse(child2.subsumes(parent));
         }
     }
 

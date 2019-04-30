@@ -44,6 +44,9 @@ public class Pair<K, V> {
     public int hashCode(){ return data.hashCode();}
 
     @Override
+    public String toString(){ return data.toString();}
+
+    @Override
     public boolean equals(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
