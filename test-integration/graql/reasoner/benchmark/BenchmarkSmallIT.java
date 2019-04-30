@@ -90,8 +90,8 @@ public class BenchmarkSmallIT {
                     .assign(toRole, toEntity);
 
             for (int i = 1; i <= N; i++) {
-                Statement fromVar = new Statement(new Variable().asUserDefined());
-                Statement toVar = new Statement(new Variable().asUserDefined());
+                Statement fromVar = new Statement(new Variable().asReturnedVar());
+                Statement toVar = new Statement(new Variable().asReturnedVar());
                 Statement rulePattern = Graql
                         .type("rule" + i)
                         .when(
@@ -265,7 +265,7 @@ public class BenchmarkSmallIT {
 
         //with substitution
         Concept id = tx.execute(Graql.parse("match $x has index 'a'; get;").asGet()).iterator().next().get("x");
-        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id '" + id.id().getValue() + "'; get;";
+        String queryString3 = "match (Q-from: $x, Q-to: $y) isa Q;$x id " + id.id().getValue() + "; get;";
         GraqlGet query3 = Graql.parse(queryString3).asGet();
 
         executeQuery(query, tx, "full");

@@ -28,13 +28,12 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
+import java.util.List;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -228,54 +227,53 @@ public class SubsumptionIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariants = genericSchemaGraph.differentRelationVariants();
-            int[][] subsumptionMatrix = new int[differentTypeRelationVariants.size()][differentRelationVariants.size()];
 
             subsumption(
                     differentTypeRelationVariants.patterns(),
                     differentRelationVariants.patterns(),
-                    subsumptionMatrix,
+                    QueryPattern.zeroMatrix(differentTypeRelationVariants.size(), differentRelationVariants.size()),
+                    tx
+            );
+        }
+    }
+
+    /**
+     * No subsumption relation possible in this case:
+     *
+     * Child:
+     * $x isa relation;
+     *
+     * Parent:
+     * $x ($y, $z) isa relation;
+     *
+     * Even though it looks like child specialises parent, parent describes a subset of all possible relations - ones that have
+     * at least two roleplayers. As a result, parent in general doesn't retain all the answers to child.
+     */
+    @Test
+    public void testSubsumption_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
+            QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
+
+            subsumption(
+                    differentTypeRelationVariants.patterns(),
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    QueryPattern.zeroMatrix(differentTypeRelationVariants.size(), differentRelationVariantsWithRelationVariable.size()),
                     tx
             );
         }
     }
 
     @Test
-    public void testSubsumption_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable(){
+    public void testSubsumption_differentRelationVariantsWithRelationVariable_differentTypeRelationVariants(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
             QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
             QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
-            int[][] subsumptionMatrix = new int[][]{
-                    //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18,19,20
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},//4
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},//7
-                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},//11
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},//15
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
-            };
 
             subsumption(
-                    differentTypeRelationVariants.patterns(),
                     differentRelationVariantsWithRelationVariable.patterns(),
-                    subsumptionMatrix,
+                    differentTypeRelationVariants.patterns(),
+                    QueryPattern.zeroMatrix(differentRelationVariantsWithRelationVariable.size(), differentTypeRelationVariants.size()),
                     tx
             );
         }
@@ -353,7 +351,7 @@ public class SubsumptionIT {
                     //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
                     { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
                     { 1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                    { 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    { 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                     { 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                     { 1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//4
                     { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//5
@@ -386,6 +384,53 @@ public class SubsumptionIT {
         }
     }
 
+    /**
+     * No subsumption relation possible in this case:
+     *
+     * Child:
+     * $x isa resource;
+     *
+     * Parent:
+     * $x has resource $r;
+     *
+     * Equivalent to:
+     *
+     * $r isa resource; (resource-owner:$x, resource-value: $r) isa @...;
+     *
+     * Even though it looks like child specialises parent, parent describes connected attributes, whereas
+     * child describes all attributes including disconnected ones. As a result, parent in general doesn't retain
+     * all the answers to child.
+     */
+    @Test
+    public void testSubsumption_differentTypeResourceVariants_differentResourceVariants(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
+            QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
+
+            subsumption(
+                    differentTypeVariants.patterns(),
+                    differentResourceVariants.patterns(),
+                    QueryPattern.zeroMatrix(differentTypeVariants.size(), differentResourceVariants.size()),
+                    tx
+            );
+        }
+    }
+
+    @Test
+    public void testSubsumption_differentResourceVariants_differentTypeResourceVariants(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
+            QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
+
+            subsumption(
+                    differentResourceVariants.patterns(),
+                    differentTypeVariants.patterns(),
+                    QueryPattern.zeroMatrix(differentResourceVariants.size(), differentTypeVariants.size()),
+                    tx
+            );
+        }
+    }
+
     private void subsumption(List<String> children, List<String> parents, int[][] resultMatrix, TransactionOLTP tx){
         int i = 0;
         int j = 0;
@@ -403,7 +448,7 @@ public class SubsumptionIT {
         ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childString), tx);
         ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentString), tx);
         UnifierType unifierType = UnifierType.SUBSUMPTIVE;
-        
+
         assertEquals("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", subsumes, child.subsumes(parent));
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         if (subsumes){

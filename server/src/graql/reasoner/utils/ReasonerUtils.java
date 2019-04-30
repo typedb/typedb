@@ -99,7 +99,7 @@ public class ReasonerUtils {
     public static IdPredicate getIdPredicate(Variable typeVariable, Statement typeVar, Set<Statement> vars, ReasonerQuery parent){
         IdPredicate predicate = null;
         //look for id predicate among vars
-        if(typeVar.var().isUserDefinedName()) {
+        if(typeVar.var().isReturned()) {
             predicate = getUserDefinedIdPredicate(typeVariable, vars, parent);
         } else {
             TypeProperty nameProp = typeVar.getProperty(TypeProperty.class).orElse(null);
@@ -147,7 +147,7 @@ public class ReasonerUtils {
      * @return stream of mapped ValuePredicates
      */
     public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext, ReasonerQuery parent){
-        Stream<Statement> context = statement.var().isUserDefinedName()?
+        Stream<Statement> context = statement.var().isReturned()?
                 fullContext.stream().filter(v -> v.var().equals(valueVariable)) :
                 Stream.of(statement);
         Set<ValuePredicate> vps = context

@@ -68,7 +68,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (statement.hasProperty(RelationProperty.class)) return null;
 
-        Variable varName = var.asUserDefined();
+        Variable varName = var.asReturnedVar();
         Variable typeVar = property.type().var();
 
         IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);

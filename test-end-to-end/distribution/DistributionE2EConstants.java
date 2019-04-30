@@ -56,7 +56,6 @@ public class DistributionE2EConstants {
     }
 
     public static void unzipGrakn() throws IOException, InterruptedException, TimeoutException {
-        System.out.println("Unzipped Grakn to: " + GRAKN_UNZIPPED_DIRECTORY.toAbsolutePath());
         new ProcessExecutor()
                 .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
     }

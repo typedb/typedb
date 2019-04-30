@@ -70,7 +70,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         return addRelation(true);
     }
 
-    public Relation addRelation(boolean isInferred) {
+    private Relation addRelation(boolean isInferred) {
         Relation relation = addInstance(Schema.BaseType.RELATION,
                 (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
         vertex().tx().cache().addNewRelation(relation);

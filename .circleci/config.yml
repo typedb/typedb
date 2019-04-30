@@ -281,7 +281,7 @@ jobs:
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           client-java:master client-python:master client-nodejs:master \
-          workbase:master docs:development examples:development
+          workbase:master docs:development examples:development benchmark:master
 
   release-approval:
     machine: true
@@ -300,7 +300,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN_GRABL
-          bazel run //:deploy-github
+          bazel run //:deploy-github -- $CIRCLE_SHA1
 
   deploy-apt:
     machine: true

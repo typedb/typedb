@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Caches TransactionOLTP specific data this includes:
@@ -225,6 +226,16 @@ public class TransactionCache {
     public <X extends Concept> X getCachedConcept(ConceptId id) {
         //noinspection unchecked
         return (X) conceptCache.get(id);
+    }
+
+    /**
+     * @return cached things that are inferred
+     */
+    public Stream<Thing> getInferredConcepts(){
+        return conceptCache.values().stream()
+                .filter(Concept::isThing)
+                .map(Concept::asThing)
+                .filter(Thing::isInferred);
     }
 
     /**

@@ -91,6 +91,6 @@ abstract class IdFragment extends Fragment {
 
     @Override
     public boolean canOperateOnEdges() {
-        return id().getValue().startsWith(Schema.PREFIX_EDGE);
+        return Schema.isEdgeId(id());
     }
 }

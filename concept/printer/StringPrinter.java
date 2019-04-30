@@ -40,8 +40,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static graql.lang.util.StringUtil.escapeLabelOrId;
-
 /**
  * Default printer that prints results in Graql syntax
  *
@@ -64,7 +62,7 @@ public class StringPrinter extends Printer<StringBuilder> {
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
     public static String conceptId(ConceptId id) {
-        return escapeLabelOrId(id.getValue());
+        return id.getValue();
     }
 
     /**
@@ -75,7 +73,7 @@ public class StringPrinter extends Printer<StringBuilder> {
      * then it will be returned as-is, otherwise it will be quoted and escaped.
      */
     public static String label(Label label) {
-        return escapeLabelOrId(label.getValue());
+        return label.getValue();
     }
 
     @Override

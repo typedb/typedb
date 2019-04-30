@@ -33,6 +33,7 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -660,7 +661,7 @@ public class TransactionOLTP implements Transaction {
             if (transactionCache.isConceptCached(id)) {
                 return transactionCache.getCachedConcept(id);
             } else {
-                if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
+                if (Schema.isEdgeId(id)) {
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
@@ -676,7 +677,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     private <T extends Concept> Optional<T> getConceptEdge(ConceptId id) {
-        String edgeId = id.getValue().substring(1);
+        String edgeId = Schema.elementId(id);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
             return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
@@ -835,6 +836,7 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             checkMutationAllowed();
+            removeInferredConcepts();
             validateGraph();
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
@@ -889,6 +891,7 @@ public class TransactionOLTP implements Transaction {
 
 
         checkMutationAllowed();
+        removeInferredConcepts();
         validateGraph();
 
         Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
@@ -921,6 +924,12 @@ public class TransactionOLTP implements Transaction {
         }
 
         return Optional.empty();
+    }
+
+    private void removeInferredConcepts(){
+        Set<Thing> inferredThings = cache().getInferredConcepts().collect(Collectors.toSet());
+        inferredThings.forEach(inferred -> cache().remove(inferred));
+        inferredThings.forEach(Concept::delete);
     }
 
     private void validateGraph() throws InvalidKBException {

@@ -198,7 +198,7 @@ public abstract class RelationAtom extends IsaAtomBase {
     @Override
     public Set<Atom> rewriteToAtoms(){
         return this.getRelationPlayers().stream()
-                .map(rp -> create(relationPattern(getVarName().asUserDefined(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
+                .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
                 .collect(toSet());
     }
 
@@ -209,7 +209,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                 "{" + inferPossibleTypes(new ConceptMap()).stream().map(rt -> rt.label().getValue()).collect(Collectors.joining(", ")) + "}";
         String relationString = (isUserDefined()? getVarName() + " ": "") +
                 typeString +
-                (getPredicateVariable().isUserDefinedName()? "(" + getPredicateVariable() + ")" : "") +
+                (getPredicateVariable().isReturned()? "(" + getPredicateVariable() + ")" : "") +
                 (isDirect()? "!" : "") +
                 getRelationPlayers().toString();
         return relationString + getPredicates(Predicate.class).map(Predicate::toString).collect(Collectors.joining(""));
@@ -238,7 +238,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
                 .map(Statement::var)
-                .filter(Variable::isUserDefinedName)
+                .filter(Variable::isReturned)
                 .collect(Collectors.toSet());
     }
 
@@ -255,7 +255,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     protected Pattern createCombinedPattern(){
-        if (getPredicateVariable().isUserDefinedName()) return super.createCombinedPattern();
+        if (getPredicateVariable().isReturned()) return super.createCombinedPattern();
         return getSchemaConcept() == null?
                 relationPattern() :
                 isDirect()?
@@ -287,7 +287,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (obj == this) return true;
         RelationAtom that = (RelationAtom) obj;
         return this. isUserDefined() == that.isUserDefined()
-                && this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName()
+                && this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned()
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId())
                 //check relation players equivalent
@@ -468,7 +468,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .filter(var -> var.var().isUserDefinedName())
+                .filter(var -> var.var().isReturned())
                 .filter(vp -> vp.getType().isPresent())
                 .map(vp -> {
                     String label = vp.getType().orElse(null);
@@ -716,7 +716,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(CommonUtil::optionalToStream)
-                .filter(p -> p.var().isUserDefinedName())
+                .filter(p -> p.var().isReturned())
                 .filter(p -> !p.getType().isPresent())
                 .map(Statement::var)
                 .collect(Collectors.toSet());
@@ -729,7 +729,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                 getRelationPlayers().stream()
                         .map(RelationProperty.RolePlayer::getRole)
                         .flatMap(CommonUtil::optionalToStream)
-                        .filter(vp -> vp.var().isUserDefinedName())
+                        .filter(vp -> vp.var().isReturned())
                         .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.getValue()))
                         .map(p -> IdPredicate.create(p.getKey(), Label.of(p.getValue()), getParentQuery()))
@@ -841,7 +841,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                 String typeLabel = rolePattern.getType().orElse(null);
                 Role role = typeLabel != null ? graph.getRole(typeLabel) : null;
                 //try indirectly
-                if (role == null && rolePattern.var().isUserDefinedName()) {
+                if (role == null && rolePattern.var().isReturned()) {
                     IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
                     if (rolePredicate != null){
                         Role r = graph.getConcept(rolePredicate.getPredicate());
@@ -999,7 +999,7 @@ public abstract class RelationAtom extends IsaAtomBase {
             boolean unifyRoleVariables = parent.getRelationPlayers().stream()
                     .map(RelationProperty.RolePlayer::getRole)
                     .flatMap(CommonUtil::optionalToStream)
-                    .anyMatch(rp -> rp.var().isUserDefinedName());
+                    .anyMatch(rp -> rp.var().isReturned());
             getRelationPlayerMappings(parent, unifierType)
                     .forEach(mappingList -> {
                         Multimap<Variable, Variable> varMappings = HashMultimap.create();
@@ -1075,7 +1075,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
         ConceptMap relationSub = ConceptUtils.mergeAnswers(
                 getRoleSubstitution(),
-                getVarName().isUserDefinedName()?
+                getVarName().isReturned()?
                         new ConceptMap(ImmutableMap.of(getVarName(), relation)) :
                         new ConceptMap()
         );
@@ -1101,7 +1101,7 @@ public abstract class RelationAtom extends IsaAtomBase {
             if (rolePattern != null) {
                 Variable roleVar = rolePattern.var();
                 String roleLabel = rolePattern.getType().orElse(null);
-                relVar = relVar.rel(new Statement(roleVar.asUserDefined()).type(roleLabel), rp.getPlayer());
+                relVar = relVar.rel(new Statement(roleVar.asReturnedVar()).type(roleLabel), rp.getPlayer());
             } else {
                 relVar = relVar.rel(rp.getPlayer());
             }
@@ -1114,13 +1114,13 @@ public abstract class RelationAtom extends IsaAtomBase {
      * @return new relation atom with user defined name if necessary or this
      */
     private RelationAtom rewriteWithRelationVariable(Atom parentAtom){
-        if (this.getVarName().isUserDefinedName() || !parentAtom.getVarName().isUserDefinedName()) return this;
+        if (this.getVarName().isReturned() || !parentAtom.getVarName().isReturned()) return this;
         return rewriteWithRelationVariable();
     }
 
     @Override
     public RelationAtom rewriteWithRelationVariable(){
-        StatementInstance newVar = new StatementThing(new Variable().asUserDefined());
+        StatementInstance newVar = new StatementThing(new Variable().asReturnedVar());
         Statement relVar = getPattern().getProperty(IsaProperty.class)
                 .map(prop -> newVar.isa(prop.type()))
                 .orElse(newVar);
@@ -1138,7 +1138,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     public RelationAtom rewriteWithTypeVariable(){
-        return create(this.getPattern(), this.getPredicateVariable().asUserDefined(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
+        return create(this.getPattern(), this.getPredicateVariable().asReturnedVar(), this.getTypeId(), this.getPossibleTypes(), this.getParentQuery());
     }
 
     @Override

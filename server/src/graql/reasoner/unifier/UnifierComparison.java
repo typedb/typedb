@@ -45,9 +45,9 @@ public interface UnifierComparison {
     /**
      * @param parent parent type {@link Atomic}
      * @param child child type {@link Atomic}
-     * @return true if both types are compatible in terms of type expliciteness (directness)
+     * @return true if both types are compatible in terms of type directness
      */
-    boolean typeExplicitenessCompatibility(Atomic parent, Atomic child);
+    boolean typeDirectednessCompatibility(Atomic parent, Atomic child);
 
     /**
      * @param parent {@link SchemaConcept} of parent expression

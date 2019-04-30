@@ -133,7 +133,7 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void makeSureDisconnectedIndexedQueriesProduceCompletePlan_indexedEntity() {
         String queryString = "{" +
-                "$x isa someEntity;$x id 'V123';" +
+                "$x isa someEntity;$x id V123;" +
                 "$y isa resource;" +
                 "$z isa someRelation;" +
                 "};";
@@ -148,7 +148,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "$w id 'sampleId';" +
+                "$w id Vsampleid;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -166,7 +166,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
-                "$z id 'sampleId';" +
+                "$z id Vsampleid;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -184,8 +184,8 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "$z id 'sampleId';" +
-                "$w id 'sampleId2';" +
+                "$z id Vsampleid;" +
+                "$w id Vsampleid2;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -314,8 +314,8 @@ public class ResolutionPlanIT {
     @Test
     public void exploitDBRelationsAndConnectivity_relationLinkWithSubbedEndsAndRuleRelationInTheMiddle(){
         String queryString = "{" +
-                "$start id 'someSampleId';" +
-                "$end id 'anotherSampleId';" +
+                "$start id someSampleId;" +
+                "$end id anotherSampleId;" +
                 "(someRole: $link, otherRole: $start) isa someRelation;" +
                 "(someRole: $link, otherRole: $anotherlink) isa derivedRelation;" +
                 "(someRole: $anotherlink, otherRole: $end) isa anotherRelation;" +
@@ -344,8 +344,8 @@ public class ResolutionPlanIT {
     @Test
     public void exploitDBRelationsAndConnectivity_relationLinkWithSubbedEndsAndRuleRelationAtEnd(){
         String queryString = "{" +
-                "$start id 'someSampleId';" +
-                "$end id 'anotherSampleId';" +
+                "$start id Vsomesampleid;" +
+                "$end id Vanothersampleid;" +
                 "(someRole: $link, otherRole: $start) isa someRelation;" +
                 "(someRole: $anotherlink, otherRole: $link) isa anotherRelation;" +
                 "(someRole: $end, otherRole: $anotherlink) isa derivedRelation;" +
@@ -377,7 +377,7 @@ public class ResolutionPlanIT {
     @Test
     public void exploitDBRelationsAndConnectivity_relationLinkWithEndsSharingAResource(){
         String queryString = "{" +
-                "$start id 'sampleId';" +
+                "$start id sampleId;" +
                 "$start isa someEntity;" +
                 "$start has anotherResource 'someValue';" +
                 "$start has resource $res;" +
@@ -422,11 +422,11 @@ public class ResolutionPlanIT {
                         "$y has anotherResource 'that';";
 
         String xPatternString = "{" +
-                "$x id '" + concept.id() + "';" +
+                "$x id " + concept.id() + ";" +
                 basePatternString +
                 "};";
         String yPatternString = "{" +
-                "$y id '" + concept.id() + "';" +
+                "$y id " + concept.id() + ";" +
                 basePatternString +
                 "};";
         ReasonerQueryImpl queryX = ReasonerQueries.create(conjunction(xPatternString), tx);

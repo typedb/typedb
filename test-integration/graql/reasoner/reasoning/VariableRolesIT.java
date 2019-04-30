@@ -86,7 +86,7 @@ public class VariableRolesIT {
 
             String equivalentQueryString2 = "match " +
                     "($r1: $a, $r2: $b) isa binary-base; " +
-                    "$r1 type 'role' ;" +
+                    "$r1 type role;" +
                     "get $a, $b, $r2;";
 
             GraqlGet query2 = Graql.parse(queryString2).asGet();
