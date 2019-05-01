@@ -39,7 +39,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.BaseType.RELATION;
+import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
+import static grakn.core.server.kb.Schema.EdgeLabel.RELATES;
+import static grakn.core.server.kb.Schema.EdgeLabel.ROLE_PLAYER;
 import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
+import static grakn.core.server.kb.Schema.EdgeLabel.SUB;
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
 import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
 import static grakn.core.server.kb.Schema.VertexProperty.SCHEMA_LABEL;
@@ -568,8 +572,66 @@ public class JanusMicroBenchmark {
 
 
     @Test
-    public void test() {
+    public void testDFSvsBFSGremlinQuery() {
+        List<Long> durations1 = new LinkedList<>();
+        List<Long> durations2 = new LinkedList<>();
+        int trails = 10;
 
+        System.out.println("Initialising and populating keyspace...");
+        SessionImpl session1 = newSession();
+        populateKeypsace(session1, 3000, 5, 2);
+        System.out.println("Finished creating keysace...");
+
+        for (int i = 0; i < trails; i++) {
+            try (TransactionOLTP tx = session1.transaction().read()) {
+                Long startTime = System.currentTimeMillis();
+
+                List<Map<String, Object>> maps = tx.getTinkerTraversal().V().as("start")
+                        .outE(RELATES.name()).inV().out(SUB.name()).has(SCHEMA_LABEL.name(), "person").as("x")
+                        .select("start")
+                        .outE(ROLE_PLAYER.name()).inV().out(ISA.name()).as("y")
+                        .select("x", "y").toList();
+
+                Long endTime = System.currentTimeMillis();
+                System.out.println("Retrieve maps using DFS style gremlin query: " + (endTime - startTime));
+                durations1.add(endTime - startTime);
+            }
+            confuse(session1);
+        }
+
+        System.out.println("Initialising and populating keyspace2...");
+        SessionImpl session2 = newSession();
+        populateKeypsace(session2, 3000, 5, 2);
+        Map<String, String> idNameMap2 = getIdNameMap(session2);
+        System.out.println("Finished creating keysace...");
+        for (int i = 0; i < trails; i++) {
+            try (TransactionOLTP tx = session2.transaction().read()) {
+                Long startTime = System.currentTimeMillis();
+
+                List<Map<String, Object>> maps = tx.getTinkerTraversal().V().as("start")
+                        .outE(RELATES.name()).as("x0")
+                        .select("start")
+                        .outE(ROLE_PLAYER.name()).as("y0")
+                        .select("x0").inV().as("x1")
+                        .select("y0").inV().as("y1")
+                        .select("x1").out(SUB.name()).has(SCHEMA_LABEL.name(), "person").as("x")
+                        .select("y1").out(ISA.name()).as("y")
+                        .select("x", "y").toList();
+
+                Long endTime = System.currentTimeMillis();
+                System.out.println("Retrieve maps using single level BFS style gremlin query: " + (endTime - startTime));
+                durations2.add(endTime - startTime);
+            }
+            confuse(session2);
+        }
+
+        double meanDuration1 = mean(durations1);
+        double stddev1 = stddev(durations1);
+        double meanDuration2 = mean(durations2);
+        double stddev2 = stddev(durations2);
+
+        System.out.println("Mean, stddev time Retrieve maps using DFS style gremlin query: " + meanDuration1 + ", " + stddev1);
+        System.out.println("Mean, stddev time Retrieve maps using DFS style gremlin query: " + meanDuration2 + ", " + stddev2);
     }
 
 
