@@ -19,7 +19,9 @@ package grakn.core.graql.reasoner.atom;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
@@ -465,15 +467,15 @@ public abstract class Atom extends AtomicBase {
      */
     public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier) {
         Set<VariableDefinition> diff = new HashSet<>();
-        ImmutableMap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
-        ImmutableMap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
+        SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
+        SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
         Unifier unifierInverse = unifier.inverse();
 
         unifier.mappings().forEach(m -> {
             Variable childVar = m.getKey();
             Variable parentVar = m.getValue();
-            Type childType = childVarTypeMap.get(childVar);
-            Type parentType = parentVarTypeMap.get(parentVar);
+            Type childType = Iterables.getOnlyElement(childVarTypeMap.get(childVar));
+            Type parentType = Iterables.getOnlyElement(parentVarTypeMap.get(parentVar));
             Type type = childType != null ?
                     parentType != null ?
                             (!parentType.equals(childType) ? childType : null) :

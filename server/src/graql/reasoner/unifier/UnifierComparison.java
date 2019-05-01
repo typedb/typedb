@@ -59,7 +59,7 @@ public interface UnifierComparison {
      * @param child  {@link SchemaConcept} of child expression
      * @return true if {@link Type}s are compatible
      */
-    boolean typeCompatibility(SchemaConcept parent, SchemaConcept child);
+    boolean typeCompatibility(Set<? extends SchemaConcept> parent, Set<? extends SchemaConcept> child);
 
     /**
      * @param parent {@link Atomic} of parent expression

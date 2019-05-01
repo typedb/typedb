@@ -270,7 +270,7 @@ public abstract class AttributeAtom extends Binary{
             return errors;
         }
 
-        Type ownerType = getParentQuery().getVarTypeMap().get(getVarName());
+        Type ownerType = Iterables.getOnlyElement(getParentQuery().getVarTypeMap().get(getVarName()));
 
         if (ownerType != null
                 && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){

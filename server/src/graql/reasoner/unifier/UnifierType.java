@@ -70,9 +70,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
-            return (parent == null && child == null)
-                    || (parent != null && !ConceptUtils.areDisjointTypes(parent, child, true));
+        public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
+            return (parentTypes.isEmpty() && childTypes.isEmpty())
+                    || !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, true);
         }
 
         @Override
@@ -122,9 +122,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
-            return (parent == null && child == null)
-                    || (parent != null && !ConceptUtils.areDisjointTypes(parent, child, true));
+        public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
+            return (parentTypes.isEmpty() && childTypes.isEmpty())
+                    || !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, true);
         }
 
         @Override
@@ -183,8 +183,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
-            return child == null || !ConceptUtils.areDisjointTypes(parent, child, false);
+        public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
+            return childTypes.isEmpty() || !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, false);
         }
 
         @Override
@@ -260,10 +260,11 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
         }
 
         @Override
-        public boolean typeCompatibility(SchemaConcept parent, SchemaConcept child) {
-            return (child == null && parent == null)
-                    || (child != null && parent == null)
-                    || (child != null && parent.subs().anyMatch(child::equals));
+        public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
+            return (parentTypes.isEmpty())
+                    || (!childTypes.isEmpty()
+                    && parentTypes.stream().flatMap(SchemaConcept::subs).anyMatch(childTypes::contains))
+                    && !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, false);
         }
 
         @Override

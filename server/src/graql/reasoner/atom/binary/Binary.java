@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptId;
@@ -40,6 +41,7 @@ import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import java.util.Collections;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
@@ -183,12 +185,12 @@ public abstract class Binary extends Atom {
         Variable parentVarName = parentAtom.getVarName();
         Variable childPredicateVarName = this.getPredicateVariable();
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
-        Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
-        Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
+        Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentAtom.getVarName(), inferTypes);
+        Type childType = this.getParentQuery().getUnambiguousType(this.getVarName(), inferTypes);
 
         //check for incompatibilities
-        if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept())
-                || !unifierType.typeCompatibility(parentType, childType)
+        if( !unifierType.typeCompatibility(Collections.singleton(parentAtom.getSchemaConcept()), Collections.singleton(this.getSchemaConcept()))
+                || !unifierType.typeCompatibility(Collections.singleton(parentType), Collections.singleton(childType))
                 || !unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType)
                 || !unifierType.typeDirectednessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();

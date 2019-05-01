@@ -35,9 +35,10 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toSet;
 
 public class ConceptUtils {
+
     /**
      * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top non-meta {@link SchemaConcept}s from within the provided set
+     * @return top (most general) non-meta {@link SchemaConcept}s from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -47,7 +48,7 @@ public class ConceptUtils {
 
     /**
      * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return bottom non-meta {@link SchemaConcept}s from within the provided set
+     * @return bottom (most specific) non-meta {@link SchemaConcept}s from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -98,6 +99,18 @@ public class ConceptUtils {
             superType = superType.sup();
         }
         return false;
+    }
+
+    /**
+     *
+     * @param parentTypes
+     * @param childTypes
+     * @param direct
+     * @return
+     */
+    public static boolean areDisjointTypeSets(Set<? extends SchemaConcept>  parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
+        return parentTypes.stream().anyMatch(parent -> childTypes.stream()
+                .anyMatch(child -> ConceptUtils.areDisjointTypes(parent, child, direct)));
     }
 
     /** determines disjointness of parent-child types, parent defines the bound on the child
