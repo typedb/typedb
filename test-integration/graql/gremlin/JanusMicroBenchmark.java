@@ -578,6 +578,7 @@ public class JanusMicroBenchmark {
     - time to obtain vertices with a specific indexed property and how it relates to number of matches:
         sometimes it seems matching a property with a small number of hits is much slower than a large number of hits!
 
+    // relevant for type ID mapping versus type label
     - writing a string property vs an int/long property
     - reading a string property vs an int/long property
 
@@ -585,7 +586,9 @@ public class JanusMicroBenchmark {
     - cost of filtering vertices on 1 property vs 2, 3, 4...
     - cost of writing 1, 2, 3 properties in one go (writes, not reads)
     - cost of using `as` and then referring back to prior answer sets that janus found, versus linear chains of evaluation
-    - cost of `last` in combination with `as`, which we use a lot
+
+    // branching traversal written DFS versus BFS (eg v -> [a -> b], v -> [c -> d] vs v -> [a, c], a -> b, c -> d)
+    - cost of `last` in combination with `as`, which we use a lot, and relation to BFS versus DFS written janus queries
 
     - cost of janus-level `order` versus ordering in server
 
