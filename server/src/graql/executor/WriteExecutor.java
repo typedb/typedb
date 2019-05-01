@@ -398,7 +398,12 @@ public class WriteExecutor {
         throw GraqlQueryException.insertUndefinedVariable(printableRepresentation(var));
     }
 
-    Statement printableRepresentation(Variable var) {
+    public boolean isConceptDefined(Variable var) {
+        var = equivalentVars.componentOf(var);
+        return concepts.containsKey(var);
+    }
+
+    public Statement printableRepresentation(Variable var) {
         LinkedHashSet<VarProperty> propertiesOfVar = new LinkedHashSet<>();
 
         // This could be faster if we built a dedicated map Var -> VarPattern

@@ -19,8 +19,10 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -116,7 +118,15 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         @Override
         public void execute(WriteExecutor executor) {
             Type type = executor.getConcept(property.type().var()).asType();
-            executor.getBuilder(var).isa(type);
+            if (executor.isConceptDefined(var)) {
+                Concept concept = executor.getConcept(var);
+                // we silently "allow" redefining attributes, while actually doing a no-op
+                if (!concept.isAttribute()) {
+                    throw GraqlQueryException.insertExistingConcept(executor.printableRepresentation(var), concept);
+                }
+            } else {
+                executor.getBuilder(var).isa(type);
+            }
         }
     }
 }

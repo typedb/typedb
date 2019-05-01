@@ -26,6 +26,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -66,6 +67,7 @@ import java.util.Set;
 
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static graql.lang.Graql.insert;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
@@ -215,6 +217,7 @@ public class GraqlInsertIT {
         assertNotExists(tx, language1);
         assertNotExists(tx, language2);
     }
+
 
     @Test
     public void testIterateInsertResults() {
@@ -620,6 +623,77 @@ public class GraqlInsertIT {
 
         tx.execute(Graql.insert(type("movie").plays("actor")));
     }
+
+
+    // ------ match-insert the same resource/extending resources tests
+    @Test
+    public void testMatchInsertSameEntityThrows() {
+        Statement matchStatement = var("x").isa("movie");
+        Statement insertStatement = var("x").isa("movie");
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage("cannot overwrite properties");
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+    }
+
+    @Test
+    public void testMatchInsertSameRelationThrows() {
+        Statement matchStatement = var("r").isa("directed-by");
+        Statement insertStatement = var("r").isa("directed-by");
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage("cannot overwrite properties");
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+    }
+
+    @Test
+    public void testMatchInsertSameAttributeDoesntThrow() {
+        Statement matchStatement = var("a").isa("name");
+        Statement insertStatement = var("a").isa("name");
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+    }
+
+    @Test
+    public void testAddRolePlayerDoesntThrow() {
+        Statement matchStatement = var("r").isa("directed-by");
+        Statement insertStatement = var("r").rel("director", "player");
+        Statement insertStatement2 = var("player").isa("person");
+        tx.execute(Graql.match(matchStatement).insert(insertStatement, insertStatement2));
+    }
+
+    @Test
+    public void testAddRolePlayerWithRelationTypeThrows() {
+        /*
+        We have the convention that providing the type via `isa` indicates that we wish to instantiate the type
+        So if we do `match $x isa someRelation; sert $x (role: $rp) isa relation` fails,
+        whereas `match $x isa someRelation; insert $x (role: $rp);` should work
+        */
+
+        Statement matchStatement = var("r").isa("directed-by");
+        Statement insertStatement = var("r").rel("director", "player").isa("directed-by");
+        Statement insertStatement2 = var("player").isa("person");
+
+        exception.expect(GraqlQueryException.class);
+        exception.expectMessage("cannot overwrite properties");
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement, insertStatement2));
+    }
+
+    @Test
+    public void testAddNewAttributeOwnerDoesntThrow() {
+        Statement matchStatement = var("x").isa("production").has("title", var("attr"));
+        Statement insertStatement = var("newProduction").isa("production").has("title", var("attr"));
+        List<Numeric> oldCount = tx.execute(Graql.match(matchStatement).get("x").count());
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+
+        // expect there to be twice as many productions with titles!
+        List<Numeric> newCount = tx.execute(Graql.match(matchStatement).get("x").count());
+        assertEquals(oldCount.get(0).number().intValue() * 2, newCount.get(0).number().intValue());
+    }
+
 
     private void assertInsert(Statement... vars) {
         // Make sure vars don't exist
