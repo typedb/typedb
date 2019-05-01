@@ -344,16 +344,20 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                     Variable var = p.getKey();
                     Type newType = p.getValue().asType();
                     Set<Type> types = map.get(var);
-                    //put most specific type
+
                     if (types.isEmpty()) map.put(var, newType);
                     else {
-                        boolean isSubType = types.stream().flatMap(Type::subs).anyMatch(t -> t.equals(newType));
+                        boolean isSubType = newType.sups().anyMatch(types::contains);
+                        boolean isSuperType = newType.subs().anyMatch(types::contains);
+
+                        //if it's a supertype of existing type, put most specific type
                         if (isSubType){
                             map.removeAll(var);
                             ConceptUtils
                                     .bottom(Sets.union(types, Sets.newHashSet(newType)))
                                     .forEach( t -> map.put(var, t));
                         }
+                        if (!isSubType && !isSuperType) map.put(var, newType);
                     }
                 });
         return map;
@@ -398,6 +402,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     @Override
     public Type getUnambiguousType(Variable var, boolean inferTypes){
         ImmutableSet<Type> types = getVarTypeMap(inferTypes).get(var);
+        if (types.size() > 1){
+            System.out.println();
+        }
         return types.isEmpty()? null : Iterables.getOnlyElement(types);
     }
 

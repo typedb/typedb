@@ -185,13 +185,13 @@ public abstract class Binary extends Atom {
         Variable parentVarName = parentAtom.getVarName();
         Variable childPredicateVarName = this.getPredicateVariable();
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
-        Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentAtom.getVarName(), inferTypes);
-        Type childType = this.getParentQuery().getUnambiguousType(this.getVarName(), inferTypes);
+        Set<Type> parentTypes = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
+        Set<Type> childTypes = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
 
         //check for incompatibilities
         if( !unifierType.typeCompatibility(Collections.singleton(parentAtom.getSchemaConcept()), Collections.singleton(this.getSchemaConcept()))
-                || !unifierType.typeCompatibility(Collections.singleton(parentType), Collections.singleton(childType))
-                || !unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType)
+                || !unifierType.typeCompatibility(parentTypes, childTypes)
+                || !parentTypes.stream().allMatch(parentType -> unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType))
                 || !unifierType.typeDirectednessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();
         }

@@ -909,10 +909,11 @@ public abstract class RelationAtom extends IsaAtomBase {
                         Variable parentRolePlayer = prp.getPlayer().var();
                         Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
                         boolean typeUnambiguous = parentTypes.size() == 1;
-                        Type parentType = typeUnambiguous? parentTypes.iterator().next() : null;
-                        Set<Role> compatibleRoles = typeUnambiguous?
-                                ReasonerUtils.compatibleRoles(tx().getSchemaConcept(Label.of(parentRoleLabel)), parentType, childRoles)
-                                : new HashSet<>();
+
+                        Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
+                                tx().getSchemaConcept(Label.of(parentRoleLabel)),
+                                typeUnambiguous? parentTypes.iterator().next() : null,
+                                childRoles);
 
                         List<RelationProperty.RolePlayer> compatibleRelationPlayers = new ArrayList<>();
                         compatibleRoles.stream()
@@ -923,8 +924,8 @@ public abstract class RelationAtom extends IsaAtomBase {
                                                 .filter(crp -> {
                                                     Variable childVar = crp.getPlayer().var();
                                                     Set<Type> childTypes = childVarTypeMap.get(childVar);
-                                                    return matchType.typePlayability(childQuery, childVar, parentType)
-                                                            && matchType.typeCompatibility(parentTypes, childTypes);
+                                                    return matchType.typeCompatibility(parentTypes, childTypes)
+                                                            && parentTypes.stream().allMatch(parentType -> matchType.typePlayability(childQuery, childVar, parentType));
                                                 })
                                                 //check for substitution compatibility
                                                 .filter(crp -> {

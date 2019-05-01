@@ -18,10 +18,7 @@
 package grakn.core.graql.reasoner.atom;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
@@ -50,14 +47,13 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -467,15 +463,13 @@ public abstract class Atom extends AtomicBase {
      */
     public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier) {
         Set<VariableDefinition> diff = new HashSet<>();
-        SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
-        SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
         Unifier unifierInverse = unifier.inverse();
 
         unifier.mappings().forEach(m -> {
             Variable childVar = m.getKey();
             Variable parentVar = m.getValue();
-            Type childType = Iterables.getOnlyElement(childVarTypeMap.get(childVar));
-            Type parentType = Iterables.getOnlyElement(parentVarTypeMap.get(parentVar));
+            Type childType = this.getParentQuery().getUnambiguousType(childVar, false);
+            Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentVar, false);
             Type type = childType != null ?
                     parentType != null ?
                             (!parentType.equals(childType) ? childType : null) :

@@ -877,7 +877,7 @@ public class AtomicQueryUnificationIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
-                if (i == 0 && j == 12){
+                if (i == 0 && j == 3){
                     System.out.println();
                 }
                 System.out.println("(i, j) = " + i + " " + j);
