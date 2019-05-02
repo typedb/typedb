@@ -528,8 +528,14 @@ public abstract class RelationAtom extends IsaAtomBase {
     private Multimap<Role, Type> getRoleTypeMap(boolean inferTypes) {
         ImmutableMultimap.Builder<Role, Type> builder = ImmutableMultimap.builder();
         Multimap<Role, Variable> roleMap = getRoleVarMap();
-        SetMultimap<Variable, Type> varTypeMap = getParentQuery().getVarTypeMap();
+        SetMultimap<Variable, Type> varTypeMap = getParentQuery().getVarTypeMap(inferTypes);
 
+        roleMap.entries().stream()
+                .sorted(Comparator.comparing(e -> e.getKey().label()))
+                .flatMap(e -> varTypeMap.get(e.getValue()).stream().map(type -> new Pair<>(e.getKey(), type)))
+                .sorted(Comparator.comparing(Pair::hashCode))
+                .forEach(p -> builder.put(p.getKey(), p.getValue()));
+        /*
         roleMap.entries().stream()
                 .filter(e -> varTypeMap.containsKey(e.getValue()))
                 .filter(e -> {
@@ -545,6 +551,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                                 .sorted(Comparator.comparing(SchemaConcept::label))
                                 .forEach(t -> builder.put(e.getKey(), t))
                 );
+                */
         return builder.build();
     }
 
