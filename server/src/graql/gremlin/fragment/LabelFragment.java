@@ -93,7 +93,7 @@ public abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    protected int labelHash() {
+    public int variableAgnosticHash() {
         Label[] labels = labels().stream().sorted().collect(Collectors.toList()).toArray(new Label[] {});
         return Arrays.hashCode(labels);
     }

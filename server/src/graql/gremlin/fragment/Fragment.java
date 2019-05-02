@@ -306,16 +306,10 @@ public abstract class Fragment {
     }
 
     /**
-     * Compute a hash that is equivalent up to alpha-equivalent
-     * which means that it doesn't NOT depend on the vars contained in the
-     * fragments, but only information that cannot be random - labels and the name
-     * of the fragment
-     * @return
+     * Compute a hash that is alpha-equivalent -
+     * this means that it doesn't depend on the vars contained in the
+     * fragments, but only information that cannot be random - labels, comparators, and
+     * any flags that may be set in the fragment
      */
-    protected abstract int labelHash();
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(labelHash(), name());
-    }
+    public abstract int variableAgnosticHash();
 }

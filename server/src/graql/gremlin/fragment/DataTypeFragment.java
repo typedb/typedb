@@ -52,7 +52,7 @@ abstract class DataTypeFragment extends Fragment {
     }
 
     @Override
-    protected int labelHash() {
+    public int variableAgnosticHash() {
         return dataType().hashCode();
     }
 

@@ -95,7 +95,7 @@ abstract class IdFragment extends Fragment {
     }
 
     @Override
-    protected int labelHash() {
-        return canOperateOnEdges() ? 2 : 1;
+    public int variableAgnosticHash() {
+        return id().hashCode();
     }
 }

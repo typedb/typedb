@@ -98,12 +98,6 @@ public class ValueFragment extends Fragment {
     }
 
     @Override
-    protected int labelHash() {
-        // convert to string to ensure we compare the representation not the memory address
-        return operation.comparator().toString().hashCode();
-    }
-
-    @Override
     public Set<Variable> dependencies() {
         if (operation instanceof Comparison.Variable) {
             return Collections.singleton(((Comparison.Variable) operation).value().var());
@@ -134,5 +128,11 @@ public class ValueFragment extends Fragment {
         h *= 1000003;
         h ^= this.operation.hashCode();
         return h;
+    }
+
+    @Override
+    public int variableAgnosticHash() {
+        // convert to string to ensure we compare the representation not the memory address
+        return operation.comparator().toString().hashCode();
     }
 }

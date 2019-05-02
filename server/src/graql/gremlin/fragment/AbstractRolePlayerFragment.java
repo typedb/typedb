@@ -117,7 +117,7 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
     }
 
     @Override
-    protected int labelHash() {
+    public int variableAgnosticHash() {
         // convert sets into ordered lists, based on the hashcodes
         List<Label> labels = relationTypeLabels().stream().sorted().collect(Collectors.toList());
         labels.addAll(roleLabels().stream().sorted().collect(Collectors.toList()));

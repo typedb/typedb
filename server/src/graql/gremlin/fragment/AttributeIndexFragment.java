@@ -57,7 +57,7 @@ abstract class AttributeIndexFragment extends Fragment {
     }
 
     @Override
-    protected int labelHash() {
+    public int variableAgnosticHash() {
         return 1;
     }
 }
