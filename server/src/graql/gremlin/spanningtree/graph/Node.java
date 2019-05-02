@@ -18,16 +18,22 @@
 
 package grakn.core.graql.gremlin.spanningtree.graph;
 
+import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.fragment.Fragment;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * An node in a directed graph.
  *
  */
-public class Node {
+public class Node implements Comparable {
 
     private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
@@ -40,6 +46,9 @@ public class Node {
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
+
+    // this is a special hash used for ordering nodes, and is computed externally and saved into the node
+    private int neighborhoodAwareHash;
 
     public Node(NodeId nodeId) {
         this.nodeId = nodeId;
@@ -116,5 +125,43 @@ public class Node {
     @Override
     public String toString() {
         return nodeId.toString();
+    }
+
+
+    public int localHashCode() {
+        // a sort of hash based on this node's fragments' internal hash codes
+        Set<Fragment> internalFragments = Sets.newHashSet(fragmentsWithoutDependency);
+        internalFragments.addAll(fragmentsWithDependency);
+        internalFragments.addAll(fragmentsWithDependencyVisited);
+        internalFragments.addAll(dependants);
+
+        // sort into a list based on the fragments' hashes
+        Integer[] orderedInternalFragmentHashes = internalFragments.stream()
+                .map(Fragment::variableAgnosticHash)
+                .sorted()
+                .collect(Collectors.toList())
+                .toArray(new Integer[] {});
+
+        return Objects.hashCode(orderedInternalFragmentHashes);
+    }
+
+    public void setGlobalHash(int neighborhoodAwareHash) {
+        this.neighborhoodAwareHash = neighborhoodAwareHash;
+    }
+
+    public int globalCode() {
+        return neighborhoodAwareHash;
+    }
+
+    /**
+     * We make Node comparable because we can then deterministically order and sort them
+     * leading to deterministic query plans
+     */
+    @Override
+    public int compareTo(Object o) {
+        if (o instanceof Node) {
+            return nodeId.hashCode() - o.hashCode();
+        }
+        throw new ClassCastException("Cannot compare Node class and " + o.getClass().toString());
     }
 }
