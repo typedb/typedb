@@ -43,6 +43,8 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
+
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -300,10 +302,34 @@ public class QueryPlannerIT {
                 var().rel("role1", x).rel("role2", z),
                 var().rel("role1", y).rel("role2", z)
         );
+        // repeat planning step to handle nondeterminism, we may pick different starting points each time
         for (int i = 0; i < 20; i++) {
-            // ensure that any (for now) chosen randomly starting point still generates full traversals with all required fragments
             ImmutableList<Fragment> plan = getPlan(pattern);
             assertEquals(6, plan.size());
+        }
+    }
+
+    @Test
+    public void indexedFragmentsAreListedFirst() {
+        Pattern pattern = and(
+                x.isa(veryRelated),
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var().rel(x).rel(y),
+                y.has(resourceType, "someString"));
+
+        List<Fragment> plan = getPlan(pattern);
+        boolean priorFragmentHasFixedCost = true;
+        for (Fragment fragment : plan) {
+            if (!fragment.hasFixedFragmentCost()) {
+                priorFragmentHasFixedCost = false;
+            } else {
+                // if the current fragment is fixed cost
+                // and the prior one was not, throw and fail the test
+                if (!priorFragmentHasFixedCost) {
+                    throw new RuntimeException("Found a fixed cost fragment after a non fixed cost fragment");
+                }
+            }
         }
     }
 
