@@ -468,6 +468,7 @@ public abstract class Atom extends AtomicBase {
         unifier.mappings().forEach(m -> {
             Variable childVar = m.getKey();
             Variable parentVar = m.getValue();
+
             Type childType = this.getParentQuery().getUnambiguousType(childVar, false);
             Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentVar, false);
             Type type = childType != null ?
@@ -475,6 +476,7 @@ public abstract class Atom extends AtomicBase {
                             (!parentType.equals(childType) ? childType : null) :
                             childType
                     : null;
+
 
             Set<ValuePredicate> predicates = this.getPredicates(childVar, ValuePredicate.class).collect(toSet());
             parentAtom.getPredicates(parentVar, ValuePredicate.class)

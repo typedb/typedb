@@ -44,20 +44,17 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -65,33 +62,33 @@ import static org.junit.Assert.assertNull;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class TypeInferenceIT {
 
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
+
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl testContextSession;
 
-    private static void loadFromFile(String fileName, SessionImpl session){
-        try {
-            InputStream inputStream = TypeInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e){
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
     @BeforeClass
     public static void loadContext(){
         testContextSession = server.sessionWithNewKeyspace();
-        loadFromFile("typeInferenceTest.gql", testContextSession);
+        loadFromFileAndCommit(resourcePath,"typeInferenceTest.gql", testContextSession);
     }
 
     @AfterClass
     public static void closeSession(){
         testContextSession.close();
+    }
+
+    @Test
+    public void whenCalculatingTypeMaps_typesAreCollapsedCorrectly(){
+        TransactionOLTP tx = testContextSession.transaction().write();
+
+        ReasonerQuery query = ReasonerQueries.create(conjunction("{$x isa singleRoleEntity;$x isa twoRoleEntity;};", tx), tx);
+        assertEquals(tx.getEntityType("twoRoleEntity"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+
+        query = ReasonerQueries.atomic(conjunction("{$x isa thing;$x isa singleRoleEntity;};", tx), tx);
+        assertEquals(tx.getType(Label.of("twoRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
     }
 
     @Test

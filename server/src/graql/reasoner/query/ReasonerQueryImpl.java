@@ -409,9 +409,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     @Override
     public Type getUnambiguousType(Variable var, boolean inferTypes){
         ImmutableSet<Type> types = getVarTypeMap(inferTypes).get(var);
-        if (types.size() > 1){
-            System.out.println();
-        }
         return types.isEmpty()? null : Iterables.getOnlyElement(types);
     }
 
