@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
@@ -365,6 +366,11 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ImmutableSetMultimap<Variable, Type> getVarTypeMap(boolean inferTypes) {
+
+        if (!inferTypes) return ImmutableSetMultimap.copyOf(getVarTypeMap(getAtoms(IsaAtomBase.class)));
+        return getVarTypeMap();
+
+        /*
         Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
         ImmutableSetMultimap.Builder<Variable, Type> builder = ImmutableSetMultimap.builder();
                 getVarTypeMap().asMap()
@@ -377,6 +383,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                         )
                         .forEach(e -> builder.putAll(e.getKey(), e.getValue()));
         return builder.build();
+        */
     }
 
     @Override

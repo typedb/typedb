@@ -109,14 +109,17 @@ public class ConceptUtils {
      * @return
      */
     public static boolean areDisjointTypeSets(Set<? extends SchemaConcept>  parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
-        return parentTypes.stream().anyMatch(parent -> childTypes.stream()
+        return childTypes.isEmpty() && !parentTypes.isEmpty()
+                || parentTypes.stream().anyMatch(parent -> childTypes.stream()
                 .anyMatch(child -> ConceptUtils.areDisjointTypes(parent, child, direct)));
     }
 
     /** determines disjointness of parent-child types, parent defines the bound on the child
      * @param parent {@link SchemaConcept}
      * @param child {@link SchemaConcept}
-     * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
+     * @return true if types do not belong to the same type hierarchy, also:
+     * - true if parent is null and
+     * - false if parent non-null and child null - parents defines a constraint to satisfy
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
