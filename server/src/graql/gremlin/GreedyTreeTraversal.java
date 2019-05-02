@@ -32,6 +32,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
@@ -60,8 +61,11 @@ public class GreedyTreeTraversal {
         // expanding from the root until all nodes have been visited
         while (!reachableNodes.isEmpty()) {
 
-            Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
-                    branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).orElse(null);
+            Node nodeWithMinCost = reachableNodes.stream()
+                    .sorted(Comparator.comparing(Node::globalHashCode))
+                    .collect(Collectors.toList()).stream()
+                    .min(Comparator.comparingDouble(node ->
+                        branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).orElse(null);
 
             assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
 

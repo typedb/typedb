@@ -149,7 +149,7 @@ public class Node implements Comparable {
         this.neighborhoodAwareHash = neighborhoodAwareHash;
     }
 
-    public int globalCode() {
+    public int globalHashCode() {
         return neighborhoodAwareHash;
     }
 
