@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -74,6 +73,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
     private final Map<String, SessionImpl> openSessions;
     private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    // The following set keeps track of all active transactions, so that if the user wants to stop the server
+    // we can forcefully close all the connections to clients using active transactions.
     private Set<TransactionListener> transactionListenerSet;
 
     public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
@@ -86,7 +87,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     /**
      * Close all open transactions, sessions and connections with clients - this is invoked by JVM shutdown hook
      */
-    public void shutdown(){
+    public void shutdown() {
         transactionListenerSet.forEach(transactionListener -> transactionListener.close(null));
         transactionListenerSet.clear();
         openSessions.values().forEach(SessionImpl::close);
@@ -163,20 +164,16 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         @Override
         public void onNext(Transaction.Req request) {
             // !important: this is the gRPC thread
-            try {
-                if (ServerTracing.tracingEnabledFromMessage(request)) {
-                    TraceContext receivedTraceContext = ServerTracing.extractTraceContext(request);
-                    Span queueSpan = ServerTracing.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
-                    queueSpan.start();
-                    queueSpan.tag("childNumber", "0");
+            if (ServerTracing.tracingEnabledFromMessage(request)) {
+                TraceContext receivedTraceContext = ServerTracing.extractTraceContext(request);
+                Span queueSpan = ServerTracing.createChildSpanWithParentContext("Server receive queue", receivedTraceContext);
+                queueSpan.start();
+                queueSpan.tag("childNumber", "0");
 
-                    // hop context & active Span across thread boundaries
-                    submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
-                } else {
-                    submit(() -> handleRequest(request));
-                }
-            } catch (RuntimeException e) {
-                close(e);
+                // hop context & active Span across thread boundaries
+                submit(() -> handleRequest(request, queueSpan, receivedTraceContext));
+            } else {
+                submit(() -> handleRequest(request));
             }
         }
 
@@ -205,94 +202,88 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void handleRequest(Transaction.Req request) {
-            switch (request.getReqCase()) {
-                case OPEN_REQ:
-                    open(request.getOpenReq());
-                    break;
-                case COMMIT_REQ:
-                    commit();
-                    break;
-                case QUERY_REQ:
-                    query(request.getQueryReq());
-                    break;
-                case ITERATE_REQ:
-                    next(request.getIterateReq());
-                    break;
-                case GETSCHEMACONCEPT_REQ:
-                    getSchemaConcept(request.getGetSchemaConceptReq());
-                    break;
-                case GETCONCEPT_REQ:
-                    getConcept(request.getGetConceptReq());
-                    break;
-                case GETATTRIBUTES_REQ:
-                    getAttributes(request.getGetAttributesReq());
-                    break;
-                case PUTENTITYTYPE_REQ:
-                    putEntityType(request.getPutEntityTypeReq());
-                    break;
-                case PUTATTRIBUTETYPE_REQ:
-                    putAttributeType(request.getPutAttributeTypeReq());
-                    break;
-                case PUTRELATIONTYPE_REQ:
-                    putRelationType(request.getPutRelationTypeReq());
-                    break;
-                case PUTROLE_REQ:
-                    putRole(request.getPutRoleReq());
-                    break;
-                case PUTRULE_REQ:
-                    putRule(request.getPutRuleReq());
-                    break;
-                case CONCEPTMETHOD_REQ:
-                    conceptMethod(request.getConceptMethodReq());
-                    break;
-                default:
-                case REQ_NOT_SET:
-                    throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
+            try {
+                switch (request.getReqCase()) {
+                    case OPEN_REQ:
+                        open(request.getOpenReq());
+                        break;
+                    case COMMIT_REQ:
+                        commit();
+                        break;
+                    case QUERY_REQ:
+                        query(request.getQueryReq());
+                        break;
+                    case ITERATE_REQ:
+                        next(request.getIterateReq());
+                        break;
+                    case GETSCHEMACONCEPT_REQ:
+                        getSchemaConcept(request.getGetSchemaConceptReq());
+                        break;
+                    case GETCONCEPT_REQ:
+                        getConcept(request.getGetConceptReq());
+                        break;
+                    case GETATTRIBUTES_REQ:
+                        getAttributes(request.getGetAttributesReq());
+                        break;
+                    case PUTENTITYTYPE_REQ:
+                        putEntityType(request.getPutEntityTypeReq());
+                        break;
+                    case PUTATTRIBUTETYPE_REQ:
+                        putAttributeType(request.getPutAttributeTypeReq());
+                        break;
+                    case PUTRELATIONTYPE_REQ:
+                        putRelationType(request.getPutRelationTypeReq());
+                        break;
+                    case PUTROLE_REQ:
+                        putRole(request.getPutRoleReq());
+                        break;
+                    case PUTRULE_REQ:
+                        putRule(request.getPutRuleReq());
+                        break;
+                    case CONCEPTMETHOD_REQ:
+                        conceptMethod(request.getConceptMethodReq());
+                        break;
+                    default:
+                    case REQ_NOT_SET:
+                        throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
+                }
+            } catch (RuntimeException e) {
+                close(e);
             }
         }
 
         public void close(@Nullable Throwable error) {
-            submit(() -> {
+            if (!terminated.getAndSet(true)) {
                 if (tx != null) {
                     tx.close();
                 }
-            });
 
-            if (!terminated.getAndSet(true)) {
                 if (error != null) {
                     LOG.error("Runtime Exception in RPC TransactionListener: ", error);
                     responseSender.onError(ResponseBuilder.exception(error));
                 } else {
                     responseSender.onCompleted();
                 }
-            }
 
-            // just in case there's a trailing span, let's close it
-            if (ServerTracing.tracingActive()) {
-                ServerTracing.currentSpan().finish();
-            }
-
-            threadExecutor.shutdownNow();
-            try {
-                boolean terminated = threadExecutor.awaitTermination(30, TimeUnit.SECONDS);
-                if (!terminated) {
-                    LOG.warn("Some tasks did not terminate within the timeout period.");
+                // just in case there's a trailing span, let's close it
+                if (ServerTracing.tracingActive()) {
+                    ServerTracing.currentSpan().finish();
                 }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+
+                threadExecutor.shutdownNow();
+                try {
+                    boolean terminated = threadExecutor.awaitTermination(30, TimeUnit.SECONDS);
+                    if (!terminated) {
+                        LOG.warn("Some tasks did not terminate within the timeout period.");
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
 
         private void submit(Runnable runnable) {
-            try {
-                threadExecutor.submit(runnable).get();
-            } catch (ExecutionException e) {
-                Throwable cause = e.getCause();
-                assert cause instanceof RuntimeException : "No checked exceptions are thrown, because it's a `Runnable`";
-                throw (RuntimeException) cause;
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            threadExecutor.submit(runnable);
         }
 
         private void open(Transaction.Open.Req request) {
