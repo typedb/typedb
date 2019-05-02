@@ -420,7 +420,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(1).end());
+        assertEquals(x.var(), plan.get(3).end());
         assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
@@ -435,7 +435,7 @@ public class QueryPlannerIT {
                 y.isa(thingy2),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(2).end());
+        assertEquals(x.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy),
@@ -443,7 +443,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(2).end());
+        assertEquals(x.var(), plan.get(4).end());
 
         pattern = and(
                 x.isa(superType),
@@ -453,7 +453,7 @@ public class QueryPlannerIT {
                 z.isa(subType),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(z.var(), plan.get(10).end());
+        assertEquals(z.var(), plan.get(5).end());
 
         tx.shard(tx.getEntityType(thingy1).id());
         tx.shard(tx.getEntityType(thingy1).id());
@@ -466,7 +466,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(1).end());
+        assertEquals(y.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -474,7 +474,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(1).end());
+        assertEquals(x.var(), plan.get(3).end());
 
         tx.shard(tx.getEntityType(thingy1).id());
         tx.shard(tx.getEntityType(thingy1).id());
@@ -486,7 +486,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(1).end());
+        assertEquals(y.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -494,7 +494,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(1).end());
+        assertEquals(y.var(), plan.get(3).end());
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
