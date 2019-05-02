@@ -73,4 +73,9 @@ public abstract class EdgeFragment extends Fragment {
                 weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
                 weighted(DirectedEdge.from(middle).to(end), 0));
     }
+
+    @Override
+    protected int labelHash() {
+        return 1;
+    }
 }

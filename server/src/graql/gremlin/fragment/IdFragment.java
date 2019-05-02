@@ -93,4 +93,9 @@ abstract class IdFragment extends Fragment {
     public boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
     }
+
+    @Override
+    protected int labelHash() {
+        return canOperateOnEdges() ? 2 : 1;
+    }
 }

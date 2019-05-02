@@ -47,4 +47,10 @@ abstract class AbstractFragment extends Fragment {
     public double internalFragmentCost() {
         return COST_NODE_IS_ABSTRACT;
     }
+
+
+    @Override
+    protected int labelHash() {
+        return 1;
+    }
 }

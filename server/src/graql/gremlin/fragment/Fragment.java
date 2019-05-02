@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -304,4 +305,17 @@ public abstract class Fragment {
         return str;
     }
 
+    /**
+     * Compute a hash that is equivalent up to alpha-equivalent
+     * which means that it doesn't NOT depend on the vars contained in the
+     * fragments, but only information that cannot be random - labels and the name
+     * of the fragment
+     * @return
+     */
+    protected abstract int labelHash();
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(labelHash(), name());
+    }
 }

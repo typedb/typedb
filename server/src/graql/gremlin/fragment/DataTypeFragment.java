@@ -50,4 +50,10 @@ abstract class DataTypeFragment extends Fragment {
     public double internalFragmentCost() {
         return COST_NODE_DATA_TYPE;
     }
+
+    @Override
+    protected int labelHash() {
+        return dataType().hashCode();
+    }
+
 }

@@ -65,4 +65,9 @@ public abstract class NeqFragment extends Fragment {
     public ImmutableSet<Variable> dependencies() {
         return ImmutableSet.of(other());
     }
+
+    @Override
+    protected int labelHash() {
+        return 1;
+    }
 }

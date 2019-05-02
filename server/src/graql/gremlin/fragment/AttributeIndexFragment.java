@@ -55,4 +55,9 @@ abstract class AttributeIndexFragment extends Fragment {
     public boolean hasFixedFragmentCost() {
         return true;
     }
+
+    @Override
+    protected int labelHash() {
+        return 1;
+    }
 }

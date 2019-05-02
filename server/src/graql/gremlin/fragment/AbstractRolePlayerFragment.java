@@ -31,7 +31,10 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.graql.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static java.util.stream.Collectors.toSet;
@@ -111,5 +114,15 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
             Fragments.outSubs(Fragments.traverseSchemaConceptFromEdge(traversal, edgeProperty));
             assignVar(traversal, role, vars).select(edge.symbol());
         }
+    }
+
+    @Override
+    protected int labelHash() {
+        // convert sets into ordered lists, based on the hashcodes
+        List<Label> labels = relationTypeLabels().stream().sorted().collect(Collectors.toList());
+        labels.addAll(roleLabels().stream().sorted().collect(Collectors.toList()));
+
+        Label[] labelsArray = labels.toArray(new Label[] {});
+        return Objects.hash(labelsArray);
     }
 }

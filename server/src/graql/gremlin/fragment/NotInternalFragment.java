@@ -52,4 +52,10 @@ abstract class NotInternalFragment extends Fragment {
     public double internalFragmentCost() {
         return COST_NODE_NOT_INTERNAL;
     }
+
+    @Override
+    protected int labelHash() {
+        return 1;
+    }
 }
+

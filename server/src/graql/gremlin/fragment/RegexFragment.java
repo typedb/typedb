@@ -51,4 +51,9 @@ abstract class RegexFragment extends Fragment {
     public double internalFragmentCost() {
         return COST_NODE_REGEX;
     }
+
+    @Override
+    protected int labelHash() {
+        return regex().hashCode();
+    }
 }

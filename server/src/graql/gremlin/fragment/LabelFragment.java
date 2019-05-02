@@ -31,8 +31,12 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
@@ -86,5 +90,11 @@ public abstract class LabelFragment extends Fragment {
                 .flatMap(SchemaConcept::subs)
                 .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
                 .sum();
+    }
+
+    @Override
+    protected int labelHash() {
+        Label[] labels = labels().stream().sorted().collect(Collectors.toList()).toArray(new Label[] {});
+        return Arrays.hashCode(labels);
     }
 }
