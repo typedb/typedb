@@ -33,8 +33,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -93,7 +91,7 @@ public abstract class LabelFragment extends Fragment {
     }
 
     @Override
-    public int variableAgnosticHash() {
+    public int alphaEquivalentHash() {
         Label[] labels = labels().stream().sorted().collect(Collectors.toList()).toArray(new Label[] {});
         return Arrays.hashCode(labels);
     }

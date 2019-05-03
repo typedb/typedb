@@ -30,9 +30,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -117,12 +117,12 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
     }
 
     @Override
-    public int variableAgnosticHash() {
+    public int alphaEquivalentHash() {
         // convert sets into ordered lists, based on the hashcodes
         List<Label> labels = relationTypeLabels().stream().sorted().collect(Collectors.toList());
         labels.addAll(roleLabels().stream().sorted().collect(Collectors.toList()));
 
         Label[] labelsArray = labels.toArray(new Label[] {});
-        return Objects.hash(labelsArray);
+        return Arrays.hashCode(labelsArray);
     }
 }

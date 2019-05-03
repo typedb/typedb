@@ -22,9 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.fragment.Fragment;
 
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -142,7 +140,7 @@ public class Node implements Comparable {
                 .collect(Collectors.toList())
                 .toArray(new Integer[] {});
 
-        return Objects.hashCode(orderedInternalFragmentHashes);
+        return Arrays.hashCode(orderedInternalFragmentHashes);
     }
 
     public void setGlobalHash(int neighborhoodAwareHash) {

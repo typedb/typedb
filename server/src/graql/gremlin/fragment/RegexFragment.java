@@ -53,7 +53,7 @@ abstract class RegexFragment extends Fragment {
     }
 
     @Override
-    public int variableAgnosticHash() {
+    public int alphaEquivalentHash() {
         return regex().hashCode();
     }
 }

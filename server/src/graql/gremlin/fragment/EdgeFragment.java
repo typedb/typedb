@@ -75,7 +75,7 @@ public abstract class EdgeFragment extends Fragment {
     }
 
     @Override
-    public int variableAgnosticHash() {
+    public int alphaEquivalentHash() {
         return 1;
     }
 }

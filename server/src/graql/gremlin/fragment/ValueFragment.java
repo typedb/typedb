@@ -131,7 +131,7 @@ public class ValueFragment extends Fragment {
     }
 
     @Override
-    public int variableAgnosticHash() {
+    public int alphaEquivalentHash() {
         // convert to string to ensure we compare the representation not the memory address
         return operation.comparator().toString().hashCode();
     }

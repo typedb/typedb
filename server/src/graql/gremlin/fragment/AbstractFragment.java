@@ -50,7 +50,7 @@ abstract class AbstractFragment extends Fragment {
 
 
     @Override
-    public int variableAgnosticHash() {
+    public int alphaEquivalentHash() {
         return 1;
     }
 }

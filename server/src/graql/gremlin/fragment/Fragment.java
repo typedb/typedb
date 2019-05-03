@@ -311,5 +311,9 @@ public abstract class Fragment {
      * fragments, but only information that cannot be random - labels, comparators, and
      * any flags that may be set in the fragment
      */
-    public abstract int variableAgnosticHash();
+    protected abstract int alphaEquivalentHash();
+
+    public int variableAgnosticHash() {
+        return Objects.hash(alphaEquivalentHash(), this.getClass().toString());
+    }
 }
