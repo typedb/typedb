@@ -121,19 +121,20 @@ public abstract class SemanticCache<
                 || getParents(query).stream().anyMatch(q -> super.isComplete(keyToQuery(q)));
     }
 
-    @Override
-    public void ackCompleteness(ReasonerAtomicQuery query) {
-        super.ackCompleteness(query);
-        getChildren(query).stream()
-                .filter(q -> !isComplete(keyToQuery(q)))
-                .forEach(childKey -> {
-            ReasonerAtomicQuery child = keyToQuery(childKey);
-            CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
-            if (childEntry != null){
-                propagateAnswersToQuery(child, childEntry, true);
-                ackCompleteness(child);
-            }
-        });
+    /**
+     * propagate answers within the cache (children fetch answers from parents)
+     */
+    public void propagateAnswers(){
+        parents.keySet().stream()
+                .filter(c -> isComplete(keyToQuery(c)))
+                .forEach(c-> {
+                    ReasonerAtomicQuery child = keyToQuery(c);
+                    CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
+                    if (childEntry != null) {
+                        propagateAnswersToQuery(child, childEntry, true);
+                        ackCompleteness(child);
+                    }
+                });
     }
 
     private Set<QE> getParents(ReasonerAtomicQuery child){
@@ -149,7 +150,6 @@ public abstract class SemanticCache<
         Set<QE> children = new HashSet<>();
         family.stream()
                 .map(this::keyToQuery)
-                //.filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
                 .filter(potentialChild -> potentialChild.subsumes(parent))
                 .map(this::queryToKey)
                 .forEach(children::add);
