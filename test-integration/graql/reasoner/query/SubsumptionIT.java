@@ -100,6 +100,55 @@ public class SubsumptionIT {
     }
 
     @Test
+    public void testSubsumption_reflexiveNonReflexiveRelationPairs() {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $y);"), tx);
+            ReasonerAtomicQuery child2 = ReasonerQueries.atomic(conjunction("{(baseRole1: $x, baseRole2: $y); $y id " + id + ";};"), tx);
+
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $x);"), tx);
+
+            assertFalse(child.subsumes(parent));
+            assertFalse(child2.subsumes(parent));
+            assertFalse(child.subsumes(parent));
+            assertFalse(child2.subsumes(parent));
+        }
+    }
+
+    @Test
+    public void testSubsumption_differentReflexiveRelationVariants(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            int[][] subsumptionMatrix = new int[][]{
+                    //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                    {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                    {1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+
+                    {1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},//4
+                    {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},
+                    {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1},
+
+                    {1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},//7
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+
+                    {1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0},//11
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+
+                    {1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1}//15
+            };
+            subsumption(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    subsumptionMatrix, tx);
+        }
+    }
+
+    @Test
     public void testSubsumption_differentRelationVariantsWithMetaRoles(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read() ){
             QueryPattern differentRelationVariantsWithMetaRoles = genericSchemaGraph.differentRelationVariantsWithMetaRoles();
@@ -178,21 +227,6 @@ public class SubsumptionIT {
                     subsumptionMatrix,
                     tx
             );
-        }
-    }
-    @Test
-    public void test() {
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
-            String id = tx.getEntityType("baseRoleEntity").instances().iterator().next().id().getValue();
-            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $y);"), tx);
-            ReasonerAtomicQuery child2 = ReasonerQueries.atomic(conjunction("{(baseRole1: $x, baseRole2: $y); $y id " + id + ";};"), tx);
-
-            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("(baseRole1: $x, baseRole2: $x);"), tx);
-
-            assertFalse(child.subsumes(parent));
-            assertFalse(child2.subsumes(parent));
-            assertFalse(child.subsumes(parent));
-            assertFalse(child2.subsumes(parent));
         }
     }
 
@@ -452,6 +486,10 @@ public class SubsumptionIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
+                if (i == 3 && j == 0) {
+                    System.out.println();
+                }
+                System.out.println("(i, j) = " + i + " " + j);
                 subsumption(child, parent, resultMatrix[i][j] == 1, tx);
                 j++;
             }

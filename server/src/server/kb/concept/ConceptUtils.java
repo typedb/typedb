@@ -88,7 +88,7 @@ public class ConceptUtils {
      * @param direct flag indicating whether only direct types should be considered
      * @return true if child is a subtype of parent
      */
-    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
+    private static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
         if (parent == null ) return true;
         if (child == null) return false;
         if (direct) return parent.equals(child);
@@ -102,11 +102,10 @@ public class ConceptUtils {
     }
 
     /**
-     *
-     * @param parentTypes
-     * @param childTypes
-     * @param direct
-     * @return
+     * @param parentTypes set of types defining parent, parent defines type constraints to be fulfilled
+     * @param childTypes set of types defining child
+     * @param direct flag indicating whether only direct types should be considered
+     * @return true if type sets are disjoint - it's possible to find a disjoint pair among parent and child set
      */
     public static boolean areDisjointTypeSets(Set<? extends SchemaConcept>  parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
         return childTypes.isEmpty() && !parentTypes.isEmpty()
@@ -117,6 +116,7 @@ public class ConceptUtils {
     /** determines disjointness of parent-child types, parent defines the bound on the child
      * @param parent {@link SchemaConcept}
      * @param child {@link SchemaConcept}
+     * @param direct flag indicating whether only direct types should be considered
      * @return true if types do not belong to the same type hierarchy, also:
      * - true if parent is null and
      * - false if parent non-null and child null - parents defines a constraint to satisfy

@@ -71,9 +71,11 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
-            return (parentTypes.isEmpty() && childTypes.isEmpty())
-                    || ( super.typeCompatibility(parentTypes, childTypes)
-                    && !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, true));
+            return super.typeCompatibility(parentTypes, childTypes)
+                    && (
+                    (parentTypes.isEmpty() && childTypes.isEmpty())
+                            || !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, true)
+            );
         }
 
         @Override
@@ -266,9 +268,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean typeCompatibility(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes) {
-            return (parentTypes.isEmpty())
-                    || (!childTypes.isEmpty()
-                    && parentTypes.stream().flatMap(SchemaConcept::subs).anyMatch(childTypes::contains))
+            return super.typeCompatibility(parentTypes, childTypes)
+                    && (parentTypes.stream().allMatch(t -> t.subs().anyMatch(childTypes::contains)))
                     && !ConceptUtils.areDisjointTypeSets(parentTypes, childTypes, false);
         }
 
