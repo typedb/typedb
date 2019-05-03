@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;

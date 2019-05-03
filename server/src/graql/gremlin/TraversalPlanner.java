@@ -160,7 +160,8 @@ public class TraversalPlanner {
 
         // fragments that represent Janus edges
         final Set<Fragment> edgeFragmentSet = new HashSet<>();
-
+        ArrayList<Object> objects = new ArrayList<>();
+        objects.ha
         // save the fragments corresponding to edges, and updates some costs if we can via shard count
         for (Fragment fragment : connectedFragments) {
             if (fragment.end() != null) {

@@ -18,9 +18,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;

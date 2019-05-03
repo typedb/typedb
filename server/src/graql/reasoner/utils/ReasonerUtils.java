@@ -46,7 +46,6 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-import java.util.HashSet;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;

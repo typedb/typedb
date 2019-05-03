@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.atom;
 
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Rule;
-import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;

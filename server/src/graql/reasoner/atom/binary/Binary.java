@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptId;
