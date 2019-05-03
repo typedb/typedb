@@ -486,10 +486,6 @@ public class SubsumptionIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
-                if (i == 3 && j == 0) {
-                    System.out.println();
-                }
-                System.out.println("(i, j) = " + i + " " + j);
                 subsumption(child, parent, resultMatrix[i][j] == 1, tx);
                 j++;
             }
