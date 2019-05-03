@@ -551,15 +551,6 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentReflexiveRelationVariants_RULE(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            List<ReasonerAtomicQuery> queries = genericSchemaGraph.differentReflexiveRelationVariants().patterns().stream()
-                    .map(p -> ReasonerQueries.atomic(conjunction(p), tx)).collect(Collectors.toList());
-
-            queries.stream()
-                    .flatMap(q -> q.getAtoms(IdPredicate.class))
-                    .map(p -> tx.getConcept(p.getPredicate()))
-                    .distinct()
-                    .forEach(c -> System.out.println(c + " " + ((Concept) c).asThing().type()));
-            queries.forEach(System.out::println);
             unification(
                     genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
                     genericSchemaGraph.differentReflexiveRelationVariants().ruleMatrix(),
