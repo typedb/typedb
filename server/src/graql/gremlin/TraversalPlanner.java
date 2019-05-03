@@ -138,7 +138,7 @@ public class TraversalPlanner {
             plan.addAll(remainingFragments);
         }
 
-        //LOG.trace("Greedy Plan = {}", plan);
+        LOG.trace("Greedy Plan = {}", plan);
         return plan;
     }
 
