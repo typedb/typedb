@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
@@ -337,15 +337,18 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
-    public ImmutableMap<Variable, Type> getVarTypeMap() {
+    public Type getUnambiguousType(Variable var, boolean inferTypes) { throw new UnsupportedOperationException(); }
+
+    @Override
+    public ImmutableSetMultimap<Variable, Type> getVarTypeMap() {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public ImmutableMap<Variable, Type> getVarTypeMap(boolean inferTypes) { return getVarTypeMap(); }
+    public ImmutableSetMultimap<Variable, Type> getVarTypeMap(boolean inferTypes) { return getVarTypeMap(); }
 
     @Override
-    public ImmutableMap<Variable, Type> getVarTypeMap(ConceptMap sub) { return getVarTypeMap(); }
+    public ImmutableSetMultimap<Variable, Type> getVarTypeMap(ConceptMap sub) { return getVarTypeMap(); }
 
     @Override
     public Stream<ConceptMap> resolve() {

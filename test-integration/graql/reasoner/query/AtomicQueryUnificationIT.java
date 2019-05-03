@@ -25,6 +25,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -139,7 +140,7 @@ public class AtomicQueryUnificationIT {
                     new Variable("y1"), new Variable("x1"),
                     new Variable("y2"), new Variable("x2")
             ));
-            assertTrue(unifier.equals(correctUnifier));
+            assertEquals(correctUnifier, unifier);
         }
     }
 
@@ -523,6 +524,36 @@ public class AtomicQueryUnificationIT {
             unification(
                     genericSchemaGraph.differentRelationVariants().patterns(),
                     genericSchemaGraph.differentRelationVariants().ruleMatrix(),
+                    UnifierType.RULE, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_EXACT(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().exactMatrix(),
+                    UnifierType.EXACT, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_STRUCTURAL(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().structuralMatrix(),
+                    UnifierType.STRUCTURAL, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().ruleMatrix(),
                     UnifierType.RULE, tx);
         }
     }
