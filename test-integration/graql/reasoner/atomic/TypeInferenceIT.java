@@ -89,6 +89,7 @@ public class TypeInferenceIT {
 
         query = ReasonerQueries.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};", tx), tx);
         assertEquals(tx.getType(Label.of("singleRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+        tx.close();
     }
 
     @Test
