@@ -453,7 +453,7 @@ public class QueryPlannerIT {
                 z.isa(subType),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(z.var(), plan.get(5).end());
+        assertEquals(z.var(), plan.get(10).end());
 
         tx.shard(tx.getEntityType(thingy1).id());
         tx.shard(tx.getEntityType(thingy1).id());
