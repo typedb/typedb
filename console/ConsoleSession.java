@@ -254,11 +254,17 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     @Override
-    public final void close() throws IOException {
+    public final void close() {
         tx.close();
         session.close();
         client.close();
-        historyFile.flush();
+        try {
+            historyFile.flush();
+        } catch (IOException e) {
+            // Print stacktrace to any available stream
+            // nothing more to do here
+            e.printStackTrace();
+        }
     }
 
     /**

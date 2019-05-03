@@ -51,14 +51,17 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
@@ -71,15 +74,29 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private final OpenRequest requestOpener;
     private final Map<String, SessionImpl> openSessions;
     private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
+    private Set<TransactionListener> transactionListenerSet;
 
     public SessionService(OpenRequest requestOpener, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon) {
         this.requestOpener = requestOpener;
         this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
         this.openSessions = new HashMap<>();
+        this.transactionListenerSet = new HashSet<>();
     }
 
+    /**
+     * Close all open transactions, sessions and connections with clients - this is invoked by JVM shutdown hook
+     */
+    public void shutdown(){
+        transactionListenerSet.forEach(transactionListener -> transactionListener.close(null));
+        transactionListenerSet.clear();
+        openSessions.values().forEach(SessionImpl::close);
+    }
+
+    @Override
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        return new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions);
+        TransactionListener transactionListener = new TransactionListener(responseSender, attributeDeduplicatorDaemon, openSessions);
+        transactionListenerSet.add(transactionListener);
+        return transactionListener;
     }
 
     @Override
@@ -113,19 +130,19 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
      * A StreamObserver that implements the transaction-handling behaviour for io.grpc.Server.
      * Receives a stream of Transaction.Reqs and returning a stream of Transaction.Ress.
      */
-    static class TransactionListener implements StreamObserver<Transaction.Req> {
+    class TransactionListener implements StreamObserver<Transaction.Req> {
         final Logger LOG = LoggerFactory.getLogger(TransactionListener.class);
         private final StreamObserver<Transaction.Res> responseSender;
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
         private AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
         private final Map<String, SessionImpl> openSessions;
-        private final Iterators iterators = Iterators.create();
+        private final Iterators iterators = new Iterators();
 
         @Nullable
         private TransactionOLTP tx = null;
 
-        public TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
+        TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
             this.responseSender = responseSender;
 
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
@@ -135,7 +152,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
 
-        private static <T> T nonNull(@Nullable T item) {
+        private <T> T nonNull(@Nullable T item) {
             if (item == null) {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             } else {
@@ -165,11 +182,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         @Override
         public void onError(Throwable t) {
+            transactionListenerSet.remove(this);
             close(t);
         }
 
         @Override
         public void onCompleted() {
+            transactionListenerSet.remove(this);
             close(null);
         }
 
@@ -253,7 +272,15 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 ServerTracing.currentSpan().finish();
             }
 
-            threadExecutor.shutdown();
+            threadExecutor.shutdownNow();
+            try {
+                boolean terminated = threadExecutor.awaitTermination(30, TimeUnit.SECONDS);
+                if (!terminated) {
+                    LOG.warn("Some tasks did not terminate within the timeout period.");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
 
         private void submit(Runnable runnable) {
@@ -273,26 +300,23 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            SessionImpl sess = openSessions.get(request.getSessionId());
+            SessionImpl session = openSessions.get(request.getSessionId());
 
             Type type = Type.of(request.getType().getNumber());
             if (type != null && type.equals(Type.WRITE)) {
-                tx = sess.transaction().write();
+                tx = session.transaction().write();
             } else if (type != null && type.equals(Type.READ)) {
-                tx = sess.transaction().read();
+                tx = session.transaction().read();
             } else {
                 throw TransactionException.create("Invalid Transaction Type");
             }
 
             Transaction.Res response = ResponseBuilder.Transaction.open();
-
             onNextResponse(response);
         }
 
         private void commit() {
-
             /* permanent tracing hooks one method down */
-
             tx().commitAndGetLogs().ifPresent(commitLog ->
                     commitLog.attributes().forEach((attributeIndex, conceptIds) ->
                             conceptIds.forEach(id -> attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), attributeIndex, id))
@@ -301,16 +325,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void query(SessionProto.Transaction.Query.Req request) {
-
             /* permanent tracing hooks, as performance here varies depending on query and what's in the graph */
-
-
             int parseQuerySpanId = ServerTracing.startScopedChildSpan("Parsing Graql Query");
 
             GraqlQuery query = Graql.parse(request.getQuery());
 
             ServerTracing.closeScopedChildSpan(parseQuerySpanId);
-
 
             int createStreamSpanId = ServerTracing.startScopedChildSpan("Creating query stream");
 
@@ -393,7 +413,6 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         }
 
         private void next(Transaction.Iter.Req iterate) {
-
             int iteratorId = iterate.getId();
             Transaction.Res response = iterators.next(iteratorId);
             if (response == null) throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
@@ -409,16 +428,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     }
 
     /**
-     * Contains a mutable map of iterators of Transaction.Ress for gRPC. These iterators are used for returning
+     * Contains a mutable map of iterators of Transaction.Res for gRPC. These iterators are used for returning
      * lazy, streaming responses such as for Graql query results.
      */
-    public static class Iterators {
+    class Iterators {
         private final AtomicInteger iteratorIdCounter = new AtomicInteger(1);
         private final Map<Integer, Iterator<Transaction.Res>> iterators = new ConcurrentHashMap<>();
-
-        public static Iterators create() {
-            return new Iterators();
-        }
 
         public int add(Iterator<Transaction.Res> iterator) {
             int iteratorId = iteratorIdCounter.getAndIncrement();

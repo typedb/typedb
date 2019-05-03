@@ -39,7 +39,7 @@ import io.grpc.ServerBuilder;
  */
 public class ServerFactory {
     /**
-     * Create a Server configured for Grakn Core. Grakn Queue (which is needed for post-processing and distributed locks) is implemented with Redis as the backend store
+     * Create a Server configured for Grakn Core.
      *
      * @return a Server instance configured for Grakn Core
      */
@@ -61,8 +61,13 @@ public class ServerFactory {
         // post-processing
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(sessionFactory);
 
-        // http services: gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, attributeDeduplicatorDaemon, keyspaceStore, janusGraphFactory, benchmark);
+        // Enable server tracing
+        if (benchmark) {
+            ServerTracing.initInstrumentation("server-instrumentation");
+        }
+
+        // create gRPC server
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, attributeDeduplicatorDaemon, keyspaceStore, janusGraphFactory);
 
         return createServer(serverID, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
@@ -79,26 +84,23 @@ public class ServerFactory {
 
         Server server = new Server(serverID, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
 
-        Thread thread = new Thread(server::close, "grakn-server-shutdown");
-        Runtime.getRuntime().addShutdownHook(thread);
+        Runtime.getRuntime().addShutdownHook(new Thread(server::close, "grakn-server-shutdown"));
 
         return server;
     }
 
-    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, JanusGraphFactory janusGraphFactory, boolean benchmark) {
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, JanusGraphFactory janusGraphFactory) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
-        if (benchmark) {
-            ServerTracing.initInstrumentation("server-instrumentation");
-        }
+        SessionService sessionService = new SessionService(requestOpener, attributeDeduplicatorDaemon);
 
-        io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
-                .addService(new SessionService(requestOpener, attributeDeduplicatorDaemon))
+        Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
+
+        return ServerBuilder.forPort(grpcPort)
+                .addService(sessionService)
                 .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
-
-        return serverRPC;
     }
 
 }

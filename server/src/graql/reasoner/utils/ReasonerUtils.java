@@ -231,10 +231,14 @@ public class ReasonerUtils {
         return compatibleRoles;
     }
 
-    public static Set<Role> compatibleRoles(Type type, Set<Role> relRoles){
-        return compatibleRoles(null, type, relRoles);
+    public static Set<Role> compatibleRoles(Set<Type> types, Set<Role> relRoles){
+        Iterator<Type> typeIterator = types.iterator();
+        Set<Role> roles = relRoles;
+        while(typeIterator.hasNext()){
+            roles = Sets.intersection(roles, compatibleRoles(null, typeIterator.next(), relRoles));
+        }
+        return roles;
     }
-
 
     /**
      * @param childTypes type atoms of child query

@@ -87,18 +87,18 @@ public abstract class GraqlTraversal {
         }
     }
 
-    //       Set of disjunctions
-    //        |
-    //        |           List of fragments in order of execution
-    //        |            |
-    //        V            V
+    //            Set of disjunctions
+    //                |
+    //                |           List of fragments in order of execution
+    //                |             |
+    //                V             V
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
 
     /**
      * @param transform map defining id transform var -> new id
      * @return graql traversal with concept id transformed according to the provided transform
      */
-    public GraqlTraversal transform(Map<Variable, ConceptId> transform){
+    public GraqlTraversal transform(Map<Variable, ConceptId> transform) {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );

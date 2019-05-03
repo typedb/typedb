@@ -113,7 +113,7 @@ public class QueryExecutor {
 
                 int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
 
-            GraqlTraversal graqlTraversal = TraversalPlanner.createTraversal(matchClause.getPatterns(), transaction);
+                GraqlTraversal graqlTraversal = TraversalPlanner.createTraversal(matchClause.getPatterns(), transaction);
 
                 ServerTracing.closeScopedChildSpan(createTraversalSpanId);
 
@@ -125,15 +125,14 @@ public class QueryExecutor {
                 ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
             } else {
 
-            int disjunctionSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
+                int disjunctionSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
 
                 Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
                 answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
 
                 ServerTracing.closeScopedChildSpan(disjunctionSpanId);
             }
-        }
-        catch(GraqlCheckedException e){
+        } catch (GraqlCheckedException e) {
             LOG.debug(e.getMessage());
             answerStream = Stream.empty();
         }
@@ -200,7 +199,7 @@ public class QueryExecutor {
 
         // ensure variables used in var-var comparisons are used elsewhere too
         Set<Variable> unboundComparisonVariables = Sets.difference(varVarComparisons, notVarVarComparisons);
-        if (! unboundComparisonVariables.isEmpty()) {
+        if (!unboundComparisonVariables.isEmpty()) {
             throw GraqlQueryException.unboundComparisonVariables(unboundComparisonVariables);
         }
     }
