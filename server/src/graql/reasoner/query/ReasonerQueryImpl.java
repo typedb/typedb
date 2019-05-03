@@ -19,8 +19,6 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
@@ -366,24 +364,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public ImmutableSetMultimap<Variable, Type> getVarTypeMap(boolean inferTypes) {
-
         if (!inferTypes) return ImmutableSetMultimap.copyOf(getVarTypeMap(getAtoms(IsaAtomBase.class)));
         return getVarTypeMap();
-
-        /*
-        Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
-        ImmutableSetMultimap.Builder<Variable, Type> builder = ImmutableSetMultimap.builder();
-                getVarTypeMap().asMap()
-                        .entrySet().stream()
-                        .filter(e -> inferTypes ||
-                                isas.stream()
-                                        .filter(isa -> isa.getVarName().equals(e.getKey()))
-                                        .filter(isa -> Objects.nonNull(isa.getSchemaConcept()))
-                                        .anyMatch(isa -> isa.getSchemaConcept().equals(e.getValue()))
-                        )
-                        .forEach(e -> builder.putAll(e.getKey(), e.getValue()));
-        return builder.build();
-        */
     }
 
     @Override
@@ -409,12 +391,19 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     @Override
     public Type getUnambiguousType(Variable var, boolean inferTypes){
         ImmutableSet<Type> types = getVarTypeMap(inferTypes).get(var);
-        return types.isEmpty()? null : Iterables.getOnlyElement(types);
+        Type type = null;
+        if(types.isEmpty()) return type;
+
+        try {
+            type = Iterables.getOnlyElement(types);
+        } catch(IllegalArgumentException e){
+            throw GraqlQueryException.ambiguousType(var, types);
+        }
+        return type;
     }
 
     /**
-     *
-     * @return
+     * @return the resolution plan for this query
      */
     public ResolutionPlan resolutionPlan(){
         if (resolutionPlan == null){
@@ -519,8 +508,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     private static String PLACEHOLDER_ID = "placeholder_id";
 
     /**
-     *
-     * @return
+     * @return true if this query has complete entries in the cache
      */
     public boolean isCacheComplete(){
         //TODO sort out properly

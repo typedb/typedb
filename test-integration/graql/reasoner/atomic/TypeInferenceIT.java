@@ -84,11 +84,11 @@ public class TypeInferenceIT {
     public void whenCalculatingTypeMaps_typesAreCollapsedCorrectly(){
         TransactionOLTP tx = testContextSession.transaction().write();
 
-        ReasonerQuery query = ReasonerQueries.create(conjunction("{$x isa singleRoleEntity;$x isa twoRoleEntity;};", tx), tx);
+        ReasonerQuery query = ReasonerQueries.atomic(conjunction("{($x); $x isa singleRoleEntity;$x isa twoRoleEntity;};", tx), tx);
         assertEquals(tx.getEntityType("twoRoleEntity"), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
 
-        query = ReasonerQueries.atomic(conjunction("{$x isa thing;$x isa singleRoleEntity;};", tx), tx);
-        assertEquals(tx.getType(Label.of("twoRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
+        query = ReasonerQueries.atomic(conjunction("{($x); $x isa entity;$x isa singleRoleEntity;};", tx), tx);
+        assertEquals(tx.getType(Label.of("singleRoleEntity")), Iterables.getOnlyElement(query.getVarTypeMap().get(new Variable("x"))));
     }
 
     @Test

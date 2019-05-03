@@ -220,6 +220,7 @@ public enum ErrorMessage {
     NON_EXISTENT_UNIFIER("Could not proceed with thr unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
+    AMBIGUOUS_TYPE("Sought variable [%s] has ambiguous types [%s]");
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
 

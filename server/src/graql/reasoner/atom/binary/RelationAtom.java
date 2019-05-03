@@ -535,23 +535,6 @@ public abstract class RelationAtom extends IsaAtomBase {
                 .flatMap(e -> varTypeMap.get(e.getValue()).stream().map(type -> new Pair<>(e.getKey(), type)))
                 .sorted(Comparator.comparing(Pair::hashCode))
                 .forEach(p -> builder.put(p.getKey(), p.getValue()));
-        /*
-        roleMap.entries().stream()
-                .filter(e -> varTypeMap.containsKey(e.getValue()))
-                .filter(e -> {
-                    return inferTypes
-                            || getParentQuery().getAtoms(TypeAtom.class)
-                            .filter(t -> t.getVarName().equals(e.getValue()))
-                            .filter(t -> Objects.nonNull(t.getSchemaConcept()))
-                            .anyMatch(t -> t.getSchemaConcept().equals(varTypeMap.get(e.getValue())));
-                })
-                .sorted(Comparator.comparing(e -> e.getKey().label()))
-                .forEach(e ->
-                        varTypeMap.get(e.getValue()).stream()
-                                .sorted(Comparator.comparing(SchemaConcept::label))
-                                .forEach(t -> builder.put(e.getKey(), t))
-                );
-                */
         return builder.build();
     }
 
