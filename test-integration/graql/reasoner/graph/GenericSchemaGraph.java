@@ -163,9 +163,6 @@ public class GenericSchemaGraph {
         };
 
         Variable reflexiveRP = Graql.var().var();
-        System.out.println(entity + " " + entity.asThing().type());
-        System.out.println(anotherBaseEntity + " " + anotherBaseEntity.asThing().type());
-        System.out.println(subEntity + " " + subEntity.asThing().type());
         this.differentReflexiveRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(
                         new Pair<>(Label.of("baseRole1"), reflexiveRP), Label.of("baseRoleEntity"),
