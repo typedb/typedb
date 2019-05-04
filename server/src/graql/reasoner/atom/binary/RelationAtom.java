@@ -886,30 +886,38 @@ public abstract class RelationAtom extends IsaAtomBase {
 
         ReasonerQueryImpl childQuery = (ReasonerQueryImpl) getParentQuery();
         Set<Role> childRoles = childRoleRPMap.keySet();
-        parentAtom.getRelationPlayers().stream()
-                .filter(prp -> prp.getRole().isPresent())
+        parentAtom.getRelationPlayers()
                 .forEach(prp -> {
                     Statement parentRolePattern = prp.getRole().orElse(null);
                     if (parentRolePattern == null){
                         throw GraqlQueryException.rolePatternAbsent(this);
                     }
-                    String parentRoleLabel = parentRolePattern.getType().orElse(null);
+                    Label parentRoleLabel = parentRolePattern.getType().isPresent()? Label.of(parentRolePattern.getType().get()) : null;
 
-                    if (parentRoleLabel != null) {
+                    //if (parentRoleLabel != null) {
                         Variable parentRolePlayer = prp.getPlayer().var();
                         Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
                         boolean typeUnambiguous = parentTypes.size() == 1;
 
-                        Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
-                                tx().getSchemaConcept(Label.of(parentRoleLabel)),
-                                typeUnambiguous? parentTypes.iterator().next() : null,
-                                childRoles);
+                        Set<RelationProperty.RolePlayer> childRPsToCheck;
+                        if (parentRoleLabel != null){
+                            Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
+                                    tx().getSchemaConcept(parentRoleLabel), typeUnambiguous? parentTypes.iterator().next() : null, childRoles);
+                            childRPsToCheck = compatibleRoles.stream()
+                                    .filter(childRoleRPMap::containsKey)
+                                    .flatMap(role -> childRoleRPMap.get(role).stream())
+                                    .collect(toSet());
+                        } else {
+                            childRPsToCheck = new HashSet<>(this.getRelationPlayers());
+                        }
+                        /*
+                        Set<Role> compatibleRoles = parentRoleLabel != null?
+                                ReasonerUtils.compatibleRoles(tx().getSchemaConcept(parentRoleLabel), typeUnambiguous? parentTypes.iterator().next() : null, childRoles) :
+                                childRoleRPMap.keySet();
+                                */
 
                         List<RelationProperty.RolePlayer> compatibleRelationPlayers = new ArrayList<>();
-                        compatibleRoles.stream()
-                                .filter(childRoleRPMap::containsKey)
-                                .forEach(role ->
-                                        childRoleRPMap.get(role).stream()
+                        childRPsToCheck.stream()
                                                 //check for inter-type compatibility
                                                 .filter(crp -> {
                                                     Variable childVar = crp.getPlayer().var();
@@ -935,8 +943,10 @@ public abstract class RelationAtom extends IsaAtomBase {
                                                     Variable childVar = crp.getPlayer().var();
                                                     return matchType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
                                                 })
-                                                .forEach(compatibleRelationPlayers::add)
-                                );
+                                                .forEach(compatibleRelationPlayers::add);
+
+
+
                         if (!compatibleRelationPlayers.isEmpty()) {
                             compatibleMappingsPerParentRP.add(
                                     compatibleRelationPlayers.stream()
@@ -944,13 +954,17 @@ public abstract class RelationAtom extends IsaAtomBase {
                                             .collect(Collectors.toSet())
                             );
                         }
+
+                        /*
                     } else {
+                        //TODO if no role label present we assume everything is compatible!
                         compatibleMappingsPerParentRP.add(
                                 getRelationPlayers().stream()
                                         .map(crp -> new Pair<>(crp, prp))
                                         .collect(Collectors.toSet())
                         );
                     }
+                    */
                 });
 
         return Sets.cartesianProduct(compatibleMappingsPerParentRP).stream()

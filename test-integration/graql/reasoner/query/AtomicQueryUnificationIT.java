@@ -559,6 +559,39 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_EXACT(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+
+
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().exactMatrix(),
+                    UnifierType.EXACT, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_STRUCTURAL(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns().forEach(System.out::println);
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().structuralMatrix(),
+                    UnifierType.STRUCTURAL, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().ruleMatrix(),
+                    UnifierType.RULE, tx);
+        }
+    }
+
+    @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
@@ -868,6 +901,7 @@ public class AtomicQueryUnificationIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
+                System.out.println("(i, j) = " + i + " " + j);
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
                 j++;
             }
@@ -890,6 +924,10 @@ public class AtomicQueryUnificationIT {
 
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
+        if (unifierExists != !multiUnifier.isEmpty()){
+            System.out.println("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent);
+            child.getMultiUnifier(parent, unifierType);
+        }
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
