@@ -35,6 +35,8 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 
 import graql.lang.Graql;
+import graql.lang.property.RelationProperty;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -100,8 +102,8 @@ public class GenericSchemaGraph {
 
         this.differentRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("baseRole1"), Graql.var().var()), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("baseRole2"), Graql.var().var()), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole1"), Graql.var()), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), Graql.var()), Label.of("anotherBaseRoleEntity")
                 ),
                 Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
                 new ArrayList<>()
@@ -162,11 +164,11 @@ public class GenericSchemaGraph {
             }
         };
 
-        Variable reflexiveRP = Graql.var().var();
+        Statement reflexiveRP = Graql.var();
         this.differentReflexiveRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("baseRole1"), reflexiveRP), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("baseRole2"), reflexiveRP), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole1"), reflexiveRP), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), reflexiveRP), Label.of("anotherBaseRoleEntity")
                 ),
                 Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
                 new ArrayList<>()
@@ -256,8 +258,8 @@ public class GenericSchemaGraph {
 
         this.differentRelationVariantsWithMetaRoles = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("role"), Graql.var().var()), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("role"), Graql.var().var()), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("role"), new Statement(new Variable().asReturnedVar())), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("role"), new Statement(new Variable().asReturnedVar())), Label.of("anotherBaseRoleEntity")
                 ),
                 Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
                 new ArrayList<>()
@@ -345,8 +347,8 @@ public class GenericSchemaGraph {
 
         this.differentRelationVariantsWithRelationVariable = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("baseRole1"), Graql.var().var()), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("baseRole2"), Graql.var().var()), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole1"), Graql.var()), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), Graql.var()), Label.of("anotherBaseRoleEntity")
                 ),
                 Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
                 Lists.newArrayList(relation.id(), anotherRelation.id())
