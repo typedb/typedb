@@ -845,63 +845,58 @@ public abstract class RelationAtom extends IsaAtomBase {
                     Label parentRoleLabel = parentRolePattern.getType().isPresent()? Label.of(parentRolePattern.getType().get()) : null;
 
                     //if (parentRoleLabel != null) {
-                        Variable parentRolePlayer = prp.getPlayer().var();
-                        Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
-                        boolean typeUnambiguous = parentTypes.size() == 1;
+                    Variable parentRolePlayer = prp.getPlayer().var();
+                    Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
+                    boolean typeUnambiguous = parentTypes.size() == 1;
 
-                        Set<RelationProperty.RolePlayer> childRPsToCheck;
-                        if (parentRoleLabel != null){
-                            Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
-                                    tx().getSchemaConcept(parentRoleLabel), typeUnambiguous? parentTypes.iterator().next() : null, childRoles);
-                            childRPsToCheck = compatibleRoles.stream()
-                                    .filter(childRoleRPMap::containsKey)
-                                    .flatMap(role -> childRoleRPMap.get(role).stream())
-                                    .collect(toSet());
-                        } else {
-                            childRPsToCheck = new HashSet<>(this.getRelationPlayers());
-                        }
-                        /*
-                        Set<Role> compatibleRoles = parentRoleLabel != null?
-                                ReasonerUtils.compatibleRoles(tx().getSchemaConcept(parentRoleLabel), typeUnambiguous? parentTypes.iterator().next() : null, childRoles) :
-                                childRoleRPMap.keySet();
-                                */
+                    Set<RelationProperty.RolePlayer> childRPsToCheck;
+                    if (parentRoleLabel != null){
+                        Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
+                                tx().getSchemaConcept(parentRoleLabel), typeUnambiguous? parentTypes.iterator().next() : null, childRoles);
+                        childRPsToCheck = compatibleRoles.stream()
+                                .filter(childRoleRPMap::containsKey)
+                                .flatMap(role -> childRoleRPMap.get(role).stream())
+                                .collect(toSet());
+                    } else {
+                        childRPsToCheck = new HashSet<>(this.getRelationPlayers());
+                    }
 
-                        List<RelationProperty.RolePlayer> compatibleRelationPlayers = new ArrayList<>();
-                        childRPsToCheck.stream()
-                                //check for inter-type compatibility
-                                .filter(crp -> {
-                                    Variable childVar = crp.getPlayer().var();
-                                    Set<Type> childTypes = childVarTypeMap.get(childVar);
-                                    return matchType.typeCompatibility(parentTypes, childTypes)
-                                            && parentTypes.stream().allMatch(parentType -> matchType.typePlayability(childQuery, childVar, parentType));
-                                })
-                                //check for substitution compatibility
-                                .filter(crp -> {
-                                    Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(toSet());
-                                    Set<Atomic> childIds = this.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(toSet());
-                                    return matchType.idCompatibility(parentIds, childIds);
-                                })
-                                //check for value predicate compatibility
-                                .filter(crp -> {
-                                    Set<Atomic> parentVP = parentAtom.getPredicates(prp.getPlayer().var(), ValuePredicate.class).collect(toSet());
-                                    Set<Atomic> childVP = this.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(toSet());
-                                    return matchType.valueCompatibility(parentVP, childVP);
-                                })
-                                //check linked resources
-                                .filter(crp -> {
-                                    Variable parentVar = prp.getPlayer().var();
-                                    Variable childVar = crp.getPlayer().var();
-                                    return matchType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
-                                })
-                                .forEach(compatibleRelationPlayers::add);
+                    List<RelationProperty.RolePlayer> compatibleRelationPlayers = new ArrayList<>();
+                    childRPsToCheck.stream()
+                            //check for inter-type compatibility
+                            .filter(crp -> {
+                                Variable childVar = crp.getPlayer().var();
+                                Set<Type> childTypes = childVarTypeMap.get(childVar);
+                                return matchType.typeCompatibility(parentTypes, childTypes)
+                                        && parentTypes.stream().allMatch(parentType -> matchType.typePlayability(childQuery, childVar, parentType));
+                            })
+                            //check for substitution compatibility
+                            .filter(crp -> {
+                                Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(toSet());
+                                Set<Atomic> childIds = this.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(toSet());
+                                return matchType.idCompatibility(parentIds, childIds);
+                            })
+                            //check for value predicate compatibility
+                            .filter(crp -> {
+                                Set<Atomic> parentVP = parentAtom.getPredicates(prp.getPlayer().var(), ValuePredicate.class).collect(toSet());
+                                Set<Atomic> childVP = this.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(toSet());
+                                return matchType.valueCompatibility(parentVP, childVP);
+                            })
+                            //check linked resources
+                            .filter(crp -> {
+                                Variable parentVar = prp.getPlayer().var();
+                                Variable childVar = crp.getPlayer().var();
+                                return matchType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
+                            })
+                            .forEach(compatibleRelationPlayers::add);
 
-                        if (!compatibleRelationPlayers.isEmpty()) {
-                            compatibleMappingsPerParentRP.add(
-                                    compatibleRelationPlayers.stream()
-                                            .map(crp -> new Pair<>(crp, prp))
-                                            .collect(Collectors.toSet())
-                            );
-                        }
+                    if (!compatibleRelationPlayers.isEmpty()) {
+                        compatibleMappingsPerParentRP.add(
+                                compatibleRelationPlayers.stream()
+                                        .map(crp -> new Pair<>(crp, prp))
+                                        .collect(Collectors.toSet())
+                        );
+                    }
                 });
 
         return Sets.cartesianProduct(compatibleMappingsPerParentRP).stream()
