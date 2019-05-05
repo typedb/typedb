@@ -562,7 +562,6 @@ public class AtomicQueryUnificationIT {
     public void testUnification_differentRelationVariantsWithVariableRoles_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
 
-
             unification(
                     genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithVariableRoles().exactMatrix(),
@@ -614,7 +613,10 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_RULE(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            unification(genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(), genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(), UnifierType.RULE, tx);
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(),
+                    UnifierType.RULE, tx);
         }
     }
 
@@ -1012,6 +1014,10 @@ public class AtomicQueryUnificationIT {
     }
 
     private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
+        if ( queryExpectation != equiv.equivalent(a, b)){
+            equiv.equivalent(a, b);
+            System.out.println();
+        }
         assertEquals(equiv.name() + " - Queries:\n" + a.toString() + "\n=?\n" + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
