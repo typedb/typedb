@@ -133,6 +133,6 @@ public class ValueFragment extends Fragment {
     @Override
     public int alphaEquivalentHash() {
         // convert to string to ensure we compare the representation not the memory address
-        return operation.comparator().toString().hashCode();
+        return operation.comparator().hashCode();
     }
 }

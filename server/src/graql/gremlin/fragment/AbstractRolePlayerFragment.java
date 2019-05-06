@@ -122,7 +122,6 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
         List<Label> labels = relationTypeLabels().stream().sorted().collect(Collectors.toList());
         labels.addAll(roleLabels().stream().sorted().collect(Collectors.toList()));
 
-        Label[] labelsArray = labels.toArray(new Label[] {});
-        return Arrays.hashCode(labelsArray);
+        return labels.hashCode();
     }
 }

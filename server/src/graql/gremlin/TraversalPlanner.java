@@ -188,8 +188,7 @@ public class TraversalPlanner {
             // find the minimum spanning tree for each root
             // then get the tree with minimum weight
             Arborescence<Node> arborescence = startingNodes.stream()
-                    .sorted(Comparator.comparing(Node::globalHashCode)) // this sort ensures we determinstically order the nodes
-                    .collect(Collectors.toList()).stream()
+                    .sorted(Comparator.comparing(Node::globalHashCode)) // this sort ensures we deterministically order the nodes, up to determinism of the global hash code
                     .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
                     .max(Comparator.comparingDouble(tree -> tree.weight))
                     .map(arborescenceInside -> arborescenceInside.val).orElse(Arborescence.empty());
@@ -215,31 +214,27 @@ public class TraversalPlanner {
 
         // aggregate 1-hop neighbors' local hashes into each node's hash
         for (Node node : weightedGraph.getNodes()) {
-            List<Integer> orderedNeighborNodeHashes = weightedGraph.getIncomingEdges(node)
+            List<Integer> oneHopNeighborhoodHashes = weightedGraph.getIncomingEdges(node)
                     .stream()
                     .map(weightedEdge -> weightedEdge.val.source.localHashCode())
                     .sorted()
                     .collect(Collectors.toList());
 
             // include the local node in this list
-            orderedNeighborNodeHashes.add(0, node.localHashCode());
-            Integer[] localNodeHashes = orderedNeighborNodeHashes.toArray(new Integer[] {});
-            int oneHopHash = Arrays.hashCode(localNodeHashes);
-            oneHopHashes.put(node, oneHopHash);
+            oneHopNeighborhoodHashes.add(0, node.localHashCode());
+            oneHopHashes.put(node, oneHopNeighborhoodHashes.hashCode());
         }
 
         // repeat the same process using the intermediate one-hop global hashes, which will bring in the two-hop neighbors
         for (Node node : oneHopHashes.keySet()) {
-            List<Integer> orderedNeighborNodeHashes = weightedGraph.getIncomingEdges(node)
+            List<Integer> twoHopNeighborhoodHashes = weightedGraph.getIncomingEdges(node)
                     .stream()
                     .map(weightedEdge -> weightedEdge.val.source)
                     .map(oneHopHashes::get)
                     .sorted()
                     .collect(Collectors.toList());
-            orderedNeighborNodeHashes.add(0, oneHopHashes.get(node));
-            Integer[] oneHopOrderedNodeHashes = orderedNeighborNodeHashes.toArray(new Integer[] {});
-            int twoHopGlobalHash = Arrays.hashCode(oneHopOrderedNodeHashes);
-            node.setGlobalHash(twoHopGlobalHash);
+            twoHopNeighborhoodHashes.add(0, oneHopHashes.get(node));
+            node.setGlobalHash(twoHopNeighborhoodHashes.hashCode());
         }
     }
 

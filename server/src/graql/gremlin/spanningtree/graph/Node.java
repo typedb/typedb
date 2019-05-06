@@ -23,7 +23,7 @@ import grakn.core.graql.gremlin.fragment.Fragment;
 
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Objects;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * An node in a directed graph.
  *
  */
-public class Node implements Comparable {
+public class Node {
 
     private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
@@ -125,7 +125,9 @@ public class Node implements Comparable {
         return nodeId.toString();
     }
 
-
+    /**
+     * Hash code representing the contents of the node's deterministic data
+     */
     public int localHashCode() {
         // a sort of hash based on this node's fragments' internal hash codes
         Set<Fragment> internalFragments = Sets.newHashSet(fragmentsWithoutDependency);
@@ -134,32 +136,22 @@ public class Node implements Comparable {
         internalFragments.addAll(dependants);
 
         // sort into a list based on the fragments' hashes
-        Integer[] orderedInternalFragmentHashes = internalFragments.stream()
+        List<Integer> orderedInternalFragmentHashes = internalFragments.stream()
                 .map(Fragment::variableAgnosticHash)
                 .sorted()
-                .collect(Collectors.toList())
-                .toArray(new Integer[] {});
+                .collect(Collectors.toList());
 
-        return Arrays.hashCode(orderedInternalFragmentHashes);
+        return orderedInternalFragmentHashes.hashCode();
     }
 
     public void setGlobalHash(int neighborhoodAwareHash) {
         this.neighborhoodAwareHash = neighborhoodAwareHash;
     }
 
+    /**
+     * Hash code representing the local combined with neighboring hashes
+     */
     public int globalHashCode() {
         return neighborhoodAwareHash;
-    }
-
-    /**
-     * We make Node comparable because we can then deterministically order and sort them
-     * leading to deterministic query plans
-     */
-    @Override
-    public int compareTo(Object o) {
-        if (o instanceof Node) {
-            return nodeId.hashCode() - o.hashCode();
-        }
-        throw new ClassCastException("Cannot compare Node class and " + o.getClass().toString());
     }
 }
