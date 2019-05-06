@@ -438,6 +438,9 @@ public class AtomicQueryEquivalenceIT {
     }
 
     private void singleAtomicEquivalence(Atomic a, Atomic b, boolean expectation, AtomicEquivalence equivalence){
+        if(expectation != equivalence.equivalent(a, b)){
+            equivalence.equivalent(a, b);
+        }
         assertEquals(equivalence.name() + " - Atom:\n" + a + "\n=?\n" + b, expectation,  equivalence.equivalent(a, b));
 
         //check hash additionally if need to be equal

@@ -677,7 +677,7 @@ public class ReasoningIT {
     }
 
     @Test
-    public void ternaryRelationsRequiryingDifferentMultiunifiers(){
+    public void ternaryRelationsRequiringDifferentMultiunifiers(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (TransactionOLTP tx = session.transaction().read()) {

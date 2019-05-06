@@ -228,6 +228,7 @@ public abstract class SemanticCache<
             @Nullable CacheEntry<ReasonerAtomicQuery, SE> entry,
             @Nullable MultiUnifier unifier) {
 
+        assert(query.isPositive());
         validateAnswer(answer, query, query.getVarNames());
 
         /*
@@ -276,6 +277,7 @@ public abstract class SemanticCache<
 
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
+        assert(query.isPositive());
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
         boolean queryGround = query.isGround();
 
