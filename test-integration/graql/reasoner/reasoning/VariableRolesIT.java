@@ -25,6 +25,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.math3.util.CombinatoricsUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -33,8 +34,10 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 
 public class VariableRolesIT {
@@ -61,16 +64,14 @@ public class VariableRolesIT {
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
         try(TransactionOLTP tx = variableRoleSession.transaction().write()) {
-
             //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
-            /*
             String queryString = "match " +
                     "(role1: $a, $r2: $b) isa binary-base;" +
                     "get;";
 
             String equivalentQueryString = "match " +
                     "($r1: $a, $r2: $b) isa binary-base;" +
-                    "$r1 label 'role1';" +
+                    "$r1 type role1;" +
                     "get $a, $b, $r2;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -78,7 +79,6 @@ public class VariableRolesIT {
             assertEquals(18, answers.size());
             assertTrue(CollectionUtils.isEqualCollection(answers, equivalentAnswers));
 
-            */
             //9 binary-base instances with {role, role1, role2} = 3 roles for r2 -> 27 answers
             String queryString2 = "match " +
                     "(role: $a, $r2: $b) isa binary-base; " +
@@ -90,24 +90,19 @@ public class VariableRolesIT {
                     "get $a, $b, $r2;";
 
             GraqlGet query2 = Graql.parse(queryString2).asGet();
-            //System.out.println(query2);
-            //List<ConceptMap> answers2 = tx.execute(query2);
-            //System.out.println();
+            List<ConceptMap> answers2 = tx.execute(query2);
 
             GraqlGet equivQuery2 = Graql.parse(equivalentQueryString2).asGet();
-            System.out.println(equivQuery2);
             List<ConceptMap> equivalentAnswers2 = tx.execute(equivQuery2);
-            System.out.println();
 
-            //assertEquals(27, answers2.size());
-            //assertCollectionsNonTriviallyEqual(answers2, equivalentAnswers2);
+            assertEquals(27, answers2.size());
+            assertCollectionsNonTriviallyEqual(answers2, equivalentAnswers2);
 
-            /*
             //role variables bound hence should return original 9 instances
             String queryString3 = "match " +
                     "($r1: $a, $r2: $b) isa binary-base;" +
-                    "$r1 label 'role';" +
-                    "$r2 label 'role2';" +
+                    "$r1 type role;" +
+                    "$r2 type role2;" +
                     "get $a, $b;";
 
             String equivalentQueryString3 = "match " +
@@ -126,7 +121,7 @@ public class VariableRolesIT {
 
             List<ConceptMap> answers4 = tx.execute(Graql.parse(queryString4).asGet());
             assertEquals(63, answers4.size());
-            */
+
         }
     }
 

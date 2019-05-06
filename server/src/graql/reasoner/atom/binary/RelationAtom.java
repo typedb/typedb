@@ -305,7 +305,10 @@ public abstract class RelationAtom extends IsaAtomBase {
     public boolean isAlphaEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.EXACT).isEmpty();
+        //return !this.getMultiUnifier(that, UnifierType.EXACT).isEmpty();
+        Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(that, UnifierType.EXACT);
+        return !rpMappings.isEmpty()
+                && rpMappings.stream().allMatch(mapping -> mapping.size() == getRelationPlayers().size());
     }
 
     @Override
@@ -929,18 +932,15 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (parentAtom.isRelation()) {
             RelationAtom parent = parentAtom.toRelationAtom();
             Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(parent, unifierType);
+            boolean containsRoleVariables = parent.getRelationPlayers().stream()
+                    .map(RelationProperty.RolePlayer::getRole)
+                    .flatMap(CommonUtil::optionalToStream)
+                    .anyMatch(rp -> rp.var().isReturned());
 
             //NB: if two atoms are equal and their rp mappings are complete we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
-            /*
-            if (this.equals(parent)
-                    && unifierType != UnifierType.SUBSUMPTIVE
-                    && this.getPartialSubstitutions().collect(toSet()).equals(parent.getPartialSubstitutions().collect(toSet()))
-                    && this.getTypeConstraints().collect(toSet()).equals(parent.getTypeConstraints().collect(toSet()))
-                    && !rpMappings.isEmpty()
-                    && rpMappings.stream().allMatch(mapping -> mapping.size() == getRelationPlayers().size())){
-                    */
             if (ReasonerQueryEquivalence.Equality.equivalent(this.getParentQuery(), parent.getParentQuery())
+                    && containsRoleVariables
                     //for subsumptive unifiers we need a meaningful (with actual variables) inverse
                     && unifierType != UnifierType.SUBSUMPTIVE
                     && !rpMappings.isEmpty()
@@ -948,10 +948,6 @@ public abstract class RelationAtom extends IsaAtomBase {
                 return MultiUnifierImpl.trivial();
             }
 
-            boolean unifyRoleVariables = parent.getRelationPlayers().stream()
-                    .map(RelationProperty.RolePlayer::getRole)
-                    .flatMap(CommonUtil::optionalToStream)
-                    .anyMatch(rp -> rp.var().isReturned());
             rpMappings
                     .forEach(mappingList -> {
                         Multimap<Variable, Variable> varMappings = HashMultimap.create();
@@ -962,7 +958,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                             //add role var mapping if needed
                             Statement childRolePattern = rpm.getKey().getRole().orElse(null);
                             Statement parentRolePattern = rpm.getValue().getRole().orElse(null);
-                            if (parentRolePattern != null && childRolePattern != null && unifyRoleVariables){
+                            if (parentRolePattern != null && childRolePattern != null && containsRoleVariables){
                                 varMappings.put(childRolePattern.var(), parentRolePattern.var());
                             }
 
