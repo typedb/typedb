@@ -52,6 +52,7 @@ import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
@@ -931,7 +932,16 @@ public abstract class RelationAtom extends IsaAtomBase {
 
             //NB: if two atoms are equal and their rp mappings are complete we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
+            /*
             if (this.equals(parent)
+                    && unifierType != UnifierType.SUBSUMPTIVE
+                    && this.getPartialSubstitutions().collect(toSet()).equals(parent.getPartialSubstitutions().collect(toSet()))
+                    && this.getTypeConstraints().collect(toSet()).equals(parent.getTypeConstraints().collect(toSet()))
+                    && !rpMappings.isEmpty()
+                    && rpMappings.stream().allMatch(mapping -> mapping.size() == getRelationPlayers().size())){
+                    */
+            if (ReasonerQueryEquivalence.Equality.equivalent(this.getParentQuery(), parent.getParentQuery())
+                    //for subsumptive unifiers we need a meaningful (with actual variables) inverse
                     && unifierType != UnifierType.SUBSUMPTIVE
                     && !rpMappings.isEmpty()
                     && rpMappings.stream().allMatch(mapping -> mapping.size() == getRelationPlayers().size())){
