@@ -928,15 +928,6 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (parentAtom.isRelation()) {
             RelationAtom parent = parentAtom.toRelationAtom();
 
-            //NB: if two atoms are equal and their sub and type mappings are equal we return the identity unifier
-            //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
-            if (this.equals(parent)
-                    && unifierType != UnifierType.SUBSUMPTIVE
-                    && this.getPartialSubstitutions().collect(toSet()).equals(parent.getPartialSubstitutions().collect(toSet()))
-                    && this.getTypeConstraints().collect(toSet()).equals(parent.getTypeConstraints().collect(toSet()))){
-                return MultiUnifierImpl.trivial();
-            }
-
             boolean unifyRoleVariables = parent.getRelationPlayers().stream()
                     .map(RelationProperty.RolePlayer::getRole)
                     .flatMap(CommonUtil::optionalToStream)

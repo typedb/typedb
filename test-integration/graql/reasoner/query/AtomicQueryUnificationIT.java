@@ -579,7 +579,6 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentRelationVariantsWithVariableRoles_RULE(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns().forEach(System.out::println);
             unification(
                     genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
                     genericSchemaGraph.differentRelationVariantsWithVariableRoles().ruleMatrix(),
@@ -926,7 +925,7 @@ public class AtomicQueryUnificationIT {
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
 
-            assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
+            assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
         return multiUnifier;
