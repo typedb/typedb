@@ -25,7 +25,6 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -39,17 +38,16 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -902,10 +900,6 @@ public class AtomicQueryUnificationIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
-                if ( i == 2 && j == 14){
-                    System.out.println();
-                }
-                System.out.println("(i, j) = " + i + " " + j);
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
                 j++;
             }
@@ -928,10 +922,6 @@ public class AtomicQueryUnificationIT {
 
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
-        if (unifierExists != !multiUnifier.isEmpty()){
-            System.out.println("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent);
-            child.getMultiUnifier(parent, unifierType);
-        }
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
         if (unifierExists && unifierType != UnifierType.RULE){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
