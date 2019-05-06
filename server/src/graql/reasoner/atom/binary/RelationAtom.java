@@ -302,14 +302,14 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj) || !(obj instanceof RelationAtom)) return false;
+        if (!isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
         return !this.getMultiUnifier(that, UnifierType.EXACT).isEmpty();
     }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj) || !(obj instanceof RelationAtom)) return false;
+        if (!isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
         return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).isEmpty();
     }
@@ -834,7 +834,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
         if (parentAtom.getRelationPlayers().size() > this.getRelationPlayers().size()) return new HashSet<>();
 
-        ReasonerQueryImpl childQuery = (ReasonerQueryImpl) getParentQuery();
+        ReasonerQuery childQuery = getParentQuery();
         Set<Role> childRoles = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers()
                 .forEach(prp -> {
@@ -844,7 +844,6 @@ public abstract class RelationAtom extends IsaAtomBase {
                     }
                     Label parentRoleLabel = parentRolePattern.getType().isPresent()? Label.of(parentRolePattern.getType().get()) : null;
 
-                    //if (parentRoleLabel != null) {
                     Variable parentRolePlayer = prp.getPlayer().var();
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
                     boolean typeUnambiguous = parentTypes.size() == 1;
