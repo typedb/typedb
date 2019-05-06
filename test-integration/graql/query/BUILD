@@ -20,7 +20,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "graql-get-it",
-    size = "medium",
+    size = "enormous",
     srcs = ["GraqlGetIT.java"],
     test_class = "grakn.core.graql.query.GraqlGetIT",
     deps = [
@@ -31,6 +31,8 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "@graknlabs_graql//java:graql",
+
+        "@graknlabs_client_java//:client-java",
     ],
 )
 

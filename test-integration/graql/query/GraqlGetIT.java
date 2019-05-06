@@ -18,11 +18,13 @@
 
 package grakn.core.graql.query;
 
+import grakn.client.GraknClient;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
@@ -85,6 +87,85 @@ public class GraqlGetIT {
         session.close();
     }
 
+    @Test
+    public void testSubPlan() {
+        EntityType movie = tx.getEntityType("movie");
+        EntityType actionMovie = tx.putEntityType("actionmovie");
+//        movie.sup(actionMovie);
+        actionMovie.sup(movie);
+//        List<ConceptMap> execute = tx.execute(Graql.parse("match $y sub entity; $x isa $y; $x has name $n; get;").asGet());
+//        List<ConceptMap> execute = tx.execute(Graql.parse("match $x isa movie; $x has name $n; get;").asGet());
+        List<ConceptMap> execute = tx.execute(Graql.parse(" match $r ($x) ;get;").asGet());
+
+        System.out.println(execute);
+    }
+
+
+    @Test
+    public void testing() {
+        tx.execute(Graql.parse("define \n" +
+                "  r1 sub relation, relates super; r2 sub r1, relates subRole; subRole sub super;\n" +
+                "  person sub entity, plays subRole, plays super;\n").asDefine());
+
+        tx.execute(Graql.parse("insert $x isa person; $r (subRole: $x) isa r2;").asInsert());
+        tx.execute(Graql.parse("insert $x isa person; $r (super: $x) isa r1;").asInsert());
+
+        tx.commit();
+        tx = session.transaction().write();
+        List<ConceptMap> execute = tx.execute(Graql.parse("match $r (super: $x) isa r1; get;").asGet());
+        System.out.println("Answer: " + execute);
+
+    }
+
+
+    @Test
+    public void taxfixSlow() {
+        tx.close();
+        GraknClient.Session sess = (new GraknClient("localhost:48555").session("slack_marco"));
+        GraknClient.Transaction txs = sess.transaction().write();
+
+        long startTime = System.currentTimeMillis();
+
+        List<ConceptMap> execute = txs.execute(Graql.parse("match\n" +
+                "$number_of_days_field has identifier == \"730/QuadroC/PeriodoLavoro/GiorniLavoroDipendente\"; \n" +
+                "$withholding_irpef_field has identifier == \"730/QuadroC/RitenuteLavoroDipendente/RitIrpef\"; \n" +
+                "$withholding_prep_regional_field has identifier == \"730/QuadroC/RitenuteLavoroDipendente/RitAddRegionale\";\n" +
+//                "$withholding_prep_municipal_tax_year_field has identifier == \"730/QuadroC/RitenuteLavoroDipendente/RitAccAddComunale\"; \n" +
+                "$number_of_days_field (form: $prefill, field: $number_of_days) isa has_form_field; \n" +
+                "$withholding_irpef_field (form: $prefill, field: $withholding_irpef) isa has_form_field; \n" +
+                "$withholding_prep_regional_field (form: $prefill, field: $withholding_prep_regional) isa has_form_field; \n" +
+//                "$withholding_prep_municipal_tax_year_field (form: $prefill, field: $withholding_prep_municipal_tax_year) isa has_form_field; \n" +
+                "get;").asGet());
+        System.out.println(execute);
+
+        System.out.println("End time: " + System.currentTimeMillis());
+
+
+        txs.close();
+        sess.close();
+    }
+
+
+    @Test
+    public void addNewAttributeOwner() {
+        tx.close();
+        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        TransactionOLTP tx = session.transaction().write();
+        tx.execute(Graql.parse("define\n" +
+                "\n" +
+                "name sub attribute,\n" +
+                "    datatype string;\n" +
+                "\n" +
+                "person sub entity,\n" +
+                "    has name;\n").asDefine());
+        tx.execute(Graql.parse("insert $x isa person, has name \"bill\";").asInsert());
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.parse("match $x isa person, has name $np; insert $e isa person, has name $np;").asInsert());
+
+        tx.close();
+    }
 
     @Test
     public void testGetSort() {

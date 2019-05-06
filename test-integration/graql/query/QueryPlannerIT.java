@@ -471,6 +471,56 @@ public class QueryPlannerIT {
         assertEquals(y.var(), plan.get(1).end());
     }
 
+    @Test
+    public void deterministicQueryPlanChoice() {
+        // query with multiple valid starting points, all of which have the same cost
+        // (assuming hardcoded statistics)
+        // thus would produce nondeterministic query plans if no further disambiguation happens
+        // ideally, we would always produce the same query plan when faced with multiple equally-costed plans
+
+//        Pattern pattern = and(
+//                x.isa(thingy),
+//                y.isa(thingy2),
+//                z.isa("entity"),
+//                var("w").isa("relation"),
+//                var().rel(x).rel(y),
+//                var().rel(x).rel(z),
+//                var().rel(y).rel(var("w"))
+//        );
+
+        // two starting points, both the attribute label
+        // except in one side of the query pattern, we have one more relation that is multiple hops away
+        Pattern pattern = and(
+                var("a1").isa(thingy),
+                var().rel(var("a1")).rel(var("middle")),
+                var().rel(var("a1")).rel(var("y")),
+                var("y").has(resourceType, "bob"),
+                var("a2").isa(thingy2),
+                var().rel(var("middle")).rel(var("a2")),
+                var().rel(var("a2")).rel(var("z")),
+                var("z").has(resourceType, "bob")
+        );
+
+        ImmutableList<Fragment> firstPlan = getPlan(pattern);
+        int asymmetricIndex = 0;
+        for (int i = 0; i < firstPlan.size(); i++) {
+            if (firstPlan.get(i).end() != null) {
+                if (firstPlan.get(i).end().toString().contains("asymmetry")) {
+                    asymmetricIndex = i;
+                    break;
+                }
+            }
+        }
+
+        for (int i = 0; i < 20; i++) {
+            ImmutableList<Fragment> plan = getPlan(pattern);
+            System.out.println(plan);
+//            assertTrue(plan.get(asymmetricIndex).end().toString().contains("asymmetry"));
+        }
+
+    }
+
+
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
         return TraversalPlanner.createTraversal(pattern, tx).fragments().iterator().next();
     }
