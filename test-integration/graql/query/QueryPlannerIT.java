@@ -325,10 +325,9 @@ public class QueryPlannerIT {
                 priorFragmentHasFixedCost = false;
             } else {
                 // if the current fragment is fixed cost
-                // and the prior one was not, throw and fail the test
-                if (!priorFragmentHasFixedCost) {
-                    throw new RuntimeException("Found a fixed cost fragment after a non fixed cost fragment");
-                }
+                // and the prior one was, it's ok.
+                // if it wasn't, fail the test
+                assertTrue(priorFragmentHasFixedCost);
             }
         }
     }
