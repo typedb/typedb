@@ -935,8 +935,10 @@ public abstract class RelationAtom extends IsaAtomBase {
 
             //NB: if two atoms are equal and their rp mappings are complete we return the identity unifier
             //this is important for cases like unifying ($r1: $x, $r2: $y) with itself
+            //this is only for cached queries to ensure they do not produce spurious answers
             if (ReasonerQueryEquivalence.Equality.equivalent(this.getParentQuery(), parent.getParentQuery())
                     && containsRoleVariables
+                    && unifierType != UnifierType.RULE
                     //for subsumptive unifiers we need a meaningful (with actual variables) inverse
                     && unifierType != UnifierType.SUBSUMPTIVE
                     && !rpMappings.isEmpty()

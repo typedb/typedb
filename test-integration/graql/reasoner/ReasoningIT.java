@@ -568,7 +568,7 @@ public class ReasoningIT {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (TransactionOLTP tx = session.transaction().read()) {
-                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false);
+                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet(), false);
 
                 List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match (someRole: $x, anotherRole: $y, anotherRole: $z, inferredRole: $z); $y != $z;get;"));
                 assertEquals(1, answers.size());
@@ -595,7 +595,7 @@ public class ReasoningIT {
                         "get;"));
                 assertEquals(2, answers5.size());
 
-                assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false));
+                assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet(), false));
             }
         }
     }
@@ -606,8 +606,8 @@ public class ReasoningIT {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (TransactionOLTP tx = session.transaction().read()) {
 
-                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet(), false);
-                List<ConceptMap> inferredRelations = tx.execute(Graql.parse("match $r isa relation0; get;").asGet());
+                List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet(), false);
+                List<ConceptMap> inferredRelations = tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet());
                 assertCollectionsNonTriviallyEqual("New relations were created!", persistedRelations, inferredRelations);
 
                 Set<ConceptMap> variants = Stream.of(
@@ -622,11 +622,11 @@ public class ReasoningIT {
                 assertCollectionsNonTriviallyEqual("Rules are not matched correctly!", variants, inferredRelations);
 
                 List<ConceptMap> derivedRPTriples = tx.execute(Graql.<GraqlGet>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
-                //NB: same answer is obtained from both rules
-                assertEquals("Rule body is not rewritten correctly!", 1, derivedRPTriples.size());
-
                 List<ConceptMap> derivedRelations = tx.execute(Graql.<GraqlGet>parse("match $r (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
+
+                //NB: same answer is obtained from both rules
                 //three symmetric roles hence 3! results
+                assertEquals("Rule body is not rewritten correctly!", 6, derivedRPTriples.size());
                 assertEquals("Rule body is not rewritten correctly!", 6, derivedRelations.size());
             }
         }
