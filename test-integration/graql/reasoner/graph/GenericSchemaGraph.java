@@ -35,6 +35,8 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 
 import graql.lang.Graql;
+import graql.lang.property.RelationProperty;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -49,6 +51,7 @@ public class GenericSchemaGraph {
 
     private final QueryPattern differentReflexiveRelationVariants;
     private final QueryPattern differentRelationVariants;
+    private final QueryPattern differentRelationVariantsWithVariableRoles;
     private final QueryPattern differentRelationVariantsWithMetaRoles;
     private final QueryPattern differentRelationVariantsWithRelationVariable;
 
@@ -61,21 +64,28 @@ public class GenericSchemaGraph {
 
         TransactionOLTP tx = session.transaction().read();
         EntityType subRoleEntityType = tx.getEntityType("subRoleEntity");
-
+        EntityType subSubRoleEntity = tx.getEntityType("subSubRoleEntity");
         EntityType entityType = tx.getEntityType("baseRoleEntity");
+
         EntityType anotherEntityType = tx.getEntityType("anotherBaseRoleEntity");
         AttributeType<Object> resourceType = tx.getAttributeType("resource");
         AttributeType<Object> anotherResourceType = tx.getAttributeType("resource-long");
         RelationType binary = tx.getRelationType("binary");
         RelationType ternary = tx.getRelationType("ternary");
 
-        Iterator<Entity> entities = entityType.instances()
+        Entity baseRoleEntity = entityType.instances()
                 .filter(et -> !et.type().equals(subRoleEntityType) )
-                .collect(toSet()).iterator();
-        Entity entity = entities.next();
-        Entity anotherEntity = entities.next();
-        Entity anotherBaseEntity = anotherEntityType.instances().findFirst().orElse(null);
-        Entity subEntity = subRoleEntityType.instances().findFirst().orElse(null);
+                .filter(et -> !et.type().equals(subSubRoleEntity) )
+                .findFirst().orElse(null);
+
+        Entity anotherEntity = entityType.instances()
+                .filter(et -> !et.type().equals(entityType) )
+                .findFirst().orElse(null);
+
+        Entity anotherBaseRoleEntity = anotherEntityType.instances().findFirst().orElse(null);
+        Entity subEntity = subRoleEntityType.instances()
+                .filter(et -> !et.type().equals(subSubRoleEntity) )
+                .findFirst().orElse(null);
 
         Iterator<Relation> relations = binary.subs().flatMap(RelationType::instances).iterator();
         Relation relation = relations.next();
@@ -96,14 +106,14 @@ public class GenericSchemaGraph {
         this.differentResourceVariants = new AttributePattern(
                 resourceType.label(), anotherResourceType.label(),
                 entityType.label(), anotherEntityType.label(),
-                entity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
+                baseRoleEntity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
 
         this.differentRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("baseRole1"), Graql.var().var()), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("baseRole2"), Graql.var().var()), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole1"), Graql.var()), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), Graql.var()), Label.of("anotherBaseRoleEntity")
                 ),
-                Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                Lists.newArrayList(baseRoleEntity.id(), anotherBaseRoleEntity.id(), subEntity.id()),
                 new ArrayList<>()
         ){
             @Override
@@ -162,13 +172,13 @@ public class GenericSchemaGraph {
             }
         };
 
-        Variable reflexiveRP = Graql.var().var();
+        Statement reflexiveRP = Graql.var();
         this.differentReflexiveRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("baseRole1"), reflexiveRP), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("baseRole2"), reflexiveRP), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole1"), reflexiveRP), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), reflexiveRP), Label.of("anotherBaseRoleEntity")
                 ),
-                Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                Lists.newArrayList(baseRoleEntity.id(), anotherBaseRoleEntity.id(), subEntity.id()),
                 new ArrayList<>()
         ){
             @Override
@@ -178,18 +188,18 @@ public class GenericSchemaGraph {
                             {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
                             {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                             {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                            {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
                             {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
                             {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
-                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-                            {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
-                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},//14
+                            {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//14
                             {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
                             {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0},
@@ -204,7 +214,7 @@ public class GenericSchemaGraph {
                         {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
                         {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                         {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
-                        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
                         {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
                         {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
                         {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
@@ -231,20 +241,20 @@ public class GenericSchemaGraph {
                         {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
                         {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
 
-                        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
                         {1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
                         {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
                         {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
 
                         {1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
-                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 
                         {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0},
-                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 
                         {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},//15
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0},
@@ -254,12 +264,99 @@ public class GenericSchemaGraph {
             }
         };
 
+        this.differentRelationVariantsWithVariableRoles = new RelationPattern(
+                ImmutableMultimap.of(
+                        new RelationProperty.RolePlayer(Graql.var("r1"), Graql.var()), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var("r2"), Graql.var()), Label.of("anotherBaseRoleEntity")
+                ),
+                Lists.newArrayList(baseRoleEntity.id(), anotherBaseRoleEntity.id(), subEntity.id()),
+                new ArrayList<>()
+        ){
+            @Override
+            public int[][] exactMatrix() {
+                return new int[][]{
+                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                        {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//7
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
+                        {0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0},//14
+                        {0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}
+                };
+            }
+
+            @Override
+            public int[][] structuralMatrix() {
+                return new int[][]{
+                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                        {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//0
+                        {0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//3
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//7
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},//11
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},//14
+                        {0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1},
+                        {0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1}
+                };
+            }
+
+            @Override
+            public int[][] ruleMatrix() {
+                return new int[][]{
+                        //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//0
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 0, 1, 0},//3
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0},//7
+                        {1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                        {1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                        {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0},
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0},//11
+                        {1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0},
+                        {1, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0},
+                        {1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0},//14
+                        {1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1},
+                        {1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0},
+                        {1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0},
+                        {1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1}
+                };
+            }
+        };
+
         this.differentRelationVariantsWithMetaRoles = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("role"), Graql.var().var()), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("role"), Graql.var().var()), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("role"), new Statement(new Variable().asReturnedVar())), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("role"), new Statement(new Variable().asReturnedVar())), Label.of("anotherBaseRoleEntity")
                 ),
-                Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                Lists.newArrayList(baseRoleEntity.id(), anotherBaseRoleEntity.id(), subEntity.id()),
                 new ArrayList<>()
         ) {
 
@@ -345,10 +442,10 @@ public class GenericSchemaGraph {
 
         this.differentRelationVariantsWithRelationVariable = new RelationPattern(
                 ImmutableMultimap.of(
-                        new Pair<>(Label.of("baseRole1"), Graql.var().var()), Label.of("baseRoleEntity"),
-                        new Pair<>(Label.of("baseRole2"), Graql.var().var()), Label.of("anotherBaseRoleEntity")
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole1"), Graql.var()), Label.of("baseRoleEntity"),
+                        new RelationProperty.RolePlayer(Graql.var().type("baseRole2"), Graql.var()), Label.of("anotherBaseRoleEntity")
                 ),
-                Lists.newArrayList(entity.id(), anotherBaseEntity.id(), subEntity.id()),
+                Lists.newArrayList(baseRoleEntity.id(), anotherBaseRoleEntity.id(), subEntity.id()),
                 Lists.newArrayList(relation.id(), anotherRelation.id())
         ){
             @Override
@@ -419,6 +516,7 @@ public class GenericSchemaGraph {
     public QueryPattern differentResourceVariants(){ return differentResourceVariants;}
     public QueryPattern differentRelationVariants(){ return differentRelationVariants;}
     public QueryPattern differentReflexiveRelationVariants(){ return differentReflexiveRelationVariants;}
+    public QueryPattern differentRelationVariantsWithVariableRoles(){ return differentRelationVariantsWithVariableRoles;}
     public QueryPattern differentRelationVariantsWithMetaRoles(){ return differentRelationVariantsWithMetaRoles;}
     public QueryPattern differentRelationVariantsWithRelationVariable(){ return differentRelationVariantsWithRelationVariable;}
 }
