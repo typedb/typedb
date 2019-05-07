@@ -305,18 +305,14 @@ public abstract class RelationAtom extends IsaAtomBase {
     public boolean isAlphaEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
-        Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(that, UnifierType.EXACT);
-        return !rpMappings.isEmpty()
-                && rpMappings.stream().allMatch(mapping -> mapping.size() == getRelationPlayers().size());
+        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
-        Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(that, UnifierType.STRUCTURAL);
-        return !rpMappings.isEmpty()
-                && rpMappings.stream().allMatch(mapping -> mapping.size() == getRelationPlayers().size());
+        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Memoized

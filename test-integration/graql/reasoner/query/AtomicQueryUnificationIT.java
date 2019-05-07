@@ -1005,6 +1005,9 @@ public class AtomicQueryUnificationIT {
     }
 
     private void singleQueryEquivalence(ReasonerAtomicQuery a, ReasonerAtomicQuery b, boolean queryExpectation, ReasonerQueryEquivalence equiv){
+        if (queryExpectation != equiv.equivalent(a, b)){
+            equiv.equivalent(a, b);
+        }
         assertEquals(equiv.name() + " - Queries:\n" + a.toString() + "\n=?\n" + b.toString(), queryExpectation, equiv.equivalent(a, b));
 
         //check hash additionally if need to be equal
