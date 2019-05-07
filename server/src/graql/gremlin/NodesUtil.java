@@ -97,17 +97,16 @@ public class NodesUtil {
         });
     }
 
+    static List<Fragment> nodeFragmentsWithoutDependencies(Node node) {
+        return node.getFragmentsWithoutDependency().stream()
+                .sorted(Comparator.comparingDouble(Fragment::fragmentCost))
+                .collect(Collectors.toList());
+    }
+
     // convert a Node to a sub-plan, updating dependants' dependency map
-    static List<Fragment> nodeToPlanFragments(Node node, Map<NodeId, Node> nodes, boolean visited) {
+    static List<Fragment> nodeVisitedDependenciesFragments(Node node, Map<NodeId, Node> nodes) {
         List<Fragment> subplan = new LinkedList<>();
-        if (!visited) {
-            node.getFragmentsWithoutDependency().stream()
-                    .min(Comparator.comparingDouble(Fragment::fragmentCost))
-                    .ifPresent(firstNodeFragment -> {
-                        subplan.add(firstNodeFragment);
-                        node.getFragmentsWithoutDependency().remove(firstNodeFragment);
-                    });
-        }
+
         node.getFragmentsWithoutDependency().addAll(node.getFragmentsWithDependencyVisited());
         subplan.addAll(node.getFragmentsWithoutDependency().stream()
                 .sorted(Comparator.comparingDouble(Fragment::fragmentCost))
