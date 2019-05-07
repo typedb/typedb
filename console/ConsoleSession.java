@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
@@ -78,6 +79,8 @@ public class ConsoleSession implements AutoCloseable {
     private final GraknClient client;
     private final GraknClient.Session session;
     private GraknClient.Transaction tx;
+    private final AtomicBoolean terminated = new AtomicBoolean(false);
+
 
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
@@ -121,12 +124,12 @@ public class ConsoleSession implements AutoCloseable {
         tx = session.transaction().write();
         String input;
 
-        while ((input = consoleReader.readLine()) != null) {
+        while ((input = consoleReader.readLine()) != null && !terminated.get()) {
             if (input.equals(EDITOR)) {
                 executeQuery(openTextEditor());
 
             } else if (input.startsWith(LOAD + ' ')) {
-                try{
+                try {
                     input = readFile(Paths.get(unescapeJava(input.substring(LOAD.length() + 1))));
                     executeQuery(input);
                 } catch (NoSuchFileException e) {
@@ -166,6 +169,7 @@ public class ConsoleSession implements AutoCloseable {
     private void executeQuery(String queryString) throws IOException {
         executeQuery(queryString, true);
     }
+
     private void executeQuery(String queryString, boolean catchRuntimeException) throws IOException {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
@@ -196,6 +200,8 @@ public class ConsoleSession implements AutoCloseable {
                     printErr.println("Error: " + e.getClass().getName());
                 }
                 printErr.println("All uncommitted data is cleared");
+                //If console session was terminated by shutdown hook thread, do not try to reopen transaction
+                if (terminated.get()) return;
                 reopenTransaction();
             } else {
                 throw e;
@@ -255,6 +261,7 @@ public class ConsoleSession implements AutoCloseable {
 
     @Override
     public final void close() {
+        terminated.set(true);
         tx.close();
         session.close();
         client.close();
