@@ -27,7 +27,7 @@
         <appender-ref ref="STDOUT"/>
     </root>
 
-    <logger name="grakn.core" level="TRACE" additivity="false">
+    <logger name="grakn.core" level="INFO" additivity="false">
         <appender-ref ref="STDOUT"/>
     </logger>
 
