@@ -280,7 +280,6 @@ public abstract class SemanticCache<
         boolean queryGround = query.isGround();
 
         if (match != null) {
-            LOG.trace("Query Cache match: {}, size: {}", match.query(), match.cachedElement().size());
             boolean answersToGroundQuery = false;
             boolean queryDBComplete = isDBComplete(query);
             if (queryGround) {
