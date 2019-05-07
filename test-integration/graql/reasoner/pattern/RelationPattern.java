@@ -97,18 +97,9 @@ public abstract class RelationPattern extends QueryPattern {
         Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
-        //Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            //Label role = entry.getKey().getKey();
             RelationProperty.RolePlayer rp = entry.getKey();
-
             Statement role = rp.getRole().orElse(null);
-
-            /*
-            Statement roleStatement = rp.getRole().orElse(null);
-            String roleLabel = roleStatement != null? roleStatement.getType().orElse(null) : null;
-            Label role = roleLabel != null? Label.of(roleLabel) : null;
-            */
 
             Statement rolePlayer = new Statement(entry.getKey().getPlayer().var().asReturnedVar());
 
