@@ -430,13 +430,6 @@ public abstract class RelationAtom extends IsaAtomBase {
         return errors;
     }
 
-    @Override
-    public Stream<IdPredicate> getPartialSubstitutions() {
-        Set<Variable> varNames = getVarNames();
-        return getPredicates(IdPredicate.class)
-                .filter(pred -> varNames.contains(pred.getVarName()));
-    }
-
     public Stream<IdPredicate> getRolePredicates(){
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
@@ -852,10 +845,13 @@ public abstract class RelationAtom extends IsaAtomBase {
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
                     boolean typeUnambiguous = parentTypes.size() == 1;
 
+
                     Set<RelationProperty.RolePlayer> childRPsToCheck;
-                    if (parentRoleLabel != null){
+                    if(!childRoles.isEmpty()){
                         Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
-                                tx().getSchemaConcept(parentRoleLabel), typeUnambiguous? parentTypes.iterator().next() : null, childRoles);
+                                tx().getSchemaConcept(parentRoleLabel),
+                                typeUnambiguous ? parentTypes.iterator().next() : null,
+                                childRoles);
                         childRPsToCheck = compatibleRoles.stream()
                                 .filter(childRoleRPMap::containsKey)
                                 .flatMap(role -> childRoleRPMap.get(role).stream())

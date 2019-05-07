@@ -205,7 +205,7 @@ public class ReasonerUtils {
      * @param entryRoles entry set of possible {@link Role}s
      * @return set of playable {@link Role}s defined by type-role parent combination, parent role assumed as possible
      */
-    public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
+    public static Set<Role> compatibleRoles(@Nullable Role parentRole, @Nullable Type parentType, Set<Role> entryRoles) {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
         if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.label()) ){
