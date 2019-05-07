@@ -282,7 +282,7 @@ jobs:
           --targets \
           grakn-kgms:master benchmark:master workbase:master \
           client-java:master client-python:master client-nodejs:master \
-          docs:development examples:development
+          docs:master examples:master
 
   release-approval:
     machine: true

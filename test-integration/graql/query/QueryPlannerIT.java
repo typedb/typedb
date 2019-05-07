@@ -43,6 +43,8 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import java.util.List;
+
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
@@ -300,10 +302,33 @@ public class QueryPlannerIT {
                 var().rel("role1", x).rel("role2", z),
                 var().rel("role1", y).rel("role2", z)
         );
+        // repeat planning step to handle nondeterminism, we may pick different starting points each time
         for (int i = 0; i < 20; i++) {
-            // ensure that any (for now) chosen randomly starting point still generates full traversals with all required fragments
             ImmutableList<Fragment> plan = getPlan(pattern);
             assertEquals(6, plan.size());
+        }
+    }
+
+    @Test
+    public void indexedFragmentsAreListedFirst() {
+        Pattern pattern = and(
+                x.isa(veryRelated),
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var().rel(x).rel(y),
+                y.has(resourceType, "someString"));
+
+        List<Fragment> plan = getPlan(pattern);
+        boolean priorFragmentHasFixedCost = true;
+        for (Fragment fragment : plan) {
+            if (!fragment.hasFixedFragmentCost()) {
+                priorFragmentHasFixedCost = false;
+            } else {
+                // if the current fragment is fixed cost
+                // and the prior one was, it's ok.
+                // if it wasn't, fail the test
+                assertTrue(priorFragmentHasFixedCost);
+            }
         }
     }
 
@@ -394,7 +419,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(1).end());
+        assertEquals(x.var(), plan.get(3).end());
         assertEquals(3L, plan.stream().filter(fragment -> fragment instanceof NeqFragment).count());
 
         //TODO: should uncomment the following after updating cost of out-isa fragment
@@ -409,7 +434,7 @@ public class QueryPlannerIT {
                 y.isa(thingy2),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(2).end());
+        assertEquals(x.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy),
@@ -417,7 +442,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(2).end());
+        assertEquals(x.var(), plan.get(4).end());
 
         pattern = and(
                 x.isa(superType),
@@ -440,7 +465,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(1).end());
+        assertEquals(y.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -448,7 +473,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(x.var(), plan.get(1).end());
+        assertEquals(x.var(), plan.get(3).end());
 
         tx.shard(tx.getEntityType(thingy1).id());
         tx.shard(tx.getEntityType(thingy1).id());
@@ -460,7 +485,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(1).end());
+        assertEquals(y.var(), plan.get(3).end());
 
         pattern = and(
                 x.isa(thingy1),
@@ -468,7 +493,7 @@ public class QueryPlannerIT {
                 z.isa(thingy3),
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
-        assertEquals(y.var(), plan.get(1).end());
+        assertEquals(y.var(), plan.get(3).end());
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {

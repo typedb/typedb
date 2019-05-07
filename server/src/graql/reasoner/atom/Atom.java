@@ -192,11 +192,6 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
-     * @return partial substitutions for this atom (NB: instances)
-     */
-    public Stream<IdPredicate> getPartialSubstitutions() { return Stream.empty();}
-
-    /**
      * @return set of variables that need to be have their roles expanded
      */
     public Set<Variable> getRoleExpansionVariables() { return new HashSet<>();}

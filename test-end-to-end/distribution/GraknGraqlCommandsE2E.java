@@ -169,6 +169,18 @@ public class GraknGraqlCommandsE2E {
         assertThat(output, containsString("Invalid argument:"));
     }
 
+
+    /**
+     * test 'grakn <some-invalid-command>'
+     */
+    @Test
+    public void grakn_whenReceivingInvalidServerCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
+        String output = commandExecutor.command("./grakn", "server", "start", "storag").execute().outputUTF8();
+        assertThat(output, containsString("Usage: grakn server COMMAND\n"));
+    }
+
+
+
     /**
      * Grakn should stop correctly when there are client connections still open
      */
