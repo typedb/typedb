@@ -277,7 +277,7 @@ jobs:
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:sync-dependencies -- --source grakn@0dfc2b687bf69ddd3af04ae57e9dcd11b133e103 --targets grakn-kgms:sync-dependencies-test
+          bazel run @graknlabs_build_tools//ci:sync-dependencies -- --source grakn@f1dc6b5db03029247da0b8822ecbc1aa76de9179 --targets grakn-kgms:sync-dependencies-test
 
   release-approval:
     machine: true
