@@ -27,6 +27,8 @@ import grakn.core.server.session.SessionFactory;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.stream.Collectors;
 
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
  * Grakn RPC Keyspace Service
  */
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
+    private final Logger LOG = LoggerFactory.getLogger(KeyspaceService.class);
 
     private final KeyspaceManager keyspaceStore;
     private SessionFactory sessionFactory;
@@ -58,6 +61,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
             response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();
         } catch (RuntimeException e) {
+            LOG.error("Exception during keyspaces retrieval.", e);
             response.onError(ResponseBuilder.exception(e));
         }
     }
@@ -77,6 +81,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
             response.onCompleted();
 
         } catch (RuntimeException e) {
+            LOG.error("Exception during keyspace deletion.", e);
             response.onError(ResponseBuilder.exception(e));
         }
     }
