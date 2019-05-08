@@ -37,7 +37,7 @@ import java.util.Set;
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
 
-public class DFSTreeTraversal {
+public class DepthFirstTreeTraversal {
 
     static List<Fragment> dfsTraversal(Arborescence<Node> arborescence,
                                            Map<NodeId, Node> nodes,

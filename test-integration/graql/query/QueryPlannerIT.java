@@ -35,6 +35,7 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -44,6 +45,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
@@ -494,6 +497,32 @@ public class QueryPlannerIT {
                 var().rel(x).rel(y).rel(z));
         plan = getPlan(pattern);
         assertEquals(y.var(), plan.get(3).end());
+    }
+
+    @Test
+    public void planIsCreatedDepthFirst() {
+        Pattern pattern = and(
+                z.sub(thingy),
+                x.isa(z),
+                x.rel(var("attrx")),
+                y.isa(z),
+                y.rel(var("attry"))
+        );
+        List<Fragment> plan = getPlan(pattern);
+        List<Variable> varsInFragments = plan.stream().flatMap(fragment -> fragment.vars().stream()).collect(Collectors.toList());
+
+        int zIndex = varsInFragments.indexOf(new Variable("z"));
+        int yIndex = varsInFragments.indexOf(new Variable("y"));
+        int attrYIndex = varsInFragments.indexOf(new Variable("attry"));
+
+
+        int xIndex = varsInFragments.indexOf(new Variable("x"));
+        int attrXIndex = varsInFragments.indexOf(new Variable("attrx"));
+
+        assertTrue(zIndex < yIndex);
+        assertTrue(yIndex < attrYIndex);
+        assertTrue(zIndex < xIndex);
+        assertTrue(xIndex < attrXIndex);
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
