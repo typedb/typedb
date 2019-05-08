@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.unifier;
 
+import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -54,6 +55,14 @@ public interface UnifierComparison {
      * @return true if both types are compatible in terms of type directness
      */
     boolean typeDirectednessCompatibility(Atomic parent, Atomic child);
+
+    /**
+     *
+     * @param parent
+     * @param child
+     * @return
+     */
+    boolean roleCompatibility(Role parent, Role child);
 
     /**
      * @param parent {@link SchemaConcept} of parent expression

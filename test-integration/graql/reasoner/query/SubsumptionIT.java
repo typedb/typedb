@@ -36,6 +36,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
@@ -114,6 +115,18 @@ public class SubsumptionIT {
             assertFalse(child2.subsumes(parent));
         }
     }
+
+    @Test
+    public void test() {
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction("(baseRole1: $x, $r2: $y);"), tx);
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction("($r1: $x, $r2: $y);"), tx);
+
+            assertFalse(parent.subsumes(child));
+            assertTrue(child.subsumes(parent));
+        }
+    }
+
 
     @Test
     public void testSubsumption_differentReflexiveRelationVariants(){
