@@ -33,6 +33,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
@@ -55,13 +56,13 @@ public class DepthFirstTreeTraversal {
 
         Node root = arborescence.getRoot();
 
-        List<Node> reachableNodes = new ArrayList<>();
-        reachableNodes.add(root);
+        Stack<Node> nodeStack = new Stack<>();
+        nodeStack.add(root);
         // expanding from the root until all nodes have been visited
-        while (!reachableNodes.isEmpty()) {
+        while (!nodeStack.isEmpty()) {
 
             // remove the last item off the stack
-            Node nextNode = reachableNodes.remove(reachableNodes.size()-1);
+            Node nextNode = nodeStack.pop();
 
             // add fragments without dependencies first (eg. could be the index fragments)
             nodeFragmentsWithoutDependencies(nextNode).forEach(fragment -> {
@@ -81,7 +82,7 @@ public class DepthFirstTreeTraversal {
             });
 
             if (edgesParentToChild.containsKey(nextNode)) {
-                reachableNodes.addAll(edgesParentToChild.get(nextNode));
+                nodeStack.addAll(edgesParentToChild.get(nextNode));
             }
         }
 
