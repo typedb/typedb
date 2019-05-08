@@ -22,6 +22,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
@@ -31,6 +32,11 @@ import java.util.function.BiFunction;
  * Interface for defining unifier comparisons.
  */
 public interface UnifierComparison {
+
+    /**
+     * @return true if the unifier permits a multi-valued mapping (parent vars can have multiple corresponding child vars)
+     */
+    default boolean allowsNonInjectiveMappings(){ return true;}
 
     /**
      * @return true if types should be inferred when computing unifier
@@ -54,7 +60,11 @@ public interface UnifierComparison {
      * @param child  {@link SchemaConcept} of child expression
      * @return true if {@link Type}s are compatible
      */
-    boolean typeCompatibility(SchemaConcept parent, SchemaConcept child);
+    default boolean typeCompatibility(Set<? extends SchemaConcept> parent, Set<? extends SchemaConcept> child){
+        //checks intra compatibility
+        return !ConceptUtils.areDisjointTypeSets(parent, parent, true)
+                && !ConceptUtils.areDisjointTypeSets(child, child, true);
+    }
 
     /**
      * @param parent {@link Atomic} of parent expression
@@ -90,8 +100,8 @@ public interface UnifierComparison {
 
     default boolean predicateCompatibility(Set<Atomic> parent, Set<Atomic> child, BiFunction<Atomic, Atomic, Boolean> comparison){
         //checks intra compatibility
-        return (child.isEmpty() || child.stream().allMatch(cp -> child.stream().allMatch(cp::isCompatibleWith)))
-                && (parent.isEmpty() || parent.stream().allMatch(cp -> parent.stream().allMatch(cp::isCompatibleWith)));
+        return (child.stream().allMatch(cp -> child.stream().allMatch(cp::isCompatibleWith)))
+                && (parent.stream().allMatch(cp -> parent.stream().allMatch(cp::isCompatibleWith)));
     }
 
     /**

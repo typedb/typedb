@@ -123,9 +123,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
         if (multiUnifier.isEmpty()) return false;
         MultiUnifier inverse = multiUnifier.inverse();
-        return//check whether propagated answers would be complete
-                !inverse.isEmpty() &&
-                        inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
+
+        //check whether propagated answers would be complete
+        boolean propagatedAnswersComplete = !inverse.isEmpty() &&
+                inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()));
+        return propagatedAnswersComplete
                         && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
                         && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
     }

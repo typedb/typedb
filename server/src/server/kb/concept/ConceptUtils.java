@@ -35,9 +35,10 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toSet;
 
 public class ConceptUtils {
+
     /**
      * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return top non-meta {@link SchemaConcept}s from within the provided set
+     * @return top (most general) non-meta {@link SchemaConcept}s from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> top(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -47,7 +48,7 @@ public class ConceptUtils {
 
     /**
      * @param schemaConcepts entry {@link SchemaConcept} set
-     * @return bottom non-meta {@link SchemaConcept}s from within the provided set
+     * @return bottom (most specific) non-meta {@link SchemaConcept}s from within the provided set
      */
     public static <T extends SchemaConcept> Set<T> bottom(Set<T> schemaConcepts) {
         return schemaConcepts.stream()
@@ -87,7 +88,7 @@ public class ConceptUtils {
      * @param direct flag indicating whether only direct types should be considered
      * @return true if child is a subtype of parent
      */
-    public static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
+    private static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
         if (parent == null ) return true;
         if (child == null) return false;
         if (direct) return parent.equals(child);
@@ -100,10 +101,25 @@ public class ConceptUtils {
         return false;
     }
 
+    /**
+     * @param parentTypes set of types defining parent, parent defines type constraints to be fulfilled
+     * @param childTypes set of types defining child
+     * @param direct flag indicating whether only direct types should be considered
+     * @return true if type sets are disjoint - it's possible to find a disjoint pair among parent and child set
+     */
+    public static boolean areDisjointTypeSets(Set<? extends SchemaConcept>  parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
+        return childTypes.isEmpty() && !parentTypes.isEmpty()
+                || parentTypes.stream().anyMatch(parent -> childTypes.stream()
+                .anyMatch(child -> ConceptUtils.areDisjointTypes(parent, child, direct)));
+    }
+
     /** determines disjointness of parent-child types, parent defines the bound on the child
      * @param parent {@link SchemaConcept}
      * @param child {@link SchemaConcept}
-     * @return true if types do not belong to the same type hierarchy, also true if parent is null and false if parent non-null and child null
+     * @param direct flag indicating whether only direct types should be considered
+     * @return true if types do not belong to the same type hierarchy, also:
+     * - true if parent is null and
+     * - false if parent non-null and child null - parents defines a constraint to satisfy
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);

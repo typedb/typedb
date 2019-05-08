@@ -230,8 +230,8 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException("resource types " + attributeTypes + " have different data types");
     }
 
-    public static GraqlQueryException unificationAtomIncompatibility() {
-        return new GraqlQueryException(ErrorMessage.UNIFICATION_ATOM_INCOMPATIBILITY.getMessage());
+    public static GraqlQueryException ambiguousType(Variable var, Set<Type> types) {
+        return new GraqlQueryException(ErrorMessage.AMBIGUOUS_TYPE.getMessage(var, types));
     }
 
     public static GraqlQueryException nonGroundNeqPredicate(ReasonerQuery query) {

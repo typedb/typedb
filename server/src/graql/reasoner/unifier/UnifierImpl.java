@@ -86,6 +86,11 @@ public class UnifierImpl implements Unifier {
     }
 
     @Override
+    public boolean isNonInjective() {
+        return unifier.inverse().asMap().values().stream().anyMatch(s -> s.size() > 1);
+    }
+
+    @Override
     public Set<Variable> keySet() {
         return unifier.keySet();
     }

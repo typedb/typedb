@@ -205,7 +205,7 @@ public class ReasonerUtils {
      * @param entryRoles entry set of possible {@link Role}s
      * @return set of playable {@link Role}s defined by type-role parent combination, parent role assumed as possible
      */
-    public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
+    public static Set<Role> compatibleRoles(@Nullable Role parentRole, @Nullable Type parentType, Set<Role> entryRoles) {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
         if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.label()) ){
@@ -231,10 +231,14 @@ public class ReasonerUtils {
         return compatibleRoles;
     }
 
-    public static Set<Role> compatibleRoles(Type type, Set<Role> relRoles){
-        return compatibleRoles(null, type, relRoles);
+    public static Set<Role> compatibleRoles(Set<Type> types, Set<Role> relRoles){
+        Iterator<Type> typeIterator = types.iterator();
+        Set<Role> roles = relRoles;
+        while(typeIterator.hasNext()){
+            roles = Sets.intersection(roles, compatibleRoles(null, typeIterator.next(), relRoles));
+        }
+        return roles;
     }
-
 
     /**
      * @param childTypes type atoms of child query
