@@ -21,6 +21,8 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.WriteExecutor;
@@ -37,6 +39,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
@@ -119,10 +122,18 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         public void execute(WriteExecutor executor) {
             Type type = executor.getConcept(property.type().var()).asType();
             if (executor.isConceptDefined(var)) {
-                Concept concept = executor.getConcept(var);
-                // we silently "allow" redefining attributes, while actually doing a no-op
+                Concept concept = executor.getConcept(var); // retrieve the existing concept
+                // we silently "allow" redefining attributes, while actually doing a no-op, as long as the type hasn't changed
                 if (!concept.isAttribute()) {
+                    // however, non-attribute still throw exceptions
                     throw GraqlQueryException.insertExistingConcept(executor.printableRepresentation(var), concept);
+                } else if ((type instanceof AttributeType)) {
+                    //
+                    if (! type.subs().map(SchemaConcept::label).collect(Collectors.toSet()).contains(concept.asThing().type().label())) {
+                        //downcasting is bad
+                        throw GraqlQueryException.attributeDowncast(concept.asThing().type(), type);
+                    }
+                    // upcasting we silently accept
                 }
             } else {
                 executor.getBuilder(var).isa(type);

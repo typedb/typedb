@@ -79,6 +79,10 @@ public class GraqlQueryException extends GraknException {
         return new GraqlQueryException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
     }
 
+    public static GraqlQueryException attributeDowncast(Type existingType, Type newType) {
+        return create("Downcasting attributes from type `%s` to type `%s` is not allowed", existingType, newType);
+    }
+
     public static GraqlQueryException relationWithNonRelationType(Label label) {
         return new GraqlQueryException(ErrorMessage.NOT_A_RELATION_TYPE.getMessage(label));
     }
