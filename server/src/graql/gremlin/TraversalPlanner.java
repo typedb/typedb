@@ -116,7 +116,7 @@ public class TraversalPlanner {
             if (subgraphArborescence != null) {
                 // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
                 Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
-                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
+                List<Fragment> subplan = DFSTreeTraversal.dfsTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
             } else {
                 // find and include all the nodes not touched in the MST in the plan
