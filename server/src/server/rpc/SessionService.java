@@ -141,6 +141,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         @Nullable
         private TransactionOLTP tx = null;
+        private String sessionId;
 
         TransactionListener(StreamObserver<Transaction.Res> responseSender, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, Map<String, SessionImpl> openSessions) {
             this.responseSender = responseSender;
@@ -183,6 +184,10 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         @Override
         public void onError(Throwable t) {
             transactionListenerSet.remove(this);
+            // This method is invoked when a client abruptly terminates a connection to the server
+            // so we want to make sure to also close and delete the session to which this transaction is associated to.
+            SessionImpl session = openSessions.remove(sessionId);
+            session.close();
             close(t);
         }
 
@@ -300,7 +305,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                 throw ResponseBuilder.exception(Status.FAILED_PRECONDITION);
             }
 
-            SessionImpl session = openSessions.get(request.getSessionId());
+            sessionId = request.getSessionId();
+            SessionImpl session = openSessions.get(sessionId);
 
             Type type = Type.of(request.getType().getNumber());
             if (type != null && type.equals(Type.WRITE)) {
