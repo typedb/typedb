@@ -986,12 +986,17 @@ public abstract class RelationAtom extends IsaAtomBase {
             Set<Role> parentRoles = parentVarRoleMap.get(parentVar);
             Role role = null;
             if(parentRoleVars.contains(parentVar)){
-                Set<Label> roleLabel = this.getRelationPlayers().stream()
-                        .filter(rp -> rp.getRole().isPresent())
-                        .filter(rp -> rp.getRole().get().var().equals(childVar))
-                        .map(rp -> Label.of(rp.getRole().get().getType().get()))
+                Set<Label> roleLabels = this.getRelationPlayers().stream()
+                        .map(RelationProperty.RolePlayer::getRole)
+                        .flatMap(CommonUtil::optionalToStream)
+                        .filter(roleStatement -> roleStatement.var().equals(childVar))
+                        .map(Statement::getType)
+                        .flatMap(CommonUtil::optionalToStream)
+                        .map(Label::of)
                         .collect(toSet());
-                role = tx().getRole(Iterables.getOnlyElement(roleLabel).getValue());
+                if (!roleLabels.isEmpty()){
+                    role = tx().getRole(Iterables.getOnlyElement(roleLabels).getValue());
+                }
             }
             diff.add(new VariableDefinition(childVar,null, role, bottom(Sets.difference(childRoles, parentRoles)), new HashSet<>()));
         });

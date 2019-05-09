@@ -47,6 +47,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -173,6 +174,50 @@ public class SemanticDifferenceIT {
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
             Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey().inverse(), semanticPair.getValue());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+        }
+    }
+
+    @Test
+    public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+            Role baseRole1 = tx.getRole("baseRole1");
+            Role subRole1 = tx.getRole("subRole1");
+            Role baseRole2 = tx.getRole("baseRole2");
+            Role subRole2 = tx.getRole("subRole2");
+            String base = "($role: $x, $role2: $x) isa binary;";
+            String parentPattern = patternise(base, "$role type " + baseRole1.label() + ";", "$role2 type " + baseRole2.label() + ";");
+            String childPattern = patternise(base, "$role type " + subRole1.label() + ";", "$role2 type " + subRole2.label() + ";");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
+            Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
+
+            SemanticDifference expected = new SemanticDifference(
+                    ImmutableSet.of(
+                            new VariableDefinition(new Variable("x"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
+                    )
+            );
+            assertEquals(expected, semanticPair.getValue());
+            Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey().inverse(), semanticPair.getValue());
+            assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
+        }
+    }
+
+    @Test
+    public void whenChildAndParentHaveVariableRoles_differenceIsCalculatedCorrectly(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+            String base = "($role: $x, $role2: $y) isa binary;";
+            String parentPattern = patternise(base);
+            String childPattern = patternise(base, "$y id V123;");
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+
+            Set<Pair<Unifier, SemanticDifference>> semanticPairs = child.getMultiUnifierWithSemanticDiff(parent);
+
+            SemanticDifference expected = new SemanticDifference(ImmutableSet.of());
+            semanticPairs.stream().map(Pair::getValue).forEach(sd -> assertEquals(expected, sd));
         }
     }
 
