@@ -480,20 +480,6 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
-    public void test() {
-        try (TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            String child = "{ (baseRole1: $x, subRole1: $y); };";
-            String parent = "{ (baseRole1: $y, subRole1: $z);};";
-
-            ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction(child), tx);
-            ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parent), tx);
-
-            MultiUnifier u = childQuery.getMultiUnifier(parentQuery, UnifierType.RULE);
-            MultiUnifier u2 = parentQuery.getMultiUnifier(childQuery, UnifierType.RULE);
-        }
-    }
-
-    @Test
     public void testUnification_RULE_BinaryRelationWithRoleAndTypeHierarchy_BaseRoleParent_middleTypes(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             String parentRelation = "{ (baseRole1: $x, baseRole2: $y); $x isa subRoleEntity; $y isa subRoleEntity; };";
