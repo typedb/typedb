@@ -42,7 +42,6 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.Schema;
@@ -289,7 +288,7 @@ public abstract class AttributeAtom extends Binary{
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+    public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
         if (!(parentAtom instanceof AttributeAtom)) {
             // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
             if (unifierType.equals(UnifierType.RULE)) {

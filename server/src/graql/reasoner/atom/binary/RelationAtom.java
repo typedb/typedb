@@ -58,7 +58,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
@@ -817,12 +816,12 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     /**
      * @param parentAtom reference atom defining the mapping
-     * @param matchType type of match to be performed
+     * @param unifierType type of match to be performed
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
-    private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationAtom parentAtom, UnifierComparison matchType) {
-        SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(matchType.inferTypes());
-        SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(matchType.inferTypes());
+    private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationAtom parentAtom, UnifierType unifierType) {
+        SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(unifierType.inferTypes());
+        SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(unifierType.inferTypes());
 
         //establish compatible castings for each parent casting
         List<Set<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> compatibleMappingsPerParentRP = new ArrayList<>();
@@ -850,32 +849,35 @@ public abstract class RelationAtom extends IsaAtomBase {
                                 }
                                 String childRoleLabel = childRolePattern.getType().isPresent() ? childRolePattern.getType().get() : null;
                                 Role childRole = childRoleLabel != null? tx().getRole(childRoleLabel) : null;
-                                return matchType.roleCompatibility(parentRole, childRole);
+
+                                boolean varCompatibility = unifierType.equivalence() == null
+                                        || parentRolePattern.var().isReturned() == childRolePattern.var().isReturned();
+                                return varCompatibility && unifierType.roleCompatibility(parentRole, childRole);
                             })
                             //check for inter-type compatibility
                             .filter(crp -> {
                                 Variable childVar = crp.getPlayer().var();
                                 Set<Type> childTypes = childVarTypeMap.get(childVar);
-                                return matchType.typeCompatibility(parentTypes, childTypes)
-                                        && parentTypes.stream().allMatch(parentType -> matchType.typePlayability(childQuery, childVar, parentType));
+                                return unifierType.typeCompatibility(parentTypes, childTypes)
+                                        && parentTypes.stream().allMatch(parentType -> unifierType.typePlayability(childQuery, childVar, parentType));
                             })
                             //check for substitution compatibility
                             .filter(crp -> {
                                 Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(toSet());
                                 Set<Atomic> childIds = this.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(toSet());
-                                return matchType.idCompatibility(parentIds, childIds);
+                                return unifierType.idCompatibility(parentIds, childIds);
                             })
                             //check for value predicate compatibility
                             .filter(crp -> {
                                 Set<Atomic> parentVP = parentAtom.getPredicates(prp.getPlayer().var(), ValuePredicate.class).collect(toSet());
                                 Set<Atomic> childVP = this.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(toSet());
-                                return matchType.valueCompatibility(parentVP, childVP);
+                                return unifierType.valueCompatibility(parentVP, childVP);
                             })
                             //check linked resources
                             .filter(crp -> {
                                 Variable parentVar = prp.getPlayer().var();
                                 Variable childVar = crp.getPlayer().var();
-                                return matchType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
+                                return unifierType.attributeCompatibility(parentAtom.getParentQuery(), this.getParentQuery(), parentVar, childVar);
                             })
                             .forEach(compatibleRelationPlayers::add);
 
@@ -905,12 +907,12 @@ public abstract class RelationAtom extends IsaAtomBase {
     }
 
     @Override
-    public Unifier getUnifier(Atom pAtom, UnifierComparison unifierType){
+    public Unifier getUnifier(Atom pAtom, UnifierType unifierType){
         return getMultiUnifier(pAtom, unifierType).getUnifier();
     }
 
     @Override
-    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType) {
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
         Unifier baseUnifier = super.getUnifier(parentAtom, unifierType);
         if (baseUnifier == null){ return MultiUnifierImpl.nonExistent();}
 
