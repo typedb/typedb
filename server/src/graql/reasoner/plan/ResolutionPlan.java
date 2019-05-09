@@ -22,15 +22,9 @@ import com.google.common.collect.ImmutableList;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import graql.lang.statement.Variable;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +39,7 @@ public final class ResolutionPlan {
     public ResolutionPlan(ReasonerQueryImpl q){
         this.query = q;
         this.plan = GraqlTraversalPlanner.plan(query);
+        assert(q.isPositive());
         validatePlan();
     }
 
@@ -65,33 +60,7 @@ public final class ResolutionPlan {
         return query.selectAtoms().allMatch(plan::contains);
     }
 
-    /**
-     * @return true if the plan is valid with respect to provided query - its resolution doesn't lead to any non-ground neq predicates
-     */
-    private boolean isNeqGround(){
-        Set<NeqIdPredicate> nonGroundPredicates = new HashSet<>();
-        Set<Variable> mappedVars = this.query.getAtoms(IdPredicate.class).map(Atomic::getVarName).collect(Collectors.toSet());
-        for(Atom atom : this.plan){
-            mappedVars.addAll(atom.getVarNames());
-            atom.getPredicates(NeqIdPredicate.class)
-                    .forEach(neq -> {
-                        //look for non-local non-ground predicates
-                        if (!mappedVars.containsAll(neq.getVarNames())
-                                && !atom.getVarNames().containsAll(neq.getVarNames())){
-                            nonGroundPredicates.add(neq);
-                        } else{
-                            //if this is ground for this atom but non-ground for another it is ground
-                            if (nonGroundPredicates.contains(neq)) nonGroundPredicates.remove(neq);
-                        }
-                    });
-        }
-        return nonGroundPredicates.isEmpty();
-    }
-
     private void validatePlan() {
-        if (!isNeqGround()) {
-            throw GraqlQueryException.nonGroundNeqPredicate(query);
-        }
         if (!isComplete()){
             throw GraqlQueryException.incompleteResolutionPlan(query);
         }

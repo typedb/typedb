@@ -31,7 +31,7 @@ import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.util.Partition;
 import grakn.core.server.session.TransactionOLTP;
@@ -319,7 +319,7 @@ public class WriteExecutor {
         if (!dependencies.isEmpty()) {
             // This means there must have been a loop. Pick an arbitrary remaining var to display
             Variable var = dependencies.keys().iterator().next().var();
-            throw GraqlQueryException.insertRecursive(printableRepresentation(var));
+            throw GraqlSemanticException.insertRecursive(printableRepresentation(var));
         }
 
         return sorted.build();
@@ -333,12 +333,12 @@ public class WriteExecutor {
      * response to PropertyExecutor#producedVars().
      * For example, a property may call {@code executor.builder(var).isa(type);} in order to provide a type for a var.
      *
-     * @throws GraqlQueryException if the concept in question has already been created
+     * @throws GraqlSemanticException if the concept in question has already been created
      */
     public ConceptBuilder getBuilder(Variable var) {
         return tryBuilder(var).orElseThrow(() -> {
             Concept concept = concepts.get(equivalentVars.componentOf(var));
-            return GraqlQueryException.insertExistingConcept(printableRepresentation(var), concept);
+            return GraqlSemanticException.insertExistingConcept(printableRepresentation(var), concept);
         });
     }
 
@@ -395,7 +395,7 @@ public class WriteExecutor {
 
         LOG.debug("Could not build concept for {}\nconcepts = {}\nconceptBuilders = {}", var, concepts, conceptBuilders);
 
-        throw GraqlQueryException.insertUndefinedVariable(printableRepresentation(var));
+        throw GraqlSemanticException.insertUndefinedVariable(printableRepresentation(var));
     }
 
     Statement printableRepresentation(Variable var) {

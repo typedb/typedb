@@ -21,7 +21,7 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -53,7 +53,7 @@ public class TypeExecutor implements PropertyExecutor.Referrable {
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         SchemaConcept schemaConcept = parent.tx().getSchemaConcept(Label.of(property.name()));
-        if (schemaConcept == null) throw GraqlQueryException.labelNotFound(Label.of(property.name()));
+        if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(Label.of(property.name()));
         return IdPredicate.create(var.asReturnedVar(), Label.of(property.name()), parent);
     }
 
