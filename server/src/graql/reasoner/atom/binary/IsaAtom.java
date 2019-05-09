@@ -29,7 +29,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
@@ -106,7 +106,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         super.checkValid();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isType()) {
-            throw GraqlQueryException.cannotGetInstancesOfNonType(type.label());
+            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
         }
     }
 

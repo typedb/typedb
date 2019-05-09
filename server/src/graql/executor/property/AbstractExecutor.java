@@ -21,7 +21,7 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Concept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -93,7 +93,7 @@ public class AbstractExecutor implements PropertyExecutor.Definable {
             if (concept.isType()) {
                 concept.asType().isAbstract(true);
             } else {
-                throw GraqlQueryException.insertAbstractOnNonType(concept.asSchemaConcept());
+                throw GraqlSemanticException.insertAbstractOnNonType(concept.asSchemaConcept());
             }
         }
     }

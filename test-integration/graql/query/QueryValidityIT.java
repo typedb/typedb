@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -29,7 +29,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 
@@ -113,50 +112,50 @@ public class QueryValidityIT {
         assertThat(tx.execute(Graql.parse(queryString3).asGet()), empty());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentRelationTypeLabelViaVariable_emptyResultReturned() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForInexistentRelationTypeLabelViaVariable_emptyResultReturned() throws GraqlSemanticException {
         String queryString = "match ($x, $y) isa $type; $type type jakas-relacja; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentEntityTypeLabelViaVariable_Throws() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForInexistentEntityTypeLabelViaVariable_Throws() throws GraqlSemanticException {
         String queryString = "match $x isa $type; $type type polok; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentEntityTypeLabel_Throws() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForInexistentEntityTypeLabel_Throws() throws GraqlSemanticException {
         String queryString = "match $x isa polok; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForMismatchedResourceTypeLabel_Throws() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForMismatchedResourceTypeLabel_Throws() throws GraqlSemanticException {
         String queryString = "match $x has binary $r; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForInexistentRelationTypeLabel_Throws() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForInexistentRelationTypeLabel_Throws() throws GraqlSemanticException {
         String queryString = "match ($x, $y) isa jakas-relacja; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForMismatchedRelationTypeLabel_Throws() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForMismatchedRelationTypeLabel_Throws() throws GraqlSemanticException {
         String queryString = "match ($x, $y) isa name; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
-    @Test (expected = GraqlQueryException.class)
-    public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlQueryException{
+    @Test (expected = GraqlSemanticException.class)
+    public void whenQueryingForRelationWithNonExistentRoles_Throws() throws GraqlSemanticException {
         String queryString = "match (rola: $x, rola: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());
     }
 
     // this should be caught at the parser level
-    @Test (expected = GraqlQueryException.class)
+    @Test (expected = GraqlSemanticException.class)
     public void whenQueryingForRelationWithNonRoleRoles_Throws() throws GraqlException {
         String queryString = "match (entity: $x, entity: $y) isa relation; get;";
         tx.execute(Graql.parse(queryString).asGet());

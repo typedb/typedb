@@ -23,7 +23,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -86,7 +86,7 @@ public class QueryErrorIT {
 
     @Test
     public void testErrorNonExistentConceptType() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("film");
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(var("x").isa("film")));
@@ -94,7 +94,7 @@ public class QueryErrorIT {
 
     @Test
     public void testErrorNotARole() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("role"), containsString("person"), containsString("isa person")));
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(var("x").isa("movie"), var().rel("person", "y").rel("x")));
@@ -102,27 +102,27 @@ public class QueryErrorIT {
 
     @Test
     public void testErrorNonExistentResourceType() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("thingy");
         tx.execute(Graql.match(var("x").has("thingy", "value")).delete("x"));
     }
 
     @Test @Ignore // TODO: enable this properly after fixing issue #4664
     public void whenMatchingWildcardHas_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         tx.execute(Graql.match(type("thing").has(var("x"))).get());
     }
 
     @Test
     public void whenMatchingHasWithNonExistentType_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.labelNotFound(Label.of("heffalump")).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.labelNotFound(Label.of("heffalump")).getMessage());
         tx.execute(Graql.match(var("x").has("heffalump", "foo")).get());
     }
 
     @Test
     public void testErrorNotARelation() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(
                 containsString("relation"), containsString("movie"), containsString("separate"), containsString(";")));
         //noinspection ResultOfMethodCallIgnored
@@ -131,7 +131,7 @@ public class QueryErrorIT {
 
     @Test
     public void testErrorInvalidNonExistentRole() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(ErrorMessage.NOT_A_ROLE_TYPE.getMessage("character-in-production", "character-in-production"));
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(var().isa("has-cast").rel("character-in-production", "x")));
@@ -149,7 +149,7 @@ public class QueryErrorIT {
 
     @Test
     public void whenSpecifyingMultipleSubs_ThrowIncludingInformationAboutTheConceptAndBothSupers() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(
                 containsString("abc"), containsString("sub"), containsString("person"), containsString("has-cast")
         ));
@@ -159,7 +159,7 @@ public class QueryErrorIT {
     @Test
     public void testErrorHasGenreQuery() {
         // 'has genre' is not allowed because genre is an entity type
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage("genre"));
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(var("x").isa("movie").has("genre", "Drama")));
@@ -202,16 +202,16 @@ public class QueryErrorIT {
 
     @Test
     public void testExceptionInstanceOfRoleType() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("actor")).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.cannotGetInstancesOfNonType(Label.of("actor")).getMessage());
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(var("x").isa("actor")));
     }
 
     @Test
     public void testExceptionInstanceOfRule() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.cannotGetInstancesOfNonType(Label.of("rule")).getMessage());
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(var("x").isa("rule")));
     }
@@ -241,7 +241,7 @@ public class QueryErrorIT {
         Thing movie = tx.getEntityType("movie").instances().iterator().next();
         Type person = tx.getEntityType("person");
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(containsString("person"));
 
         tx.execute(Graql.match(var("x").id(movie.id().getValue())).insert(var("x").isa(type(person.label().getValue()))));

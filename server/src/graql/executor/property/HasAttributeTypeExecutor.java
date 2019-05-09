@@ -24,7 +24,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -66,7 +66,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
         // TODO: this may the cause of issue #4664
         String type = attributeType.getType().orElseThrow(
-                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
+                () -> GraqlSemanticException.noLabelSpecifiedForHas(attributeType.var())
         );
 
         Statement role = Graql.type(Graql.Token.Type.ROLE);

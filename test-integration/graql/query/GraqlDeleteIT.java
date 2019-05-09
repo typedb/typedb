@@ -22,7 +22,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
@@ -246,7 +246,7 @@ public class GraqlDeleteIT {
         boolean exists;
         try{
             exists = !tx.execute(Graql.match(var().id(id.getValue()))).isEmpty();
-        } catch (GraqlQueryException e){
+        } catch (GraqlSemanticException e){
             exists = false;
         }
         return exists;
@@ -322,8 +322,8 @@ public class GraqlDeleteIT {
     public void whenDeletingASchemaConcept_Throw() {
         SchemaConcept newType = tx.execute(Graql.define(x.type("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
 
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.deleteSchemaConcept(newType).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
         tx.execute(Graql.match(x.type("new-type")).delete(x.var()));
     }
 

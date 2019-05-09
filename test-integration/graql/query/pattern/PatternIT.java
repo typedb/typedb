@@ -21,7 +21,7 @@ package grakn.core.graql.query.pattern;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
@@ -283,7 +283,7 @@ public class PatternIT {
     @Test
     public void testStatementsWithoutPropertyThrows() {
         // empty `match $x; get;` not allowed
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Require statement to have at least one property");
         List<ConceptMap> answers = tx.execute(Graql.match(var("x")).get());
     }
@@ -297,12 +297,12 @@ public class PatternIT {
     @Test
     public void testUnboundComparisonThrows() {
         // value comparison
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Variables used in comparisons cannot be unbound");
         List<ConceptMap> answers = tx.execute(Graql.match(var("x").neq(var("y"))).get());
 
         // concept comparison
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Variables used in comparisons cannot be unbound");
         answers = tx.execute(Graql.match( var("y").not("x")).get());
     }
