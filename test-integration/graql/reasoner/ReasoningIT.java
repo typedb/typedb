@@ -711,6 +711,12 @@ public class ReasoningIT {
                 assertEquals(12, answers3.size());
 
                 List<ConceptMap> answers4 = tx.execute(Graql.parse(queryString4).asGet());
+                assertEquals(answers3.stream()
+                        .filter(ans -> ans.get("a").asThing()
+                                .attributes(tx.getAttributeType("name"))
+                                .anyMatch(at -> at.value().equals("b")))
+                        .count(),
+                        answers4.size());
                 assertEquals(4, answers4.size());
             }
         }
