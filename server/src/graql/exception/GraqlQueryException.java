@@ -41,6 +41,10 @@ public class GraqlQueryException  extends GraknException {
     @Override
     public String getName() { return NAME; }
 
+    public static GraqlQueryException maxIterationsReached(Class<?> clazz) {
+        return new GraqlQueryException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
+    }
+
     public static GraqlQueryException ambiguousType(Variable var, Set<Type> types) {
         return new GraqlQueryException(ErrorMessage.AMBIGUOUS_TYPE.getMessage(var, types));
     }

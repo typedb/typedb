@@ -205,10 +205,6 @@ public class GraqlSemanticException extends GraknException {
         return new GraqlSemanticException(ErrorMessage.UNKNOWN_AGGREGATE.getMessage(name));
     }
 
-    public static GraqlSemanticException maxIterationsReached(Class<?> clazz) {
-        return new GraqlSemanticException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
-    }
-
     public static GraqlSemanticException statisticsAttributeTypesNotSpecified() {
         return new GraqlSemanticException(ErrorMessage.ATTRIBUTE_TYPE_NOT_SPECIFIED.getMessage());
     }
