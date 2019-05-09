@@ -29,6 +29,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -550,6 +551,19 @@ public class QueryCacheIT {
             assertTrue(query.isCacheComplete());
             Set<ConceptMap> answers = query.resolve(new HashSet<>(), query.requiresReiteration()).collect(toSet());
             assertEquals(preFetchCache, getCacheContent(tx));
+        }
+    }
+
+    @Test
+    public void whenResolvingQueryWithVariableRoles_roleExpansionAnswersAreCached(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("($r: $x) isa binary-symmetric;"), tx);
+
+            Set<ConceptMap> answers = query.resolve().collect(toSet());
+            Set<ConceptMap> cachedAnswers = tx.queryCache().getAnswers(query);
+            assertTrue(answers.stream().anyMatch(ans -> ans.explanation().isRuleExplanation()));
+            assertTrue(answers.stream().anyMatch(ans -> Schema.MetaSchema.isMetaLabel(ans.get("r").asRole().label())));
+            assertEquals(answers,cachedAnswers);
         }
     }
 
