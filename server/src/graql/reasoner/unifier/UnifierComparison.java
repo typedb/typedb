@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.unifier;
 
+import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -56,6 +57,19 @@ public interface UnifierComparison {
     boolean typeDirectednessCompatibility(Atomic parent, Atomic child);
 
     /**
+     * Does compatibility comparison between a parent-child role pair.
+     * NB: in contrast to typeCompatibility, roles in rules have INSERT semantics - have strict direct types.
+     *
+     * @param parent role
+     * @param child role
+     * @return true if {@link Type}s are compatible
+     */
+    boolean roleCompatibility(Role parent, Role child);
+
+    /**
+     * Does compatibility comparison between a parent-child type set pair.
+     * NB: Because types are defined in the when part, types have MATCH semantics - their types include relevant hierarchy parts.
+     *
      * @param parent {@link SchemaConcept} of parent expression
      * @param child  {@link SchemaConcept} of child expression
      * @return true if {@link Type}s are compatible
