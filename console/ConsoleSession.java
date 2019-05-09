@@ -64,7 +64,9 @@ public class ConsoleSession implements AutoCloseable {
     private static final String ANSI_RESET = "\u001B[0m";
 
     private static final String HISTORY_FILE = StandardSystemProperty.USER_HOME.value() + "/.grakn-console-history";
-    private static final String EDITOR_DEFAULT = "vim";
+    private static final String UNIX_EDITOR_DEFAULT = "vim";
+    private static final String WINDOWS_EDITOR_DEFAULT = "notepad";
+
     private static final String EDITOR_FILE = "/grakn-console-editor.gql";
 
     private final boolean infer;
@@ -126,7 +128,7 @@ public class ConsoleSession implements AutoCloseable {
                 executeQuery(openTextEditor());
 
             } else if (input.startsWith(LOAD + ' ')) {
-                try{
+                try {
                     input = readFile(Paths.get(unescapeJava(input.substring(LOAD.length() + 1))));
                     executeQuery(input);
                 } catch (NoSuchFileException e) {
@@ -166,6 +168,7 @@ public class ConsoleSession implements AutoCloseable {
     private void executeQuery(String queryString) throws IOException {
         executeQuery(queryString, true);
     }
+
     private void executeQuery(String queryString, boolean catchRuntimeException) throws IOException {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
@@ -273,17 +276,28 @@ public class ConsoleSession implements AutoCloseable {
      * @return the string written in the editor
      */
     private String openTextEditor() throws IOException, InterruptedException {
-        String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(EDITOR_DEFAULT);
         File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + EDITOR_FILE);
         tempFile.createNewFile();
 
-        // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
-        ProcessBuilder builder = new ProcessBuilder(
-                "/bin/bash", "-c",
-                editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath()
-        );
+        ProcessBuilder builder;
+
+        if (isWindows()) {
+            String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(WINDOWS_EDITOR_DEFAULT);
+            builder = new ProcessBuilder("cmd", "/c", editor + " " + tempFile.getAbsolutePath());
+        } else {
+            String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(UNIX_EDITOR_DEFAULT);
+            // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
+            builder = new ProcessBuilder("/bin/bash", "-c", editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath());
+        }
+
 
         builder.start().waitFor();
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
+
+
+    private boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
 }
