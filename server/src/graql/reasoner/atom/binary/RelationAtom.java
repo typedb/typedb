@@ -820,7 +820,6 @@ public abstract class RelationAtom extends IsaAtomBase {
      * @return set of possible COMPLETE mappings between this (child) and parent relation players
      */
     private Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> getRelationPlayerMappings(RelationAtom parentAtom, UnifierComparison matchType) {
-        Multimap<Role, RelationProperty.RolePlayer> childRoleRPMap = this.getRoleRelationPlayerMap();
         SetMultimap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(matchType.inferTypes());
         SetMultimap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(matchType.inferTypes());
 
@@ -829,36 +828,29 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (parentAtom.getRelationPlayers().size() > this.getRelationPlayers().size()) return new HashSet<>();
 
         ReasonerQuery childQuery = getParentQuery();
-        Set<Role> childRoles = childRoleRPMap.keySet();
         parentAtom.getRelationPlayers()
                 .forEach(prp -> {
                     Statement parentRolePattern = prp.getRole().orElse(null);
                     if (parentRolePattern == null){
-                        throw GraqlQueryException.rolePatternAbsent(this);
+                        throw GraqlQueryException.rolePatternAbsent(parentAtom);
                     }
-                    Label parentRoleLabel = parentRolePattern.getType().isPresent()? Label.of(parentRolePattern.getType().get()) : null;
-
+                    String parentRoleLabel = parentRolePattern.getType().isPresent()? parentRolePattern.getType().get() : null;
+                    Role parentRole = parentRoleLabel != null? tx().getRole(parentRoleLabel) : null;
                     Variable parentRolePlayer = prp.getPlayer().var();
                     Set<Type> parentTypes = parentVarTypeMap.get(parentRolePlayer);
-                    boolean typeUnambiguous = parentTypes.size() == 1;
 
-
-                    Set<RelationProperty.RolePlayer> childRPsToCheck;
-                    if(!childRoles.isEmpty()){
-                        Set<Role> compatibleRoles = ReasonerUtils.compatibleRoles(
-                                tx().getSchemaConcept(parentRoleLabel),
-                                typeUnambiguous ? parentTypes.iterator().next() : null,
-                                childRoles);
-                        childRPsToCheck = compatibleRoles.stream()
-                                .filter(childRoleRPMap::containsKey)
-                                .flatMap(role -> childRoleRPMap.get(role).stream())
-                                .collect(toSet());
-                    } else {
-                        childRPsToCheck = new HashSet<>(this.getRelationPlayers());
-                    }
-
-                    List<RelationProperty.RolePlayer> compatibleRelationPlayers = new ArrayList<>();
-                    childRPsToCheck.stream()
+                    Set<RelationProperty.RolePlayer> compatibleRelationPlayers = new HashSet<>();
+                    this.getRelationPlayers().stream()
+                            //check for role compatibility
+                            .filter(crp -> {
+                                Statement childRolePattern = crp.getRole().orElse(null);
+                                if (childRolePattern == null){
+                                    throw GraqlQueryException.rolePatternAbsent(this);
+                                }
+                                String childRoleLabel = childRolePattern.getType().isPresent() ? childRolePattern.getType().get() : null;
+                                Role childRole = childRoleLabel != null? tx().getRole(childRoleLabel) : null;
+                                return matchType.roleCompatibility(parentRole, childRole);
+                            })
                             //check for inter-type compatibility
                             .filter(crp -> {
                                 Variable childVar = crp.getPlayer().var();
