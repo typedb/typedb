@@ -115,7 +115,7 @@ public abstract class QueryCacheBase<
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */
-    public CacheEntry<Q, SE> getEntry(Q query) {
+    CacheEntry<Q, SE> getEntry(Q query) {
         return cache.get(queryToKey(query));
     }
 

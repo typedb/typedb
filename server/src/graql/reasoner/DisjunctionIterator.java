@@ -53,11 +53,6 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
     public DisjunctionIterator(MatchClause matchClause, TransactionOLTP tx) {
         this.tx = tx;
-        //clear cache for now so that it only applies to this disjunction
-        tx.queryCache().clear();
-
-
-
         int conjunctionIterSpanId = ServerTracing.startScopedChildSpan("DisjunctionIterator() create DNF, conjunction iterator");
 
         this.conjIterator = matchClause.getPatterns().getNegationDNF().getPatterns().stream().iterator();
