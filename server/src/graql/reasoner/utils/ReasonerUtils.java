@@ -35,7 +35,7 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Utiliy class providing useful functionalities.
+ * Utility class providing useful functionalities.
  * </p>
  *
  *
@@ -246,7 +246,7 @@ public class ReasonerUtils {
      * @param childParentUnifier unifier to unify child with parent
      * @return combined unifier for type atoms
      */
-    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierComparison unifierType){
+    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierType unifierType){
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Variable childVarName = childType.getVarName();

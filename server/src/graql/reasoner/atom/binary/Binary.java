@@ -32,8 +32,8 @@ import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
@@ -178,7 +178,7 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+    public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
         boolean inferTypes = unifierType.inferTypes();
         Variable childVarName = this.getVarName();
         Variable parentVarName = parentAtom.getVarName();

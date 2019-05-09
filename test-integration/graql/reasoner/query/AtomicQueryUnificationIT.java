@@ -497,6 +497,26 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_RelationsWithVariableRolesAndPotentialTypes(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            String query = "{ (baseRole1: $x, baseRole2: $y);};";
+            String potentialEquivalent = "{ ($role: $u, baseRole2: $v);$role type baseRole1;};";
+
+            unification(query, potentialEquivalent, false, UnifierType.EXACT, tx);
+            unification(potentialEquivalent, query, false, UnifierType.EXACT, tx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL, tx);
+            unification(potentialEquivalent, query, false, UnifierType.STRUCTURAL, tx);
+
+            unification(query, potentialEquivalent, true, UnifierType.RULE, tx);
+            unification(potentialEquivalent, query, true, UnifierType.RULE, tx);
+
+            unification(query, potentialEquivalent, true, UnifierType.SUBSUMPTIVE, tx);
+            unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, tx);
+        }
+    }
+
+    @Test
     public void testUnification_differentRelationVariants_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
@@ -922,7 +942,7 @@ public class AtomicQueryUnificationIT {
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
-        if (unifierExists && unifierType != UnifierType.RULE){
+        if (unifierExists && unifierType.equivalence() != null){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
 
             assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
