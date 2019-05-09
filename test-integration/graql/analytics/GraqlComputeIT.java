@@ -30,7 +30,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
@@ -128,8 +128,8 @@ public class GraqlComputeIT {
 
     @Test
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
-        expectedEx.expect(GraqlQueryException.class);
-        expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("rule")).getMessage());
+        expectedEx.expect(GraqlSemanticException.class);
+        expectedEx.expectMessage(GraqlSemanticException.labelNotFound(Label.of("rule")).getMessage());
         try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().count().in("rule", "thing"));
         }
@@ -137,8 +137,8 @@ public class GraqlComputeIT {
 
     @Test
     public void testSubgraphContainingRoleDoesNotBreakAnalytics() {
-        expectedEx.expect(GraqlQueryException.class);
-        expectedEx.expectMessage(GraqlQueryException.labelNotFound(Label.of("role")).getMessage());
+        expectedEx.expect(GraqlSemanticException.class);
+        expectedEx.expectMessage(GraqlSemanticException.labelNotFound(Label.of("role")).getMessage());
         try (TransactionOLTP tx = session.transaction().read()) {
             tx.execute(Graql.compute().count().in("role"));
         }
@@ -201,14 +201,14 @@ public class GraqlComputeIT {
         }
     }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlSemanticException.class)
     public void testInvalidTypeWithStatistics() {
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("compute sum of thingy;").asComputeStatistics());
         }
     }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlSemanticException.class)
     public void testInvalidTypeWithDegree() {
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("compute centrality of thingy, using degree;").asComputeCentrality());
@@ -304,7 +304,7 @@ public class GraqlComputeIT {
         }
     }
 
-    @Test(expected = GraqlQueryException.class)
+    @Test(expected = GraqlSemanticException.class)
     public void testNonResourceTypeAsSubgraphForAnalytics() throws InvalidKBException {
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.putEntityType(thingy);

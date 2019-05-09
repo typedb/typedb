@@ -19,7 +19,7 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -117,7 +117,7 @@ public interface PropertyExecutor {
         if (executor instanceof Definable) {
             return (Definable) executor;
         } else {
-            throw GraqlQueryException.defineUnsupportedProperty(property.keyword());
+            throw GraqlSemanticException.defineUnsupportedProperty(property.keyword());
         }
     }
 
@@ -127,7 +127,7 @@ public interface PropertyExecutor {
         if (executor instanceof Insertable) {
             return (Insertable) executor;
         } else {
-            throw GraqlQueryException.insertUnsupportedProperty(property.keyword());
+            throw GraqlSemanticException.insertUnsupportedProperty(property.keyword());
         }
     }
 

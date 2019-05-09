@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -142,7 +142,7 @@ public class CorenessVertexProgram extends GraknVertexProgram<String> {
 
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: {}", MAX_ITERATION);
-            throw GraqlQueryException.maxIterationsReached(this.getClass());
+            throw GraqlSemanticException.maxIterationsReached(this.getClass());
         }
 
         if (memory.<Boolean>get(PERSIST_CORENESS)) {

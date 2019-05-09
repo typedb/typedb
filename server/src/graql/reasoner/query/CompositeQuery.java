@@ -26,7 +26,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -70,7 +70,7 @@ public class CompositeQuery implements ResolvableQuery {
     final private Set<ResolvableQuery> complementQueries;
     final private TransactionOLTP tx;
 
-    CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) throws GraqlQueryException{
+    CompositeQuery(Conjunction<Pattern> pattern, TransactionOLTP tx) throws GraqlSemanticException {
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
                         .filter(p -> !p.isNegation())
@@ -86,7 +86,7 @@ public class CompositeQuery implements ResolvableQuery {
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
-            throw GraqlQueryException.unsafeNegationBlock(this);
+            throw GraqlSemanticException.unsafeNegationBlock(this);
         }
     }
 
@@ -161,7 +161,7 @@ public class CompositeQuery implements ResolvableQuery {
                 .map(p -> {
                     Set<Conjunction<Pattern>> patterns = p.getNegationDNF().getPatterns();
                     if (p.getNegationDNF().getPatterns().size() != 1){
-                        throw GraqlQueryException.disjunctiveNegationBlock();
+                        throw GraqlSemanticException.disjunctiveNegationBlock();
                     }
                     return Iterables.getOnlyElement(patterns);
                 })
@@ -188,7 +188,7 @@ public class CompositeQuery implements ResolvableQuery {
             if(!body.isPositive() && complementQueries.stream().noneMatch(ReasonerQuery::isPositive)){
                 errors.add(ErrorMessage.VALIDATION_RULE_NESTED_NEGATION.getMessage(rule.label()));
             }
-        } catch (GraqlQueryException e) {
+        } catch (GraqlSemanticException e) {
             errors.add(ErrorMessage.VALIDATION_RULE_INVALID.getMessage(rule.label(), e.getMessage()));
         }
         return errors;

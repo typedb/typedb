@@ -31,7 +31,7 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.exception.GraqlCheckedException;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
@@ -152,7 +152,7 @@ public class QueryExecutor {
                 .filter(statement -> statement.properties().size() == 0)
                 .collect(toList());
         if (statementsWithoutProperties.size() != 0) {
-            throw GraqlQueryException.matchWithoutAnyProperties(statementsWithoutProperties.get(0));
+            throw GraqlSemanticException.matchWithoutAnyProperties(statementsWithoutProperties.get(0));
         }
 
         validateVarVarComparisons(negationDNF);
@@ -166,7 +166,7 @@ public class QueryExecutor {
                     .flatMap(p -> p.getPatterns().stream())
                     .anyMatch(Pattern::isNegation);
             if (containsNegation) {
-                throw GraqlQueryException.usingNegationWithReasoningOff(matchClause.getPatterns());
+                throw GraqlSemanticException.usingNegationWithReasoningOff(matchClause.getPatterns());
             }
         }
     }
@@ -200,7 +200,7 @@ public class QueryExecutor {
         // ensure variables used in var-var comparisons are used elsewhere too
         Set<Variable> unboundComparisonVariables = Sets.difference(varVarComparisons, notVarVarComparisons);
         if (!unboundComparisonVariables.isEmpty()) {
-            throw GraqlQueryException.unboundComparisonVariables(unboundComparisonVariables);
+            throw GraqlSemanticException.unboundComparisonVariables(unboundComparisonVariables);
         }
     }
 
@@ -231,7 +231,7 @@ public class QueryExecutor {
         for (Variable var : vars) {
             Element element = elements.get(var.symbol());
             if (element == null) {
-                throw GraqlQueryException.unexpectedResult(var);
+                throw GraqlSemanticException.unexpectedResult(var);
             } else {
                 Concept result;
                 if (element instanceof Vertex) {
@@ -362,7 +362,7 @@ public class QueryExecutor {
         conceptsToDelete.forEach(concept -> {
             // a concept is either a schema concept or a thing
             if (concept.isSchemaConcept()) {
-                throw GraqlQueryException.deleteSchemaConcept(concept.asSchemaConcept());
+                throw GraqlSemanticException.deleteSchemaConcept(concept.asSchemaConcept());
             } else if (concept.isThing()) {
                 try {
                     // if it's not inferred, we can delete it

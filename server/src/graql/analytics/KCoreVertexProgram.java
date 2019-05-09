@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Iterators;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.server.kb.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
@@ -234,7 +234,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
 
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: {}", MAX_ITERATION);
-            throw GraqlQueryException.maxIterationsReached(this.getClass());
+            throw GraqlSemanticException.maxIterationsReached(this.getClass());
         }
 
         if (memory.<Boolean>get(CONNECTED_COMPONENT_STARTED)) {

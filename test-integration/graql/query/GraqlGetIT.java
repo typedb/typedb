@@ -23,7 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
@@ -430,7 +430,7 @@ public class GraqlGetIT {
 
     @Test
     public void testEmptyMatchThrows() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(Matchers.containsString("at least one property"));
         tx.execute(Graql.match(var()).get());
     }

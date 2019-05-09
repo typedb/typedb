@@ -27,6 +27,7 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -202,7 +203,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         }
 
         private Statement getRole(RelationProperty.RolePlayer relationPlayer) {
-            return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
+            return relationPlayer.getRole().orElseThrow(GraqlSemanticException::insertRolePlayerWithoutRoleType);
         }
     }
 }

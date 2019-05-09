@@ -19,7 +19,7 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -59,7 +59,7 @@ public class ThenExecutor implements PropertyExecutor.Definable {
     @Override
     public Set<PropertyExecutor.Writer> undefineExecutors() {
         // TODO: Fix this so that Undefining ThenProperty behaves symmetrically to Defining ThenProperty
-        throw GraqlQueryException.defineUnsupportedProperty(property.keyword());
+        throw GraqlSemanticException.defineUnsupportedProperty(property.keyword());
     }
 
     private class DefineThen implements PropertyExecutor.Writer {

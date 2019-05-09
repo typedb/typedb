@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import java.util.Collections;
 import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -96,7 +96,7 @@ public class ConnectedComponentsVertexProgram extends GraknVertexProgram<String>
         }
         if (memory.getIteration() == MAX_ITERATION) {
             LOGGER.debug("Reached Max Iteration: {}", MAX_ITERATION);
-            throw GraqlQueryException.maxIterationsReached(this.getClass());
+            throw GraqlSemanticException.maxIterationsReached(this.getClass());
         }
 
         memory.set(VOTE_TO_HALT, true);

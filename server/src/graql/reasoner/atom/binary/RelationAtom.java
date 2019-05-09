@@ -44,6 +44,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
@@ -172,7 +173,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                 .forEach(roleId -> {
                     SchemaConcept schemaConcept = tx().getSchemaConcept(roleId);
                     if (schemaConcept == null || !schemaConcept.isRole()) {
-                        throw GraqlQueryException.invalidRoleLabel(roleId);
+                        throw GraqlSemanticException.invalidRoleLabel(roleId);
                     }
                 });
     }
@@ -182,7 +183,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         super.checkValid();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isRelationType()){
-            throw GraqlQueryException.relationWithNonRelationType(type.label());
+            throw GraqlSemanticException.relationWithNonRelationType(type.label());
         }
         checkPattern();
     }

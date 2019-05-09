@@ -60,7 +60,7 @@ import grakn.core.graql.analytics.StatisticsMapReduce;
 import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -234,18 +234,18 @@ class ComputeExecutor {
         AttributeType.DataType<?> dataType = null;
         for (Type type : targetTypes(query)) {
             // check if the selected type is a attribute type
-            if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.label());
+            if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
             AttributeType<?> attributeType = type.asAttributeType();
             if (dataType == null) {
                 // check if the attribute type has data-type LONG or DOUBLE
                 dataType = attributeType.dataType();
                 if (!dataType.equals(AttributeType.DataType.LONG) && !dataType.equals(AttributeType.DataType.DOUBLE)) {
-                    throw GraqlQueryException.attributeMustBeANumber(dataType, attributeType.label());
+                    throw GraqlSemanticException.attributeMustBeANumber(dataType, attributeType.label());
                 }
             } else {
                 // check if all the attribute types have the same data-type
                 if (!dataType.equals(attributeType.dataType())) {
-                    throw GraqlQueryException.attributesWithDifferentDataTypes(query.of());
+                    throw GraqlSemanticException.attributesWithDifferentDataTypes(query.of());
                 }
             }
         }
@@ -334,7 +334,7 @@ class ComputeExecutor {
         ConceptId fromID = ConceptId.of(query.from());
         ConceptId toID = ConceptId.of(query.to());
 
-        if (!scopeContainsInstances(query, fromID, toID)) throw GraqlQueryException.instanceDoesNotExist();
+        if (!scopeContainsInstances(query, fromID, toID)) throw GraqlSemanticException.instanceDoesNotExist();
         if (fromID.equals(toID)) return Stream.of(new ConceptList(ImmutableList.of(fromID)));
 
         Set<LabelId> scopedLabelIds = convertLabelsToIds(scopeTypeLabels(query));
@@ -389,7 +389,7 @@ class ComputeExecutor {
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
-                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
+                        if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::label)
@@ -423,7 +423,7 @@ class ComputeExecutor {
     private Stream<ConceptSetMeasure> runComputeCoreness(GraqlCompute.Centrality query) {
         long k = query.where().minK().get();
 
-        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+        if (k < 2L) throw GraqlSemanticException.kValueSmallerThanTwo();
 
         Set<Label> targetTypeLabels;
 
@@ -435,8 +435,8 @@ class ComputeExecutor {
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
                         Type type = tx.getSchemaConcept(typeLabel);
-                        if (type == null) throw GraqlQueryException.labelNotFound(typeLabel);
-                        if (type.isRelationType()) throw GraqlQueryException.kCoreOnRelationType(typeLabel);
+                        if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
+                        if (type.isRelationType()) throw GraqlSemanticException.kCoreOnRelationType(typeLabel);
                         return type.subs();
                     })
                     .map(SchemaConcept::label)
@@ -489,7 +489,7 @@ class ComputeExecutor {
         if (query.where().contains().isPresent()) {
             ConceptId conceptId = ConceptId.of(query.where().contains().get());
             if (!scopeContainsInstances(query, conceptId)) {
-                throw GraqlQueryException.instanceDoesNotExist();
+                throw GraqlSemanticException.instanceDoesNotExist();
             }
             vertexProgram = new ConnectedComponentVertexProgram(conceptId);
         } else {
@@ -520,7 +520,7 @@ class ComputeExecutor {
     private Stream<ConceptSet> runComputeKCore(GraqlCompute.Cluster query) {
         long k = query.where().k().get();
 
-        if (k < 2L) throw GraqlQueryException.kValueSmallerThanTwo();
+        if (k < 2L) throw GraqlSemanticException.kValueSmallerThanTwo();
 
         if (!scopeContainsInstance(query)) {
             return Stream.empty();
@@ -656,15 +656,15 @@ class ComputeExecutor {
      */
     private ImmutableSet<Type> targetTypes(Computable.Targetable<?> query) {
         if (query.of().isEmpty()) {
-            throw GraqlQueryException.statisticsAttributeTypesNotSpecified();
+            throw GraqlSemanticException.statisticsAttributeTypesNotSpecified();
         }
 
         return query.of().stream()
                 .map(t -> {
                     Label label = Label.of(t);
                     Type type = tx.getSchemaConcept(label);
-                    if (type == null) throw GraqlQueryException.labelNotFound(label);
-                    if (!type.isAttributeType()) throw GraqlQueryException.mustBeAttributeType(type.label());
+                    if (type == null) throw GraqlSemanticException.labelNotFound(label);
+                    if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
                     return type;
                 })
                 .flatMap(Type::subs)
@@ -745,7 +745,7 @@ class ComputeExecutor {
             Stream<Type> subTypes = query.in().stream().map(t -> {
                 Label label = Label.of(t);
                 Type type = tx.getType(label);
-                if (type == null) throw GraqlQueryException.labelNotFound(label);
+                if (type == null) throw GraqlSemanticException.labelNotFound(label);
                 return type;
             }).flatMap(Type::subs);
 
