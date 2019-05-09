@@ -36,7 +36,7 @@ public class GraqlQueryException  extends GraknException {
 
     private final String NAME = "GraqlQueryException";
 
-    private GraqlQueryException(String error) { super(error, null, false, false); }
+    private GraqlQueryException(String error) { super(error, null); }
 
     @Override
     public String getName() { return NAME; }
