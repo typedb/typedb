@@ -192,8 +192,6 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
         @Override
         public boolean roleCompatibility(Role parent, Role child) {
-            // p:    someRole
-            // child $r
             return parent == null || parent.subs().anyMatch(sub -> sub.equals(child));
         }
 
