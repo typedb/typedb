@@ -1,0 +1,45 @@
+define
+
+service sub entity,
+    plays owner;
+capability-type sub entity,
+    plays capability;
+capabilityOne sub capability-type;
+capabilityTwo sub capability-type;
+
+has-capability sub relation,
+    relates owner,
+    relates capability;
+
+dummy-rule sub rule,
+when {
+   $x isa capabilityOne;
+},
+then {
+   $x isa capability-type;
+};
+
+dummy-rule2 sub rule,
+when {
+   $x isa capabilityTwo;
+},
+then {
+   $x isa capability-type;
+};
+
+insert
+
+$s1 isa service;
+$s2 isa service;
+$s3 isa service;
+$s4 isa service;
+
+$c1 isa capabilityOne;
+$c1prime isa capabilityOne;
+$c2 isa capabilityTwo;
+$c2prime isa capabilityTwo;
+
+(owner: $s1, capability: $c1) isa has-capability;
+(owner: $s2, capability: $c1prime) isa has-capability;
+(owner: $s3, capability: $c2) isa has-capability;
+(owner: $s4, capability: $c2prime) isa has-capability;

@@ -131,13 +131,15 @@ java_test(
     ],
 )
 
-
 java_test(
     name = "ontological-query-it",
     size = "large",
     srcs = ["OntologicalQueryIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:matching-types",
+        "//test-integration/graql/reasoner/resources:rule-applicability",
+    ],
     test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
     deps = [
         "//concept",
