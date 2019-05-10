@@ -115,6 +115,10 @@ public class GraqlSemanticException extends GraknException {
         return new GraqlSemanticException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
     }
 
+    public static GraqlSemanticException attributeDowncast(Type existingType, Type newType) {
+        return create("Downcasting attributes from type `%s` to type `%s` is not allowed", existingType, newType);
+    }
+
     public static GraqlSemanticException cannotGetInstancesOfNonType(Label label) {
         return GraqlSemanticException.create("%s is not a type and so does not have instances", label);
     }
