@@ -27,6 +27,8 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
@@ -327,16 +329,23 @@ public abstract class AttributeAtom extends Binary{
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
     }
 
-    private void attachAttribute(Concept owner, Attribute attribute){
+    private Relation attachAttribute(Concept owner, Attribute attribute){
         //check if link exists
         if (owner.asThing().attributes(attribute.type()).noneMatch(a -> a.equals(attribute))) {
             if (owner.isEntity()) {
-                EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+                return EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
             } else if (owner.isRelation()) {
-                RelationImpl.from(owner.asRelation()).attributeInferred(attribute);
+                return RelationImpl.from(owner.asRelation()).attributeInferred(attribute);
             } else if (owner.isAttribute()) {
-                AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+                return AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
             }
+            return null;
+        } else {
+            Role ownerRole = tx().getRole(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()).getValue());
+            Role valueRole = tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()).getValue());
+            return owner.asThing().relations(ownerRole)
+                    .filter(relation -> relation.rolePlayersMap().get(valueRole).contains(attribute))
+                    .findFirst().orElse(null);
         }
     }
 
@@ -375,10 +384,16 @@ public abstract class AttributeAtom extends Binary{
         }
 
         if (attribute != null) {
-            attachAttribute(owner, attribute);
-            return Stream.of(ConceptUtils.mergeAnswers(substitution, new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
+            Relation relation = attachAttribute(owner, attribute);
+            if (relation != null) {
+                ConceptMap answer = new ConceptMap(ImmutableMap.of(resourceVariable, attribute));
+                if (getRelationVariable().isReturned()){
+                    answer = ConceptUtils.mergeAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
+                }
+                return Stream.of(ConceptUtils.mergeAnswers(substitution, answer));
+            }
         }
-        return Stream.of(new ConceptMap());
+        return Stream.empty();
     }
 
     /**

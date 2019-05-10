@@ -291,9 +291,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return getThis();
     }
 
-    public T attributeInferred(Attribute attribute) {
-        attributeRelation(attribute, true);
-        return getThis();
+    public Relation attributeInferred(Attribute attribute) {
+        return attributeRelation(attribute, true);
     }
 
     @Override
