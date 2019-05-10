@@ -29,14 +29,14 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import graql.lang.pattern.Pattern;
@@ -106,7 +106,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         super.checkValid();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isType()) {
-            throw GraqlQueryException.cannotGetInstancesOfNonType(type.label());
+            throw GraqlSemanticException.cannotGetInstancesOfNonType(type.label());
         }
     }
 
@@ -230,7 +230,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+    public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
         //in general this <= parent, so no specialisation viable
         if (this.getClass() != parentAtom.getClass()) return UnifierImpl.nonExistent();
         return super.getUnifier(parentAtom, unifierType);

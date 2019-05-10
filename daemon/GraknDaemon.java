@@ -43,6 +43,7 @@ public class GraknDaemon {
 
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
+    private static final String EMPTY_STRING = "";
 
     private final Storage storageExecutor;
     private final Server serverExecutor;
@@ -165,9 +166,12 @@ public class GraknDaemon {
             case STORAGE:
                 storageExecutor.stop();
                 break;
-            default:
+            case EMPTY_STRING:
                 serverExecutor.stop();
                 storageExecutor.stop();
+                break;
+            default:
+                serverHelp();
         }
     }
 
@@ -179,9 +183,12 @@ public class GraknDaemon {
             case STORAGE:
                 storageExecutor.startIfNotRunning();
                 break;
-            default:
+            case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
                 serverExecutor.startIfNotRunning(arg);
+                break;
+            default:
+                serverHelp();
         }
     }
 

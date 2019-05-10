@@ -25,6 +25,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -126,12 +127,12 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
                 // we silently "allow" redefining attributes, while actually doing a no-op, as long as the type hasn't changed
                 if (!concept.isAttribute()) {
                     // however, non-attribute still throw exceptions
-                    throw GraqlQueryException.insertExistingConcept(executor.printableRepresentation(var), concept);
+                    throw GraqlSemanticException.insertExistingConcept(executor.printableRepresentation(var), concept);
                 } else if ((type instanceof AttributeType)) {
                     //
                     if (! type.subs().map(SchemaConcept::label).collect(Collectors.toSet()).contains(concept.asThing().type().label())) {
                         //downcasting is bad
-                        throw GraqlQueryException.attributeDowncast(concept.asThing().type(), type);
+                        throw GraqlSemanticException.attributeDowncast(concept.asThing().type(), type);
                     }
                     // upcasting we silently accept
                 }

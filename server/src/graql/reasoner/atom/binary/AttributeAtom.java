@@ -31,6 +31,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -41,7 +42,6 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.Schema;
@@ -203,7 +203,7 @@ public abstract class AttributeAtom extends Binary{
         super.checkValid();
         SchemaConcept type = getSchemaConcept();
         if (type != null && !type.isAttributeType()) {
-            throw GraqlQueryException.attributeWithNonAttributeType(type.label());
+            throw GraqlSemanticException.attributeWithNonAttributeType(type.label());
         }
     }
 
@@ -270,7 +270,7 @@ public abstract class AttributeAtom extends Binary{
             return errors;
         }
 
-        Type ownerType = getParentQuery().getVarTypeMap().get(getVarName());
+        Type ownerType = getParentQuery().getUnambiguousType(getVarName(), false);
 
         if (ownerType != null
                 && ownerType.attributes().noneMatch(rt -> rt.equals(type.asAttributeType()))){
@@ -288,7 +288,7 @@ public abstract class AttributeAtom extends Binary{
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
+    public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
         if (!(parentAtom instanceof AttributeAtom)) {
             // in general this >= parent, hence for rule unifiers we can potentially specialise child to match parent
             if (unifierType.equals(UnifierType.RULE)) {

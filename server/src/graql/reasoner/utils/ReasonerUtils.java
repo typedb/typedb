@@ -35,7 +35,7 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.graql.reasoner.utils.conversion.TypeConverter;
@@ -62,7 +62,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Utiliy class providing useful functionalities.
+ * Utility class providing useful functionalities.
  * </p>
  *
  *
@@ -205,7 +205,7 @@ public class ReasonerUtils {
      * @param entryRoles entry set of possible {@link Role}s
      * @return set of playable {@link Role}s defined by type-role parent combination, parent role assumed as possible
      */
-    public static Set<Role> compatibleRoles(Role parentRole, Type parentType, Set<Role> entryRoles) {
+    public static Set<Role> compatibleRoles(@Nullable Role parentRole, @Nullable Type parentType, Set<Role> entryRoles) {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();
 
         if (parentRole != null && !Schema.MetaSchema.isMetaLabel(parentRole.label()) ){
@@ -231,10 +231,14 @@ public class ReasonerUtils {
         return compatibleRoles;
     }
 
-    public static Set<Role> compatibleRoles(Type type, Set<Role> relRoles){
-        return compatibleRoles(null, type, relRoles);
+    public static Set<Role> compatibleRoles(Set<Type> types, Set<Role> relRoles){
+        Iterator<Type> typeIterator = types.iterator();
+        Set<Role> roles = relRoles;
+        while(typeIterator.hasNext()){
+            roles = Sets.intersection(roles, compatibleRoles(null, typeIterator.next(), relRoles));
+        }
+        return roles;
     }
-
 
     /**
      * @param childTypes type atoms of child query
@@ -242,7 +246,7 @@ public class ReasonerUtils {
      * @param childParentUnifier unifier to unify child with parent
      * @return combined unifier for type atoms
      */
-    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierComparison unifierType){
+    public static Unifier typeUnifier(Set<TypeAtom> childTypes, Set<TypeAtom> parentTypes, Unifier childParentUnifier, UnifierType unifierType){
         Unifier unifier = childParentUnifier;
         for(TypeAtom childType : childTypes){
             Variable childVarName = childType.getVarName();

@@ -26,7 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.GraknVersion;
 import grakn.core.console.GraknConsole;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import io.grpc.Status;

@@ -38,17 +38,16 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -139,7 +138,7 @@ public class AtomicQueryUnificationIT {
                     new Variable("y1"), new Variable("x1"),
                     new Variable("y2"), new Variable("x2")
             ));
-            assertTrue(unifier.equals(correctUnifier));
+            assertEquals(correctUnifier, unifier);
         }
     }
 
@@ -498,6 +497,26 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_RelationsWithVariableRolesAndPotentialTypes(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            String query = "{ (baseRole1: $x, baseRole2: $y);};";
+            String potentialEquivalent = "{ ($role: $u, baseRole2: $v);$role type baseRole1;};";
+
+            unification(query, potentialEquivalent, false, UnifierType.EXACT, tx);
+            unification(potentialEquivalent, query, false, UnifierType.EXACT, tx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL, tx);
+            unification(potentialEquivalent, query, false, UnifierType.STRUCTURAL, tx);
+
+            unification(query, potentialEquivalent, true, UnifierType.RULE, tx);
+            unification(potentialEquivalent, query, true, UnifierType.RULE, tx);
+
+            unification(query, potentialEquivalent, true, UnifierType.SUBSUMPTIVE, tx);
+            unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, tx);
+        }
+    }
+
+    @Test
     public void testUnification_differentRelationVariants_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
@@ -528,6 +547,66 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_differentReflexiveRelationVariants_EXACT(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().exactMatrix(),
+                    UnifierType.EXACT, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_STRUCTURAL(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().structuralMatrix(),
+                    UnifierType.STRUCTURAL, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().ruleMatrix(),
+                    UnifierType.RULE, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_EXACT(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().exactMatrix(),
+                    UnifierType.EXACT, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_STRUCTURAL(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().structuralMatrix(),
+                    UnifierType.STRUCTURAL, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().ruleMatrix(),
+                    UnifierType.RULE, tx);
+        }
+    }
+
+    @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
@@ -550,7 +629,10 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_RULE(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            unification(genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(), genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(), UnifierType.RULE, tx);
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(),
+                    UnifierType.RULE, tx);
         }
     }
 
@@ -860,10 +942,10 @@ public class AtomicQueryUnificationIT {
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
-        if (unifierExists && unifierType != UnifierType.RULE){
+        if (unifierExists && unifierType.equivalence() != null){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
 
-            assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
+            assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
         return multiUnifier;

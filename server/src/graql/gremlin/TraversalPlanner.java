@@ -57,7 +57,7 @@ import java.util.stream.Collectors;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
-import static grakn.core.graql.gremlin.NodesUtil.nodeToPlanFragments;
+import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
 import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 
@@ -127,7 +127,7 @@ public class TraversalPlanner {
                if (unhandledNodes.size() != 1) {
                    throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
                }
-               plan.addAll(nodeToPlanFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes, false));
+               plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
             }
         }
 
@@ -238,7 +238,7 @@ public class TraversalPlanner {
                         !node.getFragmentsWithDependencyVisited().isEmpty())
                 .collect(Collectors.toSet());
         while (!nodeWithFragment.isEmpty()) {
-            nodeWithFragment.forEach(node -> subplan.addAll(nodeToPlanFragments(node, allNodes, false)));
+            nodeWithFragment.forEach(node -> subplan.addAll(nodeVisitedDependenciesFragments(node, allNodes)));
             nodeWithFragment = connectedNodes.stream()
                     .filter(node -> !node.getFragmentsWithoutDependency().isEmpty() ||
                             !node.getFragmentsWithDependencyVisited().isEmpty())

@@ -112,6 +112,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         }
 
         toComplete.forEach(query.tx().queryCache()::ackCompleteness);
+        query.tx().queryCache().propagateAnswers();
 
         return false;
     }

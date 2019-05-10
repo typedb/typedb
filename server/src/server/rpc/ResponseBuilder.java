@@ -29,7 +29,7 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.protocol.AnswerProto;
 import grakn.core.protocol.ConceptProto;
 import grakn.core.protocol.SessionProto;
@@ -388,7 +388,7 @@ public class ResponseBuilder {
                 return exception(Status.INTERNAL, message);
             } else if (e instanceof PropertyNotUniqueException) {
                 return exception(Status.ALREADY_EXISTS, message);
-            } else if (e instanceof TransactionException | e instanceof GraqlQueryException |
+            } else if (e instanceof TransactionException | e instanceof GraqlSemanticException |
                     e instanceof GraqlException | e instanceof InvalidKBException) {
                 return exception(Status.INVALID_ARGUMENT, message);
             }

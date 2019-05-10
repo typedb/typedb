@@ -28,7 +28,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
@@ -147,7 +147,7 @@ public class StatisticsIT {
         boolean exceptionThrown = false;
         try {
             tx.execute(query);
-        } catch (GraqlQueryException | GraqlException e) {
+        } catch (GraqlSemanticException | GraqlException e) {
             exceptionThrown = true;
         }
         assertTrue(exceptionThrown);
