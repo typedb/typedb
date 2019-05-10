@@ -49,6 +49,11 @@ filegroup(
 )
 
 filegroup(
+    name = "matching-types",
+    srcs = ["matchingTypesTest.gql"],
+)
+
+filegroup(
     name = "materialisation",
     srcs = ["materialisationTest.gql"],
 )

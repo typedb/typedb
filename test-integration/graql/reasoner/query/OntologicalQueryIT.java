@@ -61,39 +61,39 @@ public class OntologicalQueryIT {
         loadFromFileAndCommit(resourcePath, "ruleApplicabilityTest.gql", session);
     }
 
-//    @Rule
-//    public final SampleKBContext matchingTypesContext = SampleKBContext.load("matchingTypesTest.gql");
+    @Test
+    public void instancePairsRelatedToSameTypeOfEntity(){
+        SessionImpl session = server.sessionWithNewKeyspace();
+        loadFromFileAndCommit(resourcePath, "matchingTypesTest.gql", session);
+        for(int i = 0; i < 500 ; i++) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                String basePattern = "$x isa service;" +
+                        "$y isa service;" +
+                        "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
+                        "(owner: $y, capability: $yy) isa has-capability; $yy isa $type;" +
+                        "$y != $x;";
 
-    //TODO flaky!
-//    @Ignore
-//    @Test
-//    public void instancePairsRelatedToSameTypeOfEntity(){
-//        TransactionOLTPOLTP tx = matchingTypesContext.tx();
-//        String basePattern = "$x isa service;" +
-//                "$y isa service;" +
-//                "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
-//                "(owner: $y, capability: $yy) isa has-capability; $yy isa $type;" +
-//                "$y != $x;";
-//
-//        String simpleQuery = "match " +
-//                basePattern +
-//                "get $x, $y;";
-//        String queryWithExclusions = "match " +
-//                basePattern +
-//                "$meta label entity; $type != $meta;" +
-//                "$meta2 label thing; $type != $meta2;" +
-//                "$meta3 label capability-type; $type != $meta3;" +
-//                "get $x, $y, $type;";
-//
-//        List<ConceptMap> simpleAnswers = Graql.parse(simpleQuery).asGet().execute(false);
-//        List<ConceptMap> simpleAnswersInferred = tx.execute(Graql.parse(simpleQuery).asGet());
-//        List<ConceptMap> answersWithExclusions = Graql.parse(queryWithExclusions).asGet().execute(false);
-//        List<ConceptMap> answersWithExclusionsInferred = tx.execute(Graql.parse(queryWithExclusions).asGet());
-//        assertFalse(simpleAnswers.isEmpty());
-//        assertFalse(answersWithExclusions.isEmpty());
-//        assertCollectionsNonTriviallyEqual(simpleAnswers, simpleAnswersInferred);
-//        assertCollectionsNonTriviallyEqual(answersWithExclusions, answersWithExclusionsInferred);
-//    }
+                String simpleQuery = "match " +
+                        basePattern +
+                        "get $x, $y;";
+                String queryWithExclusions = "match " +
+                        basePattern +
+                        "$meta type entity; $type != $meta;" +
+                        "$meta2 type thing; $type != $meta2;" +
+                        "$meta3 type capability-type; $type != $meta3;" +
+                        "get $x, $y, $type;";
+
+                List<ConceptMap> simpleAnswers = tx.execute(Graql.parse(simpleQuery).asGet(), false);
+                List<ConceptMap> simpleAnswersInferred = tx.execute(Graql.parse(simpleQuery).asGet());
+                List<ConceptMap> answersWithExclusions = tx.execute(Graql.parse(queryWithExclusions).asGet(), false);
+                List<ConceptMap> answersWithExclusionsInferred = tx.execute(Graql.parse(queryWithExclusions).asGet());
+                assertFalse(simpleAnswers.isEmpty());
+                assertFalse(answersWithExclusions.isEmpty());
+                assertCollectionsNonTriviallyEqual(simpleAnswers, simpleAnswersInferred);
+                assertCollectionsNonTriviallyEqual(answersWithExclusions, answersWithExclusionsInferred);
+            }
+        }
+    }
 
     @Test
     public void instancesOfSubsetOfTypesExcludingGivenType() {
