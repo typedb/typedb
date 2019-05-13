@@ -169,7 +169,8 @@ assemble_zip(
         "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+        "//server:services/hadoop/bin/winutils.exe": "server/services/hadoop/bin/winutils.exe"
     },
     empty_directories = [
         "server/db/cassandra",
