@@ -435,4 +435,35 @@ public class TransactionIT {
         assertTrue(answers.isEmpty());
     }
 
+    @Test
+    public void whenCommitingInferredAttributeEdge_EdgeIsNotPersisted(){
+        tx.execute(Graql.<GraqlDefine>parse(
+                "define " +
+                        "score sub attribute, datatype double;" +
+                        "person sub entity, has score;" +
+                        "infer-attr sub rule," +
+                        "when {" +
+                        "  $p isa person, has score $s;" +
+                        "  $q isa person; $q != $p;" +
+                        "}, then {" +
+                        "  $q has score $s;" +
+                        "};"
+        ));
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
+        tx.execute(Graql.<GraqlInsert>parse("insert $q isa person;"));
+        tx.commit();
+
+        tx = session.transaction().write();
+        List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"));
+        assertEquals(2, answers.size());
+        tx.commit();
+
+        tx = session.transaction().read();
+        answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), false);
+        assertEquals(1, answers.size());
+    }
+
 }
