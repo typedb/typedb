@@ -1,3 +1,4 @@
+build --workspace_status_command bin/workspace_status.sh
 build:rbe --project_id=grakn-dev
 build:rbe --remote_instance_name=projects/grakn-dev/instances/default_instance
 build:rbe --remote_cache=remotebuildexecution.googleapis.com
