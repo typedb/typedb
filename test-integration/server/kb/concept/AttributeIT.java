@@ -19,8 +19,6 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -35,8 +33,11 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import graql.lang.Graql;
+import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -44,11 +45,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -100,32 +96,6 @@ public class AttributeIT {
         List<AttributeType> subEntityAttributes = subEntity.attributes().collect(toList());
         assertTrue(entityAttributes.containsAll(subEntityAttributes));
         assertTrue(subEntityAttributes.containsAll(entityAttributes));
-    }
-
-    @Test
-    public void whenDefiningHierarchiesOfAttributesAndKeys_queryingReturnsCorrectResults() throws Exception {
-        AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
-        AttributeType<String> subResource = tx.putAttributeType("subResource", AttributeType.DataType.STRING).sup(resource);
-        EntityType someEntity = tx.putEntityType("someEntity").has(resource);
-        EntityType anotherEntity = tx.putEntityType("anotherEntity").key(resource);
-        someEntity.create().has(resource.create("value"));
-        anotherEntity.create().has(resource.create("key"));
-
-        Set<ConceptMap> initialAnswers = tx.stream(Graql.parse("match $x has resource $r;get;").asGet()).collect(toSet());
-
-
-        someEntity.has(subResource);
-        anotherEntity.key(subResource);
-
-        someEntity.create().has(subResource.create("value"));
-        anotherEntity.create().has(subResource.create("key"));
-
-        Set<ConceptMap> answers = tx.stream(Graql.parse("match $x has resource $r;get;").asGet()).collect(toSet());
-        Set<ConceptMap> subAnswers = tx.stream(Graql.parse("match $x has subResource $r;get;").asGet()).collect(toSet());
-        assertTrue(answers.containsAll(Sets.union(initialAnswers, subAnswers)));
-
-        List<ConceptMap> typedAnswers = tx.execute(Graql.parse("match $x isa entity; ($x, $y) isa $type; get;").asGet());
-        assertEquals(4*initialAnswers.size()+5*subAnswers.size(), typedAnswers.size());
     }
 
     @Test
