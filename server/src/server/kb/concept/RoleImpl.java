@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
@@ -26,11 +25,11 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * An SchemaConcept which defines a Role which can be played in a RelationType.
@@ -106,11 +105,11 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers() {
-        return relations().
-                flatMap(RelationType::instances).
-                map(relation -> RelationImpl.from(relation).reified()).
-                flatMap(CommonUtil::optionalToStream).
-                flatMap(relation -> relation.castingsRelation(this));
+        return relations()
+                .flatMap(RelationType::instances)
+                .map(relation -> RelationImpl.from(relation).reified())
+                .filter(Objects::nonNull)
+                .flatMap(relation -> relation.castingsRelation(this));
     }
 
     @Override

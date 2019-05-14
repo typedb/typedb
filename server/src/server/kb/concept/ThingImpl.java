@@ -340,7 +340,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
         }).forEach(Concept::delete);
 
-        return getThis();
+        return (T) this;
     }
 
     /**
