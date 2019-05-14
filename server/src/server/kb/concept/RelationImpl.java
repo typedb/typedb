@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Encapsulates relations between Thing
@@ -61,6 +62,7 @@ public class RelationImpl implements Relation, ConceptVertex {
      *
      * @return The RelationReified if the Relation has been reified
      */
+    @Nullable
     public RelationReified reified() {
         if (relationStructure.isReified()) return relationStructure.reify();
         return null;
