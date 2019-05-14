@@ -97,6 +97,16 @@ public class GraknGraqlCommandsE2E {
     }
 
     /**
+     * test 'grakn server start --benchmark'
+     */
+    @Test
+    public void grakn_shouldBeAbleToStartWithBenchmarkOption() throws IOException, InterruptedException, TimeoutException {
+        commandExecutor.command("./grakn", "server", "start", "--benchmark").execute();
+        assertGraknIsRunning();
+        commandExecutor.command("./grakn", "server", "stop").execute();
+    }
+
+    /**
      * test 'grakn server help'
      */
     @Test

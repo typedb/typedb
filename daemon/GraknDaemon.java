@@ -44,6 +44,8 @@ public class GraknDaemon {
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
+    private static final String BENCHMARK_FLAG = "--benchmark";
+
 
     private final Storage storageExecutor;
     private final Server serverExecutor;
@@ -183,6 +185,7 @@ public class GraknDaemon {
             case STORAGE:
                 storageExecutor.startIfNotRunning();
                 break;
+            case BENCHMARK_FLAG:
             case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
                 serverExecutor.startIfNotRunning(arg);

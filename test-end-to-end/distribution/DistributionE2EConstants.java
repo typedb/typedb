@@ -46,7 +46,7 @@ public class DistributionE2EConstants {
     public static void assertGraknIsNotRunning() {
         Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
+        assertThat("assertGraknIsNotRunning() failed because ", serverReady, equalTo(false));
     }
 
     public static void assertZipExists() {
