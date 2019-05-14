@@ -19,6 +19,8 @@
 package grakn.core.server.kb.concept;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -33,6 +35,9 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
+import java.util.List;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,7 +50,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -76,6 +83,49 @@ public class AttributeIT {
     public void tearDown() {
         tx.close();
         session.close();
+    }
+
+    @Test
+    public void whenSubTypeSharesAttributes_noDuplicatesAreProducedWhenRetrievingAttributes(){
+        AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.DataType.STRING);
+        EntityType someEntity = tx.putEntityType("someEntity")
+                .has(resource)
+                .has(anotherResource);
+        EntityType subEntity = tx.putEntityType("subEntity").sup(someEntity)
+                .has(resource)
+                .has(anotherResource);
+
+        List<AttributeType> entityAttributes = someEntity.attributes().collect(toList());
+        List<AttributeType> subEntityAttributes = subEntity.attributes().collect(toList());
+        assertTrue(entityAttributes.containsAll(subEntityAttributes));
+        assertTrue(subEntityAttributes.containsAll(entityAttributes));
+    }
+
+    @Test
+    public void whenDefiningHierarchiesOfAttributesAndKeys_queryingReturnsCorrectResults() throws Exception {
+        AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> subResource = tx.putAttributeType("subResource", AttributeType.DataType.STRING).sup(resource);
+        EntityType someEntity = tx.putEntityType("someEntity").has(resource);
+        EntityType anotherEntity = tx.putEntityType("anotherEntity").key(resource);
+        someEntity.create().has(resource.create("value"));
+        anotherEntity.create().has(resource.create("key"));
+
+        Set<ConceptMap> initialAnswers = tx.stream(Graql.parse("match $x has resource $r;get;").asGet()).collect(toSet());
+
+
+        someEntity.has(subResource);
+        anotherEntity.key(subResource);
+
+        someEntity.create().has(subResource.create("value"));
+        anotherEntity.create().has(subResource.create("key"));
+
+        Set<ConceptMap> answers = tx.stream(Graql.parse("match $x has resource $r;get;").asGet()).collect(toSet());
+        Set<ConceptMap> subAnswers = tx.stream(Graql.parse("match $x has subResource $r;get;").asGet()).collect(toSet());
+        assertTrue(answers.containsAll(Sets.union(initialAnswers, subAnswers)));
+
+        List<ConceptMap> typedAnswers = tx.execute(Graql.parse("match $x isa entity; ($x, $y) isa $type; get;").asGet());
+        assertEquals(4*initialAnswers.size()+5*subAnswers.size(), typedAnswers.size());
     }
 
     @Test
@@ -192,6 +242,23 @@ public class AttributeIT {
         assertEquals(date, myBirthday.value());
         assertEquals(myBirthday, attributeType.attribute(date));
         assertThat(tx.getAttributesByValue(date), containsInAnyOrder(myBirthday));
+    }
+
+    @Test
+    public void whenCreatingAttributeInstancesWithHierarchies_HierarchyOfImplicitRelationsIsPreserved(){
+        AttributeType<String> baseAttribute = tx.putAttributeType("baseAttribute", AttributeType.DataType.STRING);
+        AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.DataType.STRING).sup(baseAttribute);
+
+        tx.putEntityType("someEntity")
+                .has(baseAttribute)
+                .has(subAttribute);
+
+        RelationType baseImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(baseAttribute.label()).getValue());
+        RelationType subImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(subAttribute.label()).getValue());
+        assertNotNull(baseImplicitRelation);
+        assertNotNull(subImplicitRelation);
+        TestCase.assertTrue(baseImplicitRelation.subs().anyMatch(sub -> sub.equals(subImplicitRelation)));
+        TestCase.assertTrue(subImplicitRelation.sups().anyMatch(sup -> sup.equals(baseImplicitRelation)));
     }
 
     @Test

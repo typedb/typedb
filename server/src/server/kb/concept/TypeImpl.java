@@ -131,7 +131,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 filter(sup -> !sup.equals(this)). //We already have the plays from ourselves
                 flatMap(sup -> TypeImpl.from(sup).directPlays().keySet().stream());
 
-        return Stream.concat(allRoles, superSet);
+        //NB: use distinct as roles from different types from the hierarchy can overlap
+        return Stream.concat(allRoles, superSet).distinct();
     }
 
     @Override
