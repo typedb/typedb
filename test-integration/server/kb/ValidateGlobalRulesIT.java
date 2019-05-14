@@ -75,7 +75,7 @@ public class ValidateGlobalRulesIT {
 
         RelationImpl assertion = (RelationImpl) hunts.create().
                 assign(witcher, geralt).assign(monster, werewolf);
-        assertion.reified().get().castingsRelation().forEach(rolePlayer ->
+        assertion.reified().castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         hunter.plays(witcher);
@@ -83,7 +83,7 @@ public class ValidateGlobalRulesIT {
         boolean [] flags = {false, false};
         int count = 0;
 
-        for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
+        for (Casting casting : assertion.reified().castingsRelation().collect(Collectors.toSet())) {
             flags[count] = !ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty();
             count++;
         }
@@ -92,7 +92,7 @@ public class ValidateGlobalRulesIT {
         wolf.sup(creature);
         creature.plays(monster);
 
-        for (Casting casting : assertion.reified().get().castingsRelation().collect(Collectors.toSet())) {
+        for (Casting casting : assertion.reified().castingsRelation().collect(Collectors.toSet())) {
             assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(casting).isEmpty());
         }
     }
@@ -117,19 +117,19 @@ public class ValidateGlobalRulesIT {
                 .assign(role2, other1).assign(role1, entity);
 
         // Valid with only a single relation
-        relation1.reified().get().castingsRelation().forEach(rolePlayer ->
+        relation1.reified().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
         RelationImpl relation2 = (RelationImpl) relationType.create()
                 .assign(role2, other2).assign(role1, entity);
 
         // Invalid with multiple relations
-        relation1.reified().get().castingsRelation().forEach(rolePlayer -> {
+        relation1.reified().castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRole().equals(role1)) {
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
         });
-        relation2.reified().get().castingsRelation().forEach(rolePlayer -> {
+        relation2.reified().castingsRelation().forEach(rolePlayer -> {
             if (rolePlayer.getRole().equals(role1)) {
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty());
             }
