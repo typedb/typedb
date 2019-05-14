@@ -111,14 +111,14 @@ public class EntityIT {
         Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
         Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
 
-        assertThat(relation.reified().get().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.id();
         rolePlayer1.delete();
 
         assertNull(tx.getConcept(idOfDeleted));
-        assertThat(relation.reified().get().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
