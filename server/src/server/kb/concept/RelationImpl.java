@@ -27,12 +27,11 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.structure.VertexElement;
-
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * Encapsulates relations between Thing
@@ -63,13 +62,14 @@ public class RelationImpl implements Relation, ConceptVertex {
      *
      * @return The RelationReified if the Relation has been reified
      */
-    public Optional<RelationReified> reified() {
-        if (!relationStructure.isReified()) return Optional.empty();
-        return Optional.of(relationStructure.reify());
+    @Nullable
+    public RelationReified reified() {
+        if (relationStructure.isReified()) return relationStructure.reify();
+        return null;
     }
 
     /**
-     * Reifys and returns the RelationReified
+     * Reifies and returns the RelationReified
      */
     private RelationReified reify() {
         if (relationStructure.isReified()) return relationStructure.reify();
@@ -111,7 +111,8 @@ public class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public Stream<Attribute<?>> keys(AttributeType[] attributeTypes) {
-        return reified().map(relationReified -> relationReified.attributes(attributeTypes)).orElseGet(Stream::empty);
+        RelationReified relationReified = reified();
+        return relationReified != null? relationReified.attributes(attributeTypes) : Stream.empty();
     }
 
     @Override
@@ -134,7 +135,8 @@ public class RelationImpl implements Relation, ConceptVertex {
      * Stream is returned.
      */
     private <X> Stream<X> readFromReified(Function<RelationReified, Stream<X>> producer) {
-        return reified().map(producer).orElseGet(Stream::empty);
+        RelationReified relationReified = reified();
+        return relationReified != null? producer.apply(relationReified) : Stream.empty();
     }
 
     /**
@@ -168,7 +170,8 @@ public class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public Relation unhas(Attribute attribute) {
-        reified().ifPresent(rel -> rel.unhas(attribute));
+        RelationReified relationReified = reified();
+        if (relationReified != null) relationReified.unhas(attribute);
         return this;
     }
 
@@ -179,7 +182,10 @@ public class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public void unassign(Role role, Thing player) {
-        reified().ifPresent(relationReified -> relationReified.removeRolePlayer(role, player));
+        RelationReified relationReified = reified();
+        if (relationReified != null){
+            relationReified.removeRolePlayer(role, player);
+        }
     }
 
     /**

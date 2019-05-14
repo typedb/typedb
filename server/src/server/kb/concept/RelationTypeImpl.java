@@ -142,8 +142,9 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     void trackRolePlayers() {
         instances().forEach(concept -> {
             RelationImpl relation = RelationImpl.from(concept);
-            if (relation.reified().isPresent()) {
-                relation.reified().get().castingsRelation().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
+            RelationReified reifedRelation = relation.reified();
+            if (reifedRelation != null) {
+                reifedRelation.castingsRelation().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
             }
         });
     }

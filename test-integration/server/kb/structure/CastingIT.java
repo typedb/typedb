@@ -76,7 +76,7 @@ public class CastingIT {
         RelationImpl relation = (RelationImpl) relationType.create().
                 assign(role1, e1);
 
-        Set<Casting> castings = relation.reified().get().castingsRelation().collect(Collectors.toSet());
+        Set<Casting> castings = relation.reified().castingsRelation().collect(Collectors.toSet());
 
         castings.forEach(rolePlayer -> {
             assertEquals(e1, rolePlayer.getRolePlayer());
@@ -94,16 +94,16 @@ public class CastingIT {
         RelationImpl relation = (RelationImpl) relationType.create().
                 assign(role1, e1);
 
-        Set<Thing> things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
-        Set<Role> roles = relation.reified().get().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());
+        Set<Thing> things = relation.reified().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
+        Set<Role> roles = relation.reified().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());
         assertThat(things, containsInAnyOrder(e1));
         assertThat(roles, containsInAnyOrder(role1));
 
         //Now Update
         relation.assign(role2, e1).assign(role3, e3);
 
-        things = relation.reified().get().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
-        roles = relation.reified().get().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());
+        things = relation.reified().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
+        roles = relation.reified().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());
         assertThat(things, containsInAnyOrder(e1, e3));
         assertThat(roles, containsInAnyOrder(role1, role2, role3));
     }
