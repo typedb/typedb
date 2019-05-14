@@ -33,6 +33,12 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -40,12 +46,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
-
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertNotNull;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -76,6 +79,23 @@ public class AttributeIT {
     public void tearDown() {
         tx.close();
         session.close();
+    }
+
+    @Test
+    public void whenSubTypeSharesAttributes_noDuplicatesAreProducedWhenRetrievingAttributes(){
+        AttributeType<String> resource = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        AttributeType<String> anotherResource = tx.putAttributeType("anotherResource", AttributeType.DataType.STRING);
+        EntityType someEntity = tx.putEntityType("someEntity")
+                .has(resource)
+                .has(anotherResource);
+        EntityType subEntity = tx.putEntityType("subEntity").sup(someEntity)
+                .has(resource)
+                .has(anotherResource);
+
+        List<AttributeType> entityAttributes = someEntity.attributes().collect(toList());
+        List<AttributeType> subEntityAttributes = subEntity.attributes().collect(toList());
+        assertTrue(entityAttributes.containsAll(subEntityAttributes));
+        assertTrue(subEntityAttributes.containsAll(entityAttributes));
     }
 
     @Test
@@ -192,6 +212,23 @@ public class AttributeIT {
         assertEquals(date, myBirthday.value());
         assertEquals(myBirthday, attributeType.attribute(date));
         assertThat(tx.getAttributesByValue(date), containsInAnyOrder(myBirthday));
+    }
+
+    @Test
+    public void whenCreatingAttributeInstancesWithHierarchies_HierarchyOfImplicitRelationsIsPreserved(){
+        AttributeType<String> baseAttribute = tx.putAttributeType("baseAttribute", AttributeType.DataType.STRING);
+        AttributeType<String> subAttribute = tx.putAttributeType("subAttribute", AttributeType.DataType.STRING).sup(baseAttribute);
+
+        tx.putEntityType("someEntity")
+                .has(baseAttribute)
+                .has(subAttribute);
+
+        RelationType baseImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(baseAttribute.label()).getValue());
+        RelationType subImplicitRelation = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(subAttribute.label()).getValue());
+        assertNotNull(baseImplicitRelation);
+        assertNotNull(subImplicitRelation);
+        TestCase.assertTrue(baseImplicitRelation.subs().anyMatch(sub -> sub.equals(subImplicitRelation)));
+        TestCase.assertTrue(subImplicitRelation.sups().anyMatch(sup -> sup.equals(baseImplicitRelation)));
     }
 
     @Test
