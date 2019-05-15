@@ -19,7 +19,6 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.auto.value.AutoValue;
 import com.google.auto.value.extension.memoized.Memoized;
-import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -792,26 +791,6 @@ public abstract class RelationAtom extends IsaAtomBase {
             }
         });
         return builder.build();
-    }
-
-    private Multimap<Role, RelationProperty.RolePlayer> getRoleRelationPlayerMap(){
-        Multimap<Role, RelationProperty.RolePlayer> roleRelationPlayerMap = ArrayListMultimap.create();
-        Multimap<Role, Variable> roleVarMap = getRoleVarMap();
-        List<RelationProperty.RolePlayer> relationPlayers = getRelationPlayers();
-        roleVarMap.asMap().forEach((role, value) -> {
-            Label roleLabel = role.label();
-            relationPlayers.stream()
-                    .filter(rp -> rp.getRole().isPresent())
-                    .forEach(rp -> {
-                        Statement roleTypeVar = rp.getRole().orElse(null);
-                        String rl = roleTypeVar != null ? roleTypeVar.getType().orElse(null) : null;
-                        if (roleLabel != null &&
-                                ( rl == null || roleLabel.equals(Label.of(rl))) ) {
-                            roleRelationPlayerMap.put(role, rp);
-                        }
-                    });
-        });
-        return roleRelationPlayerMap;
     }
 
     /**

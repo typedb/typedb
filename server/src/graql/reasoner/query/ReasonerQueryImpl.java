@@ -505,13 +505,12 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
-    private static String PLACEHOLDER_ID = "placeholder_id";
+    private static final String PLACEHOLDER_ID = "placeholder_id";
 
     /**
      * @return true if this query has complete entries in the cache
      */
     public boolean isCacheComplete(){
-        //TODO sort out properly
         if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());
