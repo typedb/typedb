@@ -92,7 +92,8 @@ public class Storage {
     private void initialiseConfig() {
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
+            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {
+            };
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
 
             // Read the original Cassandra config from services/cassandra/cassandra.yaml into a String
@@ -195,23 +196,24 @@ public class Storage {
 
         LocalDateTime timeout = LocalDateTime.now().plusSeconds(STORAGE_STARTUP_TIMEOUT_SECOND);
 
-        try {
-            while (LocalDateTime.now().isBefore(timeout) && !result.isDone()) {
-                System.out.print(".");
-                System.out.flush();
+        while (LocalDateTime.now().isBefore(timeout) && !result.isDone()) {
+            System.out.print(".");
+            System.out.flush();
 
-                if (storageStatus().equals("running") && result.get().success()) {
-                    System.out.println("SUCCESS");
-                    return;
-                }
-
-                try {
-                    Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
+            if (storageStatus().equals("running")) {
+                System.out.println("SUCCESS");
+                return;
             }
 
+            try {
+                Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+
+
+        try {
             System.out.println("FAILED!");
             System.err.println("Unable to start " + DISPLAY_NAME + ".");
             String errorMessage = "Process exited with code '" + result.get().exitCode() + "': '" + result.get().stderr() + "'";
