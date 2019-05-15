@@ -148,7 +148,7 @@ public class GraknDaemon {
                 serverStop(option);
                 break;
             case "status":
-                serverStatus(option);
+                serverStatus();
                 break;
             case "clean":
                 clean();
@@ -207,15 +207,9 @@ public class GraknDaemon {
                                    "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
     }
 
-    private void serverStatus(String verboseFlag) {
+    private void serverStatus() {
         storageExecutor.status();
         serverExecutor.status();
-
-        if (verboseFlag.equals("--verbose")) {
-            System.out.println("======== Failure Diagnostics ========");
-            storageExecutor.statusVerbose();
-            serverExecutor.statusVerbose();
-        }
     }
 
     private void version() {

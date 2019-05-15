@@ -23,6 +23,7 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.daemon.exception.GraknDaemonException;
 import grakn.core.server.Grakn;
+import grakn.core.server.GraknStorage;
 
 import java.io.File;
 import java.io.IOException;
@@ -72,8 +73,10 @@ public class Server {
     }
 
     public void startIfNotRunning(String benchmarkFlag) {
-        boolean isServerRunning = executor.isProcessRunning(SERVER_PIDFILE);
-        if (isServerRunning) {
+        boolean isProcessRunning = executor.isProcessRunning(SERVER_PIDFILE);
+        boolean isGraknProcess = executor.isAGraknProcess(SERVER_PIDFILE, Grakn.class.getName());
+
+        if (isProcessRunning && isGraknProcess) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
             start(benchmarkFlag);
@@ -85,11 +88,7 @@ public class Server {
     }
 
     public void status() {
-        executor.processStatus(SERVER_PIDFILE, DISPLAY_NAME);
-    }
-
-    public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '" + executor.getPidFromFile(SERVER_PIDFILE).orElse("") + "' (from " + SERVER_PIDFILE + "), '" + executor.getPidFromPsOf(getServerMainClass().getName()) + "' (from ps -ef)");
+        executor.processStatus(SERVER_PIDFILE, DISPLAY_NAME, Grakn.class.getName());
     }
 
     public void clean() {
