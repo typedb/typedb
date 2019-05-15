@@ -145,21 +145,9 @@ public abstract class SemanticCache<
                 .collect(toSet());
     }
 
-    private Set<QE> getChildren(ReasonerAtomicQuery parent){
-        Set<QE> family = getFamily(parent);
-        Set<QE> children = new HashSet<>();
-        family.stream()
-                .map(this::keyToQuery)
-                .filter(potentialChild -> potentialChild.subsumes(parent))
-                .map(this::queryToKey)
-                .forEach(children::add);
-        return children;
-    }
-
     /**
-     *
      * @param query to find
-     * @return
+     * @return queries that belong to the same family as input query
      */
     private Set<QE> getFamily(ReasonerAtomicQuery query){
         SchemaConcept schemaConcept = query.getAtom().getSchemaConcept();
