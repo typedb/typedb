@@ -134,10 +134,9 @@ public class Executor {
     /**
      * Method used to check whether the pid contained in the pid file actually corresponds
      * to a Grakn(Storage) process.
-     * This method is to be used
      *
      * @param pidFile path to pid file
-     * @param className name of Class associated to the given pid (e.g. grakn.core.server.Grakn)
+     * @param className name of Class associated to the given pid (e.g. "grakn.core.server.Grakn")
      * @return true if PID is associated to the a Grakn process, false otherwise.
      */
     public boolean isAGraknProcess(Path pidFile, String className) {

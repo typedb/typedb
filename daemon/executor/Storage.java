@@ -92,8 +92,7 @@ public class Storage {
     private void initialiseConfig() {
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {
-            };
+            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
 
             // Read the original Cassandra config from services/cassandra/cassandra.yaml into a String
