@@ -138,7 +138,7 @@ public class Executor {
      *
      * @param pidFile path to pid file
      * @param className name of Class associated to the given pid (e.g. grakn.core.server.Grakn)
-     * @return true if PID is associated to the GraknStorage process, false otherwise.
+     * @return true if PID is associated to the a Grakn process, false otherwise.
      */
     public boolean isAGraknProcess(Path pidFile, String className) {
         String processPid;
@@ -174,7 +174,7 @@ public class Executor {
         if (isWindows()) {
             return Arrays.asList("cmd", "/c", "wmic process where processId='" + pid.trim() + "' get Commandline | findstr Grakn");
         } else {
-            return Arrays.asList(SH, "-c", "ps -p " + pid.trim() + " | awk '{print $NF}' | grep Grakn");
+            return Arrays.asList(SH, "-c", "ps -p " + pid.trim() + " -o command | awk '{print $NF}' | grep Grakn");
         }
     }
 
