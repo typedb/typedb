@@ -94,6 +94,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     private ConceptMap substitution = null;
     private ImmutableSetMultimap<Variable, Type> varTypeMap = null;
     private ResolutionPlan resolutionPlan = null;
+    private Conjunction<Pattern> pattern = null;
+    private Set<Variable> varNames = null;
 
     ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionOLTP tx) {
         this.tx = tx;
@@ -221,12 +223,15 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Conjunction<Pattern> getPattern() {
-        return Graql.and(
-                getAtoms().stream()
-                        .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.statements().stream())
-                        .collect(Collectors.toSet())
-        );
+        if (pattern == null) {
+            pattern = Graql.and(
+                    getAtoms().stream()
+                            .map(Atomic::getCombinedPattern)
+                            .flatMap(p -> p.statements().stream())
+                            .collect(Collectors.toSet())
+            );
+        }
+        return pattern;
     }
 
     @Override
@@ -301,9 +306,12 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Set<Variable> getVarNames() {
-        Set<Variable> vars = new HashSet<>();
-        getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
-        return vars;
+        if (varNames == null) {
+            Set<Variable> vars = new HashSet<>();
+            getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
+            varNames = vars;
+        }
+        return varNames;
     }
 
     @Override
