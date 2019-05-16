@@ -18,6 +18,7 @@
 
 package grakn.core.server.statistics;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -37,6 +38,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class UncomittedStatisticsDeltaIT {
     private SessionImpl session;
+    private TransactionOLTP tx;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -44,21 +46,25 @@ public class UncomittedStatisticsDeltaIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        TransactionOLTP tx = session.transaction().write();
+        tx = session.transaction().write();
         AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
+
+        tx = session.transaction().write();
     }
 
     @After
-    public void closeSession() { session.close(); }
+    public void closeSession() {
+        tx.close();
+        session.close();
+    }
 
 
     @Test
     public void newTransactionsInitialisedWithEmptyStatsDelta() {
-        TransactionOLTP tx = session.transaction().write();
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
 
         long entityDelta = statisticsDelta.delta("entity");
@@ -72,8 +78,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingEntitiesIncrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
-
         // test concept API insertion
         EntityType personType = tx.getEntityType("person");
         personType.create();
@@ -88,7 +92,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingRelationsIncrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
         EntityType personType = tx.getEntityType("person");
         Entity person1 = personType.create();
         Entity person2 = personType.create();
@@ -110,8 +113,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingAttributeValuesIncrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
-
         // test concept API insertion
         AttributeType age = tx.getAttributeType("age");
         age.create(1);
@@ -129,8 +130,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingAttributeOwnersIncrementsImplicitRelations() {
-        TransactionOLTP tx = session.transaction().write();
-
         // test concept API insertion
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age = ageType.create(1);
@@ -150,4 +149,102 @@ public class UncomittedStatisticsDeltaIT {
     }
 
 
+    @Test
+    public void removingEntitiesDecrementsCorrectly() {
+        // test concept API insertion
+        EntityType personType = tx.getEntityType("person");
+        ConceptId id1 = personType.create().id();
+        ConceptId id2 = personType.create().id();
+        ConceptId id3 = personType.create().id();
+        tx.commit();
+
+        tx = session.transaction().write();
+        // test concept API deletion
+        tx.getConcept(id1).delete();
+
+        // test Graql deletion
+        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long personDelta = statisticsDelta.delta("person");
+        assertEquals(-2, personDelta);
+    }
+
+    @Test
+    public void removingRelationsDecrementsCorrectly() {
+        EntityType personType = tx.getEntityType("person");
+        Entity person1 = personType.create();
+        Entity person2 = personType.create();
+        Entity person3 = personType.create();
+        RelationType friendship = tx.getRelationType("friendship");
+        Role friend = tx.getRole("friend");
+        ConceptId id1 = friendship.create().assign(friend, person1).assign(friend, person2).id();
+        ConceptId id2 = friendship.create().assign(friend, person1).assign(friend, person3).id();
+        ConceptId id3 = friendship.create().assign(friend, person2).assign(friend, person3).id();
+
+        tx.commit();
+
+        tx = session.transaction().write();
+        // test concept API deletion
+        tx.getConcept(id1).delete();
+
+        // test Graql deletion
+        tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
+        tx.execute(Graql.parse("match $x id " + id3 + "; delete $x;").asDelete());
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long friendshipDelta = statisticsDelta.delta("friendship");
+        assertEquals(-3, friendshipDelta);
+    }
+
+    @Test
+    public void removingAttributesDecrementsCorrectly() {
+        AttributeType age = tx.getAttributeType("age");
+        ConceptId lastAttributeId = null;
+        for (int i = 0; i < 100; i++) {
+            lastAttributeId = age.create(i).id();
+        }
+        tx.commit();
+
+        tx = session.transaction().write();
+        // test ConceptAPI deletion
+        tx.getConcept(lastAttributeId).delete();
+
+        // test Graql deletion
+        tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x, $y, $z;").asDelete());
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long ageDelta = statisticsDelta.delta("age");
+        assertEquals(-4, ageDelta);
+    }
+
+    @Test
+    public void deletingAttributeDecrementsImplicitRelsAndAttribute() {
+        // test concept API insertion
+        AttributeType ageType = tx.getAttributeType("age");
+        Attribute age1 = ageType.create(1);
+        Attribute age2 = ageType.create(99);
+        ConceptId age2Id  = age2.id();
+        EntityType personType = tx.getEntityType("person");
+        personType.create().has(age1);
+        personType.create().has(age1);
+        personType.create().has(age2);
+
+        tx.commit();
+        tx = session.transaction().write();
+
+        // test ConceptAPI deletion
+        tx.getConcept(age2Id).delete();
+
+        // test deletion
+        tx.execute(Graql.parse("match $x 1 isa age; delete $x;").asDelete());
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long ageDelta = statisticsDelta.delta("age");
+        assertEquals(-2, ageDelta);
+        long personDelta = statisticsDelta.delta("person");
+        assertEquals(0, personDelta);
+        long implicitAgeRelation = statisticsDelta.delta("@has-age");
+        assertEquals(-3, implicitAgeRelation);
+    }
 }

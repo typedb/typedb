@@ -113,6 +113,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
+        vertex().tx().statisticsDelta().decrement(type().label().toString());
+        // decrement concept counts for non-reified edges - need to be explicitly handled before they are deleted by Janus
+        this.edgeRelations().forEach(relation -> vertex().tx().statisticsDelta().decrement(relation.type().label().toString()));
+
         vertex().tx().cache().removedInstance(type().id());
         deleteNode();
 
@@ -342,7 +346,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         relations.filter(relation -> {
             Stream<Thing> rolePlayers = relation.rolePlayers(filterNulls(roleHasValue, roleKeyValue));
             return rolePlayers.anyMatch(rolePlayer -> rolePlayer.equals(attribute));
-        }).forEach(Concept::delete);
+        }).forEach(concept -> {
+            concept.delete();
+        });
 
         return getThis();
     }

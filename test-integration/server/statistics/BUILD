@@ -48,5 +48,6 @@ checkstyle_test(
     name = "checkstyle",
     targets = [
         ":keyspace-statistics-it",
+        ":uncomitted-statistics-delta-it"
     ],
 )

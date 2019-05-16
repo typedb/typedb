@@ -37,6 +37,7 @@ public class UncomittedStatisticsDelta {
     }
 
     public void decrement(String label) {
-
+        Long currentCount = instanceDeltas.getOrDefault(label, 0L);
+        instanceDeltas.put(label, currentCount - 1);
     }
 }
