@@ -46,24 +46,10 @@ java_test(
 )
 
 
-java_test(
-    name = "keyspace-statistics-persistence-it",
-    test_class = "grakn.core.server.statistics.KeyspaceStatisticsPersistenceIT",
-    srcs = ["KeyspaceStatisticsPersistenceIT.java"],
-    deps = [
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "//concept",
-    ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":uncomitted-statistics-delta-it",
         ":keyspace-statistics-it",
-        ":keyspace-statistics-persistence-it"
     ],
 )
