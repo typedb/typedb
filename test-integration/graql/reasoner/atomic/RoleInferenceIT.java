@@ -43,12 +43,15 @@ import java.io.InputStreamReader;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class RoleInferenceIT {
+
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -57,27 +60,14 @@ public class RoleInferenceIT {
     private static SessionImpl genericSchemaSession;
     private static SessionImpl ruleApplicabilitySetSession;
 
-    private static void loadFromFile(String fileName, SessionImpl session){
-        try {
-            InputStream inputStream = RoleInferenceIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e){
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
-
     @BeforeClass
     public static void loadContext(){
         roleInferenceSetSession = server.sessionWithNewKeyspace();
-        loadFromFile("roleInferenceTest.gql", roleInferenceSetSession);
+        loadFromFileAndCommit(resourcePath, "roleInferenceTest.gql", roleInferenceSetSession);
         genericSchemaSession = server.sessionWithNewKeyspace();
-        loadFromFile("genericSchema.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath, "genericSchema.gql", genericSchemaSession);
         ruleApplicabilitySetSession = server.sessionWithNewKeyspace();
-        loadFromFile("ruleApplicabilityTest.gql", ruleApplicabilitySetSession);
+        loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySetSession);
     }
 
     @AfterClass

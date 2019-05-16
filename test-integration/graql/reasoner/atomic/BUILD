@@ -75,6 +75,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -91,6 +92,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
