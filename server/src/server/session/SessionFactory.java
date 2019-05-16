@@ -22,6 +22,7 @@ import grakn.core.common.config.Config;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
 import org.janusgraph.core.JanusGraph;
 
@@ -62,10 +63,11 @@ public class SessionFactory {
      * @return a new Session connecting to the provided keyspace
      */
     public SessionImpl session(KeyspaceImpl keyspace) {
+        KeyspaceCacheContainer cacheContainer;
         JanusGraph graph;
         KeyspaceCache cache;
-        KeyspaceCacheContainer cacheContainer;
         ReadWriteLock graphLock;
+        KeyspaceStatistics keyspaceStatistics;
 
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
@@ -77,15 +79,17 @@ public class SessionFactory {
                 graph = cacheContainer.graph();
                 cache = cacheContainer.cache();
                 graphLock = cacheContainer.graphLock();
+                keyspaceStatistics = cacheContainer.keyspaceStatistics();
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 cache = new KeyspaceCache();
                 graphLock = new ReentrantReadWriteLock();
-                cacheContainer = new KeyspaceCacheContainer(cache, graph, graphLock);
+                keyspaceStatistics = new KeyspaceStatistics();
+                cacheContainer = new KeyspaceCacheContainer(cache, graph, graphLock, keyspaceStatistics);
                 keyspaceCacheMap.put(keyspace, cacheContainer);
             }
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, graphLock);
+            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, graphLock, keyspaceStatistics);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
@@ -160,12 +164,15 @@ public class SessionFactory {
         // All the sessions connecting to the same keyspace will lock on the graphLock when committing
         // (we are forcing serialised commits to avoid clashes with JanusGraph indices)
         private ReadWriteLock graphLock;
+        // Shared keyspace statistics
+        private KeyspaceStatistics keyspaceStatistics;
 
-        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
+        public KeyspaceCacheContainer(KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.sessions = new ArrayList<>();
             this.graphLock = graphLock;
+            this.keyspaceStatistics = keyspaceStatistics;
         }
 
         public KeyspaceCache cache() {
@@ -193,6 +200,8 @@ public class SessionFactory {
         public JanusGraph graph() {
             return graph;
         }
+
+        public KeyspaceStatistics keyspaceStatistics() { return keyspaceStatistics; }
 
     }
 

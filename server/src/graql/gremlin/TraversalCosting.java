@@ -49,4 +49,14 @@ public class TraversalCosting {
 
      */
 
+
+    /*
+    Then, we need to convert the tree acquired from the MSt algorithm into a linear plan.
+    This has been the job of the greedy traversal planner, which can be improved by actually finding the optimal
+    order of traversing the tree using a Dynamic Programming algorithm - if we start by assigning the cost
+    of a traversal as: a*b + a*b*c + a*b*c*d... we want to find the optimal ordering of a, b, c, d etc. to reduce this sume
+    This is the ordering that the tree should be traversed in. The values of a,b,c etc. can be estimated using instance counts
+    to start with and made more accurate over time with first-order statistics (eg. # of this type/role per that type).
+     */
+
 }
