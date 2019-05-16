@@ -40,4 +40,8 @@ public class UncomittedStatisticsDelta {
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount - 1);
     }
+
+    HashMap<String, Long> instanceDeltas() {
+        return instanceDeltas;
+    }
 }

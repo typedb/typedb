@@ -850,6 +850,7 @@ public class TransactionOLTP implements Transaction {
                 commitTransactionInternal();
                 transactionCache.flushToKeyspaceCache();
             }
+            session.keyspaceStatistics().commit(uncomittedStatisticsDelta);
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
@@ -913,6 +914,7 @@ public class TransactionOLTP implements Transaction {
             commitTransactionInternal();
             transactionCache.flushToKeyspaceCache();
         }
+        session.keyspaceStatistics().commit(uncomittedStatisticsDelta);
 
         ServerTracing.closeScopedChildSpan(commitSpanId);
 
