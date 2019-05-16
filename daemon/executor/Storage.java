@@ -62,7 +62,6 @@ import static grakn.core.daemon.executor.Executor.WAIT_INTERVAL_SECOND;
 public class Storage {
 
     private static final String DISPLAY_NAME = "Storage";
-    private static final String STORAGE_PROCESS_NAME = "CassandraDaemon";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
     private static final Path STORAGE_DATA = Paths.get("server", "db", "cassandra");
@@ -124,7 +123,7 @@ public class Storage {
                             inputConfig.properties().getProperty(key)
                     ));
 
-            // Write the new Cassandra config into the original file:services/cassandra/cassandra.yaml
+            // Write the new Cassandra config into the original file: services/cassandra/cassandra.yaml
             mapper.writeValue(outputstream, newConfigMap);
             String newConfigStr = outputstream.toString(StandardCharsets.UTF_8.name());
             Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), newConfigStr.getBytes(StandardCharsets.UTF_8));
@@ -138,8 +137,9 @@ public class Storage {
      * Attempt to start Storage if it is not already running
      */
     public void startIfNotRunning() {
-        boolean isStorageRunning = daemonExecutor.isProcessRunning(STORAGE_PIDFILE);
-        if (isStorageRunning) {
+        boolean isProcessRunning = daemonExecutor.isProcessRunning(STORAGE_PIDFILE);
+        boolean isGraknStorageProcess = daemonExecutor.isAGraknProcess(STORAGE_PIDFILE, GraknStorage.class.getName());
+        if (isProcessRunning && isGraknStorageProcess) {
             System.out.println(DISPLAY_NAME + " is already running");
         } else {
             FileUtils.deleteQuietly(STORAGE_PIDFILE.toFile()); // delete dangling STORAGE_PIDFILE, if any
@@ -152,12 +152,7 @@ public class Storage {
     }
 
     public void status() {
-        daemonExecutor.processStatus(STORAGE_PIDFILE, DISPLAY_NAME);
-    }
-
-    public void statusVerbose() {
-        System.out.println(DISPLAY_NAME + " pid = '" + daemonExecutor.getPidFromFile(STORAGE_PIDFILE).orElse("") +
-                                   "' (from " + STORAGE_PIDFILE + "), '" + daemonExecutor.getPidFromPsOf(STORAGE_PROCESS_NAME) + "' (from ps -ef)");
+        daemonExecutor.processStatus(STORAGE_PIDFILE, DISPLAY_NAME, GraknStorage.class.getName());
     }
 
     public void clean() {
@@ -216,9 +211,10 @@ public class Storage {
             }
         }
 
-        System.out.println("FAILED!");
-        System.err.println("Unable to start " + DISPLAY_NAME + ".");
+
         try {
+            System.out.println("FAILED!");
+            System.err.println("Unable to start " + DISPLAY_NAME + ".");
             String errorMessage = "Process exited with code '" + result.get().exitCode() + "': '" + result.get().stderr() + "'";
             System.err.println(errorMessage);
             throw new GraknDaemonException(errorMessage);
@@ -263,7 +259,6 @@ public class Storage {
         return Arrays.asList(
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,
-                //TODO: this needs to be removed or find lighter cassandra deps
                 NodeTool.class.getCanonicalName(),
                 "statusthrift"
         );
