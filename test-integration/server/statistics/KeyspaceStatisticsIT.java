@@ -1,7 +1,24 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.server.statistics;
 
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
 import org.junit.After;
 import org.junit.Before;
@@ -9,13 +26,11 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 
 public class KeyspaceStatisticsIT {
 
     private SessionImpl session;
-    private SessionFactory sessionFactory;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -23,7 +38,6 @@ public class KeyspaceStatisticsIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        sessionFactory = server.sessionFactory();
     }
 
     @After
@@ -31,7 +45,7 @@ public class KeyspaceStatisticsIT {
 
 
     @Test
-    public void newKeyspaceHasZeroBaseCounts() {
+    public void newKeyspaceHasZeroCounts() {
         KeyspaceStatistics statistics = session.keyspaceStatistics();
         int entityCount = statistics.count("entity");
         int relationCount = statistics.count("relation");
@@ -45,7 +59,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void sessionsToSameKeyspaceShareStatistics() {
         SessionImpl session2 = server.session(session.keyspace().name());
-        assertTrue(session.keyspaceStatistics() == session2.keyspaceStatistics());
+        assertSame(session.keyspaceStatistics(), session2.keyspaceStatistics());
     }
 
 

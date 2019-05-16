@@ -58,6 +58,7 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.statistics.UncomittedStatisticsDelta;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -124,6 +125,7 @@ public class TransactionOLTP implements Transaction {
     private Transaction.Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
+    private UncomittedStatisticsDelta uncomittedStatisticsDelta;
 
     // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -167,6 +169,8 @@ public class TransactionOLTP implements Transaction {
 
         this.keyspaceCache = keyspaceCache;
         this.transactionCache = new TransactionCache(keyspaceCache);
+
+        this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
 
     }
 
@@ -355,6 +359,10 @@ public class TransactionOLTP implements Transaction {
 
     public TransactionCache cache() {
         return transactionCache;
+    }
+
+    public UncomittedStatisticsDelta statisticsDelta() {
+        return uncomittedStatisticsDelta;
     }
 
     @Override

@@ -31,6 +31,19 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+java_test(
+    name = "uncomitted-statistics-delta-it",
+    test_class = "grakn.core.server.statistics.UncomittedStatisticsDeltaIT",
+    srcs = ["UncomittedStatisticsDeltaIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//concept",
+        "@graknlabs_graql//java:graql",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
