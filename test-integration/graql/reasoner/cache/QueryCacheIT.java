@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
@@ -36,6 +37,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -524,6 +526,43 @@ public class QueryCacheIT {
 
             assertNotNull(match);
             assertEquals(answers, match.cachedElement().getAll());
+        }
+    }
+
+    @Test
+    public void whenFullyResolvingAQuery_allSubgoalsAreMarkedAsComplete(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = tx.queryCache();
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa baseRelation;"), tx);
+
+            Set<ConceptMap> answers = query.resolve().collect(toSet());
+            cache.queries().forEach(q -> assertEquals(cache.isDBComplete(q), cache.isComplete(q)));
+        }
+    }
+
+    @Test
+    public void whenResolvingASequenceOfQueries_onlyFullyResolvedSubgoalsAreMarkedAsComplete(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = tx.queryCache();
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"), tx);
+
+            Set<ConceptMap> incompleteAnswers = query.resolve().limit(3).collect(toSet());
+            Set<ReasonerAtomicQuery> incompleteQueries = cache.queries();
+            //binary symmetric has no db entries
+            assertTrue(cache.isDBComplete(query));
+            Sets.difference(incompleteQueries, Collections.singleton(query))
+                    .forEach(q -> {
+                        assertFalse(cache.isDBComplete(q));
+                        assertFalse(cache.isComplete(q));
+            });
+
+            query = ReasonerQueries.atomic(conjunction("(symmetricRole: $y, symmetricRole: $z) isa binary-trans;"), tx);
+            Set<ConceptMap> answers = query.resolve().collect(toSet());
+            Sets.difference(cache.queries(), Collections.singleton(query))
+                    .forEach(q -> {
+                        assertTrue(cache.isDBComplete(q));
+                        assertEquals(cache.isDBComplete(q), cache.isComplete(q));
+                    });
         }
     }
 
