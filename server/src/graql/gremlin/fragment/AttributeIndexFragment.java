@@ -19,6 +19,8 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.concept.Label;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -30,9 +32,10 @@ import java.util.Collection;
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
 
 @AutoValue
-abstract class AttributeIndexFragment extends Fragment {
+public abstract class AttributeIndexFragment extends Fragment {
 
-    abstract String attributeIndex();
+    public abstract Label attributeLabel();
+    abstract String attributeValue();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -54,5 +57,10 @@ abstract class AttributeIndexFragment extends Fragment {
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
+    }
+
+    private String attributeIndex() {
+        String attributeIndex = Schema.generateAttributeIndex(attributeLabel(), attributeValue());
+        return attributeIndex;
     }
 }

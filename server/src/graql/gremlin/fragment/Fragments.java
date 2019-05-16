@@ -140,8 +140,7 @@ public class Fragments {
      */
     public static Fragment attributeIndex(
             @Nullable VarProperty varProperty, Variable start, Label label, Object attributeValue) {
-        String attributeIndex = Schema.generateAttributeIndex(label, attributeValue.toString());
-        return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
+        return new AutoValue_AttributeIndexFragment(varProperty, start, label, attributeValue.toString());
     }
 
 

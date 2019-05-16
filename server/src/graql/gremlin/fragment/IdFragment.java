@@ -37,7 +37,7 @@ import java.util.Map;
 import static grakn.core.concept.printer.StringPrinter.conceptId;
 
 @AutoValue
-abstract class IdFragment extends Fragment {
+public abstract class IdFragment extends Fragment {
 
     abstract ConceptId id();
 
