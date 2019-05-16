@@ -150,7 +150,6 @@ public class Executor {
                 Result command = executeAndWait(getGraknPIDArgsCommand(processPid), null);
 
                 if (command.exitCode() != 0) {
-                    System.out.println(command.stderr());
                     return false;
                 }
                 return command.stdout().contains(className);
