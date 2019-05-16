@@ -9,36 +9,47 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class KeyspaceStatistics {
 
-    private ConcurrentHashMap<String, Long> instanceCounts;
+    private ConcurrentHashMap<String, Long> instanceCountsCache;
 
     public KeyspaceStatistics() {
-        instanceCounts = new ConcurrentHashMap<>();
+        instanceCountsCache = new ConcurrentHashMap<>();
     }
 
     public long count(TransactionOLTP tx, String label) {
-        instanceCounts.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
-        return instanceCounts.get(label);
+        // return count if cached, else cache miss and retrieve from Janus
+        instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
+        return instanceCountsCache.get(label);
     }
 
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<String, Long> deltaMap = statisticsDelta.instanceDeltas();
-        deltaMap.forEach((key, delta) -> instanceCounts.compute(key, (k, prior) -> {
-            if (instanceCounts.containsKey(key)) {
-                return prior + delta;
-            } else {
-                return retrieveCountFromVertex(tx, key) + delta;
-            }
-        }));
+
+        // merge each delta into the cache, then flush the cache to Janus
+        for (Map.Entry<String, Long> entry : deltaMap.entrySet()) {
+            String label = entry.getKey();
+            Long delta = entry.getValue();
+            instanceCountsCache.compute(label, (k, prior) -> {
+                long existingCount;
+                if (instanceCountsCache.containsKey(label)) {
+                    existingCount = prior;
+                } else {
+                    existingCount = retrieveCountFromVertex(tx, label) ;
+                }
+                return existingCount + delta;
+            });
+        }
+
         persist(tx);
     }
 
     private void persist(TransactionOLTP tx) {
-        for (String label : instanceCounts.keySet()) {
-            Long count = instanceCounts.get(label);
+        for (String label : instanceCountsCache.keySet()) {
+            Long count = instanceCountsCache.get(label);
             Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
