@@ -191,7 +191,7 @@ public class TraversalPlanner {
         if (!weightedGraph.isEmpty()) {
             // sparse graph for better performance
             SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-            List<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph, tx);
+            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph, tx);
 
             // find the minimum spanning tree for each root
             // then get the tree with minimum weight
@@ -217,8 +217,8 @@ public class TraversalPlanner {
         return weightedGraph;
     }
 
-    private static List<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph, TransactionOLTP tx) {
-        final List<Node> highPriorityStartingNodeSet = new ArrayList<>();
+    private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph, TransactionOLTP tx) {
+        final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.stream()
             .filter(Fragment::hasFixedFragmentCost)
@@ -229,13 +229,13 @@ public class TraversalPlanner {
                 highPriorityStartingNodeSet.add(node);
             });
 
-        List<Node> startingNodes;
+        Set<Node> startingNodes;
         if (!highPriorityStartingNodeSet.isEmpty()) {
             startingNodes = highPriorityStartingNodeSet;
         } else {
             // if we have no good starting points, use any valid nodes
             startingNodes = sparseWeightedGraph.getNodes().stream()
-                    .filter(Node::isValidStartingPoint).collect(Collectors.toList());
+                    .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
         }
         return startingNodes;
     }
