@@ -182,15 +182,26 @@ public final class Schema {
      * An enum which defines the non-unique mutable properties of the concept.
      */
     public enum VertexProperty {
-        //Unique Properties
-        SCHEMA_LABEL(String.class), INDEX(String.class), LABEL_ID(Integer.class),
+        // Schema concept properties
+        SCHEMA_LABEL(String.class), LABEL_ID(Integer.class), INSTANCE_COUNT(Long.class),IS_ABSTRACT(Boolean.class),
+
+        // Attribute schema concept properties
+        REGEX(String.class), DATA_TYPE(String.class),
+
+        // Attribute concept properties
+        INDEX(String.class),
+
+        // Reified relations' ID (exported from a previously non-reified edge ID)
         EDGE_RELATION_ID(String.class),
 
-        //Other Properties
-        THING_TYPE_LABEL_ID(Integer.class),
-        IS_ABSTRACT(Boolean.class), IS_IMPLICIT(Boolean.class), IS_INFERRED(Boolean.class),
-        REGEX(String.class), DATA_TYPE(String.class), CURRENT_LABEL_ID(Integer.class),
-        RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
+        // Properties on all Concept vertices
+        THING_TYPE_LABEL_ID(Integer.class), IS_INFERRED(Boolean.class),
+
+        // Misc. properties
+        CURRENT_LABEL_ID(Integer.class), RULE_WHEN(String.class), RULE_THEN(String.class), CURRENT_SHARD(String.class),
+
+        // Relation properties
+        IS_IMPLICIT(Boolean.class),
 
         //Supported Data Types
         VALUE_STRING(String.class), VALUE_LONG(Long.class),

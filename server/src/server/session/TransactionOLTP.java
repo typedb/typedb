@@ -846,11 +846,11 @@ public class TransactionOLTP implements Transaction {
             validateGraph();
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
+            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             synchronized (keyspaceCache) {
                 commitTransactionInternal();
                 transactionCache.flushToKeyspaceCache();
             }
-            session.keyspaceStatistics().commit(uncomittedStatisticsDelta);
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
@@ -910,11 +910,11 @@ public class TransactionOLTP implements Transaction {
 
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
         // force serialized updates, keeping Janus and our KeyspaceCache in sync
+        session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
         synchronized (keyspaceCache) {
             commitTransactionInternal();
             transactionCache.flushToKeyspaceCache();
         }
-        session.keyspaceStatistics().commit(uncomittedStatisticsDelta);
 
         ServerTracing.closeScopedChildSpan(commitSpanId);
 

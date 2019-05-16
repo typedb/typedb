@@ -28,6 +28,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -49,15 +50,19 @@ public class KeyspaceStatisticsIT {
     }
 
     @After
-    public void closeSession() { session.close(); }
+    public void closeSession() {
+        session.close();
+    }
 
 
     @Test
     public void newKeyspaceHasZeroCounts() {
         KeyspaceStatistics statistics = session.keyspaceStatistics();
-        long entityCount = statistics.count("entity");
-        long relationCount = statistics.count("relation");
-        long attributeCount = statistics.count("attribute");
+        TransactionOLTP tx = session.transaction().write();
+        long entityCount = statistics.count(tx, "entity");
+        long relationCount = statistics.count(tx, "relation");
+        long attributeCount = statistics.count(tx, "attribute");
+        tx.close();
 
         assertEquals(0, entityCount);
         assertEquals(0, relationCount);
@@ -90,10 +95,12 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
-        long personCount = session.keyspaceStatistics().count("person");
-        long ageCount = session.keyspaceStatistics().count("age");
-        long friendshipCount = session.keyspaceStatistics().count("friendship");
-        long implicitAgeCount = session.keyspaceStatistics().count("@has-age");
+        tx = session.transaction().write();
+        long personCount = session.keyspaceStatistics().count(tx, "person");
+        long ageCount = session.keyspaceStatistics().count(tx, "age");
+        long friendshipCount = session.keyspaceStatistics().count(tx, "friendship");
+        long implicitAgeCount = session.keyspaceStatistics().count(tx, "@has-age");
+        tx.close();
 
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
@@ -103,10 +110,13 @@ public class KeyspaceStatisticsIT {
         tx = session.transaction().write();
         tx.execute(Graql.parse("match $x isa friendship; delete $x;").asDelete());
         tx.commit();
-        personCount = session.keyspaceStatistics().count("person");
-        ageCount = session.keyspaceStatistics().count("age");
-        friendshipCount = session.keyspaceStatistics().count("friendship");
-        implicitAgeCount = session.keyspaceStatistics().count("@has-age");
+
+        tx = session.transaction().write();
+        personCount = session.keyspaceStatistics().count(tx, "person");
+        ageCount = session.keyspaceStatistics().count(tx, "age");
+        friendshipCount = session.keyspaceStatistics().count(tx, "friendship");
+        implicitAgeCount = session.keyspaceStatistics().count(tx, "@has-age");
+        tx.close();
 
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
@@ -116,10 +126,12 @@ public class KeyspaceStatisticsIT {
         tx = session.transaction().write();
         tx.execute(Graql.parse("match $x isa thing; delete $x;").asDelete());
         tx.commit();
-        personCount = session.keyspaceStatistics().count("person");
-        ageCount = session.keyspaceStatistics().count("age");
-        friendshipCount = session.keyspaceStatistics().count("friendship");
-        implicitAgeCount = session.keyspaceStatistics().count("@has-age");
+        tx = session.transaction().write();
+        personCount = session.keyspaceStatistics().count(tx, "person");
+        ageCount = session.keyspaceStatistics().count(tx, "age");
+        friendshipCount = session.keyspaceStatistics().count(tx, "friendship");
+        implicitAgeCount = session.keyspaceStatistics().count(tx, "@has-age");
+        tx.close();
 
         assertEquals(0, personCount);
         assertEquals(0, ageCount);
@@ -147,10 +159,12 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.close();
 
-        long personCount = session.keyspaceStatistics().count("person");
-        long ageCount = session.keyspaceStatistics().count("age");
-        long friendshipCount = session.keyspaceStatistics().count("friendship");
-        long implicitAgeCount = session.keyspaceStatistics().count("@has-age");
+        tx = session.transaction().write();
+        long personCount = session.keyspaceStatistics().count(tx, "person");
+        long ageCount = session.keyspaceStatistics().count(tx, "age");
+        long friendshipCount = session.keyspaceStatistics().count(tx, "friendship");
+        long implicitAgeCount = session.keyspaceStatistics().count(tx, "@has-age");
+        tx.close();
 
         assertEquals(0, personCount);
         assertEquals(0, ageCount);
@@ -158,7 +172,52 @@ public class KeyspaceStatisticsIT {
         assertEquals(0, implicitAgeCount);
     }
 
-    // ------- persistence is TODO
-    // only work on tests that can be performed in-memory
+    /**
+     * Tests persistence
+     */
+    @Test
+    public void reopeningSessionRetrievesStatistics() {
+        TransactionOLTP tx = session.transaction().write();
+        AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        Role friend = tx.putRole("friend");
+        EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
+        RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
+        tx.commit();
 
+        tx = session.transaction().write();
+        ageType = tx.getAttributeType("age");
+        Attribute age = ageType.create(1);
+        personType = tx.getEntityType("person");
+        Entity person1 = personType.create().has(age).has(age);
+        Entity person2 = personType.create().has(age);
+        friendshipType = tx.getRelationType("friendship");
+        friend = tx.getRole("friend");
+        friendshipType.create().assign(friend, person1).assign(friend, person2);
+        tx.commit();
+
+        tx = session.transaction().write();
+        long personCount = session.keyspaceStatistics().count(tx, "person");
+        long ageCount = session.keyspaceStatistics().count(tx, "age");
+        long friendshipCount = session.keyspaceStatistics().count(tx, "friendship");
+        long implicitAgeCount = session.keyspaceStatistics().count(tx, "@has-age");
+        tx.close();
+
+        session.close();
+
+        // at this point, the graph and keyspace should be deleted from Grakn server
+        session = server.session(session.keyspace().name());
+
+        tx = session.transaction().write();
+        long personCountReopened = session.keyspaceStatistics().count(tx, "person");
+        long ageCountReopened = session.keyspaceStatistics().count(tx, "age");
+        long friendshipCountReopened = session.keyspaceStatistics().count(tx, "friendship");
+        long implicitAgeCountReopened = session.keyspaceStatistics().count(tx, "@has-age");
+        tx.close();
+
+        TestCase.assertEquals(personCount, personCountReopened);
+        TestCase.assertEquals(ageCount, ageCountReopened);
+        TestCase.assertEquals(friendshipCount, friendshipCountReopened);
+        TestCase.assertEquals(implicitAgeCount, implicitAgeCountReopened);
+
+    }
 }

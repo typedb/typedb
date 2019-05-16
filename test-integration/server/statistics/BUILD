@@ -20,19 +20,6 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 
 java_test(
-    name = "keyspace-statistics-it",
-    test_class = "grakn.core.server.statistics.KeyspaceStatisticsIT",
-    srcs = ["KeyspaceStatisticsIT.java"],
-    deps = [
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "//concept",
-        "@graknlabs_graql//java:graql",
-    ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
-)
-
-java_test(
     name = "uncomitted-statistics-delta-it",
     test_class = "grakn.core.server.statistics.UncomittedStatisticsDeltaIT",
     srcs = ["UncomittedStatisticsDeltaIT.java"],
@@ -45,10 +32,38 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+java_test(
+    name = "keyspace-statistics-it",
+    test_class = "grakn.core.server.statistics.KeyspaceStatisticsIT",
+    srcs = ["KeyspaceStatisticsIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//concept",
+        "@graknlabs_graql//java:graql",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+
+java_test(
+    name = "keyspace-statistics-persistence-it",
+    test_class = "grakn.core.server.statistics.KeyspaceStatisticsPersistenceIT",
+    srcs = ["KeyspaceStatisticsPersistenceIT.java"],
+    deps = [
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//concept",
+    ],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
+        ":uncomitted-statistics-delta-it",
         ":keyspace-statistics-it",
-        ":uncomitted-statistics-delta-it"
+        ":keyspace-statistics-persistence-it"
     ],
 )
