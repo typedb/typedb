@@ -131,10 +131,12 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel build //:assemble-mac-zip
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --get
       - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
       - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --save-success
 
   test-assembly-windows-zip:
     machine: true
@@ -153,10 +155,12 @@ jobs:
       - checkout
       - run-bazel-rbe:
           command: bazel build //:assemble-linux-targz
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --get
       - run: tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
       - run: nohup bazel-genfiles/grakn-core-all-linux/grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --save-success
 
   test-assembly-linux-apt:
     machine: true
