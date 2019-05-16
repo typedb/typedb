@@ -18,7 +18,9 @@
 
 package grakn.core.server.statistics;
 
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
@@ -43,8 +45,9 @@ public class UncomittedStatisticsDeltaIT {
     public void setUp() {
         session = server.sessionWithNewKeyspace();
         TransactionOLTP tx = session.transaction().write();
+        AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
-        EntityType personType = tx.putEntityType("person").plays(friend);
+        EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
     }
@@ -104,4 +107,47 @@ public class UncomittedStatisticsDeltaIT {
         long friendshipDelta = statisticsDelta.delta("friendship");
         assertEquals(2, friendshipDelta);
     }
+
+    @Test
+    public void addingAttributeValuesIncrementsCorrectly() {
+        TransactionOLTP tx = session.transaction().write();
+
+        // test concept API insertion
+        AttributeType age = tx.getAttributeType("age");
+        age.create(1);
+
+        // test Graql insertion
+        tx.execute(Graql.parse("insert $a 99 isa age;").asInsert());
+
+        // test deduplication withing a single tx too
+        tx.execute(Graql.parse("insert $a 1 isa age;").asInsert());
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long ageDelta = statisticsDelta.delta("age");
+        assertEquals(2, ageDelta);
+    }
+
+    @Test
+    public void addingAttributeOwnersIncrementsImplicitRelations() {
+        TransactionOLTP tx = session.transaction().write();
+
+        // test concept API insertion
+        AttributeType ageType = tx.getAttributeType("age");
+        Attribute age = ageType.create(1);
+        EntityType personType = tx.getEntityType("person");
+        Entity person = personType.create().has(age);
+
+        // test Graql insertion with two ages, one of which is shared
+        tx.execute(Graql.parse("insert $x isa person, has age 99, has age 1;").asInsert());
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long ageDelta = statisticsDelta.delta("age");
+        assertEquals(2, ageDelta);
+        long personDelta = statisticsDelta.delta("person");
+        assertEquals(2, personDelta);
+        long implicitAgeRelation = statisticsDelta.delta("@has-age");
+        assertEquals(3, implicitAgeRelation);
+    }
+
+
 }

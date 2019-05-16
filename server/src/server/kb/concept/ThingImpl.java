@@ -324,6 +324,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+
+        vertex().tx().statisticsDelta().increment(hasAttribute.label().toString());
+
         return vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
     }
 
