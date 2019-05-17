@@ -214,6 +214,7 @@ public class KeyspaceStatisticsIT {
         tx.close();
 
         localSession.close();
+        remoteSession.close();
 
         // at this point, the graph and keyspace should be deleted from Grakn server
         localSession = server.session(remoteSession.keyspace().name());

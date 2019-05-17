@@ -22,6 +22,12 @@ import grakn.core.concept.Label;
 
 import java.util.HashMap;
 
+/**
+ * A transaction-bound tracker of created and deleted types. A simple implementation that increments and decrements
+ * and doesn't need to be thread safe as transactions are currently bound to a single thread.
+ *
+ * Written into `KeyspaceStatistics` on commit
+ */
 public class UncomittedStatisticsDelta {
 
     private HashMap<Label, Long> instanceDeltas;

@@ -47,7 +47,7 @@ public class AttributeDeduplicator {
      * finally deleting that other duplicates.
      *
      * @param sessionFactory    the factory object for accessing the database
-     * @param keyspaceAttributeTriple the pair containing information about the attribute keyspace and index
+     * @param keyspaceAttributeTriple the object containing information about the attribute keyspace, label, and index
      */
     public static void deduplicate(SessionFactory sessionFactory, KeyspaceAttributeTriple keyspaceAttributeTriple) {
         SessionImpl session = sessionFactory.session(keyspaceAttributeTriple.keyspace());

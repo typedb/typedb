@@ -88,7 +88,7 @@ public class UncomittedStatisticsDeltaIT {
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
         long personDelta = statisticsDelta.delta("person");
         assertEquals(2, personDelta);
-    }
+}
 
     @Test
     public void addingRelationsIncrementsCorrectly() {

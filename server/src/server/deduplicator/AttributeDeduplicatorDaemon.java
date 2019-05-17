@@ -89,7 +89,7 @@ public class AttributeDeduplicatorDaemon {
 
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
-     * The thread listens to the RocksDbQueue queue for incoming attributes and applies
+     * The thread listens queue for incoming attributes and applies
      * the AttributeDeduplicator#deduplicate(SessionStore, KeyspaceAttributeTriple) algorithm.
      *
      */

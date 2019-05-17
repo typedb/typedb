@@ -30,6 +30,16 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+
+/**
+ * This class is bound per-keyspace, and shared between sessions on the same keyspace just like the JanusGraph object.
+ * The general method of operation is as a cache, into which the statistics delta is merged on commit.
+ * At this point we also write the statistics to JanusGraph, writing recorded values as vertex properties on the schema
+ * concepts.
+ *
+ * On cache miss, we read from JanusGraph schema vertices, which only have the INSTANCE_COUNT property if the
+ * count is non-zero or has been non-zero in the past. No such property means instance count is 0.
+ */
 public class KeyspaceStatistics {
 
     private ConcurrentHashMap<Label, Long> instanceCountsCache;
