@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
@@ -67,30 +68,19 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicUnificationIT {
 
+    private static String resourcePath = "test-integration/graql/reasoner/resources/";
+
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
     private static SessionImpl genericSchemaSession;
-
-    private static void loadFromFile(String fileName, SessionImpl session){
-        try {
-            InputStream inputStream = AtomicUnificationIT.class.getClassLoader().getResourceAsStream("test-integration/graql/reasoner/resources/"+fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-            TransactionOLTP tx = session.transaction().write();
-            Graql.parseList(s).forEach(tx::execute);
-            tx.commit();
-        } catch (Exception e){
-            System.err.println(e);
-            throw new RuntimeException(e);
-        }
-    }
 
     private TransactionOLTP tx;
 
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        loadFromFile("genericSchema.gql", genericSchemaSession);
+        loadFromFileAndCommit(resourcePath,"genericSchema.gql", genericSchemaSession);
     }
 
     @AfterClass
