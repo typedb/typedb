@@ -69,11 +69,19 @@ public class KeyspaceStatistics {
         for (String label : instanceCountsCache.keySet()) {
             Long count = instanceCountsCache.get(label);
             Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
-            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-            janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
+            if (schemaConcept != null) {
+                Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+                janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
+            } else {
+                instanceCountsCache.remove(label);
+            }
         }
     }
 
+    /**
+     * Effectively a cache miss - retrieves the value from the janus vertex
+     * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
+     */
     private long retrieveCountFromVertex(TransactionOLTP tx, String label) {
         Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
         Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();

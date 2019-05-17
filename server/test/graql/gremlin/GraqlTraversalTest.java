@@ -107,6 +107,7 @@ public class GraqlTraversalTest {
 //        graph.putRelationType("marriage").relates(wife);
 
         SessionImpl session = mock(SessionImpl.class);
+        when(tx.session()).thenReturn(session);
         KeyspaceStatistics statistics = mock(KeyspaceStatistics.class);
         when(session.keyspaceStatistics()).thenReturn(statistics);
         when(statistics.count(eq(tx), anyString())).thenReturn(1L);
