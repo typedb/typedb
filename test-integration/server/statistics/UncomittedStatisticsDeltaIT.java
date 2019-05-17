@@ -19,6 +19,7 @@
 package grakn.core.server.statistics;
 
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -67,9 +68,9 @@ public class UncomittedStatisticsDeltaIT {
     public void newTransactionsInitialisedWithEmptyStatsDelta() {
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
 
-        long entityDelta = statisticsDelta.delta("entity");
-        long relationDelta = statisticsDelta.delta("relationDelta");
-        long attributeDelta = statisticsDelta.delta("attribute");
+        long entityDelta = statisticsDelta.delta(Label.of("entity"));
+        long relationDelta = statisticsDelta.delta(Label.of("relationDelta"));
+        long attributeDelta = statisticsDelta.delta(Label.of("attribute"));
 
         assertEquals(0, entityDelta);
         assertEquals(0, relationDelta);
@@ -86,7 +87,7 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("insert $x isa person;").asInsert());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long personDelta = statisticsDelta.delta("person");
+        long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(2, personDelta);
 }
 
@@ -107,7 +108,7 @@ public class UncomittedStatisticsDeltaIT {
                 "insert $r (friend: $x, friend: $y, friend: $z) isa friendship;").asInsert());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long friendshipDelta = statisticsDelta.delta("friendship");
+        long friendshipDelta = statisticsDelta.delta(Label.of("friendship"));
         assertEquals(2, friendshipDelta);
     }
 
@@ -124,7 +125,7 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("insert $a 1 isa age;").asInsert());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long ageDelta = statisticsDelta.delta("age");
+        long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(2, ageDelta);
     }
 
@@ -140,11 +141,11 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("insert $x isa person, has age 99, has age 1;").asInsert());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long ageDelta = statisticsDelta.delta("age");
+        long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(2, ageDelta);
-        long personDelta = statisticsDelta.delta("person");
+        long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(2, personDelta);
-        long implicitAgeRelation = statisticsDelta.delta("@has-age");
+        long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
         assertEquals(3, implicitAgeRelation);
     }
 
@@ -166,7 +167,7 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("match $x id " + id2 + "; delete $x;").asDelete());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long personDelta = statisticsDelta.delta("person");
+        long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(-2, personDelta);
     }
 
@@ -193,7 +194,7 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("match $x id " + id3 + "; delete $x;").asDelete());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long friendshipDelta = statisticsDelta.delta("friendship");
+        long friendshipDelta = statisticsDelta.delta(Label.of("friendship"));
         assertEquals(-3, friendshipDelta);
     }
 
@@ -214,7 +215,7 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("match $x 50 isa age; $y 51 isa age; $z 52 isa age; delete $x, $y, $z;").asDelete());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long ageDelta = statisticsDelta.delta("age");
+        long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-4, ageDelta);
     }
 
@@ -240,11 +241,11 @@ public class UncomittedStatisticsDeltaIT {
         tx.execute(Graql.parse("match $x 1 isa age; delete $x;").asDelete());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
-        long ageDelta = statisticsDelta.delta("age");
+        long ageDelta = statisticsDelta.delta(Label.of("age"));
         assertEquals(-2, ageDelta);
-        long personDelta = statisticsDelta.delta("person");
+        long personDelta = statisticsDelta.delta(Label.of("person"));
         assertEquals(0, personDelta);
-        long implicitAgeRelation = statisticsDelta.delta("@has-age");
+        long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
         assertEquals(-3, implicitAgeRelation);
     }
 }
