@@ -215,17 +215,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null));
 
         Iterator<ResolutionState> subGoalIterator;
+        boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
-        if(visitedSubGoals.contains(this)
+        boolean doNotResolveFurther = visited
                 || tx().queryCache().isComplete(this)
-                || (this.isGround() && dbIterator.hasNext())){
+                || (this.isGround() && dbIterator.hasNext());
+        if(doNotResolveFurther){
             subGoalIterator = Collections.emptyIterator();
         } else {
-            visitedSubGoals.add(this);
+
             subGoalIterator = getRuleStream()
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
                     .iterator();
         }
+        if (!visited) visitedSubGoals.add(this);
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 

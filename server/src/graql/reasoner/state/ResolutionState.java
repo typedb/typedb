@@ -66,11 +66,6 @@ public abstract class ResolutionState {
     }
 
     /**
-     * @return stream of queries to be acked for completion when processing is finished
-     */
-    public Stream<ReasonerAtomicQuery> completionQueries(){ return Stream.empty();}
-
-    /**
      * @return parent state of this state
      */
     QueryStateBase getParentState(){ return parentState;}

@@ -87,9 +87,6 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         return recordAnswer(query, answer);
     }
 
-    @Override
-    public Stream<ReasonerAtomicQuery> completionQueries(){ return Stream.of(getQuery());}
-
     /**
      * @return cache unifier if any
      */
