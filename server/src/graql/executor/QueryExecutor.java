@@ -155,8 +155,6 @@ public class QueryExecutor {
             throw GraqlSemanticException.matchWithoutAnyProperties(statementsWithoutProperties.get(0));
         }
 
-        validateVarVarComparisons(negationDNF);
-
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
                 .map(p -> Graql.and(Collections.singleton(p)))
@@ -168,39 +166,6 @@ public class QueryExecutor {
             if (containsNegation) {
                 throw GraqlSemanticException.usingNegationWithReasoningOff(matchClause.getPatterns());
             }
-        }
-    }
-
-    public void validateVarVarComparisons(Disjunction<Conjunction<Pattern>> negationDNF) {
-        // comparisons between two variables (ValueProperty and NotEqual, similar to !== and !=)
-        // must only use variables that are also used outside of comparisons
-
-        // collect variables used in comparisons between two variables
-        // and collect variables used outside of two-variable comparisons (variable to value is OK)
-        Set<Statement> statements = negationDNF.statements();
-        Set<Variable> varVarComparisons = new HashSet<>();
-        Set<Variable> notVarVarComparisons = new HashSet<>();
-        for (Statement stmt : statements) {
-            if (stmt.hasProperty(NeqProperty.class)) {
-                varVarComparisons.add(stmt.var());
-                varVarComparisons.add(stmt.getProperty(NeqProperty.class).get().statement().var());
-            } else if (stmt.hasProperty(ValueProperty.class)) {
-                ValueProperty valueProperty = stmt.getProperty(ValueProperty.class).get();
-                if (valueProperty.operation().hasVariable()) {
-                    varVarComparisons.add(stmt.var());
-                    varVarComparisons.add(valueProperty.operation().innerStatement().var());
-                } else {
-                    notVarVarComparisons.add(stmt.var());
-                }
-            } else {
-                notVarVarComparisons.addAll(stmt.variables());
-            }
-        }
-
-        // ensure variables used in var-var comparisons are used elsewhere too
-        Set<Variable> unboundComparisonVariables = Sets.difference(varVarComparisons, notVarVarComparisons);
-        if (!unboundComparisonVariables.isEmpty()) {
-            throw GraqlSemanticException.unboundComparisonVariables(unboundComparisonVariables);
         }
     }
 
