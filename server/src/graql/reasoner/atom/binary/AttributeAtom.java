@@ -286,6 +286,7 @@ public abstract class AttributeAtom extends Binary{
         Set<Variable> varNames = super.getVarNames();
         varNames.add(getAttributeVariable());
         if (getRelationVariable().isReturned()) varNames.add(getRelationVariable());
+        getMultiPredicate().forEach(p -> varNames.addAll(p.getVarNames()));
         return varNames;
     }
 

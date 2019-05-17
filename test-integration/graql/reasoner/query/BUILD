@@ -127,6 +127,7 @@ java_test(
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+        "@com-google-guava-guava//jar",
         "@graknlabs_graql//java:graql",
     ],
 )

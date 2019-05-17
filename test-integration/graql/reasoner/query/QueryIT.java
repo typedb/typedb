@@ -18,12 +18,18 @@
 
 package grakn.core.graql.reasoner.query;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
@@ -34,13 +40,13 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
@@ -146,6 +152,36 @@ public class QueryIT {
                         tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()))
                 );
                 assertTrue(query.requiresReiteration());
+            }
+        }
+    }
+
+    @Test
+    public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched(){
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+
+                AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);
+                resource.create(1337L);
+                resource.create(1667L);
+                tx.putEntityType("someEntity")
+                        .has(resource);
+                tx.commit();
+            }
+            try (TransactionOLTP tx = session.transaction().write()) {
+                Attribute<Long> attribute = tx.getAttributesByValue(1337L).iterator().next();
+                String basePattern = "{" +
+                        "$x isa someEntity;" +
+                        "$x has resource $value;" +
+                        "$value > $anotherValue;" +
+                        "};";
+                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(basePattern, tx), tx);
+                assertEquals(
+                        Sets.newHashSet(new Variable("x"), new Variable("value"), new Variable("anotherValue")),
+                        query.getVarNames());
+                ConceptMap sub = new ConceptMap(ImmutableMap.of(new Variable("anotherValue"), attribute));
+                ReasonerQueryImpl subbedQuery = ReasonerQueries.create(query, sub);
+                assertTrue(subbedQuery.getAtoms(IdPredicate.class).findAny().isPresent());
             }
         }
     }
