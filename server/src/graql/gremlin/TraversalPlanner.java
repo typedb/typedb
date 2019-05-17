@@ -24,6 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.gremlin.fragment.AttributeIndexFragment;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.IdFragment;
@@ -267,10 +268,14 @@ public class TraversalPlanner {
             Stream<AttributeType> attributeSubs = attributeType.subs();
 
             Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-            RelationType implicitRelationType = tx.getSchemaConcept(implicitAttributeType).asRelationType();
-            Stream<RelationType> implicitSubs = implicitRelationType.subs();
+            SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
+            long totalImplicitRels = 0L;
+            if (implicitAttributeRelationType != null) {
+                RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
+                Stream<RelationType> implicitSubs = implicitRelationType.subs();
+                totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
+            }
 
-            long totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
             long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
 
             if (totalAttributes == 0) {
@@ -295,11 +300,13 @@ public class TraversalPlanner {
 
             Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
             RelationType implicitRelationType = tx.getSchemaConcept(implicitAttributeType).asRelationType();
-            Stream<RelationType> implicitSubs = implicitRelationType.subs();
-
-            long totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
+            SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
+            long totalImplicitRels = 0L;
+            if (implicitAttributeRelationType != null) {
+                Stream<RelationType> implicitSubs = implicitRelationType.subs();
+                totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
+            }
             long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
-
             if (totalAttributes == 0) {
                 // short circuiting can be done quickly if starting here
                 return 0;
