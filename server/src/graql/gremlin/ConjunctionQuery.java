@@ -72,12 +72,10 @@ class ConjunctionQuery {
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
                 statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(toImmutableSet());
 
-        // Get all variable names mentioned in non-starting, non-comparing fragments (these should have vars bound elsewhere too)
+        // Get all variable names mentioned in non-starting
         Set<Variable> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
-                .filter(fragment -> !fragment.validStartIfDisconnected()
-                                && !(fragment instanceof ValueFragment)
-                                && !(fragment instanceof NeqFragment))
+                .filter(fragment -> !fragment.validStartIfDisconnected())
                 .flatMap(fragment -> fragment.vars().stream())
                 .collect(toImmutableSet());
 
