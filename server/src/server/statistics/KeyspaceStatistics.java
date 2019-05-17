@@ -51,6 +51,7 @@ public class KeyspaceStatistics {
         for (Map.Entry<String, Long> entry : deltaMap.entrySet()) {
             String label = entry.getKey();
             Long delta = entry.getValue();
+            // atomic update
             instanceCountsCache.compute(label, (k, prior) -> {
                 long existingCount;
                 if (instanceCountsCache.containsKey(label)) {
@@ -70,13 +71,17 @@ public class KeyspaceStatistics {
         // when the schemaConcept is null - ie it's been removed. However making this
         // thread safe with competing action of creating a schema concept of the same name again
         // So for now just wait until sessions are closed and rebuild the instance counts cache from scratch
+
         for (String label : instanceCountsCache.keySet()) {
-            Long count = instanceCountsCache.get(label);
-            Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
-            if (schemaConcept != null) {
-                Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-                janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
-            }
+            // don't change the value, just use `.compute()` for atomic and locking vertex write
+            instanceCountsCache.compute(label, (lab, count) -> {
+                Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
+                if (schemaConcept != null) {
+                    Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+                    janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
+                }
+                return count;
+            });
         }
     }
 
@@ -86,9 +91,15 @@ public class KeyspaceStatistics {
      */
     private long retrieveCountFromVertex(TransactionOLTP tx, String label) {
         Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
-        Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-        VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name());
-        // VertexProperty is similar to a Java Optional
-        return (Long) property.orElse(0L);
+        if (schemaConcept != null) {
+            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name());
+            // VertexProperty is similar to a Java Optional
+            return (Long) property.orElse(0L);
+        } else {
+            // if the schema concept is NULL, it doesn't exist! While it shouldn't pass validation, if we can use it to
+            // short circuit then it's a good starting point
+            return -1L;
+        }
     }
 }
