@@ -28,10 +28,11 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 @AutoValue
 public abstract class Attribute {
     public abstract KeyspaceImpl keyspace();
+    public abstract String label();
     public abstract String index();
     public abstract ConceptId conceptId();
 
-    public static Attribute create(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
-        return new AutoValue_Attribute(keyspace, index, conceptId);
+    public static Attribute create(KeyspaceImpl keyspace, String label, String index, ConceptId conceptId) {
+        return new AutoValue_Attribute(keyspace, label, index, conceptId);
     }
 }

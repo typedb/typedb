@@ -41,6 +41,7 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//concept",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_client_java//:client-java",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )

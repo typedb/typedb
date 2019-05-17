@@ -26,11 +26,12 @@ import grakn.core.server.keyspace.KeyspaceImpl;
  *
  */
 @AutoValue
-public abstract class KeyspaceIndexPair {
+public abstract class KeyspaceAttributeTriple {
     public abstract KeyspaceImpl keyspace();
+    public abstract String label();
     public abstract String index();
 
-    public static KeyspaceIndexPair create(KeyspaceImpl keyspace, String index) {
-        return new AutoValue_KeyspaceIndexPair(keyspace, index);
+    public static KeyspaceAttributeTriple create(KeyspaceImpl keyspace, String label, String index) {
+        return new AutoValue_KeyspaceAttributeTriple(keyspace, label, index);
     }
 }
