@@ -87,4 +87,15 @@ public abstract class LabelFragment extends Fragment {
                 .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
                 .sum();
     }
+
+
+    @Override
+    public long estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        // there's only 1 label in this set, but sum anyway
+        long instances = labels().stream()
+                .map(label -> tx.session().keyspaceStatistics().count(tx, label.toString()))
+                .reduce((a,b) -> a+b)
+                .orElseThrow(() -> new RuntimeException("LabelFragment contains no labels!"));
+        return instances;
+    }
 }

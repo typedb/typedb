@@ -225,7 +225,7 @@ public class TraversalPlanner {
 
         fragmentSet.stream()
             .filter(Fragment::hasFixedFragmentCost)
-            .sorted(Comparator.comparing(fragment -> estimateInitialCost(fragment, tx)))
+            .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(tx)))
             .limit(MAX_STARTING_POINTS)
             .forEach(fragment -> {
                 Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
@@ -241,83 +241,6 @@ public class TraversalPlanner {
                     .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
         }
         return startingNodes;
-    }
-
-    /**
-     * Estimate the "cost" of a starting point for each type of fixed cost fragment
-     * These are heuristic proxies using statistics
-     * @param fixedCostFragment
-     * @return
-     */
-    private static long estimateInitialCost(Fragment fixedCostFragment, TransactionOLTP tx) {
-        KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
-        if (fixedCostFragment instanceof  LabelFragment) {
-            // there's only 1 label in this set, but sum anyway
-            Set<Label> labels = ((LabelFragment) fixedCostFragment).labels();
-            long instances = labels.stream()
-                    .map(label -> statistics.count(tx, label.toString()))
-                    .reduce((a,b) -> a+b)
-                    .orElseThrow(() -> new RuntimeException("LabelFragment contains no labels!"));
-
-            return instances;
-        } else if (fixedCostFragment instanceof AttributeIndexFragment) {
-            // here we estimate the number of owners of an attribute instance of this type
-            // as this is the most common usage/expensive component of an attribute
-            // given that there's only 1 attribute of a type and value at any time
-            Label attributeLabel = ((AttributeIndexFragment) fixedCostFragment).attributeLabel();
-
-            AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
-            Stream<AttributeType> attributeSubs = attributeType.subs();
-
-            Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-            SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
-            long totalImplicitRels = 0L;
-            if (implicitAttributeRelationType != null) {
-                RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
-                Stream<RelationType> implicitSubs = implicitRelationType.subs();
-                totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
-            }
-
-            long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
-            if (totalAttributes == 0) {
-                // short circuiting can be done quickly if starting here
-                return 0;
-            } else {
-                // may well be 0 or 1 if there are many attributes and not many owners!
-                return totalImplicitRels / totalAttributes;
-            }
-        } else if (fixedCostFragment instanceof IdFragment) {
-            return 1L;
-        } else if (fixedCostFragment instanceof ValueFragment) {
-            // compute the sum of all @has-attribute implicit relations
-            // and the sum of all attribute instances
-            // then compute some mean number of owners per attribute
-            // this is probably the worst heuristic here, needs work
-
-            Label attributeLabel = Label.of("attribute");
-
-            AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
-            Stream<AttributeType> attributeSubs = attributeType.subs();
-
-            Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-            RelationType implicitRelationType = tx.getSchemaConcept(implicitAttributeType).asRelationType();
-            SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
-            long totalImplicitRels = 0L;
-            if (implicitAttributeRelationType != null) {
-                Stream<RelationType> implicitSubs = implicitRelationType.subs();
-                totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
-            }
-
-            long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
-            if (totalAttributes == 0) {
-                // short circuiting can be done quickly if starting here
-                return 0;
-            } else {
-                return totalImplicitRels / totalAttributes;
-            }
-        } else {
-            throw new QueryException("Unhandled fixed cost fragment type " + fixedCostFragment.getClass());
-        }
     }
 
 

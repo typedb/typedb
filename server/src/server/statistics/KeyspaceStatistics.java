@@ -66,14 +66,16 @@ public class KeyspaceStatistics {
     }
 
     private void persist(TransactionOLTP tx) {
+        // TODO - there's an possible removal from instanceCountsCache here
+        // when the schemaConcept is null - ie it's been removed. However making this
+        // thread safe with competing action of creating a schema concept of the same name again
+        // So for now just wait until sessions are closed and rebuild the instance counts cache from scratch
         for (String label : instanceCountsCache.keySet()) {
             Long count = instanceCountsCache.get(label);
             Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
             if (schemaConcept != null) {
                 Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
                 janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
-            } else {
-                instanceCountsCache.remove(label);
             }
         }
     }

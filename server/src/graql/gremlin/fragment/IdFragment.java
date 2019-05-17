@@ -93,4 +93,10 @@ public abstract class IdFragment extends Fragment {
     public boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
     }
+
+    @Override
+    public long estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        // only ever 1 matching concept for an ID - a good starting point
+        return 1L;
+    }
 }
