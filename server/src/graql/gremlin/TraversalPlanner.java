@@ -79,6 +79,8 @@ public class TraversalPlanner {
 
     protected static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
 
+    protected static final int MAX_STARTING_POINTS = 3;
+
     /**
      * Create a traversal plan.
      *
@@ -224,7 +226,7 @@ public class TraversalPlanner {
         fragmentSet.stream()
             .filter(Fragment::hasFixedFragmentCost)
             .sorted(Comparator.comparing(fragment -> estimateInitialCost(fragment, tx)))
-            .limit(3)
+            .limit(MAX_STARTING_POINTS)
             .forEach(fragment -> {
                 Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
                 highPriorityStartingNodeSet.add(node);
@@ -277,7 +279,6 @@ public class TraversalPlanner {
             }
 
             long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
-
             if (totalAttributes == 0) {
                 // short circuiting can be done quickly if starting here
                 return 0;
@@ -306,6 +307,7 @@ public class TraversalPlanner {
                 Stream<RelationType> implicitSubs = implicitRelationType.subs();
                 totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
             }
+
             long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
             if (totalAttributes == 0) {
                 // short circuiting can be done quickly if starting here

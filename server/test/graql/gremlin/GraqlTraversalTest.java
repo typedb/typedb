@@ -73,6 +73,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -108,7 +109,7 @@ public class GraqlTraversalTest {
         SessionImpl session = mock(SessionImpl.class);
         KeyspaceStatistics statistics = mock(KeyspaceStatistics.class);
         when(session.keyspaceStatistics()).thenReturn(statistics);
-        when(statistics.count(tx, anyString())).thenReturn(1L);
+        when(statistics.count(eq(tx), anyString())).thenReturn(1L);
     }
 
     @Test
