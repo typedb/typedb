@@ -32,24 +32,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class KeyspaceStatistics {
 
-    private ConcurrentHashMap<String, Long> instanceCountsCache;
+    private ConcurrentHashMap<Label, Long> instanceCountsCache;
 
     public KeyspaceStatistics() {
         instanceCountsCache = new ConcurrentHashMap<>();
     }
 
     public long count(TransactionOLTP tx, String label) {
+        Label lab = Label.of(label);
         // return count if cached, else cache miss and retrieve from Janus
-        instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
+        instanceCountsCache.computeIfAbsent(lab, l -> retrieveCountFromVertex(tx, l));
         return instanceCountsCache.get(label);
     }
 
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
-        HashMap<String, Long> deltaMap = statisticsDelta.instanceDeltas();
+        HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
         // merge each delta into the cache, then flush the cache to Janus
-        for (Map.Entry<String, Long> entry : deltaMap.entrySet()) {
-            String label = entry.getKey();
+        for (Map.Entry<Label, Long> entry : deltaMap.entrySet()) {
+            Label label = entry.getKey();
             Long delta = entry.getValue();
             // atomic update
             instanceCountsCache.compute(label, (k, prior) -> {
@@ -72,10 +73,10 @@ public class KeyspaceStatistics {
         // thread safe with competing action of creating a schema concept of the same name again
         // So for now just wait until sessions are closed and rebuild the instance counts cache from scratch
 
-        for (String label : instanceCountsCache.keySet()) {
+        for (Label label : instanceCountsCache.keySet()) {
             // don't change the value, just use `.compute()` for atomic and locking vertex write
             instanceCountsCache.compute(label, (lab, count) -> {
-                Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
+                Concept schemaConcept = tx.getSchemaConcept(label);
                 if (schemaConcept != null) {
                     Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
                     janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
@@ -89,8 +90,8 @@ public class KeyspaceStatistics {
      * Effectively a cache miss - retrieves the value from the janus vertex
      * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
      */
-    private long retrieveCountFromVertex(TransactionOLTP tx, String label) {
-        Concept schemaConcept = tx.getSchemaConcept(Label.of(label));
+    private long retrieveCountFromVertex(TransactionOLTP tx, Label label) {
+        Concept schemaConcept = tx.getSchemaConcept(label);
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name());

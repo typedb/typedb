@@ -902,7 +902,7 @@ public class TransactionOLTP implements Transaction {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
-        Map<Pair<String, String>, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
+        Map<Pair<Label, String>, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         ServerTracing.closeScopedChildSpan(validateSpanId);
@@ -1000,9 +1000,9 @@ public class TransactionOLTP implements Transaction {
 
         private final KeyspaceImpl keyspace;
         private final Map<ConceptId, Long> instanceCount;
-        private final Map<Pair<String, String>, Set<ConceptId>> attributes;
+        private final Map<Pair<Label, String>, Set<ConceptId>> attributes;
 
-        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<String, String>, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
@@ -1025,11 +1025,11 @@ public class TransactionOLTP implements Transaction {
             return instanceCount;
         }
 
-        public Map<Pair<String, String>, Set<ConceptId>> attributes() {
+        public Map<Pair<Label, String>, Set<ConceptId>> attributes() {
             return attributes;
         }
 
-        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<String, String>, Set<ConceptId>> newAttributes) {
+        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> newAttributes) {
             return new CommitLog(keyspace, instanceCount, newAttributes);
         }
 

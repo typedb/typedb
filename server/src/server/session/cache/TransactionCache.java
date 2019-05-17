@@ -75,7 +75,7 @@ public class TransactionCache {
     //New attributes are tracked so that we can merge any duplicate attributes in post.
     // This is a map of attribute indices to <label, concept id>
     // The index and id are directly cached to prevent unneeded reads
-    private Multimap<Pair<String, String>, ConceptId> newAttributes = ArrayListMultimap.create();
+    private Multimap<Pair<Label, String>, ConceptId> newAttributes = ArrayListMultimap.create();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
@@ -260,12 +260,12 @@ public class TransactionCache {
     }
 
 
-    public void addNewAttribute(String label, String index, ConceptId conceptId) {
+    public void addNewAttribute(Label label, String index, ConceptId conceptId) {
         newAttributes.put(new Pair<>(label, index), conceptId);
     }
 
-    public Map<Pair<String, String>, Set<ConceptId>> getNewAttributes() {
-        Map<Pair<String, String>, Set<ConceptId>> map = new HashMap<>();
+    public Map<Pair<Label, String>, Set<ConceptId>> getNewAttributes() {
+        Map<Pair<Label, String>, Set<ConceptId>> map = new HashMap<>();
         newAttributes.asMap().forEach((attrValue, conceptIds) -> map.put(attrValue, new HashSet<>(conceptIds)));
         return map;
     }

@@ -79,7 +79,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the instances
-        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), testAttributeLabel, Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue)));
+        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(testAttributeLabel), Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue)));
 
         // verify if we only have 1 instances after deduplication
         try (TransactionOLTP tx = session.transaction().read()) {
@@ -111,7 +111,7 @@ public class AttributeDeduplicatorIT {
         }
 
         // perform deduplicate on the attribute
-        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), ownedAttributeLabel, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownedAttributeLabel), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
         try (TransactionOLTP tx = session.transaction().read()) {
@@ -156,9 +156,9 @@ public class AttributeDeduplicatorIT {
         }
 
         // deduplicate
-        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), ownedAttributeLabel, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
-        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), ownerLabel, Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
-        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), ownerLabel, Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
+        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownedAttributeLabel), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownerLabel), Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
+        AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownerLabel), Schema.generateAttributeIndex(Label.of(ownerLabel), ownerValue1)));
 
         // verify
         try (TransactionOLTP tx = session.transaction().read()) {
@@ -200,7 +200,7 @@ public class AttributeDeduplicatorIT {
 
         // perform deduplicate on the attribute
         AttributeDeduplicator.deduplicate(sessionFactory,
-                KeyspaceAttributeTriple.create(session.keyspace(), ownedAttributeLabel, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+                KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownedAttributeLabel), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
         try (TransactionOLTP tx = session.transaction().read()) {
@@ -243,7 +243,7 @@ public class AttributeDeduplicatorIT {
 
         // deduplicate
         AttributeDeduplicator.deduplicate(sessionFactory,
-                KeyspaceAttributeTriple.create(session.keyspace(), ownedAttributeLabel, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+                KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownedAttributeLabel), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
         try (TransactionOLTP tx = session.transaction().read()) {
@@ -294,7 +294,7 @@ public class AttributeDeduplicatorIT {
 
         // deduplicate
         AttributeDeduplicator.deduplicate(sessionFactory,
-                KeyspaceAttributeTriple.create(session.keyspace(), ownedAttributeLabel, Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
+                KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownedAttributeLabel), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
         // verify
         try (TransactionOLTP tx = session.transaction().read()) {

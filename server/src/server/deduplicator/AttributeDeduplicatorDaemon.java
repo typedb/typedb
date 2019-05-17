@@ -20,6 +20,7 @@ package grakn.core.server.deduplicator;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.InMemoryQueue;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -80,7 +81,7 @@ public class AttributeDeduplicatorDaemon {
      * @param index the value of the attribute
      * @param conceptId the concept id of the attribute
      */
-    public void markForDeduplication(KeyspaceImpl keyspace, String label, String index, ConceptId conceptId) {
+    public void markForDeduplication(KeyspaceImpl keyspace, Label label, String index, ConceptId conceptId) {
         Attribute attribute = Attribute.create(keyspace, label, index, conceptId);
         LOG.trace("insert({})",  attribute);
         queue.insert(attribute);

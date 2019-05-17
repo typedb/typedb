@@ -105,7 +105,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         V instance = producer.apply(instanceVertex, getThis());
         assert instance != null : "producer should never return null";
 
-        vertex().tx().statisticsDelta().increment(label().toString());
+        vertex().tx().statisticsDelta().increment(label());
 
         return instance;
     }

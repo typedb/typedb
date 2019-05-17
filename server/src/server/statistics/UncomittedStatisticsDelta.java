@@ -18,11 +18,13 @@
 
 package grakn.core.server.statistics;
 
+import grakn.core.concept.Label;
+
 import java.util.HashMap;
 
 public class UncomittedStatisticsDelta {
 
-    private HashMap<String, Long> instanceDeltas;
+    private HashMap<Label, Long> instanceDeltas;
     public UncomittedStatisticsDelta() {
         instanceDeltas = new HashMap<>();
     }
@@ -31,17 +33,17 @@ public class UncomittedStatisticsDelta {
         return instanceDeltas.getOrDefault(label, 0L);
     }
 
-    public void increment(String label) {
+    public void increment(Label label) {
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount + 1);
     }
 
-    public void decrement(String label) {
+    public void decrement(Label label) {
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount - 1);
     }
 
-    HashMap<String, Long> instanceDeltas() {
+    HashMap<Label, Long> instanceDeltas() {
         return instanceDeltas;
     }
 }
