@@ -86,3 +86,6 @@ $y isa someOtherEntity;
 
 $z "value1" isa anotherResource;
 $a "value2" isa anotherResource;
+
+$b isa someEntity;
+$c isa baseEntity;
