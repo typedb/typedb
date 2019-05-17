@@ -476,6 +476,7 @@ public class ResolutionPlanIT {
      \   (d, g) - (g, h)*
      */
     @Test
+    @Ignore
     @Repeat( times = repeat )
     public void makeSureBranchedQueryChainsWithResolvableRelationsDoNotProduceDisconnectedPlans(){
 
