@@ -151,12 +151,11 @@ public class ValueFragment extends Fragment {
         AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
         Stream<AttributeType> attributeSubs = attributeType.subs();
 
-        Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-        RelationType implicitRelationType = tx.getSchemaConcept(implicitAttributeType).asRelationType();
-        SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
+        Label implicitAttributeRelation = Schema.ImplicitType.HAS.getLabel(attributeLabel);
+        SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeRelation);
         long totalImplicitRels = 0L;
         if (implicitAttributeRelationType != null) {
-            Stream<RelationType> implicitSubs = implicitRelationType.subs();
+            Stream<RelationType> implicitSubs = implicitAttributeRelationType.asRelationType().subs();
             totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
         }
 

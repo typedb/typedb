@@ -45,6 +45,9 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+/**
+ * NOTE this doesn't have to be an integration test but it was promoted along with GraqlTraversalIT
+ */
 public class ConjunctionQueryTest {
     private Label resourceTypeWithoutSubTypesLabel = Label.of("name");
     private Label resourceTypeWithSubTypesLabel = Label.of("resource");
