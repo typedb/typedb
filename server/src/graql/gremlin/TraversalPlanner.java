@@ -221,12 +221,12 @@ public class TraversalPlanner {
     }
 
     private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph, TransactionOLTP tx) {
-        final List<Node> highPriorityStartingNodeSet = new ArrayList<>();
+        final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.stream()
             .filter(Fragment::hasFixedFragmentCost)
             .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(tx)))
-//            .limit(MAX_STARTING_POINTS)
+            .limit(MAX_STARTING_POINTS)
             .forEach(fragment -> {
                 Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
                 highPriorityStartingNodeSet.add(node);
@@ -234,7 +234,7 @@ public class TraversalPlanner {
 
         Set<Node> startingNodes;
         if (!highPriorityStartingNodeSet.isEmpty()) {
-            startingNodes = highPriorityStartingNodeSet.stream().collect(Collectors.toSet());
+            startingNodes = highPriorityStartingNodeSet;
         } else {
             // if we have no good starting points, use any valid nodes
             startingNodes = sparseWeightedGraph.getNodes().stream()
