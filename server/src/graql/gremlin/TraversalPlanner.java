@@ -273,8 +273,13 @@ public class TraversalPlanner {
             long totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
             long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
 
-            // may well be 0 or 1 if there are many attributes and not many owners!
-            return totalImplicitRels/totalAttributes;
+            if (totalAttributes == 0) {
+                // short circuiting can be done quickly if starting here
+                return 0;
+            } else {
+                // may well be 0 or 1 if there are many attributes and not many owners!
+                return totalImplicitRels / totalAttributes;
+            }
         } else if (fixedCostFragment instanceof IdFragment) {
             return 1L;
         } else if (fixedCostFragment instanceof ValueFragment) {
@@ -295,7 +300,12 @@ public class TraversalPlanner {
             long totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
             long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
 
-            return totalImplicitRels/totalAttributes;
+            if (totalAttributes == 0) {
+                // short circuiting can be done quickly if starting here
+                return 0;
+            } else {
+                return totalImplicitRels / totalAttributes;
+            }
         } else {
             throw new QueryException("Unhandled fixed cost fragment type " + fixedCostFragment.getClass());
         }
