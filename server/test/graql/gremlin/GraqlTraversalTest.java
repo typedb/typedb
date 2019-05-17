@@ -29,7 +29,9 @@ import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -65,10 +67,12 @@ import static graql.lang.Graql.var;
 import static java.util.Comparator.comparing;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
+import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.CoreMatchers.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -100,6 +104,11 @@ public class GraqlTraversalTest {
         //TODO: mock the following in a proper way
 //        Role wife = graph.putRole("wife");
 //        graph.putRelationType("marriage").relates(wife);
+
+        SessionImpl session = mock(SessionImpl.class);
+        KeyspaceStatistics statistics = mock(KeyspaceStatistics.class);
+        when(session.keyspaceStatistics()).thenReturn(statistics);
+        when(statistics.count(tx, anyString())).thenReturn(1L);
     }
 
     @Test
