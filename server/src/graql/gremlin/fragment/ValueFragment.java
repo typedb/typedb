@@ -18,9 +18,15 @@
 
 package grakn.core.graql.gremlin.fragment;
 
+import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.executor.property.ValueExecutor.Operation.Comparison;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -32,6 +38,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class ValueFragment extends Fragment {
 
@@ -128,5 +135,36 @@ public class ValueFragment extends Fragment {
         h *= 1000003;
         h ^= this.operation.hashCode();
         return h;
+    }
+
+    @Override
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
+
+        // compute the sum of all @has-attribute implicit relations
+        // and the sum of all attribute instances
+        // then compute some mean number of owners per attribute
+        // this is probably not the highest quality heuristic (plus it is a heavy operation), needs work
+
+        Label attributeLabel = Label.of("attribute");
+
+        AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
+        Stream<AttributeType> attributeSubs = attributeType.subs();
+
+        Label implicitAttributeRelation = Schema.ImplicitType.HAS.getLabel(attributeLabel);
+        SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeRelation);
+        double totalImplicitRels = 0.0;
+        if (implicitAttributeRelationType != null) {
+            Stream<RelationType> implicitSubs = implicitAttributeRelationType.asRelationType().subs();
+            totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
+        }
+
+        double totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
+        if (totalAttributes == 0) {
+            // short circuiting can be done quickly if starting here
+            return 0.0;
+        } else {
+            return totalImplicitRels / totalAttributes;
+        }
     }
 }

@@ -32,6 +32,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
 
@@ -73,9 +74,9 @@ public class TransactionCache {
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
     //New attributes are tracked so that we can merge any duplicate attributes in post.
-    // This is a map of attribute indices to concept ids
+    // This is a map of attribute indices to <label, concept id>
     // The index and id are directly cached to prevent unneeded reads
-    private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
+    private Multimap<Pair<Label, String>, ConceptId> newAttributes = ArrayListMultimap.create();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
@@ -146,7 +147,8 @@ public class TransactionCache {
         modifiedRules.remove(concept);
 
         if (concept.isAttribute()) {
-            newAttributes.removeAll(AttributeImpl.from(concept.asAttribute()).getIndex());
+            AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
+            newAttributes.removeAll(new Pair<>(attr.type().label().toString(), attr.getIndex()));
         }
 
         if (concept.isRelation()) {
@@ -269,12 +271,12 @@ public class TransactionCache {
     }
 
 
-    public void addNewAttribute(String index, ConceptId conceptId) {
-        newAttributes.put(index, conceptId);
+    public void addNewAttribute(Label label, String index, ConceptId conceptId) {
+        newAttributes.put(new Pair<>(label, index), conceptId);
     }
 
-    public Map<String, Set<ConceptId>> getNewAttributes() {
-        Map<String, Set<ConceptId>> map = new HashMap<>();
+    public Map<Pair<Label, String>, Set<ConceptId>> getNewAttributes() {
+        Map<Pair<Label, String>, Set<ConceptId>> map = new HashMap<>();
         newAttributes.asMap().forEach((attrValue, conceptIds) -> map.put(attrValue, new HashSet<>(conceptIds)));
         return map;
     }

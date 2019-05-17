@@ -21,10 +21,17 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.gremlin.fragment.AttributeIndexFragment;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.IdFragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.spanningtree.Arborescence;
 import grakn.core.graql.gremlin.spanningtree.ChuLiuEdmonds;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
@@ -34,11 +41,14 @@ import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.exception.GraknServerException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.janusgraph.core.QueryException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +64,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
@@ -67,6 +78,8 @@ import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
 public class TraversalPlanner {
 
     protected static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
+
+    protected static final int MAX_STARTING_POINTS = 3;
 
     /**
      * Create a traversal plan.
@@ -181,7 +194,7 @@ public class TraversalPlanner {
         if (!weightedGraph.isEmpty()) {
             // sparse graph for better performance
             SparseWeightedGraph sparseWeightedGraph = SparseWeightedGraph.from(weightedGraph);
-            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph);
+            Set<Node> startingNodes = chooseStartingNodeSet(connectedFragments, nodes, sparseWeightedGraph, tx);
 
             // find the minimum spanning tree for each root
             // then get the tree with minimum weight
@@ -207,15 +220,17 @@ public class TraversalPlanner {
         return weightedGraph;
     }
 
-    private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph) {
+    private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph, TransactionOLTP tx) {
         final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
 
-        fragmentSet.forEach(fragment -> {
-            if (fragment.hasFixedFragmentCost()) {
+        fragmentSet.stream()
+            .filter(Fragment::hasFixedFragmentCost)
+            .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(tx)))
+            .limit(MAX_STARTING_POINTS)
+            .forEach(fragment -> {
                 Node node = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
                 highPriorityStartingNodeSet.add(node);
-            }
-        });
+            });
 
         Set<Node> startingNodes;
         if (!highPriorityStartingNodeSet.isEmpty()) {
@@ -227,6 +242,7 @@ public class TraversalPlanner {
         }
         return startingNodes;
     }
+
 
     // add unvisited node fragments to plan
     private static List<Fragment> fragmentsForUnvisitedNodes(Map<NodeId, Node> allNodes, Collection<Node> connectedNodes) {

@@ -262,6 +262,15 @@ public abstract class Fragment {
     public abstract double internalFragmentCost();
 
     /**
+     * Estimate the "cost" of a starting point for each type of fixed cost fragment
+     * These are cost heuristic proxies using statistics
+     * @return
+     */
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        throw new UnsupportedOperationException("Fragment of type " + this.getClass() + " is not a fixed cost starting point - no esimated cost as a starting point.");
+    }
+
+    /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
      * A plan should always start with these fragments when possible.
      */

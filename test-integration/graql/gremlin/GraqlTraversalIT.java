@@ -23,12 +23,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -39,7 +42,11 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.hamcrest.Matcher;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -69,10 +76,23 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-public class GraqlTraversalTest {
+public class GraqlTraversalIT {
+    @ClassRule
+    public static final GraknTestServer graknServer = new GraknTestServer();
+    public static SessionImpl session;
+    private static TransactionOLTP tx;
+
+    @BeforeClass
+    public static void newSession() {
+        session = graknServer.sessionWithNewKeyspace();
+    }
+
+    @AfterClass
+    public static void closeSession() {
+        session.close();
+    }
+
 
     private static final Statement a = Graql.var("a");
     private static final Statement b = Graql.var("b");
@@ -87,19 +107,21 @@ public class GraqlTraversalTest {
     private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var(), true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
-    private static TransactionOLTP tx;
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
     @Before
     public void setUp() {
-        tx = mock(TransactionOLTP.class);
-        Role wife = mock(Role.class);
-        when(wife.label()).thenReturn(Label.of("wife"));
-        when(wife.isRole()).thenReturn(true);
-        when(tx.getSchemaConcept(Label.of("wife"))).thenReturn(wife);
-        //TODO: mock the following in a proper way
-//        Role wife = graph.putRole("wife");
-//        graph.putRelationType("marriage").relates(wife);
+        tx = session.transaction().write();
+        Role wife = tx.putRole("wife");
+        EntityType personType = tx.putEntityType("person").plays(wife);
+        RelationType marriageType = tx.putRelationType("marriage").relates(wife);
+        tx.commit();
+        tx = session.transaction().write();
+    }
+
+    @After
+    public void closeTransaction() {
+        tx.close();
     }
 
     @Test
@@ -305,7 +327,7 @@ public class GraqlTraversalTest {
 
         return lists.stream()
                 .map(Sets::newHashSet)
-                .map(GraqlTraversalTest::createTraversal)
+                .map(GraqlTraversalIT::createTraversal)
                 .flatMap(CommonUtil::optionalToStream);
     }
 

@@ -79,4 +79,13 @@ insert
 $x isa someEntity, has resource 'someValue';
 $y isa someOtherEntity;
 (someRole: $x, otherRole: $y) isa someRelation;
+(someRole: $x, otherRole: $y) isa someRelation;
 (someRole: $x, otherRole: $y) isa anotherRelation;
+(someRole: $x, otherRole: $y) isa anotherRelation;
+(someRole: $x, otherRole: $y) isa yetAnotherRelation;
+
+$z "value1" isa anotherResource;
+$a "value2" isa anotherResource;
+
+$b isa someEntity;
+$c isa baseEntity;

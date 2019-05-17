@@ -42,6 +42,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
@@ -59,6 +60,7 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.statistics.UncomittedStatisticsDelta;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -125,6 +127,7 @@ public class TransactionOLTP implements Transaction {
     private Transaction.Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
+    private UncomittedStatisticsDelta uncomittedStatisticsDelta;
 
     // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -168,6 +171,8 @@ public class TransactionOLTP implements Transaction {
 
         this.keyspaceCache = keyspaceCache;
         this.transactionCache = new TransactionCache(keyspaceCache);
+
+        this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
 
     }
 
@@ -356,6 +361,10 @@ public class TransactionOLTP implements Transaction {
 
     public TransactionCache cache() {
         return transactionCache;
+    }
+
+    public UncomittedStatisticsDelta statisticsDelta() {
+        return uncomittedStatisticsDelta;
     }
 
     @Override
@@ -841,6 +850,7 @@ public class TransactionOLTP implements Transaction {
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
+                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 commitTransactionInternal();
                 transactionCache.flushToKeyspaceCache();
             }
@@ -893,7 +903,7 @@ public class TransactionOLTP implements Transaction {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
-        Map<String, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
+        Map<Pair<Label, String>, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         ServerTracing.closeScopedChildSpan(validateSpanId);
@@ -903,6 +913,7 @@ public class TransactionOLTP implements Transaction {
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
         // force serialized updates, keeping Janus and our KeyspaceCache in sync
         synchronized (keyspaceCache) {
+            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             commitTransactionInternal();
             transactionCache.flushToKeyspaceCache();
         }
@@ -996,9 +1007,9 @@ public class TransactionOLTP implements Transaction {
 
         private final KeyspaceImpl keyspace;
         private final Map<ConceptId, Long> instanceCount;
-        private final Map<String, Set<ConceptId>> attributes;
+        private final Map<Pair<Label, String>, Set<ConceptId>> attributes;
 
-        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
@@ -1021,11 +1032,11 @@ public class TransactionOLTP implements Transaction {
             return instanceCount;
         }
 
-        public Map<String, Set<ConceptId>> attributes() {
+        public Map<Pair<Label, String>, Set<ConceptId>> attributes() {
             return attributes;
         }
 
-        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
+        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> newAttributes) {
             return new CommitLog(keyspace, instanceCount, newAttributes);
         }
 

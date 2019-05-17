@@ -15,41 +15,34 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "label-fragment-set-test",
-    srcs = ["LabelFragmentSetTest.java"],
-    test_class = "grakn.core.graql.gremlin.sets.LabelFragmentSetTest",
+    name = "conjunction-query-test",
+    test_class = "grakn.core.graql.gremlin.ConjunctionQueryTest",
+    srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
         "//concept:concept",
         "//server:server",
 
         "@graknlabs_graql//java:graql",
 
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core"
-        ],
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+    ],
     size = "small"
 )
 
-checkstyle_test(
-    name = "checkstyle",
-    targets = [
-        ":label-fragment-set-test",
-        ":roleplayer-fragment-set-test",
-    ],
-)
-
 java_test(
-    name = "roleplayer-fragment-set-test",
-    test_class = "grakn.core.graql.gremlin.sets.RolePlayerFragmentSetTest",
-    srcs = ["RolePlayerFragmentSetTest.java"],
+    name = "graql-traversal-test",
+    test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
+    srcs = ["GraqlTraversalIT.java", "GraqlMatchers.java"],
     deps = [
+        "//common:common",
         "//concept:concept",
         "//server:server",
+        "//test-integration/graql/graph:movie-graph",
+        "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",
 
@@ -58,4 +51,12 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
     ],
     size = "small"
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":graql-traversal-test",
+        ":conjunction-query-test"
+    ],
 )

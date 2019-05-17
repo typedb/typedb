@@ -19,6 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.InMemoryQueue;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -43,11 +44,11 @@ public class InMemoryQueueTest {
     public void shouldBeAbleToInsertNewAttributes() throws InterruptedException {
         InMemoryQueue queue = new InMemoryQueue();
         List<Attribute> attributes = Arrays.asList(
-                Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
-                Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2")),
-                Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
-                Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
-                Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
+                Attribute.create(KeyspaceImpl.of("k1"), Label.of("v"), "v1", ConceptId.of("c1")),
+                Attribute.create(KeyspaceImpl.of("k2"), Label.of("v"), "v2", ConceptId.of("c2")),
+                Attribute.create(KeyspaceImpl.of("k3"), Label.of("v"), "v3", ConceptId.of("c3")),
+                Attribute.create(KeyspaceImpl.of("k4"), Label.of("v"), "v4", ConceptId.of("c4")),
+                Attribute.create(KeyspaceImpl.of("k5"), Label.of("v"), "v5", ConceptId.of("c5"))
         );
 
         for (Attribute attr : attributes) {
@@ -62,11 +63,11 @@ public class InMemoryQueueTest {
     public void readButUnackedAttributesShouldRemainInTheQueue() throws InterruptedException {
         InMemoryQueue queue = new InMemoryQueue();
         List<Attribute> attributes = Arrays.asList(
-                Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
-                Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2")),
-                Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
-                Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
-                Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
+                Attribute.create(KeyspaceImpl.of("k1"), Label.of("v"), "v1", ConceptId.of("c1")),
+                Attribute.create(KeyspaceImpl.of("k2"), Label.of("v"), "v2", ConceptId.of("c2")),
+                Attribute.create(KeyspaceImpl.of("k3"), Label.of("v"), "v3", ConceptId.of("c3")),
+                Attribute.create(KeyspaceImpl.of("k4"), Label.of("v"), "v4", ConceptId.of("c4")),
+                Attribute.create(KeyspaceImpl.of("k5"), Label.of("v"), "v5", ConceptId.of("c5"))
         );
 
         for (Attribute attr : attributes) {
@@ -82,11 +83,11 @@ public class InMemoryQueueTest {
     public void shouldBeAbleToAckOnlySomeOfTheReadAttributes() throws InterruptedException {
         InMemoryQueue queue = new InMemoryQueue();
         List<Attribute> attributes = new ArrayList<>(Arrays.asList(
-                Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1")),
-                Attribute.create(KeyspaceImpl.of("k2"), "v2", ConceptId.of("c2")),
-                Attribute.create(KeyspaceImpl.of("k3"), "v3", ConceptId.of("c3")),
-                Attribute.create(KeyspaceImpl.of("k4"), "v4", ConceptId.of("c4")),
-                Attribute.create(KeyspaceImpl.of("k5"), "v5", ConceptId.of("c5"))
+                Attribute.create(KeyspaceImpl.of("k1"), Label.of("v"), "v1", ConceptId.of("c1")),
+                Attribute.create(KeyspaceImpl.of("k2"), Label.of("v"), "v2", ConceptId.of("c2")),
+                Attribute.create(KeyspaceImpl.of("k3"), Label.of("v"), "v3", ConceptId.of("c3")),
+                Attribute.create(KeyspaceImpl.of("k4"), Label.of("v"), "v4", ConceptId.of("c4")),
+                Attribute.create(KeyspaceImpl.of("k5"), Label.of("v"), "v5", ConceptId.of("c5"))
         ));
 
         attributes.forEach(queue::insert);
@@ -138,7 +139,7 @@ public class InMemoryQueueTest {
     public void theReadMethodMustReturnOnceTheQueueIsNonEmpty() throws InterruptedException, ExecutionException, TimeoutException {
         InMemoryQueue queue = new InMemoryQueue();
 
-        Attribute input = Attribute.create(KeyspaceImpl.of("k1"), "v1", ConceptId.of("c1"));
+        Attribute input = Attribute.create(KeyspaceImpl.of("k1"), Label.of("v"), "v1", ConceptId.of("c1"));
         List<Attribute> expectedOutput = Arrays.asList(input);
 
         // perform a read() on the currently empty queue asynchronously.

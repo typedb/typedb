@@ -19,6 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.concept.Label;
 import grakn.core.server.keyspace.KeyspaceImpl;
 
 /**
@@ -26,11 +27,12 @@ import grakn.core.server.keyspace.KeyspaceImpl;
  *
  */
 @AutoValue
-public abstract class KeyspaceIndexPair {
+public abstract class KeyspaceAttributeTriple {
     public abstract KeyspaceImpl keyspace();
+    public abstract Label label();
     public abstract String index();
 
-    public static KeyspaceIndexPair create(KeyspaceImpl keyspace, String index) {
-        return new AutoValue_KeyspaceIndexPair(keyspace, index);
+    public static KeyspaceAttributeTriple create(KeyspaceImpl keyspace, Label label, String index) {
+        return new AutoValue_KeyspaceAttributeTriple(keyspace, label, index);
     }
 }

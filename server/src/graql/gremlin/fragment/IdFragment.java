@@ -37,7 +37,7 @@ import java.util.Map;
 import static grakn.core.concept.printer.StringPrinter.conceptId;
 
 @AutoValue
-abstract class IdFragment extends Fragment {
+public abstract class IdFragment extends Fragment {
 
     abstract ConceptId id();
 
@@ -92,5 +92,11 @@ abstract class IdFragment extends Fragment {
     @Override
     public boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
+    }
+
+    @Override
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        // only ever 1 matching concept for an ID - a good starting point
+        return 1.0;
     }
 }

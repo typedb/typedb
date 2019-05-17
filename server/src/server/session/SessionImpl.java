@@ -30,6 +30,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import org.janusgraph.core.JanusGraph;
 
 import javax.annotation.CheckReturnValue;
@@ -59,6 +60,7 @@ public class SessionImpl implements Session {
     private final ReadWriteLock graphLock;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
+    private final KeyspaceStatistics keyspaceStatistics;
     private Consumer<SessionImpl> onClose;
 
     private boolean isClosed = false;
@@ -70,8 +72,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, graphLock, new HadoopGraphFactory(config, keyspace));
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics) {
+        this(keyspace, config, keyspaceCache, graph, graphLock, keyspaceStatistics, new HadoopGraphFactory(config, keyspace));
     }
 
     /**
@@ -81,7 +83,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, HadoopGraphFactory hadoopGraphFactory) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory) {
         this.keyspace = keyspace;
         this.config = config;
         this.graphLock = graphLock;
@@ -92,6 +94,7 @@ public class SessionImpl implements Session {
         this.graph = graph;
 
         this.keyspaceCache = keyspaceCache;
+        this.keyspaceStatistics = keyspaceStatistics;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
 
@@ -245,6 +248,10 @@ public class SessionImpl implements Session {
     @Override
     public KeyspaceImpl keyspace() {
         return keyspace;
+    }
+
+    public KeyspaceStatistics keyspaceStatistics() {
+        return keyspaceStatistics;
     }
 
     /**

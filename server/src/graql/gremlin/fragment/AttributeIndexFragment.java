@@ -19,20 +19,29 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.SchemaConcept;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
 
 @AutoValue
-abstract class AttributeIndexFragment extends Fragment {
+public abstract class AttributeIndexFragment extends Fragment {
 
-    abstract String attributeIndex();
+    public abstract Label attributeLabel();
+
+    abstract String attributeValue();
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -54,5 +63,40 @@ abstract class AttributeIndexFragment extends Fragment {
     @Override
     public boolean hasFixedFragmentCost() {
         return true;
+    }
+
+    private String attributeIndex() {
+        String attributeIndex = Schema.generateAttributeIndex(attributeLabel(), attributeValue());
+        return attributeIndex;
+    }
+
+    @Override
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
+        // here we estimate the number of owners of an attribute instance of this type
+        // as this is the most common usage/expensive component of an attribute
+        // given that there's only 1 attribute of a type and value at any time
+        Label attributeLabel = attributeLabel();
+
+        AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
+        Stream<AttributeType> attributeSubs = attributeType.subs();
+
+        Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
+        SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
+        double totalImplicitRels = 0.0;
+        if (implicitAttributeRelationType != null) {
+            RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
+            Stream<RelationType> implicitSubs = implicitRelationType.subs();
+            totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
+        }
+
+        double totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
+        if (totalAttributes == 0) {
+            // short circuiting can be done quickly if starting here
+            return 0.0;
+        } else {
+            // may well be 0 or 1 if there are many attributes and not many owners!
+            return totalImplicitRels / totalAttributes;
+        }
     }
 }
