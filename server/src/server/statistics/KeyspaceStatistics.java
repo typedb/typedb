@@ -52,7 +52,7 @@ public class KeyspaceStatistics {
         Label lab = Label.of(label);
         // return count if cached, else cache miss and retrieve from Janus
         instanceCountsCache.computeIfAbsent(lab, l -> retrieveCountFromVertex(tx, l));
-        return instanceCountsCache.get(label);
+        return instanceCountsCache.get(lab);
     }
 
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
@@ -86,7 +86,7 @@ public class KeyspaceStatistics {
         for (Label label : instanceCountsCache.keySet()) {
             // don't change the value, just use `.compute()` for atomic and locking vertex write
             instanceCountsCache.compute(label, (lab, count) -> {
-                Concept schemaConcept = tx.getSchemaConcept(label);
+                Concept schemaConcept = tx.getSchemaConcept(lab);
                 if (schemaConcept != null) {
                     Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
                     janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
