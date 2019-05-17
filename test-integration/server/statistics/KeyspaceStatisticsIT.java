@@ -39,6 +39,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -62,6 +63,8 @@ public class KeyspaceStatisticsIT {
     @After
     public void closeSession() {
         remoteSession.close();
+        localSession.close();
+        graknClient.close();
     }
 
 
@@ -275,7 +278,8 @@ public class KeyspaceStatisticsIT {
 
         future1.get();
         future2.get();
-        parallelExecutor.shutdown();
+        parallelExecutor.shutdownNow();
+        parallelExecutor.awaitTermination(5, TimeUnit.SECONDS);
 
         // allow attribute deduplicator to kick in and finish operation
         Thread.sleep(1000);

@@ -147,7 +147,7 @@ public class TransactionCache {
 
         if (concept.isAttribute()) {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
-            newAttributes.removeAll(new Pair<>(attr.asType().label().toString(), attr.getIndex()));
+            newAttributes.removeAll(new Pair<>(attr.type().label().toString(), attr.getIndex()));
         }
 
         if (concept.isRelation()) {
