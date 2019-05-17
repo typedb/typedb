@@ -266,7 +266,7 @@ public abstract class Fragment {
      * These are cost heuristic proxies using statistics
      * @return
      */
-    public long estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         throw new UnsupportedOperationException("Fragment of type " + this.getClass() + " is not a fixed cost starting point - no esimated cost as a starting point.");
     }
 

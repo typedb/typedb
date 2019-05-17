@@ -95,8 +95,8 @@ public abstract class IdFragment extends Fragment {
     }
 
     @Override
-    public long estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         // only ever 1 matching concept for an ID - a good starting point
-        return 1L;
+        return 1.0;
     }
 }

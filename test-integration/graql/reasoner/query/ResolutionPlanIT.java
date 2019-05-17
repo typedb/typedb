@@ -271,6 +271,7 @@ public class ResolutionPlanIT {
     @Test
     @Repeat( times = repeat )
     public void prioritiseSpecificResourcesOverNonSpecific(){
+
         String queryString = "{" +
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +

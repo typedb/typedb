@@ -71,7 +71,7 @@ public abstract class AttributeIndexFragment extends Fragment {
     }
 
     @Override
-    public long estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
         // here we estimate the number of owners of an attribute instance of this type
         // as this is the most common usage/expensive component of an attribute
@@ -83,17 +83,17 @@ public abstract class AttributeIndexFragment extends Fragment {
 
         Label implicitAttributeType = Schema.ImplicitType.HAS.getLabel(attributeLabel);
         SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeType);
-        long totalImplicitRels = 0L;
+        double totalImplicitRels = 0.0;
         if (implicitAttributeRelationType != null) {
             RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
             Stream<RelationType> implicitSubs = implicitRelationType.subs();
             totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
         }
 
-        long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
+        double totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
         if (totalAttributes == 0) {
             // short circuiting can be done quickly if starting here
-            return 0;
+            return 0.0;
         } else {
             // may well be 0 or 1 if there are many attributes and not many owners!
             return totalImplicitRels / totalAttributes;

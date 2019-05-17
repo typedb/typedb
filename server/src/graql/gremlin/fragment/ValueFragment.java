@@ -138,7 +138,7 @@ public class ValueFragment extends Fragment {
     }
 
     @Override
-    public long estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
 
         // compute the sum of all @has-attribute implicit relations
@@ -153,16 +153,16 @@ public class ValueFragment extends Fragment {
 
         Label implicitAttributeRelation = Schema.ImplicitType.HAS.getLabel(attributeLabel);
         SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeRelation);
-        long totalImplicitRels = 0L;
+        double totalImplicitRels = 0.0;
         if (implicitAttributeRelationType != null) {
             Stream<RelationType> implicitSubs = implicitAttributeRelationType.asRelationType().subs();
             totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
         }
 
-        long totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
+        double totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
         if (totalAttributes == 0) {
             // short circuiting can be done quickly if starting here
-            return 0;
+            return 0.0;
         } else {
             return totalImplicitRels / totalAttributes;
         }
