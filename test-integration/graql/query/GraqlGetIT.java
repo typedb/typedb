@@ -85,12 +85,6 @@ public class GraqlGetIT {
         session.close();
     }
 
-
-    @Test
-    public void testing() {
-        tx.execute(Graql.parse("match $x isa person, has name \"John\"; get;").asGet());
-    }
-
     @Test
     public void testGetSort() {
         List<ConceptMap> answers = tx.execute(
