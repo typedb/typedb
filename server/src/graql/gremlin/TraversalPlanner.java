@@ -21,17 +21,10 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.gremlin.fragment.AttributeIndexFragment;
 import grakn.core.graql.gremlin.fragment.Fragment;
-import grakn.core.graql.gremlin.fragment.IdFragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.spanningtree.Arborescence;
 import grakn.core.graql.gremlin.spanningtree.ChuLiuEdmonds;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
@@ -41,17 +34,11 @@ import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.exception.GraknServerException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.statistics.KeyspaceStatistics;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.janusgraph.core.QueryException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -64,7 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
@@ -77,9 +65,9 @@ import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
  */
 public class TraversalPlanner {
 
-    protected static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TraversalPlanner.class);
 
-    protected static final int MAX_STARTING_POINTS = 3;
+    private static final int MAX_STARTING_POINTS = 3;
 
     /**
      * Create a traversal plan.
@@ -201,7 +189,8 @@ public class TraversalPlanner {
             Arborescence<Node> arborescence = startingNodes.stream()
                     .map(node -> ChuLiuEdmonds.getMaxArborescence(sparseWeightedGraph, node))
                     .max(Comparator.comparingDouble(tree -> tree.weight))
-                    .map(arborescenceInside -> arborescenceInside.val).orElse(Arborescence.empty());
+                    .map(arborescenceInside -> arborescenceInside.val)
+                    .orElse(Arborescence.empty());
 
             return arborescence;
         } else {
@@ -340,7 +329,7 @@ public class TraversalPlanner {
         }
     }
 
-    static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
+    private static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
         Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
         for (Fragment fragment : connectedFragments) {
             Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
