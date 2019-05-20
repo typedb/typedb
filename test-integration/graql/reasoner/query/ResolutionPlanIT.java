@@ -28,6 +28,7 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
+import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -622,6 +623,33 @@ public class ResolutionPlanIT {
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
+    }
+
+    @Test
+    public void whenEstimatingInferredCountOfAnInferredRelation_countIsDerivedFromMinimumPremiseCount(){
+        Label someRelationLabel = Label.of("someRelation");
+        Label anotherRelationLabel = Label.of("anotherRelation");
+        Label derivedRelationLabel = Label.of("derivedRelation");
+        Label anotherDerivedRelationLabel = Label.of("anotherDerivedRelation");
+        assertEquals(
+                tx.session().keyspaceStatistics().count(tx, someRelationLabel.toString()),
+                RuleUtils.estimateInferredTypeCount(derivedRelationLabel, tx)
+        );
+
+        assertEquals(
+                tx.session().keyspaceStatistics().count(tx, anotherRelationLabel.toString()),
+                RuleUtils.estimateInferredTypeCount(anotherDerivedRelationLabel, tx)
+        );
+    }
+
+    @Test
+    public void whenEstimatingInferredCountOfAnInferredRecursiveRelation_countIsDerivedFromLeafType(){
+        Label someRelationLabel = Label.of("someRelation");
+        Label someRelationTransLabel = Label.of("someRelationTrans");
+        assertEquals(
+                tx.session().keyspaceStatistics().count(tx, someRelationLabel.toString()),
+                RuleUtils.estimateInferredTypeCount(someRelationTransLabel, tx)
+        );
     }
 
     private Atom getAtomWithVariables(ReasonerQuery query, Set<Variable> vars){

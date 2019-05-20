@@ -68,7 +68,7 @@ public class RuleUtils {
                 .forEach(p -> graph.put(p.getKey(), p.getValue()));
         return graph;
     }
-    
+
     /**
      * @return a type graph (when->then) from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
      */
