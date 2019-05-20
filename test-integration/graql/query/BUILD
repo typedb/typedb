@@ -201,7 +201,6 @@ java_test(
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
 )
 
 checkstyle_test(
