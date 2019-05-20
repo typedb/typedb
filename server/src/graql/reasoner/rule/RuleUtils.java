@@ -23,7 +23,10 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.common.util.CommonUtil;
+import grakn.core.concept.Label;
 import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -35,6 +38,7 @@ import grakn.core.server.session.TransactionOLTP;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
@@ -65,10 +69,17 @@ public class RuleUtils {
         return graph;
     }
 
+
+    public static HashMultimap<Type, Type> typeGraphInverse(TransactionOLTP tx){
+        HashMultimap<Type, Type> inverse = HashMultimap.create();
+        typeGraph(tx).entries().forEach(e -> inverse.put(e.getValue(), e.getKey()));
+        return inverse;
+    }
+
     /**
-     * @return a type graph from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
+     * @return a type graph (when->then) from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
      */
-    private static HashMultimap<Type,Type> typeGraph(TransactionOLTP tx){
+    private static HashMultimap<Type, Type> typeGraph(TransactionOLTP tx){
         HashMultimap<Type, Type> graph = HashMultimap.create();
         tx.getMetaRule().subs()
                 .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
@@ -186,5 +197,47 @@ public class RuleUtils {
             }
         }
         return rules;
+    }
+
+    /**
+     * @param label type label for which the inferred count should be estimated
+     * @param tx transaction context
+     * @return estimated number of inferred instances of a given type
+     */
+    public static long estimateInferredTypeCount(Label label, TransactionOLTP tx){
+        SchemaConcept initialType = tx.getSchemaConcept(label);
+        if (initialType == null || !initialType.thenRules().findFirst().isPresent()) return 0;
+        long inferredEstimate = 0;
+
+        Set<SchemaConcept> visitedTypes = new HashSet<>();
+        Stack<SchemaConcept> types = new Stack<>();
+        types.push(initialType);
+        while(!types.isEmpty()) {
+            SchemaConcept type = types.pop();
+            //estimate count by assuming connectivity determined by the least populated type
+            Set<Optional<? extends Type>> dependants = type.thenRules()
+                    .map(rule ->
+                            rule.whenTypes()
+                                    .flatMap(Type::subs)
+                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.toString())))
+                    ).collect(toSet());
+
+            if (!visitedTypes.contains(type) && !dependants.isEmpty()){
+                dependants.stream()
+                        .flatMap(CommonUtil::optionalToStream)
+                        .filter(at -> !visitedTypes.contains(at))
+                        .filter(at -> !types.contains(at))
+                        .forEach(types::add);
+                visitedTypes.add(type);
+            } else {
+                //if type is a leaf - update counts
+                Set<? extends SchemaConcept> subs = type.subs().collect(toSet());
+                for (SchemaConcept sub : subs) {
+                    long labelCount = tx.session().keyspaceStatistics().count(tx, sub.label().toString());
+                    inferredEstimate += labelCount;
+                }
+            }
+        }
+        return inferredEstimate;
     }
 }

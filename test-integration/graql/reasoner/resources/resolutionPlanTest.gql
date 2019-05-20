@@ -77,15 +77,17 @@ $x has anotherDerivedResource $r;
 insert
 
 $x isa someEntity, has resource 'someValue';
+$z isa someEntity;
+$c isa baseEntity;
 $y isa someOtherEntity;
 (someRole: $x, otherRole: $y) isa someRelation;
-(someRole: $x, otherRole: $y) isa someRelation;
+(someRole: $x, otherRole: $z) isa someRelation;
 (someRole: $x, otherRole: $y) isa anotherRelation;
-(someRole: $x, otherRole: $y) isa anotherRelation;
+(someRole: $x, otherRole: $z) isa anotherRelation;
+(someRole: $x, otherRole: $c) isa anotherRelation;
 (someRole: $x, otherRole: $y) isa yetAnotherRelation;
 
-$z "value1" isa anotherResource;
-$a "value2" isa anotherResource;
+$ar "someValue" isa anotherResource;
+$ar2 "anotherValue" isa anotherResource;
 
-$b isa someEntity;
-$c isa baseEntity;
+
