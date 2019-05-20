@@ -125,10 +125,9 @@ public abstract class SemanticCache<
      * propagate answers within the cache (children fetch answers from parents)
      */
     public void propagateAnswers(){
-        parents.keySet().stream()
-                .filter(c -> isComplete(keyToQuery(c)))
-                .forEach(c-> {
-                    ReasonerAtomicQuery child = keyToQuery(c);
+        queries().stream()
+                .filter(this::isComplete)
+                .forEach(child-> {
                     CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
                     if (childEntry != null) {
                         propagateAnswersToQuery(child, childEntry, true);
