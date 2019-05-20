@@ -208,16 +208,18 @@ public class RuleUtils {
         while(!types.isEmpty()) {
             SchemaConcept type = types.pop();
             //estimate count by assuming connectivity determined by the least populated type
-            Set<Optional<? extends Type>> dependants = type.thenRules()
+            Set<Type> dependants = type.thenRules()
                     .map(rule ->
                             rule.whenTypes()
-                                    .flatMap(Type::subs)
+                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx, t2.toString()))))
+                                    .flatMap(CommonUtil::optionalToStream)
                                     .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.toString())))
-                    ).collect(toSet());
+                    )
+                    .flatMap(CommonUtil::optionalToStream)
+                    .collect(toSet());
 
             if (!visitedTypes.contains(type) && !dependants.isEmpty()){
                 dependants.stream()
-                        .flatMap(CommonUtil::optionalToStream)
                         .filter(at -> !visitedTypes.contains(at))
                         .filter(at -> !types.contains(at))
                         .forEach(types::add);
