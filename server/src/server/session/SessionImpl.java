@@ -262,4 +262,8 @@ public class SessionImpl implements Session {
     public Config config() {
         return config;
     }
+
+    public ReadWriteLock getGraphLock(){
+        return graphLock;
+    }
 }
