@@ -68,14 +68,7 @@ public class RuleUtils {
                 .forEach(p -> graph.put(p.getKey(), p.getValue()));
         return graph;
     }
-
-
-    public static HashMultimap<Type, Type> typeGraphInverse(TransactionOLTP tx){
-        HashMultimap<Type, Type> inverse = HashMultimap.create();
-        typeGraph(tx).entries().forEach(e -> inverse.put(e.getValue(), e.getKey()));
-        return inverse;
-    }
-
+    
     /**
      * @return a type graph (when->then) from possibly uncommited/invalid rules (no mapping to InferenceRule may exist).
      */
