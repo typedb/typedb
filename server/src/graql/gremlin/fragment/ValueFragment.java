@@ -140,7 +140,6 @@ public class ValueFragment extends Fragment {
 
     @Override
     public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
-        long startTime = System.currentTimeMillis();
         KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
 
         // compute the sum of all @has-attribute implicit relations
@@ -163,7 +162,6 @@ public class ValueFragment extends Fragment {
             totalImplicitRels += statistics.count(tx, implicitAttrRelLabel.toString());
         }
 
-        System.out.println("Time for valueFragment: " + (System.currentTimeMillis() - startTime) + " ms");
         if (totalAttributes == 0) {
             // short circuiting can be done quickly if starting here
             return 0.0;
