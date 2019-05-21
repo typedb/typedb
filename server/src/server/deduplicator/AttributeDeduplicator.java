@@ -60,6 +60,7 @@ public class AttributeDeduplicator {
                 while (duplicates.hasNext()) {
                     Vertex duplicate = duplicates.next();
                     try {
+                        session.getGraphLock().writeLock().lock();
                         duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
                             // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
                             GraphTraversal<Vertex, Edge> attributeEdge =
@@ -85,6 +86,8 @@ public class AttributeDeduplicator {
                         tx.statisticsDelta().decrement(keyspaceAttributeTriple.label());
                     } catch (IllegalStateException vertexAlreadyRemovedException) {
                         LOG.warn("Trying to call the method vertices(Direction.IN) on vertex {} which is already removed.", duplicate.id());
+                    } finally {
+                        session.getGraphLock().writeLock().unlock();
                     }
                 }
 
