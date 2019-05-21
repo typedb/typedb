@@ -20,6 +20,7 @@ package grakn.core.graql.gremlin.spanningtree.graph;
 
 import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -52,8 +53,8 @@ public class Node {
     }
 
     private NodeType nodeType;
-    // the default is any possible thing
-    private Label instanceTypeLabel = Label.of("thing");
+    // null instance type label indicates we have no information and we the total of all instance counts;
+    private String instanceTypeLabel = null;
 
     public Node(NodeId nodeId, NodeType nodeType) {
         this.nodeId = nodeId;
@@ -114,6 +115,29 @@ public class Node {
         this.branchWeight = branchWeight;
     }
 
+    /**
+     * Calculate the expected number of vertices in the graph that match this node, using the information
+     * available to this node. Without further refinement, this only consumes the node type and if it's an
+     * instance node then returns the total count of the graph vertices
+     * @param tx
+     * @return estimated number nodes in the graph that may match this node
+     */
+    public long estimateNodeQuantity(TransactionOLTP tx) {
+        if (nodeType.equals(NodeType.INSTANCE_NODE)) {
+            if (instanceTypeLabel == null) {
+                // upper bound for now until we can efficiently retrieve the total of all things efficiently
+                return 100000L;
+            } else {
+                return tx.session().keyspaceStatistics().count(tx, instanceTypeLabel);
+            }
+        } else {
+            // there's exactly 1 node for an ID
+            // there's exactly 1 schema node for a label
+            // we assume nodes representing edges have cardinality 1 for now
+            return 1;
+        }
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -132,4 +156,5 @@ public class Node {
     public String toString() {
         return nodeId.toString();
     }
+
 }
