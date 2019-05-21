@@ -36,6 +36,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -147,19 +148,20 @@ public class ValueFragment extends Fragment {
         // this is probably not the highest quality heuristic (plus it is a heavy operation), needs work
 
         Label attributeLabel = Label.of("attribute");
+        long totalImplicitRels = 0;
+        long totalAttributes = 0;
 
         AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
         Stream<AttributeType> attributeSubs = attributeType.subs();
 
-        Label implicitAttributeRelation = Schema.ImplicitType.HAS.getLabel(attributeLabel);
-        SchemaConcept implicitAttributeRelationType = tx.getSchemaConcept(implicitAttributeRelation);
-        double totalImplicitRels = 0.0;
-        if (implicitAttributeRelationType != null) {
-            Stream<RelationType> implicitSubs = implicitAttributeRelationType.asRelationType().subs();
-            totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
+        for (Iterator<AttributeType> it = attributeSubs.iterator(); it.hasNext(); ) {
+            AttributeType attrType = it.next();
+            Label attrLabel = attrType.label();
+            Label implicitAttrRelLabel = Schema.ImplicitType.HAS.getLabel(attrLabel);
+            totalAttributes += statistics.count(tx, attrLabel.toString());
+            totalImplicitRels += statistics.count(tx, implicitAttrRelLabel.toString());
         }
 
-        double totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a,b) -> a+b).orElse(1L);
         if (totalAttributes == 0) {
             // short circuiting can be done quickly if starting here
             return 0.0;
