@@ -18,6 +18,7 @@
 
 package grakn.core.graql.gremlin.spanningtree.graph;
 
+import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
 
 import java.util.HashSet;
@@ -41,8 +42,22 @@ public class Node {
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
-    public Node(NodeId nodeId) {
+
+    // state used by QP planning & statistics
+    public enum NodeType {
+        SCHEMA_NODE,
+        EDGE_NODE,
+        INSTANCE_NODE,
+        ID_NODE
+    }
+
+    private NodeType nodeType;
+    // the default is any possible thing
+    private Label instanceTypeLabel = Label.of("thing");
+
+    public Node(NodeId nodeId, NodeType nodeType) {
         this.nodeId = nodeId;
+        this.nodeType = nodeType;
     }
 
     public NodeId getNodeId() {

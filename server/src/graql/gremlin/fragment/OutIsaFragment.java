@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Set;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
 import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
@@ -75,8 +74,18 @@ public abstract class OutIsaFragment extends EdgeFragment {
     }
 
     @Override
-    NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end())));
+    protected Node.NodeType startNodeType() {
+        return Node.NodeType.INSTANCE_NODE;
+    }
+
+    @Override
+    protected Node.NodeType endNodeType() {
+        return Node.NodeType.SCHEMA_NODE;
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeIdType.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
 
     @Override

@@ -21,6 +21,7 @@ package grakn.core.graql.gremlin.fragment;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Role;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
@@ -78,9 +79,20 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
         return builder.build();
     }
 
+
     @Override
-    NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeType.VAR, edge());
+    protected Node.NodeType startNodeType() {
+        return Node.NodeType.INSTANCE_NODE;
+    }
+
+    @Override
+    protected Node.NodeType endNodeType() {
+        return Node.NodeType.INSTANCE_NODE;
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeIdType.VAR, edge());
     }
 
 

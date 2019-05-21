@@ -20,6 +20,7 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
@@ -132,9 +133,18 @@ public abstract class InIsaFragment extends EdgeFragment {
         return COST_INSTANCES_PER_TYPE;
     }
 
+    @Override
+    protected Node.NodeType startNodeType() {
+        return Node.NodeType.SCHEMA_NODE;
+    }
 
     @Override
-    NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeType.ISA, new HashSet<>(Arrays.asList(start(), end())));
+    protected Node.NodeType endNodeType() {
+        return Node.NodeType.INSTANCE_NODE;
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeIdType.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
 }

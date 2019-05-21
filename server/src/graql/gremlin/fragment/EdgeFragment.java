@@ -38,19 +38,21 @@ import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
  */
 public abstract class EdgeFragment extends Fragment {
 
-    abstract NodeId getMiddleNodeId();
+    abstract protected NodeId getMiddleNodeId();
+    abstract protected Node.NodeType startNodeType();
+    abstract protected Node.NodeType endNodeType();
 
     public Set<Node> getNodes() {
-        Node start = new Node(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = new Node(NodeId.of(NodeId.NodeType.VAR, end()));
-        Node middle = new Node(getMiddleNodeId());
+        Node start = new Node(NodeId.of(NodeId.NodeIdType.VAR, start()), startNodeType());
+        Node end = new Node(NodeId.of(NodeId.NodeIdType.VAR, end()), endNodeType());
+        Node middle = new Node(getMiddleNodeId(), Node.NodeType.EDGE_NODE);
         middle.setInvalidStartingPoint();
         return Sets.newHashSet(start, end, middle);
     }
 
     @Override
     public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
+        Node start = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, start()));
         Node middle = nodes.get(getMiddleNodeId());
         // directed edge: middle -> start
         return new Pair<>(middle, start);
@@ -65,8 +67,8 @@ public abstract class EdgeFragment extends Fragment {
         // since the middle node cannot be addressed it does not have a variable, so we create a new ID for it
         // as the combination of start() and end() with the type
 
-        Node start = nodes.get(NodeId.of(NodeId.NodeType.VAR, start()));
-        Node end = nodes.get(NodeId.of(NodeId.NodeType.VAR, end()));
+        Node start = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, start()));
+        Node end = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, end()));
         Node middle = nodes.get(getMiddleNodeId());
 
         return Sets.newHashSet(

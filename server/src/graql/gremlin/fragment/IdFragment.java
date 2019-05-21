@@ -21,6 +21,8 @@ package grakn.core.graql.gremlin.fragment;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.IdProperty;
@@ -32,7 +34,9 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
 import static grakn.core.concept.printer.StringPrinter.conceptId;
 
@@ -92,6 +96,11 @@ public abstract class IdFragment extends Fragment {
     @Override
     public boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
+    }
+
+    public Set<Node> getNodes() {
+        NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
+        return Collections.singleton(new Node(startNodeId, Node.NodeType.ID_NODE));
     }
 
     @Override

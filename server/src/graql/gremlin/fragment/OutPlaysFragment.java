@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
@@ -68,9 +69,18 @@ abstract class OutPlaysFragment extends EdgeFragment {
         return COST_ROLES_PER_TYPE;
     }
 
+    @Override
+    protected Node.NodeType startNodeType() {
+        return Node.NodeType.SCHEMA_NODE;
+    }
 
     @Override
-    NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeType.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
+    protected Node.NodeType endNodeType() {
+        return Node.NodeType.SCHEMA_NODE;
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.NodeIdType.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
     }
 }
