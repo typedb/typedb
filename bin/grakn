@@ -21,7 +21,7 @@
 JAVA_BIN=java
 [[ $(readlink $0) ]] && path=$(readlink $0) || path=$0
 GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
-GRAKN_CONFIG="conf/grakn.properties"
+GRAKN_CONFIG="server/conf/grakn.properties"
 
 CONSOLE_JAR_FILENAME=(${GRAKN_HOME}/console/services/lib/io-grakn-core-console*.jar)
 SERVER_JAR_FILENAME=(${GRAKN_HOME}/server/services/lib/io-grakn-core-server*.jar)

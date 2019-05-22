@@ -120,7 +120,7 @@ assemble_targz(
     targets = [":server-deps", "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
@@ -143,7 +143,7 @@ assemble_zip(
     targets = [":server-deps", "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
@@ -166,7 +166,7 @@ assemble_zip(
     targets = [":server-deps", "//bin:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
@@ -211,7 +211,7 @@ assemble_apt(
     installation_dir = "/opt/grakn/core/",
     files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
@@ -250,7 +250,7 @@ assemble_rpm(
      ],
     files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "conf/grakn.properties",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"

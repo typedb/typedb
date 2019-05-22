@@ -20,7 +20,7 @@ REM
 SET "GRAKN_HOME=%cd%"
 
 
-SET "GRAKN_CONFIG=conf\grakn.properties"
+SET "GRAKN_CONFIG=server\conf\grakn.properties"
 
 where java >NUL 2>NUL
 if %ERRORLEVEL% GEQ 1 (
