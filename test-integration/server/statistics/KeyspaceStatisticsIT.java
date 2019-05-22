@@ -19,6 +19,7 @@
 package grakn.core.server.statistics;
 
 import grakn.client.GraknClient;
+import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -72,9 +73,9 @@ public class KeyspaceStatisticsIT {
     public void newKeyspaceHasZeroCounts() {
         KeyspaceStatistics statistics = localSession.keyspaceStatistics();
         TransactionOLTP tx = localSession.transaction().write();
-        long entityCount = statistics.count(tx, "entity");
-        long relationCount = statistics.count(tx, "relation");
-        long attributeCount = statistics.count(tx, "attribute");
+        long entityCount = statistics.count(tx, Label.of("entity"));
+        long relationCount = statistics.count(tx, Label.of("relation"));
+        long attributeCount = statistics.count(tx, Label.of("attribute"));
         tx.close();
 
         assertEquals(0, entityCount);
@@ -109,10 +110,10 @@ public class KeyspaceStatisticsIT {
         tx.commit();
 
         tx = localSession.transaction().write();
-        long personCount = localSession.keyspaceStatistics().count(tx, "person");
-        long ageCount = localSession.keyspaceStatistics().count(tx, "age");
-        long friendshipCount = localSession.keyspaceStatistics().count(tx, "friendship");
-        long implicitAgeCount = localSession.keyspaceStatistics().count(tx, "@has-age");
+        long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
+        long implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
         tx.close();
 
         assertEquals(2, personCount);
@@ -125,10 +126,10 @@ public class KeyspaceStatisticsIT {
         tx.commit();
 
         tx = localSession.transaction().write();
-        personCount = localSession.keyspaceStatistics().count(tx, "person");
-        ageCount = localSession.keyspaceStatistics().count(tx, "age");
-        friendshipCount = localSession.keyspaceStatistics().count(tx, "friendship");
-        implicitAgeCount = localSession.keyspaceStatistics().count(tx, "@has-age");
+        personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
+        implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
         tx.close();
 
         assertEquals(2, personCount);
@@ -140,10 +141,10 @@ public class KeyspaceStatisticsIT {
         tx.execute(Graql.parse("match $x isa thing; delete $x;").asDelete());
         tx.commit();
         tx = localSession.transaction().write();
-        personCount = localSession.keyspaceStatistics().count(tx, "person");
-        ageCount = localSession.keyspaceStatistics().count(tx, "age");
-        friendshipCount = localSession.keyspaceStatistics().count(tx, "friendship");
-        implicitAgeCount = localSession.keyspaceStatistics().count(tx, "@has-age");
+        personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
+        implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
         tx.close();
 
         assertEquals(0, personCount);
@@ -173,10 +174,10 @@ public class KeyspaceStatisticsIT {
         tx.close();
 
         tx = localSession.transaction().write();
-        long personCount = localSession.keyspaceStatistics().count(tx, "person");
-        long ageCount = localSession.keyspaceStatistics().count(tx, "age");
-        long friendshipCount = localSession.keyspaceStatistics().count(tx, "friendship");
-        long implicitAgeCount = localSession.keyspaceStatistics().count(tx, "@has-age");
+        long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
+        long implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
         tx.close();
 
         assertEquals(0, personCount);
@@ -207,10 +208,10 @@ public class KeyspaceStatisticsIT {
         tx.commit();
 
         tx = localSession.transaction().write();
-        long personCount = localSession.keyspaceStatistics().count(tx, "person");
-        long ageCount = localSession.keyspaceStatistics().count(tx, "age");
-        long friendshipCount = localSession.keyspaceStatistics().count(tx, "friendship");
-        long implicitAgeCount = localSession.keyspaceStatistics().count(tx, "@has-age");
+        long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
+        long implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
         tx.close();
 
         localSession.close();
@@ -220,10 +221,10 @@ public class KeyspaceStatisticsIT {
         localSession = server.session(remoteSession.keyspace().name());
 
         tx = localSession.transaction().write();
-        long personCountReopened = localSession.keyspaceStatistics().count(tx, "person");
-        long ageCountReopened = localSession.keyspaceStatistics().count(tx, "age");
-        long friendshipCountReopened = localSession.keyspaceStatistics().count(tx, "friendship");
-        long implicitAgeCountReopened = localSession.keyspaceStatistics().count(tx, "@has-age");
+        long personCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        long ageCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        long friendshipCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
+        long implicitAgeCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
         tx.close();
 
         TestCase.assertEquals(personCount, personCountReopened);
@@ -235,7 +236,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void nonexistentLabelStatisticsReturnMinusOne() {
         TransactionOLTP tx = localSession.transaction().write();
-        long personCount = localSession.keyspaceStatistics().count(tx, "person");
+        long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         tx.close();
         assertEquals(-1L, personCount);
     }
@@ -249,8 +250,8 @@ public class KeyspaceStatisticsIT {
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
 
-        long personCountStart = localSession.keyspaceStatistics().count(tx, "person");
-        long ageCountStart = localSession.keyspaceStatistics().count(tx, "age");
+        long personCountStart = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        long ageCountStart = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         tx.commit();
 
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
@@ -286,8 +287,8 @@ public class KeyspaceStatisticsIT {
         Thread.sleep(1000);
 
         tx = localSession.transaction().write();
-        long personCount = localSession.keyspaceStatistics().count(tx, "person");
-        long ageCount = localSession.keyspaceStatistics().count(tx, "age");
+        long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
+        long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         tx.close();
 
         assertEquals(2L, personCount - personCountStart);

@@ -20,7 +20,10 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
+import grakn.core.concept.Label;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
@@ -143,4 +146,56 @@ public class NodesUtil {
         return subplan;
     }
 
+
+    /**
+     * We propagate across ISA edges any labels that might be found on one side of the ISA to
+     * the node on the other side of the ISA (moving the label from the label fragment to the instance node)
+     * @param parentToChild a mapping that represents the Query as a Tree (after the arborescence step)
+     */
+    static void propagateLabels(Map<Node, Set<Node>> parentToChild) {
+        /*
+        1. find Edge type nodes, filter these to the set of these that are ISA edges
+        2. for each ISA edge, find its parent, then children. if the parent has a LabelFragment -> to children
+            if the children contains a LabelFragment -> propagate to parent
+         */
+
+        // filter to nodes representing edges in the query planner
+        // then reduce to the ones that are pointing to an ISA either as parent or child (this information is stored
+        // on the middle node ID type)
+        Set<Node> isaEdgeNodes = parentToChild.keySet().stream()
+                .filter(node -> node.getNodeType().equals(Node.NodeType.EDGE_NODE))
+                .filter(node -> node.getNodeId().nodeIdType().equals(NodeId.NodeIdType.ISA))
+                .collect(Collectors.toSet());
+
+        for (Node node : isaEdgeNodes) {
+            Set<Node> children = parentToChild.get(node);
+            // can only be one parent - it's a  tree
+            Node parent = parentToChild.entrySet().stream().
+                    filter(entry -> entry.getValue().contains(node))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow(() ->  GraqlSemanticException.create("QueryPlanner node: " + node.toString() + " has no parent"));
+
+            Set<Fragment> parentFragments = parent.getFragmentsWithoutDependency();
+            LabelFragment parentLabelFragment = (LabelFragment)parentFragments.stream().filter(f -> f instanceof LabelFragment).findFirst().orElse(null);
+            if (parentLabelFragment != null) {
+                // propagate the label to the children
+                Label label = parentLabelFragment.labels().iterator().next();
+                children.forEach(child -> child.setInstanceLabel(label));
+            } else {
+                // find the label fragment among the children if there is one
+                // then propagate the label to the parent
+                LabelFragment labelFragment = (LabelFragment) children.stream()
+                        .flatMap(child -> child.getFragmentsWithoutDependency().stream())
+                        .filter(fragment -> fragment instanceof LabelFragment)
+                        .findFirst()
+                        .orElse(null);
+
+                if (labelFragment != null) {
+                    Label label = labelFragment.labels().iterator().next();
+                    parent.setInstanceLabel(label);
+                }
+            }
+        }
+    }
 }

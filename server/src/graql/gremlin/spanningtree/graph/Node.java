@@ -18,6 +18,7 @@
 
 package grakn.core.graql.gremlin.spanningtree.graph;
 
+import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -62,7 +63,7 @@ public class Node {
     }
     private NodeType nodeType;
     // null instance type label indicates we have no information and we the total of all instance counts;
-    private String instanceTypeLabel = null;
+    private Label instanceTypeLabel = null;
 
     public Node(NodeId nodeId, NodeType nodeType) {
         this.nodeId = nodeId;
@@ -79,6 +80,9 @@ public class Node {
 
     public void setNodeType(NodeType nodeType) {
         this.nodeType = nodeType;
+    }
+    public void setInstanceLabel(Label label) {
+        instanceTypeLabel = label;
     }
 
     public Set<Fragment> getFragmentsWithoutDependency() {

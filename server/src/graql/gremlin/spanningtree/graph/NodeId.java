@@ -59,6 +59,10 @@ public class NodeId {
         return vars;
     }
 
+    public NodeIdType nodeIdType() {
+        return nodeIdType;
+    }
+
     @Override
     public int hashCode() {
         int result = nodeIdType == null ? 0 : nodeIdType.hashCode();
