@@ -56,6 +56,11 @@ checkstyle_test(
     ],
 )
 
+exports_files(
+    glob(["conf/logback.xml"]),
+    visibility = ["//visibility:public"]
+)
+
 java_binary(
     name = "console-binary",
     main_class = "grakn.core.console.GraknConsole",
@@ -76,7 +81,7 @@ assemble_targz(
     output_filename = "grakn-core-console-linux",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
     additional_files = {
-        "//console:conf/logback.xml": "conf/logback.xml"
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -86,7 +91,7 @@ assemble_zip(
     output_filename = "grakn-core-console-mac",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
     additional_files = {
-        "//console:conf/logback.xml": "conf/logback.xml"
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -96,7 +101,7 @@ assemble_zip(
     output_filename = "grakn-core-console-windows",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
     additional_files = {
-        "//console:conf/logback.xml": "conf/logback.xml"
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -125,7 +130,7 @@ assemble_apt(
       "grakn-core-bin (={version})"
     ],
     files = {
-        "//console:conf/logback.xml": "conf/logback.xml"
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
@@ -148,7 +153,7 @@ assemble_rpm(
     spec_file = "//config/rpm:grakn-core-console.spec",
     archives = [":console-deps"],
     files = {
-        "//console:conf/logback.xml": "conf/logback.xml"
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",
