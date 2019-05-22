@@ -18,7 +18,6 @@
 
 package grakn.core.graql.gremlin.spanningtree.graph;
 
-import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -43,15 +42,24 @@ public class Node {
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
-
     // state used by QP planning & statistics
     public enum NodeType {
-        SCHEMA_NODE,
-        EDGE_NODE,
-        INSTANCE_NODE,
-        ID_NODE
-    }
+        // lower is better - a lower ordering indicates the node is more specific
+        // ie. has fewer matches in the graph
+        ID_NODE(1),     // an ID always matches exactly one node
+        SCHEMA_NODE(2),     // a schema node only has 1 node as well, arbitrary ordering between ID and this
+        EDGE_NODE(3),       // We currently weight edge nodes as 1 always, but this may change with better stats
+        INSTANCE_NODE(4);   // instance nodes are the worst, always matching many vertices
 
+        private int ordering;
+        NodeType(int relativeOrdering) {
+            this.ordering = relativeOrdering;
+        }
+        public int getRelativeOrdering() {
+            return ordering;
+        }
+
+    }
     private NodeType nodeType;
     // null instance type label indicates we have no information and we the total of all instance counts;
     private String instanceTypeLabel = null;
@@ -63,6 +71,14 @@ public class Node {
 
     public NodeId getNodeId() {
         return nodeId;
+    }
+
+    public NodeType getNodeType() {
+        return nodeType;
+    }
+
+    public void setNodeType(NodeType nodeType) {
+        this.nodeType = nodeType;
     }
 
     public Set<Fragment> getFragmentsWithoutDependency() {
@@ -122,7 +138,7 @@ public class Node {
      * @param tx
      * @return estimated number nodes in the graph that may match this node
      */
-    public long estimateNodeQuantity(TransactionOLTP tx) {
+    public long nodeQuantityEstimate(TransactionOLTP tx) {
         if (nodeType.equals(NodeType.INSTANCE_NODE)) {
             if (instanceTypeLabel == null) {
                 // upper bound for now until we can efficiently retrieve the total of all things efficiently

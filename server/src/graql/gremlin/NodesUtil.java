@@ -48,11 +48,24 @@ public class NodesUtil {
             for (Node node : fragmentNodes) {
                 NodeId nodeId = node.getNodeId();
                 nodes.merge(nodeId, node, (node1, node2) -> {
-                    // key point: if any fragment indicates a node is not a valid starting point, it never is!
+
+                    // extract and keep the most specific node type
+                    Node.NodeType node1Type = node1.getNodeType();
+                    Node.NodeType node2Type = node2.getNodeType();
+                    Node.NodeType mostSpecificType;
+                    if (node1Type.getRelativeOrdering() < node2Type.getRelativeOrdering()) {
+                        mostSpecificType = node1Type;
+                    } else {
+                        mostSpecificType = node2Type;
+                    }
+
+                    // another key point: if any fragment indicates a node is not a valid starting point, it never is!
                     if (!node1.isValidStartingPoint()) {
+                        node1.setNodeType(mostSpecificType);
                         return node1;
                     } else {
                         // either node2 is a valid starting point or it doesn't matter
+                        node2.setNodeType(mostSpecificType);
                         return node2;
                     }
                 });

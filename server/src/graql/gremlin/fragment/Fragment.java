@@ -145,7 +145,8 @@ public abstract class Fragment {
      * When building the query plan spanning tree, every fragment has a start defined with a variable
      * Some fragments are actually edges in JanusGraph (such as isa, sub, etc.)
      * These require another variable for the end() variable, and to force the MST algorithm to
-     * traverse these JanusGraph edges too, we insert a fake middle node representing the edge
+     * traverse these JanusGraph edges too, we insert a fake middle node representing the edge.
+     * We default to an INSTANCE_NODE node type, which is the most general node
      * @return
      */
     public Set<Node> getNodes() {
