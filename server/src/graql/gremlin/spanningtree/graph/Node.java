@@ -85,6 +85,9 @@ public class Node {
         instanceTypeLabel = label;
     }
 
+    // used by tests
+    public Label getInstanceLabel() { return instanceTypeLabel; }
+
     public Set<Fragment> getFragmentsWithoutDependency() {
         return fragmentsWithoutDependency;
     }
