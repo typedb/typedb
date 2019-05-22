@@ -33,6 +33,7 @@ assemble_targz(
                "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
+        "//console:conf/logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
@@ -56,6 +57,7 @@ assemble_zip(
                "//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
+        "//console:conf/logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
@@ -79,6 +81,7 @@ assemble_zip(
                "//bin:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "conf/logback.xml",
+        "//console:conf/logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
