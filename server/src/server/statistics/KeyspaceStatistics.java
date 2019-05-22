@@ -58,6 +58,15 @@ public class KeyspaceStatistics {
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
+        // precompute the delta for all Thing's and update the delta map
+        long thingDelta = deltaMap.values().stream()
+                .reduce((a,b) -> a+b)
+                .orElse(0L);
+        Label thingLabel = Schema.MetaSchema.THING.getLabel();
+        // it shouldn't exist but just in case we insert it and do an update
+        deltaMap.putIfAbsent(thingLabel, 0L);
+        deltaMap.put(thingLabel, deltaMap.get(thingLabel) + thingDelta);
+
         // merge each delta into the cache, then flush the cache to Janus
         for (Map.Entry<Label, Long> entry : deltaMap.entrySet()) {
             Label label = entry.getKey();
