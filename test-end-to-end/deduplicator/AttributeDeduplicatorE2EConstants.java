@@ -38,13 +38,13 @@ public class AttributeDeduplicatorE2EConstants {
     public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution-test", "grakn-core-all-mac");
 
     public static void assertGraknRunning() {
-        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", serverReady, equalTo(true));
     }
 
     public static void assertGraknStopped() {
-        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
     }
