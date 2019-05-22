@@ -49,7 +49,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
@@ -72,13 +71,13 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
             Variable castingName = new Variable();
             castingNames.add(castingName);
             return fragmentSetsFromRolePlayer(castingName, relationPlayer);
-        }).collect(toImmutableSet());
+        }).collect(ImmutableSet.toImmutableSet());
 
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
                         .map(otherName -> EquivalentFragmentSets.neq(property, castingName, otherName))
-        ).collect(toImmutableSet());
+        ).collect(ImmutableSet.toImmutableSet());
 
         return Sets.union(traversals, distinctCastingTraversals);
     }

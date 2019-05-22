@@ -27,9 +27,7 @@ java_library(
         "//common/templates/util:grakn-version"
     ],
     deps = [
-        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:annotations",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
     visibility = ["//visibility:public"],

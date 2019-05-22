@@ -55,7 +55,7 @@ public class KeyspaceStatisticsIT {
 
     @Before
     public void setUp() {
-        graknClient = new GraknClient(server.grpcUri().toString());
+        graknClient = new GraknClient(server.grpcUri());
         localSession = server.sessionWithNewKeyspace();
         remoteSession = graknClient.session(localSession.keyspace().toString());
     }

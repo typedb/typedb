@@ -40,9 +40,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
  * Grakn Console is a Command Line Application to interact with the Grakn Core database
@@ -108,7 +107,7 @@ public class GraknConsole {
                 //Intercept Ctrl+C and gracefully terminate connection with server
                 Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 String[] paths = commandLine.getOptionValues(FILE);
-                List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(toImmutableList());
+                List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(Collectors.toList());
                 for (Path file : filePaths) consoleSession.load(file);
             }
         }

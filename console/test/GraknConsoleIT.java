@@ -494,7 +494,7 @@ public class GraknConsoleIT {
         boolean uriSpecified = argList.contains("-r");
         if (!uriSpecified) {
             argList.add("-r");
-            argList.add(server.grpcUri().toString());
+            argList.add(server.grpcUri());
         }
 
         return argList.toArray(new String[argList.size()]);
