@@ -23,7 +23,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -668,7 +667,7 @@ class ComputeExecutor {
                     return type;
                 })
                 .flatMap(Type::subs)
-                .collect(CommonUtil.toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     /**
@@ -679,7 +678,7 @@ class ComputeExecutor {
     private Set<Label> targetTypeLabels(Computable.Targetable<?> query) {
         return targetTypes(query).stream()
                 .map(SchemaConcept::label)
-                .collect(CommonUtil.toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
     }
 
     /**
@@ -763,7 +762,7 @@ class ComputeExecutor {
      * @return a set of Concept Type Labels
      */
     private ImmutableSet<Label> scopeTypeLabels(GraqlCompute query) {
-        return scopeTypes(query).map(SchemaConcept::label).collect(CommonUtil.toImmutableSet());
+        return scopeTypes(query).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet());
     }
 
 

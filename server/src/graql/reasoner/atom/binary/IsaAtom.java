@@ -44,6 +44,8 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -51,9 +53,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
-
-import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
  * TypeAtom corresponding to graql a {@link IsaProperty} property.
@@ -190,7 +189,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
         return !types.isEmpty()?
                 ImmutableList.copyOf(ConceptUtils.top(types)) :
-                tx().getMetaConcept().subs().collect(toImmutableList());
+                tx().getMetaConcept().subs().collect(ImmutableList.toImmutableList());
     }
 
     @Override

@@ -20,7 +20,6 @@ package grakn.core.rule;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.common.http.SimpleURI;
 import grakn.core.server.GraknStorage;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
@@ -131,8 +130,8 @@ public class GraknTestServer extends ExternalResource {
 
     // Getters
 
-    public SimpleURI grpcUri() {
-        return new SimpleURI(serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME), serverConfig.getProperty(ConfigKey.GRPC_PORT));
+    public String grpcUri() {
+        return serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME) + ":" +serverConfig.getProperty(ConfigKey.GRPC_PORT);
     }
 
     public int nativeTransportPort() {

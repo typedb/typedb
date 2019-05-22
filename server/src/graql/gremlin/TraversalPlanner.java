@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.fragment.Fragment;
@@ -39,6 +40,9 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -51,10 +55,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
@@ -81,7 +82,7 @@ public class TraversalPlanner {
         Set<? extends List<Fragment>> fragments = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))
                 .map((ConjunctionQuery query) -> planForConjunction(query, tx))
-                .collect(toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
 
         return GraqlTraversal.create(fragments);
     }

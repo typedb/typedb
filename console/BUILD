@@ -36,9 +36,8 @@ java_library(
 
 
         # External dependencies
-        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
+        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",

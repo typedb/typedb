@@ -18,7 +18,6 @@
 
 package grakn.core.console;
 
-import com.google.common.base.StandardSystemProperty;
 import grakn.client.GraknClient;
 import grakn.core.common.exception.GraknException;
 import grakn.core.console.exception.GraknConsoleException;
@@ -64,7 +63,7 @@ public class ConsoleSession implements AutoCloseable {
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
 
-    private static final String HISTORY_FILE = StandardSystemProperty.USER_HOME.value() + "/.grakn-console-history";
+    private static final String HISTORY_FILE = System.getProperty("user.home") + "/.grakn-console-history";
     private static final String UNIX_EDITOR_DEFAULT = "vim";
     private static final String WINDOWS_EDITOR_DEFAULT = "notepad";
 
@@ -282,7 +281,7 @@ public class ConsoleSession implements AutoCloseable {
      * @return the string written in the editor
      */
     private String openTextEditor() throws IOException, InterruptedException {
-        File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + EDITOR_FILE);
+        File tempFile = new File(System.getProperty("java.io.tmpdir") + EDITOR_FILE);
         tempFile.createNewFile();
 
         ProcessBuilder builder;

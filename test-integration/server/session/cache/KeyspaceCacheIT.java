@@ -49,7 +49,7 @@ public class KeyspaceCacheIT {
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        graknClient = new GraknClient(server.grpcUri().toString());
+        graknClient = new GraknClient(server.grpcUri());
         remoteSession = graknClient.session(localSession.keyspace().name());
     }
 
@@ -170,7 +170,7 @@ public class KeyspaceCacheIT {
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        GraknClient.Session testSession = new GraknClient(server.grpcUri().toString()).session(localSession.keyspace().name());
+        GraknClient.Session testSession = new GraknClient(server.grpcUri()).session(localSession.keyspace().name());
         try (GraknClient.Transaction tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
