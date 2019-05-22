@@ -21,6 +21,7 @@ package grakn.core.graql.gremlin.fragment;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
+import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
@@ -100,7 +101,7 @@ public abstract class IdFragment extends Fragment {
 
     public Set<Node> getNodes() {
         NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
-        return Collections.singleton(new Node(startNodeId, Node.NodeType.ID_NODE));
+        return Collections.singleton(new IdNode(startNodeId));
     }
 
     @Override

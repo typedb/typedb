@@ -18,7 +18,6 @@
 
 package grakn.core.graql.gremlin.spanningtree.graph;
 
-import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionOLTP;
 
@@ -27,9 +26,8 @@ import java.util.Set;
 
 /**
  * An node in a directed graph.
- *
  */
-public class Node {
+public abstract class Node {
 
     private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
@@ -43,50 +41,14 @@ public class Node {
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
-    // state used by QP planning & statistics
-    public enum NodeType {
-        // lower is better - a lower ordering indicates the node is more specific
-        // ie. has fewer matches in the graph
-        ID_NODE(1),     // an ID always matches exactly one node
-        SCHEMA_NODE(2),     // a schema node only has 1 node as well, arbitrary ordering between ID and this
-        EDGE_NODE(3),       // We currently weight edge nodes as 1 always, but this may change with better stats
-        INSTANCE_NODE(4);   // instance nodes are the worst, always matching many vertices
 
-        private int ordering;
-        NodeType(int relativeOrdering) {
-            this.ordering = relativeOrdering;
-        }
-        public int getRelativeOrdering() {
-            return ordering;
-        }
-
-    }
-    private NodeType nodeType;
-    // null instance type label indicates we have no information and we the total of all instance counts;
-    private Label instanceTypeLabel = null;
-
-    public Node(NodeId nodeId, NodeType nodeType) {
+    public Node(NodeId nodeId) {
         this.nodeId = nodeId;
-        this.nodeType = nodeType;
     }
 
     public NodeId getNodeId() {
         return nodeId;
     }
-
-    public NodeType getNodeType() {
-        return nodeType;
-    }
-
-    public void setNodeType(NodeType nodeType) {
-        this.nodeType = nodeType;
-    }
-    public void setInstanceLabel(Label label) {
-        instanceTypeLabel = label;
-    }
-
-    // used by tests
-    public Label getInstanceLabel() { return instanceTypeLabel; }
 
     public Set<Fragment> getFragmentsWithoutDependency() {
         return fragmentsWithoutDependency;
@@ -141,25 +103,18 @@ public class Node {
     /**
      * Calculate the expected number of vertices in the graph that match this node, using the information
      * available to this node. Without further refinement, this only consumes the node type and if it's an
-     * instance node then returns the total count of the graph vertices
+     * instance node then returns the total count of the graph vertices using labels to refine if available
+     *
      * @param tx
-     * @return estimated number nodes in the graph that may match this node
+     * @return estimated number nodes in the graph that may match this node (aiming for an upper bound)
      */
-    public long matchingElementsEstimate(TransactionOLTP tx) {
-        if (nodeType.equals(NodeType.INSTANCE_NODE)) {
-            if (instanceTypeLabel == null) {
-                // upper bound for now until we can efficiently retrieve the total of all things efficiently
-                return 100000L;
-            } else {
-                return tx.session().keyspaceStatistics().count(tx, instanceTypeLabel);
-            }
-        } else {
-            // there's exactly 1 node for an ID
-            // there's exactly 1 schema node for a label
-            // we assume nodes representing edges have cardinality 1 for now
-            return 1;
-        }
-    }
+    public abstract long matchingElementsEstimate(TransactionOLTP tx);
+
+    /**
+     * Lower is a more specific and therefore a more desirable node type
+     * @return the node priority - lower is better
+     */
+    public abstract int getNodeTypePriority();
 
     @Override
     public boolean equals(Object o) {

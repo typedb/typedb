@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import graql.lang.statement.Variable;
 import org.junit.Test;
@@ -28,12 +30,12 @@ public class NodesUtilTest {
         labelNode.getFragmentsWithoutDependency().add(labelFragment);
         Set<Node> inIsaNodes = inIsaFragment.getNodes();
         Node inIsaMiddleNode = inIsaNodes.stream()
-                .filter(node -> node.getNodeType().equals(Node.NodeType.EDGE_NODE))
+                .filter(node -> node instanceof EdgeNode)
                 .findAny()
                 .orElseThrow(() -> new RuntimeException("Test error - no edge node found"));
 
-        Node instanceVarNode = inIsaNodes.stream()
-                .filter(node -> node.getNodeType().equals(Node.NodeType.INSTANCE_NODE) && node.getNodeId().toString().contains("instanceVar"))
+        InstanceNode instanceVarNode = (InstanceNode) inIsaNodes.stream()
+                .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
                 .findAny()
                 .orElseThrow(() -> new RuntimeException("Test error - no instanceVar node found"));
 
@@ -60,12 +62,12 @@ public class NodesUtilTest {
         labelNode.getFragmentsWithoutDependency().add(labelFragment);
         Set<Node> outIsaNodes = outIsaFragment.getNodes();
         Node outIsaMiddleNode = outIsaNodes.stream()
-                .filter(node -> node.getNodeType().equals(Node.NodeType.EDGE_NODE))
+                .filter(node -> node instanceof EdgeNode)
                 .findAny()
                 .orElseThrow(() -> new RuntimeException("Test error - no edge node found"));
 
-        Node instanceVarNode = outIsaNodes.stream()
-                .filter(node -> node.getNodeType().equals(Node.NodeType.INSTANCE_NODE) && node.getNodeId().toString().contains("instanceVar"))
+        InstanceNode instanceVarNode = (InstanceNode) outIsaNodes.stream()
+                .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
                 .findAny()
                 .orElseThrow(() -> new RuntimeException("Test error - no instanceVar node found"));
 

@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.spanningtree.graph.DenseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
@@ -46,17 +47,17 @@ public class ChuLiuEdmondsTest {
     final static double NINF = Double.NEGATIVE_INFINITY;
 
     static Map<NodeId, Node> nodes = new HashMap<>();
-    static Node node0 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("0")), Node.NodeType.INSTANCE_NODE);
-    static Node node1 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("1")), Node.NodeType.INSTANCE_NODE);
-    static Node node2 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("2")), Node.NodeType.INSTANCE_NODE);
-    static Node node3 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("3")), Node.NodeType.INSTANCE_NODE);
-    static Node node4 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("4")), Node.NodeType.INSTANCE_NODE);
-    static Node node5 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("5")), Node.NodeType.INSTANCE_NODE);
-    static Node node6 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("6")), Node.NodeType.INSTANCE_NODE);
-    static Node node7 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("7")), Node.NodeType.INSTANCE_NODE);
-    static Node node8 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("8")), Node.NodeType.INSTANCE_NODE);
-    static Node node9 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("9")), Node.NodeType.INSTANCE_NODE);
-    static Node node10 = new Node(NodeId.of(NodeId.NodeIdType.VAR, new Variable("10")), Node.NodeType.INSTANCE_NODE);
+    static Node node0 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("0")));
+    static Node node1 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("1")));
+    static Node node2 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("2")));
+    static Node node3 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("3")));
+    static Node node4 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("4")));
+    static Node node5 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("5")));
+    static Node node6 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("6")));
+    static Node node7 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("7")));
+    static Node node8 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("8")));
+    static Node node9 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("9")));
+    static Node node10 = new InstanceNode(NodeId.of(NodeId.NodeIdType.VAR, new Variable("10")));
     static WeightedGraph graph = SparseWeightedGraph.from(ImmutableList.of(
             weighted(DirectedEdge.from(node0).to(node1), 5),
             weighted(DirectedEdge.from(node0).to(node2), 1),

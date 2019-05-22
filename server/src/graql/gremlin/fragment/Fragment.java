@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
@@ -151,7 +152,7 @@ public abstract class Fragment {
      */
     public Set<Node> getNodes() {
         NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
-        return Collections.singleton(new Node(startNodeId, Node.NodeType.INSTANCE_NODE));
+        return Collections.singleton(new InstanceNode(startNodeId));
     }
 
     /**

@@ -20,6 +20,7 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
@@ -39,13 +40,13 @@ import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 public abstract class EdgeFragment extends Fragment {
 
     abstract protected NodeId getMiddleNodeId();
-    abstract protected Node.NodeType startNodeType();
-    abstract protected Node.NodeType endNodeType();
+    abstract protected Node startNode();
+    abstract protected Node endNode();
 
     public Set<Node> getNodes() {
-        Node start = new Node(NodeId.of(NodeId.NodeIdType.VAR, start()), startNodeType());
-        Node end = new Node(NodeId.of(NodeId.NodeIdType.VAR, end()), endNodeType());
-        Node middle = new Node(getMiddleNodeId(), Node.NodeType.EDGE_NODE);
+        Node start = startNode(); // new Node(NodeId.of(NodeId.NodeIdType.VAR, start()), startNodeType());
+        Node end = endNode(); // new Node(NodeId.of(NodeId.NodeIdType.VAR, end()), endNodeType());
+        Node middle = new EdgeNode(getMiddleNodeId());
         middle.setInvalidStartingPoint();
         return Sets.newHashSet(start, end, middle);
     }

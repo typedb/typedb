@@ -26,6 +26,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.printer.StringPrinter;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -94,7 +95,7 @@ public abstract class LabelFragment extends Fragment {
 
     public Set<Node> getNodes() {
         NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
-        return Collections.singleton(new Node(startNodeId, Node.NodeType.SCHEMA_NODE));
+        return Collections.singleton(new SchemaNode(startNodeId));
     }
 
     @Override

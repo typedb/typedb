@@ -25,6 +25,8 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
+import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 
@@ -52,25 +54,21 @@ public class NodesUtil {
                 NodeId nodeId = node.getNodeId();
                 nodes.merge(nodeId, node, (node1, node2) -> {
 
-                    // extract and keep the most specific node type
-                    Node.NodeType node1Type = node1.getNodeType();
-                    Node.NodeType node2Type = node2.getNodeType();
-                    Node.NodeType mostSpecificType;
-                    if (node1Type.getRelativeOrdering() < node2Type.getRelativeOrdering()) {
-                        mostSpecificType = node1Type;
+                    // keep the most specific node type
+                    Node nodeToKeep;
+                    if (node1.getNodeTypePriority() < node2.getNodeTypePriority()) {
+                        // lower is more desirable
+                        nodeToKeep = node1;
                     } else {
-                        mostSpecificType = node2Type;
+                        nodeToKeep = node2;
                     }
 
-                    // another key point: if any fragment indicates a node is not a valid starting point, it never is!
-                    if (!node1.isValidStartingPoint()) {
-                        node1.setNodeType(mostSpecificType);
-                        return node1;
-                    } else {
-                        // either node2 is a valid starting point or it doesn't matter
-                        node2.setNodeType(mostSpecificType);
-                        return node2;
+                    // if either node indicates it is NOT a valid starting point, the false starting point wins
+                    boolean isValidStartingPoint = node1.isValidStartingPoint() && node2.isValidStartingPoint();
+                    if (!isValidStartingPoint) {
+                        nodeToKeep.setInvalidStartingPoint();
                     }
+                    return nodeToKeep;
                 });
             }
         }
@@ -163,7 +161,7 @@ public class NodesUtil {
         // then reduce to the ones that are pointing to an ISA either as parent or child (this information is stored
         // on the middle node ID type)
         Set<Node> isaEdgeNodes = parentToChild.keySet().stream()
-                .filter(node -> node.getNodeType().equals(Node.NodeType.EDGE_NODE))
+                .filter(node -> node instanceof EdgeNode)
                 .filter(node -> node.getNodeId().nodeIdType().equals(NodeId.NodeIdType.ISA))
                 .collect(Collectors.toSet());
 
@@ -182,7 +180,7 @@ public class NodesUtil {
             if (parentLabelFragment != null) {
                 // propagate the label to the children
                 Label label = parentLabelFragment.labels().iterator().next();
-                children.forEach(child -> child.setInstanceLabel(label));
+                children.stream().filter(childNode -> childNode instanceof InstanceNode).forEach(child -> ((InstanceNode) child).setInstanceLabel(label));
             } else {
                 // find the label fragment among the children if there is one
                 // then propagate the label to the parent
@@ -192,10 +190,10 @@ public class NodesUtil {
                         .findFirst()
                         .orElse(null);
 
-                if (labelFragment != null) {
+                if (labelFragment != null && parent instanceof InstanceNode) {
                     // it's possible to have an ISA without a label at either end, so we may not end up here
                     Label label = labelFragment.labels().iterator().next();
-                    parent.setInstanceLabel(label);
+                    ((InstanceNode) parent).setInstanceLabel(label);
                 }
             }
         }
