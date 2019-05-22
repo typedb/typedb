@@ -145,7 +145,7 @@ public class Node {
      * @param tx
      * @return estimated number nodes in the graph that may match this node
      */
-    public long nodeQuantityEstimate(TransactionOLTP tx) {
+    public long matchingElementsEstimate(TransactionOLTP tx) {
         if (nodeType.equals(NodeType.INSTANCE_NODE)) {
             if (instanceTypeLabel == null) {
                 // upper bound for now until we can efficiently retrieve the total of all things efficiently

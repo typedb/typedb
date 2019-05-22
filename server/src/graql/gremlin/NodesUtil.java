@@ -167,6 +167,7 @@ public class NodesUtil {
                 .filter(node -> node.getNodeId().nodeIdType().equals(NodeId.NodeIdType.ISA))
                 .collect(Collectors.toSet());
 
+        // for each of the ISA edge nodes, find the parent and and children
         for (Node node : isaEdgeNodes) {
             Set<Node> children = parentToChild.get(node);
             // can only be one parent - it's a  tree
@@ -192,6 +193,7 @@ public class NodesUtil {
                         .orElse(null);
 
                 if (labelFragment != null) {
+                    // it's possible to have an ISA without a label at either end, so we may not end up here
                     Label label = labelFragment.labels().iterator().next();
                     parent.setInstanceLabel(label);
                 }
