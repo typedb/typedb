@@ -177,8 +177,8 @@ public class NodesUtil {
 
             Set<Fragment> parentFragments = parent.getFragmentsWithoutDependency();
             LabelFragment parentLabelFragment = parentFragments.stream()
-                    .filter(f -> f instanceof LabelFragment)
-                    .map(f -> (LabelFragment) f)
+                    .filter(LabelFragment.class::isInstance)
+                    .map(LabelFragment.class::cast)
                     .findFirst()
                     .orElse(null);
 
@@ -194,8 +194,8 @@ public class NodesUtil {
                 // then propagate the label to the parent
                 LabelFragment labelFragment = children.stream()
                         .flatMap(child -> child.getFragmentsWithoutDependency().stream())
-                        .filter(fragment -> fragment instanceof LabelFragment)
-                        .map(f -> (LabelFragment) f)
+                        .filter(LabelFragment.class::isInstance)
+                        .map(LabelFragment.class::cast)
                         .findFirst()
                         .orElse(null);
 
