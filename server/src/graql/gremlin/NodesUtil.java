@@ -184,7 +184,7 @@ public class NodesUtil {
 
             if (parentLabelFragment != null) {
                 // propagate the label to the children
-                Label label = parentLabelFragment.labels().iterator().next();
+                Label label = Iterators.getOnlyElement(parentLabelFragment.labels().iterator());
                 children.stream()
                         .filter(childNode -> childNode instanceof InstanceNode)
                         .forEach(child -> ((InstanceNode) child)
@@ -201,7 +201,7 @@ public class NodesUtil {
 
                 if (labelFragment != null && parent instanceof InstanceNode) {
                     // it's possible to have an ISA without a label at either end, so we may not end up here
-                    Label label = labelFragment.labels().iterator().next();
+                    Label label = Iterators.getOnlyElement(labelFragment.labels().iterator());
                     ((InstanceNode) parent).setInstanceLabel(label);
                 }
             }
