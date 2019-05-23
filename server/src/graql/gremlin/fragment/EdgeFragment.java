@@ -54,7 +54,7 @@ public abstract class EdgeFragment extends Fragment {
 
     @Override
     public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
-        Node start = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, start()));
+        Node start = nodes.get(NodeId.of(NodeId.Type.VAR, start()));
         Node middle = nodes.get(getMiddleNodeId());
         // directed edge: middle -> start
         return new Pair<>(middle, start);
@@ -69,8 +69,8 @@ public abstract class EdgeFragment extends Fragment {
         // since the middle node cannot be addressed it does not have a variable, so we create a new ID for it
         // as the combination of start() and end() with the type
 
-        Node start = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, start()));
-        Node end = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, end()));
+        Node start = nodes.get(NodeId.of(NodeId.Type.VAR, start()));
+        Node end = nodes.get(NodeId.of(NodeId.Type.VAR, end()));
         Node middle = nodes.get(getMiddleNodeId());
 
         return Sets.newHashSet(

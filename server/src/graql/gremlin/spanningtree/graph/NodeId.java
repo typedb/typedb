@@ -35,23 +35,23 @@ public class NodeId {
      * If the node contains a var from the query, its type is VAR.
      * If the node is an edge from the query, its type is the type of the fragment.
      **/
-    public enum NodeIdType {
+    public enum Type {
         ISA, PLAYS, RELATES, SUB, VAR
     }
 
-    private final NodeIdType nodeIdType;
+    private final Type nodeIdType;
     private final Set<Variable> vars;
 
-    private NodeId(NodeIdType nodeIdType, Set<Variable> vars) {
+    private NodeId(Type nodeIdType, Set<Variable> vars) {
         this.nodeIdType = nodeIdType;
         this.vars = vars;
     }
 
-    public static NodeId of(NodeIdType nodeIdType, Set<Variable> vars) {
+    public static NodeId of(Type nodeIdType, Set<Variable> vars) {
         return new NodeId(nodeIdType, vars);
     }
 
-    public static NodeId of(NodeIdType nodeIdType, Variable var) {
+    public static NodeId of(Type nodeIdType, Variable var) {
         return new NodeId(nodeIdType, Collections.singleton(var));
     }
 
@@ -59,7 +59,7 @@ public class NodeId {
         return vars;
     }
 
-    public NodeIdType nodeIdType() {
+    public Type nodeIdType() {
         return nodeIdType;
     }
 

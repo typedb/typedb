@@ -59,16 +59,16 @@ abstract class OutRelatesFragment extends EdgeFragment {
 
     @Override
     protected Node startNode() {
-        return new SchemaNode(NodeId.of(NodeId.NodeIdType.VAR, start()));
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, start()));
     }
 
     @Override
     protected Node endNode() {
-        return new SchemaNode(NodeId.of(NodeId.NodeIdType.VAR, end()));
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, end()));
     }
 
     @Override
     protected NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeIdType.RELATES, new HashSet<>(Arrays.asList(start(), end())));
+        return NodeId.of(NodeId.Type.RELATES, new HashSet<>(Arrays.asList(start(), end())));
     }
 }

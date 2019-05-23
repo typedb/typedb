@@ -95,7 +95,7 @@ public abstract class LabelFragment extends Fragment {
 
     @Override
     public Set<Node> getNodes() {
-        NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
+        NodeId startNodeId = NodeId.of(NodeId.Type.VAR, start());
         return Collections.singleton(new SchemaNode(startNodeId));
     }
 

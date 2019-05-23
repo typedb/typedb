@@ -87,7 +87,7 @@ public class NodesUtil {
         allFragments.forEach(fragment -> {
             if (fragment.end() == null && fragment.dependencies().isEmpty()) {
                 // process fragments that have fixed cost
-                Node start = allNodes.get(NodeId.of(NodeId.NodeIdType.VAR, fragment.start()));
+                Node start = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
                 //fragments that should be done when a node has been visited
                 start.getFragmentsWithoutDependency().add(fragment);
             }
@@ -95,8 +95,8 @@ public class NodesUtil {
                 // process fragments that have ordering dependencies
 
                 // it's either neq or value fragment
-                Node start = allNodes.get(NodeId.of(NodeId.NodeIdType.VAR, fragment.start()));
-                Node other = allNodes.get(NodeId.of(NodeId.NodeIdType.VAR, Iterators.getOnlyElement(fragment.dependencies().iterator())));
+                Node start = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
+                Node other = allNodes.get(NodeId.of(NodeId.Type.VAR, Iterators.getOnlyElement(fragment.dependencies().iterator())));
 
                 start.getFragmentsWithDependency().add(fragment);
                 other.getDependants().add(fragment);
@@ -131,9 +131,9 @@ public class NodesUtil {
 
         // telling their dependants that they have been visited
         node.getDependants().forEach(fragment -> {
-            Node otherNode = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, fragment.start()));
+            Node otherNode = nodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
             if (node.equals(otherNode)) {
-                otherNode = nodes.get(NodeId.of(NodeId.NodeIdType.VAR, fragment.dependencies().iterator().next()));
+                otherNode = nodes.get(NodeId.of(NodeId.Type.VAR, fragment.dependencies().iterator().next()));
             }
             otherNode.getDependants().remove(fragment.getInverse());
             otherNode.getFragmentsWithDependencyVisited().add(fragment);
@@ -162,7 +162,7 @@ public class NodesUtil {
         // on the middle node ID type)
         Set<Node> isaEdgeNodes = parentToChild.keySet().stream()
                 .filter(node -> node instanceof EdgeNode)
-                .filter(node -> node.getNodeId().nodeIdType().equals(NodeId.NodeIdType.ISA))
+                .filter(node -> node.getNodeId().nodeIdType().equals(NodeId.Type.ISA))
                 .collect(Collectors.toSet());
 
         // for each of the ISA edge nodes, find the parent and and children

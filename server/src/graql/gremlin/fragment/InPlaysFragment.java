@@ -19,7 +19,6 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
@@ -73,17 +72,17 @@ abstract class InPlaysFragment extends EdgeFragment {
 
     @Override
     protected Node startNode() {
-        return new SchemaNode(NodeId.of(NodeId.NodeIdType.VAR, start()));
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, start()));
     }
 
     @Override
     protected Node endNode() {
-        return new SchemaNode(NodeId.of(NodeId.NodeIdType.VAR, end()));
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, end()));
     }
 
     @Override
     protected NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeIdType.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
+        return NodeId.of(NodeId.Type.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
     }
 
 }

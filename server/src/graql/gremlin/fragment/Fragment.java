@@ -151,7 +151,7 @@ public abstract class Fragment {
      * @return
      */
     public Set<Node> getNodes() {
-        NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
+        NodeId startNodeId = NodeId.of(NodeId.Type.VAR, start());
         return Collections.singleton(new InstanceNode(startNodeId));
     }
 
