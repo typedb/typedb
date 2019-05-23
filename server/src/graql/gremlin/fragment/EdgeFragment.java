@@ -44,8 +44,8 @@ public abstract class EdgeFragment extends Fragment {
     abstract protected Node endNode();
 
     public Set<Node> getNodes() {
-        Node start = startNode(); // new Node(NodeId.of(NodeId.NodeIdType.VAR, start()), startNodeType());
-        Node end = endNode(); // new Node(NodeId.of(NodeId.NodeIdType.VAR, end()), endNodeType());
+        Node start = startNode();
+        Node end = endNode();
         Node middle = new EdgeNode(getMiddleNodeId());
         middle.setInvalidStartingPoint();
         return Sets.newHashSet(start, end, middle);
