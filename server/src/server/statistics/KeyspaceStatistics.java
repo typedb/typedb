@@ -39,6 +39,10 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * On cache miss, we read from JanusGraph schema vertices, which only have the INSTANCE_COUNT property if the
  * count is non-zero or has been non-zero in the past. No such property means instance count is 0.
+ *
+ * We also store the total count of all concepts the same was as any other schema concept, but on the `Thing` meta
+ * concept. Note that this is different from the other instance counts as it DOES include counts of all subtypes. The
+ * other counts on user-defined schema concepts are for for that concrete type only
  */
 public class KeyspaceStatistics {
 
@@ -56,6 +60,15 @@ public class KeyspaceStatistics {
 
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
+
+        // precompute the delta for all Thing's and update the delta map
+        long thingDelta = deltaMap.values().stream()
+                .reduce((a,b) -> a+b)
+                .orElse(0L);
+        Label thingLabel = Schema.MetaSchema.THING.getLabel();
+        // it shouldn't exist but just in case we insert it and do an update
+        deltaMap.putIfAbsent(thingLabel, 0L);
+        deltaMap.put(thingLabel, deltaMap.get(thingLabel) + thingDelta);
 
         // merge each delta into the cache, then flush the cache to Janus
         for (Map.Entry<Label, Long> entry : deltaMap.entrySet()) {

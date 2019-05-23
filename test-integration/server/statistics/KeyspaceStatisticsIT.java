@@ -114,12 +114,14 @@ public class KeyspaceStatisticsIT {
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
         long implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
+        long thingCount = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
         tx.close();
 
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
         assertEquals(1, friendshipCount);
         assertEquals(3, implicitAgeCount);
+        assertEquals(personCount + ageCount + friendshipCount + implicitAgeCount, thingCount);
 
         tx = localSession.transaction().write();
         tx.execute(Graql.parse("match $x isa friendship; delete $x;").asDelete());
@@ -130,12 +132,14 @@ public class KeyspaceStatisticsIT {
         ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
         implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
+        thingCount = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
         tx.close();
 
         assertEquals(2, personCount);
         assertEquals(1, ageCount);
         assertEquals(0, friendshipCount);
         assertEquals(3, implicitAgeCount);
+        assertEquals(personCount + ageCount + friendshipCount + implicitAgeCount, thingCount);
 
         tx = localSession.transaction().write();
         tx.execute(Graql.parse("match $x isa thing; delete $x;").asDelete());
@@ -145,12 +149,14 @@ public class KeyspaceStatisticsIT {
         ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
         implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
+        thingCount = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
         tx.close();
 
         assertEquals(0, personCount);
         assertEquals(0, ageCount);
         assertEquals(0, friendshipCount);
         assertEquals(0, implicitAgeCount);
+        assertEquals(0, thingCount);
     }
 
     @Test
@@ -212,6 +218,7 @@ public class KeyspaceStatisticsIT {
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
         long implicitAgeCount = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
+        long thingCount = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
         tx.close();
 
         localSession.close();
@@ -225,12 +232,14 @@ public class KeyspaceStatisticsIT {
         long ageCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
         long implicitAgeCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("@has-age"));
+        long thingCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
         tx.close();
 
-        TestCase.assertEquals(personCount, personCountReopened);
-        TestCase.assertEquals(ageCount, ageCountReopened);
-        TestCase.assertEquals(friendshipCount, friendshipCountReopened);
-        TestCase.assertEquals(implicitAgeCount, implicitAgeCountReopened);
+        assertEquals(personCount, personCountReopened);
+        assertEquals(ageCount, ageCountReopened);
+        assertEquals(friendshipCount, friendshipCountReopened);
+        assertEquals(implicitAgeCount, implicitAgeCountReopened);
+        assertEquals(thingCount, thingCountReopened);
     }
 
     @Test
@@ -289,9 +298,11 @@ public class KeyspaceStatisticsIT {
         tx = localSession.transaction().write();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
+        long thingCount = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
         tx.close();
 
         assertEquals(2L, personCount - personCountStart);
         assertEquals(3L, ageCount - ageCountStart);
+        assertEquals(personCount + ageCount, thingCount);
     }
 }
