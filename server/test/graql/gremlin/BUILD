@@ -16,6 +16,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+
 java_test(
     name = "nodes-util-test",
     srcs = ["NodesUtilTest.java"],
@@ -27,4 +29,11 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     size = "small"
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":nodes-util-test"
+    ],
 )
