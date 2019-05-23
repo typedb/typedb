@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.spanningtree.graph;
 
 import grakn.core.concept.Label;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 
 public class InstanceNode extends Node {
@@ -34,8 +35,7 @@ public class InstanceNode extends Node {
     @Override
     public long matchingElementsEstimate(TransactionOLTP tx) {
         if (instanceTypeLabel == null) {
-            // upper bound for now until we can efficiently retrieve the total of all things efficiently
-            return 100000L;
+            return tx.session().keyspaceStatistics().count(tx, Schema.MetaSchema.THING.getLabel());
         } else {
             return tx.session().keyspaceStatistics().count(tx, instanceTypeLabel);
         }
