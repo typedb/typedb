@@ -36,9 +36,8 @@ java_library(
 
 
         # External dependencies
-        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVOIUSLY UNDECLARED
+        "//dependencies/maven/artifacts/commons-lang:commons-lang", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/jline:jline",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -54,6 +53,11 @@ checkstyle_test(
     targets = [
         ":console"
     ],
+)
+
+exports_files(
+    glob(["conf/logback.xml"]),
+    visibility = ["//visibility:public"]
 )
 
 java_binary(
@@ -75,18 +79,8 @@ assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-core-console-linux",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
-    empty_directories = [
-        "console/db/cassandra",
-        "console/db/queue"
-    ],
     additional_files = {
-        "//server:conf/logback.xml": "console/conf/logback.xml",
-        "//server:conf/grakn.properties": "console/conf/grakn.properties",
-    },
-    permissions = {
-      "console/services/cassandra/cassandra.yaml": "0777",
-      "console/db/cassandra": "0777",
-      "console/db/queue": "0777",
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -95,18 +89,8 @@ assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-core-console-mac",
     targets = [":console-deps", "//bin:assemble-bash-targz"],
-    empty_directories = [
-        "console/db/cassandra",
-        "console/db/queue"
-    ],
     additional_files = {
-        "//server:conf/logback.xml": "console/conf/logback.xml",
-        "//server:conf/grakn.properties": "console/conf/grakn.properties",
-    },
-    permissions = {
-      "console/services/cassandra/cassandra.yaml": "0777",
-      "console/db/cassandra": "0777",
-      "console/db/queue": "0777",
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -114,19 +98,9 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-core-console-windows",
-    targets = [":console-deps", "//bin:assemble-bat-targz"],
-    empty_directories = [
-        "console/db/cassandra",
-        "console/db/queue"
-    ],
+    targets = [":console-deps", "//bin:assemble-bash-targz"],
     additional_files = {
-        "//server:conf/logback.xml": "console/conf/logback.xml",
-        "//server:conf/grakn.properties": "console/conf/grakn.properties",
-    },
-    permissions = {
-      "console/services/cassandra/cassandra.yaml": "0777",
-      "console/db/cassandra": "0777",
-      "console/db/queue": "0777",
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     visibility = ["//visibility:public"]
 )
@@ -155,8 +129,7 @@ assemble_apt(
       "grakn-core-bin (={version})"
     ],
     files = {
-        "//server:conf/logback.xml": "console/conf/logback.xml",
-        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     archives = [":console-deps"],
     installation_dir = "/opt/grakn/core/",
@@ -179,8 +152,7 @@ assemble_rpm(
     spec_file = "//config/rpm:grakn-core-console.spec",
     archives = [":console-deps"],
     files = {
-        "//server:conf/logback.xml": "console/conf/logback.xml",
-        "//server:conf/grakn.properties": "console/conf/grakn.properties",
+        "//console:conf/logback.xml": "console/conf/logback.xml"
     },
     empty_dirs = [
          "opt/grakn/core/console/services/lib/",

@@ -18,7 +18,6 @@
 
 package grakn.core.common.config;
 
-import com.google.common.base.StandardSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ public class Config {
      */
     private static Path getProjectPath() {
         if (SystemProperty.CURRENT_DIRECTORY.value() == null) {
-            SystemProperty.CURRENT_DIRECTORY.set(StandardSystemProperty.USER_DIR.value());
+            SystemProperty.CURRENT_DIRECTORY.set(System.getProperty("user.dir"));
         }
         return Paths.get(SystemProperty.CURRENT_DIRECTORY.value());
     }

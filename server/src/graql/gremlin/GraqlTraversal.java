@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -59,7 +58,7 @@ public abstract class GraqlTraversal {
     private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
     static GraqlTraversal create(Set<? extends List<Fragment>> fragments) {
-        ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
+        ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
         return new AutoValue_GraqlTraversal(copy);
     }
 

@@ -258,7 +258,9 @@ jobs:
       - run: sudo apt update
       - run: mv ~/circleci-workspace/VERSION.apt VERSION
       - run: cat VERSION
-      - run: sudo apt install grakn-core-all=$(cat VERSION)
+      - run: |
+          sudo apt install grakn-core-all=$(cat VERSION) grakn-core-bin=$(cat VERSION) \
+                           grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -304,6 +306,9 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
+      - run: |
+          export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
+          bazel run @graknlabs_build_tools//ci:release-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
           bazel run //:deploy-github -- $CIRCLE_SHA1

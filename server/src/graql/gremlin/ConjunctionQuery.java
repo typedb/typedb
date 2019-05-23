@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -70,7 +69,7 @@ class ConjunctionQuery {
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
-                statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(toImmutableSet());
+                statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(ImmutableSet.toImmutableSet());
 
         // Get all variable names mentioned in non-starting, non-comparing fragments (these should have vars bound elsewhere too)
         Set<Variable> names = fragmentSets.stream()
@@ -79,13 +78,13 @@ class ConjunctionQuery {
                                 && !(fragment instanceof ValueFragment)
                                 && !(fragment instanceof NeqFragment))
                 .flatMap(fragment -> fragment.vars().stream())
-                .collect(toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
         Set<Variable> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .flatMap(fragment -> fragment.dependencies().stream())
-                .collect(toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
 
         Set<Variable> validNames = Sets.difference(names, dependencies);
 

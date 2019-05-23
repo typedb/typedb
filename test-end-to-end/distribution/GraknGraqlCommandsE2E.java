@@ -72,7 +72,7 @@ public class GraknGraqlCommandsE2E {
     public void verifyDistributionFiles() {
         // assert files exist
         final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn");
-        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties");
+        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties");
         final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("cassandra");
         final Path libDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("lib");
 

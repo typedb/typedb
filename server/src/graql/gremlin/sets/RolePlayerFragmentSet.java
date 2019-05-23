@@ -38,7 +38,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -228,10 +227,10 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
 
     private RolePlayerFragmentSet substituteLabels(Set<Role> roles, Set<RelationType> relTypes){
         ImmutableSet<Label> newRoleTypeLabels = relTypes != null?
-                relTypes.stream().flatMap(RelationType::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
+                relTypes.stream().flatMap(RelationType::subs).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet()) :
                 null;
         ImmutableSet<Label> newRoleLabels = roles != null?
-                roles.stream().flatMap(Role::subs).map(SchemaConcept::label).collect(toImmutableSet()) :
+                roles.stream().flatMap(Role::subs).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet()) :
                 null;
 
         return new AutoValue_RolePlayerFragmentSet(
@@ -252,7 +251,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
         Preconditions.checkState(roleLabels() == null);
 
         ImmutableSet<Label> newRoleLabels =
-                roles.flatMap(Role::subs).map(SchemaConcept::label).collect(toImmutableSet());
+                roles.flatMap(Role::subs).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet());
 
         return new AutoValue_RolePlayerFragmentSet(
                 varProperty(), relation(), edge(), rolePlayer(), null, newRoleLabels, relationTypeLabels()

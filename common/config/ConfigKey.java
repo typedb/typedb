@@ -18,7 +18,6 @@
 
 package grakn.core.common.config;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.common.exception.ErrorMessage;
 
 import java.nio.file.Path;
@@ -29,8 +28,7 @@ import java.nio.file.Paths;
  *
  * @param <T> the type of the values of the key
  */
-@AutoValue
-public abstract class ConfigKey<T> {
+public class ConfigKey<T> {
 
     /**
      * Parser for a {@link ConfigKey}.
@@ -73,38 +71,48 @@ public abstract class ConfigKey<T> {
     /**
      * The name of the key, how it looks in the properties file
      */
-    public abstract String name();
+    private final String name;
 
     /**
      * The parser used to read and write the property.
      */
-    abstract KeyParser<T> parser();
+    private final KeyParser<T> parser;
+
+
+    public ConfigKey(String value, KeyParser<T> parser) {
+        this.name = value;
+        this.parser = parser;
+    }
+
+    public String name() {
+        return name;
+    }
 
     /**
      * Parse the value of a property.
-     *
+     * <p>
      * This function should return an empty optional if the key was not present and there is no default value.
      *
-     * @param value the value of the property. Empty if the property isn't in the property file.
+     * @param value          the value of the property. Empty if the property isn't in the property file.
      * @param configFilePath path to the config file
      * @return the parsed value
-     *
      * @throws RuntimeException if the value is not present and there is no default value
      */
     public final T parse(String value, Path configFilePath) {
         if (value == null) {
-            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name(), configFilePath));
+            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name, configFilePath));
         }
 
-        return parser().read(value);
+        return parser.read(value);
     }
 
     /**
      * Convert the value of the property into a string to store in a properties file
      */
     public final String valueToString(T value) {
-        return parser().write(value);
+        return parser.write(value);
     }
+
 
     /**
      * Create a key for a string property
@@ -117,7 +125,7 @@ public abstract class ConfigKey<T> {
      * Create a key with the given parser
      */
     public static <T> ConfigKey<T> key(String value, KeyParser<T> parser) {
-        return new AutoValue_ConfigKey<>(value, parser);
+        return new ConfigKey<>(value, parser);
     }
 
 }
