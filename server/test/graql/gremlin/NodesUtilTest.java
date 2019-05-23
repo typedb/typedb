@@ -35,6 +35,7 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
 
 public class NodesUtilTest {
 
@@ -50,12 +51,16 @@ public class NodesUtilTest {
         Node inIsaMiddleNode = inIsaNodes.stream()
                 .filter(node -> node instanceof EdgeNode)
                 .findAny()
-                .orElseThrow(() -> new RuntimeException("Test error - no edge node found"));
+                .get();
+
+        assertNotNull(inIsaMiddleNode);
 
         InstanceNode instanceVarNode = (InstanceNode) inIsaNodes.stream()
                 .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
                 .findAny()
-                .orElseThrow(() -> new RuntimeException("Test error - no instanceVar node found"));
+                .get();
+
+        assertNotNull(instanceVarNode);
 
         mockParentToChildQPGraph.put(labelNode, Collections.singleton(inIsaMiddleNode));
         mockParentToChildQPGraph.put(inIsaMiddleNode, Collections.singleton(instanceVarNode));
@@ -82,12 +87,16 @@ public class NodesUtilTest {
         Node outIsaMiddleNode = outIsaNodes.stream()
                 .filter(node -> node instanceof EdgeNode)
                 .findAny()
-                .orElseThrow(() -> new RuntimeException("Test error - no edge node found"));
+                .get();
+
+        assertNotNull(outIsaMiddleNode);
 
         InstanceNode instanceVarNode = (InstanceNode) outIsaNodes.stream()
                 .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
                 .findAny()
-                .orElseThrow(() -> new RuntimeException("Test error - no instanceVar node found"));
+                .get();
+
+        assertNotNull(instanceVarNode);
 
         mockParentToChildQPGraph.put(instanceVarNode, Collections.singleton(outIsaMiddleNode));
         mockParentToChildQPGraph.put(outIsaMiddleNode, Collections.singleton(labelNode));

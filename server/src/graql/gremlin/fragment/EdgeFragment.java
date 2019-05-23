@@ -43,6 +43,7 @@ public abstract class EdgeFragment extends Fragment {
     abstract protected Node startNode();
     abstract protected Node endNode();
 
+    @Override
     public Set<Node> getNodes() {
         Node start = startNode();
         Node end = endNode();

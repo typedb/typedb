@@ -21,7 +21,6 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import grakn.core.concept.Label;
-import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
@@ -29,6 +28,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.server.exception.GraknServerException;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -173,20 +173,29 @@ public class NodesUtil {
                     filter(entry -> entry.getValue().contains(node))
                     .map(Map.Entry::getKey)
                     .findFirst()
-                    .orElseThrow(() ->  GraqlSemanticException.create("QueryPlanner node: " + node.toString() + " has no parent"));
+                    .orElseThrow(() ->  GraknServerException.create("QueryPlanner node: " + node.toString() + " has no parent"));
 
             Set<Fragment> parentFragments = parent.getFragmentsWithoutDependency();
-            LabelFragment parentLabelFragment = (LabelFragment)parentFragments.stream().filter(f -> f instanceof LabelFragment).findFirst().orElse(null);
+            LabelFragment parentLabelFragment = parentFragments.stream()
+                    .filter(f -> f instanceof LabelFragment)
+                    .map(f -> (LabelFragment) f)
+                    .findFirst()
+                    .orElse(null);
+
             if (parentLabelFragment != null) {
                 // propagate the label to the children
                 Label label = parentLabelFragment.labels().iterator().next();
-                children.stream().filter(childNode -> childNode instanceof InstanceNode).forEach(child -> ((InstanceNode) child).setInstanceLabel(label));
+                children.stream()
+                        .filter(childNode -> childNode instanceof InstanceNode)
+                        .forEach(child -> ((InstanceNode) child)
+                                .setInstanceLabel(label));
             } else {
                 // find the label fragment among the children if there is one
                 // then propagate the label to the parent
-                LabelFragment labelFragment = (LabelFragment) children.stream()
+                LabelFragment labelFragment = children.stream()
                         .flatMap(child -> child.getFragmentsWithoutDependency().stream())
                         .filter(fragment -> fragment instanceof LabelFragment)
+                        .map(f -> (LabelFragment) f)
                         .findFirst()
                         .orElse(null);
 

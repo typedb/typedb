@@ -99,6 +99,7 @@ public abstract class IdFragment extends Fragment {
         return Schema.isEdgeId(id());
     }
 
+    @Override
     public Set<Node> getNodes() {
         NodeId startNodeId = NodeId.of(NodeId.NodeIdType.VAR, start());
         return Collections.singleton(new IdNode(startNodeId));
