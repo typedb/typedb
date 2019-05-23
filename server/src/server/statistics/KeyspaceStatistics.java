@@ -48,11 +48,10 @@ public class KeyspaceStatistics {
         instanceCountsCache = new ConcurrentHashMap<>();
     }
 
-    public long count(TransactionOLTP tx, String label) {
-        Label lab = Label.of(label);
+    public long count(TransactionOLTP tx, Label label) {
         // return count if cached, else cache miss and retrieve from Janus
-        instanceCountsCache.computeIfAbsent(lab, l -> retrieveCountFromVertex(tx, l));
-        return instanceCountsCache.get(lab);
+        instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
+        return instanceCountsCache.get(label);
     }
 
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {

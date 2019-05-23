@@ -211,9 +211,9 @@ public class RuleUtils {
             Set<Type> dependants = type.thenRules()
                     .map(rule ->
                             rule.whenTypes()
-                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx, t2.toString()))))
+                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx, t2.label()))))
                                     .flatMap(CommonUtil::optionalToStream)
-                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.toString())))
+                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.label())))
                     )
                     .flatMap(CommonUtil::optionalToStream)
                     .collect(toSet());
@@ -228,7 +228,7 @@ public class RuleUtils {
                 //if type is a leaf - update counts
                 Set<? extends SchemaConcept> subs = type.subs().collect(toSet());
                 for (SchemaConcept sub : subs) {
-                    long labelCount = tx.session().keyspaceStatistics().count(tx, sub.label().toString());
+                    long labelCount = tx.session().keyspaceStatistics().count(tx, sub.label());
                     inferredEstimate += labelCount;
                 }
             }

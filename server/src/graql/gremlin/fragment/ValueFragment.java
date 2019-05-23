@@ -158,8 +158,8 @@ public class ValueFragment extends Fragment {
             AttributeType attrType = it.next();
             Label attrLabel = attrType.label();
             Label implicitAttrRelLabel = Schema.ImplicitType.HAS.getLabel(attrLabel);
-            totalAttributes += statistics.count(tx, attrLabel.toString());
-            totalImplicitRels += statistics.count(tx, implicitAttrRelLabel.toString());
+            totalAttributes += statistics.count(tx, attrLabel);
+            totalImplicitRels += statistics.count(tx, implicitAttrRelLabel);
         }
 
         if (totalAttributes == 0) {

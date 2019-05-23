@@ -20,10 +20,15 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
+import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
+import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.server.exception.GraknServerException;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -48,13 +53,22 @@ public class NodesUtil {
             for (Node node : fragmentNodes) {
                 NodeId nodeId = node.getNodeId();
                 nodes.merge(nodeId, node, (node1, node2) -> {
-                    // key point: if any fragment indicates a node is not a valid starting point, it never is!
-                    if (!node1.isValidStartingPoint()) {
-                        return node1;
+
+                    // keep the most specific node type
+                    Node nodeToKeep;
+                    if (node1.getNodeTypePriority() < node2.getNodeTypePriority()) {
+                        // lower is more desirable
+                        nodeToKeep = node1;
                     } else {
-                        // either node2 is a valid starting point or it doesn't matter
-                        return node2;
+                        nodeToKeep = node2;
                     }
+
+                    // if either node indicates it is NOT a valid starting point, the false starting point wins
+                    boolean isValidStartingPoint = node1.isValidStartingPoint() && node2.isValidStartingPoint();
+                    if (!isValidStartingPoint) {
+                        nodeToKeep.setInvalidStartingPoint();
+                    }
+                    return nodeToKeep;
                 });
             }
         }
@@ -73,7 +87,7 @@ public class NodesUtil {
         allFragments.forEach(fragment -> {
             if (fragment.end() == null && fragment.dependencies().isEmpty()) {
                 // process fragments that have fixed cost
-                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+                Node start = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
                 //fragments that should be done when a node has been visited
                 start.getFragmentsWithoutDependency().add(fragment);
             }
@@ -81,8 +95,8 @@ public class NodesUtil {
                 // process fragments that have ordering dependencies
 
                 // it's either neq or value fragment
-                Node start = allNodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
-                Node other = allNodes.get(NodeId.of(NodeId.NodeType.VAR, Iterators.getOnlyElement(fragment.dependencies().iterator())));
+                Node start = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
+                Node other = allNodes.get(NodeId.of(NodeId.Type.VAR, Iterators.getOnlyElement(fragment.dependencies().iterator())));
 
                 start.getFragmentsWithDependency().add(fragment);
                 other.getDependants().add(fragment);
@@ -117,9 +131,9 @@ public class NodesUtil {
 
         // telling their dependants that they have been visited
         node.getDependants().forEach(fragment -> {
-            Node otherNode = nodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.start()));
+            Node otherNode = nodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
             if (node.equals(otherNode)) {
-                otherNode = nodes.get(NodeId.of(NodeId.NodeType.VAR, fragment.dependencies().iterator().next()));
+                otherNode = nodes.get(NodeId.of(NodeId.Type.VAR, fragment.dependencies().iterator().next()));
             }
             otherNode.getDependants().remove(fragment.getInverse());
             otherNode.getFragmentsWithDependencyVisited().add(fragment);
@@ -130,4 +144,67 @@ public class NodesUtil {
         return subplan;
     }
 
+
+    /**
+     * We propagate across ISA edges any labels that might be found on one side of the ISA to
+     * the node on the other side of the ISA (moving the label from the label fragment to the instance node)
+     * @param parentToChild a mapping that represents the Query as a Tree (after the arborescence step)
+     */
+    static void propagateLabels(Map<Node, Set<Node>> parentToChild) {
+        /*
+        1. find Edge type nodes, filter these to the set of these that are ISA edges
+        2. for each ISA edge, find its parent, then children. if the parent has a LabelFragment -> to children
+            if the children contains a LabelFragment -> propagate to parent
+         */
+
+        // filter to nodes representing edges in the query planner
+        // then reduce to the ones that are pointing to an ISA either as parent or child (this information is stored
+        // on the middle node ID type)
+        Set<Node> isaEdgeNodes = parentToChild.keySet().stream()
+                .filter(node -> node instanceof EdgeNode)
+                .filter(node -> node.getNodeId().nodeIdType().equals(NodeId.Type.ISA))
+                .collect(Collectors.toSet());
+
+        // for each of the ISA edge nodes, find the parent and and children
+        for (Node node : isaEdgeNodes) {
+            Set<Node> children = parentToChild.get(node);
+            // can only be one parent - it's a  tree
+            Node parent = parentToChild.entrySet().stream().
+                    filter(entry -> entry.getValue().contains(node))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow(() ->  GraknServerException.create("QueryPlanner node: " + node.toString() + " has no parent"));
+
+            Set<Fragment> parentFragments = parent.getFragmentsWithoutDependency();
+            LabelFragment parentLabelFragment = parentFragments.stream()
+                    .filter(LabelFragment.class::isInstance)
+                    .map(LabelFragment.class::cast)
+                    .findFirst()
+                    .orElse(null);
+
+            if (parentLabelFragment != null) {
+                // propagate the label to the children
+                Label label = Iterators.getOnlyElement(parentLabelFragment.labels().iterator());
+                children.stream()
+                        .filter(childNode -> childNode instanceof InstanceNode)
+                        .forEach(child -> ((InstanceNode) child)
+                                .setInstanceLabel(label));
+            } else {
+                // find the label fragment among the children if there is one
+                // then propagate the label to the parent
+                LabelFragment labelFragment = children.stream()
+                        .flatMap(child -> child.getFragmentsWithoutDependency().stream())
+                        .filter(LabelFragment.class::isInstance)
+                        .map(LabelFragment.class::cast)
+                        .findFirst()
+                        .orElse(null);
+
+                if (labelFragment != null && parent instanceof InstanceNode) {
+                    // it's possible to have an ISA without a label at either end, so we may not end up here
+                    Label label = Iterators.getOnlyElement(labelFragment.labels().iterator());
+                    ((InstanceNode) parent).setInstanceLabel(label);
+                }
+            }
+        }
+    }
 }
