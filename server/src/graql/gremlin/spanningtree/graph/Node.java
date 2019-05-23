@@ -19,15 +19,15 @@
 package grakn.core.graql.gremlin.spanningtree.graph;
 
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.server.session.TransactionOLTP;
 
 import java.util.HashSet;
 import java.util.Set;
 
 /**
  * An node in a directed graph.
- *
  */
-public class Node {
+public abstract class Node {
 
     private final NodeId nodeId;
     private boolean isValidStartingPoint = true;
@@ -40,6 +40,7 @@ public class Node {
     private Set<Fragment> fragmentsWithDependency = new HashSet<>();
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
+
 
     public Node(NodeId nodeId) {
         this.nodeId = nodeId;
@@ -99,6 +100,22 @@ public class Node {
         this.branchWeight = branchWeight;
     }
 
+    /**
+     * Calculate the expected number of vertices in the graph that match this node, using the information
+     * available to this node. Without further refinement, this only consumes the node type and if it's an
+     * instance node then returns the total count of the graph vertices using labels to refine if available
+     *
+     * @param tx
+     * @return estimated number nodes in the graph that may match this node (aiming for an upper bound)
+     */
+    public abstract long matchingElementsEstimate(TransactionOLTP tx);
+
+    /**
+     * Lower is a more specific and therefore a more desirable node type
+     * @return the node priority - lower is better
+     */
+    public abstract int getNodeTypePriority();
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -117,4 +134,5 @@ public class Node {
     public String toString() {
         return nodeId.toString();
     }
+
 }

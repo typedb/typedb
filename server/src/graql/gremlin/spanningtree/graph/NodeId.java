@@ -35,33 +35,37 @@ public class NodeId {
      * If the node contains a var from the query, its type is VAR.
      * If the node is an edge from the query, its type is the type of the fragment.
      **/
-    public enum NodeType {
+    public enum Type {
         ISA, PLAYS, RELATES, SUB, VAR
     }
 
-    private final NodeType nodeType;
+    private final Type nodeIdType;
     private final Set<Variable> vars;
 
-    private NodeId(NodeType nodeType, Set<Variable> vars) {
-        this.nodeType = nodeType;
+    private NodeId(Type nodeIdType, Set<Variable> vars) {
+        this.nodeIdType = nodeIdType;
         this.vars = vars;
     }
 
-    public static NodeId of(NodeType nodeType, Set<Variable> vars) {
-        return new NodeId(nodeType, vars);
+    public static NodeId of(Type nodeIdType, Set<Variable> vars) {
+        return new NodeId(nodeIdType, vars);
     }
 
-    public static NodeId of(NodeType nodeType, Variable var) {
-        return new NodeId(nodeType, Collections.singleton(var));
+    public static NodeId of(Type nodeIdType, Variable var) {
+        return new NodeId(nodeIdType, Collections.singleton(var));
     }
 
     public Set<Variable> getVars() {
         return vars;
     }
 
+    public Type nodeIdType() {
+        return nodeIdType;
+    }
+
     @Override
     public int hashCode() {
-        int result = nodeType == null ? 0 : nodeType.hashCode();
+        int result = nodeIdType == null ? 0 : nodeIdType.hashCode();
         result = 31 * result + (vars == null ? 0 : vars.hashCode());
         return result;
     }
@@ -73,13 +77,13 @@ public class NodeId {
 
         NodeId that = (NodeId) o;
 
-        return (nodeType != null ? nodeType.equals(that.nodeType) : that.nodeType == null) &&
+        return (nodeIdType != null ? nodeIdType.equals(that.nodeIdType) : that.nodeIdType == null) &&
                 (vars != null ? vars.equals(that.vars) : that.vars == null);
     }
 
     @Override
     public String toString() {
         String varNames = vars.stream().map(var -> var.symbol()).collect(Collectors.joining(","));
-        return nodeType + varNames;
+        return nodeIdType + varNames;
     }
 }

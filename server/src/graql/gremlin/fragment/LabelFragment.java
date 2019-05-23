@@ -24,6 +24,9 @@ import com.google.common.collect.Iterables;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.printer.StringPrinter;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -32,6 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import static grakn.core.graql.reasoner.rule.RuleUtils.estimateInferredTypeCount;
@@ -90,12 +94,18 @@ public abstract class LabelFragment extends Fragment {
     }
 
     @Override
+    public Set<Node> getNodes() {
+        NodeId startNodeId = NodeId.of(NodeId.Type.VAR, start());
+        return Collections.singleton(new SchemaNode(startNodeId));
+    }
+
+    @Override
     public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         // there's only 1 label in this set, but sum anyway
         // estimate the total number of things that might be connected by ISA to this label as a heuristic
         long instances = labels().stream()
                 .map(label -> {
-                    long baseCount = tx.session().keyspaceStatistics().count(tx, label.toString());
+                    long baseCount = tx.session().keyspaceStatistics().count(tx, label);
                     long inferredCount = estimateInferredTypeCount(label, tx);
                     return baseCount + inferredCount;
                 })

@@ -19,7 +19,9 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -54,8 +56,19 @@ abstract class InRelatesFragment extends EdgeFragment {
         return COST_SAME_AS_PREVIOUS;
     }
 
+
     @Override
-    NodeId getMiddleNodeId() {
-        return NodeId.of(NodeId.NodeType.RELATES, new HashSet<>(Arrays.asList(start(), end())));
+    protected Node startNode() {
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, start()));
+    }
+
+    @Override
+    protected Node endNode() {
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, end()));
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.Type.RELATES, new HashSet<>(Arrays.asList(start(), end())));
     }
 }

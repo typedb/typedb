@@ -87,12 +87,13 @@ public abstract class AttributeIndexFragment extends Fragment {
         if (implicitAttributeRelationType != null) {
             RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
             Stream<RelationType> implicitSubs = implicitRelationType.subs();
-            totalImplicitRels = implicitSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
+            totalImplicitRels = implicitSubs.mapToLong(t -> statistics.count(tx, t.label())).sum();
         }
 
-        double totalAttributes = attributeSubs.map(t -> statistics.count(tx, t.label().toString())).reduce((a, b) -> a + b).orElse(1L);
+        double totalAttributes = attributeSubs.mapToLong(t -> statistics.count(tx, t.label())).sum();
         if (totalAttributes == 0) {
-            // short circuiting can be done quickly if starting here
+            // check against division by 0 and
+            // short circuit can be done quickly if starting here
             return 0.0;
         } else {
             // may well be 0 or 1 if there are many attributes and not many owners!
