@@ -24,7 +24,6 @@ java_library(
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core",
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
-        "//dependencies/maven/artifacts/org/scala-lang:scala-reflect",
         ":jackson-module-paranamer"
     ],
     visibility = [

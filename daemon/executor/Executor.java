@@ -18,7 +18,6 @@
 
 package grakn.core.daemon.executor;
 
-import com.google.auto.value.AutoValue;
 import org.apache.commons.io.FileUtils;
 import org.zeroturnaround.exec.ProcessExecutor;
 import org.zeroturnaround.exec.ProcessResult;
@@ -39,21 +38,27 @@ import java.util.concurrent.TimeoutException;
  */
 public class Executor {
 
-    @AutoValue
-    public abstract static class Result {
-        public static Result create(String stdout, String stderr, int exitCode) {
-            return new AutoValue_Executor_Result(stdout, stderr, exitCode);
+    public static class Result {
+
+        private final String stdout;
+        private final String stderr;
+        private final int exitCode;
+
+        public Result(String stdout, String stderr, int exitCode) {
+            this.stdout = stdout;
+            this.stderr = stderr;
+            this.exitCode = exitCode;
         }
 
         public boolean success() {
             return exitCode() == 0;
         }
 
-        public abstract String stdout();
+        public String stdout() { return stdout; }
 
-        public abstract String stderr();
+        public String stderr() { return stderr; }
 
-        public abstract int exitCode();
+        public int exitCode() { return exitCode; }
     }
 
     static final long WAIT_INTERVAL_SECOND = 2;
@@ -73,7 +78,7 @@ public class Executor {
                     .command(command)
                     .execute();
 
-            return Result.create(
+            return new Result(
                     result.outputUTF8(),
                     stderr.toString(StandardCharsets.UTF_8.name()),
                     result.getExitValue()

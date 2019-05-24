@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLGenerator;
-import com.google.common.collect.Maps;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
@@ -92,7 +91,8 @@ public class Storage {
     private void initialiseConfig() {
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
-            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {};
+            TypeReference<Map<String, Object>> reference = new TypeReference<Map<String, Object>>() {
+            };
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
 
             // Read the original Cassandra config from services/cassandra/cassandra.yaml into a String
@@ -101,10 +101,12 @@ public class Storage {
 
             // Convert the String of config values into a Map
             Map<String, Object> oldConfigMap = mapper.readValue(oldConfig, reference);
-            oldConfigMap = Maps.transformValues(oldConfigMap, value -> value == null ? EMPTY_VALUE : value);
 
-            // Set the original config as the starting point of the new config values
-            Map<String, Object> newConfigMap = new HashMap<>(oldConfigMap);
+            // Set the original config as the starting point of the new config values (replacing null with empty string)
+            Map<String, Object> newConfigMap = new HashMap<>();
+            oldConfigMap.forEach((key, value) -> {
+                newConfigMap.put(key, value == null ? EMPTY_VALUE : value);
+            });
 
             // Read the Grakn config which is available to the user
             Config inputConfig = Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));

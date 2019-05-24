@@ -49,21 +49,21 @@ dependencies:
 
   com.fasterxml.jackson.core:
     jackson-core:
-      version: "2.9.2"
+      version: "2.9.9"
       lang: java
     jackson-databind:
-      version: "2.9.2"
+      version: "2.9.9"
       lang: java
 
   com.fasterxml.jackson.dataformat:
     jackson-dataformat-yaml:
-      version: "2.9.2"
+      version: "2.9.9"
       lang: java
 
   # TODO: Remove once com.fasterxml.jackson.core is removed
   com.fasterxml.jackson.module:
     jackson-module-scala_2.11:
-      version: "2.9.2"
+      version: "2.9.9"
       lang: java
 
   com.github.rholder:
