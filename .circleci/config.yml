@@ -29,6 +29,7 @@ commands:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
       - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
+      - run: brew cask install homebrew/cask-versions/adoptopenjdk8
 
   install-rpm:
     steps:
@@ -124,7 +125,7 @@ jobs:
 
   test-assembly-mac-zip:
     macos:
-      xcode: "9.0"
+      xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
       - install-bazel-mac
@@ -437,7 +438,7 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: master
+              only: fix-ci # TODO(vmax): reset back to master
           requires:
             - build
             - test-common
@@ -450,7 +451,7 @@ workflows:
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: master
+              only: fix-ci # TODO(vmax): reset back to master
           requires:
             - build
             - test-common
