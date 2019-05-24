@@ -29,7 +29,6 @@ commands:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
       - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
-      - run: brew cask install homebrew/cask-versions/adoptopenjdk8
 
   install-rpm:
     steps:
