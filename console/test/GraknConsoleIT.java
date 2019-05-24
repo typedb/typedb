@@ -116,12 +116,6 @@ public class GraknConsoleIT {
     }
 
     @Test
-    public void when_startingConsoleWithOptionVersion_expect_printVersion() {
-        String result = runConsoleSessionWithoutExpectingErrors("", "--version");
-        assertThat(result, containsString(GraknVersion.VERSION));
-    }
-
-    @Test
     public void when_writingToDefaultKeyspace_expect_successReadFromDefaultKeyspace() throws Exception {
         runConsoleSessionWithoutExpectingErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
 
