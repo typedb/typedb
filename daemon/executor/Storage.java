@@ -100,7 +100,7 @@ public class Storage {
             String oldConfig = new String(oldConfigBytes, StandardCharsets.UTF_8);
 
             // Convert the String of config values into a Map
-            Map<String, String> oldConfigMap = mapper.readValue(oldConfig, reference);
+            Map<String, Object> oldConfigMap = mapper.readValue(oldConfig, reference);
 
             // Set the original config as the starting point of the new config values (replacing null with empty string)
             Map<String, Object> newConfigMap = new HashMap<>();
