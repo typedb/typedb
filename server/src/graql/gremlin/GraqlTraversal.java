@@ -43,7 +43,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.joining;
 
 /**
@@ -59,7 +58,7 @@ public abstract class GraqlTraversal {
     private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
     static GraqlTraversal create(Set<? extends List<Fragment>> fragments) {
-        ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(toImmutableSet());
+        ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
         return new AutoValue_GraqlTraversal(copy);
     }
 
@@ -87,18 +86,18 @@ public abstract class GraqlTraversal {
         }
     }
 
-    //       Set of disjunctions
-    //        |
-    //        |           List of fragments in order of execution
-    //        |            |
-    //        V            V
+    //            Set of disjunctions
+    //                |
+    //                |           List of fragments in order of execution
+    //                |             |
+    //                V             V
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
 
     /**
      * @param transform map defining id transform var -> new id
      * @return graql traversal with concept id transformed according to the provided transform
      */
-    public GraqlTraversal transform(Map<Variable, ConceptId> transform){
+    public GraqlTraversal transform(Map<Variable, ConceptId> transform) {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );

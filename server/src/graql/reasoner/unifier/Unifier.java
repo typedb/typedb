@@ -50,6 +50,12 @@ public interface Unifier{
     boolean isEmpty();
 
     /**
+     * @return true if the unifier contains multi-valued mappings
+     */
+    @CheckReturnValue
+    boolean isNonInjective();
+
+    /**
      * @return variables present in this unifier
      */
     @CheckReturnValue

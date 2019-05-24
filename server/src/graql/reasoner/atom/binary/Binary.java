@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
@@ -32,14 +32,15 @@ import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import java.util.Collections;
 import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Objects;
@@ -79,7 +80,7 @@ public abstract class Binary extends Atom {
     public SchemaConcept getSchemaConcept(){
         if (type == null && getTypeId() != null) {
             SchemaConcept concept = tx().getConcept(getTypeId());
-            if (concept == null) throw GraqlQueryException.idNotFound(getTypeId());
+            if (concept == null) throw GraqlCheckedException.idNotFound(getTypeId());
             type = concept;
         }
         return type;
@@ -127,7 +128,7 @@ public abstract class Binary extends Atom {
 
     private boolean equivalenceBase(Binary that){
         return (this.isUserDefined() == that.isUserDefined())
-                && (this.getPredicateVariable().isUserDefinedName() == that.getPredicateVariable().isUserDefinedName())
+                && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId());
     }
@@ -166,8 +167,8 @@ public abstract class Binary extends Atom {
     @Override
     public Set<Variable> getVarNames() {
         Set<Variable> vars = new HashSet<>();
-        if (getVarName().isUserDefinedName()) vars.add(getVarName());
-        if (getPredicateVariable().isUserDefinedName()) vars.add(getPredicateVariable());
+        if (getVarName().isReturned()) vars.add(getVarName());
+        if (getPredicateVariable().isReturned()) vars.add(getPredicateVariable());
         return vars;
     }
 
@@ -177,33 +178,34 @@ public abstract class Binary extends Atom {
     }
 
     @Override
-    public Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType) {
-        if (!(parentAtom instanceof Binary)) {
-            throw GraqlQueryException.unificationAtomIncompatibility();
-        }
-
+    public Unifier getUnifier(Atom parentAtom, UnifierType unifierType) {
         boolean inferTypes = unifierType.inferTypes();
         Variable childVarName = this.getVarName();
         Variable parentVarName = parentAtom.getVarName();
         Variable childPredicateVarName = this.getPredicateVariable();
         Variable parentPredicateVarName = parentAtom.getPredicateVariable();
-        Type parentType = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
-        Type childType = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
+        Set<Type> parentTypes = parentAtom.getParentQuery().getVarTypeMap(inferTypes).get(parentAtom.getVarName());
+        Set<Type> childTypes = this.getParentQuery().getVarTypeMap(inferTypes).get(this.getVarName());
+
+        SchemaConcept parentType = parentAtom.getSchemaConcept();
+        SchemaConcept childType = this.getSchemaConcept();
 
         //check for incompatibilities
-        if( !unifierType.typeCompatibility(parentAtom.getSchemaConcept(), this.getSchemaConcept())
-                || !unifierType.typeCompatibility(parentType, childType)
-                || !unifierType.typePlayability(this.getParentQuery(), this.getVarName(), parentType)
-                || !unifierType.typeExplicitenessCompatibility(parentAtom, this)){
+        if( !unifierType.typeCompatibility(
+                parentType != null? Collections.singleton(parentType) : Collections.emptySet(),
+                childType != null? Collections.singleton(childType) : Collections.emptySet())
+                || !unifierType.typeCompatibility(parentTypes, childTypes)
+                || !parentTypes.stream().allMatch(pType -> unifierType.typePlayability(this.getParentQuery(), this.getVarName(), pType))
+                || !unifierType.typeDirectednessCompatibility(parentAtom, this)){
                      return UnifierImpl.nonExistent();
         }
 
         Multimap<Variable, Variable> varMappings = HashMultimap.create();
 
-        if (parentVarName.isUserDefinedName()) {
+        if (parentVarName.isReturned()) {
             varMappings.put(childVarName, parentVarName);
         }
-        if (parentPredicateVarName.isUserDefinedName()) {
+        if (parentPredicateVarName.isReturned()) {
             varMappings.put(childPredicateVarName, parentPredicateVarName);
         }
 

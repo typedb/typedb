@@ -24,7 +24,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.executor.property.ValueExecutor;
-import grakn.core.graql.printer.StringPrinter;
+import grakn.core.concept.printer.StringPrinter;
 import grakn.core.server.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -140,8 +140,7 @@ public class Fragments {
      */
     public static Fragment attributeIndex(
             @Nullable VarProperty varProperty, Variable start, Label label, Object attributeValue) {
-        String attributeIndex = Schema.generateAttributeIndex(label, attributeValue.toString());
-        return new AutoValue_AttributeIndexFragment(varProperty, start, attributeIndex);
+        return new AutoValue_AttributeIndexFragment(varProperty, start, label, attributeValue.toString());
     }
 
 
@@ -222,7 +221,7 @@ public class Fragments {
     static <T> GraphTraversal<T, Vertex> isVertex(GraphTraversal<T, ? extends Element> traversal) {
         // This cast is safe because we filter only to vertices
         //noinspection unchecked
-        return (GraphTraversal<T, Vertex>) traversal.has(Schema.VertexProperty.ID.name());
+        return (GraphTraversal<T, Vertex>) traversal.filter(e -> e.get() instanceof Vertex);
     }
 
     /**
@@ -231,7 +230,7 @@ public class Fragments {
     static <T> GraphTraversal<T, Edge> isEdge(GraphTraversal<T, ? extends Element> traversal) {
         // This cast is safe because we filter only to edges
         //noinspection unchecked
-        return (GraphTraversal<T, Edge>) traversal.hasNot(Schema.VertexProperty.ID.name());
+        return (GraphTraversal<T, Edge>) traversal.filter(e -> e.get() instanceof Edge);
     }
 
     static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {

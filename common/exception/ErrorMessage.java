@@ -208,7 +208,8 @@ public enum ErrorMessage {
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),
     DISJUNCTIVE_NEGATION_BLOCK("Unsupported disjunction in a negation block."),
-    UNSAFE_NEGATION_BLOCK("Query:[%s] is not negation safe - negated pattern variables are not bound."),
+    UNSAFE_NEGATION_BLOCK("Query:\n[%s] is not negation safe - negated pattern variables are not bound."),
+    USING_NEGATION_WITH_REASONING_OFF("Query [%s] contains negation blocks. Please turn the reasoning on."),
     NON_GROUND_NEQ_PREDICATE("Addressed query [%s] leads to a non-ground neq predicate when planning resolution."),
     INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
@@ -219,6 +220,7 @@ public enum ErrorMessage {
     NON_EXISTENT_UNIFIER("Could not proceed with thr unification as the unifier doesn't exist."),
     ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
+    AMBIGUOUS_TYPE("Sought variable [%s] has ambiguous types [%s]"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
 

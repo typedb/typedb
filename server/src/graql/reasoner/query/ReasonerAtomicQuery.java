@@ -123,9 +123,11 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
         if (multiUnifier.isEmpty()) return false;
         MultiUnifier inverse = multiUnifier.inverse();
-        return//check whether propagated answers would be complete
-                !inverse.isEmpty() &&
-                        inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
+
+        //check whether propagated answers would be complete
+        boolean propagatedAnswersComplete = !inverse.isEmpty() &&
+                inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()));
+        return propagatedAnswersComplete
                         && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
                         && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
     }
@@ -144,6 +146,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){
         if (p == this) return MultiUnifierImpl.trivial();
         Preconditions.checkArgument(p instanceof ReasonerAtomicQuery);
+
+        //NB: this is a defensive check and potentially expensive
         if (unifierType.equivalence() != null && !unifierType.equivalence().equivalent(p, this)) return MultiUnifierImpl.nonExistent();
 
         ReasonerAtomicQuery parent = (ReasonerAtomicQuery) p;
@@ -211,17 +215,20 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
                 Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null));
 
         Iterator<ResolutionState> subGoalIterator;
+        boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
-        if(visitedSubGoals.contains(this)
+        boolean doNotResolveFurther = visited
                 || tx().queryCache().isComplete(this)
-                || (this.isGround() && dbIterator.hasNext())){
+                || (this.isGround() && dbIterator.hasNext());
+        if(doNotResolveFurther){
             subGoalIterator = Collections.emptyIterator();
         } else {
-            visitedSubGoals.add(this);
+
             subGoalIterator = getRuleStream()
                     .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
                     .iterator();
         }
+        if (!visited) visitedSubGoals.add(this);
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 

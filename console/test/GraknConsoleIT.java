@@ -138,13 +138,14 @@ public class GraknConsoleIT {
         runConsoleSessionWithoutExpectingErrors("define bar-bar sub entity;\ncommit\n", "-k", "bar");
 
         String fooFooInFoo = runConsoleSessionWithoutExpectingErrors("match foo-foo sub entity; get; count;\n", "-k", "foo");
-        String fooFooInBar = runConsoleSessionWithoutExpectingErrors("match foo-foo sub entity; get; count;\n", "-k", "bar");
-        String barBarInFoo = runConsoleSessionWithoutExpectingErrors("match bar-bar sub entity; get; count;\n", "-k", "foo");
         String barBarInBar = runConsoleSessionWithoutExpectingErrors("match bar-bar sub entity; get; count;\n", "-k", "bar");
         assertThat(fooFooInFoo, containsString("1"));
-        assertThat(fooFooInBar, containsString("0"));
-        assertThat(barBarInFoo, containsString("0"));
         assertThat(barBarInBar, containsString("1"));
+
+        Response barBarInFoo = runConsoleSession("match bar-bar sub entity; get; count;\n", "-k", "foo");
+        Response fooFooInBar = runConsoleSession("match foo-foo sub entity; get; count;\n", "-k", "bar");
+        assertTrue(barBarInFoo.err().contains("label 'bar-bar' not found"));
+        assertTrue(fooFooInBar.err().contains("label 'foo-foo' not found"));
     }
 
     @Test
@@ -313,11 +314,9 @@ public class GraknConsoleIT {
 
     @Test
     public void when_rollback_expect_transactionIsCancelled() {
-        String[] result = runConsoleSessionWithoutExpectingErrors("define E sub entity;\nrollback\nmatch $x type E; get;\n").split("\n");
+        Response response = runConsoleSession("define E sub entity;\nrollback\nmatch $x type E; get;\n");
 
-        // Make sure there are no results for get query
-        assertThat(result[result.length - 2], endsWith("> match $x type E; get;"));
-        assertThat(result[result.length - 1], endsWith("> "));
+        assertTrue(response.err().contains("label 'E' not found"));
     }
 
     @Test
@@ -495,7 +494,7 @@ public class GraknConsoleIT {
         boolean uriSpecified = argList.contains("-r");
         if (!uriSpecified) {
             argList.add("-r");
-            argList.add(server.grpcUri().toString());
+            argList.add(server.grpcUri());
         }
 
         return argList.toArray(new String[argList.size()]);

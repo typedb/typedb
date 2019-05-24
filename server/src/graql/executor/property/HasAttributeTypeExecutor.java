@@ -24,7 +24,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -66,7 +66,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
 
         // TODO: this may the cause of issue #4664
         String type = attributeType.getType().orElseThrow(
-                () -> GraqlQueryException.noLabelSpecifiedForHas(attributeType.var())
+                () -> GraqlSemanticException.noLabelSpecifiedForHas(attributeType.var())
         );
 
         Statement role = Graql.type(Graql.Token.Type.ROLE);
@@ -135,7 +135,7 @@ public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        Variable varName = var.asUserDefined();
+        Variable varName = var.asReturnedVar();
         String label = property.attributeType().getType().orElse(null);
 
         Variable predicateVar = new Variable();

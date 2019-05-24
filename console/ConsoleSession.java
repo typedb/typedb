@@ -18,11 +18,10 @@
 
 package grakn.core.console;
 
-import com.google.common.base.StandardSystemProperty;
 import grakn.client.GraknClient;
 import grakn.core.common.exception.GraknException;
 import grakn.core.console.exception.GraknConsoleException;
-import grakn.core.graql.printer.Printer;
+import grakn.core.concept.printer.Printer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import jline.console.ConsoleReader;
@@ -38,6 +37,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import static org.apache.commons.lang.StringEscapeUtils.unescapeJava;
@@ -50,7 +50,7 @@ public class ConsoleSession implements AutoCloseable {
 
     private static final String COPYRIGHT = "\n" +
             "Welcome to Grakn Console. You are now in Grakn Wonderland!\n" +
-            "Copyright (C) 2018 Grakn Labs Limited\n\n";
+            "Copyright (C) 2019 Grakn Labs Limited\n\n";
 
     private static final String EDITOR = "editor";
     private static final String COMMIT = "commit";
@@ -63,8 +63,10 @@ public class ConsoleSession implements AutoCloseable {
     private static final String ANSI_PURPLE = "\u001B[35m";
     private static final String ANSI_RESET = "\u001B[0m";
 
-    private static final String HISTORY_FILE = StandardSystemProperty.USER_HOME.value() + "/.grakn-console-history";
-    private static final String EDITOR_DEFAULT = "vim";
+    private static final String HISTORY_FILE = System.getProperty("user.home") + "/.grakn-console-history";
+    private static final String UNIX_EDITOR_DEFAULT = "vim";
+    private static final String WINDOWS_EDITOR_DEFAULT = "notepad";
+
     private static final String EDITOR_FILE = "/grakn-console-editor.gql";
 
     private final boolean infer;
@@ -78,6 +80,8 @@ public class ConsoleSession implements AutoCloseable {
     private final GraknClient client;
     private final GraknClient.Session session;
     private GraknClient.Transaction tx;
+    private final AtomicBoolean terminated = new AtomicBoolean(false);
+
 
     ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
         this.keyspace = keyspace;
@@ -121,12 +125,12 @@ public class ConsoleSession implements AutoCloseable {
         tx = session.transaction().write();
         String input;
 
-        while ((input = consoleReader.readLine()) != null) {
+        while ((input = consoleReader.readLine()) != null && !terminated.get()) {
             if (input.equals(EDITOR)) {
                 executeQuery(openTextEditor());
 
             } else if (input.startsWith(LOAD + ' ')) {
-                try{
+                try {
                     input = readFile(Paths.get(unescapeJava(input.substring(LOAD.length() + 1))));
                     executeQuery(input);
                 } catch (NoSuchFileException e) {
@@ -166,6 +170,7 @@ public class ConsoleSession implements AutoCloseable {
     private void executeQuery(String queryString) throws IOException {
         executeQuery(queryString, true);
     }
+
     private void executeQuery(String queryString, boolean catchRuntimeException) throws IOException {
         // We'll use streams so we can print the answer out much faster and smoother
         try {
@@ -196,6 +201,8 @@ public class ConsoleSession implements AutoCloseable {
                     printErr.println("Error: " + e.getClass().getName());
                 }
                 printErr.println("All uncommitted data is cleared");
+                //If console session was terminated by shutdown hook thread, do not try to reopen transaction
+                if (terminated.get()) return;
                 reopenTransaction();
             } else {
                 throw e;
@@ -254,11 +261,18 @@ public class ConsoleSession implements AutoCloseable {
     }
 
     @Override
-    public final void close() throws IOException {
+    public final void close() {
+        terminated.set(true);
         tx.close();
         session.close();
         client.close();
-        historyFile.flush();
+        try {
+            historyFile.flush();
+        } catch (IOException e) {
+            // Print stacktrace to any available stream
+            // nothing more to do here
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -267,17 +281,28 @@ public class ConsoleSession implements AutoCloseable {
      * @return the string written in the editor
      */
     private String openTextEditor() throws IOException, InterruptedException {
-        String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(EDITOR_DEFAULT);
-        File tempFile = new File(StandardSystemProperty.JAVA_IO_TMPDIR.value() + EDITOR_FILE);
+        File tempFile = new File(System.getProperty("java.io.tmpdir") + EDITOR_FILE);
         tempFile.createNewFile();
 
-        // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
-        ProcessBuilder builder = new ProcessBuilder(
-                "/bin/bash", "-c",
-                editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath()
-        );
+        ProcessBuilder builder;
+
+        if (isWindows()) {
+            String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(WINDOWS_EDITOR_DEFAULT);
+            builder = new ProcessBuilder("cmd", "/c", editor + " " + tempFile.getAbsolutePath());
+        } else {
+            String editor = Optional.ofNullable(System.getenv().get("EDITOR")).orElse(UNIX_EDITOR_DEFAULT);
+            // Run the editor, pipe input into and out of tty so we can provide the input/output to the editor via Graql
+            builder = new ProcessBuilder("/bin/bash", "-c", editor + " </dev/tty >/dev/tty " + tempFile.getAbsolutePath());
+        }
+
 
         builder.start().waitFor();
         return String.join("\n", Files.readAllLines(tempFile.toPath()));
     }
+
+
+    private boolean isWindows() {
+        return System.getProperty("os.name").toLowerCase().contains("win");
+    }
+
 }

@@ -1,16 +1,4 @@
 java_library(
-    name = "netty",
-    exports = [
-        "//external:jar/io/netty/netty"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
-    ]
-)
-
-
-
-java_library(
     name = "netty-all",
     exports = [
         "//external:jar/io/netty/netty-all"
@@ -77,7 +65,7 @@ java_library(
         ":netty-handler"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -121,7 +109,7 @@ java_library(
         ":netty-transport"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -138,7 +126,7 @@ java_library(
         ":netty-transport"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 

@@ -23,7 +23,6 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
-import grakn.core.server.kb.cache.CacheOwner;
 
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +35,7 @@ import java.util.stream.Stream;
  * It contains methods which can be accessed regardless of the Relation being a represented by a
  * VertexElement or an EdgeElement
  */
-interface RelationStructure extends CacheOwner {
+interface RelationStructure {
 
     /**
      * @return The ConceptId of the Relation

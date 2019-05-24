@@ -19,7 +19,11 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
+import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.IdProperty;
@@ -31,12 +35,14 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 
-import static grakn.core.graql.printer.StringPrinter.conceptId;
+import static grakn.core.concept.printer.StringPrinter.conceptId;
 
 @AutoValue
-abstract class IdFragment extends Fragment {
+public abstract class IdFragment extends Fragment {
 
     abstract ConceptId id();
 
@@ -61,16 +67,16 @@ abstract class IdFragment extends Fragment {
     }
 
     private GraphTraversal<Vertex, Vertex> vertexTraversal(GraphTraversal<Vertex, ? extends Element> traversal) {
-        // A vertex should always be looked up by vertex property, not the actual vertex ID which may be incorrect.
-        // This is because a vertex may represent a reified relation, which will use the original edge ID as an ID.
-        
-        // We know only vertices have this property, so the cast is safe
-        //noinspection unchecked
-        return (GraphTraversal<Vertex, Vertex>) traversal.has(Schema.VertexProperty.ID.name(), id().getValue());
+        return (GraphTraversal<Vertex, Vertex>) traversal.hasId(Schema.elementId(id()));
     }
 
     private GraphTraversal<Edge, Edge> edgeTraversal() {
-        return __.hasId(id().getValue().substring(1));
+        return Fragments.union(
+                ImmutableSet.of(
+                    __.hasId(Schema.elementId(id())),
+                    __.has(Schema.VertexProperty.EDGE_RELATION_ID.name(), id().getValue())
+                )
+        );
     }
 
     @Override
@@ -90,6 +96,18 @@ abstract class IdFragment extends Fragment {
 
     @Override
     public boolean canOperateOnEdges() {
-        return id().getValue().startsWith(Schema.PREFIX_EDGE);
+        return Schema.isEdgeId(id());
+    }
+
+    @Override
+    public Set<Node> getNodes() {
+        NodeId startNodeId = NodeId.of(NodeId.Type.VAR, start());
+        return Collections.singleton(new IdNode(startNodeId));
+    }
+
+    @Override
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        // only ever 1 matching concept for an ID - a good starting point
+        return 1.0;
     }
 }

@@ -300,7 +300,7 @@ public class RuleIT {
     public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidKBException {
         validateIllegalHead(
                 Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("$x id 'V123';"),
+                Graql.parsePattern("$x id V123;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(

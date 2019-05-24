@@ -30,6 +30,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import org.janusgraph.core.JanusGraph;
 
 import javax.annotation.CheckReturnValue;
@@ -56,9 +57,10 @@ public class SessionImpl implements Session {
 
     private final KeyspaceImpl keyspace;
     private final Config config;
-    private ReadWriteLock graphLock;
+    private final ReadWriteLock graphLock;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
+    private final KeyspaceStatistics keyspaceStatistics;
     private Consumer<SessionImpl> onClose;
 
     private boolean isClosed = false;
@@ -70,26 +72,38 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics) {
+        this(keyspace, config, keyspaceCache, graph, graphLock, keyspaceStatistics, new HadoopGraphFactory(config, keyspace));
+    }
+
+    /**
+     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * using provided Grakn configuration.
+     *
+     * @param keyspace to which keyspace the session should be bound to
+     * @param config   config to be used.
+     */
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory) {
         this.keyspace = keyspace;
         this.config = config;
         this.graphLock = graphLock;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
-        this.hadoopGraphFactory = new HadoopGraphFactory(this);
+        this.hadoopGraphFactory = hadoopGraphFactory;
         // Open Janus Graph
         this.graph = graph;
 
         this.keyspaceCache = keyspaceCache;
+        this.keyspaceStatistics = keyspaceStatistics;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
         }
-        // If keyspace cache is empty, copy schema concepts in it.
+        // If keyspace cache is empty, copy schema concept labels in it.
         if (keyspaceCache.isEmpty()) {
-            copySchemaConceptsToKeyspaceCache(tx);
+            copySchemaConceptLabelsToKeyspaceCache(tx);
         }
         tx.commit();
 
@@ -100,7 +114,7 @@ public class SessionImpl implements Session {
         return new TransactionOLTP.Builder(this);
     }
 
-    TransactionOLTP transaction(Transaction.Type type) {
+    public TransactionOLTP transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -142,11 +156,11 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * Copy all Schema Concepts to current KeyspaceCache
+     * Copy schema concepts labels to current KeyspaceCache
      *
      * @param tx
      */
-    private void copySchemaConceptsToKeyspaceCache(TransactionOLTP tx) {
+    private void copySchemaConceptLabelsToKeyspaceCache(TransactionOLTP tx) {
         copyToCache(tx.getMetaConcept());
         copyToCache(tx.getMetaRole());
         copyToCache(tx.getMetaRule());
@@ -161,11 +175,12 @@ public class SessionImpl implements Session {
         return keyspaceCache;
     }
 
+    /**
+     * Copy schema concept and all its subs labels to keyspace cache
+     * @param schemaConcept
+     */
     private void copyToCache(SchemaConcept schemaConcept) {
-        schemaConcept.subs().forEach(concept -> {
-            keyspaceCache.cacheLabel(concept.label(), concept.labelId());
-//            keyspaceCache.cacheType(concept.label(), concept);
-        });
+        schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
     }
 
     private boolean keyspaceHasBeenInitialised(TransactionOLTP tx) {
@@ -190,7 +205,7 @@ public class SessionImpl implements Session {
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
-    void setOnClose(Consumer<SessionImpl> onClose) {
+    public void setOnClose(Consumer<SessionImpl> onClose) {
         this.onClose = onClose;
     }
 
@@ -235,6 +250,10 @@ public class SessionImpl implements Session {
         return keyspace;
     }
 
+    public KeyspaceStatistics keyspaceStatistics() {
+        return keyspaceStatistics;
+    }
+
     /**
      * The config options of this {@link Session} which were passed in at the time of construction
      *
@@ -242,5 +261,9 @@ public class SessionImpl implements Session {
      */
     public Config config() {
         return config;
+    }
+
+    public ReadWriteLock getGraphLock(){
+        return graphLock;
     }
 }

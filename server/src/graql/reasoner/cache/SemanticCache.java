@@ -22,7 +22,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -122,19 +121,19 @@ public abstract class SemanticCache<
                 || getParents(query).stream().anyMatch(q -> super.isComplete(keyToQuery(q)));
     }
 
-    @Override
-    public void ackCompleteness(ReasonerAtomicQuery query) {
-        super.ackCompleteness(query);
-        getChildren(query).stream()
-                .filter(q -> !isComplete(keyToQuery(q)))
-                .forEach(childKey -> {
-            ReasonerAtomicQuery child = keyToQuery(childKey);
-            CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
-            if (childEntry != null){
-                propagateAnswersToQuery(child, childEntry, true);
-                ackCompleteness(child);
-            }
-        });
+    /**
+     * propagate answers within the cache (children fetch answers from parents)
+     */
+    public void propagateAnswers(){
+        queries().stream()
+                .filter(this::isComplete)
+                .forEach(child-> {
+                    CacheEntry<ReasonerAtomicQuery, SE> childEntry = getEntry(child);
+                    if (childEntry != null) {
+                        propagateAnswersToQuery(child, childEntry, true);
+                        ackCompleteness(child);
+                    }
+                });
     }
 
     private Set<QE> getParents(ReasonerAtomicQuery child){
@@ -145,22 +144,9 @@ public abstract class SemanticCache<
                 .collect(toSet());
     }
 
-    private Set<QE> getChildren(ReasonerAtomicQuery parent){
-        Set<QE> family = getFamily(parent);
-        Set<QE> children = new HashSet<>();
-        family.stream()
-                .map(this::keyToQuery)
-                //.filter(potentialChild -> !unifierType().equivalence().equivalent(potentialChild, parent))
-                .filter(potentialChild -> potentialChild.subsumes(parent))
-                .map(this::queryToKey)
-                .forEach(children::add);
-        return children;
-    }
-
     /**
-     *
      * @param query to find
-     * @return
+     * @return queries that belong to the same family as input query
      */
     private Set<QE> getFamily(ReasonerAtomicQuery query){
         SchemaConcept schemaConcept = query.getAtom().getSchemaConcept();
@@ -189,7 +175,6 @@ public abstract class SemanticCache<
         Set<QE> computedParents = new HashSet<>();
         family.stream()
                 .map(this::keyToQuery)
-                //.filter(parent -> !unifierType().equivalence().equivalent(child, parent))
                 .filter(child::subsumes)
                 .map(this::queryToKey)
                 .peek(computedParents::add)
@@ -230,6 +215,7 @@ public abstract class SemanticCache<
             @Nullable CacheEntry<ReasonerAtomicQuery, SE> entry,
             @Nullable MultiUnifier unifier) {
 
+        assert(query.isPositive());
         validateAnswer(answer, query, query.getVarNames());
 
         /*
@@ -246,11 +232,7 @@ public abstract class SemanticCache<
             //NB: this indexes answer according to all indices in the set
             multiUnifier
                     .apply(answer)
-                    .peek(ans -> {
-                        if (!ans.vars().equals(cacheVars)){
-                            throw GraqlQueryException.invalidQueryCacheEntry(equivalentQuery, ans);
-                        }
-                    })
+                    .peek(ans -> validateAnswer(ans, equivalentQuery, cacheVars))
                     .forEach(answerSet::add);
             return match;
         }
@@ -282,11 +264,14 @@ public abstract class SemanticCache<
 
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
+        assert(query.isPositive());
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
+        boolean queryGround = query.isGround();
 
         if (match != null) {
             boolean answersToGroundQuery = false;
-            if (query.isGround()) {
+            boolean queryDBComplete = isDBComplete(query);
+            if (queryGround) {
                 boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
                 if (newAnswersPropagated) answersToGroundQuery = answersQuery(query);
             }
@@ -295,7 +280,7 @@ public abstract class SemanticCache<
             Pair<Stream<ConceptMap>, MultiUnifier> cachePair = entryToAnswerStreamWithUnifier(query, match);
 
             //if db complete or we found answers to ground query via propagation we don't need to hit the database
-            if (isDBComplete(query) || answersToGroundQuery) return cachePair;
+            if (queryDBComplete || answersToGroundQuery) return cachePair;
 
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
@@ -309,7 +294,7 @@ public abstract class SemanticCache<
         //if no match but db-complete parent exists, use parent to create entry
         Set<QE> parents = getParents(query);
         boolean fetchFromParent = parents.stream().anyMatch(p ->
-                query.isGround() || isDBComplete(keyToQuery(p))
+                queryGround || isDBComplete(keyToQuery(p))
         );
         if (fetchFromParent){
             LOG.trace("Query Cache miss: {} with fetch from parents {}", query, parents);

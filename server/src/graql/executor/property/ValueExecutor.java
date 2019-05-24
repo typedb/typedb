@@ -20,7 +20,7 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -63,7 +63,10 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
-        return ImmutableSet.of(EquivalentFragmentSets.value(property, var, operation));
+        return ImmutableSet.of(
+                EquivalentFragmentSets.notInternalFragmentSet(property, var),
+                EquivalentFragmentSets.value(property, var, operation)
+        );
     }
 
     @Override
@@ -101,7 +104,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         @Override
         public void execute(WriteExecutor executor) {
             if (!(operation instanceof Operation.Assignment)) {
-                throw GraqlQueryException.insertPredicate();
+                throw GraqlSemanticException.insertPredicate();
             } else {
                 executor.getBuilder(var).value(operation.value());
             }

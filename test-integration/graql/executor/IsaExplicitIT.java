@@ -23,7 +23,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -46,6 +46,7 @@ import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
@@ -125,7 +126,7 @@ public class IsaExplicitIT {
 
         Assert.assertEquals(9, plan.size());
         // 3 labels: thingy1, thingy1 and related
-        assertThat(plan, contains(
+        assertThat(plan, containsInAnyOrder(
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
@@ -165,7 +166,7 @@ public class IsaExplicitIT {
 
         Assert.assertEquals(9, plan.size());
         // 3 labels: thingy1, thingy1 and related
-        assertThat(plan, contains(
+        assertThat(plan, containsInAnyOrder(
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
@@ -187,7 +188,7 @@ public class IsaExplicitIT {
 
         Assert.assertEquals(10, plan.size());
         // 3 labels: thingy, thingy and related
-        assertThat(plan, contains(
+        assertThat(plan, containsInAnyOrder(
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
                 instanceOf(LabelFragment.class),
@@ -202,6 +203,6 @@ public class IsaExplicitIT {
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern, tx).fragments().iterator().next();
+        return TraversalPlanner.createTraversal(pattern, tx).fragments().iterator().next();
     }
 }

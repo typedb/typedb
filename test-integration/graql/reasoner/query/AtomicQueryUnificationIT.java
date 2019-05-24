@@ -26,6 +26,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
+import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -37,17 +38,16 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -138,7 +138,7 @@ public class AtomicQueryUnificationIT {
                     new Variable("y1"), new Variable("x1"),
                     new Variable("y2"), new Variable("x2")
             ));
-            assertTrue(unifier.equals(correctUnifier));
+            assertEquals(correctUnifier, unifier);
         }
     }
 
@@ -497,6 +497,26 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_RelationsWithVariableRolesAndPotentialTypes(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            String query = "{ (baseRole1: $x, baseRole2: $y);};";
+            String potentialEquivalent = "{ ($role: $u, baseRole2: $v);$role type baseRole1;};";
+
+            unification(query, potentialEquivalent, false, UnifierType.EXACT, tx);
+            unification(potentialEquivalent, query, false, UnifierType.EXACT, tx);
+
+            unification(query, potentialEquivalent, false, UnifierType.STRUCTURAL, tx);
+            unification(potentialEquivalent, query, false, UnifierType.STRUCTURAL, tx);
+
+            unification(query, potentialEquivalent, true, UnifierType.RULE, tx);
+            unification(potentialEquivalent, query, true, UnifierType.RULE, tx);
+
+            unification(query, potentialEquivalent, true, UnifierType.SUBSUMPTIVE, tx);
+            unification(potentialEquivalent, query, true, UnifierType.SUBSUMPTIVE, tx);
+        }
+    }
+
+    @Test
     public void testUnification_differentRelationVariants_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
@@ -527,6 +547,66 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_differentReflexiveRelationVariants_EXACT(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().exactMatrix(),
+                    UnifierType.EXACT, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_STRUCTURAL(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().structuralMatrix(),
+                    UnifierType.STRUCTURAL, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentReflexiveRelationVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentReflexiveRelationVariants().patterns(),
+                    genericSchemaGraph.differentReflexiveRelationVariants().ruleMatrix(),
+                    UnifierType.RULE, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_EXACT(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().exactMatrix(),
+                    UnifierType.EXACT, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_STRUCTURAL(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().structuralMatrix(),
+                    UnifierType.STRUCTURAL, tx);
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithVariableRoles_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithVariableRoles().ruleMatrix(),
+                    UnifierType.RULE, tx);
+        }
+    }
+
+    @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             unification(
@@ -549,7 +629,10 @@ public class AtomicQueryUnificationIT {
     @Test
     public void testUnification_differentRelationVariantsWithMetaRoles_RULE(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            unification(genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(), genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(), UnifierType.RULE, tx);
+            unification(
+                    genericSchemaGraph.differentRelationVariantsWithMetaRoles().patterns(),
+                    genericSchemaGraph.differentRelationVariantsWithMetaRoles().ruleMatrix(),
+                    UnifierType.RULE, tx);
         }
     }
 
@@ -654,6 +737,150 @@ public class AtomicQueryUnificationIT {
     }
 
     @Test
+    public void testUnification_differentTypeRelationVariants_differentRelationVariantsWithRelationVariable_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
+            QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
+
+            unification(
+                    differentTypeRelationVariants.patterns(),
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    QueryPattern.zeroMatrix(differentTypeRelationVariants.size(), differentRelationVariantsWithRelationVariable.size()),
+                    UnifierType.RULE,
+                    tx
+            );
+        }
+    }
+
+    @Test
+    public void testUnification_differentTypeResourceVariants_differentResourceVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
+            QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
+
+            unification(
+                    differentTypeVariants.patterns(),
+                    differentResourceVariants.patterns(),
+                    QueryPattern.zeroMatrix(differentTypeVariants.size(), differentResourceVariants.size()),
+                    UnifierType.RULE,
+                    tx
+            );
+        }
+    }
+
+    @Test
+    public void testUnification_differentRelationVariantsWithRelationVariable_differentTypeRelationVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeRelationVariants = genericSchemaGraph.differentTypeRelationVariants();
+            QueryPattern differentRelationVariantsWithRelationVariable = genericSchemaGraph.differentRelationVariantsWithRelationVariable();
+
+            int[][] unificationMatrix = new int[][]{
+                    //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//0
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//5
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//7
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//9
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//11
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//14
+
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//15
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//16
+
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//17
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//18
+                    
+                    {1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},//19
+                    {1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+
+            };
+            unification(
+                    differentRelationVariantsWithRelationVariable.patterns(),
+                    differentTypeRelationVariants.patterns(),
+                    unificationMatrix,
+                    UnifierType.RULE,
+                    tx
+            );
+        }
+    }
+
+    @Test
+    public void testUnification_differentResourceVariants_differentTypeResourceVariants_RULE(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
+            QueryPattern differentTypeVariants = genericSchemaGraph.differentTypeResourceVariants();
+            QueryPattern differentResourceVariants = genericSchemaGraph.differentResourceVariants();
+
+            int[][] unificationMatrix = new int[][]{
+                    //0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,11,12,13,14,15,16,17,18
+                    {1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},//0
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
+                    {1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+
+                    {1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},//5
+                    {1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},
+
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0},//7
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},
+
+                    {1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},//9
+                    {1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0},//11
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0},
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},//14
+
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0},//15
+                    {1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0},//16
+
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1},//17
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1},//18
+
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1},//19
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1},
+
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1},//21
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 1, 1},
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},//23
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1},
+
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},//25
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},//27
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},//31
+                    {1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+                    {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
+            };
+            unification(
+                    differentResourceVariants.patterns(),
+                    differentTypeVariants.patterns(),
+                    unificationMatrix,
+                    UnifierType.RULE,
+                    tx
+            );
+        }
+    }
+
+    @Test
     public void testUnification_orthogonalityOfVariants_EXACT(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             List<List<String>> queryTypes = Lists.newArrayList(
@@ -678,7 +905,6 @@ public class AtomicQueryUnificationIT {
             queryTypes.forEach(qt -> subListExcludingElements(queryTypes, Collections.singletonList(qt)).forEach(qto -> qt.forEach(q -> structuralUnification(q, qto, new ArrayList<>(), tx))));
         }
     }
-
 
     private void unification(String child, List<String> queries, List<String> queriesWithUnifier, UnifierType unifierType, TransactionOLTP tx){
         queries.forEach(parent -> unification(child, parent, queriesWithUnifier.contains(parent) || parent.equals(child), unifierType, tx));
@@ -716,10 +942,10 @@ public class AtomicQueryUnificationIT {
         if (unifierType.equivalence() != null) queryEquivalence(child, parent, unifierExists, unifierType.equivalence());
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
-        if (unifierExists && unifierType != UnifierType.RULE){
+        if (unifierExists && unifierType.equivalence() != null){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
 
-            assertEquals("Unexpected unifier inverse: " + multiUnifier + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
+            assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
             assertEquals(multiUnifierInverse, multiUnifier.inverse());
         }
         return multiUnifier;

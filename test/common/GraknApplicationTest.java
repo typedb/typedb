@@ -20,6 +20,7 @@ package grakn.core.test.common;
 
 import grakn.client.GraknClient;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -27,6 +28,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GraknApplicationTest {
@@ -50,6 +52,19 @@ public class GraknApplicationTest {
                 List<ConceptMap> result = tx.execute(Graql.match(Graql.var("t").sub("thing")).get());
                 assertTrue(result.size() > 0);
             }
+        }
+    }
+
+    @Test
+    public void testComputeQuery() {
+        try (GraknClient.Session session = graknClient.session("computetest")) {
+            GraknClient.Transaction tx = session.transaction().write();
+            tx.execute(Graql.parse("define person sub entity;").asDefine());
+            tx.execute(Graql.parse("insert $x isa person;").asInsert());
+            tx.commit();
+            tx = session.transaction().write();
+            List<Numeric> countResult = tx.execute(Graql.parse("compute count;").asComputeStatistics());
+            assertEquals(1, countResult.get(0).number().intValue());
         }
     }
 }

@@ -29,7 +29,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
@@ -53,10 +52,10 @@ import java.util.stream.Stream;
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
-    private final Cache<Boolean> cachedIsAbstract = Cache.createSessionCache(this, Cacheable.bool(), () -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
     //This cache is different in order to keep track of which plays are required
-    private final Cache<Map<Role, Boolean>> cachedDirectPlays = Cache.createSessionCache(this, Cacheable.map(), () -> {
+    private final Cache<Map<Role, Boolean>> cachedDirectPlays = new Cache<>(() -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
@@ -96,13 +95,18 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         if (isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
 
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
+
         vertex().tx().ruleCache().ackTypeInstance(this);
         if (!Schema.MetaSchema.isMetaLabel(label())) {
             vertex().tx().cache().addedInstance(id());
             if (isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
+
         V instance = producer.apply(instanceVertex, getThis());
         assert instance != null : "producer should never return null";
+
+        vertex().tx().statisticsDelta().increment(label());
+
         return instance;
     }
 
@@ -130,7 +134,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 filter(sup -> !sup.equals(this)). //We already have the plays from ourselves
                 flatMap(sup -> TypeImpl.from(sup).directPlays().keySet().stream());
 
-        return Stream.concat(allRoles, superSet);
+        //NB: use distinct as roles from different types from the hierarchy can overlap
+        return Stream.concat(allRoles, superSet).distinct();
     }
 
     @Override

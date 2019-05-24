@@ -52,18 +52,20 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
-        if (!type.dataType().dataClass().isInstance(value)) {
+        D converted;
+        try {
+            converted = ValueConverter.of(type.dataType()).convert(value);
+        } catch (ClassCastException e){
             throw TransactionException.invalidAttributeValue(value, type.dataType());
         }
-
-        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, value);
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, converted);
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
         vertexElement.property(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
-        vertexElement.tx().cache().addNewAttribute(index, attribute.id());
+        vertexElement.tx().cache().addNewAttribute(attribute.type().label(), index, attribute.id());
         return attribute;
     }
 

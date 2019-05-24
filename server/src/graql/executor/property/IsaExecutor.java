@@ -19,8 +19,13 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -35,6 +40,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
@@ -68,7 +74,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (statement.hasProperty(RelationProperty.class)) return null;
 
-        Variable varName = var.asUserDefined();
+        Variable varName = var.asReturnedVar();
         Variable typeVar = property.type().var();
 
         IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);
@@ -116,7 +122,23 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         @Override
         public void execute(WriteExecutor executor) {
             Type type = executor.getConcept(property.type().var()).asType();
-            executor.getBuilder(var).isa(type);
+            if (executor.isConceptDefined(var)) {
+                Concept concept = executor.getConcept(var); // retrieve the existing concept
+                // we silently "allow" redefining attributes, while actually doing a no-op, as long as the type hasn't changed
+                if (!concept.isAttribute()) {
+                    // however, non-attribute still throw exceptions
+                    throw GraqlSemanticException.insertExistingConcept(executor.printableRepresentation(var), concept);
+                } else if ((type instanceof AttributeType)) {
+                    //
+                    if (! type.subs().map(SchemaConcept::label).collect(Collectors.toSet()).contains(concept.asThing().type().label())) {
+                        //downcasting is bad
+                        throw GraqlSemanticException.attributeDowncast(concept.asThing().type(), type);
+                    }
+                    // upcasting we silently accept
+                }
+            } else {
+                executor.getBuilder(var).isa(type);
+            }
         }
     }
 }

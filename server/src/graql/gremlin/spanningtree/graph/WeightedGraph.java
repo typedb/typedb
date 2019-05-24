@@ -26,20 +26,19 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * @param <V> the type of the nodes stored
  */
-public abstract class WeightedGraph<V> {
-    public abstract Collection<V> getNodes();
+public abstract class WeightedGraph {
+    public abstract Collection<Node> getNodes();
 
-    public abstract double getWeightOf(V source, V dest);
+    public abstract double getWeightOf(Node source, Node dest);
 
-    public abstract Collection<Weighted<DirectedEdge<V>>> getIncomingEdges(V destinationNode);
+    public abstract Collection<Weighted<DirectedEdge>> getIncomingEdges(Node destinationNode);
 
-    public WeightedGraph<V> filterEdges(Predicate<DirectedEdge<V>> predicate) {
-        final List<Weighted<DirectedEdge<V>>> allEdges = Lists.newArrayList();
-        for (V node : getNodes()) {
-            final Collection<Weighted<DirectedEdge<V>>> incomingEdges = getIncomingEdges(node);
-            for (Weighted<DirectedEdge<V>> edge : incomingEdges) {
+    public WeightedGraph filterEdges(Predicate<DirectedEdge> predicate) {
+        final List<Weighted<DirectedEdge>> allEdges = Lists.newArrayList();
+        for (Node node : getNodes()) {
+            final Collection<Weighted<DirectedEdge>> incomingEdges = getIncomingEdges(node);
+            for (Weighted<DirectedEdge> edge : incomingEdges) {
                 if (predicate.apply(edge.val)) {
                     allEdges.add(edge);
                 }

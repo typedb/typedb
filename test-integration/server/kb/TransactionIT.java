@@ -19,7 +19,7 @@
 package grakn.core.server.kb;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -27,6 +27,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
@@ -34,6 +35,12 @@ import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.cache.TransactionCache;
+import graql.lang.Graql;
+import graql.lang.query.GraqlDefine;
+import graql.lang.query.GraqlDelete;
+import graql.lang.query.GraqlGet;
+import graql.lang.query.GraqlInsert;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
@@ -43,13 +50,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -98,9 +104,9 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenGettingResourcesByValue_ReturnTheMatchingResources() {
+    public void whenGettingAttributesByValue_ReturnTheMatchingAttributes() {
         String targetValue = "Geralt";
-//        assertThat(tx.getAttributesByValue(targetValue), is(empty()));
+        assertTrue(tx.getAttributesByValue(targetValue).isEmpty());
 
         AttributeType<String> t1 = tx.putAttributeType("Parent 1", AttributeType.DataType.STRING);
         AttributeType<String> t2 = tx.putAttributeType("Parent 2", AttributeType.DataType.STRING);
@@ -109,7 +115,7 @@ public class TransactionIT {
         Attribute<String> r2 = t2.create(targetValue);
         t2.create("Dragon");
 
-//        assertThat(tx.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
+        assertThat(tx.getAttributesByValue(targetValue), containsInAnyOrder(r1, r2));
     }
 
     @Test
@@ -179,7 +185,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void attemptingToUseClosedTxFailingThenOpeningGraph_EnsureGraphIsUsable() throws InvalidKBException {
+    public void attemptingToUseClosedTxFailsThenOpeningNewTx_EnsureTxIsUsable() throws InvalidKBException {
         tx.close();
 
         boolean errorThrown = false;
@@ -198,7 +204,7 @@ public class TransactionIT {
 
 
     @Test
-    public void whenClosingAGraphWhichWasJustCommitted_DoNothing() {
+    public void whenClosingATxWhichWasJustCommitted_DoNothing() {
         tx.commit();
         assertTrue("Graph is still open after commit", tx.isClosed());
         tx.close();
@@ -206,7 +212,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenCommittingAGraphWhichWasJustCommitted_DoNothing() {
+    public void whenCommittingATxWhichWasJustCommitted_DoNothing() {
         tx.commit();
         assertTrue("Graph is still open after commit", tx.isClosed());
         tx.commit();
@@ -255,7 +261,7 @@ public class TransactionIT {
     }
 
     @Test
-    public void whenOpeningDifferentTypesOfGraphsOnTheSameThread_Throw() {
+    public void whenOpeningDifferentTypesOfTransactionsOnTheSameThread_Throw() {
         String keyspace = tx.keyspace().name();
         failAtOpeningTx(session, true, keyspace);
         tx.close();
@@ -352,14 +358,112 @@ public class TransactionIT {
         assertEquals(2L, tx.getShardCount(entity));
     }
 
-//    @Test
-//    public void whenGettingSupsOfASchemaConcept_ResultIncludesMetaThing() {
-//        EntityType yes = tx.putEntityType("yes");
-//        EntityType entity = tx.getMetaEntityType();
-//        Type thing = tx.getMetaConcept();
-//        Set<SchemaConcept> no = (Set<SchemaConcept>) tx.sups(yes).collect(toSet());
-//        assertThat(no, containsInAnyOrder(yes, entity, thing));
-//        assertThat(tx.sups(entity).collect(toSet()), containsInAnyOrder(entity, thing));
-//        assertThat(tx.sups(thing).collect(toSet()), containsInAnyOrder(thing));
-//    }
+    @Test
+    public void whenGettingSupsOfASchemaConcept_ResultIncludesMetaThing() {
+        EntityType yes = tx.putEntityType("yes");
+        EntityType entity = tx.getMetaEntityType();
+        Type thing = tx.getMetaConcept();
+        Set<SchemaConcept> no = tx.sups(yes).collect(toSet());
+        assertThat(no, containsInAnyOrder(yes, entity, thing));
+        assertThat(tx.sups(entity).collect(toSet()), containsInAnyOrder(entity, thing));
+        assertThat(tx.sups(thing).collect(toSet()), containsInAnyOrder(thing));
+    }
+
+
+    @Test
+    public void insertAndDeleteRelationInSameTransaction_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
+        tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
+        tx.commit();
+        tx = session.transaction().write();
+        String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
+        tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
+        tx.commit();
+
+        tx = session.transaction().write();
+        List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
+        assertEquals(2, rolePlayersResult.size());
+        List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
+        assertEquals(0, relationResult.size());
+    }
+
+    @Test
+    public void insertAndDeleteSameRelationInDifferentTransactions_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
+        tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
+        tx.commit();
+        tx = session.transaction().write();
+        String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
+        tx.commit();
+        tx = session.transaction().write();
+        tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
+        tx.commit();
+
+
+        tx = session.transaction().write();
+        List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
+        assertEquals(2, rolePlayersResult.size());
+        List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
+        assertEquals(0, relationResult.size());
+    }
+
+    @Test
+    public void whenCommitingInferredConcepts_InferredConceptsAreNotPersisted(){
+        tx.execute(Graql.<GraqlDefine>parse(
+                    "define " +
+                            "name sub attribute, datatype string;" +
+                            "score sub attribute, datatype double;" +
+                            "person sub entity, has name, has score;" +
+                            "infer-attr sub rule," +
+                            "when {" +
+                            "  $p isa person, has score $s;" +
+                            "  $s > 0.0;" +
+                            "}, then {" +
+                            "  $p has name 'Ganesh';" +
+                            "};"
+            ));
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"));
+        tx.commit();
+
+        tx = session.transaction().read();
+        List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"), false);
+        assertTrue(answers.isEmpty());
+    }
+
+    @Test
+    public void whenCommitingInferredAttributeEdge_EdgeIsNotPersisted(){
+        tx.execute(Graql.<GraqlDefine>parse(
+                "define " +
+                        "score sub attribute, datatype double;" +
+                        "person sub entity, has score;" +
+                        "infer-attr sub rule," +
+                        "when {" +
+                        "  $p isa person, has score $s;" +
+                        "  $q isa person; $q != $p;" +
+                        "}, then {" +
+                        "  $q has score $s;" +
+                        "};"
+        ));
+        tx.commit();
+
+        tx = session.transaction().write();
+        tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
+        tx.execute(Graql.<GraqlInsert>parse("insert $q isa person;"));
+        tx.commit();
+
+        tx = session.transaction().write();
+        List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"));
+        assertEquals(2, answers.size());
+        tx.commit();
+
+        tx = session.transaction().read();
+        answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), false);
+        assertEquals(1, answers.size());
+    }
+
 }

@@ -52,7 +52,8 @@ public class EdgeIT {
         // Create Edge
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
         entity = (EntityImpl) entityType.create();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity.id().getValue()).outE().next();
+
+        Edge tinkerEdge = tx.getTinkerTraversal().V().hasId(Schema.elementId(entity.id())).outE().next();
         edge = new EdgeElement(tx, tinkerEdge);
     }
 
@@ -65,7 +66,7 @@ public class EdgeIT {
     @Test
     public void checkEqualityBetweenEdgesBasedOnID() {
         Entity entity2 = entityType.create();
-        Edge tinkerEdge = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), entity2.id().getValue()).outE().next();
+        Edge tinkerEdge = tx.getTinkerTraversal().V().hasId(Schema.elementId(entity2.id())).outE().next();
         EdgeElement edge2 = new EdgeElement(tx, tinkerEdge);
 
         assertEquals(edge, edge);

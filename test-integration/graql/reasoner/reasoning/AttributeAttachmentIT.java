@@ -27,14 +27,12 @@ import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.List;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.List;
-import java.util.Set;
 
 import static grakn.core.server.kb.Schema.ImplicitType.HAS;
 import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
@@ -146,12 +144,9 @@ public class AttributeAttachmentIT {
         }
     }
 
-    //TODO leads to cache inconsistency
-    @Ignore
     @Test
     public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-
             Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
             assertEquals(3, answers.size());

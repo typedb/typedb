@@ -43,6 +43,11 @@ public class GraknDaemon {
 
     private static final String SERVER = "server";
     private static final String STORAGE = "storage";
+    private static final String EMPTY_STRING = "";
+    private static final String BENCHMARK_FLAG = "--benchmark";
+    private static final String VERSION_LABEL = "Version: ";
+
+
 
     private final Storage storageExecutor;
     private final Server serverExecutor;
@@ -96,7 +101,7 @@ public class GraknDaemon {
         if (!javaVersion.equals("1.8")) {
             throw new RuntimeException(ErrorMessage.UNSUPPORTED_JAVA_VERSION.getMessage(javaVersion));
         }
-        if (!graknHome.resolve("conf").toFile().exists()) {
+        if (!graknHome.resolve("server").resolve("conf").toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
         if (!graknProperties.toFile().exists()) {
@@ -108,7 +113,12 @@ public class GraknDaemon {
         Path ascii = Paths.get(".", "server", "services", "grakn", "grakn-core-ascii.txt");
         if (ascii.toFile().exists()) {
             try {
-                System.out.println(new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8));
+                String logoString = new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8);
+                int lineLength = logoString.split("\n")[0].length();
+                int spaces = lineLength - VERSION_LABEL.length() - GraknVersion.VERSION.length();
+
+                System.out.println(logoString);
+                System.out.printf("%" + spaces + "s"+ VERSION_LABEL +"%s\n", " ", GraknVersion.VERSION);
             } catch (IOException e) {
                 // DO NOTHING
             }
@@ -147,7 +157,7 @@ public class GraknDaemon {
                 serverStop(option);
                 break;
             case "status":
-                serverStatus(option);
+                serverStatus();
                 break;
             case "clean":
                 clean();
@@ -165,9 +175,12 @@ public class GraknDaemon {
             case STORAGE:
                 storageExecutor.stop();
                 break;
-            default:
+            case EMPTY_STRING:
                 serverExecutor.stop();
                 storageExecutor.stop();
+                break;
+            default:
+                serverHelp();
         }
     }
 
@@ -179,9 +192,13 @@ public class GraknDaemon {
             case STORAGE:
                 storageExecutor.startIfNotRunning();
                 break;
-            default:
+            case BENCHMARK_FLAG:
+            case EMPTY_STRING:
                 storageExecutor.startIfNotRunning();
                 serverExecutor.startIfNotRunning(arg);
+                break;
+            default:
+                serverHelp();
         }
     }
 
@@ -200,15 +217,9 @@ public class GraknDaemon {
                                    "- Start Grakn with Zipkin-enabled benchmarking with `grakn server start --benchmark`");
     }
 
-    private void serverStatus(String verboseFlag) {
+    private void serverStatus() {
         storageExecutor.status();
         serverExecutor.status();
-
-        if (verboseFlag.equals("--verbose")) {
-            System.out.println("======== Failure Diagnostics ========");
-            storageExecutor.statusVerbose();
-            serverExecutor.statusVerbose();
-        }
     }
 
     private void version() {

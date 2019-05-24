@@ -19,13 +19,14 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -37,11 +38,8 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-
-import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
@@ -145,16 +143,42 @@ public abstract class Fragment {
     }
 
     /**
+     * When building the query plan spanning tree, every fragment has a start defined with a variable
+     * Some fragments are actually edges in JanusGraph (such as isa, sub, etc.)
+     * These require another variable for the end() variable, and to force the MST algorithm to
+     * traverse these JanusGraph edges too, we insert a fake middle node representing the edge.
+     * We default to an INSTANCE_NODE node type, which is the most general node
+     * @return
+     */
+    public Set<Node> getNodes() {
+        NodeId startNodeId = NodeId.of(NodeId.Type.VAR, start());
+        return Collections.singleton(new InstanceNode(startNodeId));
+    }
+
+    /**
+     * Some fragments represent Edges in JanusGraph. Similar to `getNodes()`, a fake node is added
+     * in the middle for the query planning step. These middle nodes are connected with a directed edge uniquely to another node -
+     * this directed edge is therefore the mapping from (node,node) directed edge to the Fragment. This is used to
+     * convert the fake middle node back into a Fragment after query planning is complete.
+     * For pairs of nodes we may have two edges (node1, node2) and (node2, node1). These stem from the two
+     * fragments that are `Equivalent` in EquivalentFragmentSet - directionality is used to disambiguate which choice to use
+     * @param nodes
+     * @return
+     */
+    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+        return null;
+    }
+
+    /**
      * Convert the fragment to a set of weighted edges for query planning
      *
      * @param nodes all nodes in the query
-     * @param edges a mapping from edge(child, parent) to its corresponding fragment
      * @return a set of edges
      */
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
+    public Set<Weighted<DirectedEdge>> directedEdges(Map<NodeId, Node> nodes) {
         return Collections.emptySet();
     }
+
 
     /**
      * @param traversal the traversal to extend with this Fragment
@@ -220,7 +244,7 @@ public abstract class Fragment {
      * A starting fragment is a fragment that can start a traversal.
      * If any other fragment is present that refers to the same variable, the starting fragment can be omitted.
      */
-    public boolean isStartingFragment() {
+    public boolean validStartIfDisconnected() {
         return false;
     }
 
@@ -240,6 +264,15 @@ public abstract class Fragment {
     public abstract double internalFragmentCost();
 
     /**
+     * Estimate the "cost" of a starting point for each type of fixed cost fragment
+     * These are cost heuristic proxies using statistics
+     * @return
+     */
+    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+        throw new UnsupportedOperationException("Fragment of type " + this.getClass() + " is not a fixed cost starting point - no esimated cost as a starting point.");
+    }
+
+    /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
      * A plan should always start with these fragments when possible.
      */
@@ -249,10 +282,6 @@ public abstract class Fragment {
 
     public Fragment getInverse() {
         return this;
-    }
-
-    public Long getShardCount(TransactionOLTP tx) {
-        return 0L;
     }
 
     /**
@@ -286,40 +315,4 @@ public abstract class Fragment {
         return str;
     }
 
-    final Set<Weighted<DirectedEdge<Node>>> directedEdges(NodeId.NodeType nodeType,
-                                                          Map<NodeId, Node> nodes,
-                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
-        Node middle = Node.addIfAbsent(nodeType, Sets.newHashSet(start(), end()), nodes);
-        middle.setInvalidStartingPoint();
-
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    final Set<Weighted<DirectedEdge<Node>>> directedEdges(Variable edge,
-                                                          Map<NodeId, Node> nodes,
-                                                          Map<Node, Map<Node, Fragment>> edgeToFragment) {
-
-        Node start = Node.addIfAbsent(NodeId.NodeType.VAR, start(), nodes);
-        Node end = Node.addIfAbsent(NodeId.NodeType.VAR, end(), nodes);
-        Node middle = Node.addIfAbsent(NodeId.NodeType.VAR, edge, nodes);
-        middle.setInvalidStartingPoint();
-
-        addEdgeToFragmentMapping(middle, start, edgeToFragment);
-        return Sets.newHashSet(
-                weighted(DirectedEdge.from(start).to(middle), -fragmentCost()),
-                weighted(DirectedEdge.from(middle).to(end), 0));
-    }
-
-    private void addEdgeToFragmentMapping(Node child, Node parent, Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        if (!edgeToFragment.containsKey(child)) {
-            edgeToFragment.put(child, new HashMap<>());
-        }
-        edgeToFragment.get(child).put(parent, this);
-    }
 }

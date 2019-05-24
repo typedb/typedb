@@ -113,7 +113,6 @@ java_library(
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/io/netty:netty",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/org/apache/htrace:htrace-core",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
@@ -173,7 +172,6 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/inject/extensions:guice-servlet",
         "//dependencies/maven/artifacts/com/google/protobuf:protobuf-java",
-        "//dependencies/maven/artifacts/io/netty:netty",
         "//dependencies/maven/artifacts/org/apache/avro:avro",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         ":hadoop-annotations",

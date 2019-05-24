@@ -32,7 +32,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.kb.cache.CacheOwner;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
 
@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Caches TransactionOLTP specific data this includes:
@@ -73,39 +74,17 @@ public class TransactionCache {
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
     //New attributes are tracked so that we can merge any duplicate attributes in post.
-    // This is a map of attribute indices to concept ids
+    // This is a map of attribute indices to <label, concept id>
     // The index and id are directly cached to prevent unneeded reads
-    private Multimap<String, ConceptId> newAttributes = ArrayListMultimap.create();
-
-    //Transaction Specific Meta Data
-    private boolean writeOccurred = false;
+    private Multimap<Pair<Label, String>, ConceptId> newAttributes = ArrayListMultimap.create();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
     }
 
-    /**
-     *
-     */
-    public void refreshKeyspaceCache() {
-        // This is used to prevent the keyspace cache from expiring its stored concept cache
-        // This method is NOT used to actually change things in the keyspace cache
-        if (!writeOccurred) {
-            keyspaceCache.readTxCache(this);
-        }
-    }
-
     public void flushToKeyspaceCache() {
         // This method is used to actually flush to the keyspace cache
         keyspaceCache.readTxCache(this);
-    }
-
-    /**
-     * Notifies the cache that a write has occurred.
-     * This is later used to determine if it is safe to flush the transaction cache to the session cache or not.
-     */
-    public void writeOccurred() {
-        writeOccurred = true;
     }
 
     /**
@@ -168,7 +147,8 @@ public class TransactionCache {
         modifiedRules.remove(concept);
 
         if (concept.isAttribute()) {
-            newAttributes.removeAll(AttributeImpl.from(concept.asAttribute()).getIndex());
+            AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
+            newAttributes.removeAll(new Pair<>(attr.type().label().toString(), attr.getIndex()));
         }
 
         if (concept.isRelation()) {
@@ -251,6 +231,16 @@ public class TransactionCache {
     }
 
     /**
+     * @return cached things that are inferred
+     */
+    public Stream<Thing> getInferredConcepts(){
+        return conceptCache.values().stream()
+                .filter(Concept::isThing)
+                .map(Concept::asThing)
+                .filter(Thing::isInferred);
+    }
+
+    /**
      * Returns a previously built type
      *
      * @param label The label of the type
@@ -281,12 +271,12 @@ public class TransactionCache {
     }
 
 
-    public void addNewAttribute(String index, ConceptId conceptId) {
-        newAttributes.put(index, conceptId);
+    public void addNewAttribute(Label label, String index, ConceptId conceptId) {
+        newAttributes.put(new Pair<>(label, index), conceptId);
     }
 
-    public Map<String, Set<ConceptId>> getNewAttributes() {
-        Map<String, Set<ConceptId>> map = new HashMap<>();
+    public Map<Pair<Label, String>, Set<ConceptId>> getNewAttributes() {
+        Map<Pair<Label, String>, Set<ConceptId>> map = new HashMap<>();
         newAttributes.asMap().forEach((attrValue, conceptIds) -> map.put(attrValue, new HashSet<>(conceptIds)));
         return map;
     }
@@ -322,8 +312,6 @@ public class TransactionCache {
 
     //--------------------------------------- TransactionOLTP Specific Meta Data -------------------------------------------
     public void closeTx() {
-        //Clear Concept Caches
-        conceptCache.values().forEach(concept -> CacheOwner.from(concept).txCacheClear());
 
         //Clear Collection Caches
         modifiedThings.clear();
@@ -338,7 +326,6 @@ public class TransactionCache {
         schemaConceptCache.clear();
         labelCache.clear();
     }
-
 
 
     @VisibleForTesting

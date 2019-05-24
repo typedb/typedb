@@ -30,7 +30,8 @@ java_test(
         "@graknlabs_graql//java:graql",
 
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
-    size = "large"
+    size = "large",
+    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 checkstyle_test(

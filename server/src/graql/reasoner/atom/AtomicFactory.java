@@ -115,9 +115,9 @@ public class AtomicFactory {
         Object value = operation.innerStatement() == null? operation.value() : null;
         return buildNeq?
                 (allowNeq?
-                        NeqValuePredicate.create(var.asUserDefined(), predicateVar, value, parent) :
-                        ValuePredicate.neq(var.asUserDefined(), predicateVar, value, parent)) :
-                ValuePredicate.create(var.asUserDefined(), operation, parent);
+                        NeqValuePredicate.create(var.asReturnedVar(), predicateVar, value, parent) :
+                        ValuePredicate.neq(var.asReturnedVar(), predicateVar, value, parent)) :
+                ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
 }
 

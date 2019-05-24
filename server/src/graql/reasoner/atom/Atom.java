@@ -18,7 +18,6 @@
 package grakn.core.graql.reasoner.atom;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
@@ -43,19 +42,17 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierComparison;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -192,11 +189,6 @@ public abstract class Atom extends AtomicBase {
     public boolean isDirect() {
         return getPattern().properties().stream().anyMatch(VarProperty::isExplicit);
     }
-
-    /**
-     * @return partial substitutions for this atom (NB: instances)
-     */
-    public Stream<IdPredicate> getPartialSubstitutions() { return Stream.empty();}
 
     /**
      * @return set of variables that need to be have their roles expanded
@@ -371,8 +363,8 @@ public abstract class Atom extends AtomicBase {
      * @return rewritten atom
      */
     public Atom rewriteWithTypeVariable(Atom parentAtom) {
-        if (parentAtom.getPredicateVariable().isUserDefinedName()
-                && !this.getPredicateVariable().isUserDefinedName()
+        if (parentAtom.getPredicateVariable().isReturned()
+                && !this.getPredicateVariable().isReturned()
                 && this.getClass() == parentAtom.getClass()) {
             return rewriteWithTypeVariable();
         }
@@ -405,7 +397,7 @@ public abstract class Atom extends AtomicBase {
      * @return corresponding unifier
      */
     @Nullable
-    public abstract Unifier getUnifier(Atom parentAtom, UnifierComparison unifierType);
+    public abstract Unifier getUnifier(Atom parentAtom, UnifierType unifierType);
 
     /**
      *
@@ -414,7 +406,7 @@ public abstract class Atom extends AtomicBase {
      * @param unifierType unifier type in question
      * @return true if predicates between this (child) and parent are compatible based on the mappings provided by unifier
      */
-    protected boolean isPredicateCompatible(Atom parentAtom, Unifier unifier, UnifierComparison unifierType){
+    protected boolean isPredicateCompatible(Atom parentAtom, Unifier unifier, UnifierType unifierType){
         //check value predicates compatibility
         return unifier.mappings().stream().allMatch(mapping -> {
             Variable childVar = mapping.getKey();
@@ -449,7 +441,7 @@ public abstract class Atom extends AtomicBase {
      * @param unifierType type of unifier to be computed
      * @return multiunifier
      */
-    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierComparison unifierType) {
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
         //NB only for relations we can have non-unique unifiers
         Unifier unifier = this.getUnifier(parentAtom, unifierType);
         return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
@@ -465,20 +457,20 @@ public abstract class Atom extends AtomicBase {
      */
     public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier) {
         Set<VariableDefinition> diff = new HashSet<>();
-        ImmutableMap<Variable, Type> childVarTypeMap = this.getParentQuery().getVarTypeMap(false);
-        ImmutableMap<Variable, Type> parentVarTypeMap = parentAtom.getParentQuery().getVarTypeMap(false);
         Unifier unifierInverse = unifier.inverse();
 
         unifier.mappings().forEach(m -> {
             Variable childVar = m.getKey();
             Variable parentVar = m.getValue();
-            Type childType = childVarTypeMap.get(childVar);
-            Type parentType = parentVarTypeMap.get(parentVar);
+
+            Type childType = this.getParentQuery().getUnambiguousType(childVar, false);
+            Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentVar, false);
             Type type = childType != null ?
                     parentType != null ?
                             (!parentType.equals(childType) ? childType : null) :
                             childType
                     : null;
+
 
             Set<ValuePredicate> predicates = this.getPredicates(childVar, ValuePredicate.class).collect(toSet());
             parentAtom.getPredicates(parentVar, ValuePredicate.class)

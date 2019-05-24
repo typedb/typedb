@@ -86,10 +86,10 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         //NB: HasAttributeProperty always has (type) label specified
-        Variable varName = var.asUserDefined();
+        Variable varName = var.asReturnedVar();
 
         //NB: we always make the attribute variable explicit
-        Variable attributeVariable = property.attribute().var().asUserDefined();
+        Variable attributeVariable = property.attribute().var().asReturnedVar();
         Variable relationVariable = property.relation().var();
         Variable predicateVariable = new Variable();
         Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent).collect(Collectors.toSet());
@@ -100,7 +100,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
 
         //add resource atom
-        Statement resVar = relationVariable.isUserDefinedName() ?
+        Statement resVar = relationVariable.isReturned() ?
                 new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
                 new Statement(varName).has(property.type(), new Statement(attributeVariable));
         return AttributeAtom.create(resVar, attributeVariable, relationVariable,

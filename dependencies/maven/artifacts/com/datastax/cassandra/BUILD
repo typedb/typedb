@@ -7,6 +7,7 @@ java_library(
         "//dependencies/maven/artifacts/com/github/jnr:jnr-ffi",
         "//dependencies/maven/artifacts/com/github/jnr:jnr-posix",
         "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
     visibility = [

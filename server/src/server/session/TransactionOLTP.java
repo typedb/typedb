@@ -18,7 +18,6 @@
 
 package grakn.core.server.session;
 
-import brave.ScopedSpan;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
@@ -34,6 +33,7 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -42,6 +42,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
@@ -59,6 +60,7 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.statistics.UncomittedStatisticsDelta;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -106,7 +108,7 @@ import java.util.stream.Stream;
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
-    final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    private final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     // Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
@@ -125,6 +127,7 @@ public class TransactionOLTP implements Transaction {
     private Transaction.Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
+    private UncomittedStatisticsDelta uncomittedStatisticsDelta;
 
     // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -169,6 +172,8 @@ public class TransactionOLTP implements Transaction {
         this.keyspaceCache = keyspaceCache;
         this.transactionCache = new TransactionCache(keyspaceCache);
 
+        this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
+
     }
 
     void open(Type type) {
@@ -209,8 +214,8 @@ public class TransactionOLTP implements Transaction {
      * @param conceptId ConceptId to be set on the vertex
      * @return just created Vertex
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
-        return executeLockingMethod(() -> factory().addVertexElement(baseType, conceptId));
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
+        return executeLockingMethod(() -> factory().addVertexElementWithEdgeIdProperty(baseType, conceptId));
     }
 
     /**
@@ -358,6 +363,10 @@ public class TransactionOLTP implements Transaction {
         return transactionCache;
     }
 
+    public UncomittedStatisticsDelta statisticsDelta() {
+        return uncomittedStatisticsDelta;
+    }
+
     @Override
     public boolean isClosed() {
         return !isTxOpen;
@@ -410,9 +419,11 @@ public class TransactionOLTP implements Transaction {
      */
     //----------------------------------------------General Functionality-----------------------------------------------
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
-        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
-        T concept = null;
+        return getConcept(getTinkerTraversal().V().has(key.name(), value));
+    }
 
+    private <T extends Concept> T getConcept(Iterator<Vertex> vertices) {
+        T concept = null;
         if (vertices.hasNext()) {
             Vertex vertex;
             // Get read lock before accessing graph so that if a commit is occurring, we wait
@@ -425,7 +436,6 @@ public class TransactionOLTP implements Transaction {
             }
             concept = factory().buildConcept(vertex);
         }
-
         return concept;
     }
 
@@ -660,17 +670,23 @@ public class TransactionOLTP implements Transaction {
             if (transactionCache.isConceptCached(id)) {
                 return transactionCache.getCachedConcept(id);
             } else {
-                if (id.getValue().startsWith(Schema.PREFIX_EDGE)) {
+                if (Schema.isEdgeId(id)) {
                     Optional<T> concept = getConceptEdge(id);
                     if (concept.isPresent()) return concept.get();
                 }
-                return this.getConcept(Schema.VertexProperty.ID, id.getValue());
+
+                T concept = getConcept(getTinkerTraversal().V(Schema.elementId(id)));
+                //if the concept doesn't exists, it is possible we are referring to a ReifiedRelation which
+                //uses an its previous EdgeRelation as an id so property must be fetched
+                return concept == null?
+                        this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue()) :
+                        concept;
             }
         });
     }
 
     private <T extends Concept> Optional<T> getConceptEdge(ConceptId id) {
-        String edgeId = id.getValue().substring(1);
+        String edgeId = Schema.elementId(id);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
             return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
@@ -814,7 +830,6 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        transactionCache.refreshKeyspaceCache();
         closeTransaction(closeMessage);
     }
 
@@ -830,10 +845,12 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             checkMutationAllowed();
+            removeInferredConcepts();
             validateGraph();
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
+                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 commitTransactionInternal();
                 transactionCache.flushToKeyspaceCache();
             }
@@ -864,8 +881,6 @@ public class TransactionOLTP implements Transaction {
     private void closeTransaction(String closedReason) {
         try {
             janusTransaction.close();
-        } catch (UnsupportedOperationException e) {
-            //Ignored for Tinker
         } finally {
             transactionCache.closeTx();
             this.closedReason = closedReason;
@@ -879,49 +894,51 @@ public class TransactionOLTP implements Transaction {
     private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
 
         /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
-        ScopedSpan span = null;
-        if (ServerTracing.tracingActive()) {
-            span = ServerTracing.startScopedChildSpan("commitWithLogs validate");
-        }
+
+        int validateSpanId = ServerTracing.startScopedChildSpan("commitWithLogs validate");
+
 
         checkMutationAllowed();
+        removeInferredConcepts();
         validateGraph();
 
         Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
-        Map<String, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
+        Map<Pair<Label, String>, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
-        if (span != null) {
-            span.finish();
-            span = ServerTracing.startScopedChildSpan("commitWithLogs commit");
-        }
+        ServerTracing.closeScopedChildSpan(validateSpanId);
+
+        int commitSpanId = ServerTracing.startScopedChildSpan("commitWithLogs commit");
 
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
         // force serialized updates, keeping Janus and our KeyspaceCache in sync
         synchronized (keyspaceCache) {
+            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             commitTransactionInternal();
             transactionCache.flushToKeyspaceCache();
         }
 
+        ServerTracing.closeScopedChildSpan(commitSpanId);
+
         //If we have logs to commit get them and add them
         if (logsExist) {
 
-            if (span != null) {
-                span.finish();
-                span = ServerTracing.startScopedChildSpan("commitWithLogs create log");
-            }
+            int createLogSpanId = ServerTracing.startScopedChildSpan("commitWithLogs create log");
 
             Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
 
-            if (span != null) {
-                span.finish();
-            }
+            ServerTracing.closeScopedChildSpan(createLogSpanId);
 
             return logs;
         }
 
-
         return Optional.empty();
+    }
+
+    private void removeInferredConcepts(){
+        Set<Thing> inferredThings = cache().getInferredConcepts().collect(Collectors.toSet());
+        inferredThings.forEach(inferred -> cache().remove(inferred));
+        inferredThings.forEach(Concept::delete);
     }
 
     private void validateGraph() throws InvalidKBException {
@@ -990,9 +1007,9 @@ public class TransactionOLTP implements Transaction {
 
         private final KeyspaceImpl keyspace;
         private final Map<ConceptId, Long> instanceCount;
-        private final Map<String, Set<ConceptId>> attributes;
+        private final Map<Pair<Label, String>, Set<ConceptId>> attributes;
 
-        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
@@ -1015,11 +1032,11 @@ public class TransactionOLTP implements Transaction {
             return instanceCount;
         }
 
-        public Map<String, Set<ConceptId>> attributes() {
+        public Map<Pair<Label, String>, Set<ConceptId>> attributes() {
             return attributes;
         }
 
-        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<String, Set<ConceptId>> newAttributes) {
+        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> newAttributes) {
             return new CommitLog(keyspace, instanceCount, newAttributes);
         }
 

@@ -18,8 +18,6 @@
 
 package grakn.core.console;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 import grakn.client.GraknClient;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
@@ -31,7 +29,6 @@ import org.apache.commons.cli.DefaultParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -43,9 +40,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import static grakn.core.common.util.CommonUtil.toImmutableList;
 
 /**
  * Grakn Console is a Command Line Application to interact with the Grakn Core database
@@ -108,14 +104,18 @@ public class GraknConsole {
         // Start a Console Session to load some Graql file(s)
         else if (commandLine.hasOption(FILE)) {
             try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
+                //Intercept Ctrl+C and gracefully terminate connection with server
+                Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 String[] paths = commandLine.getOptionValues(FILE);
-                List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(toImmutableList());
+                List<Path> filePaths = Stream.of(paths).map(Paths::get).collect(Collectors.toList());
                 for (Path file : filePaths) consoleSession.load(file);
             }
         }
         // Start a live Console Session for the user to interact with Grakn
         else {
             try (ConsoleSession consoleSession = new ConsoleSession(serverAddress, keyspace, infer, printOut, printErr)) {
+                //Intercept Ctrl+C and gracefully terminate connection with server
+                Runtime.getRuntime().addShutdownHook(new Thread(consoleSession::close, "grakn-console-shutdown"));
                 consoleSession.run();
             }
         }
@@ -136,10 +136,6 @@ public class GraknConsole {
      * Invocation from bash script './grakn console'
      */
     public static void main(String[] args) {
-        // Disable logging for Grakn console as we only use System.out
-        Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
-        root.setLevel(Level.OFF);
-
         try {
             GraknConsole console = new GraknConsole(Arrays.copyOfRange(args, 1, args.length), System.out, System.err);
             console.run();

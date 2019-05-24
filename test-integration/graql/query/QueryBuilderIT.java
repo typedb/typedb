@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
@@ -96,7 +96,7 @@ public class QueryBuilderIT {
         assertNotExists(tx, var().has("title", "123"));
     }
 
-    @Test
+    @Test (expected = GraqlSemanticException.class)
     public void whenBuildingUndefineQueryWithGraphLast_ItExecutes() {
         tx.execute(Graql.define(type("yes").sub("entity")));
 
@@ -117,7 +117,7 @@ public class QueryBuilderIT {
 
     @Test
     public void whenGraphIsProvidedAndQueryExecutedWithNonexistentType_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         //noinspection ResultOfMethodCallIgnored
         tx.stream(Graql.match(x.isa("not-a-thing")));
     }

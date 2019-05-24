@@ -22,18 +22,8 @@
 
     <!--Configure a properties file (located on the classpath) from which values can be referenced-->
     <property resource="grakn.properties"/>
+    <property name="configuredLogDir" value="${log.dirs}" />
 
-    <!--Extract the directory of the grakn logs from the properties file. If the path is relative it
-    will be appended to the directory containing grakn (system property grakn.dir). Otherwise the absolute
-    path is used. -->
-    <if condition='property("log.dirs").startsWith("/")'>
-        <then>
-            <property name="configuredLogDir" value="${log.dirs}" />
-        </then>
-        <else>
-            <property name="configuredLogDir" value="${grakn.dir}/${log.dirs}" />
-        </else>
-    </if>
 
     <!--Configure the standard out appender used to print the Grakn logo-->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">

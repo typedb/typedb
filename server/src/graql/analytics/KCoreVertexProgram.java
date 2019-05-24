@@ -21,6 +21,7 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Iterators;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.kb.Schema;
+import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -28,8 +29,6 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
-
-import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 
@@ -132,7 +131,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
         if ((vertex.label().equals(Schema.BaseType.ENTITY.name()) ||
                 vertex.label().equals(Schema.BaseType.ATTRIBUTE.name())) &&
                 Iterators.size(messenger.receiveMessages()) >= memory.<Long>get(K)) {
-            String id = vertex.value(Schema.VertexProperty.ID.name());
+            String id = vertex.id().toString();
 
             // coreness query doesn't require id
             if (persistId) {
@@ -164,7 +163,7 @@ public class KCoreVertexProgram extends GraknVertexProgram<String> {
     static void updateEntityAndAttribute(Vertex vertex, Messenger<String> messenger,
                                          Memory memory, boolean persistMessageCount) {
         if (vertex.property(K_CORE_LABEL).isPresent()) {
-            String id = vertex.value(Schema.VertexProperty.ID.name());
+            String id = vertex.id().toString();
             long messageCount = (long) getMessageCountExcludeSelf(messenger, id);
             if (vertex.property(IMPLICIT_MESSAGE_COUNT).isPresent()) {
                 messageCount += vertex.<Long>value(IMPLICIT_MESSAGE_COUNT);

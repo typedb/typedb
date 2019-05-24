@@ -26,13 +26,14 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -65,6 +66,7 @@ import java.util.Set;
 
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
+import static graql.lang.Graql.insert;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
@@ -215,6 +217,7 @@ public class GraqlInsertIT {
         assertNotExists(tx, language2);
     }
 
+
     @Test
     public void testIterateInsertResults() {
         GraqlInsert insert = Graql.insert(
@@ -247,7 +250,7 @@ public class GraqlInsertIT {
 
     @Test
     public void testErrorWhenInsertWithPredicate() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("predicate");
         tx.execute(Graql.insert(var().id("123").gt(3)));
     }
@@ -263,10 +266,10 @@ public class GraqlInsertIT {
     public void whenInsertingAResourceWithMultipleValues_Throw() {
         Statement varPattern = var().val("123").val("456").isa("title");
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(isOneOf(
-                GraqlQueryException.insertMultipleProperties(varPattern, "", "123", "456").getMessage(),
-                GraqlQueryException.insertMultipleProperties(varPattern, "", "456", "123").getMessage()
+                GraqlSemanticException.insertMultipleProperties(varPattern, "", "123", "456").getMessage(),
+                GraqlSemanticException.insertMultipleProperties(varPattern, "", "456", "123").getMessage()
         ));
 
         tx.execute(Graql.insert(varPattern));
@@ -394,7 +397,7 @@ public class GraqlInsertIT {
 
     @Test
     public void testErrorWhenInsertRelationWithEmptyRolePlayer() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
                 allOf(containsString("$y"), containsString("id"), containsString("isa"), containsString("sub"))
         );
@@ -406,7 +409,7 @@ public class GraqlInsertIT {
 
     @Test
     public void testErrorWhenAddingInstanceOfConcept() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
                 allOf(containsString("meta-type"), containsString("my-thing"), containsString(Graql.Token.Type.THING.toString()))
         );
@@ -415,7 +418,7 @@ public class GraqlInsertIT {
 
     @Test
     public void whenInsertingAResourceWithoutAValue_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("name")));
         tx.execute(Graql.insert(var("x").isa("name")));
     }
@@ -480,7 +483,7 @@ public class GraqlInsertIT {
 
     @Test
     public void testInsertInstanceWithoutType() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("isa")));
         tx.execute(Graql.insert(var().has("name", "Bob")));
     }
@@ -582,10 +585,10 @@ public class GraqlInsertIT {
         );
 
         // We don't know in what order the message will be
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(isOneOf(
-                GraqlQueryException.insertMultipleProperties(varPattern, "isa", movie, person).getMessage(),
-                GraqlQueryException.insertMultipleProperties(varPattern, "isa", person, movie).getMessage()
+                GraqlSemanticException.insertMultipleProperties(varPattern, "isa", movie, person).getMessage(),
+                GraqlSemanticException.insertMultipleProperties(varPattern, "isa", person, movie).getMessage()
         ));
 
         tx.execute(Graql.insert(var("x").isa("movie"), var("x").isa("person")));
@@ -598,27 +601,98 @@ public class GraqlInsertIT {
 
         Concept aMovie = movie.instances().iterator().next();
 
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.insertPropertyOnExistingConcept("isa", person, aMovie).getMessage());
 
         tx.execute(Graql.insert(var("x").id(aMovie.id().getValue()).isa("person")));
     }
 
     @Test
     public void whenInsertingASchemaConcept_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Graql.Token.Property.SUB.toString()).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.insertUnsupportedProperty(Graql.Token.Property.SUB.toString()).getMessage());
 
         tx.execute(Graql.insert(type("new-type").sub(Graql.Token.Type.ENTITY)));
     }
 
     @Test
     public void whenModifyingASchemaConceptInAnInsertQuery_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.insertUnsupportedProperty(Graql.Token.Property.PLAYS.toString()).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.insertUnsupportedProperty(Graql.Token.Property.PLAYS.toString()).getMessage());
 
         tx.execute(Graql.insert(type("movie").plays("actor")));
     }
+
+
+    // ------ match-insert the same resource/extending resources tests
+    @Test
+    public void testMatchInsertSameEntityThrows() {
+        Statement matchStatement = var("x").isa("movie");
+        Statement insertStatement = var("x").isa("movie");
+
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("cannot overwrite properties");
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+    }
+
+    @Test
+    public void testMatchInsertSameRelationThrows() {
+        Statement matchStatement = var("r").isa("directed-by");
+        Statement insertStatement = var("r").isa("directed-by");
+
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("cannot overwrite properties");
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+    }
+
+    @Test
+    public void testMatchInsertSameAttributeDoesntThrow() {
+        Statement matchStatement = var("a").isa("name");
+        Statement insertStatement = var("a").isa("name");
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+    }
+
+    @Test
+    public void testAddRolePlayerDoesntThrow() {
+        Statement matchStatement = var("r").isa("directed-by");
+        Statement insertStatement = var("r").rel("director", "player");
+        Statement insertStatement2 = var("player").isa("person");
+        tx.execute(Graql.match(matchStatement).insert(insertStatement, insertStatement2));
+    }
+
+    @Test
+    public void testAddRolePlayerWithRelationTypeThrows() {
+        /*
+        We have the convention that providing the type via `isa` indicates that we wish to instantiate the type
+        So if we do `match $x isa someRelation; sert $x (role: $rp) isa relation` fails,
+        whereas `match $x isa someRelation; insert $x (role: $rp);` should work
+        */
+
+        Statement matchStatement = var("r").isa("directed-by");
+        Statement insertStatement = var("r").rel("director", "player").isa("directed-by");
+        Statement insertStatement2 = var("player").isa("person");
+
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage("cannot overwrite properties");
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement, insertStatement2));
+    }
+
+    @Test
+    public void testAddNewAttributeOwnerDoesntThrow() {
+        Statement matchStatement = var("x").isa("production").has("title", var("attr"));
+        Statement insertStatement = var("newProduction").isa("production").has("title", var("attr"));
+        List<Numeric> oldCount = tx.execute(Graql.match(matchStatement).get("x").count());
+
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+
+        // expect there to be twice as many productions with titles!
+        List<Numeric> newCount = tx.execute(Graql.match(matchStatement).get("x").count());
+        assertEquals(oldCount.get(0).number().intValue() * 2, newCount.get(0).number().intValue());
+    }
+
 
     private void assertInsert(Statement... vars) {
         // Make sure vars don't exist

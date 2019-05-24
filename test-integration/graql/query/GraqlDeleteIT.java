@@ -22,7 +22,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
@@ -52,6 +52,7 @@ import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -213,33 +214,42 @@ public class GraqlDeleteIT {
     @Test
     public void testDeleteAllRolePlayers() {
         ConceptId id = tx.stream(kurtzCastRelation.get("a")).map(ans -> ans.get("a")).findFirst().get().id();
-        MatchClause relation = Graql.match(var().id(id.getValue()));
 
         assertExists(tx, kurtz);
         assertExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
-        assertExists(tx, relation);
+        assertTrue(checkIdExists(tx, id));
 
         tx.execute(kurtz.delete(x.var()));
 
         assertNotExists(tx, kurtz);
         assertExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
-        assertExists(tx, relation);
+        assertTrue(checkIdExists(tx, id));
 
         tx.execute(marlonBrando.delete(x.var()));
 
         assertNotExists(tx, kurtz);
         assertNotExists(tx, marlonBrando);
         assertExists(tx, apocalypseNow);
-        assertExists(tx, relation);
+        assertTrue(checkIdExists(tx, id));
 
         tx.execute(apocalypseNow.delete(x.var()));
 
         assertNotExists(tx, kurtz);
         assertNotExists(tx, marlonBrando);
         assertNotExists(tx, apocalypseNow);
-        assertNotExists(tx, relation);
+        assertFalse(checkIdExists(tx, id));
+    }
+
+    private boolean checkIdExists(TransactionOLTP tx, ConceptId id){
+        boolean exists;
+        try{
+            exists = !tx.execute(Graql.match(var().id(id.getValue()))).isEmpty();
+        } catch (GraqlSemanticException e){
+            exists = false;
+        }
+        return exists;
     }
 
     @Test
@@ -312,8 +322,8 @@ public class GraqlDeleteIT {
     public void whenDeletingASchemaConcept_Throw() {
         SchemaConcept newType = tx.execute(Graql.define(x.type("new-type").sub(ENTITY))).get(0).get(x.var()).asSchemaConcept();
 
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.deleteSchemaConcept(newType).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.deleteSchemaConcept(newType).getMessage());
         tx.execute(Graql.match(x.type("new-type")).delete(x.var()));
     }
 

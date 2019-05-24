@@ -20,6 +20,7 @@ package grakn.core.server.deduplicator;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.server.deduplicator.queue.Attribute;
 import grakn.core.server.deduplicator.queue.InMemoryQueue;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -80,16 +81,16 @@ public class AttributeDeduplicatorDaemon {
      * @param index the value of the attribute
      * @param conceptId the concept id of the attribute
      */
-    public void markForDeduplication(KeyspaceImpl keyspace, String index, ConceptId conceptId) {
-        Attribute attribute = Attribute.create(keyspace, index, conceptId);
+    public void markForDeduplication(KeyspaceImpl keyspace, Label label, String index, ConceptId conceptId) {
+        Attribute attribute = Attribute.create(keyspace, label, index, conceptId);
         LOG.trace("insert({})",  attribute);
         queue.insert(attribute);
     }
 
     /**
      * Starts a daemon which performs deduplication on incoming attributes in real-time.
-     * The thread listens to the RocksDbQueue queue for incoming attributes and applies
-     * the AttributeDeduplicator#deduplicate(SessionStore, KeyspaceIndexPair) algorithm.
+     * The thread listens queue for incoming attributes and applies
+     * the AttributeDeduplicator#deduplicate(SessionStore, KeyspaceAttributeTriple) algorithm.
      *
      */
     public CompletableFuture<Void> startDeduplicationDaemon() {
@@ -103,12 +104,12 @@ public class AttributeDeduplicatorDaemon {
                     LOG.trace("starting a new batch to process these new attributes: {}", attributes);
 
                     // group the attributes into a set of unique (keyspace -> value) pair
-                    Set<KeyspaceIndexPair> uniqueKeyValuePairs = attributes.stream()
-                            .map(attr -> KeyspaceIndexPair.create(attr.keyspace(), attr.index()))
+                    Set<KeyspaceAttributeTriple> uniqueKeyValuePairs = attributes.stream()
+                            .map(attr -> KeyspaceAttributeTriple.create(attr.keyspace(), attr.label(), attr.index()))
                             .collect(Collectors.toSet());
 
                     // perform deduplicate for each (keyspace -> value)
-                    for (KeyspaceIndexPair keyspaceIndexPair : uniqueKeyValuePairs) {
+                    for (KeyspaceAttributeTriple keyspaceIndexPair : uniqueKeyValuePairs) {
                         deduplicate(sessionFactory, keyspaceIndexPair);
                     }
 

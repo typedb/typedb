@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner;
 
+import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
@@ -26,22 +27,21 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.MatchClause;
+
 import java.util.HashSet;
 import java.util.Iterator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Iterator to handle execution of disjunctions.
  * We compose the disjunction into DNF - a collection of conjunctions. Then the disjunction iterator works as follows:
- *
  * - we define an answer iterator which corresponds to the iterator of the currently processed conjunction
  * - if we run out of answers in the answer iterator, we reinitialise it with the iterator of the next conjunction
  * - we do that until we run out of both answers in the answer iterator and conjunctions in the DNF
- *
  * NB: currently we clear the cache at the beginning of processing to ensure it is reused only in the context of a single
  * disjunction
- *
  */
 public class DisjunctionIterator extends ReasonerQueryIterator {
 
@@ -51,43 +51,44 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
     private static final Logger LOG = LoggerFactory.getLogger(DisjunctionIterator.class);
 
-    public DisjunctionIterator(MatchClause matchClause, TransactionOLTP tx){
+    public DisjunctionIterator(MatchClause matchClause, TransactionOLTP tx) {
         this.tx = tx;
-        //clear cache for now so that it only applies to this disjunction
-        tx.queryCache().clear();
+        int conjunctionIterSpanId = ServerTracing.startScopedChildSpan("DisjunctionIterator() create DNF, conjunction iterator");
 
         this.conjIterator = matchClause.getPatterns().getNegationDNF().getPatterns().stream().iterator();
         answerIterator = conjunctionIterator(conjIterator.next(), tx);
+
+        ServerTracing.closeScopedChildSpan(conjunctionIterSpanId);
     }
 
-    private Iterator<ConceptMap> conjunctionIterator(Conjunction<Pattern> conj, TransactionOLTP tx){
+    private Iterator<ConceptMap> conjunctionIterator(Conjunction<Pattern> conj, TransactionOLTP tx) {
         ResolvableQuery query = ReasonerQueries.resolvable(conj, tx).rewrite();
-        query.checkValid();
 
         boolean doNotResolve = query.getAtoms().isEmpty()
                 || (query.isPositive() && !query.isRuleResolvable());
 
         LOG.trace("Resolving conjunctive query ({}): {}", doNotResolve, query);
 
-        return doNotResolve?
+        return doNotResolve ?
                 tx.stream(Graql.match(conj), false).iterator() :
                 new ResolutionIterator(query, new HashSet<>(), query.requiresReiteration());
     }
 
     @Override
-    public ConceptMap next(){
+    public ConceptMap next() {
         return answerIterator.next();
     }
 
     /**
      * check whether answers available, if answers not fully computed, compute more answers
+     *
      * @return true if answers available
      */
     @Override
     public boolean hasNext() {
         if (answerIterator.hasNext()) return true;
 
-        while(conjIterator.hasNext()){
+        while (conjIterator.hasNext()) {
             answerIterator = conjunctionIterator(conjIterator.next(), tx);
             if (answerIterator.hasNext()) return true;
         }

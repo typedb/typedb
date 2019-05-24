@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.exception.GraqlException;
@@ -36,7 +38,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -68,27 +69,29 @@ class ConjunctionQuery {
         }
 
         ImmutableSet<EquivalentFragmentSet> fragmentSets =
-                statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(toImmutableSet());
+                statements.stream().flatMap(statements -> equivalentFragmentSetsRecursive(statements)).collect(ImmutableSet.toImmutableSet());
 
-        // Get all variable names mentioned in non-starting fragments
+        // Get all variable names mentioned in non-starting, non-comparing fragments (these should have vars bound elsewhere too)
         Set<Variable> names = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
-                .filter(fragment -> !fragment.isStartingFragment())
+                .filter(fragment -> !fragment.validStartIfDisconnected()
+                                && !(fragment instanceof ValueFragment)
+                                && !(fragment instanceof NeqFragment))
                 .flatMap(fragment -> fragment.vars().stream())
-                .collect(toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
 
         // Get all dependencies fragments have on certain variables existing
         Set<Variable> dependencies = fragmentSets.stream()
                 .flatMap(EquivalentFragmentSet::stream)
                 .flatMap(fragment -> fragment.dependencies().stream())
-                .collect(toImmutableSet());
+                .collect(ImmutableSet.toImmutableSet());
 
         Set<Variable> validNames = Sets.difference(names, dependencies);
 
         // Filter out any non-essential starting fragments (because other fragments refer to their starting variable)
         Set<EquivalentFragmentSet> initialEquivalentFragmentSets = fragmentSets.stream()
                 .filter(set -> set.stream().anyMatch(
-                        fragment -> !fragment.isStartingFragment() || !validNames.contains(fragment.start())
+                        fragment -> !fragment.validStartIfDisconnected() || !validNames.contains(fragment.start())
                 ))
                 .collect(toSet());
 

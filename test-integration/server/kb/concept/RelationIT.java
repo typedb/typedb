@@ -40,8 +40,10 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
-import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -50,10 +52,6 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -173,7 +171,8 @@ public class RelationIT {
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
     private Set<Concept> followRolePlayerEdgesToNeighbours(TransactionOLTP tx, Thing thing) {
-        List<Vertex> vertices = tx.getTinkerTraversal().V().has(Schema.VertexProperty.ID.name(), thing.id().getValue()).
+        List<Vertex> vertices = tx.getTinkerTraversal().V().
+                hasId(ConceptVertex.from(thing).elementId()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
@@ -353,9 +352,34 @@ public class RelationIT {
         tx.commit();
     }
 
+    @Test
+    public void whenUnattachingAttributeFromRelation_operationSucceeds(){
+
+        Role member = tx.putRole("member");
+        Role member_of = tx.putRole("member_of");
+        AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        RelationType membership = tx.putRelationType("membership")
+                .relates(member)
+                .relates(member_of)
+                .has(name);
+        EntityType group = tx.putEntityType("group").plays(member_of);
+        EntityType person = tx.putEntityType("person").plays(member);
+
+        Entity personInst = person.create();
+        Entity groupInst = group.create();
+
+        Attribute<String> attr = name.create("founder");
+        Relation membershipInst = membership.create()
+                .assign(member, personInst)
+                .assign(member_of, groupInst)
+                .has(attr);
+
+        membershipInst.unhas(attr);
+        assertFalse(membershipInst.attributes().findFirst().isPresent());
+    }
 
     @Test
-    public void whenDeletingInferredRelationship_NoErrorIsThrow() {
+    public void whenDeletingInferredRelationship_NoErrorIsThrown() {
         /*
         The exact behavior is up for debate, but at the very least we should not
         throw an exception when deleting an inferred concept, otherwise there is no way to delete

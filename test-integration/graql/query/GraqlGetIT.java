@@ -23,8 +23,8 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
-import grakn.core.graql.printer.Printer;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
@@ -32,6 +32,7 @@ import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -83,7 +84,6 @@ public class GraqlGetIT {
     public static void closeSession() {
         session.close();
     }
-
 
     @Test
     public void testGetSort() {
@@ -425,7 +425,13 @@ public class GraqlGetIT {
     @Test
     public void testEmptyMatchCount() {
         assertEquals(0L, tx.execute(Graql.match(var().isa("runtime")).get().count()).get(0).number().longValue());
-        tx.execute(Graql.match(var()).get().count());
+    }
+
+    @Test
+    public void testEmptyMatchThrows() {
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(Matchers.containsString("at least one property"));
+        tx.execute(Graql.match(var()).get());
     }
 
     @Test(expected = Exception.class) // TODO: Would help if the error message is more specific

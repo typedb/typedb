@@ -522,7 +522,7 @@ public class RuleApplicabilityIT {
             Concept concept = getConcept(tx, "name", "noRoleEntity");
             String relationString = "{" +
                     "($x, $y) isa ternary;" +
-                    "$x id '" + concept.id().getValue() + "';" +
+                    "$x id " + concept.id().getValue() + ";" +
                     "};";
             Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
             assertThat(relation.getApplicableRules().collect(toSet()), empty());
@@ -535,7 +535,7 @@ public class RuleApplicabilityIT {
             Concept concept = getConcept(tx, "name", "noRoleEntity");
             String relationString = "{" +
                     "($x, $y);" +
-                    "$x id '" + concept.id().getValue() + "';" +
+                    "$x id " + concept.id().getValue() + ";" +
                     "};";
 
             Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -769,7 +769,7 @@ public class RuleApplicabilityIT {
     public void testRuleApplicability_whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
         try(TransactionOLTP tx = ruleApplicabilitySession.transaction().read()) {
             Relation instance = tx.getRelationType("reifiable-relation").instances().findFirst().orElse(null);
-            String queryString = "{ $r has description 'typed-reified'; $r id '" + instance.id().getValue() + "'; };";
+            String queryString = "{ $r has description 'typed-reified'; $r id " + instance.id().getValue() + "; };";
             Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
 
             assertTrue(atom.getApplicableRules().findFirst().isPresent());
@@ -780,7 +780,7 @@ public class RuleApplicabilityIT {
     public void testRuleApplicability_whenMatchingRulesForGroundTypeWhichIsNotRedefined_noRulesAreMatched(){
         try(TransactionOLTP tx = ruleApplicabilitySession.transaction().read()) {
             Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
-            String queryString = "{ $x isa binary; $x id '" + instance.id().getValue() + "'; };";
+            String queryString = "{ $x isa binary; $x id " + instance.id().getValue() + "; };";
             Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
 
             assertThat(atom.getApplicableRules().collect(toSet()), empty());
@@ -791,7 +791,7 @@ public class RuleApplicabilityIT {
     public void testRuleApplicability_whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
         try(TransactionOLTP tx = ruleApplicabilitySession.transaction().read()) {
             Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
-            String queryString = "{ $r ($x, $y) isa binary; $r id '" + instance.id().getValue() + "'; };";
+            String queryString = "{ $r ($x, $y) isa binary; $r id " + instance.id().getValue() + "; };";
             Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
 
             assertThat(atom.getApplicableRules().collect(toSet()), empty());

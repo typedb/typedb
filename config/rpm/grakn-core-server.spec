@@ -9,7 +9,7 @@ AutoReqProv: no
 Source0: {_grakn-core-server-rpm-tar.tar.gz}
 
 Requires: java-1.8.0-openjdk-headless
-Requires: grakn-core-bin
+Requires: grakn-core-bin = %{version}
 
 %description
 Grakn Core (server) - description

@@ -21,18 +21,18 @@ directDerivedRelation sub derivedRelation,
 
 relationRule sub rule,
     when {
-        ($x, $y) isa subRelation;
+        ($x) isa subRelation;
     },
     then {
-        ($x, $y) isa derivedRelation;
+        ($x) isa derivedRelation;
     };
 
 directRelationRule sub rule,
     when {
-        ($x, $y) isa! subRelation;
+        ($x) isa! subRelation;
     },
     then {
-        ($x, $y) isa directDerivedRelation;
+        ($x) isa directDerivedRelation;
     };
 
 insert
@@ -43,6 +43,6 @@ $x isa baseEntity;
 $y isa baseEntity;
 $z isa baseEntity;
 
-(baseRole: $x, baseRole: $x) isa baseRelation;
-(baseRole: $y, baseRole: $y) isa subRelation;
-(baseRole: $z, baseRole: $z) isa subSubRelation;
+(baseRole: $x) isa baseRelation;
+(baseRole: $y) isa subRelation;
+(baseRole: $z) isa subSubRelation;

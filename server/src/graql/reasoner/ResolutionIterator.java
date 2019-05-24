@@ -44,10 +44,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private long oldAns = 0;
     private final ResolvableQuery query;
     private final Set<ConceptMap> answers = new HashSet<>();
-
+    private final Set<ReasonerAtomicQuery> subGoals;
     private final Stack<ResolutionState> states = new Stack<>();
-
-    private Set<ReasonerAtomicQuery> toComplete = new HashSet<>();
 
     private ConceptMap nextAnswer = null;
     private final boolean reiterationRequired;
@@ -57,6 +55,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
         this.query = q;
         this.reiterationRequired = reiterate;
+        this.subGoals = subGoals;
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
 
@@ -69,8 +68,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (state.isAnswerState() && state.isTopState()) {
                 return state.getSubstitution();
             }
-
-            state.completionQueries().forEach(toComplete::add);
 
             ResolutionState newState = state.generateSubGoal();
             if (newState != null) {
@@ -111,7 +108,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
-        toComplete.forEach(query.tx().queryCache()::ackCompleteness);
+        subGoals.forEach(query.tx().queryCache()::ackCompleteness);
+        query.tx().queryCache().propagateAnswers();
 
         return false;
     }

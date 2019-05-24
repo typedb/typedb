@@ -98,11 +98,9 @@ try:
     gcloud_ssh(instance, 'unzip grakn.zip')
 
     lprint('Installing RPM packages. Grakn will be available system-wide')
-    gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/test-grakn-core.repo')
+    gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/rpm-snapshot.repo')
     gcloud_ssh(instance, 'sudo yum -y update')
-    gcloud_ssh(instance, 'sudo yum -y install grakn-core-bin-$(cat VERSION)')
-    gcloud_ssh(instance, 'sudo yum -y install grakn-core-server-$(cat VERSION)')
-    gcloud_ssh(instance, 'sudo yum -y install grakn-core-console-$(cat VERSION)')
+    gcloud_ssh(instance, 'sudo yum -y install grakn-core-all-$(cat VERSION)')
 
     gcloud_ssh(instance, 'grakn server start')
     gcloud_ssh(instance, 'grakn server stop')

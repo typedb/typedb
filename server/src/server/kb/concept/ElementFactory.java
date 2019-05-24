@@ -34,6 +34,7 @@ import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
+import javax.annotation.Nullable;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -72,12 +73,12 @@ public final class ElementFactory {
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
-        ConceptId conceptId = ConceptId.of(element.property(Schema.VertexProperty.ID));
+        ConceptId conceptId = Schema.conceptId(element.element());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
     private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder) {
-        ConceptId conceptId = ConceptId.of(element.id().getValue());
+        ConceptId conceptId = Schema.conceptId(element.element());
         return getOrBuildConcept(element, conceptId, conceptBuilder);
     }
 
@@ -97,20 +98,38 @@ public final class ElementFactory {
     }
 
     // -------------------------------------------- Building Relations
-    RelationImpl buildRelation(VertexElement vertex, RelationType type) {
-        return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
-    }
 
-    public RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
+
+    /**
+     * Used to build a RelationEdge by ThingImpl when it needs to connect itself with an attribute (implicit relation)
+     */
+    RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
         return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge)));
     }
 
+    /**
+     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
+     */
     RelationImpl buildRelation(EdgeElement edge) {
         return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge)));
     }
 
+    /**
+     * Used by RelationEdge when it needs to reify a relation.
+     * Used by this factory when need to build an explicit relation
+     * @return ReifiedRelation
+     */
     RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
         return RelationReified.create(vertex, type);
+    }
+
+    /**
+     * Used by RelationTypeImpl to create a new instance of RelationImpl
+     * first build a ReifiedRelation and then inject it to RelationImpl
+     * @return
+     */
+    RelationImpl buildRelation(VertexElement vertex, RelationType type) {
+        return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
     }
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
@@ -145,9 +164,10 @@ public final class ElementFactory {
     }
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
+        ConceptId conceptId = Schema.conceptId(vertexElement.element());
+        Concept cachedConcept = tx.cache().getCachedConcept(conceptId);
 
-        ConceptId conceptId = ConceptId.of(vertexElement.property(Schema.VertexProperty.ID));
-        if (!tx.cache().isConceptCached(conceptId)) {
+        if (cachedConcept == null) {
             Schema.BaseType type;
             try {
                 type = getBaseType(vertexElement);
@@ -187,8 +207,9 @@ public final class ElementFactory {
                     throw TransactionException.unknownConcept(type.name());
             }
             tx.cache().cacheConcept(concept);
+            return (X) concept;
         }
-        return tx.cache().getCachedConcept(conceptId);
+        return (X) cachedConcept;
     }
 
     /**
@@ -205,7 +226,7 @@ public final class ElementFactory {
     public <X extends Concept> X buildConcept(EdgeElement edgeElement) {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
-        ConceptId conceptId = ConceptId.of(edgeElement.id().getValue());
+        ConceptId conceptId = Schema.conceptId(edgeElement.element());
         if (!tx.cache().isConceptCached(conceptId)) {
             Concept concept;
             switch (label) {
@@ -286,9 +307,6 @@ public final class ElementFactory {
      */
     public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = graph.addVertex(baseType.name());
-        String newConceptId = Schema.PREFIX_VERTEX + vertex.id().toString();
-        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
-        tx.cache().writeOccurred();
         return new VertexElement(tx, vertex);
     }
 
@@ -297,13 +315,13 @@ public final class ElementFactory {
      * @param baseType   The Schema.BaseType
      * @param conceptId the ConceptId to set as the new ConceptId
      * @return a new VertexElement
+     *
+     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
      */
-    public VertexElement addVertexElement(Schema.BaseType baseType, ConceptId conceptId) {
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
         Objects.requireNonNull(conceptId);
         Vertex vertex = graph.addVertex(baseType.name());
-        String newConceptId = conceptId.getValue();
-        vertex.property(Schema.VertexProperty.ID.name(), newConceptId);
-        tx.cache().writeOccurred();
+        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
         return new VertexElement(tx, vertex);
     }
 }

@@ -20,6 +20,7 @@ package grakn.core.distribution;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
+import grakn.core.common.config.SystemProperty;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -38,15 +40,15 @@ public class DistributionE2EConstants {
     public static final Path GRAKN_UNZIPPED_DIRECTORY = Paths.get(GRAKN_TARGET_DIRECTORY.toString(), "distribution-test", "grakn-core-all-mac");
 
     public static void assertGraknIsRunning() {
-        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
         assertThat("assertGraknRunning() failed because ", serverReady, equalTo(true));
     }
 
     public static void assertGraknIsNotRunning() {
-        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties"));
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
+        assertThat("assertGraknIsNotRunning() failed because ", serverReady, equalTo(false));
     }
 
     public static void assertZipExists() {
@@ -56,9 +58,14 @@ public class DistributionE2EConstants {
     }
 
     public static void unzipGrakn() throws IOException, InterruptedException, TimeoutException {
-        System.out.println("Unzipped Grakn to: " + GRAKN_UNZIPPED_DIRECTORY.toAbsolutePath());
         new ProcessExecutor()
                 .command("unzip", ZIP_FULLPATH.toString(), "-d", GRAKN_UNZIPPED_DIRECTORY.getParent().toString()).execute();
+    }
+
+    public static Path getLogsPath(){
+        Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
+        Path logsPath = Paths.get(config.getProperty(ConfigKey.LOG_DIR));
+        return logsPath.isAbsolute() ? logsPath : GRAKN_UNZIPPED_DIRECTORY.resolve(logsPath);
     }
 
     private static boolean isServerReady(String host, int port) {

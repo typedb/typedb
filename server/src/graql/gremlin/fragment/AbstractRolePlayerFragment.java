@@ -21,10 +21,9 @@ package grakn.core.graql.gremlin.fragment;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.util.Weighted;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
@@ -34,7 +33,6 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.fragment.Fragments.displayOptionalTypeLabels;
@@ -45,7 +43,7 @@ import static java.util.stream.Collectors.toSet;
  * {@link OutRolePlayerFragment}.
  *
  */
-public abstract class AbstractRolePlayerFragment extends Fragment {
+public abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     static final Variable RELATION_EDGE = reservedVar("RELATION_EDGE");
     static final Variable RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
@@ -82,11 +80,22 @@ public abstract class AbstractRolePlayerFragment extends Fragment {
         return builder.build();
     }
 
+
     @Override
-    public final Set<Weighted<DirectedEdge<Node>>> directedEdges(
-            Map<NodeId, Node> nodes, Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(edge(), nodes, edges);
+    protected Node startNode() {
+        return new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
     }
+
+    @Override
+    protected Node endNode() {
+        return new InstanceNode(NodeId.of(NodeId.Type.VAR, end()));
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.Type.VAR, edge());
+    }
+
 
     static void applyLabelsToTraversal(
             GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,

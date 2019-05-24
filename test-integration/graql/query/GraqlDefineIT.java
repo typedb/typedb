@@ -27,7 +27,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -67,6 +67,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItemInArray;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -314,7 +315,7 @@ public class GraqlDefineIT {
 
     @Test
     public void testErrorResourceTypeWithoutDataType() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
         );
@@ -323,21 +324,21 @@ public class GraqlDefineIT {
 
     @Test
     public void testErrorRecursiveType() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
         tx.execute(Graql.define(type("thingy").sub("thingy")));
     }
 
     @Test
     public void whenDefiningAnOntologyConceptWithoutALabel_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("entity"), containsString("type")));
         tx.execute(Graql.define(var().sub("entity")));
     }
 
     @Test
     public void testErrorWhenNonExistentResource() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage("nothing");
         tx.execute(Graql.define(type("blah this").sub("entity").has("nothing")));
     }
@@ -353,9 +354,9 @@ public class GraqlDefineIT {
     public void whenSpecifyingExistingTypeWithIncorrectDataType_Throw() {
         AttributeType name = tx.getAttributeType("name");
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                GraqlQueryException.insertPropertyOnExistingConcept("datatype", AttributeType.DataType.BOOLEAN, name).getMessage()
+                GraqlSemanticException.insertPropertyOnExistingConcept("datatype", AttributeType.DataType.BOOLEAN, name).getMessage()
         );
 
         tx.execute(Graql.define(type("name").datatype(Graql.Token.DataType.BOOLEAN)));
@@ -363,7 +364,7 @@ public class GraqlDefineIT {
 
     @Test
     public void whenSpecifyingDataTypeOnAnEntityType_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
                 allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
         );
@@ -373,14 +374,14 @@ public class GraqlDefineIT {
 
     @Test
     public void whenDefiningRuleWithoutWhen_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("when")));
         tx.execute(Graql.define(type("a-rule").sub(Graql.Token.Type.RULE).then(var("x").isa("movie"))));
     }
 
     @Test
     public void whenDefiningRuleWithoutThen_Throw() {
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("rule"), containsString("movie"), containsString("then")));
         tx.execute(Graql.define(type("a-rule").sub(Graql.Token.Type.RULE).when(var("x").isa("movie"))));
     }
@@ -389,12 +390,12 @@ public class GraqlDefineIT {
     public void whenDefiningANonRuleWithAWhenPattern_Throw() {
         Statement rule = type("yes").sub(Graql.Token.Type.ENTITY).when(var("x").isa("yes"));
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(anyOf(
                 // Either we see "entity" and an unexpected "when"...
                 allOf(containsString("unexpected property"), containsString("when")),
                 // ...or we see "when" and don't find the expected "then"
-                containsString(GraqlQueryException.insertNoExpectedProperty("then", rule).getMessage()))
+                containsString(GraqlSemanticException.insertNoExpectedProperty("then", rule).getMessage()))
         );
 
         tx.execute(Graql.define(rule));
@@ -404,12 +405,12 @@ public class GraqlDefineIT {
     public void whenDefiningANonRuleWithAThenPattern_Throw() {
         Statement rule = type("some-type").sub(Graql.Token.Type.ENTITY).then(var("x").isa("some-type"));
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(anyOf(
                 // Either we see "entity" and an unexpected "when"...
                 allOf(containsString("unexpected property"), containsString("then")),
                 // ...or we see "when" and don't find the expected "then"
-                containsString(GraqlQueryException.insertNoExpectedProperty("when", rule).getMessage()))
+                containsString(GraqlSemanticException.insertNoExpectedProperty("when", rule).getMessage()))
         );
 
         tx.execute(Graql.define(rule));
@@ -417,8 +418,8 @@ public class GraqlDefineIT {
 
     @Test
     public void whenDefiningAThing_Throw() {
-        exception.expect(GraqlQueryException.class);
-        exception.expectMessage(GraqlQueryException.defineUnsupportedProperty(Graql.Token.Property.ISA.toString()).getMessage());
+        exception.expect(GraqlSemanticException.class);
+        exception.expectMessage(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.ISA.toString()).getMessage());
 
         tx.execute(Graql.define(var("x").isa("movie")));
     }
@@ -427,10 +428,10 @@ public class GraqlDefineIT {
     public void whenModifyingAThingInADefineQuery_Throw() {
         ConceptId id = tx.getEntityType("movie").instances().iterator().next().id();
 
-        exception.expect(GraqlQueryException.class);
+        exception.expect(GraqlSemanticException.class);
         exception.expectMessage(anyOf(
-                is(GraqlQueryException.defineUnsupportedProperty(Graql.Token.Property.HAS.toString()).getMessage()),
-                is(GraqlQueryException.defineUnsupportedProperty(Graql.Token.Property.VALUE.toString()).getMessage())
+                is(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.HAS.toString()).getMessage()),
+                is(GraqlSemanticException.defineUnsupportedProperty(Graql.Token.Property.VALUE.toString()).getMessage())
         ));
 
         tx.execute(Graql.define(var().id(id.getValue()).has("title", "Bob")));
@@ -520,11 +521,22 @@ public class GraqlDefineIT {
         ));
     }
 
+    private boolean schemaObjectsExist(Statement... vars){
+        boolean exist = true;
+        try {
+            for (Statement var : vars) {
+                exist = !tx.execute(Graql.match(var)).isEmpty();
+                if (!exist) break;
+            }
+        } catch(GraqlSemanticException e){
+            exist = false;
+        }
+        return exist;
+    }
+
     private void assertDefine(Statement... vars) {
         // Make sure vars don't exist
-        for (Statement var : vars) {
-            assertNotExists(tx, var);
-        }
+        assertFalse(schemaObjectsExist(vars));
 
         // Define all vars
         tx.execute(Graql.define(vars));
@@ -538,8 +550,6 @@ public class GraqlDefineIT {
         tx.execute(Graql.undefine(vars));
 
         // Make sure vars don't exist
-        for (Statement var : vars) {
-            assertNotExists(tx, var);
-        }
+        assertFalse(schemaObjectsExist(vars));
     }
 }

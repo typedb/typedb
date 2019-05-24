@@ -29,7 +29,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
@@ -155,7 +155,7 @@ public class ConceptBuilder {
     /**
      * Build the {@link Concept} and return it, using the properties given.
      *
-     * @throws GraqlQueryException if the properties provided are inconsistent
+     * @throws GraqlSemanticException if the properties provided are inconsistent
      */
     Concept build() {
 
@@ -230,13 +230,13 @@ public class ConceptBuilder {
         } else if (has(TYPE)) {
             concept = putInstance();
         } else {
-            throw GraqlQueryException.insertUndefinedVariable(executor.printableRepresentation(var));
+            throw GraqlSemanticException.insertUndefinedVariable(executor.printableRepresentation(var));
         }
 
         // Check for any unexpected parameters
         preProvidedParams.forEach((param, value) -> {
             if (!usedParams.contains(param)) {
-                throw GraqlQueryException.insertUnexpectedProperty(param.name(), value, concept);
+                throw GraqlSemanticException.insertUnexpectedProperty(param.name(), value, concept);
             }
         });
 
@@ -321,7 +321,7 @@ public class ConceptBuilder {
 
         if (value == null) {
             Statement owner = executor.printableRepresentation(var);
-            throw GraqlQueryException.insertNoExpectedProperty(param.name(), owner);
+            throw GraqlSemanticException.insertNoExpectedProperty(param.name(), owner);
         }
 
         return value;
@@ -332,7 +332,7 @@ public class ConceptBuilder {
      * This method will return the parameter, if present and also record that it was expected, so that we can later
      * check for any unexpected properties.
      *
-     * @throws GraqlQueryException if the parameter is not present
+     * @throws GraqlSemanticException if the parameter is not present
      */
     private <T> T use(BuilderParam<T> param) {
         return useOrDefault(param, null);
@@ -346,7 +346,7 @@ public class ConceptBuilder {
         if (preProvidedParams.containsKey(param) && !preProvidedParams.get(param).equals(value)) {
             Statement varPattern = executor.printableRepresentation(var);
             Object otherValue = preProvidedParams.get(param);
-            throw GraqlQueryException.insertMultipleProperties(varPattern, param.name(), value, otherValue);
+            throw GraqlSemanticException.insertMultipleProperties(varPattern, param.name(), value, otherValue);
         }
         preProvidedParams.put(param, checkNotNull(value));
         return this;
@@ -355,7 +355,7 @@ public class ConceptBuilder {
     /**
      * Check if this pre-existing concept conforms to all specified parameters
      *
-     * @throws GraqlQueryException if any parameter does not match
+     * @throws GraqlSemanticException if any parameter does not match
      */
     private void validate(Concept concept) {
         validateParam(concept, TYPE, Thing.class, Thing::type);
@@ -371,7 +371,7 @@ public class ConceptBuilder {
     /**
      * Check if the concept is of the given type and has a property that matches the given parameter.
      *
-     * @throws GraqlQueryException if the concept does not satisfy the parameter
+     * @throws GraqlSemanticException if the concept does not satisfy the parameter
      */
     private <S extends Concept, T> void validateParam(
             Concept concept, BuilderParam<T> param, Class<S> conceptType, Function<S, T> getter) {
@@ -382,7 +382,7 @@ public class ConceptBuilder {
             boolean isInstance = conceptType.isInstance(concept);
 
             if (!isInstance || !Objects.equals(getter.apply(conceptType.cast(concept)), value)) {
-                throw GraqlQueryException.insertPropertyOnExistingConcept(param.name(), value, concept);
+                throw GraqlSemanticException.insertPropertyOnExistingConcept(param.name(), value, concept);
             }
         }
     }
@@ -397,7 +397,7 @@ public class ConceptBuilder {
         } else if (type.isAttributeType()) {
             return type.asAttributeType().create(use(VALUE));
         } else if (type.label().equals(Schema.MetaSchema.THING.getLabel())) {
-            throw GraqlQueryException.createInstanceOfMetaConcept(var, type);
+            throw GraqlSemanticException.createInstanceOfMetaConcept(var, type);
         } else {
             throw CommonUtil.unreachableStatement("Can't recognize type " + type);
         }
@@ -433,7 +433,7 @@ public class ConceptBuilder {
     /**
      * Make the second argument the super of the first argument
      *
-     * @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
+     * @throws GraqlSemanticException if the types are different, or setting the super to be a meta-type
      */
     public static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
         if (superConcept.isEntityType()) {

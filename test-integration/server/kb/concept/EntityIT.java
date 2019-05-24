@@ -111,14 +111,14 @@ public class EntityIT {
         Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
         Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
 
-        assertThat(relation.reified().get().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(relation.reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.id();
         rolePlayer1.delete();
 
         assertNull(tx.getConcept(idOfDeleted));
-        assertThat(relation.reified().get().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(relation.reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
@@ -250,13 +250,6 @@ public class EntityIT {
         assertThat(entity.keys().collect(Collectors.toSet()), containsInAnyOrder(k1));
         assertThat(entity.keys(attributeType, keyType).collect(Collectors.toSet()), containsInAnyOrder(k1));
         assertThat(entity.keys(attributeType).collect(Collectors.toSet()), empty());
-    }
-
-    @Test
-    public void whenAddingEntity_EnsureInternalTypeIsTheSameAsRealType(){
-        EntityType et = tx.putEntityType("et");
-        EntityImpl e = (EntityImpl) et.create();
-        assertEquals(et.label(), e.getInternalType());
     }
 
     @Test

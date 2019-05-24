@@ -301,11 +301,11 @@ public class InferenceRule {
         Atom headAtom = getHead().getAtom();
         SchemaConcept headType = headAtom.getSchemaConcept();
         if (headType.isRelationType()
-                && headAtom.getVarName().isUserDefinedName()) {
+                && headAtom.getVarName().isReturned()) {
             RelationAtom bodyAtom = getBody().getAtoms(RelationAtom.class)
                     .filter(at -> Objects.nonNull(at.getSchemaConcept()))
                     .filter(at -> at.getSchemaConcept().equals(headType))
-                    .filter(at -> at.getVarName().isUserDefinedName())
+                    .filter(at -> at.getVarName().isReturned())
                     .findFirst().orElse(null);
             return bodyAtom != null;
         }

@@ -37,11 +37,10 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/org/codehaus/janino:janino",
     ],
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",
-    visibility = ["//server:__pkg__"],
+    visibility = ["//visibility:public"],
     tags = ["maven_coordinates=io.grakn.core:daemon:{pom_version}"],
 )
 

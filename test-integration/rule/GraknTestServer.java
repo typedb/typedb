@@ -20,7 +20,6 @@ package grakn.core.rule;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.common.http.SimpleURI;
 import grakn.core.server.GraknStorage;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
@@ -55,61 +54,64 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 /**
- * This rule starts Cassandra and Grakn Server concurrently.
- * It makes sure that both processes bind to random and unused ports.
- * It allows all the integration tests to run concurrently on the same machine.
+ * This rule is a test server rule which starts Cassandra and Grakn Core Server on random, unused ports.
+ * It allows multiple test server instances to run concurrently.
+ * It enables all of the integration tests to run concurrently on the same machine.
  */
 public class GraknTestServer extends ExternalResource {
-    private static final Path SERVER_CONFIG_PATH =  Paths.get("server/conf/grakn.properties");
-    private static final Path CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
+    protected static final Path DEFAULT_SERVER_CONFIG_PATH = Paths.get("server/conf/grakn.properties");
+    protected static final Path DEFAULT_CASSANDRA_CONFIG_PATH = Paths.get("test-integration/resources/cassandra-embedded.yaml");
 
-    private final Path serverConfigPath;
-    private final Path cassandraConfigPath;
-    private Config serverConfig;
-    private Path dataDirTmp;
-    private Server graknServer;
-    private KeyspaceManager keyspaceStore;
+    // Grakn Core Server
+    protected final Path serverConfigPath;
+    protected Config serverConfig;
+    protected Server graknServer;
+    protected int grpcPort;
+    protected KeyspaceManager keyspaceStore;
+    protected SessionFactory sessionFactory;
+    protected Path dataDirTmp;
 
-    private int storagePort;
-    private int rpcPort;
-    private int nativeTransportPort;
-    private int grpcPort;
+    // Cassandra
+    protected final Path originalCassandraConfigPath;
+    protected File updatedCassandraConfigPath;
+    protected int storagePort;
+    protected int rpcPort;
+    protected int nativeTransportPort;
 
-    private SessionFactory sessionFactory;
 
     public GraknTestServer() {
-        this(SERVER_CONFIG_PATH, CASSANDRA_CONFIG_PATH);
+        this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH);
     }
 
     public GraknTestServer(Path serverConfigPath, Path cassandraConfigPath) {
         System.setProperty("java.security.manager", "nottodaypotato");
         this.serverConfigPath = serverConfigPath;
-        this.cassandraConfigPath = cassandraConfigPath;
+        this.originalCassandraConfigPath = cassandraConfigPath;
     }
 
     @Override
     protected void before() {
         try {
-            //Start Cassandra with random ports
+            // Start Cassandra
             System.out.println("Starting Grakn Storage...");
             generateCassandraRandomPorts();
-            File cassandraConfig = buildCassandraConfigWithRandomPorts();
-            System.setProperty("cassandra.config", "file:" + cassandraConfig.getAbsolutePath());
+            updatedCassandraConfigPath = buildCassandraConfigWithRandomPorts();
+            System.setProperty("cassandra.config", "file:" + updatedCassandraConfigPath.getAbsolutePath());
             System.setProperty("cassandra-foreground", "true");
+            System.out.println("cassandraConfig.getAbsolutePath() = " + updatedCassandraConfigPath.getAbsolutePath());
             GraknStorage.main(new String[]{});
             System.out.println("Grakn Storage started");
 
-            //Start Grakn server
+            // Start Grakn Core Server
             grpcPort = findUnusedLocalPort();
             dataDirTmp = Files.createTempDirectory("db-for-test");
             serverConfig = createTestConfig(dataDirTmp.toString());
-            System.out.println("Starting Grakn Server...");
-
+            System.out.println("Starting Grakn Core Server...");
             graknServer = createServer();
             graknServer.start();
-            System.out.println("Grakn Server started");
+            System.out.println("Grakn Core Server started");
         } catch (IOException e) {
-            throw new RuntimeException("Cannot start Grakn Server", e);
+            throw new RuntimeException("Cannot start Grakn Core Server", e);
         }
     }
 
@@ -119,6 +121,7 @@ public class GraknTestServer extends ExternalResource {
             keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
+            updatedCassandraConfigPath.delete();
         } catch (Exception e) {
             throw new RuntimeException("Could not shut down ", e);
         }
@@ -126,8 +129,13 @@ public class GraknTestServer extends ExternalResource {
 
 
     // Getters
-    public SimpleURI grpcUri() {
-        return new SimpleURI(serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME), serverConfig.getProperty(ConfigKey.GRPC_PORT));
+
+    public String grpcUri() {
+        return serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME) + ":" +serverConfig.getProperty(ConfigKey.GRPC_PORT);
+    }
+
+    public int nativeTransportPort() {
+        return nativeTransportPort;
     }
 
     public SessionImpl sessionWithNewKeyspace() {
@@ -135,7 +143,7 @@ public class GraknTestServer extends ExternalResource {
         return session(randomKeyspace);
     }
 
-    public SessionImpl session(String keyspace){
+    public SessionImpl session(String keyspace) {
         return session(KeyspaceImpl.of(keyspace));
     }
 
@@ -143,19 +151,20 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory.session(keyspace);
     }
 
-    public SessionFactory sessionFactory(){
+    public SessionFactory sessionFactory() {
         return sessionFactory;
     }
 
-    //Cassandra Helpers
-    private void generateCassandraRandomPorts() throws IOException {
+    // Cassandra Helpers
+
+    protected void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
         rpcPort = findUnusedLocalPort();
     }
 
-    private File buildCassandraConfigWithRandomPorts() throws IOException {
-        byte[] bytes = Files.readAllBytes(cassandraConfigPath);
+    protected File buildCassandraConfigWithRandomPorts() throws IOException {
+        byte[] bytes = Files.readAllBytes(originalCassandraConfigPath);
         String configString = new String(bytes, StandardCharsets.UTF_8);
 
         configString = configString + "\nstorage_port: " + storagePort;
@@ -171,14 +180,15 @@ public class GraknTestServer extends ExternalResource {
         return copyName.toFile();
     }
 
-    private static int findUnusedLocalPort() throws IOException {
+    protected static int findUnusedLocalPort() throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             return serverSocket.getLocalPort();
         }
     }
 
-    //Server helpers
-    private Config createTestConfig(String dataDir) throws FileNotFoundException {
+    // Grakn Core Server helpers
+
+    protected Config createTestConfig(String dataDir) throws FileNotFoundException {
         InputStream testConfig = new FileInputStream(serverConfigPath.toFile());
 
         Config config = Config.read(testConfig);
@@ -190,6 +200,7 @@ public class GraknTestServer extends ExternalResource {
         //Hadoop cluster uses the Astyanax driver for some operations, so need to override the RPC_PORT (Thrift)
         config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, rpcPort);
         //Hadoop cluster uses the CQL driver for some operations, so we need to instruct it to use the newly generate native transport port (CQL)
+        config.setConfigProperty(ConfigKey.CQL_STORAGE_PORT, nativeTransportPort);
         config.setConfigProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
 
         return config;
@@ -203,8 +214,6 @@ public class GraknTestServer extends ExternalResource {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
 
         keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
-
-        // tx-factory
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, serverConfig);
 
         AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(sessionFactory);
@@ -215,8 +224,6 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
-        return ServerFactory.createServer(id, serverRPC,
-                                          lockManager, attributeDeduplicatorDaemon, keyspaceStore);
+        return ServerFactory.createServer(id, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
     }
-
 }

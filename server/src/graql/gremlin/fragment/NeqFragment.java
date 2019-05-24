@@ -31,6 +31,7 @@ import java.util.Collection;
 
 /**
  * A fragment representing a negation.
+ * Used for concept comparison, not attribute values
  *
  */
 @AutoValue

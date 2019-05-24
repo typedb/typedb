@@ -34,7 +34,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
@@ -66,16 +65,8 @@ import static java.util.stream.Collectors.toSet;
  *            For example EntityType or RelationType
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
-    private final Cache<Label> cachedInternalType = Cache.createTxCache(this, Cacheable.label(), () -> {
-        int typeId = vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID);
-        Type type = vertex().tx().getConcept(Schema.VertexProperty.LABEL_ID, typeId);
-        if (type == null){
-            throw TransactionException.missingType(id());
-        }
-        return type.label();
-    });
 
-    private final Cache<V> cachedType = Cache.createTxCache(this, Cacheable.concept(), () -> {
+    private final Cache<V> cachedType = new Cache<>(() -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
                 flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
@@ -121,6 +112,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             relation.unassign(role, this);
             return relation;
         }).collect(toSet());
+
+        vertex().tx().statisticsDelta().decrement(type().label());
+        // decrement concept counts for non-reified edges - need to be explicitly handled before they are deleted by Janus
+        this.edgeRelations().forEach(relation -> vertex().tx().statisticsDelta().decrement(relation.type().label()));
 
         vertex().tx().cache().removedInstance(type().id());
         deleteNode();
@@ -206,19 +201,19 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
         if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
 
-        Set<Label> attributeHierachyLabels = completeAttributeTypes.stream()
+        Set<Label> attributeHierarchyLabels = completeAttributeTypes.stream()
                 .flatMap(t -> (Stream<AttributeType>) t.subs())
                 .map(SchemaConcept::label)
                 .collect(toSet());
 
         Set<Integer> ownerRoleIds = implicitLabelsToIds(
-                attributeHierachyLabels,
+                attributeHierarchyLabels,
                 Sets.newHashSet(
                         Schema.ImplicitType.HAS_OWNER,
                         Schema.ImplicitType.KEY_OWNER
                 ));
         Set<Integer> valueRoleIds = implicitLabelsToIds(
-                attributeHierachyLabels,
+                attributeHierarchyLabels,
                 Sets.newHashSet(
                         Schema.ImplicitType.HAS_VALUE,
                         Schema.ImplicitType.KEY_VALUE
@@ -246,7 +241,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         //noinspection unchecked
         return vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue()).
+                hasId(elementId()).
                 union(shortcutTraversal, attributeEdgeTraversal).toStream().
                 map(vertex -> vertex().tx().buildConcept(vertex));
     }
@@ -262,7 +257,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     private Stream<Relation> reifiedRelations(Role... roles) {
         GraphTraversal<Vertex, Vertex> traversal = vertex().tx().getTinkerTraversal().V().
-                has(Schema.VertexProperty.ID.name(), id().getValue());
+                hasId(elementId());
 
         if (roles.length == 0) {
             traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());
@@ -300,9 +295,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return getThis();
     }
 
-    public T attributeInferred(Attribute attribute) {
-        attributeRelation(attribute, true);
-        return getThis();
+    public Relation attributeInferred(Attribute attribute) {
+        return attributeRelation(attribute, true);
     }
 
     @Override
@@ -333,6 +327,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
+
+        vertex().tx().statisticsDelta().increment(hasAttribute.label());
+
         return vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
     }
 
@@ -380,17 +377,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     /**
-     * @return The id of the type of this concept. This is a shortcut used to prevent traversals.
-     */
-    Label getInternalType() {
-        return cachedInternalType.get();
-    }
-
-    /**
-     * @param type The type of this concept
+     * @param type Set property on vertex that stores Type label - this is needed by Analytics
      */
     private void setInternalType(Type type) {
-        cachedInternalType.set(type.label());
         vertex().property(Schema.VertexProperty.THING_TYPE_LABEL_ID, type.labelId().getValue());
     }
 

@@ -23,6 +23,10 @@ someRelation sub relation,
     relates someRole,
     relates otherRole;
 
+someRelationTrans sub relation,
+    relates someRole,
+    relates otherRole;
+
 anotherRelation sub relation,
     relates someRole,
     relates otherRole;
@@ -52,6 +56,19 @@ when {
 then {
 (someRole: $x, otherRole: $y) isa derivedRelation;};
 
+some-relation-equiv-rule
+when {
+(someRole: $x, otherRole: $y) isa someRelation;},
+then {
+(someRole: $x, otherRole: $y) isa someRelationTrans;};
+
+transitivity-rule
+when {
+(someRole: $x, otherRole: $y) isa someRelationTrans;
+(someRole: $y, otherRole: $z) isa someRelationTrans;},
+then {
+(someRole: $x, otherRole: $z) isa someRelationTrans;};
+
 another-relation-rule
 when {
 (someRole: $x, otherRole: $y) isa anotherRelation;},
@@ -77,6 +94,17 @@ $x has anotherDerivedResource $r;
 insert
 
 $x isa someEntity, has resource 'someValue';
+$z isa someEntity;
+$c isa baseEntity;
 $y isa someOtherEntity;
 (someRole: $x, otherRole: $y) isa someRelation;
+(someRole: $x, otherRole: $z) isa someRelation;
+(someRole: $x, otherRole: $c) isa someRelation;
 (someRole: $x, otherRole: $y) isa anotherRelation;
+(someRole: $x, otherRole: $z) isa anotherRelation;
+(someRole: $x, otherRole: $y) isa yetAnotherRelation;
+
+$ar "someValue" isa anotherResource;
+$ar2 "anotherValue" isa anotherResource;
+
+

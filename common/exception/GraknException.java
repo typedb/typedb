@@ -33,5 +33,9 @@ public abstract class GraknException extends RuntimeException {
         super(error, e);
     }
 
+    protected GraknException(String error, Exception e, boolean enableSuppression, boolean writableStackTrace) {
+        super(error, e, enableSuppression, writableStackTrace);
+    }
+
     public abstract String getName();
 }

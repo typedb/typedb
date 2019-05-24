@@ -18,20 +18,18 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.cache.Cache;
-import grakn.core.server.kb.cache.Cacheable;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * An SchemaConcept which defines a Role which can be played in a RelationType.
@@ -41,8 +39,8 @@ import java.util.stream.Stream;
  * 2. It is special in that it is unique to RelationTypes.
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
-    private final Cache<Set<Type>> cachedDirectPlayedByTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final Cache<Set<RelationType>> cachedRelationTypes = Cache.createSessionCache(this, Cacheable.set(), () -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     private RoleImpl(VertexElement vertexElement) {
         super(vertexElement);
@@ -107,11 +105,11 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @return Get all the roleplayers of this role type
      */
     public Stream<Casting> rolePlayers() {
-        return relations().
-                flatMap(RelationType::instances).
-                map(relation -> RelationImpl.from(relation).reified()).
-                flatMap(CommonUtil::optionalToStream).
-                flatMap(relation -> relation.castingsRelation(this));
+        return relations()
+                .flatMap(RelationType::instances)
+                .map(relation -> RelationImpl.from(relation).reified())
+                .filter(Objects::nonNull)
+                .flatMap(relation -> relation.castingsRelation(this));
     }
 
     @Override

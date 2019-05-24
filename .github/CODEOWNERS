@@ -1,0 +1,11 @@
+/api/       @haikalpribadi
+/bin/       @lolski
+/concept/   @haikalpribadi
+/config/    @lolski         @vmax
+/console/   @haikalpribadi
+/daemon/    @haikalpribadi  @lolski
+/protocol/  @haikalpribadi  @marco-scoppetta
+/test/      @lolski
+
+/dependencies/graknlabs/  @haikalpribadi
+/dependencies/maven/      @haikalpribadi @marco-scoppetta @lolski

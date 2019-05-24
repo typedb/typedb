@@ -19,19 +19,18 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Fragment following in sub edges, potentially limited to some number of `sub` edges
@@ -39,7 +38,7 @@ import java.util.Set;
  */
 
 @AutoValue
-public abstract class InSubFragment extends Fragment {
+public abstract class InSubFragment extends EdgeFragment {
 
     @Override
     public abstract Variable end();
@@ -73,9 +72,18 @@ public abstract class InSubFragment extends Fragment {
     }
 
     @Override
-    public Set<Weighted<DirectedEdge<Node>>> directedEdges(Map<NodeId, Node> nodes,
-                                                           Map<Node, Map<Node, Fragment>> edges) {
-        return directedEdges(NodeId.NodeType.SUB, nodes, edges);
+    protected Node startNode() {
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, start()));
+    }
+
+    @Override
+    protected Node endNode() {
+        return new SchemaNode(NodeId.of(NodeId.Type.VAR, end()));
+    }
+
+    @Override
+    protected NodeId getMiddleNodeId() {
+        return NodeId.of(NodeId.Type.SUB, new HashSet<>(Arrays.asList(start(), end())));
     }
 }
 

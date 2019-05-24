@@ -127,22 +127,7 @@ java_test(
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
-java_test(
-    name = "query-validity-it",
-    size = "medium",
-    srcs = ["QueryValidityIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
-    test_class = "grakn.core.graql.reasoner.query.QueryValidityIT",
-    deps = [
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
+        "@com-google-guava-guava//jar",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -152,7 +137,10 @@ java_test(
     size = "large",
     srcs = ["OntologicalQueryIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
+    resources = [
+        "//test-integration/graql/reasoner/resources:matching-types",
+        "//test-integration/graql/reasoner/resources:rule-applicability",
+    ],
     test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
     deps = [
         "//concept",
@@ -178,6 +166,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -234,7 +223,6 @@ checkstyle_test(
         ":explanation-it",
         ":negation-it",
         ":query-unification-it",
-        ":query-validity-it",
         ":query-it",
         ":ontological-query-it",
         ":resolution-plan-it",

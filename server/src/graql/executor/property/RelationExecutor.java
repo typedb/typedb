@@ -27,6 +27,7 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -48,7 +49,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.common.util.CommonUtil.toImmutableSet;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
@@ -71,13 +71,13 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
             Variable castingName = new Variable();
             castingNames.add(castingName);
             return fragmentSetsFromRolePlayer(castingName, relationPlayer);
-        }).collect(toImmutableSet());
+        }).collect(ImmutableSet.toImmutableSet());
 
         ImmutableSet<EquivalentFragmentSet> distinctCastingTraversals = castingNames.stream().flatMap(
                 castingName -> castingNames.stream()
                         .filter(otherName -> !otherName.equals(castingName))
                         .map(otherName -> EquivalentFragmentSets.neq(property, castingName, otherName))
-        ).collect(toImmutableSet());
+        ).collect(ImmutableSet.toImmutableSet());
 
         return Sets.union(traversals, distinctCastingTraversals);
     }
@@ -106,7 +106,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         boolean isReified = statement.properties().stream()
                 .filter(prop -> !RelationProperty.class.isInstance(prop))
                 .anyMatch(prop -> !IsaProperty.class.isInstance(prop));
-        Statement relVar = isReified ? new Statement(var.asUserDefined()) : new Statement(var);
+        Statement relVar = isReified ? new Statement(var.asReturnedVar()) : new Statement(var);
 
         for (RelationProperty.RolePlayer rp : property.relationPlayers()) {
             Statement rolePattern = rp.getRole().orElse(null);
@@ -150,8 +150,8 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         }
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
         relVar = isaProp != null && isaProp.isExplicit() ?
-                relVar.isaX(new Statement(typeVariable.asUserDefined())) :
-                relVar.isa(new Statement(typeVariable.asUserDefined()));
+                relVar.isaX(new Statement(typeVariable.asReturnedVar())) :
+                relVar.isa(new Statement(typeVariable.asReturnedVar()));
         return RelationAtom.create(relVar, typeVariable, predicateId, parent);
     }
 
@@ -202,7 +202,7 @@ public class RelationExecutor implements PropertyExecutor.Insertable {
         }
 
         private Statement getRole(RelationProperty.RolePlayer relationPlayer) {
-            return relationPlayer.getRole().orElseThrow(GraqlQueryException::insertRolePlayerWithoutRoleType);
+            return relationPlayer.getRole().orElseThrow(GraqlSemanticException::insertRolePlayerWithoutRoleType);
         }
     }
 }

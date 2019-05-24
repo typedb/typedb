@@ -18,12 +18,18 @@
 
 package grakn.core.graql.reasoner.query;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
@@ -34,13 +40,13 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
@@ -150,6 +156,36 @@ public class QueryIT {
         }
     }
 
+    @Test
+    public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched(){
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+
+                AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);
+                resource.create(1337L);
+                resource.create(1667L);
+                tx.putEntityType("someEntity")
+                        .has(resource);
+                tx.commit();
+            }
+            try (TransactionOLTP tx = session.transaction().write()) {
+                Attribute<Long> attribute = tx.getAttributesByValue(1337L).iterator().next();
+                String basePattern = "{" +
+                        "$x isa someEntity;" +
+                        "$x has resource $value;" +
+                        "$value > $anotherValue;" +
+                        "};";
+                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(basePattern, tx), tx);
+                assertEquals(
+                        Sets.newHashSet(new Variable("x"), new Variable("value"), new Variable("anotherValue")),
+                        query.getVarNames());
+                ConceptMap sub = new ConceptMap(ImmutableMap.of(new Variable("anotherValue"), attribute));
+                ReasonerQueryImpl subbedQuery = ReasonerQueries.create(query, sub);
+                assertTrue(subbedQuery.getAtoms(IdPredicate.class).findAny().isPresent());
+            }
+        }
+    }
+
     @Test //simple equality tests between original and a copy of a query
     public void testAlphaEquivalence_QueryCopyIsAlphaEquivalent(){
         try(TransactionOLTP tx = geoSession.transaction().write()) {
@@ -218,9 +254,9 @@ public class QueryIT {
     public void testAlphaEquivalence_nonMatchingTypes() {
         try(TransactionOLTP tx = geoSession.transaction().write()) {
             String polandId = getConcept(tx, "name", "Poland").id().getValue();
-            String patternString = "{ $y id '" + polandId + "'; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
-            String patternString2 = "{ $x1 id '" + polandId + "'; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
-            String patternString3 = "{ $y id '" + polandId + "'; $x isa city; (geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country; };";
+            String patternString = "{ $y id " + polandId + "; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
+            String patternString2 = "{ $x1 id " + polandId + "; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
+            String patternString3 = "{ $y id " + polandId + "; $x isa city; (geo-entity: $x, entity-location: $y) isa is-located-in; $y isa country; };";
             String patternString4 = "{ $x isa city; (entity-location: $y1, geo-entity: $x) isa is-located-in; };";
             String patternString5 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in; };";
 
@@ -258,13 +294,13 @@ public class QueryIT {
     @Test
     public void testAlphaEquivalence_RelationsWithSubstitution(){
         try(TransactionOLTP tx = geoSession.transaction().write()) {
-            String patternString = "{ (role: $x, role: $y);$x id 'V666'; };";
-            String patternString2 = "{ (role: $x, role: $y);$y id 'V666'; };";
-            String patternString3 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V667'; };";
-            String patternString4 = "{ (role: $x, role: $y);$y id 'V666';$x id 'V667'; };";
-            String patternString5 = "{ (entity-location: $x, geo-entity: $y);$x id 'V666';$y id 'V667'; };";
-            String patternString6 = "{ (entity-location: $x, geo-entity: $y);$y id 'V666';$x id 'V667'; };";
-            String patternString7 = "{ (role: $x, role: $y);$x id 'V666';$y id 'V666'; };";
+            String patternString = "{ (role: $x, role: $y);$x id V666; };";
+            String patternString2 = "{ (role: $x, role: $y);$y id V666; };";
+            String patternString3 = "{ (role: $x, role: $y);$x id V666;$y id V667; };";
+            String patternString4 = "{ (role: $x, role: $y);$y id V666;$x id V667; };";
+            String patternString5 = "{ (entity-location: $x, geo-entity: $y);$x id V666;$y id V667; };";
+            String patternString6 = "{ (entity-location: $x, geo-entity: $y);$y id V666;$x id V667; };";
+            String patternString7 = "{ (role: $x, role: $y);$x id V666;$y id V666; };";
             Conjunction<Statement> pattern = conjunction(patternString, tx);
             Conjunction<Statement> pattern2 = conjunction(patternString2, tx);
             Conjunction<Statement> pattern3 = conjunction(patternString3, tx);

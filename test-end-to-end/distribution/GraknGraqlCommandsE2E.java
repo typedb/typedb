@@ -18,6 +18,7 @@
 
 package grakn.core.distribution;
 
+import grakn.client.GraknClient;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -71,7 +72,7 @@ public class GraknGraqlCommandsE2E {
     public void verifyDistributionFiles() {
         // assert files exist
         final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn");
-        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("conf").resolve("grakn.properties");
+        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties");
         final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("cassandra");
         final Path libDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("lib");
 
@@ -93,6 +94,16 @@ public class GraknGraqlCommandsE2E {
         assertGraknIsRunning();
         commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
+    }
+
+    /**
+     * test 'grakn server start --benchmark'
+     */
+    @Test
+    public void grakn_shouldBeAbleToStartWithBenchmarkOption() throws IOException, InterruptedException, TimeoutException {
+        commandExecutor.command("./grakn", "server", "start", "--benchmark").execute();
+        assertGraknIsRunning();
+        commandExecutor.command("./grakn", "server", "stop").execute();
     }
 
     /**
@@ -166,5 +177,31 @@ public class GraknGraqlCommandsE2E {
     public void grakn_whenReceivingInvalidCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn", "invalid-command").execute().outputUTF8();
         assertThat(output, containsString("Invalid argument:"));
+    }
+
+
+    /**
+     * test 'grakn <some-invalid-command>'
+     */
+    @Test
+    public void grakn_whenReceivingInvalidServerCommand_shouldPrintHelp() throws IOException, InterruptedException, TimeoutException {
+        String output = commandExecutor.command("./grakn", "server", "start", "storag").execute().outputUTF8();
+        assertThat(output, containsString("Usage: grakn server COMMAND\n"));
+    }
+
+
+
+    /**
+     * Grakn should stop correctly when there are client connections still open
+     */
+
+    @Test
+    public void grakn_whenThereAreOpenConnections_shouldBeAbleToStop() throws InterruptedException, TimeoutException, IOException {
+        commandExecutor.command("./grakn", "server", "start").execute();
+        String host = "localhost:48555";
+        GraknClient graknClient = new GraknClient(host);
+        GraknClient.Transaction test = graknClient.session("test").transaction().write();
+        commandExecutor.command("./grakn", "server", "stop").execute();
+        assertGraknIsNotRunning();
     }
 }

@@ -18,15 +18,19 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -58,6 +62,7 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -87,8 +92,10 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     private final TransactionOLTP tx;
     private final ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
-    private ImmutableMap<Variable, Type> varTypeMap = null;
+    private ImmutableSetMultimap<Variable, Type> varTypeMap = null;
     private ResolutionPlan resolutionPlan = null;
+    private Conjunction<Pattern> pattern = null;
+    private Set<Variable> varNames = null;
 
     ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionOLTP tx) {
         this.tx = tx;
@@ -216,12 +223,15 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Conjunction<Pattern> getPattern() {
-        return Graql.and(
-                getAtoms().stream()
-                        .map(Atomic::getCombinedPattern)
-                        .flatMap(p -> p.statements().stream())
-                        .collect(Collectors.toSet())
-        );
+        if (pattern == null) {
+            pattern = Graql.and(
+                    getAtoms().stream()
+                            .map(Atomic::getCombinedPattern)
+                            .flatMap(p -> p.statements().stream())
+                            .collect(Collectors.toSet())
+            );
+        }
+        return pattern;
     }
 
     @Override
@@ -296,9 +306,12 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Set<Variable> getVarNames() {
-        Set<Variable> vars = new HashSet<>();
-        getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
-        return vars;
+        if (varNames == null) {
+            Set<Variable> vars = new HashSet<>();
+            getAtoms().forEach(atom -> vars.addAll(atom.getVarNames()));
+            varNames = vars;
+        }
+        return varNames;
     }
 
     @Override
@@ -328,8 +341,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 .map(p -> IsaAtom.create(p.getKey().getVarName(), new Variable(), p.getValue().asEntity().type(), false,this));
     }
 
-    private Map<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
-        HashMap<Variable, Type> map = new HashMap<>();
+    private Multimap<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
+        HashMultimap<Variable, Type> map = HashMultimap.create();
         isas
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
                 .filter(p -> Objects.nonNull(p.getValue()))
@@ -337,18 +350,34 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 .forEach(p -> {
                     Variable var = p.getKey();
                     Type newType = p.getValue().asType();
-                    Type type = map.get(var);
-                    if (type == null) map.put(var, newType);
+                    Set<Type> types = map.get(var);
+
+                    if (types.isEmpty()) map.put(var, newType);
                     else {
-                        boolean isSubType = type.subs().anyMatch(t -> t.equals(newType));
-                        if (isSubType) map.put(var, newType);
+                        boolean isSubType = newType.sups().anyMatch(types::contains);
+                        boolean isSuperType = newType.subs().anyMatch(types::contains);
+
+                        //if it's a supertype of existing type, put most specific type
+                        if (isSubType){
+                            map.removeAll(var);
+                            ConceptUtils
+                                    .bottom(Sets.union(types, Sets.newHashSet(newType)))
+                                    .forEach( t -> map.put(var, t));
+                        }
+                        if (!isSubType && !isSuperType) map.put(var, newType);
                     }
                 });
         return map;
     }
 
     @Override
-    public ImmutableMap<Variable, Type> getVarTypeMap() {
+    public ImmutableSetMultimap<Variable, Type> getVarTypeMap(boolean inferTypes) {
+        if (!inferTypes) return ImmutableSetMultimap.copyOf(getVarTypeMap(getAtoms(IsaAtomBase.class)));
+        return getVarTypeMap();
+    }
+
+    @Override
+    public ImmutableSetMultimap<Variable, Type> getVarTypeMap() {
         if (varTypeMap == null) {
             this.varTypeMap = getVarTypeMap(new ConceptMap());
         }
@@ -356,24 +385,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ImmutableMap<Variable, Type> getVarTypeMap(boolean inferTypes) {
-        Set<IsaAtomBase> isas = getAtoms(IsaAtomBase.class).collect(Collectors.toSet());
-        return ImmutableMap.copyOf(
-                getVarTypeMap()
-                        .entrySet().stream()
-                        .filter(e -> inferTypes ||
-                                isas.stream()
-                                        .filter(isa -> isa.getVarName().equals(e.getKey()))
-                                        .filter(isa -> Objects.nonNull(isa.getSchemaConcept()))
-                                        .anyMatch(isa -> isa.getSchemaConcept().equals(e.getValue()))
-                        )
-                        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-        );
-    }
-
-    @Override
-    public ImmutableMap<Variable, Type> getVarTypeMap(ConceptMap sub) {
-        return ImmutableMap.copyOf(
+    public ImmutableSetMultimap<Variable, Type> getVarTypeMap(ConceptMap sub) {
+        return ImmutableSetMultimap.copyOf(
                 getVarTypeMap(
                         Stream.concat(
                                 getAtoms(IsaAtomBase.class),
@@ -383,9 +396,22 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
+    @Override
+    public Type getUnambiguousType(Variable var, boolean inferTypes){
+        ImmutableSet<Type> types = getVarTypeMap(inferTypes).get(var);
+        Type type = null;
+        if(types.isEmpty()) return type;
+
+        try {
+            type = Iterables.getOnlyElement(types);
+        } catch(IllegalArgumentException e){
+            throw GraqlQueryException.ambiguousType(var, types);
+        }
+        return type;
+    }
+
     /**
-     *
-     * @return
+     * @return the resolution plan for this query
      */
     public ResolutionPlan resolutionPlan(){
         if (resolutionPlan == null){
@@ -440,7 +466,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             HashMap<Variable, Concept> answerMap = new HashMap<>();
             predicates.forEach(p -> {
                 Concept concept = tx().getConcept(p.getPredicate());
-                if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                if (concept == null) throw GraqlCheckedException.idNotFound(p.getPredicate());
                 answerMap.put(p.getVarName(), concept);
             });
             substitution = new ConceptMap(answerMap);
@@ -454,7 +480,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 .flatMap(RelationAtom::getRolePredicates)
                 .forEach(p -> {
                     Concept concept = tx().getConcept(p.getPredicate());
-                    if (concept == null) throw GraqlQueryException.idNotFound(p.getPredicate());
+                    if (concept == null) throw GraqlCheckedException.idNotFound(p.getPredicate());
                     roleSub.put(p.getVarName(), concept);
                 });
         return new ConceptMap(roleSub);
@@ -487,14 +513,12 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
-    private static String PLACEHOLDER_ID = "placeholder_id";
+    private static final String PLACEHOLDER_ID = "placeholder_id";
 
     /**
-     *
-     * @return
+     * @return true if this query has complete entries in the cache
      */
     public boolean isCacheComplete(){
-        //TODO sort out properly
         if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());

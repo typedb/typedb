@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.pattern;
 
-import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
@@ -28,9 +27,9 @@ import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
+import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,14 +39,19 @@ public abstract class RelationPattern extends QueryPattern {
 
     private final List<Pattern> patterns;
 
-    public RelationPattern(Multimap<Label, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
-        ImmutableMultimap.Builder<Label, Pair<Label, List<ConceptId>>> builder = ImmutableMultimap.builder();
+    /**
+     *
+     * @param rpConf configuration of rolePlayers in the form (role, variable) -> (role player type)
+     * @param ids list of roleplayer ids
+     * @param relIds list of relation ids
+     */
+    protected RelationPattern(Multimap<RelationProperty.RolePlayer, Label> rpConf, List<ConceptId> ids, List<ConceptId> relIds){
+        ImmutableMultimap.Builder<RelationProperty.RolePlayer, Pair<Label, List<ConceptId>>> builder = ImmutableMultimap.builder();
         rpConf.forEach((key, value) -> builder.put(key, new Pair<>(value, ids)));
         this.patterns = generateRelationPatterns(
                 builder.build(),
                 relIds
         );
-
     }
 
     @Override
@@ -87,20 +91,24 @@ public abstract class RelationPattern extends QueryPattern {
      * @return list of generated patterns as strings
      */
     private static List<Pattern> generateRelationPatterns(
-            Multimap<Label, Pair<Label, List<ConceptId>>> spec,
+            Multimap<RelationProperty.RolePlayer, Pair<Label, List<ConceptId>>> spec,
             List<ConceptId> relationIds){
-        Statement relationVar = !relationIds.isEmpty()? new Statement(new Variable().asUserDefined()) : Graql.var();
+        Statement relationVar = !relationIds.isEmpty()? new Statement(new Variable().asReturnedVar()) : Graql.var();
         Statement[] basePattern = {relationVar};
         List<List<Pattern>> rpTypePatterns = new ArrayList<>();
         List<List<Pattern>> rpIdPatterns = new ArrayList<>();
-        Multimap<Label, Statement> rps = HashMultimap.create();
         spec.entries().forEach(entry -> {
-            Statement rolePlayer = new Statement(new Variable().asUserDefined());
-            Label role = entry.getKey();
+            RelationProperty.RolePlayer rp = entry.getKey();
+            Statement role = rp.getRole().orElse(null);
+
+            Statement rolePlayer = new Statement(entry.getKey().getPlayer().var().asReturnedVar());
+
             Label type = entry.getValue().getKey();
             List<ConceptId> ids = entry.getValue().getValue();
-            basePattern[0] = basePattern[0].rel(role.getValue(), rolePlayer);
-            rps.put(role, rolePlayer);
+            basePattern[0] = basePattern[0].rel(role, rolePlayer);
+
+            //rps.put(role, rolePlayer);
+
             List<Pattern> rpPattern = Lists.newArrayList(rolePlayer);
             List<Pattern> typePattern = Lists.newArrayList(rolePlayer);
             if(type != null) typePattern.add(rolePlayer.isa(type.getValue()));

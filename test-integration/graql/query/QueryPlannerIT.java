@@ -24,7 +24,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.gremlin.GreedyTraversalPlan;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
@@ -40,12 +40,16 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.List;
 
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class QueryPlannerIT {
@@ -166,7 +170,7 @@ public class QueryPlannerIT {
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
 
         // Should start from the inferred relation type, instead of role players
-        String relation = plan.get(3).start().name();
+        String relation = plan.get(1).start().name();
         assertNotEquals(relation, x.var().name());
         assertNotEquals(relation, y.var().name());
     }
@@ -261,7 +265,7 @@ public class QueryPlannerIT {
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
 
         // Should start from the inferred relation type, instead of role players
-        String relation = plan.get(4).start().name();
+        String relation = plan.get(1).start().name();
         assertNotEquals(relation, x.var().name());
         assertNotEquals(relation, y.var().name());
     }
@@ -292,7 +296,55 @@ public class QueryPlannerIT {
     }
 
     @Test
+    public void noIndexedStartNodeGeneratesValidPlans() {
+        // a pattern without a indexed starting point so any of X, Y, Z,
+        Pattern pattern = and(
+                var().rel("role1", x).rel("role2", z),
+                var().rel("role1", y).rel("role2", z)
+        );
+        // repeat planning step to handle nondeterminism, we may pick different starting points each time
+        for (int i = 0; i < 20; i++) {
+            ImmutableList<Fragment> plan = getPlan(pattern);
+            assertEquals(6, plan.size());
+        }
+    }
+
+    @Test
+    public void indexedFragmentsAreListedFirst() {
+        Pattern pattern = and(
+                x.isa(veryRelated),
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var().rel(x).rel(y),
+                y.has(resourceType, "someString"));
+
+        List<Fragment> plan = getPlan(pattern);
+        boolean priorFragmentHasFixedCost = true;
+        for (Fragment fragment : plan) {
+            if (!fragment.hasFixedFragmentCost()) {
+                priorFragmentHasFixedCost = false;
+            } else {
+                // if the current fragment is fixed cost
+                // and the prior one was, it's ok.
+                // if it wasn't, fail the test
+                assertTrue(priorFragmentHasFixedCost);
+            }
+        }
+    }
+
+    @Test
+    @Ignore
     public void avoidImplicitTypes() {
+        /*
+        TODO when we disable mandatory Reification, we can re-enable this test and ensure it works
+
+        Idea is: originally, the query planner could start at high priority starting nodes (non-implicit labels),
+        low priority starting nodes (implicit labels which may represent edges instead of vertices), or worst case any
+        valid node.
+
+        This test ensures that we don't use implicit nodes as starting points if it can be avoided. Since we appear
+        to always reify, this test is irrelevant & relevant query planner code (`lowPriorityStartingNodes`) has been removed
+         */
         Pattern pattern;
         ImmutableList<Fragment> plan;
 
@@ -302,7 +354,7 @@ public class QueryPlannerIT {
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        String relation = plan.get(4).start().name();
+        String relation = plan.get(1).start().name();
 
         // should start from relation
         assertNotEquals(relation, x.var().name());
@@ -314,11 +366,11 @@ public class QueryPlannerIT {
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        relation = plan.get(4).start().name();
+        relation = plan.get(1).end().name();
 
         // should start from a role player
         assertTrue(relation.equals(x.var().name()) || relation.equals(y.var().name()));
-        assertTrue(plan.get(5) instanceof OutIsaFragment);
+        assertTrue(plan.get(3) instanceof OutIsaFragment);
     }
 
     @Test
@@ -347,16 +399,16 @@ public class QueryPlannerIT {
         // force the concept to get a new shard
         // shards of thing = 2 (thing = 1 and thing itself)
         // thing 2 = 4, thing3 = 7
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy2).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy2).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
+        tx.shard(tx.getEntityType(thingy2).id());
 
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
+        tx.shard(tx.getEntityType(thingy3).id());
 
         Pattern pattern;
         ImmutableList<Fragment> plan;
@@ -400,11 +452,11 @@ public class QueryPlannerIT {
                 z.isa(subType),
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
-        assertEquals(z.var(), plan.get(4).end());
+        assertEquals(z.var(), plan.get(10).end());
 
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy).id());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy).id());
         // now thing = 5, thing1 = 3
 
         pattern = and(
@@ -423,8 +475,8 @@ public class QueryPlannerIT {
         plan = getPlan(pattern);
         assertEquals(x.var(), plan.get(3).end());
 
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
-        ((TransactionOLTP) tx).shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
+        tx.shard(tx.getEntityType(thingy1).id());
         // now thing = 7, thing1 = 5
 
         pattern = and(
@@ -445,6 +497,6 @@ public class QueryPlannerIT {
     }
 
     private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return GreedyTraversalPlan.createTraversal(pattern, ((TransactionOLTP) tx)).fragments().iterator().next();
+        return TraversalPlanner.createTraversal(pattern, tx).fragments().iterator().next();
     }
 }
