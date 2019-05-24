@@ -55,7 +55,6 @@ public class GraknConsole {
     private static final String URI = "r";
     private static final String NO_INFER = "n";
     private static final String HELP = "h";
-    private static final String VERSION = "v";
 
     private final Options options = getOptions();
     private final CommandLine commandLine;
@@ -87,7 +86,6 @@ public class GraknConsole {
         options.addOption(URI, "address", true, "Grakn Server address");
         options.addOption(NO_INFER, "no_infer", false, "do not perform inference on results");
         options.addOption(HELP, "help", false, "print usage message");
-        options.addOption(VERSION, "version", false, "print version");
 
         return options;
     }
@@ -96,10 +94,6 @@ public class GraknConsole {
         // Print usage guidelines for Grakn Console
         if (commandLine.hasOption(HELP) || !commandLine.getArgList().isEmpty()) {
             printHelp(printOut);
-        }
-        // Print Grakn Console version
-        else if (commandLine.hasOption(VERSION)) {
-            printOut.println(GraknVersion.VERSION);
         }
         // Start a Console Session to load some Graql file(s)
         else if (commandLine.hasOption(FILE)) {
@@ -136,11 +130,16 @@ public class GraknConsole {
      * Invocation from bash script './grakn console'
      */
     public static void main(String[] args) {
+        String action = args.length > 1 ? args[1] : "";
+        if(action.equals("version")){
+            System.out.println(GraknVersion.VERSION);
+            System.exit(0);
+        }
+
         try {
             GraknConsole console = new GraknConsole(Arrays.copyOfRange(args, 1, args.length), System.out, System.err);
             console.run();
             System.exit(0);
-
         } catch (GraknConsoleException e) {
             System.err.println(e.getMessage());
             System.err.println("Cause: " + e.getCause().getClass().getName());

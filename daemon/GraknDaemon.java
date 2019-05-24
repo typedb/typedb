@@ -48,7 +48,6 @@ public class GraknDaemon {
     private static final String VERSION_LABEL = "Version: ";
 
 
-
     private final Storage storageExecutor;
     private final Server serverExecutor;
 
@@ -62,10 +61,7 @@ public class GraknDaemon {
         try {
             Path graknHome = Paths.get(Objects.requireNonNull(SystemProperty.CURRENT_DIRECTORY.value()));
             Path graknProperties = Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value()));
-
             assertEnvironment(graknHome, graknProperties);
-
-            printGraknLogo();
 
             Executor bootupProcessExecutor = new Executor();
             GraknDaemon daemon = new GraknDaemon(
@@ -132,35 +128,26 @@ public class GraknDaemon {
      *             option may be eg., `--benchmark`
      */
     public void run(String[] args) {
-        String context = args.length > 0 ? args[0] : "";
         String action = args.length > 1 ? args[1] : "";
         String option = args.length > 2 ? args[2] : "";
-
-        switch (context) {
-            case "server":
-                server(action, option);
-                break;
-            case "version":
-                version();
-                break;
-            default:
-                help();
-        }
-    }
-
-    private void server(String action, String option) {
         switch (action) {
             case "start":
+                printGraknLogo();
                 serverStart(option);
                 break;
             case "stop":
+                printGraknLogo();
                 serverStop(option);
                 break;
             case "status":
+                printGraknLogo();
                 serverStatus();
                 break;
             case "clean":
                 clean();
+                break;
+            case "version":
+                version();
                 break;
             default:
                 serverHelp();
