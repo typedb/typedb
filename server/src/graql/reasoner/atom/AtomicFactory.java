@@ -49,6 +49,7 @@ public class AtomicFactory {
      * @return set of atoms
      */
     public static Stream<Atomic> createAtoms(Conjunction<Statement> pattern, ReasonerQuery parent) {
+        //parse all atoms
         Set<Atomic> atoms = pattern.statements().stream()
                 .flatMap(statement -> statement.properties().stream()
                         .map(property -> PropertyExecutor.create(statement.var(), property)
@@ -56,15 +57,22 @@ public class AtomicFactory {
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
-        //extract neqs from attributes
-        pattern.statements().stream()
+        //extract neqs from attributes and add them to atom set - we need to treat them separately to ensure correctness
+        //this creates different vps because the statement context is bound to HasAttributeProperty
+        Set<Atomic> neqs = pattern.statements().stream()
                 .flatMap(statement -> statement.getProperties(HasAttributeProperty.class))
-                .flatMap(hp -> hp.statements().flatMap(statement ->
-                        statement.getProperties(ValueProperty.class)
+                .flatMap(hp -> hp.statements().flatMap(
+                        statement -> statement.getProperties(ValueProperty.class)
                                 .map(property -> PropertyExecutor.create(statement.var(), property)
                                         .atomic(parent, statement, pattern.statements()))
                                 .filter(Objects::nonNull))
-                ).forEach(atoms::add);
+                ).collect(Collectors.toSet());
+
+        if (!atoms.containsAll(neqs)) {
+            System.out.println();
+        }
+        boolean changed = atoms.addAll(neqs);
+
 
         //remove duplicates
         return atoms.stream()
@@ -95,18 +103,18 @@ public class AtomicFactory {
      * @param statement the value property belongs to
      * @param otherStatements other statements providing necessary context
      * @param allowNeq allow to produce a NeqPredicate if required
-     * @param attributeCheck if true we discard the VP if it's a part of an attribute and doesn't have an inequality
+     * @param discardIfInAttribute if true we discard the VP if it's a part of an attribute and doesn't have an inequality
      * @param parent query the VP should be part of
      * @return value predicate corresponding to the provided property
      */
     public static grakn.core.graql.reasoner.atom.Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
-                                                                              boolean allowNeq, boolean attributeCheck, ReasonerQuery parent) {
+                                                                              boolean allowNeq, boolean discardIfInAttribute, ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
         ValueProperty.Operation directOperation = property.operation();
         Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
 
-        boolean buildNeq = directOperation.comparator().equals(Graql.Token.Comparator.NEQV);
+        boolean hasNeq = directOperation.comparator().equals(Graql.Token.Comparator.NEQV);
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
@@ -121,7 +129,7 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
         boolean hasParentVp = !parentVPs.isEmpty();
         if (hasParentVp) return null;
-        if (attributeCheck && (partOfAttribute && !buildNeq)) return null;
+        if (discardIfInAttribute && (partOfAttribute && !hasNeq)) return null;
 
         ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
@@ -132,7 +140,7 @@ public class AtomicFactory {
         if (!newNeq.equals(oldNeq)){
             System.out.println();
         }
-        return buildNeq?
+        return hasNeq?
                 (allowNeq?
                         NeqValuePredicate.create(var.asReturnedVar(), predicateVar, value, parent) :
                         //NeqValuePredicate.create(var.asReturnedVar(), operation, parent) :

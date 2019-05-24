@@ -158,7 +158,10 @@ public class NeqValuePredicateIT {
                     "$unwanted == 'unattached';" +
                     "$val !== $unwanted;" +
                     "};").getNegationDNF().getPatterns());
+
             ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
+
+            //if a comparison vp is inside attribute, we need to copy it outside as well to ensure correctness at the end of execution
             ResolvableQuery insideAttribute = ReasonerQueries.resolvable(neqInAttribute, tx);
             ResolvableQuery indirectOutside = ReasonerQueries.resolvable(indirectOutsideNeq, tx);
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(outsideAttribute, insideAttribute));
@@ -174,13 +177,38 @@ public class NeqValuePredicateIT {
                     "$x has derived-resource-string $value;" +
                     "$y has derived-resource-string $anotherValue;" +
                     "$value !== $anotherValue;" +
-                    //"$anotherValue > 'value';" +
+                    "};";
+
+            String neqVariantWithExtraCondition = "{ " +
+                    "$x has derived-resource-string $value;" +
+                    "$y has derived-resource-string $anotherValue;" +
+                    "$value !== $anotherValue;" +
+                    "$anotherValue contains 'value';" +
+                    "};";
+
+            String eqVariant = "{ " +
+                    "$x has derived-resource-string $value;" +
+                    "$y has derived-resource-string $anotherValue;" +
+                    "$value == $anotherValue;" +
+                    "};";
+
+            String eqVariantWithExtraCondition = "{ " +
+                    "$x has derived-resource-string $value;" +
+                    "$y has derived-resource-string $anotherValue;" +
+                    "$value == $anotherValue;" +
+                    "$anotherValue contains 'value';" +
                     "};";
 
             ReasonerQueryImpl query = ReasonerQueries.create(conjunction(neqVariant), tx);
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
+            ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(neqVariantWithExtraCondition), tx);
+            ReasonerQueryImpl query3 = ReasonerQueries.create(conjunction(eqVariant), tx);
+            ReasonerQueryImpl query4 = ReasonerQueries.create(conjunction(eqVariantWithExtraCondition), tx);
+            List<ConceptMap> neqAnswers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
+            List<ConceptMap> neqAnswersWithCondition = tx.execute(Graql.match(Graql.parsePattern(neqVariantWithExtraCondition)).get());
+            List<ConceptMap> eqAnswers = tx.execute(Graql.match(Graql.parsePattern(eqVariant)).get());
+            List<ConceptMap> eqAnswersWithCondition = tx.execute(Graql.match(Graql.parsePattern(eqVariantWithExtraCondition)).get());
 
-            answers.forEach(ans -> {
+            neqAnswers.forEach(ans -> {
                 Object value = ans.get("value").asAttribute().value();
                 Object anotherValue = ans.get("anotherValue").asAttribute().value();
                 assertNotEquals(value, anotherValue);
