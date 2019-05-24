@@ -46,6 +46,7 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import java.util.Collections;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -144,20 +145,20 @@ public class ReasonerUtils {
      * @param statement {@link Statement} to look for in case the variable name is not user defined
      * @param fullContext VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
-     * @return stream of mapped ValuePredicates
+     * @return set of mapped ValuePredicates
      */
-    public static Stream<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext, ReasonerQuery parent){
-        Stream<Statement> context = statement.var().isReturned()?
-                fullContext.stream().filter(v -> v.var().equals(valueVariable)) :
-                Stream.of(statement);
-        Set<ValuePredicate> vps = context
+    public static Set<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext, ReasonerQuery parent){
+        Set<Statement> context = statement.var().isReturned()?
+                fullContext.stream().filter(v -> v.var().equals(valueVariable)).collect(toSet()) :
+                Collections.singleton(statement);
+        Set<ValuePredicate> vps = context.stream()
                 .flatMap(v -> v.getProperties(ValueProperty.class)
                         .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent))
                         .filter(ValuePredicate.class::isInstance)
                         .map(ValuePredicate.class::cast)
                 )
                 .collect(toSet());
-        return vps.stream();
+        return vps;
     }
 
     /**

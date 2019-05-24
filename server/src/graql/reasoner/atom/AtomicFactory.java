@@ -89,8 +89,18 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
     }
 
-    public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
-                                              boolean allowNeq, boolean attributeCheck, ReasonerQuery parent) {
+    /**
+     *
+     * @param property value property we are interested in
+     * @param statement the value property belongs to
+     * @param otherStatements other statements providing necessary context
+     * @param allowNeq allow to produce a NeqPredicate if required
+     * @param attributeCheck if true we discard the VP if it's a part of an attribute and doesn't have an inequality
+     * @param parent query the VP should be part of
+     * @return value predicate corresponding to the provided property
+     */
+    public static grakn.core.graql.reasoner.atom.Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
+                                                                              boolean allowNeq, boolean attributeCheck, ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
         ValueProperty.Operation directOperation = property.operation();
@@ -100,22 +110,32 @@ public class AtomicFactory {
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
-        boolean hasParentVp =
-                otherStatements.stream()
-                        .flatMap(s -> s.getProperties(ValueProperty.class))
-                        .map(vp -> vp.operation().innerStatement())
-                        .filter(Objects::nonNull)
-                        .map(Statement::var)
-                        .anyMatch(pVar -> pVar.equals(var));
+        //true if the VP has another VP that references it - a parent VP
+        Set<ValueProperty> parentVPs = otherStatements.stream()
+                .flatMap(s -> s.getProperties(ValueProperty.class))
+                .filter(vp -> {
+                    Statement inner = vp.operation().innerStatement();
+                    if (inner == null) return false;
+                    return inner.var().equals(var);
+                })
+                .collect(Collectors.toSet());
+        boolean hasParentVp = !parentVPs.isEmpty();
         if (hasParentVp) return null;
         if (attributeCheck && (partOfAttribute && !buildNeq)) return null;
 
         ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
         Object value = operation.innerStatement() == null? operation.value() : null;
+
+        NeqValuePredicate oldNeq = NeqValuePredicate.create(var.asReturnedVar(), predicateVar, value, parent);
+        NeqValuePredicate newNeq = NeqValuePredicate.create(var.asReturnedVar(), operation, parent);
+        if (!newNeq.equals(oldNeq)){
+            System.out.println();
+        }
         return buildNeq?
                 (allowNeq?
                         NeqValuePredicate.create(var.asReturnedVar(), predicateVar, value, parent) :
+                        //NeqValuePredicate.create(var.asReturnedVar(), operation, parent) :
                         ValuePredicate.neq(var.asReturnedVar(), predicateVar, value, parent)) :
                 ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }

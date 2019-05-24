@@ -50,6 +50,59 @@ public class BenchmarkSmallIT {
     public static final GraknTestServer server = new GraknTestServer();
 
 
+    @Test
+    public void fun(){
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
+        SessionImpl session = server.sessionWithNewKeyspace();
+
+        //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
+        try(TransactionOLTP tx = session.transaction().write()) {
+            String schema = "define " +
+                    "person sub entity, plays friend, has name; " +
+                    "friendship sub relation, relates friend; " +
+                    "name sub attribute, datatype string;";
+
+            tx.execute(Graql.parse(schema).asDefine());
+            System.out.println(schema);
+
+            tx.commit();
+        }
+        int txs = 200;
+        int txTupleSize = 500;
+        long start = System.currentTimeMillis();
+
+        long counter = 0;
+        for (int i = 0; i < txs; i++) {
+            try(TransactionOLTP tx = session.transaction().write()) {
+                for (int j = 0; j < txTupleSize; j++) {
+
+                    String insert = "insert " +
+                            "$x isa person, has name '" + (counter + 1) + "';" +
+                            "$y isa person, has name '" + (counter + 2) + "';" +
+                            "(friend: $x, friend: $y) isa friendship;";
+                    System.out.println(insert);
+                    String firstInsert = "insert $x isa person, has name '" + counter + "';";
+                    String personId = tx.execute(Graql.parse(firstInsert).asInsert()).get(0).get("x").id().getValue();
+                    System.out.println(firstInsert);
+                    counter++;
+
+                    String secondInsert = "insert $x isa person, has name '" + counter + "';";
+                    String personId2 = tx.execute(Graql.parse(secondInsert).asInsert()).get(0).get("x").id().getValue();
+                    System.out.println(secondInsert);
+                    counter++;
+
+                    String thirdInsert = "insert $x id " + personId + "; $y id " + personId2 + "; (friend: $x, friend: $y) isa friendship;";
+                    tx.execute(Graql.parse(thirdInsert).asInsert());
+                    System.out.println(thirdInsert);
+                }
+                tx.commit();
+            }
+        }
+        System.out.println();
+        System.out.println("Total time: " + (System.currentTimeMillis() - start));
+    }
+
+
     /**
      * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:
      *

@@ -21,8 +21,10 @@ package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
@@ -33,6 +35,8 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
+import graql.lang.statement.Statement;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -43,6 +47,8 @@ import java.util.List;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotEquals;
 
@@ -63,6 +69,79 @@ public class NeqValuePredicateIT {
     @AfterClass
     public static void closeSession(){
         attributeAttachmentSession.close();
+    }
+
+    @Test
+    public void taxfixMRE(){
+        SessionImpl session = server.sessionWithNewKeyspace();
+
+        //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
+        try(TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.parse("define " +
+                    "someEntity sub entity," +
+                    "has resource," +
+                    "has anotherResource;" +
+                    "resource sub attribute, datatype long;" +
+                    "anotherResource sub attribute, datatype long;"
+            ).asDefine());
+            tx.commit();
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            String pattern = "{" +
+                    "$x has resource $value;" +
+                    "$x has anotherResource $anotherValue;" +
+                    "$value == $anotherValue;" +
+                    "$anotherValue > 0;" +
+                    "};";
+            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(pattern), tx);
+            System.out.println();
+        }
+    }
+
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Graql.parsePattern(patternString)
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Graql.and(vars);
+    }
+
+    @Test
+    public void taxfixMRE2(){
+        SessionImpl session = server.sessionWithNewKeyspace();
+        try(TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.parse("define " +
+                    "someEntity sub entity," +
+                    "has derivedResource;" +
+                    "derivedResource sub attribute, datatype long;" +
+                    "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
+                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
+
+            ).asDefine());
+            tx.commit();
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.parse("insert " +
+                    "$x isa someEntity;" +
+                    "$y isa someEntity;"
+            ).asInsert());
+            tx.commit();
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            String pattern = "{" +
+                    "$x has derivedResource $value;" +
+                    "$y has derivedResource $anotherValue;" +
+                    "$value == $anotherValue;" +
+                    "$anotherValue > 1337;" +
+                    "};";
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
+            answers.forEach(ans -> {
+                Object value = ans.get("value").asAttribute().value();
+                Object anotherValue = ans.get("anotherValue").asAttribute().value();
+                assertEquals(value, anotherValue);
+                assertTrue((long) value > 1337L);
+            });
+            System.out.println();
+        }
     }
 
     @Test
@@ -89,15 +168,38 @@ public class NeqValuePredicateIT {
 
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    public void derivingResources_requireInequalityBetweenResources() {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+            String neqVariant = "{ " +
+                    "$x has derived-resource-string $value;" +
+                    "$y has derived-resource-string $anotherValue;" +
+                    "$value !== $anotherValue;" +
+                    //"$anotherValue > 'value';" +
+                    "};";
+
+            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(neqVariant), tx);
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
+
+            answers.forEach(ans -> {
+                Object value = ans.get("value").asAttribute().value();
+                Object anotherValue = ans.get("anotherValue").asAttribute().value();
+                assertNotEquals(value, anotherValue);
+            });
+        }
+    }
+
+    @Test
+    //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireNotHavingSpecificValue() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-            String neqVariant = "match " +
+            String neqVariant = "{ " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
-                    "get;";
-            String neqVariant2 = "match " +
+                    "};";
+            String neqVariant2 = "{ " +
                     "$x has derived-resource-string $val;" +
                     "$unwanted == 'unattached';" +
-                    "$val !== $unwanted; get;";
+                    "$val !== $unwanted;" +
+                    "};";
             String negatedVariant = "match " +
                     "$x has derived-resource-string $val;" +
                     "not {$val == 'unattached';};" +
@@ -111,11 +213,15 @@ public class NeqValuePredicateIT {
                     "not {$val !== 'unattached';};" +
                     "get;";
 
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(neqVariant), tx);
+            ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(neqVariant2), tx);
+
             String complementQueryString = "match $x has derived-resource-string $val; $val == 'unattached'; get;";
             String completeQueryString = "match $x has derived-resource-string $val; get;";
 
-            List<ConceptMap> answers = tx.execute(Graql.parse(neqVariant).asGet());
-            List<ConceptMap> answersBis = tx.execute(Graql.parse(neqVariant2).asGet());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
+
+            List<ConceptMap> answersBis = tx.execute(Graql.match(Graql.parsePattern(neqVariant2)).get());
             List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negatedVariant).asGet());
             List<ConceptMap> negationAnswersBis = tx.execute(Graql.parse(negatedVariant2).asGet());
             List<ConceptMap> negationComplement = tx.execute(Graql.parse(negatedComplement).asGet());
@@ -125,6 +231,7 @@ public class NeqValuePredicateIT {
             List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
+
             assertCollectionsNonTriviallyEqual(answers, negationAnswers);
             assertCollectionsNonTriviallyEqual(complement, negationComplement);
             assertCollectionsNonTriviallyEqual(expectedAnswers, answersBis);

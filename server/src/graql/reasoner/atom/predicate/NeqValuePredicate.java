@@ -32,9 +32,11 @@ import javax.annotation.Nullable;
 public class NeqValuePredicate extends NeqPredicate {
 
     private final Object value;
+    private final ValueProperty.Operation op;
 
-    private NeqValuePredicate(Variable varName, Variable predicateVar, @Nullable Object value, Statement pattern, ReasonerQuery parentQuery) {
+    private NeqValuePredicate(Variable varName, Variable predicateVar, @Nullable Object value, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);
+        this.op = op;
         this.value = value;
     }
 
@@ -42,14 +44,15 @@ public class NeqValuePredicate extends NeqPredicate {
         Variable predicateVar = var != null? var : Graql.var().var().asReturnedVar();
         ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
         Statement pattern = new Statement(varName).operation(op);
-        return new NeqValuePredicate(varName, predicateVar, value, pattern, parent);
+        return new NeqValuePredicate(varName, predicateVar, value, op, pattern, parent);
     }
 
     public static NeqValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
         Statement innerStatement = op.innerStatement();
-        Variable var = innerStatement != null? innerStatement.var() : Graql.var().var().asReturnedVar();
-        Object value = var == null? op.value() : null;
-        return create(varName, var, value, parent);
+        Variable predicateVar = innerStatement != null? innerStatement.var() : Graql.var().var().asReturnedVar();
+        Object value = innerStatement == null? op.value() : null;
+        Statement pattern = new Statement(varName).operation(op);
+        return new NeqValuePredicate(varName, predicateVar, value, op, pattern, parent);
     }
 
     @Nullable public Object getValue(){ return value;}
