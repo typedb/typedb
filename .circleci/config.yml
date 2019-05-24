@@ -438,7 +438,7 @@ workflows:
       - test-assembly-mac-zip:
           filters:
             branches:
-              only: fix-ci # TODO(vmax): reset back to master
+              only: master
           requires:
             - build
             - test-common
@@ -451,7 +451,7 @@ workflows:
       - test-assembly-windows-zip:
           filters:
             branches:
-              only: fix-ci # TODO(vmax): reset back to master
+              only: master
           requires:
             - build
             - test-common
