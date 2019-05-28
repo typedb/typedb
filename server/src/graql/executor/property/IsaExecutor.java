@@ -129,8 +129,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
                     // however, non-attribute still throw exceptions
                     throw GraqlSemanticException.insertExistingConcept(executor.printableRepresentation(var), concept);
                 } else if ((type instanceof AttributeType)) {
-                    //
-                    if (! type.subs().map(SchemaConcept::label).collect(Collectors.toSet()).contains(concept.asThing().type().label())) {
+                    if (type.subs().map(SchemaConcept::label).noneMatch(label -> label.equals(concept.asThing().type().label()))) {
                         //downcasting is bad
                         throw GraqlSemanticException.attributeDowncast(concept.asThing().type(), type);
                     }

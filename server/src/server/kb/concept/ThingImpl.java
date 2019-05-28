@@ -66,6 +66,8 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class ThingImpl<T extends Thing, V extends Type> extends ConceptImpl implements Thing {
 
+    private Boolean isInferred = null;
+
     private final Cache<V> cachedType = new Cache<>(() -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
                 map(EdgeElement::target).
@@ -97,7 +99,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     public boolean isInferred() {
-        return vertex().propertyBoolean(Schema.VertexProperty.IS_INFERRED);
+        //NB: might be over the top to cache it
+        if (isInferred == null) {
+            isInferred = vertex().propertyBoolean(Schema.VertexProperty.IS_INFERRED);
+        }
+        return isInferred;
     }
 
     /**
