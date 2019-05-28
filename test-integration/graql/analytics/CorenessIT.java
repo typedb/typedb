@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.K_CORE;
-import static graql.lang.query.GraqlCompute.Argument.min_k;
+import static graql.lang.query.GraqlCompute.Argument.minK;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -75,7 +75,7 @@ public class CorenessIT {
     @Test(expected = GraqlSemanticException.class)
     public void testKSmallerThan2_ThrowsException() {
         try (TransactionOLTP tx = session.transaction().read()) {
-            tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(1)));
+            tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(1)));
         }
     }
 
@@ -186,7 +186,7 @@ public class CorenessIT {
             assertEquals(5, result.get(1).set().size());
             assertEquals(4, result.get(1).measurement().intValue());
 
-            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(4L)));
+            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(4L)));
             assertEquals(1, result.size());
             assertEquals(5, result.get(0).set().size());
             assertEquals(4, result.get(0).measurement().intValue());
@@ -281,7 +281,7 @@ public class CorenessIT {
             assertEquals(8, result.get(1).set().size());
             assertEquals(3, result.get(1).measurement().intValue());
 
-            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(3L)));
+            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(3L)));
             assertEquals(1, result.size());
             assertEquals(8, result.get(0).set().size());
             assertEquals(3, result.get(0).measurement().intValue());
@@ -300,7 +300,7 @@ public class CorenessIT {
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
             try (TransactionOLTP tx = session.transaction().read()) {
-                return tx.execute(Graql.compute().centrality().using(K_CORE).where(min_k(3L)));
+                return tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(3L)));
             }
         }).collect(Collectors.toSet());
         assertEquals(1, result.size());
