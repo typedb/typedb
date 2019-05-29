@@ -303,7 +303,8 @@ public class QueryExecutor {
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
             answerStream = answers
-                    .map(answer -> WriteExecutor.create(transaction, executors.build()).write(answer));
+                    .map(answer -> WriteExecutor.create(transaction, executors.build()).write(answer))
+                    .collect(toList()).stream();
         } else {
             answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
         }
