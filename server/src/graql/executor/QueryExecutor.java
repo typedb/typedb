@@ -168,7 +168,7 @@ public class QueryExecutor {
         }
     }
 
-    public void validateVarVarComparisons(Disjunction<Conjunction<Pattern>> negationDNF) {
+    private void validateVarVarComparisons(Disjunction<Conjunction<Pattern>> negationDNF) {
         // comparisons between two variables (ValueProperty and NotEqual, similar to !== and !=)
         // must only use variables that are also used outside of comparisons
 
@@ -296,14 +296,14 @@ public class QueryExecutor {
         if (query.match() != null) {
             MatchClause match = query.match();
             Set<Variable> matchVars = match.getSelectedNames();
-            Set<Variable> insertVars = statements.stream().map(statement -> statement.var()).collect(ImmutableSet.toImmutableSet());
+            Set<Variable> insertVars = statements.stream().map(Statement::var).collect(ImmutableSet.toImmutableSet());
 
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
-            answerStream = answers.map(answer -> WriteExecutor
-                    .create(transaction, executors.build()).write(answer))
+            answerStream = answers
+                    .map(answer -> WriteExecutor.create(transaction, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
             answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
