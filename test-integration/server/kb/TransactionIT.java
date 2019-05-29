@@ -35,12 +35,16 @@ import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
-import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.hamcrest.core.IsInstanceOf;
 import org.junit.After;
@@ -50,13 +54,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -464,6 +462,68 @@ public class TransactionIT {
         tx = session.transaction().read();
         answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), false);
         assertEquals(1, answers.size());
+    }
+
+    @Test
+    public void whenCommitingConceptsDependentOnInferredConcepts_conceptsAndDependantsArePersisted(){
+        String inferrableSchema = "define " +
+                "baseEntity sub entity, has inferrableAttribute, has nonInferrableAttribute, plays someRole, plays anotherRole;" +
+                "someEntity sub baseEntity;" +
+                "nonInferrableAttribute sub attribute, datatype string;" +
+                "inferrableAttribute sub attribute, datatype string, plays anotherRole;" +
+                "inferrableRelation sub relation, has nonInferrableAttribute, relates someRole, relates anotherRole;" +
+
+                "infer-attr sub rule," +
+                "when { $p isa someEntity; not{$p has nonInferrableAttribute 'nonInferred';};}, " +
+                "then { $p has inferrableAttribute 'inferred';};" +
+
+                "infer-relation sub rule," +
+                "when { $p isa someEntity; $q isa someEntity, has inferrableAttribute $r; $r 'inferred';}, " +
+                "then { (someRole: $p, anotherRole: $r) isa inferrableRelation;};";
+
+        tx.execute(Graql.<GraqlDefine>parse(inferrableSchema));
+
+        tx.execute(Graql.<GraqlInsert>parse(
+                "insert " +
+                        "$p isa someEntity, has nonInferrableAttribute 'nonInferred';" +
+                        "$q isa someEntity;"
+        ));
+        tx.commit();
+
+        tx = session.transaction().write();
+        List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
+                "match " +
+                        "$p isa someEntity;" +
+                        "$q isa someEntity, has inferrableAttribute $r; $r 'inferred';" +
+                        "insert " +
+                        "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
+                        "$rel has nonInferrableAttribute 'relation with inferred roleplayer';"
+        ));
+
+        List<ConceptMap> inferredRelationWithAttributeAttached = tx.execute(Graql.<GraqlInsert>parse(
+                "match " +
+                        "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
+                        "insert " +
+                        "$rel has nonInferrableAttribute 'inferred relation label';"
+        ));
+        tx.commit();
+
+        tx = session.transaction().read();
+        List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
+                "match " +
+                "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
+                "$rel has nonInferrableAttribute 'relation with inferred roleplayer'; get;")
+                .asGet(), false);
+
+        List<ConceptMap> inferredRelationWithAttributeAttachedPostCommit = tx.execute(Graql.parse(
+                "match " +
+                "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
+                "$rel has nonInferrableAttribute 'inferred relation label'; get $rel;")
+                .asGet(), false);
+        tx.close();
+
+        assertCollectionsNonTriviallyEqual(relationsWithInferredRolePlayer, relationsWithInferredRolePlayerPostCommit);
+        assertCollectionsNonTriviallyEqual(inferredRelationWithAttributeAttached, inferredRelationWithAttributeAttachedPostCommit);
     }
 
 }

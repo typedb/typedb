@@ -35,7 +35,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -69,6 +68,7 @@ public class TransactionCache {
     private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
+    private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
@@ -230,14 +230,17 @@ public class TransactionCache {
         return (X) conceptCache.get(id);
     }
 
+    public void inferredThingToPersist(Thing t){ inferredConceptsToPersist.add(t); }
+
     /**
      * @return cached things that are inferred
      */
-    public Stream<Thing> getInferredConcepts(){
+    public Stream<Thing> getInferredThingsToDiscard(){
         return conceptCache.values().stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
-                .filter(Thing::isInferred);
+                .filter(Thing::isInferred)
+                .filter(t -> !inferredConceptsToPersist.contains(t));
     }
 
     /**

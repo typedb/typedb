@@ -51,9 +51,9 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
     abstract ImmutableSet<Label> labels();
 
     /**
-     * Expand a {@link LabelFragmentSet} to match all sub-concepts of the single existing {@link Label}.
+     * Expand a LabelFragmentSet to match all sub-concepts of the single existing Label.
      *
-     * Returns null if there is not exactly one label any of the {@link Label}s mentioned are not in the knowledge base.
+     * Returns null if there is not exactly one label any of the Labels mentioned are not in the knowledge base.
      */
     @Nullable
     LabelFragmentSet tryExpandSubs(Variable typeVar, TransactionOLTP tx) {
@@ -70,11 +70,11 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
     }
 
     /**
-     * Optimise away any redundant {@link LabelFragmentSet}s. A {@link LabelFragmentSet} is considered redundant if:
+     * Optimise away any redundant LabelFragmentSets. A LabelFragmentSet is considered redundant if:
      * <ol>
-     *   <li>It refers to a {@link SchemaConcept} that exists in the knowledge base
-     *   <li>It is not associated with a user-defined {@link Variable}
-     *   <li>The {@link Variable} it is associated with is not referred to in any other fragment
+     *   <li>It refers to a SchemaConcept that exists in the knowledge base
+     *   <li>It is not associated with a user-defined Variable
+     *   <li>The Variable it is associated with is not referred to in any other fragment
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */

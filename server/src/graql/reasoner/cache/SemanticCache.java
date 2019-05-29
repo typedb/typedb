@@ -29,13 +29,14 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.statement.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -57,7 +58,7 @@ import static java.util.stream.Collectors.toSet;
  *
  * i. e. the set of answers of C is a subset of the set of answers of P.
  *
- * - query semantic difference {@link SemanticDifference}
+ * - query semantic difference SemanticDifference
  * Semantic difference between query C and P defines a specialisation operation
  * required to transform query P into a query equivalent to C.
  *

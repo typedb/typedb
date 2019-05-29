@@ -36,8 +36,8 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Class defining the resolution plan for a given {@link ReasonerQueryImpl} at a query level.
- * The plan is constructed using the {@link ResolutionPlan} working at an atom level.
+ * Class defining the resolution plan for a given ReasonerQueryImpl at a query level.
+ * The plan is constructed using the ResolutionPlan working at an atom level.
  * </p>
  *
  *

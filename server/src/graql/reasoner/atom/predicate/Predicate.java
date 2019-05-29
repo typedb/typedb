@@ -30,7 +30,7 @@ import graql.lang.statement.Variable;
 import java.util.Set;
 
 /**
- * {@link AtomicBase} extension serving as base class for predicate implementations.
+ * AtomicBase extension serving as base class for predicate implementations.
  *
  * @param <T> the type of the predicate on a concept
  */

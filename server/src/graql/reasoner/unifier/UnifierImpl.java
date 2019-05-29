@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Implementation of the {@link Unifier} interface.
+ * Implementation of the Unifier interface.
  * </p>
  *
  *

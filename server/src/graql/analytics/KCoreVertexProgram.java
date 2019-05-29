@@ -21,7 +21,6 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Iterators;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.server.kb.Schema;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -29,6 +28,8 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+
+import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 

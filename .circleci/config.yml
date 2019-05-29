@@ -124,7 +124,7 @@ jobs:
 
   test-assembly-mac-zip:
     macos:
-      xcode: "9.0"
+      xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
       - install-bazel-mac

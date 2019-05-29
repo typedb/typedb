@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) with neq predicates ({@link NeqPredicate}).
+ * Query state corresponding to an atomic query (ReasonerAtomicQuery) with neq predicates (NeqPredicate).
  * Defining the answer to the entry query Q as a set B:
  *
  * B = Ans{R(x1, x2, ..., xn), xj = ..., xi != xj}

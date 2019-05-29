@@ -169,7 +169,7 @@ public class Server {
 
     private String getServerClassPath() {
         return graknHome.resolve("server").resolve("services").resolve("lib").toString() + File.separator + "*"
-                + File.pathSeparator + graknHome.resolve("conf");
+                + File.pathSeparator + graknHome.resolve("server").resolve("conf");
     }
 
     private static boolean isServerReady(String host, int port) {

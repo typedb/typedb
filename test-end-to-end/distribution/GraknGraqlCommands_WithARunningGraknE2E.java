@@ -18,7 +18,9 @@
 
 package grakn.core.distribution;
 
+import grakn.core.common.util.GraknVersion;
 import org.apache.commons.io.FileUtils;
+import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -27,6 +29,8 @@ import org.zeroturnaround.exec.ProcessExecutor;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -34,6 +38,7 @@ import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DI
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
+import static grakn.core.distribution.DistributionE2EConstants.getLogsPath;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -103,5 +108,28 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
     public void grakn_testPrintStatus_whenCurrentlyRunning() throws IOException, InterruptedException, TimeoutException {
         String output = commandExecutor.command("./grakn", "server", "status").execute().outputUTF8();
         assertThat(output, allOf(containsString("Storage: RUNNING"), containsString("Grakn Core Server: RUNNING")));
+    }
+
+    /**
+     * make sure Grakn is properly writing logs inside grakn.log file
+     */
+    @Test
+    public void logMessagesArePrintedInLogFile() throws IOException {
+        Path logsPath = getLogsPath();
+        Path graknLogFilePath = logsPath.resolve("grakn.log");
+        String logsString = new String(Files.readAllBytes(graknLogFilePath), StandardCharsets.UTF_8);
+        assertThat(logsString, containsString("Grakn started"));
+    }
+
+    @Test
+    public void graknServerVersion_shouldPrintCurrentVersion() throws InterruptedException, TimeoutException, IOException {
+        String output = commandExecutor.command("./grakn", "server", "version").execute().outputUTF8();
+        assertThat(output, containsString(GraknVersion.VERSION));
+    }
+
+    @Test
+    public void graknConsoleVersion_shouldPrintCurrentVersion() throws InterruptedException, TimeoutException, IOException {
+        String output = commandExecutor.command("./grakn", "console", "version").execute().outputUTF8();
+        assertThat(output, containsString(GraknVersion.VERSION));
     }
 }

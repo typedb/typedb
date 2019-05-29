@@ -22,12 +22,11 @@ import com.google.auto.value.AutoValue;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
-import graql.lang.property.AbstractProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 /**
- * Atomic corresponding to {@link AbstractProperty}.
+ * Atomic corresponding to AbstractProperty.
  */
 @AutoValue
 public abstract class IsAbstractAtom extends AtomicBase {

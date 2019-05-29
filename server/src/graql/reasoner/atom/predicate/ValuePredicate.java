@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Predicate implementation specialising it to be an value predicate. Corresponds to {@link ValueProperty}.
+ * Predicate implementation specialising it to be an value predicate. Corresponds to ValueProperty.
  */
 public class ValuePredicate extends Predicate<ValueProperty.Operation> {
 

@@ -21,8 +21,6 @@ package grakn.core.graql.reasoner.state;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.Role;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;
 
@@ -35,7 +33,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Query state produced by {@link AtomicState} when an atomic query {@link ReasonerAtomicQuery} contains {@link Role} variables which may require role hierarchy expansion.
+ * Query state produced by AtomicState when an atomic query ReasonerAtomicQuery contains Role variables which may require role hierarchy expansion.
  */
 class RoleExpansionState extends ResolutionState {
 

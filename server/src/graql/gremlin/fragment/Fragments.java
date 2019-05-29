@@ -22,9 +22,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
+import grakn.core.concept.printer.StringPrinter;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.executor.property.ValueExecutor;
-import grakn.core.concept.printer.StringPrinter;
 import grakn.core.server.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -44,7 +44,7 @@ import static grakn.core.server.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 
 /**
- * Factory for creating instances of {@link Fragment}.
+ * Factory for creating instances of Fragment.
  */
 public class Fragments {
 
@@ -136,7 +136,7 @@ public class Fragments {
     }
 
     /**
-     * A {@link Fragment} that uses an index stored on each attribute. Attributes are indexed by direct type and value.
+     * A Fragment that uses an index stored on each attribute. Attributes are indexed by direct type and value.
      */
     public static Fragment attributeIndex(
             @Nullable VarProperty varProperty, Variable start, Label label, Object attributeValue) {

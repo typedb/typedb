@@ -32,7 +32,6 @@ public enum ErrorMessage {
     GRAKN_PIDFILE_SYSTEM_PROPERTY_UNDEFINED("Unable to find the Java system property 'grakn.pidfile'. Don't forget to specify -Dgrakn.pidfile=/path/to/grakn.pid"),
     UNSUPPORTED_JAVA_VERSION("Unsupported Java version [%s] found. Grakn needs Java 1.8 in order to run."),
     UNABLE_TO_START_GRAKN("An error has occurred during boot-up. Please run 'grakn server status' or check the logs located under the 'logs' directory."),
-    UNABLE_TO_START_SERVER_JAR_NOT_FOUND("Unable to start Server, No JAR files found! Please re-download the Grakn distribution."),
     UNABLE_TO_GET_GRAKN_HOME_FOLDER("Unable to find Grakn home folder"),
     UNABLE_TO_GET_GRAKN_CONFIG_FOLDER("Unable to find Grakn config folder"),
     UNCAUGHT_EXCEPTION("Uncaught exception at thread [%s]"),
@@ -50,11 +49,8 @@ public enum ErrorMessage {
     REGEX_INSTANCE_FAILURE("The regex [%s] of Attribute Type [%s] cannot be applied because value [%s] " +
             "does not conform to the regular expression"),
     REGEX_NOT_STRING("The Attribute Type [%s] is not of type String so it cannot support regular expressions"),
-    CLOSED_CLEAR("The session for graph has been closed due to deleting the graph"),
-    TRANSACTIONS_NOT_SUPPORTED("The graph backend [%s] does not actually support transactions. The transaction was not %s. The graph was actually effected directly"),
     IMMUTABLE_VALUE("The value [%s] cannot be changed to [%s] due to the property [%s] being immutable"),
     META_TYPE_IMMUTABLE("The meta type [%s] is immutable"),
-    SCHEMA_LOCKED("Schema cannot be modified when using a batch loading graph"),
     HAS_INVALID("The type [%s] is not allowed to have an attribute of type [%s]"),
     BACKEND_EXCEPTION("Backend Exception."),
     INITIALIZATION_EXCEPTION("Graph for keyspace [%s] not properly initialized. Missing keyspace name resource"),
@@ -62,7 +58,6 @@ public enum ErrorMessage {
     TX_CLOSED("The transaction for keyspace [%s] is closed. Use the session to get a new transaction for the graph."),
     SESSION_CLOSED("The session for graph [%s] is closed. Create a new session to interact with the graph."),
     TX_CLOSED_ON_ACTION("The transaction was %s and closed for graph [%s]. Use the session to get a new transaction for the graph."),
-    TXS_OPEN("Closed session on graph [%s] with [%s] open transactions"),
     LOCKING_EXCEPTION("Internal locking exception. Please clear the transaction and try again."),
     CANNOT_BE_KEY_AND_ATTRIBUTE("The Type [%s] cannot have the Attribute Type [%s] as a key and as an attribute"),
     ILLEGAL_TYPE_UNHAS_ATTRIBUTE_WITH_INSTANCE("Failed to: undefine [%s] [%s] [%s]. There exists instance of this pattern."),
@@ -71,8 +66,6 @@ public enum ErrorMessage {
     TRANSACTION_ALREADY_OPEN("A transaction is already open on this thread for graph [%s]. Close the current transaction before opening a new one in the same thread."),
     TRANSACTION_READ_ONLY("This transaction on graph [%s] is read only"),
     IS_ABSTRACT("The Type [%s] is abstract and cannot have any instances \n"),
-    CLOSE_FAILURE("Unable to close graph [%s]"),
-    VERSION_MISMATCH("You are attempting to use Grakn Version [%s] with a graph build using version [%s], this is not supported."),
     NO_TYPE("Concept [%s] does not have a type"),
     INVALID_DIRECTION("Cannot traverse an edge in direction [%s]"),
     RESERVED_WORD("The word [%s] is reserved internally and cannot be used"),
@@ -80,7 +73,6 @@ public enum ErrorMessage {
     UNKNOWN_CONCEPT("Unknown concept type [%s]"),
     INVALID_IMPLICIT_TYPE("Label [%s] is not an implicit label"),
     LABEL_TAKEN("The label [%s] has already been used"),
-    BACKGROUND_TASK_UNHANDLED_EXCEPTION("An exception has occurred during the execution of a background task [%s]. Skipping..."),
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
             "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
     FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
@@ -152,19 +144,8 @@ public enum ErrorMessage {
 
     //--------------------------------------------- Factory Errors
     INVALID_PATH_TO_CONFIG("Unable to open config file [%s]"),
-    CANNOT_PRODUCE_TX("Cannot produce a Grakn Transaction using the backend [%s]"),
-    CANNOT_FIND_CLASS("The %s implementation %s must be accessible in the classpath"),
-
-    //--------------------------------------------- Client Errors
-    INVALID_SERVER_RESPONSE("Grakn Server located at [%s] returned response [%s], cannot proceed."),
-    INVALID_FACTORY("Graph Factory [%s] is not valid"),
-    MISSING_FACTORY_DEFINITION("Graph Factor Config ['knowledge-base.mode'] missing from provided config. " +
-            "Cannot produce graph"),
-    COULD_NOT_REACH_SERVER("Could not reach Grakn Server at [%s]"),
 
     //--------------------------------------------- Graql Errors -----------------------------------------------
-    NO_TX("no graph provided"),
-
     SYNTAX_ERROR("syntax error at line %s: \n%s\n%s\n%s"),
 
     MUST_BE_ATTRIBUTE_TYPE("type '%s' must be an attribute-type"),
@@ -193,17 +174,9 @@ public enum ErrorMessage {
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
     //Templating
-    TEMPLATE_MISSING_KEY("Key [%s] not present in data: [%s]"),
 
     UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
-
-    SERVER_STARTUP_ERROR("Could not start Grakn Server: [%s]"),
     UNAVAILABLE_PROPERTY("Property requested [%s] has not been defined. See configuration file [%s] for configured properties."),
-    MISSING_MANDATORY_REQUEST_PARAMETERS("Missing mandatory query parameter [%s]"),
-    MISSING_MANDATORY_BODY_REQUEST_PARAMETERS("Missing mandatory parameter in body [%s]"),
-    MISSING_REQUEST_BODY("Empty body- it should contain the Graql query to be executed."),
-    UNSUPPORTED_CONTENT_TYPE("Unsupported Content-Type [%s] requested"),
-    CANNOT_DELETE_KEYSPACE("Could not delete keyspace [%s]"),
 
     //--------------------------------------------- Reasoner Errors -----------------------------------------------
     NON_ATOMIC_QUERY("Addressed query is not atomic: [%s]."),

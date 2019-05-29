@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * Base {@link Atomic} implementation providing basic functionalities.
+ * Base Atomic implementation providing basic functionalities.
  */
 public abstract class AtomicBase implements Atomic {
 
@@ -63,8 +63,8 @@ public abstract class AtomicBase implements Atomic {
     }
 
     /**
-     * @param type the class of {@link Predicate} to return
-     * @param <T> the type of {@link Predicate} to return
+     * @param type the class of Predicate to return
+     * @param <T> the type of Predicate to return
      * @return stream of predicates relevant to this atomic
      */
     public <T extends Predicate> Stream<T> getPredicates(Class<T> type) {

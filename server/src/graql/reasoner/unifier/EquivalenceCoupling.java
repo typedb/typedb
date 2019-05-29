@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.unifier;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 
 /**
- * Interface to couple {@link UnifierType} classes with corresponding {@link ReasonerQueryEquivalence}s.
+ * Interface to couple UnifierType classes with corresponding ReasonerQueryEquivalences.
  */
 public interface EquivalenceCoupling {
 

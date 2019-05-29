@@ -90,8 +90,8 @@ public interface ReasonerQuery{
     Conjunction<Pattern> getPattern();
 
     /**
-     * @param type the class of {@link Atomic} to return
-     * @param <T> the type of {@link Atomic} to return
+     * @param type the class of Atomic to return
+     * @param <T> the type of Atomic to return
      * @return stream of atoms of specified type defined in this query
      */
     @CheckReturnValue

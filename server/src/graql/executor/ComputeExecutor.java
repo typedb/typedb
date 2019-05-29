@@ -197,7 +197,7 @@ class ComputeExecutor {
     /**
      * The compute statistics base algorithm that is called in every compute statistics query
      *
-     * @param <S> The return type of {@link StatisticsMapReduce}
+     * @param <S> The return type of StatisticsMapReduce
      * @return result of compute statistics algorithm, which will be of type S
      */
     @Nullable

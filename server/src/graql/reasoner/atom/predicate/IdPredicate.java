@@ -34,7 +34,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 /**
- * Predicate implementation specialising it to be an id predicate. Corresponds to {@link IdProperty}.
+ * Predicate implementation specialising it to be an id predicate. Corresponds to IdProperty.
  */
 public class IdPredicate extends Predicate<ConceptId> {
 

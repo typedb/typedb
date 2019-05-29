@@ -23,9 +23,9 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.utils.Pair;
 
-import java.util.Set;
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
 
 

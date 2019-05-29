@@ -55,8 +55,8 @@ abstract class IsaFragmentSet extends EquivalentFragmentSet {
      * We can skip the mid-traversal check for edge instances in the following case:
      *
      * <ol>
-     *     <li>There is an {@link IsaFragmentSet} {@code $x-[isa:with-edges]->$X}
-     *     <li>There is a {@link LabelFragmentSet} {@code $X[label:foo,bar]}
+     *     <li>There is an IsaFragmentSet {@code $x-[isa:with-edges]->$X}
+     *     <li>There is a LabelFragmentSet {@code $X[label:foo,bar]}
      *     <li>The labels {@code foo} and {@code bar} are all not types that may have edge instances</li>
      * </ol>
      */

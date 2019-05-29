@@ -29,7 +29,7 @@ import graql.lang.statement.Variable;
 
 
 /**
- * TypeAtom corresponding to a graql {@link RelatesProperty} property.
+ * TypeAtom corresponding to a graql RelatesProperty property.
  */
 @AutoValue
 public abstract class RelatesAtom extends OntologicalAtom {

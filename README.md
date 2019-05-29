@@ -73,4 +73,4 @@ Grakn Core is built using various state-of-the-art open-source Graph and Distrib
 
 This product includes software developed by [Grakn Labs Ltd](https://grakn.ai/).  It's released under the GNU Affero GENERAL PUBLIC LICENSE, Version 3, 29 June 2007. For license information, please see [LICENSE](https://github.com/graknlabs/grakn/blob/master/LICENSE). Grakn Labs Ltd also provides a commercial license for Grakn Enterprise KGMS - get in touch with our team at enterprise@grakn.ai.
 
-Copyright (C) 2018  Grakn Labs Ltd
+Copyright (C) 2019  Grakn Labs Ltd

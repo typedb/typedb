@@ -69,21 +69,6 @@ import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.locking.PermanentLockingException;
-import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -98,6 +83,20 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphElement;
+import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
+import org.janusgraph.diskstorage.locking.TemporaryLockingException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A TransactionOLTP using JanusGraph as a vendor backend.
@@ -936,9 +935,9 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void removeInferredConcepts(){
-        Set<Thing> inferredThings = cache().getInferredConcepts().collect(Collectors.toSet());
-        inferredThings.forEach(inferred -> cache().remove(inferred));
-        inferredThings.forEach(Concept::delete);
+        Set<Thing> inferredThingsToDiscard = cache().getInferredThingsToDiscard().collect(Collectors.toSet());
+        inferredThingsToDiscard.forEach(inferred -> cache().remove(inferred));
+        inferredThingsToDiscard.forEach(Concept::delete);
     }
 
     private void validateGraph() throws InvalidKBException {

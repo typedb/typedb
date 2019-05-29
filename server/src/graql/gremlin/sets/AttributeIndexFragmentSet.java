@@ -38,13 +38,13 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOf
 /**
  * A query can use a more-efficient attribute index traversal when the following criteria are met:
  * <p>
- * 1. There is an {@link IsaFragmentSet} and a {@link ValueFragmentSet} referring to the same instance {@link Variable}.
- * 2. The {@link IsaFragmentSet} refers to a type {@link Variable} with a {@link LabelFragmentSet}.
- * 3. The {@link LabelFragmentSet} refers to one type in the knowledge base.
- * 4. The {@link ValueFragmentSet} is an equality predicate referring to a literal value.
+ * 1. There is an IsaFragmentSet and a ValueFragmentSet referring to the same instance Variable.
+ * 2. The IsaFragmentSet refers to a type Variable with a LabelFragmentSet.
+ * 3. The LabelFragmentSet refers to one type in the knowledge base.
+ * 4. The ValueFragmentSet is an equality predicate referring to a literal value.
  * <p>
- * When all these criteria are met, the fragments representing the {@link IsaFragmentSet} and the
- * {@link ValueFragmentSet} can be replaced with a {@link AttributeIndexFragmentSet} that will use the attribute index
+ * When all these criteria are met, the fragments representing the IsaFragmentSet and the
+ * ValueFragmentSet can be replaced with a AttributeIndexFragmentSet that will use the attribute index
  * to perform a unique lookup in constant time.
  *
  */

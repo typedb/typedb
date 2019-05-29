@@ -41,9 +41,9 @@ public class Config {
     private final Properties prop;
 
     /**
-     * The path to the config file currently in use. Default: ./conf/grakn.properties
+     * The path to the config file currently in use. Default: ./server/conf/grakn.properties
      */
-    private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "conf", "grakn.properties");
+    private static final Path DEFAULT_CONFIG_FILE = Paths.get(".", "server", "conf", "grakn.properties");
     private static final Logger LOG = LoggerFactory.getLogger(Config.class);
     private static Config defaultConfig = null;
     private static final Path PROJECT_PATH = Config.getProjectPath();

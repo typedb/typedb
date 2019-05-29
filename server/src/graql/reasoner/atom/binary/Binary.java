@@ -40,8 +40,8 @@ import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-import java.util.Collections;
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;

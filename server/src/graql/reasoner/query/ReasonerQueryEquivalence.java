@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Static class defining different equivalence comparisons for reasoner queries ({@link ReasonerQuery}).
+ * Static class defining different equivalence comparisons for reasoner queries (ReasonerQuery).
  *
  * </p>
  *
@@ -51,7 +51,7 @@ public abstract class ReasonerQueryEquivalence extends Equivalence<ReasonerQuery
     }
 
     /**
-     * Equality - two queries are equal if they contain the same {@link Atomic}s of which all corresponding pairs are equal.
+     * Equality - two queries are equal if they contain the same Atomics of which all corresponding pairs are equal.
      */
     public final static ReasonerQueryEquivalence Equality = new ReasonerQueryEquivalence(){
 

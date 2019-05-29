@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.plan;
 
 import com.google.common.base.Equivalence;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 
 import java.util.Collection;
@@ -28,7 +27,7 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Helper class for collections of {@link ReasonerQueryImpl} queries with equality comparison {@link ReasonerQueryEquivalence}.
+ * Helper class for collections of ReasonerQueryImpl queries with equality comparison ReasonerQueryEquivalence.
  * </p>
  *
  * @param <T> unwrapped collection type

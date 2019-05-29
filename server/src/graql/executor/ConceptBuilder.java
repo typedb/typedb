@@ -34,9 +34,6 @@ import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
-import graql.lang.property.IsaProperty;
-import graql.lang.property.ValueProperty;
-import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -51,13 +48,13 @@ import java.util.function.Function;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Class for building a {@link Concept}, by providing properties.
- * A {@link VarProperty} is responsible for inserting itself into the graph. However,
- * some properties can only operate in combination. For example, to create a {@link Attribute} you need both
- * an {@link IsaProperty} and a {@link ValueProperty}.
- * Therefore, these properties do not create the {@link Concept} themselves.
- * instead they provide the necessary information to the {@link ConceptBuilder}, which will create the
- * {@link Concept} at a later time:
+ * Class for building a Concept, by providing properties.
+ * A VarProperty is responsible for inserting itself into the graph. However,
+ * some properties can only operate in combination. For example, to create a Attribute you need both
+ * an IsaProperty and a ValueProperty.
+ * Therefore, these properties do not create the Concept themselves.
+ * instead they provide the necessary information to the ConceptBuilder, which will create the
+ * Concept at a later time:
  * <pre>
  *     // Executor:
  *     ConceptBuilder builder = ConceptBuilder.of(executor, var);
@@ -153,7 +150,7 @@ public class ConceptBuilder {
     }
 
     /**
-     * Build the {@link Concept} and return it, using the properties given.
+     * Build the Concept and return it, using the properties given.
      *
      * @throws GraqlSemanticException if the properties provided are inconsistent
      */
@@ -244,8 +241,8 @@ public class ConceptBuilder {
     }
 
     /**
-     * Describes a parameter that can be set on a {@link ConceptBuilder}.
-     * We could instead just represent these parameters as fields of {@link ConceptBuilder}. Instead, we use a
+     * Describes a parameter that can be set on a ConceptBuilder.
+     * We could instead just represent these parameters as fields of ConceptBuilder. Instead, we use a
      * {@code Map<BuilderParam<?>, Object>}. This allows us to do clever stuff like iterate over the parameters,
      * or check for unexpected parameters without lots of boilerplate.
      */
@@ -289,7 +286,7 @@ public class ConceptBuilder {
 
     /**
      * Class with no fields and exactly one instance.
-     * Similar in use to {@link Void}, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
+     * Similar in use to Void, but the single instance is {@link Unit#INSTANCE} instead of {@code null}. Useful
      * when {@code null} is not allowed.
      * @see <a href=https://en.wikipedia.org/wiki/Unit_type>Wikipedia</a>
      */
@@ -328,7 +325,7 @@ public class ConceptBuilder {
     }
 
     /**
-     * Called during {@link #build()} whenever a particular parameter is expected in order to build the {@link Concept}.
+     * Called during {@link #build()} whenever a particular parameter is expected in order to build the Concept.
      * This method will return the parameter, if present and also record that it was expected, so that we can later
      * check for any unexpected properties.
      *

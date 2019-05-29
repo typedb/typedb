@@ -27,7 +27,7 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import java.util.Set;
 
 /**
- * Query state corresponding to a conjunctive query ({@link ReasonerQueryImpl}) in the resolution tree.
+ * Query state corresponding to a conjunctive query (ReasonerQueryImpl) in the resolution tree.
  */
 public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
 

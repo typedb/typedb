@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Base class for defining ontological {@link Atom} - ones referring to ontological elements.
+ * Base class for defining ontological Atom - ones referring to ontological elements.
  */
 public abstract class OntologicalAtom extends TypeAtom {
 

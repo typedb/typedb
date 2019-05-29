@@ -35,10 +35,10 @@ import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;

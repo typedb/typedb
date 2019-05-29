@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.cache;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+
 import java.util.HashSet;
 import java.util.Set;
 

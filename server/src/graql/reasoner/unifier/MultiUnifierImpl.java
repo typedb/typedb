@@ -36,7 +36,7 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Implementation of the {@link MultiUnifier} interface.
+ * Implementation of the MultiUnifier interface.
  *
  * Special cases:
  *

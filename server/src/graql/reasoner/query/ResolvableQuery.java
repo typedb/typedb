@@ -23,9 +23,9 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.Unifier;
-
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
+
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;

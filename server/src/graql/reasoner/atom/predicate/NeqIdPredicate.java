@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql {@link NeqProperty}.
+ * Predicate implementation specialising it to be an inequality predicate. Corresponds to graql NeqProperty.
  * </p>
  *
  *

@@ -46,18 +46,19 @@ import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static java.util.stream.Collectors.toSet;
 
 /**
- * {@link AtomicBase} extension defining specialised functionalities.
+ * AtomicBase extension defining specialised functionalities.
  */
 public abstract class Atom extends AtomicBase {
 
@@ -268,8 +269,8 @@ public abstract class Atom extends AtomicBase {
     public abstract Stream<Predicate> getInnerPredicates();
 
     /**
-     * @param type the class of {@link Predicate} to return
-     * @param <T>  the type of {@link Predicate} to return
+     * @param type the class of Predicate to return
+     * @param <T>  the type of Predicate to return
      * @return stream of predicates relevant to this atom
      */
     public <T extends Predicate> Stream<T> getInnerPredicates(Class<T> type) {
@@ -279,8 +280,8 @@ public abstract class Atom extends AtomicBase {
     /**
      *
      * @param var variable of interest
-     * @param type the class of {@link Predicate} to return
-     * @param <T>  the type of {@link Predicate} to return
+     * @param type the class of Predicate to return
+     * @param <T>  the type of Predicate to return
      * @return stream of all predicates (public and inner) relevant to this atom and variable
      */
     public <T extends Predicate> Stream<T> getAllPredicates(Variable var, Class<T> type) {
@@ -300,8 +301,8 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
-     * @param type the class of {@link Predicate} to return
-     * @param <T>  the type of neighbour {@link Atomic} to return
+     * @param type the class of Predicate to return
+     * @param <T>  the type of neighbour Atomic to return
      * @return neighbours of this atoms, i.e. atoms connected to this atom via shared variable
      */
     protected <T extends Atomic> Stream<T> getNeighbours(Class<T> type) {
@@ -344,8 +345,8 @@ public abstract class Atom extends AtomicBase {
     public List<Atom> atomOptions(ConceptMap sub) { return Lists.newArrayList(inferTypes(sub));}
 
     /**
-     * @param type to be added to this {@link Atom}
-     * @return new {@link Atom} with specified type
+     * @param type to be added to this Atom
+     * @return new Atom with specified type
      */
     public Atom addType(SchemaConcept type) { return this;}
 

@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Resolution planner using {@link TraversalPlanner} to establish optimal resolution order..
+ * Resolution planner using TraversalPlanner to establish optimal resolution order..
  */
 public class GraqlTraversalPlanner {
 
@@ -56,14 +56,14 @@ public class GraqlTraversalPlanner {
      *
      * Refined plan procedure:
      * - establish a list of starting atom candidates based on their substitutions
-     * - create a plan using {@link TraversalPlanner}
+     * - create a plan using TraversalPlanner
      * - if the graql plan picks an atom that is not a candidate
      *   - pick an optimal candidate
      *   - call the procedure on atoms with removed candidate
      * - otherwise return
      *
      * @param query for which the plan should be constructed
-     * @return list of atoms in order they should be resolved using a refined {@link GraqlTraversal} procedure.
+     * @return list of atoms in order they should be resolved using a refined GraqlTraversal procedure.
      */
     public static ImmutableList<Atom> plan(ReasonerQueryImpl query) {
         List<Atom> startCandidates = query.getAtoms(Atom.class)

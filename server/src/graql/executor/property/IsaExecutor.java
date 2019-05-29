@@ -24,7 +24,6 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
@@ -129,8 +128,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
                     // however, non-attribute still throw exceptions
                     throw GraqlSemanticException.insertExistingConcept(executor.printableRepresentation(var), concept);
                 } else if ((type instanceof AttributeType)) {
-                    //
-                    if (! type.subs().map(SchemaConcept::label).collect(Collectors.toSet()).contains(concept.asThing().type().label())) {
+                    if (type.subs().map(SchemaConcept::label).noneMatch(label -> label.equals(concept.asThing().type().label()))) {
                         //downcasting is bad
                         throw GraqlSemanticException.attributeDowncast(concept.asThing().type(), type);
                     }

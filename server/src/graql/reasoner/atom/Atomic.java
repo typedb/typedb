@@ -53,7 +53,7 @@ public interface Atomic {
     Statement getPattern();
 
     /**
-     * @return the {@link ReasonerQuery} this atomic belongs to
+     * @return the ReasonerQuery this atomic belongs to
      */
     ReasonerQuery getParentQuery();
 

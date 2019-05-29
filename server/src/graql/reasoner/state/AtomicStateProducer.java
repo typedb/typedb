@@ -28,7 +28,7 @@ import java.util.Set;
 /**
  *
  * <p>
- * State producing {@link AtomicState}s when when atom type is unknown and type inference is required
+ * State producing AtomicStates when when atom type is unknown and type inference is required
  * </p>
  *
  *

@@ -35,7 +35,6 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
@@ -75,6 +74,8 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -89,7 +90,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.server.kb.concept.ConceptUtils.bottom;
 import static grakn.core.server.kb.concept.ConceptUtils.top;
@@ -97,8 +97,8 @@ import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Atom implementation defining a relation atom corresponding to a combined {@link RelationProperty}
- * and (optional) {@link IsaProperty}. The relation atom is a {@link TypeAtom} with relation players.
+ * Atom implementation defining a relation atom corresponding to a combined RelationProperty
+ * and (optional) IsaProperty. The relation atom is a TypeAtom with relation players.
  */
 @AutoValue
 public abstract class RelationAtom extends IsaAtomBase {
@@ -268,7 +268,7 @@ public abstract class RelationAtom extends IsaAtomBase {
      * construct a $varName (rolemap) isa $typeVariable relation
      * @param varName            variable name
      * @param relationPlayers collection of rolePlayer-roleType mappings
-     * @return corresponding {@link Statement}
+     * @return corresponding Statement
      */
     private Statement relationPattern(Variable varName, Collection<RelationProperty.RolePlayer> relationPlayers) {
         Statement var = new Statement(varName);
@@ -509,10 +509,10 @@ public abstract class RelationAtom extends IsaAtomBase {
     }
 
     /**
-     * infer {@link RelationType}s that this {@link RelationAtom} can potentially have
-     * NB: {@link EntityType}s and link {@link Role}s are treated separately as they behave differently:
-     * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
-     * @return list of {@link RelationType}s this atom can have ordered by the number of compatible {@link Role}s
+     * infer RelationTypes that this RelationAtom can potentially have
+     * NB: EntityTypes and link Roles are treated separately as they behave differently:
+     * EntityTypes only play the explicitly defined Roles (not the relevant part of the hierarchy of the specified Role) and the Role inherited from parent
+     * @return list of RelationTypes this atom can have ordered by the number of compatible Roles
      */
     private Set<Type> inferPossibleEntityTypePlayers(ConceptMap sub){
         return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
@@ -562,11 +562,11 @@ public abstract class RelationAtom extends IsaAtomBase {
     public ImmutableList<Type> getPossibleTypes(){ return inferPossibleTypes(new ConceptMap());}
 
     /**
-     * infer {@link RelationType}s that this {@link RelationAtom} can potentially have
-     * NB: {@link EntityType}s and link {@link Role}s are treated separately as they behave differently:
+     * infer RelationTypes that this RelationAtom can potentially have
+     * NB: EntityTypes and link Roles are treated separately as they behave differently:
      * NB: Not using Memoized as memoized methods can't have parameters
-     * {@link EntityType}s only play the explicitly defined {@link Role}s (not the relevant part of the hierarchy of the specified {@link Role}) and the {@link Role} inherited from parent
-     * @return list of {@link RelationType}s this atom can have ordered by the number of compatible {@link Role}s
+     * EntityTypes only play the explicitly defined Roles (not the relevant part of the hierarchy of the specified Role) and the Role inherited from parent
+     * @return list of RelationTypes this atom can have ordered by the number of compatible Roles
      */
     private ImmutableList<Type> inferPossibleTypes(ConceptMap sub) {
         if (possibleTypes == null) {
@@ -1012,9 +1012,9 @@ public abstract class RelationAtom extends IsaAtomBase {
     }
 
     /**
-     * if any {@link Role} variable of the parent is user defined rewrite ALL {@link Role} variables to user defined (otherwise unification is problematic)
+     * if any Role variable of the parent is user defined rewrite ALL Role variables to user defined (otherwise unification is problematic)
      * @param parentAtom parent atom that triggers rewrite
-     * @return new relation atom with user defined {@link Role} variables if necessary or this
+     * @return new relation atom with user defined Role variables if necessary or this
      */
     private RelationAtom rewriteWithVariableRoles(Atom parentAtom){
         if (!parentAtom.requiresRoleExpansion()) return this;

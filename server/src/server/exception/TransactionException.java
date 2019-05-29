@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Thing;
@@ -30,15 +29,14 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import javax.annotation.Nullable;
 import java.util.stream.Collectors;
 
-import static grakn.core.common.exception.ErrorMessage.CLOSE_FAILURE;
 import static grakn.core.common.exception.ErrorMessage.HAS_INVALID;
 import static grakn.core.common.exception.ErrorMessage.INVALID_DIRECTION;
 import static grakn.core.common.exception.ErrorMessage.INVALID_PROPERTY_USE;
@@ -203,13 +201,6 @@ public class TransactionException extends GraknException {
     }
 
     /**
-     * Thrown when attempting to mutate the schema while the transaction is in batch mode
-     */
-    public static TransactionException schemaMutation() {
-        return create(ErrorMessage.SCHEMA_LOCKED.getMessage());
-    }
-
-    /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
     public static TransactionException transactionClosed(@Nullable TransactionOLTP tx, @Nullable String reason) {
@@ -219,13 +210,6 @@ public class TransactionException extends GraknException {
         } else {
             return create(reason);
         }
-    }
-
-    /**
-     * Thrown when the graph can not be closed due to an unknown reason.
-     */
-    public static TransactionException closingFailed(TransactionOLTP tx, Exception e) {
-        return new TransactionException(CLOSE_FAILURE.getMessage(tx.keyspace()), e);
     }
 
     /**
@@ -284,13 +268,6 @@ public class TransactionException extends GraknException {
     public static TransactionException changingSuperWillDisconnectRole(Type oldSuper, Type newSuper, Role role) {
         return create(String.format("Cannot change the super type {%s} to {%s} because {%s} is connected to role {%s} which {%s} is not connected to.",
                                     oldSuper.label(), newSuper.label(), oldSuper.label(), role.label(), newSuper.label()));
-    }
-
-    /**
-     * Thrown when a Thing is missing a Type
-     */
-    public static TransactionException missingType(ConceptId id) {
-        return create(String.format("Thing {%s} is missing a type", id));
     }
 
     /**

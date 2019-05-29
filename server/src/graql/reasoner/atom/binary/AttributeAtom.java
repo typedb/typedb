@@ -59,6 +59,7 @@ import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -70,7 +71,7 @@ import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollecti
 /**
  *
  * <p>
- * Atom implementation defining a resource atom corresponding to a {@link HasAttributeProperty}.
+ * Atom implementation defining a resource atom corresponding to a HasAttributeProperty.
  * The resource structure is the following:
  *
  * has($varName, $attributeVariable), type($attributeVariable)

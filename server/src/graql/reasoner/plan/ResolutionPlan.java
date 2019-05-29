@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.plan;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
@@ -28,8 +27,8 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import java.util.stream.Collectors;
 
 /**
- * Class defining the resolution plan for a given {@link ReasonerQueryImpl} at an atom level.
- * The plan is constructed  using the {@link GraqlTraversal} with the aid of {@link GraqlTraversalPlanner}.
+ * Class defining the resolution plan for a given ReasonerQueryImpl at an atom level.
+ * The plan is constructed  using the GraqlTraversal with the aid of GraqlTraversalPlanner.
  */
 public final class ResolutionPlan {
 

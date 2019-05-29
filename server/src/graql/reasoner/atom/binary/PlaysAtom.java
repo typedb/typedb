@@ -28,7 +28,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 /**
- * TypeAtom corresponding to graql a {@link PlaysProperty} property.
+ * TypeAtom corresponding to graql a PlaysProperty property.
  */
 @AutoValue
 public abstract class PlaysAtom extends OntologicalAtom {
