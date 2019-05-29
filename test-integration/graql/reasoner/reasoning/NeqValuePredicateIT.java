@@ -23,6 +23,8 @@ import com.google.common.collect.Iterables;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
+import grakn.core.graql.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
@@ -38,6 +40,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import java.util.AbstractCollection;
 import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -144,7 +147,62 @@ public class NeqValuePredicateIT {
     }
 
     @Test
-    public void whenParsingNeqValueVPS_equivalentPatternsMakeEquivalentQueries() {
+    public void whenParsingNeqValueVPs_ensureTheyAreParsedIntoAtomsCorrectly() {
+        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+            Conjunction<Pattern> neqWithoutBound = Iterables.getOnlyElement(
+                    Graql.parsePattern(
+                            "{" +
+                                    "$x has derived-resource-string $val;" +
+                                    "$y has derived-resource-string $anotherVal;" +
+                                    "$val !== $anotherVal;" +
+                                    "};"
+                    ).getNegationDNF().getPatterns()
+            );
+            Conjunction<Pattern> neqWithSoftBound = Iterables.getOnlyElement(
+                    Graql.parsePattern(
+                            "{" +
+                                    "$x has derived-resource-string $val;" +
+                                    "$y has derived-resource-string $anotherVal;" +
+                                    "$val !== $anotherVal;" +
+                                    "$anotherVal > 'value';" +
+                                    "};"
+                    ).getNegationDNF().getPatterns()
+            );
+            Conjunction<Pattern> neqWithBound = Iterables.getOnlyElement(
+                    Graql.parsePattern(
+                            "{" +
+                                    "$x has derived-resource-string $val;" +
+                                    "$y has derived-resource-string $anotherVal;" +
+                                    "$val !== $anotherVal;" +
+                                    "$another == 'value';" +
+                                    "};"
+                    ).getNegationDNF().getPatterns()
+            );
+
+            ResolvableQuery unboundNeqQuery = ReasonerQueries.resolvable(neqWithoutBound, tx);
+            ResolvableQuery softBoundNeqQuery = ReasonerQueries.resolvable(neqWithSoftBound, tx);
+            ResolvableQuery boundNeqQuery = ReasonerQueries.resolvable(neqWithBound, tx);
+
+            //we keep unbound predicates outside attributes
+            assertTrue(unboundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).allMatch(AbstractCollection::isEmpty));
+            assertTrue(unboundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+
+            //if the predicate has a soft bound, we try to incorporate it into relevant attribute
+            assertTrue(softBoundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(AbstractCollection::isEmpty));
+            assertTrue(softBoundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(pred -> !pred.isEmpty()));
+            assertTrue(softBoundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+            //we still keep the variable predicate outside
+
+            //if the predicate has a hard bound, we try to incorporate it into relevant attribute
+            //we still keep the variable predicate outside
+            assertTrue(boundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(AbstractCollection::isEmpty));
+            assertTrue(boundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(pred -> !pred.isEmpty()));
+            assertTrue(boundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+        }
+    }
+
+    @Test
+    public void whenParsingNeqValueVPsWithValue_equivalentPatternsMakeEquivalentQueries() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             Conjunction<Pattern> neqOutsideAttribute = Iterables.getOnlyElement(
                     Graql.parsePattern("{$x has derived-resource-string $val;$val !== 'unattached';};").getNegationDNF().getPatterns()
@@ -157,7 +215,7 @@ public class NeqValuePredicateIT {
                     "$unwanted == 'unattached';" +
                     "$val !== $unwanted;" +
                     "};").getNegationDNF().getPatterns());
-            
+
             ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
 
             //if a comparison vp is inside attribute, we need to copy it outside as well to ensure correctness at the end of execution
