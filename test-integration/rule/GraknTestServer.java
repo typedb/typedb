@@ -180,7 +180,7 @@ public class GraknTestServer extends ExternalResource {
         return copyName.toFile();
     }
 
-    protected static int findUnusedLocalPort() throws IOException {
+    protected synchronized static int findUnusedLocalPort() throws IOException {
         try (ServerSocket serverSocket = new ServerSocket(0)) {
             return serverSocket.getLocalPort();
         }
