@@ -20,7 +20,9 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
@@ -117,9 +119,6 @@ public class NeqValuePredicateIT {
                     "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
 
             ).asDefine());
-            tx.commit();
-        }
-        try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("insert " +
                     "$x isa someEntity;" +
                     "$y isa someEntity;"
@@ -158,7 +157,7 @@ public class NeqValuePredicateIT {
                     "$unwanted == 'unattached';" +
                     "$val !== $unwanted;" +
                     "};").getNegationDNF().getPatterns());
-
+            
             ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
 
             //if a comparison vp is inside attribute, we need to copy it outside as well to ensure correctness at the end of execution
