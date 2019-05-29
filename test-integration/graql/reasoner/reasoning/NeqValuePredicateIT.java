@@ -174,14 +174,14 @@ public class NeqValuePredicateIT {
                                     "$x has derived-resource-string $val;" +
                                     "$y has derived-resource-string $anotherVal;" +
                                     "$val !== $anotherVal;" +
-                                    "$another == 'value';" +
+                                    "$anotherVal == 'value';" +
                                     "};"
                     ).getNegationDNF().getPatterns()
             );
 
             ResolvableQuery unboundNeqQuery = ReasonerQueries.resolvable(neqWithoutBound, tx);
-            ResolvableQuery softBoundNeqQuery = ReasonerQueries.resolvable(neqWithSoftBound, tx);
             ResolvableQuery boundNeqQuery = ReasonerQueries.resolvable(neqWithBound, tx);
+            ResolvableQuery softBoundNeqQuery = ReasonerQueries.resolvable(neqWithSoftBound, tx);
 
             //we keep unbound predicates outside attributes
             assertTrue(unboundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).allMatch(AbstractCollection::isEmpty));

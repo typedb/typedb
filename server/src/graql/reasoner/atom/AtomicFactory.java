@@ -107,7 +107,7 @@ public class AtomicFactory {
      * @param parent query the VP should be part of
      * @return value predicate corresponding to the provided property
      */
-    public static grakn.core.graql.reasoner.atom.Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
+    public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
                                                                               boolean allowNeq, boolean discardIfInAttribute, ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
@@ -148,7 +148,7 @@ public class AtomicFactory {
                 ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
 
-    public static grakn.core.graql.reasoner.atom.Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
+    public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
                                                                              ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
@@ -156,6 +156,9 @@ public class AtomicFactory {
         Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
 
         //true if the VP has another VP that references it - a parent VP
+        boolean partOfAttribute = otherStatements.stream()
+                .flatMap(s -> s.getProperties(HasAttributeProperty.class))
+                .anyMatch(p -> p.attribute().var().equals(var));
         Set<ValueProperty> parentVPs = otherStatements.stream()
                 .flatMap(s -> s.getProperties(ValueProperty.class))
                 .filter(vp -> {
@@ -165,9 +168,11 @@ public class AtomicFactory {
                 })
                 .collect(Collectors.toSet());
         boolean hasParentVp = !parentVPs.isEmpty();
-        if (hasParentVp) return null;
+        if (hasParentVp && !partOfAttribute) return null;
 
-        ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
+        //
+        ValueProperty.Operation indirectOperation = null;
+        //ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
         Object value = operation.innerStatement() == null? operation.value() : null;
 

@@ -153,7 +153,10 @@ public class ReasonerUtils {
                 Collections.singleton(statement);
         Set<ValuePredicate> vps = context.stream()
                 .flatMap(v -> v.getProperties(ValueProperty.class)
-                        .map(property -> AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent))
+                        .map(property ->
+                                AtomicFactory.createValuePredicate(property, statement, fullContext, parent)
+                                //AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent)
+                        )
                         .filter(ValuePredicate.class::isInstance)
                         .map(ValuePredicate.class::cast)
                 )
