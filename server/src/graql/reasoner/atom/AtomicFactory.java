@@ -176,6 +176,8 @@ public class AtomicFactory {
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
         Object value = operation.innerStatement() == null? operation.value() : null;
 
+        //TODO update parsing for negated vps - save operation correctly - not hardcoded neq
+        //maybe make NeqValuePredicate extend ValuePredicate and add variable
         return value != null?
                 ValuePredicate.create(var.asReturnedVar(), operation, parent) :
                 NeqValuePredicate.create(var.asReturnedVar(), operation, parent);
