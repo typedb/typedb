@@ -50,8 +50,8 @@ public interface UnifierComparison {
     boolean inferValues();
 
     /**
-     * @param parent parent type {@link Atomic}
-     * @param child child type {@link Atomic}
+     * @param parent parent type Atomic
+     * @param child child type Atomic
      * @return true if both types are compatible in terms of type directness
      */
     boolean typeDirectednessCompatibility(Atomic parent, Atomic child);
@@ -62,7 +62,7 @@ public interface UnifierComparison {
      *
      * @param parent role
      * @param child role
-     * @return true if {@link Type}s are compatible
+     * @return true if Types are compatible
      */
     boolean roleCompatibility(Role parent, Role child);
 
@@ -70,9 +70,9 @@ public interface UnifierComparison {
      * Does compatibility comparison between a parent-child type set pair.
      * NB: Because types are defined in the when part, types have MATCH semantics - their types include relevant hierarchy parts.
      *
-     * @param parent {@link SchemaConcept} of parent expression
-     * @param child  {@link SchemaConcept} of child expression
-     * @return true if {@link Type}s are compatible
+     * @param parent SchemaConcept of parent expression
+     * @param child  SchemaConcept of child expression
+     * @return true if Types are compatible
      */
     default boolean typeCompatibility(Set<? extends SchemaConcept> parent, Set<? extends SchemaConcept> child){
         //checks intra compatibility
@@ -81,22 +81,22 @@ public interface UnifierComparison {
     }
 
     /**
-     * @param parent {@link Atomic} of parent expression
-     * @param child  {@link Atomic} of child expression
+     * @param parent Atomic of parent expression
+     * @param child  Atomic of child expression
      * @return true if id predicates are compatible
      */
     boolean idCompatibility(Atomic parent, Atomic child);
 
     /**
-     * @param parent {@link Atomic} of parent expression
-     * @param child  {@link Atomic} of child expression
+     * @param parent Atomic of parent expression
+     * @param child  Atomic of child expression
      * @return true if value predicates are compatible
      */
     boolean valueCompatibility(Atomic parent, Atomic child);
 
     /**
-     * @param parent {@link Atomic}s of parent expression
-     * @param child  {@link Atomic}s of child expression
+     * @param parent Atomics of parent expression
+     * @param child  Atomics of child expression
      * @return true if id predicate sets are compatible
      */
     default boolean idCompatibility(Set<Atomic> parent, Set<Atomic> child){
@@ -127,8 +127,8 @@ public interface UnifierComparison {
     boolean typePlayability(ReasonerQuery query, Variable var, Type type);
 
     /**
-     * @param parent    {@link Atomic} query
-     * @param child     {@link Atomic} query
+     * @param parent    Atomic query
+     * @param child     Atomic query
      * @param parentVar variable of interest in the parent query
      * @param childVar  variable of interest in the child query
      * @return true if attributes attached to child var are compatible with attributes attached to parent var

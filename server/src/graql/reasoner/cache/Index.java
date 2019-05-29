@@ -27,7 +27,7 @@ import java.util.Set;
 
 /**
  *
- * Index for {@link IndexedAnswerSet}. Corresponds to a set of variables which partial substitutions need to map.
+ * Index for IndexedAnswerSet. Corresponds to a set of variables which partial substitutions need to map.
  *
  */
 public class Index{

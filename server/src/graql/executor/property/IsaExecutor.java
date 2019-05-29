@@ -24,7 +24,6 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;

@@ -23,14 +23,14 @@ import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-
 import graql.lang.statement.Variable;
-import java.util.Set;
-import java.util.stream.Collectors;
+
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**

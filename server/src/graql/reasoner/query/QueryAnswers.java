@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Wrapper class for a set of {@link ConceptMap} objects providing higher level facilities.
+ * Wrapper class for a set of ConceptMap objects providing higher level facilities.
  *
  *
  */

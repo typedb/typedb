@@ -20,8 +20,6 @@ package grakn.core.graql.gremlin.fragment;
 
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.executor.property.ValueExecutor.Operation.Comparison;
 import grakn.core.server.kb.Schema;

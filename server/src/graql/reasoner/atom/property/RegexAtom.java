@@ -27,7 +27,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 /**
- * Atomic corresponding to {@link RegexProperty}.
+ * Atomic corresponding to RegexProperty.
  */
 @AutoValue
 public abstract class RegexAtom extends AtomicBase {

@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.stream.Stream;
 
 /**
- * Generalisation of the {@link Unifier} accounting for the possibility of existence of more than one unifier between two expressions.
+ * Generalisation of the Unifier accounting for the possibility of existence of more than one unifier between two expressions.
  * Corresponds to a simple set U = {u1, u2, ..., ui}, where i e N, i >= 0.
  * The case of i = 0 corresponds to a case where no unifier exists.
  */

@@ -90,7 +90,7 @@ public class ReasonerUtils {
      * looks for an appropriate var property with a specified name among the vars and maps it to an IdPredicate,
      * covers both the cases when variable is and isn't user defined
      * @param typeVariable variable name of interest
-     * @param typeVar {@link Statement} to look for in case the variable name is not user defined
+     * @param typeVar Statement to look for in case the variable name is not user defined
      * @param vars VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
      * @return mapped IdPredicate
@@ -141,7 +141,7 @@ public class ReasonerUtils {
      * looks for appropriate var properties with a specified name among the vars and maps them to ValuePredicates,
      * covers both the case when variable is and isn't user defined
      * @param valueVariable variable name of interest
-     * @param statement {@link Statement} to look for in case the variable name is not user defined
+     * @param statement Statement to look for in case the variable name is not user defined
      * @param fullContext VarAdmins to look for properties
      * @param parent reasoner query the mapped predicate should belong to
      * @return stream of mapped ValuePredicates
@@ -179,12 +179,12 @@ public class ReasonerUtils {
 
     /**
      * NB: assumes MATCH semantics - all types and their subs are considered
-     * compute the map of compatible {@link RelationType}s for a given set of {@link Type}s
+     * compute the map of compatible RelationTypes for a given set of Types
      * (intersection of allowed sets of relation types for each entry type) and compatible role types
-     * @param types for which the set of compatible {@link RelationType}s is to be computed
-     * @param schemaConceptConverter converter between {@link SchemaConcept} and relation type-role entries
+     * @param types for which the set of compatible RelationTypes is to be computed
+     * @param schemaConceptConverter converter between SchemaConcept and relation type-role entries
      * @param <T> type generic
-     * @return map of compatible {@link RelationType}s and their corresponding {@link Role}s
+     * @return map of compatible RelationTypes and their corresponding Roles
      */
     public static <T extends SchemaConcept> Multimap<RelationType, Role> compatibleRelationTypesWithRoles(Set<T> types, SchemaConceptConverter<T> schemaConceptConverter) {
         Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
@@ -200,10 +200,10 @@ public class ReasonerUtils {
 
     /**
      * NB: assumes MATCH semantics - all types and their subs are considered
-     * @param parentRole parent {@link Role}
-     * @param parentType parent {@link Type}
-     * @param entryRoles entry set of possible {@link Role}s
-     * @return set of playable {@link Role}s defined by type-role parent combination, parent role assumed as possible
+     * @param parentRole parent Role
+     * @param parentType parent Type
+     * @param entryRoles entry set of possible Roles
+     * @return set of playable Roles defined by type-role parent combination, parent role assumed as possible
      */
     public static Set<Role> compatibleRoles(@Nullable Role parentRole, @Nullable Type parentType, Set<Role> entryRoles) {
         Set<Role> compatibleRoles = parentRole != null? Sets.newHashSet(parentRole) : Sets.newHashSet();

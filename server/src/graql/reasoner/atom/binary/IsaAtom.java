@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * TypeAtom corresponding to graql a {@link IsaProperty} property.
+ * TypeAtom corresponding to graql a IsaProperty property.
  */
 @AutoValue
 public abstract class IsaAtom extends IsaAtomBase {

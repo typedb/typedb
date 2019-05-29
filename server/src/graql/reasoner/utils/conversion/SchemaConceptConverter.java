@@ -27,10 +27,10 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- * Interface for conversion between compatible {@link SchemaConcept}s.
+ * Interface for conversion between compatible SchemaConcepts.
  * NB: assumes MATCH semantics - all types and their subs are considered.
  * </p>
- * @param <T> {@link SchemaConcept} type to convert from
+ * @param <T> SchemaConcept type to convert from
  *
  */
 public interface SchemaConceptConverter<T extends SchemaConcept>{
@@ -52,7 +52,7 @@ public interface SchemaConceptConverter<T extends SchemaConcept>{
 
     /**
      * @param entryConcept to be converted
-     * @return {@link Role}s that are compatible with this {@link SchemaConcept}
+     * @return Roles that are compatible with this SchemaConcept
      */
     Stream<Role> toCompatibleRoles(T entryConcept);
 }

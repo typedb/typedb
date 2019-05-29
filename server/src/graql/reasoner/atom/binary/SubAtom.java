@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 /**
  *
  * <p>
- * TypeAtom corresponding to graql a {@link SubProperty} property.
+ * TypeAtom corresponding to graql a SubProperty property.
  * </p>
  *
  *

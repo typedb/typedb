@@ -22,10 +22,7 @@ import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.server.session.TransactionOLTP;
@@ -37,7 +34,7 @@ import java.util.Collection;
 import java.util.stream.Stream;
 
 /**
- * Factory class for producing instances of {@link EquivalentFragmentSet}.
+ * Factory class for producing instances of EquivalentFragmentSet.
  *
  */
 public class EquivalentFragmentSets {
@@ -53,7 +50,7 @@ public class EquivalentFragmentSets {
     );
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a type whose instances play a role.
+     * An EquivalentFragmentSet that indicates a variable is a type whose instances play a role.
      *
      * @param type a type variable label
      * @param role a role variable label
@@ -64,9 +61,9 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * Describes the edge connecting a {@link Relation} to a role-player.
+     * Describes the edge connecting a Relation to a role-player.
      * <p>
-     * Can be constrained with information about the possible {@link Role}s or {@link RelationType}s.
+     * Can be constrained with information about the possible Roles or RelationTypes.
      *
          */
     public static EquivalentFragmentSet rolePlayer(VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role, @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relTypeLabels) {
@@ -78,14 +75,14 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
+     * An EquivalentFragmentSet that indicates a variable is a sub-type of another variable.
      */
     public static EquivalentFragmentSet sub(VarProperty varProperty, Variable subType, Variable superType, boolean explicitSub) {
         return new AutoValue_SubFragmentSet(varProperty, subType, superType, explicitSub);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a sub-type of another variable.
+     * An EquivalentFragmentSet that indicates a variable is a sub-type of another variable.
      *
      */
     public static EquivalentFragmentSet sub(VarProperty varProperty, Variable subType, Variable superType) {
@@ -94,21 +91,21 @@ public class EquivalentFragmentSets {
 
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a relation type which involves a role.
+     * An EquivalentFragmentSet that indicates a variable is a relation type which involves a role.
      */
     public static EquivalentFragmentSet relates(VarProperty varProperty, Variable relationType, Variable role) {
         return new AutoValue_RelatesFragmentSet(varProperty, relationType, role);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is not a casting or a shard.
+     * An EquivalentFragmentSet that indicates a variable is not a casting or a shard.
      */
     public static EquivalentFragmentSet notInternalFragmentSet(VarProperty varProperty, Variable start) {
         return new AutoValue_NotInternalFragmentSet(varProperty, start);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is a direct instance of a type.
+     * An EquivalentFragmentSet that indicates a variable is a direct instance of a type.
      */
     public static EquivalentFragmentSet isa(
             VarProperty varProperty, Variable instance, Variable type, boolean mayHaveEdgeInstances) {
@@ -116,35 +113,35 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable is not equal to another variable.
+     * An EquivalentFragmentSet that indicates a variable is not equal to another variable.
      */
     public static EquivalentFragmentSet neq(VarProperty varProperty, Variable varA, Variable varB) {
         return new AutoValue_NeqFragmentSet(varProperty, varA, varB);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable represents a resource with value matching a predicate.
+     * An EquivalentFragmentSet that indicates a variable represents a resource with value matching a predicate.
      */
     public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, ValueExecutor.Operation<?, ?> predicate) {
         return new ValueFragmentSet(varProperty, resource, predicate);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable representing a concept with a particular ID.
+     * An EquivalentFragmentSet that indicates a variable representing a concept with a particular ID.
      */
     public static EquivalentFragmentSet id(VarProperty varProperty, Variable start, ConceptId id) {
         return new AutoValue_IdFragmentSet(varProperty, start, id);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable represents an abstract type.
+     * An EquivalentFragmentSet that indicates a variable represents an abstract type.
      */
     public static EquivalentFragmentSet isAbstract(VarProperty varProperty, Variable start) {
         return new AutoValue_IsAbstractFragmentSet(varProperty, start);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable representing a schema concept with one of the
+     * An EquivalentFragmentSet that indicates a variable representing a schema concept with one of the
      * specified labels.
      */
     public static EquivalentFragmentSet label(VarProperty varProperty, Variable type, ImmutableSet<Label> labels) {
@@ -152,24 +149,24 @@ public class EquivalentFragmentSets {
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a variable representing a resource type with a data-type.
+     * An EquivalentFragmentSet that indicates a variable representing a resource type with a data-type.
      */
     public static EquivalentFragmentSet dataType(VarProperty varProperty, Variable resourceType, AttributeType.DataType<?> dataType) {
         return new AutoValue_DataTypeFragmentSet(varProperty, resourceType, dataType);
     }
 
     /**
-     * An {@link EquivalentFragmentSet} that indicates a resource type whose instances must conform to a given regex.
+     * An EquivalentFragmentSet that indicates a resource type whose instances must conform to a given regex.
      */
     public static EquivalentFragmentSet regex(VarProperty varProperty, Variable resourceType, String regex) {
         return new AutoValue_RegexFragmentSet(varProperty, resourceType, regex);
     }
 
     /**
-     * Modify the given collection of {@link EquivalentFragmentSet} to introduce certain optimisations, such as the
-     * {@link AttributeIndexFragmentSet}.
+     * Modify the given collection of EquivalentFragmentSet to introduce certain optimisations, such as the
+     * AttributeIndexFragmentSet.
      * <p>
-     * This involves substituting various {@link EquivalentFragmentSet} with other {@link EquivalentFragmentSet}.
+     * This involves substituting various EquivalentFragmentSet with other EquivalentFragmentSet.
      */
     public static void optimiseFragmentSets(
             Collection<EquivalentFragmentSet> fragmentSets, TransactionOLTP tx) {

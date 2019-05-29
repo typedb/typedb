@@ -62,17 +62,17 @@ abstract class SubFragmentSet extends EquivalentFragmentSet {
      * A query can avoid navigating the sub hierarchy when the following conditions are met:
      *
      * <ol>
-     *     <li>There is a {@link SubFragmentSet} {@code $X-[sub]->$Y}
-     *     <li>There is a {@link LabelFragmentSet} {@code $Y[label:foo,bar]}
+     *     <li>There is a SubFragmentSet {@code $X-[sub]->$Y}
+     *     <li>There is a LabelFragmentSet {@code $Y[label:foo,bar]}
      * </ol>
      *
      * <p>
-     * In this case, the {@link SubFragmentSet} can be replaced with a {@link LabelFragmentSet}
+     * In this case, the SubFragmentSet can be replaced with a LabelFragmentSet
      * {@code $X[label:foo,...]} that is the <b>intersection</b> of all the subs of {@code foo} and {@code bar}.
      * </p>
      *
      * <p>
-     * However, we still keep the old {@link LabelFragmentSet} in case it is connected to anything.
+     * However, we still keep the old LabelFragmentSet in case it is connected to anything.
      * {@link LabelFragmentSet#REDUNDANT_LABEL_ELIMINATION_OPTIMISATION} will eventually remove it if it is not.
      * </p>
      */

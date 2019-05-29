@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Factory class for creating {@link Atomic} objects.
+ * Factory class for creating Atomic objects.
  */
 public class AtomicFactory {
 

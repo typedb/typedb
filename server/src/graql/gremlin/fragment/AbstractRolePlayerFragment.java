@@ -20,7 +20,6 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Label;
-import grakn.core.concept.type.Role;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
@@ -39,8 +38,8 @@ import static grakn.core.graql.gremlin.fragment.Fragments.displayOptionalTypeLab
 import static java.util.stream.Collectors.toSet;
 
 /**
- * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: {@link InRolePlayerFragment} and
- * {@link OutRolePlayerFragment}.
+ * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: InRolePlayerFragment and
+ * OutRolePlayerFragment.
  *
  */
 public abstract class AbstractRolePlayerFragment extends EdgeFragment {
@@ -109,7 +108,7 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
     }
 
     /**
-     * Optionally traverse from a {@link Schema.EdgeLabel#ROLE_PLAYER} edge to the {@link Role} it mentions, plus any super-types.
+     * Optionally traverse from a {@link Schema.EdgeLabel#ROLE_PLAYER} edge to the Role it mentions, plus any super-types.
      *
      * @param traversal the traversal, starting from the {@link Schema.EdgeLabel#ROLE_PLAYER}  edge
      * @param role the variable to assign to the role. If not present, do nothing

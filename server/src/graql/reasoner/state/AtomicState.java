@@ -33,10 +33,9 @@ import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
-import java.util.stream.Stream;
 
 /**
- * Query state corresponding to an atomic query ({@link ReasonerAtomicQuery}) in the resolution tree.
+ * Query state corresponding to an atomic query (ReasonerAtomicQuery) in the resolution tree.
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class AtomicState extends QueryState<ReasonerAtomicQuery> {

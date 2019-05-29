@@ -48,6 +48,7 @@ import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -140,7 +141,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     /**
-     * @throws IllegalArgumentException if passed a {@link ReasonerQuery} that is not a {@link ReasonerAtomicQuery}.
+     * @throws IllegalArgumentException if passed a ReasonerQuery that is not a ReasonerAtomicQuery.
      */
     @Override
     public MultiUnifier getMultiUnifier(ReasonerQuery p, UnifierType unifierType){

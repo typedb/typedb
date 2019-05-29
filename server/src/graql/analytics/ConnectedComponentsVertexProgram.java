@@ -19,8 +19,6 @@
 package grakn.core.graql.analytics;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import java.util.Collections;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -28,6 +26,9 @@ import org.apache.tinkerpop.gremlin.process.computer.VertexComputeKey;
 import org.apache.tinkerpop.gremlin.process.traversal.Operator;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
+
+import java.util.Collections;
+import java.util.Set;
 
 /**
  * The vertex program for computing connected components.

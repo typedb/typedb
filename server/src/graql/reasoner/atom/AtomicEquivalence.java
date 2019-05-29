@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.atom;
 
 import com.google.common.base.Equivalence;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 
 import java.util.Collection;
@@ -31,17 +30,17 @@ import java.util.stream.Stream;
 /**
  *
  * <p>
- * Static class defining different equivalence comparisons for {@link Atomic}s :
+ * Static class defining different equivalence comparisons for Atomics :
  *
- * - Equality: two {@link Atomic}s are equal if they are equal including all their corresponding variables.
+ * - Equality: two Atomics are equal if they are equal including all their corresponding variables.
  *
- * - Alpha-equivalence: two {@link Atomic}s are alpha-equivalent if they are equal up to the choice of free variables.
+ * - Alpha-equivalence: two Atomics are alpha-equivalent if they are equal up to the choice of free variables.
  *
  * - Structural equivalence:
- * Two atomics are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates {@link IdPredicate}).
+ * Two atomics are structurally equivalent if they are equal up to the choice of free variables and partial substitutions (id predicates IdPredicate).
  * Hence:
  * - any two IdPredicates are structurally equivalent
- * - structural equivalence check on queries is done by looking at {@link Atom}s. As a result:
+ * - structural equivalence check on queries is done by looking at Atoms. As a result:
  *   * connected predicates are assessed together with atoms they are connected to
  *   * dangling predicates are ignored
  *

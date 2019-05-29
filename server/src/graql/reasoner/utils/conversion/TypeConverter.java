@@ -25,7 +25,7 @@ import java.util.stream.Stream;
 
 /**
  * <p>
- * Basic {@link SchemaConceptConverter} implementation for conversion between compatible types.
+ * Basic SchemaConceptConverter implementation for conversion between compatible types.
  * </p>
  *
  */

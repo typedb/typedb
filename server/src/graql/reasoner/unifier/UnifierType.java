@@ -23,8 +23,6 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.cache.QueryCache;
-import grakn.core.graql.reasoner.cache.StructuralCache;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.server.kb.concept.ConceptUtils;
@@ -44,8 +42,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
     /**
      * Exact unifier, requires type and id predicate bindings to match.
-     * Used in {@link QueryCache} comparisons.
-     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent {@link ReasonerQueryEquivalence}.
+     * Used in QueryCache comparisons.
+     * An EXACT unifier between two queries can only exists iff they are alpha-equivalent ReasonerQueryEquivalence.
      * .
      */
     EXACT {
@@ -103,8 +101,8 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
     /**
      * Similar to the exact one with addition to allowing id predicates to differ.
-     * Used in {@link StructuralCache} comparisons.
-     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent {@link ReasonerQueryEquivalence}.
+     * Used in StructuralCache comparisons.
+     * A STRUCTURAL unifier between two queries can only exists iff they are structurally-equivalent ReasonerQueryEquivalence.
      */
     STRUCTURAL {
         @Override
@@ -239,7 +237,7 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
 
     /**
      * Unifier type used to determine whether two queries are in a subsumption relation.
-     * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE {@link UnifierType}.
+     * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE UnifierType.
      * Defining queries C and P and their respective answer sets A(C) and A(P) we say that a subsumptive unifier between child
      * and parent exists if:
      *

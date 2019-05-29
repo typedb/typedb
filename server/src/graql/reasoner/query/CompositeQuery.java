@@ -43,6 +43,7 @@ import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;

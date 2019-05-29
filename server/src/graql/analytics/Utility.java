@@ -21,11 +21,9 @@ package grakn.core.graql.analytics;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -48,7 +46,7 @@ import static graql.lang.Graql.var;
 public class Utility {
     /**
      * The Grakn type property on a given Tinkerpop vertex.
-     * If the vertex is a {@link SchemaConcept}, return invalid {@link Label}.
+     * If the vertex is a SchemaConcept, return invalid Label.
      *
      * @param vertex the Tinkerpop vertex
      * @return the type

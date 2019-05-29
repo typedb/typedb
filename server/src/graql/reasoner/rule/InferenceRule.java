@@ -47,6 +47,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -59,7 +60,7 @@ import static java.util.stream.Collectors.toSet;
 /**
  *
  * <p>
- * Class providing resolution and higher level facilities for {@link Rule} objects.
+ * Class providing resolution and higher level facilities for Rule objects.
  * </p>
  *
  *

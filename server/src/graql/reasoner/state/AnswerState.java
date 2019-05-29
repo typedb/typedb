@@ -25,7 +25,7 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 /**
  *
  * <p>
- * Resolution state holding an answer ({@link ConceptMap}) to the parent state.
+ * Resolution state holding an answer (ConceptMap) to the parent state.
  * </p>
  *
  *

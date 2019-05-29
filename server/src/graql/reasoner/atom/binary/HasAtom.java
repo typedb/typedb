@@ -30,7 +30,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 /**
- * TypeAtom corresponding to graql a {@link HasAttributeTypeProperty} property.
+ * TypeAtom corresponding to graql a HasAttributeTypeProperty property.
  */
 @AutoValue
 public abstract class HasAtom extends OntologicalAtom {

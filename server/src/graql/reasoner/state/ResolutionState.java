@@ -19,8 +19,6 @@
 package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import java.util.stream.Stream;
 
 /**
  *
