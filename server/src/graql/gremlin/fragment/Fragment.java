@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.common.util.Tuple;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
@@ -26,7 +27,6 @@ import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -165,7 +165,7 @@ public abstract class Fragment {
      * @param nodes
      * @return
      */
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+    public Tuple<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
         return null;
     }
 

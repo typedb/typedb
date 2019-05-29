@@ -19,16 +19,17 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.Sets;
+import grakn.core.common.util.Tuple;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.reasoner.utils.Pair;
 
 import java.util.Map;
 import java.util.Set;
 
+import static grakn.core.common.util.Collections.tuple;
 import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 
 /**
@@ -53,11 +54,11 @@ public abstract class EdgeFragment extends Fragment {
     }
 
     @Override
-    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+    public Tuple<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
         Node start = nodes.get(NodeId.of(NodeId.Type.VAR, start()));
         Node middle = nodes.get(getMiddleNodeId());
         // directed edge: middle -> start
-        return new Pair<>(middle, start);
+        return tuple(middle, start);
     }
 
     @Override

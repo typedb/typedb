@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import grakn.core.common.util.Tuple;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -33,7 +34,6 @@ import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
-import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
@@ -333,10 +333,10 @@ public class TraversalPlanner {
     private static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
         Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
         for (Fragment fragment : connectedFragments) {
-            Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
+            Tuple<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
             if (middleNodeDirectedEdge != null) {
-                middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.getKey(), new HashMap<>());
-                middleNodeFragmentMapping.get(middleNodeDirectedEdge.getKey()).put(middleNodeDirectedEdge.getValue(), fragment);
+                middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.first(), new HashMap<>());
+                middleNodeFragmentMapping.get(middleNodeDirectedEdge.first()).put(middleNodeDirectedEdge.second(), fragment);
             }
         }
         return middleNodeFragmentMapping;

@@ -192,48 +192,4 @@ public class RuleUtils {
         return rules;
     }
 
-    /**
-     * @param label type label for which the inferred count should be estimated
-     * @param tx transaction context
-     * @return estimated number of inferred instances of a given type
-     */
-    public static long estimateInferredTypeCount(Label label, TransactionOLTP tx){
-        //TODO find a lighter estimate/way to cache it efficiently
-        SchemaConcept initialType = tx.getSchemaConcept(label);
-        if (initialType == null || !initialType.thenRules().findFirst().isPresent()) return 0;
-        long inferredEstimate = 0;
-
-        Set<SchemaConcept> visitedTypes = new HashSet<>();
-        Stack<SchemaConcept> types = new Stack<>();
-        types.push(initialType);
-        while(!types.isEmpty()) {
-            SchemaConcept type = types.pop();
-            //estimate count by assuming connectivity determined by the least populated type
-            Set<Type> dependants = type.thenRules()
-                    .map(rule ->
-                            rule.whenTypes()
-                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx, t2.label()))))
-                                    .flatMap(CommonUtil::optionalToStream)
-                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.label())))
-                    )
-                    .flatMap(CommonUtil::optionalToStream)
-                    .collect(toSet());
-
-            if (!visitedTypes.contains(type) && !dependants.isEmpty()){
-                dependants.stream()
-                        .filter(at -> !visitedTypes.contains(at))
-                        .filter(at -> !types.contains(at))
-                        .forEach(types::add);
-                visitedTypes.add(type);
-            } else {
-                //if type is a leaf - update counts
-                Set<? extends SchemaConcept> subs = type.subs().collect(toSet());
-                for (SchemaConcept sub : subs) {
-                    long labelCount = tx.session().keyspaceStatistics().count(tx, sub.label());
-                    inferredEstimate += labelCount;
-                }
-            }
-        }
-        return inferredEstimate;
-    }
 }
