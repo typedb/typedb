@@ -315,9 +315,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void commit() {
             /* permanent tracing hooks one method down */
             tx().commitAndGetLogs().ifPresent(commitLog ->
-                    commitLog.attributes().forEach((labelIndexPair, conceptIds) ->
-                            conceptIds.forEach(id -> attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), labelIndexPair.getKey(), labelIndexPair.getValue(), id))
-                    ));
+                    commitLog.attributes().forEach((labelIndexPair, conceptId) ->
+                           attributeDeduplicatorDaemon.markForDeduplication(commitLog.keyspace(), labelIndexPair.getKey(), labelIndexPair.getValue(), conceptId))
+                    );
             onNextResponse(ResponseBuilder.Transaction.commit());
         }
 

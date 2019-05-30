@@ -69,21 +69,6 @@ import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -97,6 +82,23 @@ import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A TransactionOLTP using JanusGraph as a vendor backend.
@@ -112,7 +114,7 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    private final ReadWriteLock graphLock;
+    private final ConcurrentHashMap<String, String> attributesMap;
 
 
     // Caches
@@ -153,8 +155,8 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ReadWriteLock graphLock) {
-        this.graphLock = graphLock;
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ConcurrentHashMap<String, String> attributesMap) {
+        this.attributesMap = attributesMap;
 
         createdInCurrentThread.set(true);
 
@@ -187,16 +189,13 @@ public class TransactionOLTP implements Transaction {
         executeLockingMethod(() -> {
             try {
                 LOG.trace("Graph is valid. Committing graph...");
-                // Serialise all the commits to the same Janus graph
-                // (the lock is associated to a specific graph)
-                graphLock.writeLock().lock();
                 janusTransaction.commit();
-
+                cache().getNewAttributes().forEach((labelStringPair, conceptId) -> {
+                    attributesMap.putIfAbsent(labelStringPair.getValue(), conceptId.getValue());
+                });
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
-            } finally {
-                graphLock.writeLock().unlock();
             }
             return null;
         });
@@ -424,15 +423,7 @@ public class TransactionOLTP implements Transaction {
     private <T extends Concept> T getConcept(Iterator<Vertex> vertices) {
         T concept = null;
         if (vertices.hasNext()) {
-            Vertex vertex;
-            // Get read lock before accessing graph so that if a commit is occurring, we wait
-            // Without lock, when inserting a lot of attributes this traversal might return ghost vertices
-            graphLock.readLock().lock();
-            try {
-                vertex = vertices.next();
-            } finally {
-                graphLock.readLock().unlock();
-            }
+            Vertex vertex = vertices.next();
             concept = factory().buildConcept(vertex);
         }
         return concept;
@@ -902,7 +893,7 @@ public class TransactionOLTP implements Transaction {
         validateGraph();
 
         Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
-        Map<Pair<Label, String>, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
+        Map<Pair<Label, String>, ConceptId> newAttributes = transactionCache.getNewAttributes();
         boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
 
         ServerTracing.closeScopedChildSpan(validateSpanId);
@@ -1006,9 +997,9 @@ public class TransactionOLTP implements Transaction {
 
         private final KeyspaceImpl keyspace;
         private final Map<ConceptId, Long> instanceCount;
-        private final Map<Pair<Label, String>, Set<ConceptId>> attributes;
+        private final Map<Pair<Label, String>, ConceptId> attributes;
 
-        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, ConceptId> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
@@ -1031,11 +1022,11 @@ public class TransactionOLTP implements Transaction {
             return instanceCount;
         }
 
-        public Map<Pair<Label, String>, Set<ConceptId>> attributes() {
+        public Map<Pair<Label, String>, ConceptId> attributes() {
             return attributes;
         }
 
-        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> newAttributes) {
+        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, ConceptId> newAttributes) {
             return new CommitLog(keyspace, instanceCount, newAttributes);
         }
 

@@ -34,7 +34,7 @@ java_test(
     name = "keyspace-cache-it",
     test_class = "grakn.core.server.session.cache.KeyspaceCacheIT",
     srcs = ["cache/KeyspaceCacheIT.java"],
-    deps = ["//server", "//test-integration/rule:grakn-test-server", "@graknlabs_client_java//:client-java", "//concept"],
+    deps = ["//server", "//test-integration/rule:grakn-test-server", "@graknlabs_client_java//:client-java", "//concept", "@graknlabs_graql//java:graql"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
