@@ -198,6 +198,7 @@ public class RuleUtils {
      * @return estimated number of inferred instances of a given type
      */
     public static long estimateInferredTypeCount(Label label, TransactionOLTP tx){
+        //TODO find a lighter estimate/way to cache it efficiently
         SchemaConcept initialType = tx.getSchemaConcept(label);
         if (initialType == null || !initialType.thenRules().findFirst().isPresent()) return 0;
         long inferredEstimate = 0;

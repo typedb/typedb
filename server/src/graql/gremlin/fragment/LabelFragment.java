@@ -38,7 +38,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import static grakn.core.graql.reasoner.rule.RuleUtils.estimateInferredTypeCount;
 import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
@@ -106,8 +105,8 @@ public abstract class LabelFragment extends Fragment {
         long instances = labels().stream()
                 .map(label -> {
                     long baseCount = tx.session().keyspaceStatistics().count(tx, label);
-                    long inferredCount = estimateInferredTypeCount(label, tx);
-                    return baseCount + inferredCount;
+                    //TODO add a reasonably light estimate for inferred concepts
+                    return baseCount;
                 })
                 .reduce(Long::sum)
                 .orElseThrow(() -> new RuntimeException("LabelFragment contains no labels!"));
