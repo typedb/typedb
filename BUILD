@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["VERSION", "deployment.properties", "RELEASE_TEMPLATE.md"], visibility = ["//visibility:public"])
+exports_files(["VERSION", "deployment.properties", "RELEASE_TEMPLATE.md", "LICENSE", "README.md"], visibility = ["//visibility:public"])
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//brew:rules.bzl", "deploy_brew")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip", "checksum", "assemble_versioned")
@@ -38,6 +38,8 @@ assemble_targz(
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+        "//:LICENSE": "LICENSE",
+        "//:README.md": "README.md",
     },
     empty_directories = [
         "server/db/cassandra",
@@ -62,6 +64,8 @@ assemble_zip(
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+        "//:LICENSE": "LICENSE",
+        "//:README.md": "README.md",
     },
     empty_directories = [
         "server/db/cassandra",
@@ -86,6 +90,8 @@ assemble_zip(
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+        "//:LICENSE": "LICENSE",
+        "//:README.md": "README.md",
         "//server:services/hadoop/bin/winutils.exe": "server/services/hadoop/bin/winutils.exe"
     },
     empty_directories = [
