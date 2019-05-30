@@ -62,7 +62,7 @@ public class NeqValuePredicate extends NeqPredicate {
 
     @Override
     public String toString(){
-        return "[" + getVarName() + " !== " + getPredicate() + "]"
+        return "[" + getVarName() + " " + op.comparator() + " " + getPredicate() + "]"
                 + (getValue() != null? "[" + getPredicate() + "/" + getValue() + "]" : "");
     }
 
