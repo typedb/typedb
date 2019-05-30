@@ -42,6 +42,7 @@ import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import java.util.AbstractCollection;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -99,15 +100,14 @@ public class NeqValuePredicateIT {
                     "$anotherValue > 0;" +
                     "};";
             ReasonerQueryImpl query = ReasonerQueries.create(conjunction(pattern), tx);
-            System.out.println();
+            List<ConceptMap> answers = query.resolve().collect(Collectors.toList());
+            answers.forEach(ans -> {
+                Object val = ans.get("value").asAttribute().value();
+                Object anotherVal = ans.get("anotherValue").asAttribute().value();
+                assertEquals(val, anotherVal);
+                assertTrue((long) anotherVal > 0L);
+            });
         }
-    }
-
-    private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parsePattern(patternString)
-                .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
     }
 
     @Test
@@ -179,41 +179,68 @@ public class NeqValuePredicateIT {
                     ).getNegationDNF().getPatterns()
             );
 
+            Conjunction<Pattern> negationWithIndirectBound = Iterables.getOnlyElement(
+                    Graql.parsePattern(
+                            "{ " +
+                                    "$x has derived-resource-string $val;" +
+                                    "not {$val == $unwanted;$unwanted == 'unattached';};" +
+                                    "};"
+                    ).getNegationDNF().getPatterns()
+            );
+
+            Conjunction<Pattern> negationWithBound = Iterables.getOnlyElement(
+                    Graql.parsePattern(
+                            "{ " +
+                                    "$x has derived-resource-string $val;" +
+                                    "not {$val == 'unattached';};" +
+                                    "};"
+                    ).getNegationDNF().getPatterns()
+            );
+
             ResolvableQuery unboundNeqQuery = ReasonerQueries.resolvable(neqWithoutBound, tx);
             ResolvableQuery boundNeqQuery = ReasonerQueries.resolvable(neqWithBound, tx);
             ResolvableQuery softBoundNeqQuery = ReasonerQueries.resolvable(neqWithSoftBound, tx);
+            ResolvableQuery negatedQueryWithIndirectBound = ReasonerQueries.resolvable(negationWithIndirectBound, tx);
+            ResolvableQuery negatedQueryWithBound = ReasonerQueries.resolvable(negationWithBound, tx);
 
             //we keep unbound predicates outside attributes
             assertTrue(unboundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).allMatch(AbstractCollection::isEmpty));
             assertTrue(unboundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
 
             //if the predicate has a soft bound, we try to incorporate it into relevant attribute
+            //we still keep the variable predicate outside
             assertTrue(softBoundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(AbstractCollection::isEmpty));
             assertTrue(softBoundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(pred -> !pred.isEmpty()));
             assertTrue(softBoundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
-            //we still keep the variable predicate outside
 
             //if the predicate has a hard bound, we try to incorporate it into relevant attribute
             //we still keep the variable predicate outside
             assertTrue(boundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(AbstractCollection::isEmpty));
             assertTrue(boundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(pred -> !pred.isEmpty()));
             assertTrue(boundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+
+            assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(negatedQueryWithBound, negatedQueryWithIndirectBound));
         }
     }
 
     @Test
     public void whenParsingNeqValueVPsWithValue_equivalentPatternsMakeEquivalentQueries() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-            Conjunction<Pattern> neqOutsideAttribute = Iterables.getOnlyElement(
-                    Graql.parsePattern("{$x has derived-resource-string $val;$val !== 'unattached';};").getNegationDNF().getPatterns()
+            Conjunction<Pattern> neqOutsideAttribute = Iterables.getOnlyElement(Graql.parsePattern(
+                    "{" +
+                            "$x has derived-resource-string $val;$val !== 'unattached';" +
+                    "};").getNegationDNF().getPatterns()
             );
-            Conjunction<Pattern> neqInAttribute = Iterables.getOnlyElement(
-                    Graql.parsePattern("{$x has derived-resource-string !== 'unattached';};").getNegationDNF().getPatterns()
+            Conjunction<Pattern> neqInAttribute = Iterables.getOnlyElement(Graql.parsePattern(
+                    "{"+
+                            "$x has derived-resource-string !== 'unattached';" +
+                            "};").getNegationDNF().getPatterns()
             );
-            Conjunction<Pattern> indirectOutsideNeq = Iterables.getOnlyElement(Graql.parsePattern("{" +
-                    "$x has derived-resource-string $val;" +
-                    "$unwanted == 'unattached';" +
-                    "$val !== $unwanted;" +
+            Conjunction<Pattern> indirectOutsideNeq = Iterables.getOnlyElement(Graql.parsePattern(
+                    "{" +
+                            "$x has derived-resource-string $val;" +
+                            "$unwanted == 'unattached';" +
+                            "$val !== $unwanted;" +
                     "};").getNegationDNF().getPatterns());
 
             ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
@@ -285,21 +312,25 @@ public class NeqValuePredicateIT {
                     "$unwanted == 'unattached';" +
                     "$val !== $unwanted;" +
                     "};";
-            String negatedVariant = "match " +
+            String negatedVariant = "{ " +
                     "$x has derived-resource-string $val;" +
                     "not {$val == 'unattached';};" +
-                    "get;";
-            String negatedVariant2 = "match " +
+                    "};";
+            String negatedVariant2 = "{ " +
                     "$x has derived-resource-string $val;" +
                     "not {$val == $unwanted;$unwanted == 'unattached';};" +
-                    "get;";
-            String negatedComplement = "match " +
+                    "};";
+            String negatedComplement = "{ " +
                     "$x has derived-resource-string $val;" +
                     "not {$val !== 'unattached';};" +
-                    "get;";
+                    "};";
 
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(neqVariant), tx);
             ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(neqVariant2), tx);
+            ResolvableQuery query3 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant), tx);
+            //TODO this is parsed wrong
+            ResolvableQuery query4 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant2), tx);
+            ResolvableQuery query5 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedComplement), tx);
 
             String complementQueryString = "match $x has derived-resource-string $val; $val == 'unattached'; get;";
             String completeQueryString = "match $x has derived-resource-string $val; get;";
@@ -307,9 +338,9 @@ public class NeqValuePredicateIT {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
 
             List<ConceptMap> answersBis = tx.execute(Graql.match(Graql.parsePattern(neqVariant2)).get());
-            List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negatedVariant).asGet());
-            List<ConceptMap> negationAnswersBis = tx.execute(Graql.parse(negatedVariant2).asGet());
-            List<ConceptMap> negationComplement = tx.execute(Graql.parse(negatedComplement).asGet());
+            List<ConceptMap> negationAnswers = tx.execute(Graql.match(Graql.parsePattern(negatedVariant)).get());
+            List<ConceptMap> negationAnswersBis = tx.execute(Graql.match(Graql.parsePattern(negatedVariant2)).get());
+            List<ConceptMap> negationComplement = tx.execute(Graql.match(Graql.parsePattern(negatedComplement)).get());
 
             List<ConceptMap> complement = tx.execute(Graql.parse(complementQueryString).asGet());
             List<ConceptMap> complete = tx.execute(Graql.parse(completeQueryString).asGet());
@@ -388,5 +419,19 @@ public class NeqValuePredicateIT {
             GraqlGet query = Graql.parse(queryString).asGet();
             tx.execute(query);
         }
+    }
+
+    private Conjunction<Statement> conjunction(String patternString){
+        Set<Statement> vars = Graql.parsePattern(patternString)
+                .getDisjunctiveNormalForm().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Graql.and(vars);
+    }
+
+    private Conjunction<Pattern> conjunctionWithNegation(String patternString){
+        Set<Pattern> vars = Graql.parsePattern(patternString)
+                .getNegationDNF().getPatterns()
+                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
+        return Graql.and(vars);
     }
 }

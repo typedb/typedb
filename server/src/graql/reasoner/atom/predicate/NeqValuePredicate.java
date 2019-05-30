@@ -58,7 +58,11 @@ public class NeqValuePredicate extends NeqPredicate {
     @Nullable public Object getValue(){ return value;}
 
     @Override
-    public Atomic copy(ReasonerQuery parent) { return create(this.getVarName(), this.getPredicate(), this.getValue(), parent);}
+    public Atomic copy(ReasonerQuery parent) {
+        return create(this.getVarName(), this.operation(), parent);
+    }
+
+    public ValueProperty.Operation operation(){ return op;}
 
     @Override
     public String toString(){

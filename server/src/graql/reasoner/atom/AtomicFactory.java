@@ -172,6 +172,7 @@ public class AtomicFactory {
 
         //
         ValueProperty.Operation indirectOperation = null;
+        //TODO instead of looking at children, look at parents
         //ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
         Object value = operation.innerStatement() == null? operation.value() : null;
