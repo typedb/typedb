@@ -154,7 +154,7 @@ public class AtomicFactory {
         Variable var = has != null? has.attribute().var() : statement.var();
         ValueProperty.Operation directOperation = property.operation();
         Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
-        
+
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
@@ -172,7 +172,7 @@ public class AtomicFactory {
 
         //
         //ValueProperty.Operation indirectOperation = null;
-        //if predicate variable is bound in another atom, we need to create a NeqPredicate
+        //TODO if predicate variable is bound in another atom, we alawys need to create a NeqPredicate
         ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
         //ValueProperty.Operation indirectOperation = directOperation.comparator().equals(Graql.Token.Comparator.EQ)?
           //      ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;

@@ -158,6 +158,14 @@ public class NeqValuePredicateIT {
                                     "};"
                     ).getNegationDNF().getPatterns()
             );
+            Conjunction<Pattern> neqWithoutBound2 = Iterables.getOnlyElement(
+                    Graql.parsePattern(
+                            "{" +
+                                    "$x has derived-resource-string !== $anotherVal;" +
+                                    "$y has derived-resource-string $anotherVal;" +
+                                    "};"
+                    ).getNegationDNF().getPatterns()
+            );
             Conjunction<Pattern> neqWithSoftBound = Iterables.getOnlyElement(
                     Graql.parsePattern(
                             "{" +
@@ -198,12 +206,14 @@ public class NeqValuePredicateIT {
             );
 
             ResolvableQuery unboundNeqQuery = ReasonerQueries.resolvable(neqWithoutBound, tx);
+            ResolvableQuery unboundNeqQuery2 = ReasonerQueries.resolvable(neqWithoutBound2, tx);
             ResolvableQuery boundNeqQuery = ReasonerQueries.resolvable(neqWithBound, tx);
             ResolvableQuery softBoundNeqQuery = ReasonerQueries.resolvable(neqWithSoftBound, tx);
             ResolvableQuery negatedQueryWithIndirectBound = ReasonerQueries.resolvable(negationWithIndirectBound, tx);
             ResolvableQuery negatedQueryWithBound = ReasonerQueries.resolvable(negationWithBound, tx);
 
             //we keep unbound predicates outside attributes
+            assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(unboundNeqQuery, unboundNeqQuery2));
             assertTrue(unboundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).allMatch(AbstractCollection::isEmpty));
             assertTrue(unboundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
 
