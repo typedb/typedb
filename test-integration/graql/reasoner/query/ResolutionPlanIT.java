@@ -293,6 +293,7 @@ public class ResolutionPlanIT {
      * [$start/...] ($start, $link) - ($link, $anotherlink) - ($anotherlink, $end)* [$anotherlink/...]
      *
      */
+    @Ignore ("should be fixed once we provide an estimate for inferred concepts count")
     @Test
     public void whenRelationLinkWithSubbedEndsAndRuleRelationInTheMiddle_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
