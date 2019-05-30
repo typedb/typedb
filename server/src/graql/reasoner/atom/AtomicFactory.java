@@ -154,8 +154,7 @@ public class AtomicFactory {
         Variable var = has != null? has.attribute().var() : statement.var();
         ValueProperty.Operation directOperation = property.operation();
         Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
-
-        //true if the VP has another VP that references it - a parent VP
+        
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
@@ -167,17 +166,20 @@ public class AtomicFactory {
                     return inner.var().equals(var);
                 })
                 .collect(Collectors.toSet());
+        //true if the VP has another VP that references it - a parent VP
         boolean hasParentVp = !parentVPs.isEmpty();
         if (hasParentVp && !partOfAttribute) return null;
 
         //
-        ValueProperty.Operation indirectOperation = null;
-        //TODO instead of looking at children, look at parents
-        //ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
+        //ValueProperty.Operation indirectOperation = null;
+        //if predicate variable is bound in another atom, we need to create a NeqPredicate
+        ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
+        //ValueProperty.Operation indirectOperation = directOperation.comparator().equals(Graql.Token.Comparator.EQ)?
+          //      ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
         Object value = operation.innerStatement() == null? operation.value() : null;
 
-        //TODO update parsing for negated vps - save operation correctly - not hardcoded neq
+        //TODO return set cause we might want to have two bounds (one VP and one comparison)
         //maybe make NeqValuePredicate extend ValuePredicate and add variable
         return value != null?
                 ValuePredicate.create(var.asReturnedVar(), operation, parent) :
