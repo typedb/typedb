@@ -241,7 +241,7 @@ public class NeqValuePredicateIT {
                             "$x has derived-resource-string $val;$val !== 'unattached';" +
                     "};").getNegationDNF().getPatterns()
             );
-            Conjunction<Pattern> neqInAttribute = Iterables.getOnlyElement(Graql.parsePattern(
+            Conjunction<Pattern> neqInsideAttribute = Iterables.getOnlyElement(Graql.parsePattern(
                     "{"+
                             "$x has derived-resource-string !== 'unattached';" +
                             "};").getNegationDNF().getPatterns()
@@ -256,7 +256,7 @@ public class NeqValuePredicateIT {
             ResolvableQuery outsideAttribute = ReasonerQueries.resolvable(neqOutsideAttribute, tx);
 
             //if a comparison vp is inside attribute, we need to copy it outside as well to ensure correctness at the end of execution
-            ResolvableQuery insideAttribute = ReasonerQueries.resolvable(neqInAttribute, tx);
+            ResolvableQuery insideAttribute = ReasonerQueries.resolvable(neqInsideAttribute, tx);
             ResolvableQuery indirectOutside = ReasonerQueries.resolvable(indirectOutsideNeq, tx);
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(outsideAttribute, insideAttribute));
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(insideAttribute, indirectOutside));

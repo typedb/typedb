@@ -29,6 +29,8 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.executor.property.PropertyExecutor;
+import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
@@ -47,6 +49,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
+import java.util.Objects;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -151,17 +154,21 @@ public class ReasonerUtils {
         Set<Statement> context = statement.var().isReturned()?
                 fullContext.stream().filter(v -> v.var().equals(valueVariable)).collect(toSet()) :
                 Collections.singleton(statement);
-        Set<ValuePredicate> vps = context.stream()
-                .flatMap(v -> v.getProperties(ValueProperty.class)
+        Set<Atomic> vps = context.stream()
+                .flatMap(s -> s.getProperties(ValueProperty.class)
                         .map(property ->
-                                AtomicFactory.createValuePredicate(property, statement, fullContext, parent)
-                                //AtomicFactory.createValuePredicate(property, statement, fullContext, false, false, parent)
+                                //AtomicFactory.createValuePredicate(property, statement, fullContext, parent)
+                                PropertyExecutor
+                                        .create(statement.var(), property)
+                                        .atomic(parent, statement, fullContext)
+
                         )
-                        .filter(ValuePredicate.class::isInstance)
-                        .map(ValuePredicate.class::cast)
                 )
                 .collect(toSet());
-        return vps;
+        return vps.stream()
+                .filter(ValuePredicate.class::isInstance)
+                .map(ValuePredicate.class::cast)
+                .collect(toSet());
     }
 
     /**

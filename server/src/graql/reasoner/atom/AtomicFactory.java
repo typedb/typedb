@@ -53,19 +53,20 @@ public class AtomicFactory {
         //parse all atoms
         Set<Atomic> atoms = pattern.statements().stream()
                 .flatMap(statement -> statement.properties().stream()
-                        .map(property -> PropertyExecutor.create(statement.var(), property)
+                        .map(property -> PropertyExecutor
+                                .create(statement.var(), property)
                                 .atomic(parent, statement, pattern.statements()))
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
         //extract neqs from attributes and add them to atom set - we need to treat them separately to ensure correctness
         //this creates different vps because the statement context is bound to HasAttributeProperty
-        /*
         Set<Atomic> neqs = pattern.statements().stream()
                 .flatMap(statement -> statement.getProperties(HasAttributeProperty.class))
                 .flatMap(hp -> hp.statements().flatMap(
                         statement -> statement.getProperties(ValueProperty.class)
-                                .map(property -> PropertyExecutor.create(statement.var(), property)
+                                .map(property -> PropertyExecutor
+                                        .create(statement.var(), property)
                                         .atomic(parent, statement, pattern.statements()))
                                 .filter(Objects::nonNull))
                 ).collect(Collectors.toSet());
@@ -74,9 +75,6 @@ public class AtomicFactory {
             System.out.println();
         }
         boolean changed = atoms.addAll(neqs);
-        */
-
-
 
         //remove duplicates
         return atoms.stream()
@@ -111,47 +109,6 @@ public class AtomicFactory {
      * @param parent query the VP should be part of
      * @return value predicate corresponding to the provided property
      */
-    public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
-                                                                              boolean allowNeq, boolean discardIfInAttribute, ReasonerQuery parent) {
-        HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
-        Variable var = has != null? has.attribute().var() : statement.var();
-        ValueProperty.Operation directOperation = property.operation();
-        Variable predicateVar = directOperation.innerStatement() != null? directOperation.innerStatement().var() : null;
-
-        boolean hasNeq = directOperation.comparator().equals(Graql.Token.Comparator.NEQV);
-        boolean partOfAttribute = otherStatements.stream()
-                .flatMap(s -> s.getProperties(HasAttributeProperty.class))
-                .anyMatch(p -> p.attribute().var().equals(var));
-        //true if the VP has another VP that references it - a parent VP
-        Set<ValueProperty> parentVPs = otherStatements.stream()
-                .flatMap(s -> s.getProperties(ValueProperty.class))
-                .filter(vp -> {
-                    Statement inner = vp.operation().innerStatement();
-                    if (inner == null) return false;
-                    return inner.var().equals(var);
-                })
-                .collect(Collectors.toSet());
-        boolean hasParentVp = !parentVPs.isEmpty();
-        if (hasParentVp) return null;
-        if (discardIfInAttribute && (partOfAttribute && !hasNeq)) return null;
-
-        ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
-        ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
-        Object value = operation.innerStatement() == null? operation.value() : null;
-
-        NeqValuePredicate oldNeq = NeqValuePredicate.create(var.asReturnedVar(), predicateVar, value, parent);
-        NeqValuePredicate newNeq = NeqValuePredicate.create(var.asReturnedVar(), operation, parent);
-        if (!newNeq.equals(oldNeq)){
-            System.out.println();
-        }
-        return hasNeq?
-                (allowNeq?
-                        NeqValuePredicate.create(var.asReturnedVar(), predicateVar, value, parent) :
-                        //NeqValuePredicate.create(var.asReturnedVar(), operation, parent) :
-                        ValuePredicate.neq(var.asReturnedVar(), predicateVar, value, parent)) :
-                ValuePredicate.create(var.asReturnedVar(), operation, parent);
-    }
-
     public static ValuePredicate createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
                                                                              ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
@@ -172,11 +129,9 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
         //true if the VP has another VP that references it - a parent VP
         boolean hasParentVp = !parentVPs.isEmpty();
-        if (hasParentVp) return null;
-        //if (hasParentVp && !partOfAttribute) return null;
+        //if (hasParentVp) return null;
+        if (hasParentVp && !partOfAttribute) return null;
 
-        //
-        //ValueProperty.Operation indirectOperation = null;
         //TODO if predicate variable is bound in another atom, we always need to create a NeqPredicate
         boolean predicateVarBound = otherStatements.stream()
                 .flatMap(s -> s.properties().stream())
@@ -188,18 +143,8 @@ public class AtomicFactory {
         ValueProperty.Operation indirectOperation = !predicateVarBound?
                 ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
-        Object value = operation.innerStatement() == null? operation.value() : null;
-
-        //TODO return set cause we might want to have two bounds (one VP and one comparison)
-        //maybe make NeqValuePredicate extend ValuePredicate and add variable
 
         return ValuePredicate.create(var.asReturnedVar(), operation, parent);
-        /*
-        return value != null?
-                ValuePredicate.create(var.asReturnedVar(), operation, parent) :
-                NeqValuePredicate.create(var.asReturnedVar(), operation, parent);
-
-         */
     }
 }
 

@@ -78,10 +78,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         if (vp == null) return vp;
 
+        boolean isVariable = vp.getPredicate().innerStatement() != null;
         boolean partOfAttribute = otherStatements.stream()
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
-        return partOfAttribute? NeqValuePredicate.fromValuePredicate(vp) : vp;
+        return isVariable? NeqValuePredicate.fromValuePredicate(vp) : vp;
 
         //return AtomicFactory.createValuePredicate(property, statement, otherStatements, true, true, parent);
     }

@@ -36,15 +36,10 @@ public class NeqValuePredicate extends NeqPredicate {
 
     private NeqValuePredicate(Variable varName, Variable predicateVar, @Nullable Object value, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);
+        //neqs only valid for variable predicates (ones having a reference variable)
+        assert (op.innerStatement() != null);
         this.op = op;
         this.value = value;
-    }
-
-    public static NeqValuePredicate create(Variable varName, @Nullable Variable var, @Nullable Object value, ReasonerQuery parent){
-        Variable predicateVar = var != null? var : Graql.var().var().asReturnedVar();
-        ValueProperty.Operation.Comparison<?> op = ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.NEQV, value != null ? value : Graql.var(predicateVar));
-        Statement pattern = new Statement(varName).operation(op);
-        return new NeqValuePredicate(varName, predicateVar, value, op, pattern, parent);
     }
 
     public static NeqValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
@@ -63,7 +58,6 @@ public class NeqValuePredicate extends NeqPredicate {
     }
 
     public static Atomic fromValuePredicate(ValuePredicate predicate){
-        if (predicate.getPredicate().value() != null) return null;
         return create(predicate.getVarName(), predicate.getPredicate(), predicate.getParentQuery());
     }
 
