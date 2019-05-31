@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
  * P are the comparison predicates
  *
  * Consequently we compute the answer set of Q' ans(Q') first and find the answer set of Q ans(Q) by applying all variable
- * predicates to ans(Q')
+ * predicates to ans(Q').
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")

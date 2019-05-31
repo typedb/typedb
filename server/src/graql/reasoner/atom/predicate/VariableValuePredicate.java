@@ -38,6 +38,11 @@ import graql.lang.statement.Variable;
  * all processing we ensure all comparisons hold. This ensures the ordering of atoms does not interfere with the correctness
  * of the result.
  *
+ * General handling of value predicates:
+ * - bound predicates (with specific value, either hard (equality) or soft (inequality) - store them internally as part of
+ * attributes
+ * - unbound (variable) predicates - store them outside attributes to be used in VariableComparisonStates
+ *
  */
 public class VariableValuePredicate extends VariablePredicate {
 
