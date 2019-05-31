@@ -18,6 +18,8 @@
 
 package grakn.core.common.util;
 
+import java.util.Objects;
+
 public class Tuple<A, B> {
 
     private A first;
@@ -34,5 +36,28 @@ public class Tuple<A, B> {
 
     public B second() {
         return second;
+    }
+
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+
+        if (obj.getClass() == this.getClass()) {
+            Tuple<?, ?> other = (Tuple) obj;
+
+            return (Objects.equals(this.first, other.first) &&
+                    Objects.equals(this.second, other.second));
+        }
+
+        return false;
+    }
+
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.first.hashCode();
+        h *= 1000003;
+        h ^= this.second.hashCode();
+
+        return h;
     }
 }

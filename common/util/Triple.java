@@ -18,6 +18,8 @@
 
 package grakn.core.common.util;
 
+import java.util.Objects;
+
 public class Triple<A, B, C> {
 
     private A first;
@@ -40,5 +42,31 @@ public class Triple<A, B, C> {
 
     public C third() {
         return third;
+    }
+
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+
+        if (obj.getClass() == this.getClass()) {
+            Triple<?, ?, ?> other = (Triple) obj;
+
+            return (Objects.equals(this.first, other.first) &&
+                    Objects.equals(this.second, other.second) &&
+                    Objects.equals(this.third, other.third));
+        }
+
+        return false;
+    }
+
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.first.hashCode();
+        h *= 1000003;
+        h ^= this.second.hashCode();
+        h *= 1000003;
+        h ^= this.third.hashCode();
+
+        return h;
     }
 }
