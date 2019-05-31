@@ -19,7 +19,9 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -40,11 +42,9 @@ import graql.lang.statement.Statement;
 import java.util.AbstractCollection;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
@@ -74,40 +74,7 @@ public class VariableValuePredicateIT {
     }
 
     @Test
-    public void taxfixMRE(){
-        SessionImpl session = server.sessionWithNewKeyspace();
-
-        //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-        try(TransactionOLTP tx = session.transaction().write()) {
-            tx.execute(Graql.parse("define " +
-                    "someEntity sub entity," +
-                    "has resource," +
-                    "has anotherResource;" +
-                    "resource sub attribute, datatype long;" +
-                    "anotherResource sub attribute, datatype long;"
-            ).asDefine());
-            tx.commit();
-        }
-        try(TransactionOLTP tx = session.transaction().write()) {
-            String pattern = "{" +
-                    "$x has resource $value;" +
-                    "$x has anotherResource $anotherValue;" +
-                    "$value == $anotherValue;" +
-                    "$anotherValue > 0;" +
-                    "};";
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(pattern), tx);
-            List<ConceptMap> answers = query.resolve().collect(Collectors.toList());
-            answers.forEach(ans -> {
-                Object val = ans.get("value").asAttribute().value();
-                Object anotherVal = ans.get("anotherValue").asAttribute().value();
-                assertEquals(val, anotherVal);
-                assertTrue((long) anotherVal > 0L);
-            });
-        }
-    }
-
-    @Test
-    public void taxfixMRE2(){
+    public void whenResolvableAttributesHaveVariableComparisonAndSoftBound_answersAreCalculatedCorrectly(){
         SessionImpl session = server.sessionWithNewKeyspace();
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +
@@ -138,7 +105,6 @@ public class VariableValuePredicateIT {
                 assertEquals(value, anotherValue);
                 assertTrue((long) value > 1337L);
             });
-            System.out.println();
         }
     }
 
@@ -303,6 +269,26 @@ public class VariableValuePredicateIT {
                 Object anotherValue = ans.get("anotherValue").asAttribute().value();
                 assertNotEquals(value, anotherValue);
             });
+
+            neqAnswersWithCondition.forEach(ans -> {
+                Object value = ans.get("value").asAttribute().value();
+                Object anotherValue = ans.get("anotherValue").asAttribute().value();
+                assertNotEquals(value, anotherValue);
+                assertTrue(anotherValue.toString().contains("value"));
+            });
+
+            eqAnswers.forEach(ans -> {
+                Object value = ans.get("value").asAttribute().value();
+                Object anotherValue = ans.get("anotherValue").asAttribute().value();
+                assertEquals(value, anotherValue);
+            });
+
+            eqAnswersWithCondition.forEach(ans -> {
+                Object value = ans.get("value").asAttribute().value();
+                Object anotherValue = ans.get("anotherValue").asAttribute().value();
+                assertEquals(value, anotherValue);
+                assertTrue(anotherValue.toString().contains("value"));
+            });
         }
     }
 
@@ -310,44 +296,47 @@ public class VariableValuePredicateIT {
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireNotHavingSpecificValue() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-            String neqVariant = "{ " +
+            String neqHardBound = "{ " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
                     "};";
-            String neqVariant2 = "{ " +
+            String neqHardBound2 = "{ " +
                     "$x has derived-resource-string $val;" +
                     "$unwanted == 'unattached';" +
                     "$val !== $unwanted;" +
                     "};";
-            String negatedVariant = "{ " +
+            String negatedVpHardBound = "{ " +
                     "$x has derived-resource-string $val;" +
                     "not {$val == 'unattached';};" +
                     "};";
-            String negatedVariant2 = "{ " +
+            String negatedVpHardBound2 = "{ " +
                     "$x has derived-resource-string $val;" +
                     "not {$val == $unwanted;$unwanted == 'unattached';};" +
                     "};";
-            String negatedComplement = "{ " +
+            String negatedNeqVpHardBound = "{ " +
                     "$x has derived-resource-string $val;" +
                     "not {$val !== 'unattached';};" +
                     "};";
 
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(neqVariant), tx);
-            ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(neqVariant2), tx);
-            ResolvableQuery query3 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant), tx);
-            ResolvableQuery query4 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant2), tx);
-            ResolvableQuery query5 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedComplement), tx);
+            ReasonerAtomicQuery neqHardBoundQuery = ReasonerQueries.atomic(conjunction(neqHardBound), tx);
+            ReasonerAtomicQuery neqHardBoundQuery2 = ReasonerQueries.atomic(conjunction(neqHardBound2), tx);
+            ResolvableQuery negatedVpHardBoundQuery = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVpHardBound), tx);
+            ResolvableQuery negatedVpHardBoundQuery2 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVpHardBound2), tx);
+            ResolvableQuery negatedNeqVpHardBoundQuery = ReasonerQueries.resolvable(conjunctionWithNegation(negatedNeqVpHardBound), tx);
+
+            assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(neqHardBoundQuery, neqHardBoundQuery2));
+            assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(negatedVpHardBoundQuery, negatedVpHardBoundQuery2));
 
             String complementQueryPattern = "{$x has derived-resource-string $val; $val == 'unattached';};";
             String completeQueryPattern = "{$x has derived-resource-string $val;};";
 
             ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(conjunction(complementQueryPattern), tx);
 
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqHardBound)).get());
 
-            List<ConceptMap> answersBis = tx.execute(Graql.match(Graql.parsePattern(neqVariant2)).get());
-            List<ConceptMap> negationAnswers = tx.execute(Graql.match(Graql.parsePattern(negatedVariant)).get());
-            List<ConceptMap> negationAnswersBis = tx.execute(Graql.match(Graql.parsePattern(negatedVariant2)).get());
-            List<ConceptMap> negationComplement = tx.execute(Graql.match(Graql.parsePattern(negatedComplement)).get());
+            List<ConceptMap> answersBis = tx.execute(Graql.match(Graql.parsePattern(neqHardBound2)).get());
+            List<ConceptMap> negationAnswers = tx.execute(Graql.match(Graql.parsePattern(negatedVpHardBound)).get());
+            List<ConceptMap> negationAnswersBis = tx.execute(Graql.match(Graql.parsePattern(negatedVpHardBound2)).get());
+            List<ConceptMap> negationComplement = tx.execute(Graql.match(Graql.parsePattern(negatedNeqVpHardBound)).get());
 
             List<ConceptMap> complement = tx.execute(Graql.match(Graql.parsePattern(complementQueryPattern)).get());
             List<ConceptMap> complete = tx.execute(Graql.match(Graql.parsePattern(completeQueryPattern)).get());
@@ -408,23 +397,26 @@ public class VariableValuePredicateIT {
         }
     }
 
-    //TODO another bug here
-    @Ignore
-    @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
+    @Test
     public void derivingResources_requireAnEntityToHaveTwoDistinctResourcesOfNotAbstractType() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             String queryString = "match " +
                     "$x has derivable-resource-string $value;" +
                     "$x has derivable-resource-string $unwantedValue;" +
-                    "$unwantedValue 'unattached';" +
-                    "$value !== $unwantedValue;" +
+                    "$value !== $unwantedValue;$unwantedValue 'unattached';" +
                     "$value isa $type;" +
                     "$unwantedValue isa $type;" +
-                    "$type != $unwantedType;" +
-                    "$unwantedType type 'derivable-resource-string';" +
+                    "$type != $unwantedType;$unwantedType type derivable-resource-string;" +
                     "get;";
             GraqlGet query = Graql.parse(queryString).asGet();
-            tx.execute(query);
+            List<ConceptMap> answers = tx.execute(query);
+            Type unwantedType = tx.getType(Label.of("derivable-resource-string"));
+            answers.forEach(ans -> {
+                Type type = ans.get("type").asType();
+                Object value = ans.get("value").asAttribute().value();
+                assertTrue(!value.equals("unattached"));
+                assertTrue(!type.equals(unwantedType));
+            });
         }
     }
 
