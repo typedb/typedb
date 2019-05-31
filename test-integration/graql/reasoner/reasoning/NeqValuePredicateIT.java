@@ -16,7 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
@@ -335,7 +334,6 @@ public class NeqValuePredicateIT {
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(neqVariant), tx);
             ReasonerAtomicQuery query2 = ReasonerQueries.atomic(conjunction(neqVariant2), tx);
             ResolvableQuery query3 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant), tx);
-            //TODO this is parsed wrong
             ResolvableQuery query4 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant2), tx);
             ResolvableQuery query5 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedComplement), tx);
 

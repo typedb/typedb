@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atom.predicate;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
@@ -38,6 +39,7 @@ public class NeqValuePredicate extends NeqPredicate {
         super(varName, predicateVar, pattern, parentQuery);
         //neqs only valid for variable predicates (ones having a reference variable)
         assert (op.innerStatement() != null);
+        assert (value == null);
         this.op = op;
         this.value = value;
     }
@@ -71,18 +73,23 @@ public class NeqValuePredicate extends NeqPredicate {
 
     @Override
     public boolean isSatisfied(ConceptMap sub) {
-        Object predicateVal = getPredicates(getPredicate(), ValuePredicate.class)
-                .map(p -> p.getPredicate().value())
-                .findFirst().orElse(null);
-
-        Object val = getValue() != null? getValue() : predicateVal;
-        if (val == null &&
-                (!sub.containsVar(getVarName()) || !sub.containsVar(getPredicate()))) {
-            return true;
-        }
-
         Concept concept = sub.containsVar(getVarName())? sub.get(getVarName()) : null;
         Concept referenceConcept = sub.containsVar(getPredicate())? sub.get(getPredicate()) : null;
+
+        if (concept == null || referenceConcept == null
+                || !concept.isAttribute() || !referenceConcept.isAttribute()){
+            throw new IllegalStateException();
+        }
+
+        Object lhs = concept.asAttribute().value();
+        Object rhs = referenceConcept.asAttribute().value();
+
+        ValueProperty.Operation subOperation = ValueProperty.Operation.Comparison.of(operation().comparator(), lhs);
+        ValueExecutor.Operation<?, ?> operationExecutor = ValueExecutor.Operation.of(subOperation);
+
+        return operationExecutor.test(rhs);
+
+        /*
         return  concept != null
                 && concept.isAttribute()
                 && (
@@ -90,9 +97,12 @@ public class NeqValuePredicate extends NeqPredicate {
                                 || (
                                         referenceConcept != null
                                                 && referenceConcept.isAttribute()
-                                                && !concept.asAttribute().value().equals(referenceConcept.asAttribute().value())
+                                                && !concept.asAttribute().value()
+                                                .equals(referenceConcept.asAttribute().value())
                         )
         );
+        */
+
     }
 
 }
