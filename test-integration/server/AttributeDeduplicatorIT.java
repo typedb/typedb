@@ -77,10 +77,10 @@ public class AttributeDeduplicatorIT {
         String testAttributeValue = "test-attribute-value";
 
         // define the schema
-        TransactionOLTP tx = session.transaction().write();
-        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
-        tx.commit();
-
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+            tx.commit();
+        }
 
         // insert 3 instances with the same value
         GraqlInsert query = Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue));
@@ -88,20 +88,20 @@ public class AttributeDeduplicatorIT {
         insertConcurrently(query, 16);
 
         // verify there are 16 attribute instances in the graph before deduplication
-        tx = session.transaction().read();
-        List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
-        assertThat(conceptMaps, hasSize(16));
-        tx.close();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
+            assertThat(conceptMaps, hasSize(16));
+        }
 
         String attributeIndex = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
         // perform deduplicate on the instances
         AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(testAttributeLabel), attributeIndex));
 
         // verify if we only have 1 instances after deduplication
-        tx = session.transaction().read();
-        conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
-        assertThat(conceptMaps, hasSize(1));
-        tx.close();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
+            assertThat(conceptMaps, hasSize(1));
+        }
     }
 
     @Test
