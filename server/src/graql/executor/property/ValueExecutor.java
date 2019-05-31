@@ -75,13 +75,8 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         ValuePredicate vp = AtomicFactory.createValuePredicate(property, statement, otherStatements, parent);
-
         if (vp == null) return vp;
-
         boolean isVariable = vp.getPredicate().innerStatement() != null;
-        boolean partOfAttribute = otherStatements.stream()
-                .flatMap(s -> s.getProperties(HasAttributeProperty.class))
-                .anyMatch(p -> p.attribute().var().equals(var));
         return isVariable? NeqValuePredicate.fromValuePredicate(vp) : vp;
     }
 

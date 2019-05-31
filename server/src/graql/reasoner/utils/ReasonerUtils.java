@@ -157,7 +157,6 @@ public class ReasonerUtils {
         Set<Atomic> vps = context.stream()
                 .flatMap(s -> s.getProperties(ValueProperty.class)
                         .map(property ->
-                                //AtomicFactory.createValuePredicate(property, statement, fullContext, parent)
                                 PropertyExecutor
                                         .create(statement.var(), property)
                                         .atomic(parent, statement, fullContext)

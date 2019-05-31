@@ -28,31 +28,23 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-import javax.annotation.Nullable;
-
 public class NeqValuePredicate extends NeqPredicate {
 
-    private final Object value;
     private final ValueProperty.Operation op;
 
-    private NeqValuePredicate(Variable varName, Variable predicateVar, @Nullable Object value, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
+    private NeqValuePredicate(Variable varName, Variable predicateVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);
-        //neqs only valid for variable predicates (ones having a reference variable)
+        //comparisons only valid for variable predicates (ones having a reference variable)
         assert (op.innerStatement() != null);
-        assert (value == null);
         this.op = op;
-        this.value = value;
     }
 
     public static NeqValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
         Statement innerStatement = op.innerStatement();
         Variable predicateVar = innerStatement != null? innerStatement.var() : Graql.var().var().asReturnedVar();
-        Object value = innerStatement == null? op.value() : null;
         Statement pattern = new Statement(varName).operation(op);
-        return new NeqValuePredicate(varName, predicateVar, value, op, pattern, parent);
+        return new NeqValuePredicate(varName, predicateVar, op, pattern, parent);
     }
-
-    @Nullable public Object getValue(){ return value;}
 
     @Override
     public Atomic copy(ReasonerQuery parent) {
@@ -67,8 +59,7 @@ public class NeqValuePredicate extends NeqPredicate {
 
     @Override
     public String toString(){
-        return "[" + getVarName() + " " + op.comparator() + " " + getPredicate() + "]"
-                + (getValue() != null? "[" + getPredicate() + "/" + getValue() + "]" : "");
+        return "[" + getVarName() + " " + op.comparator() + " " + getPredicate() + "]";
     }
 
     @Override
@@ -86,23 +77,7 @@ public class NeqValuePredicate extends NeqPredicate {
 
         ValueProperty.Operation subOperation = ValueProperty.Operation.Comparison.of(operation().comparator(), lhs);
         ValueExecutor.Operation<?, ?> operationExecutor = ValueExecutor.Operation.of(subOperation);
-
         return operationExecutor.test(rhs);
-
-        /*
-        return  concept != null
-                && concept.isAttribute()
-                && (
-                        (val != null && !concept.asAttribute().value().equals(val))
-                                || (
-                                        referenceConcept != null
-                                                && referenceConcept.isAttribute()
-                                                && !concept.asAttribute().value()
-                                                .equals(referenceConcept.asAttribute().value())
-                        )
-        );
-        */
-
     }
 
 }
