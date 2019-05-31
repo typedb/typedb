@@ -57,8 +57,10 @@ public class AtomicFactory {
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
-        //extract neqs from attributes and add them to atom set - we need to treat them separately to ensure correctness
-        //this creates different vps because the statement context is bound to HasAttributeProperty
+        //Extract variable predicates from attributes and add them to theatom set
+        //We need to treat them separately to ensure correctness - different conditions can arise with different
+        //orderings of resolvable atoms - hence we need to compare at the end.
+        //NB: this creates different vps because the statement context is bound to HasAttributeProperty.
         Set<Atomic> neqs = pattern.statements().stream()
                 .flatMap(statement -> statement.getProperties(HasAttributeProperty.class))
                 .flatMap(hp -> hp.statements().flatMap(
@@ -68,11 +70,6 @@ public class AtomicFactory {
                                         .atomic(parent, statement, pattern.statements()))
                                 .filter(Objects::nonNull))
                 ).collect(Collectors.toSet());
-
-        if (!atoms.containsAll(neqs)) {
-            System.out.println();
-        }
-        boolean changed = atoms.addAll(neqs);
 
         //remove duplicates
         return atoms.stream()
