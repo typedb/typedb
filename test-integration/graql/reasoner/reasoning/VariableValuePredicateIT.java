@@ -74,7 +74,70 @@ public class VariableValuePredicateIT {
     }
 
     @Test
-    public void whenResolvableAttributesHaveVariableComparisonAndSoftBound_answersAreCalculatedCorrectly(){
+    public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
+        SessionImpl session = server.sessionWithNewKeyspace();
+        try(TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.parse("define " +
+                    "someEntity sub entity," +
+                    "has derivedResource;" +
+                    "derivedResource sub attribute, datatype long;" +
+                    "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
+                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
+
+            ).asDefine());
+            tx.execute(Graql.parse("insert " +
+                    "$x isa someEntity;" +
+                    "$y isa someEntity;"
+            ).asInsert());
+            tx.commit();
+        }
+
+        Pattern basePattern = Graql.parsePattern("{" +
+                "$x has derivedResource $value;" +
+                "$y has derivedResource $anotherValue;" +
+                "};");
+
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").gt(Graql.var("anotherValue")))).get());
+            answers.forEach(ans -> {
+                assertTrue((long) ans.get("value").asAttribute().value() > (long) ans.get("anotherValue").asAttribute().value());
+            });
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            Conjunction<?> queryPattern = Graql.and(basePattern, Graql.var("value").gte(Graql.var("anotherValue")));
+            List<ConceptMap> answers = tx.execute(Graql.match(queryPattern).get());
+            answers.forEach(ans -> {
+                assertTrue((long) ans.get("value").asAttribute().value() >= (long) ans.get("anotherValue").asAttribute().value());
+            });
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").lt(Graql.var("anotherValue")))).get());
+            answers.forEach(ans -> {
+                assertTrue((long) ans.get("value").asAttribute().value() < (long) ans.get("anotherValue").asAttribute().value());
+            });
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").lte(Graql.var("anotherValue")))).get());
+            answers.forEach(ans -> {
+                assertTrue((long) ans.get("value").asAttribute().value() <= (long) ans.get("anotherValue").asAttribute().value());
+            });
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").eq(Graql.var("anotherValue")))).get());
+            answers.forEach(ans -> {
+                assertEquals((long) ans.get("value").asAttribute().value(), (long) ans.get("anotherValue").asAttribute().value());
+            });
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").neq(Graql.var("anotherValue")))).get());
+            answers.forEach(ans -> {
+                assertTrue((long) ans.get("value").asAttribute().value() != (long) ans.get("anotherValue").asAttribute().value());
+            });
+        }
+    }
+
+    @Test
+    public void whenResolvableAttributesHaveVariableComparisonsd_answersAreCalculatedCorrectly(){
         SessionImpl session = server.sessionWithNewKeyspace();
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +

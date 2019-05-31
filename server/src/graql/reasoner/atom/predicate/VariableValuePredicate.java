@@ -91,9 +91,8 @@ public class VariableValuePredicate extends VariablePredicate {
         Object lhs = concept.asAttribute().value();
         Object rhs = referenceConcept.asAttribute().value();
 
-        ValueProperty.Operation subOperation = ValueProperty.Operation.Comparison.of(operation().comparator(), lhs);
-        ValueExecutor.Operation<?, ?> operationExecutor = ValueExecutor.Operation.of(subOperation);
-        return operationExecutor.test(rhs);
+        ValueProperty.Operation subOperation = ValueProperty.Operation.Comparison.of(operation().comparator(), rhs);
+        ValueExecutor.Operation<?, ?> operationExecutorRHS = ValueExecutor.Operation.of(subOperation);
+        return operationExecutorRHS.test(lhs);
     }
-
 }
