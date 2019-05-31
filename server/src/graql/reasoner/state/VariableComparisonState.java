@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.state;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
@@ -32,55 +32,50 @@ import java.util.stream.Collectors;
 
 /**
  *
- * <p>
- * Query state corresponding to an atomic query (ReasonerAtomicQuery) with neq predicates (NeqPredicate).
- * Defining the answer to the entry query Q as a set B:
+ * Query state corresponding to an atomic query (ReasonerAtomicQuery) with variable comparison predicates -
+ * either NeqIdPredicates or VariableValuePredicates.
+ * We define the entry query Q as a conjunction:
  *
- * B = Ans{R(x1, x2, ..., xn), xj = ..., xi != xj}
- *
- * We find the answer to the query by finding the complement:
- *
- * B = A\C,
+ * Q := Q', P
  *
  * where
+ * Q' is the entry query stripped of all comparison predicates
+ * P are the comparison predicates
  *
- * A = Ans{R(x1, x2, ..., xn), xj = ...}
- * C = Ans{R(x1, x2, ..., xn), xj = ..., xi = xj}
- *
- * </p>
- *
+ * Consequently we compute the answer set of Q' ans(Q') first and find the answer set of Q ans(Q) by applying all variable
+ * predicates to ans(Q').
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
-public class NeqComplementState extends QueryStateBase {
+public class VariableComparisonState extends QueryStateBase {
 
     private final ResolutionState complementState;
     private boolean visited = false;
 
-    private final ConceptMap neqPredicateSub;
-    private final Set<NeqPredicate> neqPredicates;
+    private final ConceptMap variablePredicateSub;
+    private final Set<VariablePredicate> variablePredicates;
 
-    public NeqComplementState(ResolvableQuery q,
-                              ConceptMap sub,
-                              Unifier u,
-                              QueryStateBase parent,
-                              Set<ReasonerAtomicQuery> subGoals) {
+    public VariableComparisonState(ResolvableQuery q,
+                                   ConceptMap sub,
+                                   Unifier u,
+                                   QueryStateBase parent,
+                                   Set<ReasonerAtomicQuery> subGoals) {
         super(sub, u, parent, subGoals);
         ResolvableQuery query = ReasonerQueries.resolvable(q, sub);
-        this.neqPredicates = q.getAtoms(NeqPredicate.class).collect(Collectors.toSet());
-        this.neqPredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
-                .project(this.neqPredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
+        this.variablePredicates = q.getAtoms(VariablePredicate.class).collect(Collectors.toSet());
+        this.variablePredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
+                .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
         this.complementState = query.neqPositive().subGoal(sub, u, this, subGoals);
     }
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap fullAnswer = ConceptUtils.mergeAnswers(state.getSubstitution(), neqPredicateSub);
+        ConceptMap fullAnswer = ConceptUtils.mergeAnswers(state.getSubstitution(), variablePredicateSub);
 
-        boolean isNeqSatisfied = neqPredicates.stream()
+        boolean predicatesSatisfied = variablePredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));
-        return isNeqSatisfied?
+        return predicatesSatisfied?
                 new AnswerState(state.getSubstitution(), getUnifier(), getParentState()) :
                 null;
     }

@@ -28,7 +28,7 @@ import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -149,8 +149,8 @@ public abstract class Binary extends Atom {
         Set<ValuePredicate> thisValuePredicate = this.getPredicates(thisVar, ValuePredicate.class).collect(Collectors.toSet());
         Set<ValuePredicate> valuePredicate = that.getPredicates(thatVar, ValuePredicate.class).collect(Collectors.toSet());
 
-        Set<NeqPredicate> thisNeqPredicate = this.getPredicates(thisVar, NeqPredicate.class).collect(Collectors.toSet());
-        Set<NeqPredicate> neqPredicate = that.getPredicates(thatVar, NeqPredicate.class).collect(Collectors.toSet());
+        Set<VariablePredicate> thisNeqPredicate = this.getPredicates(thisVar, VariablePredicate.class).collect(Collectors.toSet());
+        Set<VariablePredicate> neqPredicate = that.getPredicates(thatVar, VariablePredicate.class).collect(Collectors.toSet());
 
         return equiv.equivalentCollection(thisIdPredicate, idPredicate)
                 && equiv.equivalentCollection(thisValuePredicate, valuePredicate)

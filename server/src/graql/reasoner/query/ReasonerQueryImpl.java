@@ -37,12 +37,11 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
-import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtomBase;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.Index;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
@@ -54,7 +53,7 @@ import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.ConjunctiveState;
 import grakn.core.graql.reasoner.state.CumulativeState;
-import grakn.core.graql.reasoner.state.NeqComplementState;
+import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -160,7 +159,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         return ReasonerQueries.create(
                 getAtoms().stream()
                         .map(Atomic::neqPositive)
-                        .filter(at -> !(at instanceof NeqPredicate))
+                        .filter(at -> !(at instanceof VariablePredicate))
                         .collect(Collectors.toSet()),
                 tx());
     }
@@ -168,10 +167,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     /**
      * @return true if the query doesn't contain any NeqPredicates
      */
-    boolean isNeqPositive(){
-        return !getAtoms(NeqPredicate.class).findFirst().isPresent()
-                && getAtoms(AttributeAtom.class).flatMap(at -> at.getMultiPredicate().stream())
-                .noneMatch(p -> p.getPredicate().comparator().equals(Graql.Token.Comparator.NEQV));
+    boolean containsVariablePredicates(){
+        return getAtoms(VariablePredicate.class).findFirst().isPresent();
     }
 
     /**
@@ -565,14 +562,16 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
-        return new ResolutionIterator(this, subGoals, reiterate).hasStream();
+        return isRuleResolvable()?
+                new ResolutionIterator(this, subGoals, reiterate).hasStream() :
+                tx.stream(getQuery());
     }
 
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
-        return isNeqPositive() ?
+        return !containsVariablePredicates() ?
                 new ConjunctiveState(this, sub, u, parent, subGoals) :
-                new NeqComplementState(this, sub, u, parent, subGoals);
+                new VariableComparisonState(this, sub, u, parent, subGoals);
     }
 
     /**

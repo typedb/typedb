@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
  *
  */
 
-public class NeqIdPredicate extends NeqPredicate {
+public class NeqIdPredicate extends VariablePredicate {
 
     private NeqIdPredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);

@@ -28,13 +28,13 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public abstract class NeqPredicate extends Predicate<Variable> {
+public abstract class VariablePredicate extends Predicate<Variable> {
 
-    NeqPredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
+    VariablePredicate(Variable varName, Variable predicateVar, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, pattern, predicateVar, parentQuery);
     }
 
-    private boolean predicateBindingsEquivalent(NeqPredicate that, Equivalence<Atomic> equiv){
+    private boolean predicateBindingsEquivalent(VariablePredicate that, Equivalence<Atomic> equiv){
         IdPredicate thisPredicate = this.getIdPredicate(this.getVarName());
         IdPredicate thatPredicate = that.getIdPredicate(that.getVarName());
         IdPredicate thisRefPredicate = this.getIdPredicate(this.getPredicate());
@@ -63,7 +63,7 @@ public abstract class NeqPredicate extends Predicate<Variable> {
     public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        NeqPredicate that = (NeqPredicate) obj;
+        VariablePredicate that = (VariablePredicate) obj;
         return predicateBindingsEquivalent(that, AtomicEquivalence.AlphaEquivalence);
     }
 
@@ -76,7 +76,7 @@ public abstract class NeqPredicate extends Predicate<Variable> {
     public boolean isStructurallyEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        NeqPredicate that = (NeqPredicate) obj;
+        VariablePredicate that = (VariablePredicate) obj;
         return predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
     }
 

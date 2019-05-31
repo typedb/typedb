@@ -187,6 +187,7 @@ public enum ErrorMessage {
     INCOMPLETE_RESOLUTION_PLAN("Addressed query [%s] leads to an incomplete resolution plan."),
     ROLE_PATTERN_ABSENT("Addressed relation [%s] is missing a role pattern."),
     ROLE_ID_IS_NOT_ROLE("Assignment of a non-role id to a role variable in pattern [%s]."),
+    INVALID_VARIABLE_PREDICATE_STATE("Invalid state in variable predicate [%s] with answer [%s]: either a concept is missing or not an attribute."),
     NO_ATOMS_SELECTED("No atoms were selected from the query [%s]."),
     INVALID_CACHE_ENTRY("Query cache entry for query [%s] contains an invalid entry: [%s]."),
     UNIFICATION_ATOM_INCOMPATIBILITY("Attempted unification on incompatible atoms."),

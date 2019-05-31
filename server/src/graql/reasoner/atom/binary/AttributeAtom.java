@@ -37,6 +37,7 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
@@ -157,12 +158,13 @@ public abstract class AttributeAtom extends Binary{
     @Override
     public String toString(){
         String multiPredicateString = getMultiPredicate().isEmpty()?
-                getAttributeVariable().toString() :
+                "" :
                 getMultiPredicate().stream().map(Predicate::getPredicate).collect(Collectors.toSet()).toString();
         return getVarName() + " has " + getSchemaConcept().label() + " " +
+                getAttributeVariable() + " " +
                 multiPredicateString +
                 (getRelationVariable().isReturned()? "(" + getRelationVariable() + ")" : "") +
-                getPredicates().map(Predicate::toString).collect(Collectors.joining(""));
+                getPredicates(IdPredicate.class).map(Predicate::toString).collect(Collectors.joining(""));
     }
 
     @Override

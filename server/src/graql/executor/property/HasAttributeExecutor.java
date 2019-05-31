@@ -92,7 +92,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
         Variable attributeVariable = property.attribute().var().asReturnedVar();
         Variable relationVariable = property.relation().var();
         Variable predicateVariable = new Variable();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent).collect(Collectors.toSet());
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent);
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         Statement typeVar = isaProp != null ? isaProp.type() : null;
