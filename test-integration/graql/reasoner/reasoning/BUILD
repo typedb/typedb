@@ -20,7 +20,7 @@ java_test(
 java_test(
     name = "neq-valuepredicate-it",
     size = "medium",
-    srcs = ["NeqValuePredicateIT.java"],
+    srcs = ["VariableValuePredicateIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.NeqValuePredicateIT",

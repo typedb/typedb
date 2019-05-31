@@ -26,13 +26,12 @@ import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
-import grakn.core.graql.reasoner.atom.predicate.NeqValuePredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.Serialiser;
 import graql.lang.Graql;
-import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -77,7 +76,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
         ValuePredicate vp = AtomicFactory.createValuePredicate(property, statement, otherStatements, parent);
         if (vp == null) return vp;
         boolean isVariable = vp.getPredicate().innerStatement() != null;
-        return isVariable? NeqValuePredicate.fromValuePredicate(vp) : vp;
+        return isVariable? VariableValuePredicate.fromValuePredicate(vp) : vp;
     }
 
     @Override

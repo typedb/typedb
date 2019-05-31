@@ -28,22 +28,22 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-public class NeqValuePredicate extends NeqPredicate {
+public class VariableValuePredicate extends VariablePredicate {
 
     private final ValueProperty.Operation op;
 
-    private NeqValuePredicate(Variable varName, Variable predicateVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
+    private VariableValuePredicate(Variable varName, Variable predicateVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);
         //comparisons only valid for variable predicates (ones having a reference variable)
         assert (op.innerStatement() != null);
         this.op = op;
     }
 
-    public static NeqValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
+    public static VariableValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
         Statement innerStatement = op.innerStatement();
         Variable predicateVar = innerStatement != null? innerStatement.var() : Graql.var().var().asReturnedVar();
         Statement pattern = new Statement(varName).operation(op);
-        return new NeqValuePredicate(varName, predicateVar, op, pattern, parent);
+        return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
     }
 
     @Override

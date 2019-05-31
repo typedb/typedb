@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.reasoning;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.atom.predicate.NeqValuePredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
@@ -54,7 +54,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotEquals;
 
-public class NeqValuePredicateIT {
+public class VariableValuePredicateIT {
 
     private static String resourcePath = "test-integration/graql/reasoner/stubs/";
 
@@ -211,19 +211,19 @@ public class NeqValuePredicateIT {
             //we keep unbound predicates outside attributes
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(unboundNeqQuery, unboundNeqQuery2));
             assertTrue(unboundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).allMatch(AbstractCollection::isEmpty));
-            assertTrue(unboundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+            assertTrue(unboundNeqQuery.getAtoms(VariableValuePredicate.class).findFirst().isPresent());
 
             //if the predicate has a soft bound, we try to incorporate it into relevant attribute
             //we still keep the variable predicate outside
             assertTrue(softBoundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(AbstractCollection::isEmpty));
             assertTrue(softBoundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(pred -> !pred.isEmpty()));
-            assertTrue(softBoundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+            assertTrue(softBoundNeqQuery.getAtoms(VariableValuePredicate.class).findFirst().isPresent());
 
             //if the predicate has a hard bound, we try to incorporate it into relevant attribute
             //we still keep the variable predicate outside
             assertTrue(boundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(AbstractCollection::isEmpty));
             assertTrue(boundNeqQuery.getAtoms(AttributeAtom.class).map(AttributeAtom::getMultiPredicate).anyMatch(pred -> !pred.isEmpty()));
-            assertTrue(boundNeqQuery.getAtoms(NeqValuePredicate.class).findFirst().isPresent());
+            assertTrue(boundNeqQuery.getAtoms(VariableValuePredicate.class).findFirst().isPresent());
 
             assertTrue(ReasonerQueryEquivalence.AlphaEquivalence.equivalent(negatedQueryWithBound, negatedQueryWithIndirectBound));
         }

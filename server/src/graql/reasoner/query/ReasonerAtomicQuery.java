@@ -28,7 +28,7 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
-import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
@@ -36,7 +36,7 @@ import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.reasoner.state.CacheCompletionState;
-import grakn.core.graql.reasoner.state.NeqComplementState;
+import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -129,8 +129,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean propagatedAnswersComplete = !inverse.isEmpty() &&
                 inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()));
         return propagatedAnswersComplete
-                        && !parent.getAtoms(NeqPredicate.class).findFirst().isPresent()
-                        && !this.getAtoms(NeqPredicate.class).findFirst().isPresent();
+                        && !parent.getAtoms(VariablePredicate.class).findFirst().isPresent()
+                        && !this.getAtoms(VariablePredicate.class).findFirst().isPresent();
     }
 
     /**
@@ -194,9 +194,9 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
-        return isNeqPositive()?
+        return !containsVariablePredicates()?
                 new AtomicState(this, sub, u, parent, subGoals) :
-                new NeqComplementState(this, sub, u, parent, subGoals);
+                new VariableComparisonState(this, sub, u, parent, subGoals);
     }
 
     @Override

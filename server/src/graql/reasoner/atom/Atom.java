@@ -33,7 +33,7 @@ import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.atom.predicate.NeqPredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
@@ -98,8 +98,8 @@ public abstract class Atom extends AtomicBase {
         return//check whether propagated answers would be complete
                 !inverse.isEmpty() &&
                         inverse.stream().allMatch(u -> u.values().containsAll(this.getVarNames()))
-                        && !parent.getPredicates(NeqPredicate.class).findFirst().isPresent()
-                        && !this.getPredicates(NeqPredicate.class).findFirst().isPresent();
+                        && !parent.getPredicates(VariablePredicate.class).findFirst().isPresent()
+                        && !this.getPredicates(VariablePredicate.class).findFirst().isPresent();
     }
 
     /**
