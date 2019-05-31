@@ -70,6 +70,7 @@ public class AtomicFactory {
                                         .atomic(parent, statement, pattern.statements()))
                                 .filter(Objects::nonNull))
                 ).collect(Collectors.toSet());
+        atoms.addAll(neqs);
 
         //remove duplicates
         return atoms.stream()
