@@ -122,7 +122,7 @@ public class AttributeDeduplicatorIT {
         GraqlInsert query = Graql.insert(var().isa("owner").has(ownedAttributeLabel, ownedAttributeValue));
         insertConcurrently(query, 3);
 
-        // verify there are 3 owerns with 3 different attribute instances
+        // verify there are 3 owners with 3 different attribute instances
         try (TransactionOLTP tx = session.transaction().read()) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
@@ -141,7 +141,7 @@ public class AttributeDeduplicatorIT {
         // perform deduplicate on the attribute
         AttributeDeduplicator.deduplicate(sessionFactory, KeyspaceAttributeTriple.create(session.keyspace(), Label.of(ownedAttributeLabel), Schema.generateAttributeIndex(Label.of(ownedAttributeLabel), ownedAttributeValue)));
 
-        // verify there are 3 owerns linked to only 1 attribute instance
+        // verify there are 3 owners linked to only 1 attribute instance
         try (TransactionOLTP tx = session.transaction().read()) {
             Set<String> owned = new HashSet<>();
             Set<String> owner = new HashSet<>();
