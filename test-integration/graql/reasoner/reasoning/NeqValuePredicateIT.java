@@ -20,9 +20,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
-import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.NeqValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -41,6 +39,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import java.util.AbstractCollection;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.AfterClass;
@@ -48,8 +47,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import java.util.List;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;

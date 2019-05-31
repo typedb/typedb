@@ -104,8 +104,6 @@ public class AtomicFactory {
      * @param property value property we are interested in
      * @param statement the value property belongs to
      * @param otherStatements other statements providing necessary context
-     * @param allowNeq allow to produce a NeqPredicate if required
-     * @param discardIfInAttribute if true we discard the VP if it's a part of an attribute and doesn't have an inequality
      * @param parent query the VP should be part of
      * @return value predicate corresponding to the provided property
      */
@@ -132,18 +130,21 @@ public class AtomicFactory {
         //if (hasParentVp) return null;
         if (hasParentVp && !partOfAttribute) return null;
 
-        //TODO if predicate variable is bound in another atom, we always need to create a NeqPredicate
+        //if predicate variable is bound in another atom, we always need to create a NeqPredicate
         boolean predicateVarBound = otherStatements.stream()
                 .flatMap(s -> s.properties().stream())
                 .filter(p -> !(p instanceof ValueProperty))
                 .flatMap(VarProperty::statements)
                 .map(Statement::var)
                 .anyMatch(v -> v.equals(predicateVar));
-        //ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
         ValueProperty.Operation indirectOperation = !predicateVarBound?
                 ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
-        ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
+        ValueProperty.Operation operation;
 
+        if (indirectOperation == null) operation = directOperation;
+        else{
+            operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), indirectOperation.value());
+        }
         return ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
 }

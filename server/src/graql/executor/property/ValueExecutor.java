@@ -83,8 +83,6 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 .flatMap(s -> s.getProperties(HasAttributeProperty.class))
                 .anyMatch(p -> p.attribute().var().equals(var));
         return isVariable? NeqValuePredicate.fromValuePredicate(vp) : vp;
-
-        //return AtomicFactory.createValuePredicate(property, statement, otherStatements, true, true, parent);
     }
 
     @Override
