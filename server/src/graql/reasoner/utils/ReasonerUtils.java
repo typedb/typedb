@@ -154,19 +154,16 @@ public class ReasonerUtils {
         Set<Statement> context = statement.var().isReturned()?
                 fullContext.stream().filter(v -> v.var().equals(valueVariable)).collect(toSet()) :
                 Collections.singleton(statement);
-        Set<Atomic> vps = context.stream()
+        return context.stream()
                 .flatMap(s -> s.getProperties(ValueProperty.class)
                         .map(property ->
                                 PropertyExecutor
                                         .create(statement.var(), property)
                                         .atomic(parent, statement, fullContext)
-
                         )
+                        .filter(ValuePredicate.class::isInstance)
+                        .map(ValuePredicate.class::cast)
                 )
-                .collect(toSet());
-        return vps.stream()
-                .filter(ValuePredicate.class::isInstance)
-                .map(ValuePredicate.class::cast)
                 .collect(toSet());
     }
 
