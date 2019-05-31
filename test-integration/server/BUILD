@@ -24,6 +24,7 @@ java_test(
     srcs = ["AttributeDeduplicatorIT.java"],
     deps = [
         "//concept:concept",
+        "//common",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
