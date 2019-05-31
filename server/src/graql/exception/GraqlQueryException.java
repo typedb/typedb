@@ -81,4 +81,8 @@ public class GraqlQueryException  extends GraknException {
     public static GraqlQueryException nonRoleIdAssignedToRoleVariable(Statement var) {
         return new GraqlQueryException(ErrorMessage.ROLE_ID_IS_NOT_ROLE.getMessage(var.toString()));
     }
+
+    public static GraqlQueryException invalidVariablePredicateState(Atomic vp, ConceptMap ans){
+        return new GraqlQueryException(ErrorMessage.INVALID_VARIABLE_PREDICATE_STATE.getMessage(vp.toString(), ans.toString()));
+    }
 }

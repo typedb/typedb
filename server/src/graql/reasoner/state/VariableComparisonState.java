@@ -32,23 +32,18 @@ import java.util.stream.Collectors;
 
 /**
  *
- * <p>
- * Query state corresponding to an atomic query (ReasonerAtomicQuery) with variable comparison predicates (VariablePredicate).
- * Defining the answer to the entry query Q as a set B:
+ * Query state corresponding to an atomic query (ReasonerAtomicQuery) with variable comparison predicates -
+ * either NeqIdPredicates or VariableValuePredicates.
+ * We define the entry query Q as a conjunction:
  *
- * B = Ans{R(x1, x2, ..., xn), xj = ..., xi != xj}
- *
- * We find the answer to the query by finding the complement:
- *
- * B = A\C,
+ * Q := Q', P
  *
  * where
+ * Q' is the entry query stripped of all comparison predicates
+ * P are the comparison predicates
  *
- * A = Ans{R(x1, x2, ..., xn), xj = ...}
- * C = Ans{R(x1, x2, ..., xn), xj = ..., xi = xj}
- *
- * </p>
- *
+ * Consequently we compute the answer set of Q' ans(Q') first and find the answer set of Q ans(Q) by applying all variable
+ * predicates to ans(Q')
  *
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")

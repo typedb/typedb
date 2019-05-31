@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.atom.predicate;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
@@ -28,6 +29,16 @@ import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+/**
+ * Class used to handle value predicates with a variable:
+ * $var <operation> $anotherVar
+ *
+ * We need to separate variable VPs for the case if a attribute atom is rule resolvable. Because ordering of atom resolution
+ * can differ, we add a final step in the form of VariableComparisonState where we store the variable predicates and after
+ * all processing we ensure all comparisons hold. This ensures the ordering of atoms does not interfere with the correctness
+ * of the result.
+ *
+ */
 public class VariableValuePredicate extends VariablePredicate {
 
     private final ValueProperty.Operation op;
@@ -69,7 +80,7 @@ public class VariableValuePredicate extends VariablePredicate {
 
         if (concept == null || referenceConcept == null
                 || !concept.isAttribute() || !referenceConcept.isAttribute()){
-            throw new IllegalStateException();
+            throw GraqlQueryException.invalidVariablePredicateState(this, sub);
         }
 
         Object lhs = concept.asAttribute().value();
