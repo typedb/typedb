@@ -29,6 +29,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.ValueProperty;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -59,6 +60,7 @@ public class AtomicFactory {
 
         //extract neqs from attributes and add them to atom set - we need to treat them separately to ensure correctness
         //this creates different vps because the statement context is bound to HasAttributeProperty
+        /*
         Set<Atomic> neqs = pattern.statements().stream()
                 .flatMap(statement -> statement.getProperties(HasAttributeProperty.class))
                 .flatMap(hp -> hp.statements().flatMap(
@@ -72,6 +74,8 @@ public class AtomicFactory {
             System.out.println();
         }
         boolean changed = atoms.addAll(neqs);
+        */
+
 
 
         //remove duplicates
@@ -148,7 +152,7 @@ public class AtomicFactory {
                 ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
 
-    public static Atomic createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
+    public static ValuePredicate createValuePredicate(ValueProperty property, Statement statement, Set<Statement> otherStatements,
                                                                              ReasonerQuery parent) {
         HasAttributeProperty has = statement.getProperties(HasAttributeProperty.class).findFirst().orElse(null);
         Variable var = has != null? has.attribute().var() : statement.var();
@@ -168,22 +172,34 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
         //true if the VP has another VP that references it - a parent VP
         boolean hasParentVp = !parentVPs.isEmpty();
-        if (hasParentVp && !partOfAttribute) return null;
+        if (hasParentVp) return null;
+        //if (hasParentVp && !partOfAttribute) return null;
 
         //
         //ValueProperty.Operation indirectOperation = null;
-        //TODO if predicate variable is bound in another atom, we alawys need to create a NeqPredicate
-        ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
-        //ValueProperty.Operation indirectOperation = directOperation.comparator().equals(Graql.Token.Comparator.EQ)?
-          //      ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
+        //TODO if predicate variable is bound in another atom, we always need to create a NeqPredicate
+        boolean predicateVarBound = otherStatements.stream()
+                .flatMap(s -> s.properties().stream())
+                .filter(p -> !(p instanceof ValueProperty))
+                .flatMap(VarProperty::statements)
+                .map(Statement::var)
+                .anyMatch(v -> v.equals(predicateVar));
+        //ValueProperty.Operation indirectOperation = ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements);
+        ValueProperty.Operation indirectOperation = !predicateVarBound?
+                ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
         ValueProperty.Operation operation = indirectOperation != null? indirectOperation : directOperation;
         Object value = operation.innerStatement() == null? operation.value() : null;
 
         //TODO return set cause we might want to have two bounds (one VP and one comparison)
         //maybe make NeqValuePredicate extend ValuePredicate and add variable
+
+        return ValuePredicate.create(var.asReturnedVar(), operation, parent);
+        /*
         return value != null?
                 ValuePredicate.create(var.asReturnedVar(), operation, parent) :
                 NeqValuePredicate.create(var.asReturnedVar(), operation, parent);
+
+         */
     }
 }
 

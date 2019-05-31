@@ -26,10 +26,13 @@ import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
+import grakn.core.graql.reasoner.atom.predicate.NeqValuePredicate;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.Serialiser;
 import graql.lang.Graql;
+import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -71,7 +74,15 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     @Override
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return AtomicFactory.createValuePredicate(property, statement, otherStatements, parent);
+        ValuePredicate vp = AtomicFactory.createValuePredicate(property, statement, otherStatements, parent);
+
+        if (vp == null) return vp;
+
+        boolean partOfAttribute = otherStatements.stream()
+                .flatMap(s -> s.getProperties(HasAttributeProperty.class))
+                .anyMatch(p -> p.attribute().var().equals(var));
+        return partOfAttribute? NeqValuePredicate.fromValuePredicate(vp) : vp;
+
         //return AtomicFactory.createValuePredicate(property, statement, otherStatements, true, true, parent);
     }
 

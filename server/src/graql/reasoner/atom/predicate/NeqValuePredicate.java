@@ -62,6 +62,11 @@ public class NeqValuePredicate extends NeqPredicate {
         return create(this.getVarName(), this.operation(), parent);
     }
 
+    public static Atomic fromValuePredicate(ValuePredicate predicate){
+        if (predicate.getPredicate().value() != null) return null;
+        return create(predicate.getVarName(), predicate.getPredicate(), predicate.getParentQuery());
+    }
+
     public ValueProperty.Operation operation(){ return op;}
 
     @Override

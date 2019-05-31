@@ -169,9 +169,11 @@ public class ReasonerQueryImpl implements ResolvableQuery {
      * @return true if the query doesn't contain any NeqPredicates
      */
     boolean isNeqPositive(){
-        return !getAtoms(NeqPredicate.class).findFirst().isPresent()
+        return !getAtoms(NeqPredicate.class).findFirst().isPresent();
+        /*
                 && getAtoms(AttributeAtom.class).flatMap(at -> at.getMultiPredicate().stream())
                 .noneMatch(p -> p.getPredicate().comparator().equals(Graql.Token.Comparator.NEQV));
+         */
     }
 
     /**

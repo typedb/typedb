@@ -342,8 +342,10 @@ public class NeqValuePredicateIT {
             ResolvableQuery query4 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedVariant2), tx);
             ResolvableQuery query5 = ReasonerQueries.resolvable(conjunctionWithNegation(negatedComplement), tx);
 
-            String complementQueryString = "match $x has derived-resource-string $val; $val == 'unattached'; get;";
-            String completeQueryString = "match $x has derived-resource-string $val; get;";
+            String complementQueryPattern = "{$x has derived-resource-string $val; $val == 'unattached';};";
+            String completeQueryPattern = "{$x has derived-resource-string $val;};";
+
+            ReasonerAtomicQuery complementQuery = ReasonerQueries.atomic(conjunction(complementQueryPattern), tx);
 
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(neqVariant)).get());
 
@@ -352,8 +354,8 @@ public class NeqValuePredicateIT {
             List<ConceptMap> negationAnswersBis = tx.execute(Graql.match(Graql.parsePattern(negatedVariant2)).get());
             List<ConceptMap> negationComplement = tx.execute(Graql.match(Graql.parsePattern(negatedComplement)).get());
 
-            List<ConceptMap> complement = tx.execute(Graql.parse(complementQueryString).asGet());
-            List<ConceptMap> complete = tx.execute(Graql.parse(completeQueryString).asGet());
+            List<ConceptMap> complement = tx.execute(Graql.match(Graql.parsePattern(complementQueryPattern)).get());
+            List<ConceptMap> complete = tx.execute(Graql.match(Graql.parsePattern(completeQueryPattern)).get());
             List<ConceptMap> expectedAnswers = ReasonerUtils.listDifference(complete, complement);
 
             assertCollectionsNonTriviallyEqual(expectedAnswers, answers);
