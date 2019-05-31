@@ -75,11 +75,11 @@ public class ConcurrencyE2E {
                 "surname sub attribute, datatype string;").asDefine());
 
         tx.commit();
-        ExecutorService executorService = Executors.newFixedThreadPool(16);
+        ExecutorService executorService = Executors.newFixedThreadPool(36);
 
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         // We need a good amount of parallelism to have a good chance to spot possible issues. Don't use smaller values.
-        int numberOfConcurrentTransactions = 36;
+        int numberOfConcurrentTransactions = 56;
         int batchSize = 200;
         for (int i = 0; i < numberOfConcurrentTransactions; i++) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
