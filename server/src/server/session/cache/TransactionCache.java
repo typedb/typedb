@@ -310,24 +310,6 @@ public class TransactionCache {
         return newRelations;
     }
 
-    //--------------------------------------- TransactionOLTP Specific Meta Data -------------------------------------------
-    public void closeTx() {
-
-        //Clear Collection Caches
-        modifiedThings.clear();
-        modifiedRoles.clear();
-        modifiedRelationTypes.clear();
-        modifiedRules.clear();
-        modifiedCastings.clear();
-        newAttributes.clear();
-        newRelations.clear();
-        shardingCount.clear();
-        conceptCache.clear();
-        schemaConceptCache.clear();
-        labelCache.clear();
-    }
-
-
     @VisibleForTesting
     Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;

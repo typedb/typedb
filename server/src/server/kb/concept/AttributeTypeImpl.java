@@ -180,9 +180,9 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     private Attribute<D> attributeUsingMap(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-        String id = vertex().tx().session().attributesMap().get(index);
+        ConceptId id = vertex().tx().session().attributesMap().get(index);
         if (id != null) {
-            return vertex().tx().getConcept(ConceptId.of(id));
+            return vertex().tx().getConcept(id);
         } else {
             return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
         }

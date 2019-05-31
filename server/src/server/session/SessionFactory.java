@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import grakn.core.common.config.Config;
+import grakn.core.concept.ConceptId;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
@@ -32,8 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Grakn Server's internal {@link SessionImpl} Factory
@@ -68,7 +67,7 @@ public class SessionFactory {
         JanusGraph graph;
         KeyspaceCache cache;
         KeyspaceStatistics keyspaceStatistics;
-        ConcurrentHashMap<String, String> attributesMap;
+        ConcurrentHashMap<String, ConceptId> attributesMap;
 
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
         lock.lock();
@@ -169,9 +168,9 @@ public class SessionFactory {
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that AttributeDeduplicator and new transactions can all refer to the same ID when working with newly created attributes,
         // eliminating the risk of fetching attribute ids that will be removed by deduplication (leading to ghost vertex)
-        private ConcurrentHashMap<String, String> attributesMap;
+        private ConcurrentHashMap<String, ConceptId> attributesMap;
 
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, String> attributesMap) {
+        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.sessions = new ArrayList<>();
@@ -205,7 +204,7 @@ public class SessionFactory {
 
         public KeyspaceStatistics keyspaceStatistics() { return keyspaceStatistics; }
 
-        public ConcurrentHashMap<String, String> attributesMap() { return attributesMap;}
+        public ConcurrentHashMap<String, ConceptId> attributesMap() { return attributesMap;}
 
     }
 

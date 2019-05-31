@@ -19,6 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import com.google.common.collect.Lists;
+import grakn.core.concept.ConceptId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
@@ -57,8 +58,8 @@ public class AttributeDeduplicator {
             // Duplicates might be empty if the user deleted the attribute right after the insertion or deleted the keyspace.
             if (duplicates.hasNext()) {
                 // Get the Id of the Target concept from the centralised attributes map
-                String targetId = session.attributesMap().get(keyspaceAttributeTriple.index());
-                Vertex mergeTargetV = tinker.V(targetId).next();
+                ConceptId targetId = session.attributesMap().get(keyspaceAttributeTriple.index());
+                Vertex mergeTargetV = tinker.V(Schema.elementId(targetId)).next();
                 while (duplicates.hasNext()) {
                     Vertex duplicate = duplicates.next();
                     if (!duplicate.id().equals(mergeTargetV.id())) { // don't try to merge the target with itself
