@@ -196,7 +196,7 @@ public class TransactionOLTP implements Transaction {
     // Register new committed Attributes in AttributesMap (if the map doesnt already contain the same INDEX),
     // so that all following Transactions will be able to use the same ConceptId
     // when in need of same attribute with same value.
-    private void updateAttributesMapInSession(){
+    private void updateAttributesMapInSession() {
         cache().getNewAttributes().forEach((labelStringPair, conceptId) -> {
             session.attributesMap().putIfAbsent(labelStringPair.getValue(), conceptId);
         });
@@ -313,7 +313,9 @@ public class TransactionOLTP implements Transaction {
         return ruleCache;
     }
 
-    public MultilevelSemanticCache queryCache(){ return queryCache;}
+    public MultilevelSemanticCache queryCache() {
+        return queryCache;
+    }
 
     /**
      * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
@@ -400,7 +402,7 @@ public class TransactionOLTP implements Transaction {
      * @return A read-only Tinkerpop traversal for manually traversing the graph
      */
     public GraphTraversalSource getTinkerTraversal() {
-        operateOnOpenGraph(() -> null); //This is to check if the graph is open
+        checkGraphIsOpen();
         if (graphTraversalSource == null) {
             graphTraversalSource = janusGraph.traversal().withStrategies(ReadOnlyStrategy.instance());
         }
@@ -468,15 +470,13 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * An operation on the graph which requires it to be open.
+     * Make sure graph is open and usable.
      *
-     * @param supplier The operation to be performed on the graph
-     * @return The result of the operation on the graph.
-     * @throws TransactionException if the graph is closed.
+     * @throws TransactionException if the graph is closed
+     *                              or current transaction is not local (i.e. it was open in another thread)
      */
-    private <X> X operateOnOpenGraph(Supplier<X> supplier) {
+    private void checkGraphIsOpen() {
         if (!isLocal() || isClosed()) throw TransactionException.transactionClosed(this, this.closedReason);
-        return supplier.get();
     }
 
     private boolean isLocal() {
@@ -657,37 +657,39 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
-        return operateOnOpenGraph(() -> {
-            if (transactionCache.isConceptCached(id)) {
-                return transactionCache.getCachedConcept(id);
-            } else {
-                if (Schema.isEdgeId(id)) {
-                    Optional<T> concept = getConceptEdge(id);
-                    if (concept.isPresent()) return concept.get();
-                }
+        checkGraphIsOpen();
 
-                T concept = getConcept(getTinkerTraversal().V(Schema.elementId(id)));
-                //if the concept doesn't exists, it is possible we are referring to a ReifiedRelation which
-                //uses an its previous EdgeRelation as an id so property must be fetched
-                return concept == null?
-                        this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue()) :
-                        concept;
-            }
-        });
+        // fetch concept from cache if it's cached
+        if (transactionCache.isConceptCached(id)) {
+            return transactionCache.getCachedConcept(id);
+        }
+
+        // If edgeId, we are trying to fetch either:
+        // - a concept edge
+        // - a reified relation
+        if (Schema.isEdgeId(id)) {
+            T concept = getConceptEdge(id);
+            if (concept != null) return concept;
+            // If concept is still null,  it is possible we are referring to a ReifiedRelation which
+            // uses its previous EdgeRelation as an id so property must be fetched
+            return this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue());
+        }
+
+        return getConcept(getTinkerTraversal().V(Schema.elementId(id)));
     }
 
-    private <T extends Concept> Optional<T> getConceptEdge(ConceptId id) {
+    @Nullable
+    private <T extends Concept> T getConceptEdge(ConceptId id) {
         String edgeId = Schema.elementId(id);
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
         if (traversal.hasNext()) {
-            return Optional.of(factory().buildConcept(factory().buildEdgeElement(traversal.next())));
+            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
         }
-        return Optional.empty();
+        return null;
     }
 
     private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
-        operateOnOpenGraph(() -> null); //Makes sure the graph is open
-
+        checkGraphIsOpen();
         SchemaConcept schemaConcept;
         if (transactionCache.isTypeCached(label)) {
             schemaConcept = transactionCache.getCachedSchemaConcept(label);
@@ -923,7 +925,7 @@ public class TransactionOLTP implements Transaction {
         return Optional.empty();
     }
 
-    private void removeInferredConcepts(){
+    private void removeInferredConcepts() {
         Set<Thing> inferredThingsToDiscard = cache().getInferredThingsToDiscard().collect(Collectors.toSet());
         inferredThingsToDiscard.forEach(inferred -> cache().remove(inferred));
         inferredThingsToDiscard.forEach(Concept::delete);
