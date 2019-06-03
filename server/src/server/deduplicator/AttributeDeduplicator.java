@@ -19,6 +19,7 @@
 package grakn.core.server.deduplicator;
 
 import com.google.common.collect.Lists;
+import grakn.core.concept.ConceptId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
@@ -46,7 +47,7 @@ public class AttributeDeduplicator {
      * in the duplicates as the "merge target", copying every edges from every "other duplicates" to the merge target, and
      * finally deleting that other duplicates.
      *
-     * @param sessionFactory    the factory object for accessing the database
+     * @param sessionFactory          the factory object for accessing the database
      * @param keyspaceAttributeTriple the object containing information about the attribute keyspace, label, and index
      */
     public static void deduplicate(SessionFactory sessionFactory, KeyspaceAttributeTriple keyspaceAttributeTriple) {
@@ -56,41 +57,41 @@ public class AttributeDeduplicator {
             GraphTraversal<Vertex, Vertex> duplicates = tinker.V().has(Schema.VertexProperty.INDEX.name(), keyspaceAttributeTriple.index());
             // Duplicates might be empty if the user deleted the attribute right after the insertion or deleted the keyspace.
             if (duplicates.hasNext()) {
-                Vertex mergeTargetV = duplicates.next();
+                // Get the Id of the Target concept from the centralised attributes map
+                ConceptId targetId = session.attributesMap().get(keyspaceAttributeTriple.index());
+                Vertex mergeTargetV = tinker.V(Schema.elementId(targetId)).next();
                 while (duplicates.hasNext()) {
                     Vertex duplicate = duplicates.next();
-                    try {
-                        session.getGraphLock().writeLock().lock();
-                        duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
-                            // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-                            GraphTraversal<Vertex, Edge> attributeEdge =
-                                    tinker.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
-                            if (attributeEdge.hasNext()) {
-                                mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
-                            }
+                    if (!duplicate.id().equals(mergeTargetV.id())) { // don't try to merge the target with itself
+                        try {
+                            duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
+                                // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                                GraphTraversal<Vertex, Edge> attributeEdge =
+                                        tinker.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
+                                if (attributeEdge.hasNext()) {
+                                    mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
+                                }
 
-                            // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-                            GraphTraversal<Vertex, Edge> rolePlayerEdge =
-                                    tinker.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
-                            if (rolePlayerEdge.hasNext()) {
-                                mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
-                            }
-                            try {
-                                attributeEdge.close();
-                                rolePlayerEdge.close();
-                            } catch (Exception e) {
-                                LOG.warn("Exception while closing traversals:", e);
-                            }
-                        });
-                        duplicate.remove();
-                        tx.statisticsDelta().decrement(keyspaceAttributeTriple.label());
-                    } catch (IllegalStateException vertexAlreadyRemovedException) {
-                        LOG.warn("Trying to call the method vertices(Direction.IN) on vertex {} which is already removed.", duplicate.id());
-                    } finally {
-                        session.getGraphLock().writeLock().unlock();
+                                // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                                GraphTraversal<Vertex, Edge> rolePlayerEdge =
+                                        tinker.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
+                                if (rolePlayerEdge.hasNext()) {
+                                    mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
+                                }
+                                try {
+                                    attributeEdge.close();
+                                    rolePlayerEdge.close();
+                                } catch (Exception e) {
+                                    LOG.warn("Exception while closing traversals:", e);
+                                }
+                            });
+                            duplicate.remove();
+                            tx.statisticsDelta().decrement(keyspaceAttributeTriple.label());
+                        } catch (IllegalStateException vertexAlreadyRemovedException) {
+                            LOG.warn("Trying to call the method vertices(Direction.IN) on vertex {} which is already removed.", duplicate.id());
+                        }
                     }
                 }
-
                 tx.commit();
             } else {
                 tx.close();
@@ -102,7 +103,6 @@ public class AttributeDeduplicator {
             } catch (Exception e) {
                 LOG.warn("Exception while closing traversals:", e);
             }
-
         } finally {
             session.close();
         }

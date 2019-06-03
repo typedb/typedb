@@ -19,8 +19,6 @@
 package grakn.core.server.session.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -35,6 +33,7 @@ import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -76,7 +75,7 @@ public class TransactionCache {
     //New attributes are tracked so that we can merge any duplicate attributes in post.
     // This is a map of attribute indices to <label, concept id>
     // The index and id are directly cached to prevent unneeded reads
-    private Multimap<Pair<Label, String>, ConceptId> newAttributes = ArrayListMultimap.create();
+    private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
@@ -148,7 +147,7 @@ public class TransactionCache {
 
         if (concept.isAttribute()) {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
-            newAttributes.removeAll(new Pair<>(attr.type().label().toString(), attr.getIndex()));
+            newAttributes.remove(new Pair<>(attr.type().label().toString(), attr.getIndex()));
         }
 
         if (concept.isRelation()) {
@@ -278,10 +277,8 @@ public class TransactionCache {
         newAttributes.put(new Pair<>(label, index), conceptId);
     }
 
-    public Map<Pair<Label, String>, Set<ConceptId>> getNewAttributes() {
-        Map<Pair<Label, String>, Set<ConceptId>> map = new HashMap<>();
-        newAttributes.asMap().forEach((attrValue, conceptIds) -> map.put(attrValue, new HashSet<>(conceptIds)));
-        return map;
+    public Map<Pair<Label, String>, ConceptId> getNewAttributes() {
+        return newAttributes;
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------
@@ -312,24 +309,6 @@ public class TransactionCache {
     public Set<Relation> getNewRelations() {
         return newRelations;
     }
-
-    //--------------------------------------- TransactionOLTP Specific Meta Data -------------------------------------------
-    public void closeTx() {
-
-        //Clear Collection Caches
-        modifiedThings.clear();
-        modifiedRoles.clear();
-        modifiedRelationTypes.clear();
-        modifiedRules.clear();
-        modifiedCastings.clear();
-        newAttributes.clear();
-        newRelations.clear();
-        shardingCount.clear();
-        conceptCache.clear();
-        schemaConceptCache.clear();
-        labelCache.clear();
-    }
-
 
     @VisibleForTesting
     Map<ConceptId, Concept> getConceptCache() {

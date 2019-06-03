@@ -69,21 +69,6 @@ import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Function;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
@@ -97,6 +82,21 @@ import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A TransactionOLTP using JanusGraph as a vendor backend.
@@ -112,8 +112,6 @@ public class TransactionOLTP implements Transaction {
     private final SessionImpl session;
     private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
-    private final ReadWriteLock graphLock;
-
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -153,9 +151,7 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache, ReadWriteLock graphLock) {
-        this.graphLock = graphLock;
-
+    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -187,18 +183,22 @@ public class TransactionOLTP implements Transaction {
         executeLockingMethod(() -> {
             try {
                 LOG.trace("Graph is valid. Committing graph...");
-                // Serialise all the commits to the same Janus graph
-                // (the lock is associated to a specific graph)
-                graphLock.writeLock().lock();
                 janusTransaction.commit();
-
+                updateAttributesMapInSession();
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
-            } finally {
-                graphLock.writeLock().unlock();
             }
             return null;
+        });
+    }
+
+    // Register new committed Attributes in AttributesMap (if the map doesnt already contain the same INDEX),
+    // so that all following Transactions will be able to use the same ConceptId
+    // when in need of same attribute with same value.
+    private void updateAttributesMapInSession(){
+        cache().getNewAttributes().forEach((labelStringPair, conceptId) -> {
+            session.attributesMap().putIfAbsent(labelStringPair.getValue(), conceptId);
         });
     }
 
@@ -424,15 +424,7 @@ public class TransactionOLTP implements Transaction {
     private <T extends Concept> T getConcept(Iterator<Vertex> vertices) {
         T concept = null;
         if (vertices.hasNext()) {
-            Vertex vertex;
-            // Get read lock before accessing graph so that if a commit is occurring, we wait
-            // Without lock, when inserting a lot of attributes this traversal might return ghost vertices
-            graphLock.readLock().lock();
-            try {
-                vertex = vertices.next();
-            } finally {
-                graphLock.readLock().unlock();
-            }
+            Vertex vertex = vertices.next();
             concept = factory().buildConcept(vertex);
         }
         return concept;
@@ -881,7 +873,6 @@ public class TransactionOLTP implements Transaction {
         try {
             janusTransaction.close();
         } finally {
-            transactionCache.closeTx();
             this.closedReason = closedReason;
             this.isTxOpen = false;
             ruleCache().clear();
@@ -901,9 +892,7 @@ public class TransactionOLTP implements Transaction {
         removeInferredConcepts();
         validateGraph();
 
-        Map<ConceptId, Long> newInstances = transactionCache.getShardingCount();
-        Map<Pair<Label, String>, Set<ConceptId>> newAttributes = transactionCache.getNewAttributes();
-        boolean logsExist = !newInstances.isEmpty() || !newAttributes.isEmpty();
+        Map<Pair<Label, String>, ConceptId> newAttributes = transactionCache.getNewAttributes();
 
         ServerTracing.closeScopedChildSpan(validateSpanId);
 
@@ -919,12 +908,12 @@ public class TransactionOLTP implements Transaction {
 
         ServerTracing.closeScopedChildSpan(commitSpanId);
 
-        //If we have logs to commit get them and add them
-        if (logsExist) {
+        //If we have new attributes to deduplicate create CommitLog
+        if (!newAttributes.isEmpty()) {
 
             int createLogSpanId = ServerTracing.startScopedChildSpan("commitWithLogs create log");
 
-            Optional logs = Optional.of(CommitLog.create(keyspace(), newInstances, newAttributes));
+            Optional logs = Optional.of(new CommitLog(keyspace(), newAttributes));
 
             ServerTracing.closeScopedChildSpan(createLogSpanId);
 
@@ -999,24 +988,17 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Stores the commit log of a TransactionOLTP which is uploaded to the jserver when the Session is closed.
-     * The commit log is also uploaded periodically to make sure that if a failure occurs the counts are still roughly maintained.
+     * Stores the commit log of a TransactionOLTP.
      */
-    public static class CommitLog {
-
+    public class CommitLog {
         private final KeyspaceImpl keyspace;
-        private final Map<ConceptId, Long> instanceCount;
-        private final Map<Pair<Label, String>, Set<ConceptId>> attributes;
+        private final Map<Pair<Label, String>, ConceptId> attributes;
 
-        CommitLog(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> attributes) {
+        CommitLog(KeyspaceImpl keyspace, Map<Pair<Label, String>, ConceptId> attributes) {
             if (keyspace == null) {
                 throw new NullPointerException("Null keyspace");
             }
             this.keyspace = keyspace;
-            if (instanceCount == null) {
-                throw new NullPointerException("Null instanceCount");
-            }
-            this.instanceCount = instanceCount;
             if (attributes == null) {
                 throw new NullPointerException("Null attributes");
             }
@@ -1027,40 +1009,8 @@ public class TransactionOLTP implements Transaction {
             return keyspace;
         }
 
-        public Map<ConceptId, Long> instanceCount() {
-            return instanceCount;
-        }
-
-        public Map<Pair<Label, String>, Set<ConceptId>> attributes() {
+        public Map<Pair<Label, String>, ConceptId> attributes() {
             return attributes;
-        }
-
-        public static CommitLog create(KeyspaceImpl keyspace, Map<ConceptId, Long> instanceCount, Map<Pair<Label, String>, Set<ConceptId>> newAttributes) {
-            return new CommitLog(keyspace, instanceCount, newAttributes);
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-
-            TransactionOLTP.CommitLog that = (TransactionOLTP.CommitLog) o;
-
-            return (this.keyspace.equals(that.keyspace()) &&
-                    this.instanceCount.equals(that.instanceCount()) &&
-                    this.attributes.equals(that.attributes()));
-        }
-
-        @Override
-        public int hashCode() {
-            int h = 1;
-            h *= 1000003;
-            h ^= this.keyspace.hashCode();
-            h *= 1000003;
-            h ^= this.instanceCount.hashCode();
-            h *= 1000003;
-            h ^= this.attributes.hashCode();
-            return h;
         }
     }
 }

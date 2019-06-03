@@ -23,6 +23,7 @@ import grakn.core.api.Session;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
@@ -34,7 +35,7 @@ import grakn.core.server.statistics.KeyspaceStatistics;
 import org.janusgraph.core.JanusGraph;
 
 import javax.annotation.CheckReturnValue;
-import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -57,10 +58,10 @@ public class SessionImpl implements Session {
 
     private final KeyspaceImpl keyspace;
     private final Config config;
-    private final ReadWriteLock graphLock;
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
+    private final ConcurrentHashMap<String, ConceptId> attributesMap;
     private Consumer<SessionImpl> onClose;
 
     private boolean isClosed = false;
@@ -72,8 +73,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics) {
-        this(keyspace, config, keyspaceCache, graph, graphLock, keyspaceStatistics, new HadoopGraphFactory(config, keyspace));
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap) {
+        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesMap);
     }
 
     /**
@@ -83,10 +84,10 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, ReadWriteLock graphLock, KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
+                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, ConcurrentHashMap<String, ConceptId> attributesMap) {
         this.keyspace = keyspace;
         this.config = config;
-        this.graphLock = graphLock;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
         // be an expensive operation TODO: refactor in the future
         this.hadoopGraphFactory = hadoopGraphFactory;
@@ -95,6 +96,7 @@ public class SessionImpl implements Session {
 
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
+        this.attributesMap = attributesMap;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
 
@@ -126,7 +128,7 @@ public class SessionImpl implements Session {
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
-        TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache, graphLock);
+        TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 
@@ -177,6 +179,7 @@ public class SessionImpl implements Session {
 
     /**
      * Copy schema concept and all its subs labels to keyspace cache
+     *
      * @param schemaConcept
      */
     private void copyToCache(SchemaConcept schemaConcept) {
@@ -263,7 +266,7 @@ public class SessionImpl implements Session {
         return config;
     }
 
-    public ReadWriteLock getGraphLock(){
-        return graphLock;
+    public ConcurrentHashMap<String, ConceptId> attributesMap() {
+        return attributesMap;
     }
 }

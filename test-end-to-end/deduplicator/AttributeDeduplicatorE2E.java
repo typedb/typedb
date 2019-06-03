@@ -49,8 +49,7 @@ import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZi
 import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
 
 public class AttributeDeduplicatorE2E {
     private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
@@ -87,7 +86,7 @@ public class AttributeDeduplicatorE2E {
 
         LOG.info("initiating the shouldDeduplicate10AttributesWithDuplicates test...");
         try (GraknClient.Session session = localhostGrakn.session("attribute_deduplicator_e2e")) {
-            // insert 10 attributes, each with 100 duplicates
+            // insert attributes with duplicates
             LOG.info("defining the schema...");
             defineParentChildSchema(session);
             LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
@@ -102,7 +101,7 @@ public class AttributeDeduplicatorE2E {
             // verify deduplicated attributes
             LOG.info("verifying the number of attributes");
             int countAfterDeduplication = countTotalNames(session);
-            assertThat(countAfterDeduplication, equalTo(numOfUniqueNames));
+            assertEquals(numOfUniqueNames, countAfterDeduplication);
             LOG.info("test completed successfully. there are " + countAfterDeduplication + " unique names found");
         }
     }

@@ -30,11 +30,30 @@ java_test(
     data = ["//:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
+java_test(
+    name = "concurrency-e2e",
+    test_class = "grakn.core.distribution.ConcurrencyE2E",
+    srcs = ["ConcurrencyE2E.java", "DistributionE2EConstants.java"],
+    deps = [
+        "//server",
+        "//common",
+        "//concept",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "@graknlabs_client_java//:client-java",
+        "@graknlabs_graql//java:graql",
+    ],
+    size = "large",
+    data = ["//:assemble-mac-zip"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":grakn-graql-commands-e2e",
-        ":grakn-graql-commands-with-a-running-grakn-e2e"
+        ":grakn-graql-commands-with-a-running-grakn-e2e",
+        "concurrency-e2e"
     ]
 )

@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
@@ -125,7 +126,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
-        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attribute(value), instanceBuilder, isInferred);
+        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attributeUsingMap(value), instanceBuilder, isInferred);
     }
 
     /**
@@ -169,6 +170,22 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
         return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+    }
+
+    /**
+     * This is only used when checking if attribute exists before trying to create a new one.
+     * It checks if in AttributesMap exists an entry with the supplied INDEX:
+     * - if an entry is found, it uses that ID to refer to the current attribute.
+     * - if no entry is found then check with the Graph.
+     */
+    private Attribute<D> attributeUsingMap(D value) {
+        String index = Schema.generateAttributeIndex(label(), value.toString());
+        ConceptId id = vertex().tx().session().attributesMap().get(index);
+        if (id != null) {
+            return vertex().tx().getConcept(id);
+        } else {
+            return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+        }
     }
 
     /**
