@@ -11,6 +11,9 @@ java_test(
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
      ],
+     runtime_deps = [
+         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cql"
+     ],
      classpath_resources = ["//test-integration/resources:logback-test"],
      size = "medium",
 )
@@ -40,6 +43,9 @@ java_test(
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
+     ],
+     runtime_deps = [
+         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cql"
      ],
      classpath_resources = ["//test-integration/resources:logback-test"],
      size = "medium"

@@ -43,6 +43,9 @@ java_test(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cql"
+    ],
     data = ["file-(with-parentheses).gql"],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
