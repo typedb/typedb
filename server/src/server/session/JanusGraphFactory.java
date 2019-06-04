@@ -103,7 +103,7 @@ final public class JanusGraphFactory {
     );
 
     //This maps the storage backend to the needed value
-    private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandra");
+    private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandrathrift");
 
 
     public synchronized JanusGraph openGraph(String keyspace) {
