@@ -119,7 +119,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
-        vertex().tx().statisticsDelta().decrement(type().label());
+        if (!isDeleted()) vertex().tx().statisticsDelta().decrement(type().label());
         this.edgeRelations().forEach(Concept::delete);
 
         vertex().tx().cache().removedInstance(type().id());
