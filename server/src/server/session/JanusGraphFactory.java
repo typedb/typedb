@@ -102,10 +102,6 @@ final public class JanusGraphFactory {
             STORAGE_REPLICATION_FACTOR, JANUS_PREFIX + STORAGE_REPLICATION_FACTOR
     );
 
-    //This maps the storage backend to the needed value
-    private static final Map<String, String> storageBackendMapper = ImmutableMap.of("grakn-production", "cassandrathrift");
-
-
     public synchronized JanusGraph openGraph(String keyspace) {
         JanusGraph JanusGraph = configureGraph(keyspace, config);
         buildJanusIndexes(JanusGraph);
@@ -144,12 +140,6 @@ final public class JanusGraphFactory {
 
         //Load Passed in properties
         config.properties().forEach((key, value) -> {
-
-            //Overwrite storage
-            if (key.equals(STORAGE_BACKEND)) {
-                value = storageBackendMapper.get(value);
-            }
-
             //Inject properties into other default properties
             if (janusConfig.containsKey(key)) {
                 builder.set(janusConfig.get(key), value);
