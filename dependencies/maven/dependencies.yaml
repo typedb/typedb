@@ -99,20 +99,6 @@ dependencies:
       version: "3.4.0"
       lang: java
 
-  com.netflix.astyanax:
-    astyanax-cassandra:
-      version: "3.10.2"
-      lang: java
-    astyanax-core:
-      version: "3.10.2"
-      lang: java
-    astyanax-recipes:
-      version: "3.10.2"
-      lang: java
-    astyanax-thrift:
-      version: "3.10.2"
-      lang: java
-
   com.pholser:
     junit-quickcheck-generators:
       version: "0.7"

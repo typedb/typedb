@@ -5,16 +5,14 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
-        "//dependencies/maven/artifacts/org/apache/servicemix/bundles:org-apache-servicemix-bundles-commons-csv",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",
         "//dependencies/maven/artifacts/org/codehaus/jettison:jettison",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/xerial/snappy:snappy-java",
         ":astyanax-cassandra-all-shaded",
         ":astyanax-core"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -42,11 +40,10 @@ java_library(
         "//dependencies/maven/artifacts/com/github/stephenc/high-scale-lib:high-scale-lib",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
-        "//dependencies/maven/artifacts/joda-time:joda-time",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
+        "//dependencies/maven/artifacts/joda-time:joda-time"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -62,7 +59,7 @@ java_library(
         ":astyanax-core"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
@@ -79,7 +76,7 @@ java_library(
         ":astyanax-core"
     ],
     visibility = [
-        "//visibility:public"
+        "//dependencies/maven/artifacts:__subpackages__"
     ]
 )
 
