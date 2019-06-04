@@ -131,7 +131,7 @@ java_test(
 )
 
 java_test(
-     name = "concept-it",
+     name = "schema-concept-it",
      srcs = ["SchemaConceptIT.java"],
      test_class = "grakn.core.server.kb.concept.SchemaConceptIT",
      deps = [
