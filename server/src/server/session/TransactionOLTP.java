@@ -838,7 +838,7 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             checkMutationAllowed();
-            removeInferredConcepts();
+//            removeInferredConcepts();
             validateGraph();
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
@@ -891,7 +891,7 @@ public class TransactionOLTP implements Transaction {
 
 
         checkMutationAllowed();
-        removeInferredConcepts();
+//        removeInferredConcepts();
         validateGraph();
 
         Map<Pair<Label, String>, ConceptId> newAttributes = transactionCache.getNewAttributes();
