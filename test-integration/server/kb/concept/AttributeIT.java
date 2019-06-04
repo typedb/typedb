@@ -337,4 +337,27 @@ public class AttributeIT {
         assertFalse(attribute.isInferred());
         assertTrue(attributeInferred.isInferred());
     }
+
+    @Test
+    public void whenDeletingAnAttribute_associatedEdgeRelationsAreDeleted() {
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.create("polok");
+
+        EntityType entityType = tx.putEntityType("someEntity").has(attributeType);
+        Entity e1 = entityType.create();
+        Entity e2 = entityType.create();
+
+        assertThat(attribute.relations().collect(toSet()), empty());
+
+        e1.has(attribute);
+        e2.has(attribute);
+
+        assertTrue(e1.relations().findFirst().isPresent());
+        assertTrue(e2.relations().findFirst().isPresent());
+
+        attribute.delete();
+
+        assertFalse(e1.relations().findFirst().isPresent());
+        assertFalse(e2.relations().findFirst().isPresent());
+    }
 }

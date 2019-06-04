@@ -157,7 +157,7 @@ public class RelationEdge implements RelationStructure {
 
     @Override
     public void delete() {
-        edge().tx().statisticsDelta().decrement(type().label());
+        if (!isDeleted()) edge().tx().statisticsDelta().decrement(type().label());
         edge().delete();
     }
 

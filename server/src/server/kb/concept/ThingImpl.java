@@ -119,14 +119,14 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
-        vertex().tx().statisticsDelta().decrement(type().label());
-        // decrement concept counts for non-reified edges - need to be explicitly handled before they are deleted by Janus
-        this.edgeRelations().forEach(relation -> vertex().tx().statisticsDelta().decrement(relation.type().label()));
+        if (!isDeleted()) vertex().tx().statisticsDelta().decrement(type().label());
+        this.edgeRelations().forEach(Concept::delete);
 
         vertex().tx().cache().removedInstance(type().id());
         deleteNode();
 
         relations.forEach(relation -> {
+            //NB: this only deletes reified implicit relations
             if (relation.type().isImplicit()) {//For now implicit relations die
                 relation.delete();
             } else {

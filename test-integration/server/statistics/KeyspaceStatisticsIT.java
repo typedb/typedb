@@ -308,7 +308,6 @@ public class KeyspaceStatisticsIT {
         assertEquals(personCount + ageCount, thingCount);
     }
 
-    @Ignore("another PR should solve that")
     @Test
     public void attachingAttributesViaRulesDoesntAlterConceptCountsAfterCommit() {
         // test concept API insertion
