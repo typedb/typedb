@@ -20,6 +20,7 @@ package grakn.core.server.statistics;
 
 import grakn.client.GraknClient;
 import grakn.core.concept.Label;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
@@ -27,20 +28,20 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
-import junit.framework.TestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -304,5 +305,36 @@ public class KeyspaceStatisticsIT {
         assertEquals(2L, personCount - personCountStart);
         assertEquals(3L, ageCount - ageCountStart);
         assertEquals(personCount + ageCount, thingCount);
+    }
+
+    @Test
+    public void attachingAttributesViaRulesDoesntAlterConceptCountsAfterCommit() {
+        // test concept API insertion
+        TransactionOLTP tx = localSession.transaction().write();
+        AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
+        EntityType person = tx.putEntityType("person").has(age);
+
+        person.create();
+        person.create();
+        tx.putRule(
+                "someRule",
+                Graql.parsePattern("{$x isa person;};"),
+                Graql.parsePattern("{$x has age 27;};"));
+
+        tx.commit();
+
+        tx = localSession.transaction().write();
+
+        List<ConceptMap> answers = tx.execute(Graql.parse("match $x has age $r;get;").asGet());
+
+        tx.commit();
+
+        tx = localSession.transaction().write();
+
+        Label ageLabel = Label.of("age");
+        assertEquals(0, localSession.keyspaceStatistics().count(tx, ageLabel));
+        assertEquals(0, localSession.keyspaceStatistics().count(tx, Schema.ImplicitType.HAS.getLabel(ageLabel)));
+
+        tx.close();
     }
 }
