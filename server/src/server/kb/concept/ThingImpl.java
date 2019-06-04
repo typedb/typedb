@@ -120,8 +120,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }).collect(toSet());
 
         vertex().tx().statisticsDelta().decrement(type().label());
-        // decrement concept counts for non-reified edges - need to be explicitly handled before they are deleted by Janus
-        this.edgeRelations().forEach(relation -> vertex().tx().statisticsDelta().decrement(relation.type().label()));
+        this.edgeRelations().forEach(Concept::delete);
 
         vertex().tx().cache().removedInstance(type().id());
         deleteNode();
