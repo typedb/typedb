@@ -40,6 +40,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class UncomittedStatisticsDeltaIT {
     private SessionImpl session;
+    private TransactionOLTP tx;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -47,12 +48,13 @@ public class UncomittedStatisticsDeltaIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        TransactionOLTP tx = session.transaction().write();
+        tx = session.transaction().write();
         AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
+        tx = session.transaction().write();
     }
 
     @After
@@ -63,7 +65,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void newTransactionsInitialisedWithEmptyStatsDelta() {
-        TransactionOLTP tx = session.transaction().write();
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
 
         long entityDelta = statisticsDelta.delta(Label.of("entity"));
@@ -79,7 +80,6 @@ public class UncomittedStatisticsDeltaIT {
     @Test
     public void addingEntitiesIncrementsCorrectly() {
         // test concept API insertion
-        TransactionOLTP tx = session.transaction().write();
         EntityType personType = tx.getEntityType("person");
         personType.create();
 
@@ -94,7 +94,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingRelationsIncrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
         EntityType personType = tx.getEntityType("person");
         Entity person1 = personType.create();
         Entity person2 = personType.create();
@@ -117,7 +116,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void addingAttributeValuesIncrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
         // test concept API insertion
         AttributeType age = tx.getAttributeType("age");
         age.create(1);
@@ -137,7 +135,6 @@ public class UncomittedStatisticsDeltaIT {
     @Test
     public void addingAttributeOwnersIncrementsImplicitRelations() {
         // test concept API insertion
-        TransactionOLTP tx = session.transaction().write();
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age = ageType.create(1);
         EntityType personType = tx.getEntityType("person");
@@ -160,7 +157,6 @@ public class UncomittedStatisticsDeltaIT {
     @Test
     public void removingEntitiesDecrementsCorrectly() {
         // test concept API insertion
-        TransactionOLTP tx = session.transaction().write();
         EntityType personType = tx.getEntityType("person");
         ConceptId id1 = personType.create().id();
         ConceptId id2 = personType.create().id();
@@ -182,7 +178,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void removingRelationsDecrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
         EntityType personType = tx.getEntityType("person");
         Entity person1 = personType.create();
         Entity person2 = personType.create();
@@ -210,7 +205,6 @@ public class UncomittedStatisticsDeltaIT {
 
     @Test
     public void removingAttributesDecrementsCorrectly() {
-        TransactionOLTP tx = session.transaction().write();
         AttributeType age = tx.getAttributeType("age");
         ConceptId lastAttributeId = null;
         for (int i = 0; i < 100; i++) {
@@ -234,7 +228,6 @@ public class UncomittedStatisticsDeltaIT {
     @Test
     public void deletingAttributeDecrementsImplicitRelsAndAttribute() {
         // test concept API insertion
-        TransactionOLTP tx = session.transaction().write();
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age1 = ageType.create(1);
         Attribute age2 = ageType.create(99);
@@ -268,7 +261,6 @@ public class UncomittedStatisticsDeltaIT {
     @Test
     public void whenAttributeAndOwnerIsCreatedAndDeleted_countIsUnaffected() {
         // test concept API insertion
-        TransactionOLTP tx = session.transaction().write();
         AttributeType ageType = tx.getAttributeType("age");
         Attribute age1 = ageType.create(1);
         EntityType personType = tx.getEntityType("person");
@@ -300,7 +292,6 @@ public class UncomittedStatisticsDeltaIT {
     @Test
     public void whenRelationWithRolePlayersIsCreatedAndDeleted_countIsUnaffected() {
         // test concept API insertion
-        TransactionOLTP tx = session.transaction().write();
         Role someRole = tx.putRole("someRole");
         Role anotherRole = tx.putRole("anotherRole");
         RelationType relationType = tx.putRelationType("someRelation")
