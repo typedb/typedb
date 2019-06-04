@@ -126,6 +126,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         deleteNode();
 
         relations.forEach(relation -> {
+            //NB: this only deletes reified implicit relations
             if (relation.type().isImplicit()) {//For now implicit relations die
                 relation.delete();
             } else {
