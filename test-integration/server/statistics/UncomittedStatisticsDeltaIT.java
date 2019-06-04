@@ -232,6 +232,7 @@ public class UncomittedStatisticsDeltaIT {
         personType.create().has(age2);
 
         tx.commit();
+
         tx = session.transaction().write();
 
         // test ConceptAPI deletion
@@ -247,5 +248,33 @@ public class UncomittedStatisticsDeltaIT {
         assertEquals(0, personDelta);
         long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
         assertEquals(-3, implicitAgeRelation);
+
+        tx.close();
+    }
+
+    @Test
+    public void creatingAndDeletingAttributeLeavesZeroCount() {
+        // test concept API insertion
+        AttributeType ageType = tx.getAttributeType("age");
+        Attribute age1 = ageType.create(1);
+        EntityType personType = tx.getEntityType("person");
+        personType.create().has(age1);
+
+        UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();
+        long ageDelta = statisticsDelta.delta(Label.of("age"));
+        assertEquals(1, ageDelta);
+        long implicitAgeRelation = statisticsDelta.delta(Label.of("@has-age"));
+        assertEquals(1, implicitAgeRelation);
+
+        // test ConceptAPI deletion
+        tx.getConcept(age1.id()).delete();
+
+        statisticsDelta = tx.statisticsDelta();
+        long ageDeltaAfter = statisticsDelta.delta(Label.of("age"));
+        assertEquals(0, ageDeltaAfter);
+        long implicitAgeRelationAfter = statisticsDelta.delta(Label.of("@has-age"));
+        assertEquals(0, implicitAgeRelationAfter);
+
+        tx.close();
     }
 }

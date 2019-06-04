@@ -20,6 +20,7 @@ package grakn.core.server.statistics;
 
 import grakn.core.concept.Label;
 
+import grakn.core.server.kb.Schema;
 import java.util.HashMap;
 
 /**
@@ -35,7 +36,7 @@ public class UncomittedStatisticsDelta {
         instanceDeltas = new HashMap<>();
     }
 
-    public long delta(Label label) {
+    long delta(Label label) {
         return instanceDeltas.getOrDefault(label, 0L);
     }
 
@@ -51,5 +52,20 @@ public class UncomittedStatisticsDelta {
 
     HashMap<Label, Long> instanceDeltas() {
         return instanceDeltas;
+    }
+
+    /**
+     * Updates the concept count for Thing. It overwrites the entry to be equal to the sum of contributions in the
+     * delta map.
+     */
+    void updateThingCount(){
+        // precompute the delta for all Thing's and update the delta map
+        long thingDelta = instanceDeltas.values().stream()
+                .reduce(Long::sum)
+                .orElse(0L);
+        if (thingDelta != 0) {
+            Label thingLabel = Schema.MetaSchema.THING.getLabel();
+            instanceDeltas.put(thingLabel, thingDelta);
+        }
     }
 }

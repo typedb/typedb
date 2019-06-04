@@ -23,6 +23,8 @@ import grakn.core.concept.Label;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptVertex;
 import grakn.core.server.session.TransactionOLTP;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -61,41 +63,34 @@ public class KeyspaceStatistics {
     public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
-        // precompute the delta for all Thing's and update the delta map
-        long thingDelta = deltaMap.values().stream()
-                .reduce((a,b) -> a+b)
-                .orElse(0L);
-        Label thingLabel = Schema.MetaSchema.THING.getLabel();
-        // it shouldn't exist but just in case we insert it and do an update
-        deltaMap.putIfAbsent(thingLabel, 0L);
-        deltaMap.put(thingLabel, deltaMap.get(thingLabel) + thingDelta);
+        statisticsDelta.updateThingCount();
 
         // merge each delta into the cache, then flush the cache to Janus
-        for (Map.Entry<Label, Long> entry : deltaMap.entrySet()) {
-            Label label = entry.getKey();
-            Long delta = entry.getValue();
-            // atomic update
-            instanceCountsCache.compute(label, (k, prior) -> {
-                long existingCount;
-                if (instanceCountsCache.containsKey(label)) {
-                    existingCount = prior;
-                } else {
-                    existingCount = retrieveCountFromVertex(tx, label) ;
-                }
-                return existingCount + delta;
-            });
-        }
+        Set<Label> labelsToPersist = new HashSet<>();
+        deltaMap.entrySet().stream()
+                .filter(e -> e.getValue() != 0)
+                .forEach(entry -> {
+                    Label label = entry.getKey();
+                    Long delta = entry.getValue();
+                    labelsToPersist.add(label);
+                    // atomic update
+                    instanceCountsCache.compute(label, (k, prior) ->
+                        prior == null?
+                                retrieveCountFromVertex(tx, label) + delta:
+                                prior + delta
+            );
+        });
 
-        persist(tx);
+        persist(tx, labelsToPersist);
     }
 
-    private void persist(TransactionOLTP tx) {
+    private void persist(TransactionOLTP tx, Set<Label> labelsToPersist) {
         // TODO - there's an possible removal from instanceCountsCache here
         // when the schemaConcept is null - ie it's been removed. However making this
         // thread safe with competing action of creating a schema concept of the same name again
         // So for now just wait until sessions are closed and rebuild the instance counts cache from scratch
 
-        for (Label label : instanceCountsCache.keySet()) {
+        for (Label label : labelsToPersist) {
             // don't change the value, just use `.compute()` for atomic and locking vertex write
             instanceCountsCache.compute(label, (lab, count) -> {
                 Concept schemaConcept = tx.getSchemaConcept(lab);
