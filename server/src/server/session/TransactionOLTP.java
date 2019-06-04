@@ -903,7 +903,7 @@ public class TransactionOLTP implements Transaction {
         // lock on the keyspace cache shared between concurrent tx's to the same keyspace
         // force serialized updates, keeping Janus and our KeyspaceCache in sync
         synchronized (keyspaceCache) {
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+            //session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             commitTransactionInternal();
             transactionCache.flushToKeyspaceCache();
         }
