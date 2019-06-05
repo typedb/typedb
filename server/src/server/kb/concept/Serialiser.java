@@ -18,12 +18,15 @@
 
 package grakn.core.server.kb.concept;
 
-import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.type.AttributeType;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
+
+import static grakn.core.common.util.Collections.map;
+import static grakn.core.common.util.Collections.tuple;
 
 public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
@@ -41,15 +44,15 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
     public abstract DESERIALISED deserialise(SERIALISED value);
 
-    private static Map<AttributeType.DataType<?>, Serialiser<?, ?>> serialisers = ImmutableMap.<AttributeType.DataType<?>, Serialiser<?, ?>>builder()
-            .put(AttributeType.DataType.BOOLEAN, BOOLEAN)
-            .put(AttributeType.DataType.DATE, DATE)
-            .put(AttributeType.DataType.DOUBLE, DOUBLE)
-            .put(AttributeType.DataType.FLOAT, FLOAT)
-            .put(AttributeType.DataType.INTEGER, INTEGER)
-            .put(AttributeType.DataType.LONG, LONG)
-            .put(AttributeType.DataType.STRING, STRING)
-            .build();
+    private static Map<AttributeType.DataType<?>, Serialiser<?, ?>> serialisers = map(
+            tuple(AttributeType.DataType.BOOLEAN, BOOLEAN),
+            tuple(AttributeType.DataType.DATE, DATE),
+            tuple(AttributeType.DataType.DOUBLE, DOUBLE),
+            tuple(AttributeType.DataType.FLOAT, FLOAT),
+            tuple(AttributeType.DataType.INTEGER, INTEGER),
+            tuple(AttributeType.DataType.LONG, LONG),
+            tuple(AttributeType.DataType.STRING, STRING)
+    );
 
 
     // TODO: This method should not be needed if all usage of this class is
