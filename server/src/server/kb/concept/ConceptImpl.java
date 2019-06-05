@@ -22,7 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
@@ -186,7 +186,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         currentShard.set(shard);
 
         //Updated the cached shard count if needed
-        if (shardCount.isPresent()) {
+        if (shardCount.isCached()) {
             shardCount.set(shardCount() + 1);
         }
     }

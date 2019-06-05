@@ -24,7 +24,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 
 import javax.annotation.Nullable;
 
@@ -41,7 +41,7 @@ public class Casting {
     private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().tx().factory().buildConcept(edge().source()));
 
     private final Cache<RelationType> cachedRelationType = new Cache<>(() -> {
-        if (cachedRelation.isPresent()) {
+        if (cachedRelation.isCached()) {
             return cachedRelation.get().type();
         } else {
             return edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));

@@ -33,7 +33,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;

@@ -24,7 +24,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import org.slf4j.Logger;
