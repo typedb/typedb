@@ -185,7 +185,7 @@ public abstract class SemanticCache<
      * NB: target and childMatch.query() are in general not the same hence explicit arguments
      * @param target query we want propagate the answers to
      * @param childMatch entry to which we want to propagate answers
-     * @param inferred true if inferred answers should be propagated
+     * @param fetchInferred true if inferred answers should be propagated
      */
     private boolean propagateAnswersToQuery(ReasonerAtomicQuery target, CacheEntry<ReasonerAtomicQuery, SE> childMatch, boolean fetchInferred){
         ReasonerAtomicQuery child = childMatch.query();
