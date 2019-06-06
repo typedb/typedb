@@ -350,6 +350,12 @@ public abstract class Atom extends AtomicBase {
      */
     public Atom addType(SchemaConcept type) { return this;}
 
+    /**
+     * Materialises the atom - does an insert of the corresponding pattern.
+     * Exhibits PUT behaviour - if things are already present, nothing is inserted.
+     *
+     * @return materialised answer to this atom
+     */
     public Stream<ConceptMap> materialise() { return Stream.empty();}
 
     /**

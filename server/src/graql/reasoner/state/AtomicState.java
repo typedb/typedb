@@ -22,7 +22,6 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.cache.CacheEntry;
 import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
@@ -31,7 +30,7 @@ import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
-
+import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -42,6 +41,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
+    private Set<ConceptMap> materialised = new HashSet<>();
 
     public AtomicState(ReasonerAtomicQuery query,
                 ConceptMap sub,
@@ -119,41 +119,28 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        MultilevelSemanticCache cache = getQuery().tx().queryCache();
+
+        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
+        ConceptMap sub = ruleHead.getSubstitution();
+        if(materialised.contains(sub)){
+            return new ConceptMap();
+        } else {
+            materialised.add(sub);
+        }
 
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
-        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
-
+        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
         Set<Variable> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size() ?
                 unifier.keySet() :
                 ruleHead.getVarNames();
 
-        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
-
-        //check if the specific answer to ruleHead already in cache/db
-        ConceptMap headAnswer = unifier.apply(
-                cache
-                        .findAnswer(ruleHead, answer)
-                        .project(queryVars)
-        );
-
-        //if not and query different than rule head do the same with the query
-        ConceptMap queryAnswer = headAnswer.isEmpty() && queryEquivalentToHead ?
-                cache.findAnswer(query, answer) :
-                new ConceptMap();
-
-        //ensure no duplicates created - only materialise answer if it doesn't exist in the db
-        if (headAnswer.isEmpty()
-                && queryAnswer.isEmpty()) {
-            ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
-            if (materialisedSub != null) {
-                if (!queryEquivalentToHead) {
-                    cache.record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
-                }
-                answer = unifier.apply(materialisedSub.project(queryVars));
+        //materialise exhibits put behaviour - duplicates won't be created
+        ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
+        if (materialisedSub != null) {
+            if (!queryEquivalentToHead) {
+                getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
             }
-        } else {
-            answer = headAnswer.isEmpty() ? queryAnswer : headAnswer;
+            answer = unifier.apply(materialisedSub.project(queryVars));
         }
 
         if (answer.isEmpty()) return answer;
