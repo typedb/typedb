@@ -103,15 +103,6 @@ public abstract class QueryCacheBase<
     }
 
     /**
-     * find specific answer to a query in the cache
-     *
-     * @param query input query
-     * @param ans   sought specific answer to the query
-     * @return found answer if any, otherwise empty answer
-     */
-    public abstract ConceptMap findAnswer(Q query, ConceptMap ans);
-
-    /**
      * @param query for which the entry is to be retrieved
      * @return corresponding cache entry if any or null
      */

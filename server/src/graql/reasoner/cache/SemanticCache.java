@@ -323,15 +323,4 @@ public abstract class SemanticCache<
                 answerStreamWithUnifier.getValue()
         );
     }
-
-    @Override
-    public ConceptMap findAnswer(ReasonerAtomicQuery query, ConceptMap ans) {
-        if(ans.isEmpty()) return ans;
-        ConceptMap answer = getAnswerStreamWithUnifier(ReasonerQueries.atomic(query, ans)).getKey().findFirst().orElse(null);
-        if (answer != null) return answer;
-
-        //TODO should it create a cache entry?
-        List<ConceptMap> answers = query.tx().execute(ReasonerQueries.create(query, ans).getQuery(), false);
-        return answers.isEmpty()? new ConceptMap() : answers.iterator().next();
-    }
 }
