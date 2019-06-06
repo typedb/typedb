@@ -213,7 +213,7 @@ public abstract class IsaAtom extends IsaAtomBase {
         ConceptMap substitution = getParentQuery().getSubstitution();
         EntityType entityType = getSchemaConcept().asEntityType();
 
-        Concept foundConcept = substitution.get(getVarName());
+        Concept foundConcept = substitution.containsVar(getVarName())? substitution.get(getVarName()) : null;
         if (foundConcept != null) return Stream.of(substitution);
 
         Concept concept = EntityTypeImpl.from(entityType).addEntityInferred();
