@@ -216,60 +216,28 @@ public interface Transaction extends AutoCloseable {
     // Compute Query
 
     default List<Numeric> execute(GraqlCompute.Statistics query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<Numeric> execute(GraqlCompute.Statistics query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<Numeric> stream(GraqlCompute.Statistics query) {
-        return stream(query, true);
-    }
-
-    Stream<Numeric> stream(GraqlCompute.Statistics query, boolean infer);
+    Stream<Numeric> stream(GraqlCompute.Statistics query);
 
     default List<ConceptList> execute(GraqlCompute.Path query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptList> execute(GraqlCompute.Path query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptList> stream(GraqlCompute.Path query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptList> stream(GraqlCompute.Path query, boolean infer);
+    Stream<ConceptList> stream(GraqlCompute.Path query);
 
     default List<ConceptSetMeasure> execute(GraqlCompute.Centrality query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptSetMeasure> execute(GraqlCompute.Centrality query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query, boolean infer);
+    Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query);
 
     default List<ConceptSet> execute(GraqlCompute.Cluster query) {
-        return execute(query, true);
+        return stream(query).collect(Collectors.toList());
     }
 
-    default List<ConceptSet> execute(GraqlCompute.Cluster query, boolean infer) {
-        return stream(query, infer).collect(Collectors.toList());
-    }
-
-    default Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
-        return stream(query, true);
-    }
-
-    Stream<ConceptSet> stream(GraqlCompute.Cluster query, boolean infer);
+    Stream<ConceptSet> stream(GraqlCompute.Cluster query);
 
     // Generic Query
 
@@ -311,16 +279,16 @@ public interface Transaction extends AutoCloseable {
             return stream((GraqlGet.Group) query, infer);
 
         } else if (query instanceof GraqlCompute.Statistics) {
-            return stream((GraqlCompute.Statistics) query, infer);
+            return stream((GraqlCompute.Statistics) query);
 
         } else if (query instanceof GraqlCompute.Path) {
-            return stream((GraqlCompute.Path) query, infer);
+            return stream((GraqlCompute.Path) query);
 
         } else if (query instanceof GraqlCompute.Centrality) {
-            return stream((GraqlCompute.Centrality) query, infer);
+            return stream((GraqlCompute.Centrality) query);
 
         } else if (query instanceof GraqlCompute.Cluster) {
-            return stream((GraqlCompute.Cluster) query, infer);
+            return stream((GraqlCompute.Cluster) query);
 
         } else {
             throw new IllegalArgumentException("Unrecognised Query object");

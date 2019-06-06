@@ -290,23 +290,23 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public Stream<Numeric> stream(GraqlCompute.Statistics query, boolean infer) {
-        return executor(infer).compute(query);
+    public Stream<Numeric> stream(GraqlCompute.Statistics query) {
+        return executor(false).compute(query);
     }
 
     @Override
-    public Stream<ConceptList> stream(GraqlCompute.Path query, boolean infer) {
-        return executor(infer).compute(query);
+    public Stream<ConceptList> stream(GraqlCompute.Path query) {
+        return executor(false).compute(query);
     }
 
     @Override
-    public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query, boolean infer) {
-        return executor(infer).compute(query);
+    public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
+        return executor(false).compute(query);
     }
 
     @Override
-    public Stream<ConceptSet> stream(GraqlCompute.Cluster query, boolean infer) {
-        return executor(infer).compute(query);
+    public Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
+        return executor(false).compute(query);
     }
 
     public RuleCache ruleCache() {
