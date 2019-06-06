@@ -84,7 +84,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     @Override
     protected boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
-                                    boolean inferred) {
+                                    boolean propagateInferred) {
         ReasonerAtomicQuery parent = parentEntry.query();
         ReasonerAtomicQuery child = childEntry.query();
         IndexedAnswerSet parentAnswers = parentEntry.cachedElement();
@@ -105,7 +105,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         Set<ConceptMap> newAnswers = new HashSet<>();
 
         parentAnswers.getAll().stream()
-                .filter(ans -> inferred || ans.explanation().isLookupExplanation())
+                .filter(ans -> propagateInferred || ans.explanation().isLookupExplanation())
                 .flatMap(ans -> parentToChildUnifierDelta.stream()
                                 .map(unifierDelta -> unifierDelta.getValue()
                                         .applyToAnswer(ans, partialSub, childVars, unifierDelta.getKey()))

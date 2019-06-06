@@ -333,6 +333,12 @@ public abstract class AttributeAtom extends Binary{
         return Stream.concat(super.getInnerPredicates(), getMultiPredicate().stream());
     }
 
+    /**
+     * exhibits put behaviour - attributed is attached only if the link doesn't exist already
+     * @param owner attribute owner
+     * @param attribute attribute itself
+     * @return implicit relation of the attribute
+     */
     private Relation attachAttribute(Concept owner, Attribute attribute){
         //check if link exists
         if (owner.asThing().attributes(attribute.type()).noneMatch(a -> a.equals(attribute))) {

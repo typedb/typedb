@@ -142,25 +142,4 @@ public class SimpleQueryCache<Q extends ReasonerQueryImpl> extends SimpleQueryCa
                 new MultiUnifierImpl()
         );
     }
-
-    @Override
-    public ConceptMap findAnswer(Q query, ConceptMap ans) {
-        if (ans.isEmpty()) return ans;
-        CacheEntry<Q, Set<ConceptMap>> match = this.getEntry(query);
-        if (match != null) {
-            Q equivalentQuery = match.query();
-            MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
-
-            //NB: only used when checking for materialised answer duplicates
-            ConceptMap answer = match.cachedElement().stream()
-                    .flatMap(multiUnifier::apply)
-                    .filter(a -> a.containsAll(ans))
-                    .findFirst().orElse(null);
-            if (answer != null) return answer;
-        }
-
-        //TODO should it create a cache entry?
-        List<ConceptMap> answers = query.tx().execute(ReasonerQueries.create(query, ans).getQuery(), false);
-        return answers.isEmpty() ? new ConceptMap() : answers.iterator().next();
-    }
 }
