@@ -556,14 +556,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public Stream<ConceptMap> resolve() {
-        return resolve(new HashSet<>(), this.requiresReiteration());
-    }
-
-    @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean allowReiteration){
         return isRuleResolvable()?
-                new ResolutionIterator(this, subGoals, reiterate).hasStream() :
+                new ResolutionIterator(this, subGoals, allowReiteration).hasStream() :
                 tx.stream(getQuery());
     }
 
