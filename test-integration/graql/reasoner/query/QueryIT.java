@@ -119,7 +119,8 @@ public class QueryIT {
                 String patternString = "{ ($x, $y) isa inferred; };";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 assertTrue(RuleUtils.subGraphIsCyclical(
-                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()))
+                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()),
+                        tx)
                 );
                 assertTrue(query.requiresReiteration());
             }
@@ -149,7 +150,8 @@ public class QueryIT {
                 String patternString = "{ $x isa baseEntity;};";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 assertTrue(RuleUtils.subGraphIsCyclical(
-                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()))
+                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()),
+                        tx)
                 );
                 assertTrue(query.requiresReiteration());
             }
