@@ -28,6 +28,8 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.Pair;
@@ -37,9 +39,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
@@ -137,36 +137,36 @@ public class RuleUtils {
      */
     public static boolean subGraphIsCyclical(Set<InferenceRule> rules, TransactionOLTP tx){
         HashMultimap<Type, Type> typeSubGraph = persistedTypeSubGraph(rules);
-        List<Set<Type>> typeCycles = new TarjanSCC<>(typeSubGraph).getCycles();
+        TarjanSCC<Type> typeSCC = new TarjanSCC<>(typeSubGraph);
+        List<Set<Type>> typeCycles = typeSCC.getCycles();
+        HashMultimap<Type, Type> typeTCinverse = HashMultimap.create();
+
+        typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
         return typeCycles.stream().anyMatch(typeSet -> {
             Set<ReasonerAtomicQuery> queries = typeSet.stream()
+                    .flatMap(type -> typeTCinverse.get(type).stream())
                     .flatMap(type -> tx.queryCache().getFamily(type).stream())
                     .map(Equivalence.Wrapper::get)
                     .filter(q -> tx.queryCache().getParents(q).isEmpty())
                     .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
                     .collect(toSet());
-            //TODO shouldn't limit to binary relations
-            if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))
-                || !queries.stream().allMatch(q -> q.getVarNames().size() == 2)
-            ){
-                return true;
-            }
+            if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
-
-            //TODO look at roles to find the directionality
-            queries.forEach(q -> {
-                Set<Variable> varNames = q.getVarNames();
-                tx.queryCache().getAnswerStream(q)
-                        .forEach(ans -> {
-                            Iterator<Variable> vit = varNames.iterator();
-                            conceptMap.put(ans.get(vit.next()), ans.get(vit.next()));
-                        });
+            return queries.stream().anyMatch(q -> {
+                RelationAtom relationAtom = q.getAtom().toRelationAtom();
+                Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
+                IndexedAnswerSet answers = tx.queryCache().getEntry(q).cachedElement();
+                return answers.stream().anyMatch(ans ->
+                        varPairs.stream().anyMatch(p -> {
+                            Concept from = ans.get(p.getKey());
+                            Concept to = ans.get(p.getValue());
+                            if (conceptMap.get(to).contains(from)) return true;
+                            conceptMap.put(from, to);
+                            return false;
+                        }));
             });
-
-            List<Set<Concept>> cycles = new TarjanSCC<>(conceptMap).getCycles();
-            return !cycles.isEmpty();
         });
     }
 

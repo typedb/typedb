@@ -245,23 +245,27 @@ public class RecursionIT {
     public void testReverseSameGeneration() {
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             GraqlTestUtil.loadFromFileAndCommit(resourcePath, "recursivity-rsg.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
-                String specificQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; get $y;";
-                String explicitQuery = "match $y isa person, has name $name;" +
-                        "{$name == 'b';} or {$name == 'c';} or {$name == 'd';};get $y;";
+            for(int i = 0; i < 10 ; i++) {
+                try (TransactionOLTP tx = session.transaction().write()) {
+                    String specificQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG;$x has name 'a'; get $y;";
+                    String explicitQuery = "match $y isa person, has name $name;" +
+                            "{$name == 'b';} or {$name == 'c';} or {$name == 'd';};get $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitQuery).asGet(), false), tx.execute(Graql.parse(specificQuery).asGet()));
+                    GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitQuery).asGet(), false), tx.execute(Graql.parse(specificQuery).asGet()));
 
-                String generalQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG; get;";
-                String generalExplicitQuery = "match $x has name $nameX;$y has name $nameY;" +
-                        "{$nameX == 'a';$nameY == 'b';} or {$nameX == 'a';$nameY == 'c';} or" +
-                        "{$nameX == 'a';$nameY == 'd';} or {$nameX == 'm';$nameY == 'n';} or" +
-                        "{$nameX == 'm';$nameY == 'o';} or {$nameX == 'p';$nameY == 'm';} or" +
-                        "{$nameX == 'g';$nameY == 'f';} or {$nameX == 'h';$nameY == 'f';} or" +
-                        "{$nameX == 'i';$nameY == 'f';} or {$nameX == 'j';$nameY == 'f';} or" +
-                        "{$nameX == 'f';$nameY == 'k';};get $x, $y;";
+                    String generalQuery = "match (RSG-from: $x, RSG-to: $y) isa RevSG; get;";
+                    String generalExplicitQuery = "match $x has name $nameX;$y has name $nameY;" +
+                            "{$nameX == 'a';$nameY == 'b';} or {$nameX == 'a';$nameY == 'c';} or" +
+                            "{$nameX == 'a';$nameY == 'd';} or {$nameX == 'm';$nameY == 'n';} or" +
+                            "{$nameX == 'm';$nameY == 'o';} or {$nameX == 'p';$nameY == 'm';} or" +
+                            "{$nameX == 'g';$nameY == 'f';} or {$nameX == 'h';$nameY == 'f';} or" +
+                            "{$nameX == 'i';$nameY == 'f';} or {$nameX == 'j';$nameY == 'f';} or" +
+                            "{$nameX == 'f';$nameY == 'k';};get $x, $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(generalExplicitQuery).asGet(), false), tx.execute(Graql.parse(generalQuery).asGet()));
+                    GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                            tx.execute(Graql.parse(generalExplicitQuery).asGet(), false),
+                            tx.execute(Graql.parse(generalQuery).asGet()));
+                }
             }
         }
     }

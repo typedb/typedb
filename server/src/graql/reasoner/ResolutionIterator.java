@@ -91,6 +91,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private boolean reiterate(){
         if (reiterate == null) {
             reiterate = query.requiresReiteration();
+            System.out.println("reiterate: " + reiterate);
         }
         return reiterate;
     }
