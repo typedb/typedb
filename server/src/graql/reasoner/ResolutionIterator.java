@@ -90,7 +90,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private Boolean reiterate = null;
 
-    boolean reiterate(){
+    private boolean reiterate(){
         if (reiterate == null) {
             reiterate = allowReiteration && query.requiresReiteration();
         }

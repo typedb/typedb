@@ -131,8 +131,8 @@ public class RuleUtils {
      * @return true if the rule subgraph formed from provided rules contains loops
      */
     public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
-        return !new TarjanSCC<>(persistedTypeSubGraph(rules))
-                .getCycles().isEmpty();
+        List<Set<Type>> cycles = new TarjanSCC<>(persistedTypeSubGraph(rules)).getCycles();
+        return !cycles.isEmpty();
     }
 
     /**
