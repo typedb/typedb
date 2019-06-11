@@ -352,8 +352,8 @@ public class CompositeQuery implements ResolvableQuery {
     public ImmutableSetMultimap<Variable, Type> getVarTypeMap(ConceptMap sub) { return getVarTypeMap(); }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
-        return new ResolutionIterator(this, subGoals, reiterate).hasStream();
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
+        return new ResolutionIterator(this, subGoals).hasStream();
     }
 
     @Override

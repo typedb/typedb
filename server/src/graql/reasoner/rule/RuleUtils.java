@@ -23,18 +23,23 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.statement.Variable;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 import java.util.function.Function;
@@ -130,9 +135,39 @@ public class RuleUtils {
      * @param rules set of rules of interest forming a rule subgraph
      * @return true if the rule subgraph formed from provided rules contains loops
      */
-    public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
-        List<Set<Type>> cycles = new TarjanSCC<>(persistedTypeSubGraph(rules)).getCycles();
-        return !cycles.isEmpty();
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, TransactionOLTP tx){
+        HashMultimap<Type, Type> typeSubGraph = persistedTypeSubGraph(rules);
+        List<Set<Type>> typeCycles = new TarjanSCC<>(typeSubGraph).getCycles();
+
+        return typeCycles.stream().anyMatch(typeSet -> {
+            Set<ReasonerAtomicQuery> queries = typeSet.stream()
+                    .flatMap(type -> tx.queryCache().getFamily(type).stream())
+                    .map(Equivalence.Wrapper::get)
+                    .filter(q -> tx.queryCache().getParents(q).isEmpty())
+                    .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
+                    .collect(toSet());
+            //TODO shouldn't limit to binary relations
+            if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))
+                || !queries.stream().allMatch(q -> q.getVarNames().size() == 2)
+            ){
+                return true;
+            }
+
+            HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
+
+            //TODO look at roles to find the directionality
+            queries.forEach(q -> {
+                Set<Variable> varNames = q.getVarNames();
+                tx.queryCache().getAnswerStream(q)
+                        .forEach(ans -> {
+                            Iterator<Variable> vit = varNames.iterator();
+                            conceptMap.put(ans.get(vit.next()), ans.get(vit.next()));
+                        });
+            });
+
+            List<Set<Concept>> cycles = new TarjanSCC<>(conceptMap).getCycles();
+            return !cycles.isEmpty();
+        });
     }
 
     /**

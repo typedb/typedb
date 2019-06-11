@@ -49,13 +49,11 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;
-    private final boolean allowReiteration;
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, boolean reiterateIfNeeded){
+    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals){
         this.query = q;
-        this.allowReiteration = reiterateIfNeeded;
         this.subGoals = subGoals;
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
@@ -92,7 +90,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
     private boolean reiterate(){
         if (reiterate == null) {
-            reiterate = allowReiteration && query.requiresReiteration();
+            reiterate = query.requiresReiteration();
         }
         return reiterate;
     }

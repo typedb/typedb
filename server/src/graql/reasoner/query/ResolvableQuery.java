@@ -110,17 +110,16 @@ public interface ResolvableQuery extends ReasonerQuery {
      */
     @CheckReturnValue
     default Stream<ConceptMap> resolve(){
-        return resolve(new HashSet<>(), true);
+        return resolve(new HashSet<>());
     }
 
     /**
      *
      * @param subGoals already visited subgoals
-     * @param allowReiteration true if reiteration should be allowed
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals, boolean allowReiteration);
+    Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals);
 
     /**
      * @param sub partial substitution
