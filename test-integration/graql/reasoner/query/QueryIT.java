@@ -72,6 +72,7 @@ public class QueryIT {
         geoSession.close();
     }
 
+    @Ignore ("to be updated")
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraph(){
         try(TransactionOLTP tx = geoSession.transaction().write()) {
@@ -81,6 +82,7 @@ public class QueryIT {
         }
     }
 
+    @Ignore ("to be updated")
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInBodies(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
@@ -127,6 +129,7 @@ public class QueryIT {
         }
     }
 
+    @Ignore ("to be updated")
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInHead(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
