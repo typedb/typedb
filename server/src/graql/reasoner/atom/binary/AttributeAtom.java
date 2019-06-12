@@ -385,13 +385,26 @@ public abstract class AttributeAtom extends Binary{
         return null;
     }
 
-    private Relation findRelation(ConceptMap sub){
-        AttributeAtom rewrite = this.rewriteWithRelationVariable();
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(rewrite).withSubstitution(sub);
+    private ConceptMap findAnswer(ConceptMap sub){
+        AttributeAtom atom = getRelationVariable().isReturned()? this.rewriteWithRelationVariable() : this;
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(atom).withSubstitution(sub);
         ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) tx().queryCache().ackDBCompleteness(query);
-        return answer != null? answer.get(rewrite.getRelationVariable()).asRelation() : null;
+        return answer;
+    }
+
+    /**
+     *
+     * @param sub
+     * @param owner
+     * @param attribute
+     * @return inserted implicit relation if didn't exist, null otherwise
+     */
+    private Relation putRelation(ConceptMap sub, Concept owner, Attribute attribute){
+        ConceptMap answer = findAnswer(ConceptUtils.mergeAnswers(sub, new ConceptMap(ImmutableMap.of(getAttributeVariable(), attribute))));
+        if (answer == null) return attachAttribute(owner, attribute);
+        return getRelationVariable().isReturned()? answer.get(getRelationVariable()).asRelation() : null;
     }
 
     @Override
@@ -415,15 +428,12 @@ public abstract class AttributeAtom extends Binary{
         }
 
         if (attribute != null) {
-            Relation foundRelation = findRelation(ConceptUtils.mergeAnswers(substitution, new ConceptMap(ImmutableMap.of(resourceVariable, attribute))));
-            Relation relation = foundRelation != null? foundRelation : attachAttribute(owner, attribute);
-            if (relation != null) {
-                ConceptMap answer = new ConceptMap(ImmutableMap.of(resourceVariable, attribute));
-                if (getRelationVariable().isReturned()){
-                    answer = ConceptUtils.mergeAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
-                }
-                return Stream.of(ConceptUtils.mergeAnswers(substitution, answer));
+            Relation relation = putRelation(substitution, owner, attribute);
+            ConceptMap answer = new ConceptMap(ImmutableMap.of(resourceVariable, attribute));
+            if (getRelationVariable().isReturned()){
+                answer = ConceptUtils.mergeAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
             }
+            return Stream.of(ConceptUtils.mergeAnswers(substitution, answer));
         }
         return Stream.empty();
     }
