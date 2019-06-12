@@ -28,7 +28,6 @@ import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
@@ -61,7 +60,6 @@ import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -391,17 +389,17 @@ public abstract class AttributeAtom extends Binary{
         ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) tx().queryCache().ackDBCompleteness(query);
+        else tx().queryCache().record(query.withSubstitution(answer), answer);
         return answer;
     }
 
     /**
-     *
-     * @param sub
-     * @param owner
-     * @param attribute
+     * @param sub partial substitution
+     * @param owner attribute owner
+     * @param attribute attribute concept
      * @return inserted implicit relation if didn't exist, null otherwise
      */
-    private Relation putRelation(ConceptMap sub, Concept owner, Attribute attribute){
+    private Relation putImplicitRelation(ConceptMap sub, Concept owner, Attribute attribute){
         ConceptMap answer = findAnswer(ConceptUtils.mergeAnswers(sub, new ConceptMap(ImmutableMap.of(getAttributeVariable(), attribute))));
         if (answer == null) return attachAttribute(owner, attribute);
         return getRelationVariable().isReturned()? answer.get(getRelationVariable()).asRelation() : null;
@@ -409,8 +407,6 @@ public abstract class AttributeAtom extends Binary{
 
     @Override
     public Stream<ConceptMap> materialise(){
-
-        System.out.println("materialise: " + this);
         ConceptMap substitution = getParentQuery().getSubstitution();
         AttributeTypeImpl attributeType = AttributeTypeImpl.from(getSchemaConcept().asAttributeType());
 
@@ -428,7 +424,7 @@ public abstract class AttributeAtom extends Binary{
         }
 
         if (attribute != null) {
-            Relation relation = putRelation(substitution, owner, attribute);
+            Relation relation = putImplicitRelation(substitution, owner, attribute);
             ConceptMap answer = new ConceptMap(ImmutableMap.of(resourceVariable, attribute));
             if (getRelationVariable().isReturned()){
                 answer = ConceptUtils.mergeAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));

@@ -125,21 +125,13 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         if(materialised.get(rule.getRule().id()).contains(sub)) return new ConceptMap();
         materialised.put(rule.getRule().id(), sub);
 
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
-        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
         Set<Variable> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size() ?
                 unifier.keySet() :
                 ruleHead.getVarNames();
 
         //materialise exhibits put behaviour - duplicates won't be created
         ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
-        if (materialisedSub != null) {
-            if (!queryEquivalentToHead) {
-                getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
-            }
-            answer = unifier.apply(materialisedSub.project(queryVars));
-        }
-
+        if (materialisedSub != null) answer = unifier.apply(materialisedSub.project(queryVars));
         if (answer.isEmpty()) return answer;
 
         return ConceptUtils
