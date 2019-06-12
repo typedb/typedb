@@ -993,6 +993,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
 
+
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
