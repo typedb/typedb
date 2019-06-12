@@ -187,6 +187,13 @@ try:
     lprint('[Remote]: test finished successfully!')
 
 finally:
+    lprint('Copying logs from remote instance')
+    scp('/Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/logs/grakn.log',
+        'grakn.log',
+        instance_ip, 'circleci', instance_password)
+    scp('/Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/logs/cassandra.log',
+        'cassandra.log',
+        instance_ip, 'circleci', instance_password)
     lprint('Remove instance')
     sp.check_call([
         'gcloud', '--quiet', 'compute', 'instances',
