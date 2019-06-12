@@ -176,24 +176,6 @@ public abstract class AttributeAtom extends Binary{
                 && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
     }
 
-    @Override
-    public boolean isAlphaEquivalent(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        AttributeAtom that = (AttributeAtom) obj;
-        return super.isAlphaEquivalent(that)
-                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
-    }
-
-    @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        AttributeAtom that = (AttributeAtom) obj;
-        return super.isStructurallyEquivalent(that)
-                && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
-    }
-
     private boolean multiPredicateEquivalent(AttributeAtom that, AtomicEquivalence equiv){
         return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
     }
