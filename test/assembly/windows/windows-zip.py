@@ -188,10 +188,10 @@ try:
 
 finally:
     lprint('Copying logs from remote instance')
-    scp('/Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/logs/grakn.log',
+    scp('/Users/circleci/repo/bazel-genfiles/a directory with whitespace/grakn-core-all-windows/logs/grakn.log',
         'grakn.log',
         instance_ip, 'circleci', instance_password)
-    scp('/Users/circleci/repo/bazel-genfiles/"a directory with whitespace"/grakn-core-all-windows/logs/cassandra.log',
+    scp('/Users/circleci/repo/bazel-genfiles/a directory with whitespace/grakn-core-all-windows/logs/cassandra.log',
         'cassandra.log',
         instance_ip, 'circleci', instance_password)
     lprint('Remove instance')

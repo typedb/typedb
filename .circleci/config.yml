@@ -139,10 +139,10 @@ jobs:
       - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --save-success
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-mac/logs/grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-mac/logs/cassandra.log
-          destination: logs
+          destination: logs/
 
   test-assembly-windows-zip:
     machine: true
@@ -154,10 +154,10 @@ jobs:
           no_output_timeout: 20m
       - store_artifacts:
           path: ./grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: ./cassandra.log
-          destination: logs
+          destination: logs/
 
   test-assembly-linux-targz:
     machine: true
@@ -175,10 +175,10 @@ jobs:
       - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --save-success
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-linux/logs/grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-linux/logs/cassandra.log
-          destination: logs
+          destination: logs/
 
   test-assembly-linux-apt:
     machine: true
@@ -201,10 +201,10 @@ jobs:
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: /opt/grakn/core/logs/cassandra.log
-          destination: logs
+          destination: logs/
 
   test-assembly-docker:
     machine: true
@@ -215,10 +215,10 @@ jobs:
       - run: test/assembly/docker.py
       - store_artifacts:
           path: ./grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: ./cassandra.log
-          destination: logs
+          destination: logs/
 
   deploy-maven-snapshot:
     machine: true
@@ -297,10 +297,10 @@ jobs:
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: /opt/grakn/core/logs/cassandra.log
-          destination: logs
+          destination: logs/
 
   test-deployment-linux-rpm:
     machine: true
@@ -313,10 +313,10 @@ jobs:
       - run: test/deployment/rpm.py
       - store_artifacts:
           path: ./grakn.log
-          destination: logs
+          destination: logs/
       - store_artifacts:
           path: ./cassandra.log
-          destination: logs
+          destination: logs/
 
   sync-dependencies-snapshot:
     machine: true
