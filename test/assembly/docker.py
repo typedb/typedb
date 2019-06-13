@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 import subprocess as sp
 import sys
 import time
@@ -8,7 +9,7 @@ print('Building the image...')
 sp.check_call(['bazel', 'run', '//:assemble-docker'])
 
 print('Starting the image...')
-sp.check_call(['docker', 'run', '--name', 'grakn','-d', '--rm', '-ti', '-p', '127.0.0.1:48555:48555/tcp', 'bazel:assemble-docker'])
+sp.check_call(['docker', 'run', '-v', '{}:/grakn-core-all-linux/logs/'.format(os.getcwd()), '--name', 'grakn','-d', '--rm', '-ti', '-p', '127.0.0.1:48555:48555/tcp', 'bazel:assemble-docker'])
 print('Docker status:')
 sp.check_call(['docker', 'ps'])
 
