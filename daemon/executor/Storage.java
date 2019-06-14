@@ -87,10 +87,6 @@ public class Storage {
         this.daemonExecutor = processExecutor;
     }
 
-    private Config readConfig() {
-        return Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
-    }
-
     private void initialiseConfig() {
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
@@ -112,7 +108,7 @@ public class Storage {
             });
 
             // Read the Grakn config which is available to the user
-            Config inputConfig = readConfig();
+            Config inputConfig = Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
 
             // Set the new data directories for Cassandra
             String newDataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
@@ -161,8 +157,7 @@ public class Storage {
     }
 
     public void clean() {
-        Config config = readConfig();
-        Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
+        Path dataDir = Paths.get(graknProperties.getProperty(ConfigKey.DATA_DIR));
         System.out.print("Cleaning " + DISPLAY_NAME + "...");
         System.out.flush();
         try (Stream<Path> files = Files.walk(dataDir)) {
