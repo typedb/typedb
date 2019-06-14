@@ -63,7 +63,6 @@ public class Storage {
     private static final String DISPLAY_NAME = "Storage";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
-    private static final Path STORAGE_DATA = Paths.get("server", "db", "cassandra");
     private static final String JAVA_OPTS = SystemProperty.STORAGE_JAVAOPTS.value();
 
     private static final String EMPTY_VALUE = "";
@@ -88,6 +87,10 @@ public class Storage {
         this.daemonExecutor = processExecutor;
     }
 
+    private Config readConfig() {
+        return Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
+    }
+
     private void initialiseConfig() {
         try {
             ObjectMapper mapper = new ObjectMapper(new YAMLFactory().enable(YAMLGenerator.Feature.MINIMIZE_QUOTES));
@@ -109,7 +112,7 @@ public class Storage {
             });
 
             // Read the Grakn config which is available to the user
-            Config inputConfig = Config.read(Paths.get(Objects.requireNonNull(SystemProperty.CONFIGURATION_FILE.value())));
+            Config inputConfig = readConfig();
 
             // Set the new data directories for Cassandra
             String newDataDir = inputConfig.getProperty(ConfigKey.DATA_DIR);
@@ -158,15 +161,17 @@ public class Storage {
     }
 
     public void clean() {
+        Config config = readConfig();
+        Path dataDir = Paths.get(config.getProperty(ConfigKey.DATA_DIR));
         System.out.print("Cleaning " + DISPLAY_NAME + "...");
         System.out.flush();
-        try (Stream<Path> files = Files.walk(STORAGE_DATA)) {
+        try (Stream<Path> files = Files.walk(dataDir)) {
             files.map(Path::toFile)
                     .sorted(Comparator.comparing(File::isDirectory))
                     .forEach(File::delete);
-            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("data"));
-            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("commitlog"));
-            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("saved_caches"));
+            Files.createDirectories(dataDir.resolve(DATA_SUBDIR));
+            Files.createDirectories(dataDir.resolve(SAVED_CACHES_SUBDIR));
+            Files.createDirectories(dataDir.resolve(COMMITLOG_SUBDIR));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");
