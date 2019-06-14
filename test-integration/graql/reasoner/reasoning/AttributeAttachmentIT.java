@@ -128,18 +128,27 @@ public class AttributeAttachmentIT {
             List<ConceptMap> concepts = tx.execute(Graql.parse("match $x isa genericEntity; get;").asGet());
             List<ConceptMap> subResources = tx.execute(Graql.parse(
                     "match $x isa genericEntity, has subResource $res; get;").asGet());
-            List<ConceptMap> derivedResources = tx.execute(Graql.parse(
-                    "match $x isa genericEntity, has derived-resource-string $res; get;").asGet());
-
             String queryString = "match " +
                     "$rel($role:$x) isa @has-reattachable-resource-string; " +
                     "$x isa genericEntity; " +
                     "get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-            //base resources yield 4 roles: metarole, base attribute role, super role, specific role
-            //subresources yield 5 roles: all the above + specialised role
-            assertEquals(concepts.size() * 4 + subResources.size() * 5, answers.size());
+            /*
+            base resources yield 4 roles: metarole, base attribute role, super role, specific role
+            subresources yield 5 roles: all the above + specialised role
+
+            Answer configuration:
+            X (genericEntity)  --- has RRS (non inferred)  -- \
+                               --- has subResource         - \ \
+                                                              \
+            Y (genericEntity)  --- has RRS                 ---  RRS ("value")
+                               --- has subResource         ---/
+                                                               /
+            REL (relation0)    --- has RRS                 ---/
+
+            */
+            assertEquals(concepts.size() * 4 + subResources.size() * 4 + subResources.size() * 5, answers.size());
             answers.forEach(ans -> assertEquals(3, ans.size()));
         }
     }
@@ -147,9 +156,10 @@ public class AttributeAttachmentIT {
     @Test
     public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+
             Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
-            assertEquals(3, answers.size());
+            assertEquals(5, answers.size());
             answers.forEach(a -> assertTrue(a.vars().contains(new Variable("r"))));
         }
     }

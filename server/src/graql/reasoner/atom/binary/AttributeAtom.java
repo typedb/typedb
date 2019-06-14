@@ -372,15 +372,16 @@ public abstract class AttributeAtom extends Binary{
      * @return implicit relation of the attribute
      */
     private Relation attachAttribute(Concept owner, Attribute attribute){
-        System.out.println("attaching attribute: " + this);
+        Relation relation = null;
         if (owner.isEntity()) {
-            return EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
+            relation = EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
         } else if (owner.isRelation()) {
-            return RelationImpl.from(owner.asRelation()).attributeInferred(attribute);
+            relation = RelationImpl.from(owner.asRelation()).attributeInferred(attribute);
         } else if (owner.isAttribute()) {
-            return AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
+            relation = AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
         }
-        return null;
+        System.out.println("Atom : " + this + " attached attribute [" + attribute.type() + "]:\n" + attribute + "\nrelation: " + relation);
+        return relation;
     }
 
     private ConceptMap findAnswer(ConceptMap sub){
