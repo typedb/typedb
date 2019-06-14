@@ -5,6 +5,7 @@ baseType sub entity,
     has resource-long,
     has derived-resource-string,
     has derived-resource-boolean,
+    has absent-resource,
     plays someRole,
     plays anotherRole,
     plays otherRole;
@@ -37,6 +38,7 @@ derived-ternary sub relation,
 #Resources
 resource-string sub attribute, datatype string;
 resource-long sub attribute, datatype long;
+absent-resource sub attribute, datatype string;
 
 derived-resource-string sub attribute, datatype string;
 derived-resource-boolean sub attribute, datatype boolean;
@@ -78,8 +80,6 @@ binaryTransitivity sub rule,
         (someRole:$x, otherRole:$y) isa derived-binary;
     };
 
-
-
 ternaryDefinition sub rule,
     when {
         (someRole:$x, otherRole:$z) isa binary;
@@ -104,6 +104,15 @@ typeDerivation sub rule,
     },
     then {
         $x isa derived-type;
+    };
+
+negationRuleWithAbsentType sub rule,
+    when {
+        $x isa someType;
+        not { $x has absent-resource $val;};
+    },
+    then {
+        $x has derived-resource-string "no absent-resource attached";
     };
 
 insert
