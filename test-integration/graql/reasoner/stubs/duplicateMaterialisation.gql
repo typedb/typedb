@@ -1,0 +1,44 @@
+define 
+baseEntity sub entity,
+    has index,
+    has inferredAttribute,
+    has nonInferredAttribute,
+    plays someRole,
+    plays anotherRole;
+startEntity sub baseEntity;
+bulkEntity sub baseEntity;
+
+index sub attribute, datatype long;
+nonInferredAttribute sub attribute, datatype string;
+inferredAttribute sub attribute, datatype string, plays anotherRole;
+
+inferredRelation sub relation, has inferredAttribute, relates someRole, relates anotherRole;
+
+infer-attribute sub rule,
+when {
+    $p isa baseEntity;
+    not {$p has nonInferredAttribute 'start';};},
+then {
+    $p has inferredAttribute 'inferred';};
+
+infer-relation sub rule,
+when {
+    $p isa baseEntity, has index < 5;
+    $q isa baseEntity, has index < 5, has inferredAttribute $r; $r 'inferred';},
+then {
+    (someRole: $p, anotherRole: $q) isa inferredRelation;};
+
+annotate-relation sub rule,
+when {
+    $rel (someRole: $p, anotherRole: $q) isa inferredRelation;},
+then {
+    $rel has inferredAttribute 'inferredRelation';};
+
+insert
+
+$p isa startEntity, has nonInferredAttribute 'start';
+$q isa baseEntity, has index 0;
+$w isa baseEntity, has index 1;
+$r isa baseEntity, has index 2;
+$s isa baseEntity, has index 3;
+$t isa baseEntity, has index 4;
