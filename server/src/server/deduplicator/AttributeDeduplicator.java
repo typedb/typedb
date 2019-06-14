@@ -58,7 +58,11 @@ public class AttributeDeduplicator {
             // Duplicates might be empty if the user deleted the attribute right after the insertion or deleted the keyspace.
             if (duplicates.hasNext()) {
                 // Get the Id of the Target concept from the centralised attributes map
-                ConceptId targetId = session.attributesMap().get(keyspaceAttributeTriple.index());
+
+                // Do a serialised read through the attributesMap (which may be empty if all sessions are closed, then one is reopened)
+                // - only one thread should populate the map, and all following threads need to reference the same ID
+                ConceptId targetId  = session.attributesMap().computeIfAbsent(keyspaceAttributeTriple.index(), (index) -> tx.getConcept(Schema.VertexProperty.INDEX, index).id());
+
                 Vertex mergeTargetV = tinker.V(Schema.elementId(targetId)).next();
                 while (duplicates.hasNext()) {
                     Vertex duplicate = duplicates.next();
