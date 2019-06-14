@@ -31,13 +31,12 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 import static grakn.core.server.kb.Schema.ImplicitType.HAS;
 import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
@@ -68,12 +67,25 @@ public class ReasoningIT {
     //as specified in the respective comments below.
 
     @Test
+    public void whenMaterialising_duplicatesAreNotCreated(){
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "duplicateMaterialisation.gql", session);
+            try (TransactionOLTP tx = session.transaction().write()) {
+                List<ConceptMap> answers = tx.execute(Graql.parse(
+                        "match " +
+                                "$rel has inferredAttribute 'inferredRelation';" +
+                                "get;")
+                        .asGet());
+                assertEquals(25, answers.size());
+            }
+        }
+    }
+
+    @Test
     public void attributeOwnerResultsAreConsistentBetweenDifferentAccessPoints(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "resourceDirectionality.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
-                
-
                 List<ConceptMap> answers = tx.execute(Graql.parse("match $x isa specific-indicator;get;").asGet(), false);
 
                 Concept indicator = answers.iterator().next().get("x");

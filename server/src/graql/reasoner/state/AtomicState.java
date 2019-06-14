@@ -131,7 +131,10 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
         //materialise exhibits put behaviour - duplicates won't be created
         ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
-        if (materialisedSub != null) answer = unifier.apply(materialisedSub.project(queryVars));
+        if (materialisedSub != null) {
+            getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
+            answer = unifier.apply(materialisedSub.project(queryVars));
+        }
         if (answer.isEmpty()) return answer;
 
         return ConceptUtils
