@@ -372,6 +372,9 @@ public abstract class AttributeAtom extends Binary{
      * @return implicit relation of the attribute
      */
     private Relation attachAttribute(Concept owner, Attribute attribute){
+        //NB: this inserts the implicit relation based on the type of the attribute.
+        //We can have cases when we want to specialise the relation while retaining the existing attribute.
+        //In such cases at the moment we still insert the attribute type relation whilst retaining an appropriate cache entry.
         Relation relation = null;
         if (owner.isEntity()) {
             relation = EntityImpl.from(owner.asEntity()).attributeInferred(attribute);
@@ -380,7 +383,6 @@ public abstract class AttributeAtom extends Binary{
         } else if (owner.isAttribute()) {
             relation = AttributeImpl.from(owner.asAttribute()).attributeInferred(attribute);
         }
-        System.out.println("Atom : " + this + " attached attribute [" + attribute.type() + "]:\n" + attribute + "\nrelation: " + relation);
         return relation;
     }
 
