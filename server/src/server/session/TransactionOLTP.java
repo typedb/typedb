@@ -112,7 +112,7 @@ import java.util.stream.Stream;
  * 2. Clearing the graph explicitly closes the connection as well.
  */
 public class TransactionOLTP implements Transaction {
-    private final Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     // Shared Variables
     private final SessionImpl session;
     private final JanusGraph janusGraph;
@@ -186,38 +186,42 @@ public class TransactionOLTP implements Transaction {
 
     private void commitTransactionInternal() {
         executeLockingMethod(() -> {
-            try {
-                LOG.trace("Graph is valid. Committing graph...");
-                if (!cache().getNewAttributes().isEmpty()) {
-                    session.graphLock().writeLock().lock();
-                    try {
-                        cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
-                            if (session.attributesMap().containsKey(labelStringPair.getValue())) {
-                                ConceptId conceptIdTarget = session.attributesMap().get(labelStringPair.getValue());
-                                if (!conceptIdTarget.equals(conceptId)) {
-                                    //time for some merging mofos
-                                    merge(getTinkerTraversal(), conceptId, conceptIdTarget);
-                                    statisticsDelta().decrement(labelStringPair.getKey());
-                                }
-                            }
-                        }));
-                        janusTransaction.commit();
-                        updateAttributesMapInSession();
-                    } finally {
-                        session.graphLock().writeLock().unlock();
-                    }
-                } else {
-                    janusTransaction.commit();
-                }
-                LOG.trace("Graph committed.");
-            } catch (UnsupportedOperationException e) {
-                //IGNORED
+            LOG.trace("Graph is valid. Committing graph...");
+            if (!cache().getNewAttributes().isEmpty()) {
+                mergeAttributesAndCommit();
+            } else {
+                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+                janusTransaction.commit();
             }
+            LOG.trace("Graph committed.");
             return null;
         });
     }
 
-    private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId){
+
+    // When there are new attributes in the current transaction that is about to be committed
+    // we serialise the commit by locking and merge attributes that are duplicates.
+    private void mergeAttributesAndCommit() {
+        session.graphLock().writeLock().lock();
+        try {
+            cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
+                if (session.attributesMap().containsKey(labelStringPair.getValue())) {
+                    ConceptId targetId = session.attributesMap().get(labelStringPair.getValue());
+                    if (!targetId.equals(conceptId)) {
+                        merge(getTinkerTraversal(), conceptId, targetId);
+                        statisticsDelta().decrement(labelStringPair.getKey());
+                    }
+                }
+            }));
+            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+            janusTransaction.commit();
+            updateAttributesMapInSession();
+        } finally {
+            session.graphLock().writeLock().unlock();
+        }
+    }
+
+    private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
         Vertex duplicate = tinkerTraversal.V(Schema.elementId(duplicateId)).next();
         Vertex mergeTargetV = tinkerTraversal.V(Schema.elementId(targetId)).next();
         duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
@@ -238,7 +242,7 @@ public class TransactionOLTP implements Transaction {
                 attributeEdge.close();
                 rolePlayerEdge.close();
             } catch (Exception e) {
-               e.printStackTrace();
+                LOG.warn("Error closing the merging traversals", e);
             }
         });
         duplicate.remove();
@@ -928,7 +932,6 @@ public class TransactionOLTP implements Transaction {
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
                 commitTransactionInternal();
-                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 transactionCache.flushToKeyspaceCache();
             }
 

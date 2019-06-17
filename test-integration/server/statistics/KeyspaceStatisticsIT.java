@@ -226,7 +226,7 @@ public class KeyspaceStatisticsIT {
         localSession.close();
         remoteSession.close();
 
-        // at this point, the graph and keyspace should be deleted from Grakn server
+        // at this point, the graph and keyspace should be deleted from Grakn server cache
         localSession = server.session(remoteSession.keyspace().name());
 
         tx = localSession.transaction().write();
