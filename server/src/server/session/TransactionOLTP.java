@@ -192,6 +192,7 @@ public class TransactionOLTP implements Transaction {
             } else if (!cache().getRemovedAttributes().isEmpty()) {
                 session.graphLock().writeLock().lock();
                 try {
+                    janusTransaction.commit();
                     cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
                 } finally {
                     session.graphLock().writeLock().unlock();
