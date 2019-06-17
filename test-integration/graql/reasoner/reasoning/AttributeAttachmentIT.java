@@ -124,14 +124,14 @@ public class AttributeAttachmentIT {
     @Test
     public void whenReasoningWithAttributesInRelationForm_ResultsAreComplete() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-
-            List<ConceptMap> concepts = tx.execute(Graql.parse("match $x isa genericEntity; get;").asGet());
-            List<ConceptMap> subResources = tx.execute(Graql.parse(
-                    "match $x isa genericEntity, has subResource $res; get;").asGet());
             String queryString = "match " +
                     "$rel($role:$x) isa @has-reattachable-resource-string; " +
                     "$x isa genericEntity; " +
                     "get;";
+
+            List<ConceptMap> concepts = tx.execute(Graql.parse("match $x isa genericEntity; get;").asGet());
+            List<ConceptMap> subResources = tx.execute(Graql.parse(
+                    "match $x isa genericEntity, has subResource $res; get;").asGet(), false);
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             /*
@@ -148,7 +148,14 @@ public class AttributeAttachmentIT {
             REL (relation0)    --- has RRS                 ---/
 
             */
-            assertEquals(concepts.size() * 4 + subResources.size() * 4 + subResources.size() * 5, answers.size());
+            final int baseResourceRoles = 4;
+            final int subResourceRoles = 5;
+            //NB: currently we will reify the implicit relations and have duplicate reified and non-reified versions in the answers
+            assertEquals(
+                    concepts.size() * baseResourceRoles +
+                            subResources.size() * baseResourceRoles +
+                            subResources.size() * subResourceRoles,
+                    answers.size());
             answers.forEach(ans -> assertEquals(3, ans.size()));
         }
     }

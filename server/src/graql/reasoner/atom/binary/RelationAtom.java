@@ -1012,6 +1012,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                     RelationTypeImpl.from(relationType).addRelationInferred();
         }
 
+        //NB: this will potentially reify existing implicit relationships
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 
