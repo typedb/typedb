@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import os
+import platform
 import subprocess as sp
 import tempfile
 import time
@@ -39,14 +40,18 @@ def ssh(command, ssh_host, ssh_user, ssh_pass, attempts=5):
 
 
 def scp(remote, local, ssh_host, ssh_user, ssh_pass):
-    sp.check_call([
+    system = platform.system()
+    sp.check_call(filter(None, [
         'sshpass',
         '-p',
         ssh_pass,
         'scp',
+        # '-T' (suppresses strict filename check) parameter
+        # is not available on scp on macOS
+        '-T' if system == 'Linux' else None,
         '{}@{}:"{}"'.format(ssh_user, ssh_host, remote),
         local,
-    ])
+    ]))
 
 
 def wait_for_ssh(ssh_host, ssh_user, ssh_pass, timeout_mins=10):
@@ -187,6 +192,13 @@ try:
     lprint('[Remote]: test finished successfully!')
 
 finally:
+    lprint('Copying logs from remote instance')
+    scp('/Users/circleci/repo/bazel-genfiles/a directory with whitespace/grakn-core-all-windows/logs/grakn.log',
+        'grakn.log',
+        instance_ip, 'circleci', instance_password)
+    scp('/Users/circleci/repo/bazel-genfiles/a directory with whitespace/grakn-core-all-windows/logs/cassandra.log',
+        'cassandra.log',
+        instance_ip, 'circleci', instance_password)
     lprint('Remove instance')
     sp.check_call([
         'gcloud', '--quiet', 'compute', 'instances',

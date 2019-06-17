@@ -56,6 +56,7 @@ import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;
 
 public class NegationIT {
@@ -188,6 +189,22 @@ public class NegationIT {
                             "};"
             );
             tx.execute(Graql.match(pattern), false);
+        }
+    }
+
+    @Test
+    public void whenATypeInRuleNegationBlockIsAbsent_theRuleIsMatched() {
+        try (TransactionOLTP tx = negationSession.transaction().write()) {
+            assertFalse(tx.getAttributeType("absent-resource").instances().findFirst().isPresent());
+
+            List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse(
+                    "match " +
+                            "$x has derived-resource-string 'no absent-resource attached';" +
+                            "get;"
+            ));
+            List<ConceptMap> explicitAnswers = tx.execute(Graql.<GraqlGet>parse("match $x isa someType;get;"));
+
+            assertCollectionsNonTriviallyEqual(explicitAnswers,answers);
         }
     }
 

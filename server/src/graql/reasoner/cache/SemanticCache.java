@@ -220,6 +220,7 @@ public abstract class SemanticCache<
 
         assert(query.isPositive());
         validateAnswer(answer, query, query.getVarNames());
+        if (query.isGround()) ackCompleteness(query);
 
         /*
          * find SE entry
