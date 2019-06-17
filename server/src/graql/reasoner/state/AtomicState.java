@@ -135,7 +135,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
             return new ConceptMap();
         }
         materialised.put(rule.getRule().id(), sub);
-        
+
         Set<Variable> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size() ?
                 unifier.keySet() :
                 ruleHead.getVarNames();
@@ -146,7 +146,6 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
             getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
             answer = unifier.apply(materialisedSub.project(queryVars));
         }
-
         if (answer.isEmpty()) return answer;
 
         return ConceptUtils
