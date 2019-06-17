@@ -30,6 +30,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 import java.util.Set;
@@ -99,7 +100,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
     }
 
     private MultiUnifier getRuleUnifier(InferenceRule rule) {
-        if (ruleUnifier == null) this.ruleUnifier = rule.getHead().getMultiUnifier(this.getQuery());
+        if (ruleUnifier == null) this.ruleUnifier = rule.getHead().getMultiUnifier(this.getQuery(), UnifierType.RULE);
         return ruleUnifier;
     }
 
