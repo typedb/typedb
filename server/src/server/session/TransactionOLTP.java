@@ -197,6 +197,7 @@ public class TransactionOLTP implements Transaction {
                                 if (!conceptIdTarget.equals(conceptId)) {
                                     //time for some merging mofos
                                     merge(getTinkerTraversal(), conceptId, conceptIdTarget);
+                                    statisticsDelta().decrement(labelStringPair.getKey());
                                 }
                             }
                         }));
@@ -926,8 +927,8 @@ public class TransactionOLTP implements Transaction {
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
-                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 commitTransactionInternal();
+                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 transactionCache.flushToKeyspaceCache();
             }
 

@@ -282,7 +282,7 @@ public class KeyspaceStatisticsIT {
             GraknClient.Transaction tx2 = remoteSession.transaction().write();
             AttributeType ageT = tx2.getAttributeType("age");
             EntityType personT = tx2.getEntityType("person");
-            ageT.create(3); // tricky case - needs to be deduplicated
+            ageT.create(3); // tricky case - this will be merge
             ageT.create(4);
             personT.create();
             tx2.commit();
@@ -293,9 +293,6 @@ public class KeyspaceStatisticsIT {
         future2.get();
         parallelExecutor.shutdownNow();
         parallelExecutor.awaitTermination(5, TimeUnit.SECONDS);
-
-        // allow attribute deduplicator to kick in and finish operation
-        Thread.sleep(1000);
 
         tx = localSession.transaction().write();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
