@@ -327,9 +327,13 @@ public class InferenceRule {
 
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
-            ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
             //NB we don't have to rewrite complements as we don't allow recursion atm
-            return new InferenceRule(rewrittenHead, getBody(), rule, tx);
+            return new InferenceRule(
+                    ReasonerQueries.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom)),
+                    getBody(),
+                    rule,
+                    tx
+            );
         }
         return this;
     }
