@@ -189,6 +189,13 @@ public class TransactionOLTP implements Transaction {
             LOG.trace("Graph is valid. Committing graph...");
             if (!cache().getNewAttributes().isEmpty()) {
                 mergeAttributesAndCommit();
+            } else if (!cache().getRemovedAttributes().isEmpty()) {
+                session.graphLock().writeLock().lock();
+                try {
+                    cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
+                } finally {
+                    session.graphLock().writeLock().unlock();
+                }
             } else {
                 session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 janusTransaction.commit();
@@ -203,6 +210,7 @@ public class TransactionOLTP implements Transaction {
     // we serialise the commit by locking and merge attributes that are duplicates.
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
+        cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
         try {
             cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
                 if (session.attributesMap().containsKey(labelStringPair.getValue())) {

@@ -23,6 +23,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
@@ -31,6 +32,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
 
@@ -76,6 +78,7 @@ public class TransactionCache {
     // This is a map of attribute indices to <label, concept id>
     // The index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
+    private Set<String> removedAttributes = new HashSet<>();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
@@ -148,6 +151,8 @@ public class TransactionCache {
         if (concept.isAttribute()) {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
             newAttributes.remove(new Pair<>(attr.type().label().toString(), attr.getIndex()));
+            Attribute<Object> attribute = concept.asAttribute();
+            removedAttributes.add(Schema.generateAttributeIndex(attribute.type().label(), attribute.value().toString()));
         }
 
         if (concept.isRelation()) {
@@ -229,12 +234,14 @@ public class TransactionCache {
         return (X) conceptCache.get(id);
     }
 
-    public void inferredThingToPersist(Thing t){ inferredConceptsToPersist.add(t); }
+    public void inferredThingToPersist(Thing t) {
+        inferredConceptsToPersist.add(t);
+    }
 
     /**
      * @return cached things that are inferred
      */
-    public Stream<Thing> getInferredThingsToDiscard(){
+    public Stream<Thing> getInferredThingsToDiscard() {
         return conceptCache.values().stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
@@ -308,6 +315,10 @@ public class TransactionCache {
 
     public Set<Relation> getNewRelations() {
         return newRelations;
+    }
+
+    public Set<String> getRemovedAttributes() {
+        return removedAttributes;
     }
 
     @VisibleForTesting
