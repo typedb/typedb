@@ -224,6 +224,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     /**
      * Determines the roleplayer directionality in the form of variable pairs.
+     * NB: Currently we determine the directionality based on the role hashCode.
      * @return set of pairs of roleplayers arranged in terms of directionality
      */
     public Set<Pair<Variable, Variable>> varDirectionality(){

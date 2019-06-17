@@ -133,7 +133,7 @@ public class RuleUtils {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
-     * @return true if the rule subgraph formed from provided rules contains loops
+     * @return true if the rule subgraph formed from provided rules contains loops AND corresponding relation instances also contain loops
      */
     public static boolean subGraphIsCyclical(Set<InferenceRule> rules, TransactionOLTP tx){
         HashMultimap<Type, Type> typeSubGraph = persistedTypeSubGraph(rules);
