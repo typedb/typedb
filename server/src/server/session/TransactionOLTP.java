@@ -18,6 +18,7 @@
 
 package grakn.core.server.session;
 
+import com.google.common.collect.Lists;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
@@ -71,9 +72,12 @@ import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
@@ -84,6 +88,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -182,15 +187,80 @@ public class TransactionOLTP implements Transaction {
     private void commitTransactionInternal() {
         executeLockingMethod(() -> {
             try {
-                LOG.trace("Graph is valid. Committing graph...");
-                janusTransaction.commit();
                 updateAttributesMapInSession();
+                LOG.trace("Graph is valid. Committing graph...");
+                if (!cache().getNewAttributes().isEmpty()) {
+                    // lock
+                    cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
+                        if (session.attributesMap().contains(labelStringPair.getValue())) {
+                            ConceptId conceptIdTarget = session.attributesMap().get(labelStringPair.getValue());
+                            if (!conceptIdTarget.equals(conceptId)) {
+                                //time for some merging mofos
+                               merge(getTinkerTraversal(), conceptId, conceptIdTarget);
+                            }
+                        }
+                    }));
+                    janusTransaction.commit();
+                    //unlock
+                } else {
+                    janusTransaction.commit();
+                }
                 LOG.trace("Graph committed.");
             } catch (UnsupportedOperationException e) {
                 //IGNORED
             }
             return null;
         });
+    }
+
+    private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId){
+        Vertex duplicate = tinkerTraversal.V(Schema.elementId(duplicateId)).next();
+        Vertex mergeTargetV = tinkerTraversal.V(Schema.elementId(targetId)).next();
+        duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
+            // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+            GraphTraversal<Vertex, Edge> attributeEdge =
+                    tinkerTraversal.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
+            if (attributeEdge.hasNext()) {
+                mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
+            }
+
+            // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+            GraphTraversal<Vertex, Edge> rolePlayerEdge =
+                    tinkerTraversal.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
+            if (rolePlayerEdge.hasNext()) {
+                mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
+            }
+            try {
+                attributeEdge.close();
+                rolePlayerEdge.close();
+            } catch (Exception e) {
+               e.printStackTrace();
+            }
+        });
+    }
+
+    private static void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {
+        Edge edge = rolePlayerEdge.next();
+        Vertex relationVertex = edge.outVertex();
+        Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
+        relationVertex.addEdge(Schema.EdgeLabel.ROLE_PLAYER.getLabel(), mergeTargetV, properties);
+        edge.remove();
+    }
+
+    private static void mergeAttributeEdge(Vertex mergeTargetV, Vertex ent, GraphTraversal<Vertex, Edge> attributeEdge) {
+        Edge edge = attributeEdge.next();
+        Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
+        ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV, properties);
+        edge.remove();
+    }
+
+    private static Object[] propertiesToArray(ArrayList<Property<Object>> propertiesAsKeyValue) {
+        ArrayList<Object> propertiesAsObj = new ArrayList<>();
+        for (Property<Object> property : propertiesAsKeyValue) {
+            propertiesAsObj.add(property.key());
+            propertiesAsObj.add(property.value());
+        }
+        return propertiesAsObj.toArray();
     }
 
     // Register new committed Attributes in AttributesMap (if the map doesnt already contain the same INDEX),
