@@ -40,6 +40,9 @@ import java.util.Set;
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
+    //TODO: remove it once we introduce multi answer states
+    private MultiUnifier ruleUnifier = null;
+
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
     private HashMultimap<ConceptId, ConceptMap> materialised = HashMultimap.create();
@@ -95,6 +98,11 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         return cacheUnifier;
     }
 
+    private MultiUnifier getRuleUnifier(InferenceRule rule) {
+        if (ruleUnifier == null) this.ruleUnifier = rule.getHead().getMultiUnifier(this.getQuery());
+        return ruleUnifier;
+    }
+
     private ConceptMap recordAnswer(ReasonerAtomicQuery query, ConceptMap answer) {
         if (answer.isEmpty()) return answer;
         if (cacheEntry == null) {
@@ -122,7 +130,10 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         ReasonerAtomicQuery query = getQuery();
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
         ConceptMap sub = ruleHead.getSubstitution();
-        if(materialised.get(rule.getRule().id()).contains(sub)) return new ConceptMap();
+        if(materialised.get(rule.getRule().id()).contains(sub)
+            && getRuleUnifier(rule).isUnique()){
+            return new ConceptMap();
+        }
         materialised.put(rule.getRule().id(), sub);
 
         Set<Variable> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size() ?

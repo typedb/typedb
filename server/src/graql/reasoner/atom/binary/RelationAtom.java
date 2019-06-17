@@ -1007,9 +1007,13 @@ public abstract class RelationAtom extends IsaAtomBase {
             relation = substitution.get(getVarName()).asRelation();
         } else {
             Relation foundRelation = findRelation(substitution);
-            relation = foundRelation != null?
-                    foundRelation :
-                    RelationTypeImpl.from(relationType).addRelationInferred();
+            if (foundRelation == null) {
+                Relation insertedRelation = RelationTypeImpl.from(relationType).addRelationInferred();
+                relation = insertedRelation;
+            } else {
+                relation = foundRelation;
+            }
+
         }
 
         //NB: this will potentially reify existing implicit relationships
