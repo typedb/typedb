@@ -52,7 +52,7 @@ java_test(
 java_test(
     name = "attribute-uniqueness-e2e",
     test_class = "grakn.core.distribution.AttributeUniquenessE2E",
-    srcs = ["AttributeUniquenessE2E.java", "DistributionE2EConstants.java".java"],
+    srcs = ["AttributeUniquenessE2E.java", "DistributionE2EConstants.java"],
     deps = [
         # Internal dependencies
         "//common:common",
