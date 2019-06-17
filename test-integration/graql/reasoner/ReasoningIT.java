@@ -617,7 +617,6 @@ public class ReasoningIT {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
             try (TransactionOLTP tx = session.transaction().read()) {
-
                 List<ConceptMap> persistedRelations = tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet(), false);
                 List<ConceptMap> inferredRelations = tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet());
                 assertCollectionsNonTriviallyEqual("New relations were created!", persistedRelations, inferredRelations);
@@ -632,7 +631,15 @@ public class ReasoningIT {
                         .collect(Collectors.toSet());
 
                 assertCollectionsNonTriviallyEqual("Rules are not matched correctly!", variants, inferredRelations);
+                }
+        }
+    }
 
+    @Test //when rule are defined to append new RPs no new relation instances should be created
+    public void whenAppendingRolePlayers_whenHeadRelationHasSymmetricRoles_answersContainAllPermutations(){
+        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+            loadFromFileAndCommit(resourcePath, "appendingRPs.gql", session);
+            try (TransactionOLTP tx = session.transaction().read()) {
                 List<ConceptMap> derivedRPTriples = tx.execute(Graql.<GraqlGet>parse("match (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
                 List<ConceptMap> derivedRelations = tx.execute(Graql.<GraqlGet>parse("match $r (inferredRole: $x, inferredRole: $y, inferredRole: $z) isa derivedRelation; get;"));
 
@@ -640,6 +647,7 @@ public class ReasoningIT {
                 //three symmetric roles hence 3! results
                 assertEquals("Rule body is not rewritten correctly!", 6, derivedRPTriples.size());
                 assertEquals("Rule body is not rewritten correctly!", 6, derivedRelations.size());
+                assertEquals(1, derivedRelations.stream().map(ans -> ans.get("r")).collect(Collectors.toSet()).size());
             }
         }
     }

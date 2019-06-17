@@ -228,7 +228,8 @@ public class ClientJavaE2E {
                             .rel("child", var("child"))).get();
             LOG.info("clientJavaE2E() - '" + getParentship + "'");
             List<ConceptMap> parentship = tx.execute(getParentship);
-            assertThat(parentship, hasSize(1));
+            //2 answers - single answer for each parent
+            assertThat(parentship, hasSize(2));
             LOG.info("clientJavaE2E() - done.");
         });
 
