@@ -187,21 +187,24 @@ public class TransactionOLTP implements Transaction {
     private void commitTransactionInternal() {
         executeLockingMethod(() -> {
             try {
-                updateAttributesMapInSession();
                 LOG.trace("Graph is valid. Committing graph...");
                 if (!cache().getNewAttributes().isEmpty()) {
-                    // lock
-                    cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
-                        if (session.attributesMap().contains(labelStringPair.getValue())) {
-                            ConceptId conceptIdTarget = session.attributesMap().get(labelStringPair.getValue());
-                            if (!conceptIdTarget.equals(conceptId)) {
-                                //time for some merging mofos
-                               merge(getTinkerTraversal(), conceptId, conceptIdTarget);
+                    session.graphLock().writeLock().lock();
+                    try {
+                        cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
+                            if (session.attributesMap().containsKey(labelStringPair.getValue())) {
+                                ConceptId conceptIdTarget = session.attributesMap().get(labelStringPair.getValue());
+                                if (!conceptIdTarget.equals(conceptId)) {
+                                    //time for some merging mofos
+                                    merge(getTinkerTraversal(), conceptId, conceptIdTarget);
+                                }
                             }
-                        }
-                    }));
-                    janusTransaction.commit();
-                    //unlock
+                        }));
+                        janusTransaction.commit();
+                        updateAttributesMapInSession();
+                    } finally {
+                        session.graphLock().writeLock().unlock();
+                    }
                 } else {
                     janusTransaction.commit();
                 }
@@ -237,6 +240,7 @@ public class TransactionOLTP implements Transaction {
                e.printStackTrace();
             }
         });
+        duplicate.remove();
     }
 
     private static void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {
@@ -907,39 +911,34 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
+            /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
+            int validateSpanId = ServerTracing.startScopedChildSpan("commitWithLogs validate");
             checkMutationAllowed();
             removeInferredConcepts();
             validateGraph();
+
+            Map<Pair<Label, String>, ConceptId> newAttributes = transactionCache.getNewAttributes();
+
+            ServerTracing.closeScopedChildSpan(validateSpanId);
+
+            int commitSpanId = ServerTracing.startScopedChildSpan("commitWithLogs commit");
+
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
-            // force serialization & atomic updates, keeping Janus and our KeyspaceCache in sync
+            // force serialized updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
                 session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 commitTransactionInternal();
                 transactionCache.flushToKeyspaceCache();
             }
+
+            ServerTracing.closeScopedChildSpan(commitSpanId);
+
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
         }
     }
 
-    /**
-     * Commits, closes transaction and returns CommitLog.
-     *
-     * @return the commit log that would have been submitted if it is needed.
-     * @throws InvalidKBException when the graph does not conform to the object concept
-     */
-    public Optional<CommitLog> commitAndGetLogs() throws InvalidKBException {
-        if (isClosed()) {
-            return Optional.empty();
-        }
-        try {
-            return commitWithLogs();
-        } finally {
-            String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
-            closeTransaction(closeMessage);
-        }
-    }
 
     private void closeTransaction(String closedReason) {
         try {
@@ -952,48 +951,6 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-
-    private Optional<CommitLog> commitWithLogs() throws InvalidKBException {
-
-        /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
-
-        int validateSpanId = ServerTracing.startScopedChildSpan("commitWithLogs validate");
-
-
-        checkMutationAllowed();
-        removeInferredConcepts();
-        validateGraph();
-
-        Map<Pair<Label, String>, ConceptId> newAttributes = transactionCache.getNewAttributes();
-
-        ServerTracing.closeScopedChildSpan(validateSpanId);
-
-        int commitSpanId = ServerTracing.startScopedChildSpan("commitWithLogs commit");
-
-        // lock on the keyspace cache shared between concurrent tx's to the same keyspace
-        // force serialized updates, keeping Janus and our KeyspaceCache in sync
-        synchronized (keyspaceCache) {
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            commitTransactionInternal();
-            transactionCache.flushToKeyspaceCache();
-        }
-
-        ServerTracing.closeScopedChildSpan(commitSpanId);
-
-        //If we have new attributes to deduplicate create CommitLog
-        if (!newAttributes.isEmpty()) {
-
-            int createLogSpanId = ServerTracing.startScopedChildSpan("commitWithLogs create log");
-
-            Optional logs = Optional.of(new CommitLog(keyspace(), newAttributes));
-
-            ServerTracing.closeScopedChildSpan(createLogSpanId);
-
-            return logs;
-        }
-
-        return Optional.empty();
-    }
 
     private void removeInferredConcepts() {
         Set<Thing> inferredThingsToDiscard = cache().getInferredThingsToDiscard().collect(Collectors.toSet());
@@ -1057,32 +1014,5 @@ public class TransactionOLTP implements Transaction {
 
     public List<ConceptMap> execute(MatchClause matchClause, boolean infer) {
         return stream(matchClause, infer).collect(Collectors.toList());
-    }
-
-    /**
-     * Stores the commit log of a TransactionOLTP.
-     */
-    public class CommitLog {
-        private final KeyspaceImpl keyspace;
-        private final Map<Pair<Label, String>, ConceptId> attributes;
-
-        CommitLog(KeyspaceImpl keyspace, Map<Pair<Label, String>, ConceptId> attributes) {
-            if (keyspace == null) {
-                throw new NullPointerException("Null keyspace");
-            }
-            this.keyspace = keyspace;
-            if (attributes == null) {
-                throw new NullPointerException("Null attributes");
-            }
-            this.attributes = attributes;
-        }
-
-        public KeyspaceImpl keyspace() {
-            return keyspace;
-        }
-
-        public Map<Pair<Label, String>, ConceptId> attributes() {
-            return attributes;
-        }
     }
 }
