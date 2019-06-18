@@ -69,15 +69,21 @@ public  class TarjanSCC<T> {
                 .collect(Collectors.toList());
     }
 
+    private final HashMultimap<T, T> successors = HashMultimap.create();
+
+    public HashMultimap<T, T> successorMap(){ return successors;}
+
     private void dfs(T node) {
         visited.add(node);
         lowLink.put(node, pre++);
         int min = lowLink.get(node);
         stack.push(node);
+        successors.putAll(node, graph.get(node));
         //look at neighbours of v
         for (T n : graph.get(node)) {
             if (!visited.contains(n)) dfs(n);
             if (lowLink.get(n) < min) min = lowLink.get(n);
+            successors.putAll(node, successors.get(n));
         }
         if (min < lowLink.get(node)) {
             lowLink.put(node, min);
@@ -89,6 +95,7 @@ public  class TarjanSCC<T> {
             w = stack.pop();
             component.add(w);
             lowLink.put(w, graph.keySet().size());
+            successors.putAll(node, successors.get(w));
         } while (w != node);
         scc.add(component);
     }

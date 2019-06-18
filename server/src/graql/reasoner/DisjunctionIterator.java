@@ -70,7 +70,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
 
         return doNotResolve ?
                 tx.stream(Graql.match(conj), false).iterator() :
-                new ResolutionIterator(query, new HashSet<>(), query.requiresReiteration());
+                new ResolutionIterator(query, new HashSet<>());
     }
 
     @Override

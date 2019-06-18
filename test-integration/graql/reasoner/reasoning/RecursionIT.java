@@ -261,8 +261,10 @@ public class RecursionIT {
                         "{$nameX == 'i';$nameY == 'f';} or {$nameX == 'j';$nameY == 'f';} or" +
                         "{$nameX == 'f';$nameY == 'k';};get $x, $y;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(generalExplicitQuery).asGet(), false), tx.execute(Graql.parse(generalQuery).asGet()));
-            }
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(generalExplicitQuery).asGet(), false),
+                        tx.execute(Graql.parse(generalQuery).asGet()));
+                }
         }
     }
 
@@ -310,15 +312,15 @@ public class RecursionIT {
      * N(x, y) :- P(x, z), N(z, w), Q(w, y)
      * <p>
      * <p>
-     * c -- P -- d -- R -- e -- Q -- a0
-     * \                        /
-     * P               Q
-     * \    \          /
-     * b0   --  Q  --   a1
+     * (c) -- P -- (d) -- R -- (e) -- Q -- (a0)
+     * \  \                      /
+     * P                      Q
+     * \  /               /
+     * (b0)   --  Q  --   (a1)
      * \                     /
-     * P              Q
-     * \        /
-     * b1   --  Q  --   a2
+     * P                    Q
+     *  \                   /
+     * (b1)   --  Q  --   (a2)
      * .
      * .
      * .
@@ -334,7 +336,10 @@ public class RecursionIT {
                 String queryString = "match (N-rA: $x, N-rB: $y) isa N; $x has index 'c'; get $y;";
                 String explicitQuery = "match $y isa a-entity; get;";
 
-                GraqlTestUtil.assertCollectionsNonTriviallyEqual(tx.execute(Graql.parse(explicitQuery).asGet(), false), tx.execute(Graql.parse(queryString).asGet()));
+                GraqlTestUtil.assertCollectionsNonTriviallyEqual(
+                        tx.execute(Graql.parse(explicitQuery).asGet(), false),
+                        tx.execute(Graql.parse(queryString).asGet())
+                );
             }
         }
     }
