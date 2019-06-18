@@ -358,15 +358,15 @@ public class QueryExecutor {
                 .sorted(Comparator.comparing(concept -> !concept.isRelation()))
                 .collect(Collectors.toList());
 
-        Set<ConceptId> deletedConceptIds = conceptsToDelete.stream().map(concept -> {
+        Set<ConceptId> deletedConceptIds = new HashSet<>();
+        conceptsToDelete.forEach(concept -> {
             // a concept is either a schema concept or a thing
             if (concept.isSchemaConcept()) {
                 throw GraqlSemanticException.deleteSchemaConcept(concept.asSchemaConcept());
             } else if (concept.isThing()) {
                 try {
-                    ConceptId id = concept.id();
+                    deletedConceptIds.add(concept.id());
                     concept.delete();
-                    return id;
                 } catch (IllegalStateException janusVertexDeleted) {
                     if (janusVertexDeleted.getMessage().contains("was removed")) {
                         // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
@@ -379,9 +379,7 @@ public class QueryExecutor {
             } else {
                 throw GraknServerException.create("Unhandled concept type isn't a schema concept or a thing");
             }
-            // TODO rewrite to either throw or return an ID
-            return null; // we shouldn't be hitting this case without throwing an exception
-        }).filter(Objects::nonNull).collect(Collectors.toSet());
+        });
 
         // TODO: return deleted Concepts instead of ConceptIds
         return new ConceptSet(deletedConceptIds);
