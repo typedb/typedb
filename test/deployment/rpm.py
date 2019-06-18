@@ -52,6 +52,18 @@ def gcloud_scp(instance, local, remote):
     ])
 
 
+def gcloud_scp_from_remote(instance, remote, local):
+    sp.call([
+        'gcloud',
+        'compute',
+        'scp',
+        instance + ':' + remote,
+        local,
+        '--zone=europe-west1-b',
+        '--project=grakn-dev'
+    ])
+
+
 def gcloud_instances_delete(instance):
     sp.check_call([
         'gcloud',
@@ -105,5 +117,8 @@ try:
     gcloud_ssh(instance, 'grakn server start')
     gcloud_ssh(instance, 'grakn server stop')
 finally:
+    lprint('Copying logs from CentOS instance')
+    gcloud_scp_from_remote(instance, remote='/opt/grakn/core/logs/grakn.log', local='./grakn.log')
+    gcloud_scp_from_remote(instance, remote='/opt/grakn/core/logs/cassandra.log', local='./cassandra.log')
     lprint('Deleting the CentOS instance')
     gcloud_instances_delete(instance)

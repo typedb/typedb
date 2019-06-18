@@ -41,7 +41,7 @@ public class TemporaryWriteException extends GraknServerException {
 
     /**
      * Thrown when the persistence layer is locked temporarily.
-     * Retrying the transaction is reccomended.
+     * Retrying the transaction is recommended.
      */
     public static TemporaryWriteException temporaryLock(Exception e){
         return new TemporaryWriteException(LOCKING_EXCEPTION.getMessage(), e);

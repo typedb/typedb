@@ -17,7 +17,6 @@
  */
 package grakn.core.server;
 
-import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
@@ -38,17 +37,15 @@ public class Server implements AutoCloseable {
     private final ServerID serverID;
     private final LockManager lockManager;
     private final io.grpc.Server serverRPC;
-    private final AttributeDeduplicatorDaemon attributeDeduplicatorDaemon;
 
     private final KeyspaceManager keyspaceStore;
 
-    public Server(ServerID serverID, LockManager lockManager, io.grpc.Server serverRPC, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
+    public Server(ServerID serverID, LockManager lockManager, io.grpc.Server serverRPC, KeyspaceManager keyspaceStore) {
         // Lock provider
         this.lockManager = lockManager;
         this.keyspaceStore = keyspaceStore;
         this.serverRPC = serverRPC;
         this.serverID = serverID;
-        this.attributeDeduplicatorDaemon = attributeDeduplicatorDaemon;
     }
 
     public void start() throws IOException {
@@ -56,7 +53,6 @@ public class Server implements AutoCloseable {
             lockAndInitializeSystemSchema();
             serverRPC.start();
         }
-        attributeDeduplicatorDaemon.startDeduplicationDaemon();
     }
 
     @Override
@@ -69,7 +65,6 @@ public class Server implements AutoCloseable {
                 LOG.error("Exception while closing Server:", e);
                 Thread.currentThread().interrupt();
             }
-            attributeDeduplicatorDaemon.stopDeduplicationDaemon();
         }
     }
 

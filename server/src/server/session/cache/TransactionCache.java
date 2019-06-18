@@ -23,6 +23,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
@@ -31,6 +32,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.AttributeImpl;
 import grakn.core.server.kb.structure.Casting;
 
@@ -46,7 +48,6 @@ import java.util.stream.Stream;
  * Built Concepts -  Prevents rebuilding when the same vertex is encountered
  * The Schema - Optimises validation checks by preventing db read.
  * Label - Allows mapping type labels to type Ids
- * TransactionOLTP meta Data - Allows transactions to function in different ways
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
@@ -72,10 +73,12 @@ public class TransactionCache {
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
-    //New attributes are tracked so that we can merge any duplicate attributes in post.
-    // This is a map of attribute indices to <label, concept id>
-    // The index and id are directly cached to prevent unneeded reads
+    //New attributes are tracked so that we can merge any duplicate attributes at commit time.
+    // The label, index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
+    // Track the removed attributes so that we can evict old attribute indexes from attributesMap in session
+    // after commit
+    private Set<String> removedAttributes = new HashSet<>();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
         this.keyspaceCache = keyspaceCache;
@@ -148,6 +151,7 @@ public class TransactionCache {
         if (concept.isAttribute()) {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
             newAttributes.remove(new Pair<>(attr.type().label().toString(), attr.getIndex()));
+            removedAttributes.add(Schema.generateAttributeIndex(attr.type().label(), attr.value().toString()));
         }
 
         if (concept.isRelation()) {
@@ -229,12 +233,14 @@ public class TransactionCache {
         return (X) conceptCache.get(id);
     }
 
-    public void inferredThingToPersist(Thing t){ inferredConceptsToPersist.add(t); }
+    public void inferredThingToPersist(Thing t) {
+        inferredConceptsToPersist.add(t);
+    }
 
     /**
      * @return cached things that are inferred
      */
-    public Stream<Thing> getInferredThingsToDiscard(){
+    public Stream<Thing> getInferredThingsToDiscard() {
         return conceptCache.values().stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
@@ -308,6 +314,10 @@ public class TransactionCache {
 
     public Set<Relation> getNewRelations() {
         return newRelations;
+    }
+
+    public Set<String> getRemovedAttributes() {
+        return removedAttributes;
     }
 
     @VisibleForTesting

@@ -124,20 +124,21 @@ public class ClientJavaE2E {
                     type("parentship").sub("relation").relates("parent").relates("child"),
 
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
-                    type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring"),
-
-                    type("infer-parentship-from-mating-and-child-bearing").sub("rule")
-                            .when(and(
-                                    var().rel("male-partner", var("male")).rel("female-partner", var("female")).isa("mating"),
-                                    var("childbearing").rel("child-bearer").rel("offspring", var("offspring")).isa("child-bearing")
-                            ))
-                            .then(and(
-                                    var().rel("parent", var("male")).rel("parent", var("female")).rel("child", var("offspring")).isa("parentship")
-                            ))
+                    type("lion").sub("entity").has("name").plays("male-partner").plays("female-partner").plays("offspring")
             );
+
+            GraqlDefine ruleQuery = Graql.define(type("infer-parentship-from-mating-and-child-bearing").sub("rule")
+                    .when(and(
+                            var().rel("male-partner", var("male")).rel("female-partner", var("female")).isa("mating"),
+                            var("childbearing").rel("child-bearer").rel("offspring", var("offspring")).isa("child-bearing")
+                    ))
+                    .then(and(
+                            var().rel("parent", var("male")).rel("parent", var("female")).rel("child", var("offspring")).isa("parentship")
+                    )));
             LOG.info("clientJavaE2E() - define a schema...");
             LOG.info("clientJavaE2E() - '" + defineQuery + "'");
             List<ConceptMap> answer = tx.execute(defineQuery);
+            List<ConceptMap> rule = tx.execute(ruleQuery);
             tx.commit();
             LOG.info("clientJavaE2E() - done.");
         });
@@ -227,6 +228,7 @@ public class ClientJavaE2E {
                             .rel("child", var("child"))).get();
             LOG.info("clientJavaE2E() - '" + getParentship + "'");
             List<ConceptMap> parentship = tx.execute(getParentship);
+            //2 answers - single answer for each parent
             assertThat(parentship, hasSize(2));
             LOG.info("clientJavaE2E() - done.");
         });

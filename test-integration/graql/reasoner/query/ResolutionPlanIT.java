@@ -457,7 +457,7 @@ public class ResolutionPlanIT {
                                  \   (d, g) - (g, h)*
      */
     @Test
-    //@Ignore
+    @Ignore ("flaky - need to reintroduce inferred concept counts")
     @Repeat( times = repeat )
     public void whenBranchedQueryChainsWithResolvableRelations_disconnectedPlansAreNotProduced(){
 

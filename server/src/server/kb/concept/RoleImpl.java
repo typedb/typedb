@@ -22,7 +22,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
 import java.util.Objects;
@@ -72,7 +72,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @param newRelationType The new relation type to cache in the role.
      */
     void addCachedRelationType(RelationType newRelationType) {
-        cachedRelationTypes.ifPresent(set -> set.add(newRelationType));
+        cachedRelationTypes.ifCached(set -> set.add(newRelationType));
     }
 
     /**
@@ -82,7 +82,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
      * @param oldRelationType The new relation type to cache in the role.
      */
     void deleteCachedRelationType(RelationType oldRelationType) {
-        cachedRelationTypes.ifPresent(set -> set.remove(oldRelationType));
+        cachedRelationTypes.ifCached(set -> set.remove(oldRelationType));
     }
 
     /**
@@ -94,11 +94,11 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     }
 
     void addCachedDirectPlaysByType(Type newType) {
-        cachedDirectPlayedByTypes.ifPresent(set -> set.add(newType));
+        cachedDirectPlayedByTypes.ifCached(set -> set.add(newType));
     }
 
     void deleteCachedDirectPlaysByType(Type oldType) {
-        cachedDirectPlayedByTypes.ifPresent(set -> set.remove(oldType));
+        cachedDirectPlayedByTypes.ifCached(set -> set.remove(oldType));
     }
 
     /**

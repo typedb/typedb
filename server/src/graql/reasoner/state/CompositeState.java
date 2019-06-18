@@ -86,7 +86,7 @@ public class CompositeState extends QueryStateBase {
 
         boolean isNegationSatisfied = complements.stream()
                 .map(q -> ReasonerQueries.resolvable(q, answer))
-                .noneMatch(q -> q.resolve(getVisitedSubGoals(), q.requiresReiteration()).findFirst().isPresent());
+                .noneMatch(q -> q.resolve(getVisitedSubGoals()).findFirst().isPresent());
 
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :

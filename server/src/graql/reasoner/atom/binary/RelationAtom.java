@@ -50,6 +50,8 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
@@ -74,8 +76,6 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -90,10 +90,12 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.server.kb.concept.ConceptUtils.bottom;
 import static grakn.core.server.kb.concept.ConceptUtils.top;
 import static graql.lang.Graql.var;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -218,6 +220,38 @@ public abstract class RelationAtom extends IsaAtomBase {
         vars.addAll(getRolePlayers());
         vars.addAll(getRoleVariables());
         return vars;
+    }
+
+    /**
+     * Determines the roleplayer directionality in the form of variable pairs.
+     * NB: Currently we determine the directionality based on the role hashCode.
+     * @return set of pairs of roleplayers arranged in terms of directionality
+     */
+    public Set<Pair<Variable, Variable>> varDirectionality(){
+        Multimap<Role, Variable> roleVarMap = this.getRoleVarMap();
+        Multimap<Variable, Role> varRoleMap = HashMultimap.create();
+        roleVarMap.entries().forEach(e -> varRoleMap.put(e.getValue(), e.getKey()));
+
+        List<Role> roleOrdering = roleVarMap.keySet().stream()
+                .sorted(Comparator.comparing(r -> r.label().hashCode()))
+                .distinct()
+                .collect(toList());
+
+        Set<Pair<Variable, Variable>> varPairs = new HashSet<>();
+        roleVarMap.values().forEach(var -> {
+                    Collection<Role> rolePlayed = varRoleMap.get(var);
+                    rolePlayed.stream()
+                            .sorted(Comparator.comparing(Object::hashCode))
+                            .forEach(role -> {
+                                int index = roleOrdering.indexOf(role);
+                                List<Role> roles = roleOrdering.subList(index, roleOrdering.size());
+                                roles.forEach(role2 -> roleVarMap.get(role2).stream()
+                                        .filter(var2 -> !role.equals(role2) || !var.equals(var2))
+                                        .forEach(var2 -> varPairs.add(new Pair<>(var, var2))));
+                            });
+                }
+        );
+        return varPairs;
     }
 
     /**
@@ -984,19 +1018,38 @@ public abstract class RelationAtom extends IsaAtomBase {
         return baseDiff.merge(new SemanticDifference(diff));
     }
 
+    private Relation findRelation(ConceptMap sub){
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(this).withSubstitution(sub);
+        ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
+
+        if (answer == null) tx().queryCache().ackDBCompleteness(query);
+        return answer != null? answer.get(getVarName()).asRelation() : null;
+    }
+
+
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 
-        //NB: if the relation is implicit, it will created as a reified relation
-
+        //NB: if the relation is implicit, it will be created as a reified relation
         //if the relation already exists, only assign roleplayers, otherwise create a new relation
-        Relation relation = substitution.containsVar(getVarName())?
-                substitution.get(getVarName()).asRelation() :
-                RelationTypeImpl.from(relationType).addRelationInferred();
+        Relation relation;
+        if (substitution.containsVar(getVarName())){
+            relation = substitution.get(getVarName()).asRelation();
+        } else {
+            Relation foundRelation = findRelation(substitution);
+            if (foundRelation == null) {
+                Relation insertedRelation = RelationTypeImpl.from(relationType).addRelationInferred();
+                relation = insertedRelation;
+            } else {
+                relation = foundRelation;
+            }
 
+        }
+
+        //NB: this will potentially reify existing implicit relationships
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 

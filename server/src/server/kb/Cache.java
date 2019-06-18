@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb.cache;
+package grakn.core.server.kb;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -32,13 +32,13 @@ import java.util.function.Supplier;
  */
 public class Cache<V> {
     //If no cache can produce the data then the database is read
-    private final Supplier<V> databaseReader;
-    private V cacheValue = null;
-    private boolean valueRetrieved;
+    private final Supplier<V> reader;
+    private V value = null;
+    private boolean cached;
 
-    public Cache(Supplier<V> databaseReader) {
-        this.databaseReader = databaseReader;
-        this.valueRetrieved = false;
+    public Cache(Supplier<V> reader) {
+        this.reader = reader;
+        this.cached = false;
     }
 
     /**
@@ -48,11 +48,11 @@ public class Cache<V> {
      */
     @Nullable
     public V get() {
-        if (!valueRetrieved) {
-            cacheValue = databaseReader.get();
-            valueRetrieved = true;
+        if (!cached) {
+            value = reader.get();
+            cached = true;
         }
-        return cacheValue;
+        return value;
     }
 
     /**
@@ -61,24 +61,25 @@ public class Cache<V> {
      * @param value the value to be cached
      */
     public void set(@Nullable V value) {
-        cacheValue = value;
-        valueRetrieved = true;
+        this.value = value;
+        cached = true;
     }
 
     /**
      * @return true if a value has been retrieve and save into the current cache
      */
-    public boolean isPresent() {
-        return valueRetrieved;
+    public boolean isCached() {
+        return cached;
     }
 
     /**
      * Mutates the cached value if something is cached. Otherwise does nothing.
+     * TODO: Is it OK that this method does nothing if the value is not cached?
      *
      * @param modifier the mutator function.
      */
-    public void ifPresent(Consumer<V> modifier) {
-        if (isPresent()) {
+    public void ifCached(Consumer<V> modifier) {
+        if (isCached()) {
             modifier.accept(get());
         }
     }

@@ -25,7 +25,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -165,7 +165,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @param newSubType The new subtype
      */
     private void addCachedDirectSubType(T newSubType) {
-        cachedDirectSubTypes.ifPresent(set -> set.add(newSubType));
+        cachedDirectSubTypes.ifCached(set -> set.add(newSubType));
     }
 
     /**
@@ -194,7 +194,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
      * @param oldSubType The old sub type which should not be cached anymore
      */
     private void deleteCachedDirectedSubType(T oldSubType) {
-        cachedDirectSubTypes.ifPresent(set -> set.remove(oldSubType));
+        cachedDirectSubTypes.ifCached(set -> set.remove(oldSubType));
     }
 
     /**

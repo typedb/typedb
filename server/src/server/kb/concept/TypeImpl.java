@@ -28,7 +28,7 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
@@ -218,7 +218,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         checkSchemaMutationAllowed();
 
         //Update the internal cache of role types played
-        cachedDirectPlays.ifPresent(map -> map.put(role, required));
+        cachedDirectPlays.ifCached(map -> map.put(role, required));
 
         //Update the cache of types played by the role
         ((RoleImpl) role).addCachedDirectPlaysByType(this);
@@ -275,7 +275,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     public T unplay(Role role) {
         checkSchemaMutationAllowed();
         deleteEdge(Direction.OUT, Schema.EdgeLabel.PLAYS, (Concept) role);
-        cachedDirectPlays.ifPresent(set -> set.remove(role));
+        cachedDirectPlays.ifCached(set -> set.remove(role));
         ((RoleImpl) role).deleteCachedDirectPlaysByType(this);
 
         trackRolePlayers();

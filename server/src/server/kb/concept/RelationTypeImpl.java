@@ -23,7 +23,7 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.cache.Cache;
+import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -90,7 +90,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         //TODO: the following lines below this comment should only be executed if the edge is added
 
         //Cache the Role internally
-        cachedRelates.ifPresent(set -> set.add(role));
+        cachedRelates.ifCached(set -> set.add(role));
 
         //Cache the relation type in the role
         ((RoleImpl) role).addCachedRelationType(this);
@@ -119,7 +119,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         vertex().tx().cache().trackForValidation(this);
 
         //Remove from internal cache
-        cachedRelates.ifPresent(set -> set.remove(role));
+        cachedRelates.ifCached(set -> set.remove(role));
 
         //Remove from roleTypeCache
         ((RoleImpl) role).deleteCachedRelationType(this);

@@ -44,8 +44,6 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +51,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  * TypeAtom corresponding to graql a IsaProperty property.
@@ -211,10 +210,15 @@ public abstract class IsaAtom extends IsaAtomBase {
 
     @Override
     public Stream<ConceptMap> materialise(){
+        ConceptMap substitution = getParentQuery().getSubstitution();
         EntityType entityType = getSchemaConcept().asEntityType();
-        return Stream.of(ConceptUtils.mergeAnswers(
-                getParentQuery().getSubstitution(),
-                new ConceptMap(ImmutableMap.of(getVarName(), EntityTypeImpl.from(entityType).addEntityInferred()))
+
+        Concept foundConcept = substitution.containsVar(getVarName())? substitution.get(getVarName()) : null;
+        if (foundConcept != null) return Stream.of(substitution);
+
+        Concept concept = EntityTypeImpl.from(entityType).addEntityInferred();
+        return Stream.of(
+                ConceptUtils.mergeAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
         ));
     }
 

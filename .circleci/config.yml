@@ -137,6 +137,12 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
       - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --save-success
+      - store_artifacts:
+          path: bazel-genfiles/grakn-core-all-mac/logs/grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: bazel-genfiles/grakn-core-all-mac/logs/cassandra.log
+          destination: logs/cassandra.log
 
   test-assembly-windows-zip:
     machine: true
@@ -146,6 +152,12 @@ jobs:
       - run:
           command: test/assembly/windows/windows-zip.py
           no_output_timeout: 20m
+      - store_artifacts:
+          path: ./grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: ./cassandra.log
+          destination: logs/cassandra.log
 
   test-assembly-linux-targz:
     machine: true
@@ -161,6 +173,12 @@ jobs:
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
       - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --save-success
+      - store_artifacts:
+          path: bazel-genfiles/grakn-core-all-linux/logs/grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: bazel-genfiles/grakn-core-all-linux/logs/cassandra.log
+          destination: logs/cassandra.log
 
   test-assembly-linux-apt:
     machine: true
@@ -181,6 +199,12 @@ jobs:
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
+      - store_artifacts:
+          path: /opt/grakn/core/logs/grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: /opt/grakn/core/logs/cassandra.log
+          destination: logs/cassandra.log
 
   test-assembly-docker:
     machine: true
@@ -189,6 +213,12 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: test/assembly/docker.py
+      - store_artifacts:
+          path: ./grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: ./cassandra.log
+          destination: logs/cassandra.log
 
   deploy-maven-snapshot:
     machine: true
@@ -265,6 +295,12 @@ jobs:
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
+      - store_artifacts:
+          path: /opt/grakn/core/logs/grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: /opt/grakn/core/logs/cassandra.log
+          destination: logs/cassandra.log
 
   test-deployment-linux-rpm:
     machine: true
@@ -275,6 +311,12 @@ jobs:
           at: ~/circleci-workspace
       - run: mv ~/circleci-workspace/VERSION.rpm VERSION
       - run: test/deployment/rpm.py
+      - store_artifacts:
+          path: ./grakn.log
+          destination: logs/grakn.log
+      - store_artifacts:
+          path: ./cassandra.log
+          destination: logs/cassandra.log
 
   sync-dependencies-snapshot:
     machine: true
@@ -307,6 +349,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
+          pip install certifi
           export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
           bazel run @graknlabs_build_tools//ci:release-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
       - run: |
