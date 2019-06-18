@@ -61,6 +61,7 @@ public abstract class AtomicQueryCacheBase<
     }
 
     public void ackCompleteness(ReasonerAtomicQuery query) {
+        ackDBCompleteness(query);
         if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
             completeQueries.add(query);
         } else {

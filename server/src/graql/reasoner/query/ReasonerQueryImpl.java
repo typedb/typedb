@@ -285,6 +285,11 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     /**
+     * @return true if this query has a unique (single) answer if any
+     */
+    public boolean hasUniqueAnswer(){ return isGround();}
+
+    /**
      * @return true if this query contains disconnected atoms that are unbounded
      */
     public boolean isBoundlesslyDisconnected(){
