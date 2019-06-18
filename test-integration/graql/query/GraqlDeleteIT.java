@@ -21,6 +21,9 @@ package grakn.core.graql.query;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
@@ -45,6 +48,7 @@ import org.junit.rules.ExpectedException;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
@@ -70,7 +74,7 @@ public class GraqlDeleteIT {
     public TransactionOLTP tx;
 
     @Rule
-    public  final ExpectedException exception = ExpectedException.none();
+    public final ExpectedException exception = ExpectedException.none();
 
     private MatchClause kurtz;
     private MatchClause marlonBrando;
@@ -82,6 +86,7 @@ public class GraqlDeleteIT {
         session = graknServer.sessionWithNewKeyspace();
         MovieGraph.load(session);
     }
+
     @Before
     public void newTransaction() {
         tx = session.transaction().write();
@@ -94,7 +99,7 @@ public class GraqlDeleteIT {
     }
 
     @After
-    public void closeTransaction(){
+    public void closeTransaction() {
         tx.close();
     }
 
@@ -242,11 +247,11 @@ public class GraqlDeleteIT {
         assertFalse(checkIdExists(tx, id));
     }
 
-    private boolean checkIdExists(TransactionOLTP tx, ConceptId id){
+    private boolean checkIdExists(TransactionOLTP tx, ConceptId id) {
         boolean exists;
-        try{
+        try {
             exists = !tx.execute(Graql.match(var().id(id.getValue()))).isEmpty();
-        } catch (GraqlSemanticException e){
+        } catch (GraqlSemanticException e) {
             exists = false;
         }
         return exists;
@@ -268,6 +273,38 @@ public class GraqlDeleteIT {
         assertExists(tx, var().has("title", "Godfather"));
         assertNotExists(tx, var().id(id.getValue()));
         assertNotExists(tx, var().val(1000L).isa("tmdb-vote-count"));
+    }
+
+    @Test
+    public void whenDeletingAResourceOwnerAndImplicitRelation_NoErrorIsThrown() {
+
+        // ordering matters when deleting ownership and owned elements in same query
+
+        // extend schema to have a relation with a attribute
+        Role work = tx.putRole("work");
+        EntityType somework = tx.putEntityType("somework").plays(work);
+        Role author = tx.putRole("author");
+        EntityType person = tx.putEntityType("person").plays(author);
+        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
+        tx.putRelationType("authored-by").relates(work).relates(author).has(year);
+
+        Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
+                "$y isa somework; " +
+                "$a isa year; $a 2019; " +
+                "$r (author: $x, work: $y) isa authored-by; $r has year $a;").asInsert());
+
+        answers = tx.stream(Graql.parse("insert $x isa person;" +
+                "$y isa somework; " +
+                "$a isa year; $a 2020; " +
+                "$r (author: $x, work: $y) isa authored-by; $r has year $a;").asInsert());
+
+        tx.commit();
+        newTransaction();
+
+        for (int i = 0; i < 10; i++){
+            tx.execute(Graql.parse("match $a ($owner, $value) isa @has-year; delete $a, $owner, $value;").asDelete());
+        }
+
     }
 
     @Test

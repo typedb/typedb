@@ -89,9 +89,4 @@ public abstract class OutIsaFragment extends EdgeFragment {
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
-
-    @Override
-    public boolean canOperateOnEdges() {
-        return true;
-    }
 }

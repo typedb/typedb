@@ -284,13 +284,6 @@ public abstract class Fragment {
         return this;
     }
 
-    /**
-     * Indicates whether the fragment can be used on an {@link org.apache.tinkerpop.gremlin.structure.Edge} as well as
-     * a {@link org.apache.tinkerpop.gremlin.structure.Vertex}.
-     */
-    public boolean canOperateOnEdges() {
-        return false;
-    }
 
     /**
      * Get all variables in the fragment including the start and end (if present)
