@@ -19,9 +19,9 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "attribute-deduplicator-it",
-    test_class = "grakn.core.server.AttributeDeduplicatorIT",
-    srcs = ["AttributeDeduplicatorIT.java"],
+    name = "attribute-uniqueness-it",
+    test_class = "grakn.core.server.AttributeUniquenessIT",
+    srcs = ["AttributeUniquenessIT.java"],
     deps = [
         "//concept:concept",
         "//common",
@@ -38,6 +38,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":attribute-deduplicator-it"
+        ":attribute-uniqueness-it"
     ],
 )

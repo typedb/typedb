@@ -57,7 +57,7 @@ public class ConcurrencyE2E {
 
     /**
      * This is testing insertion of attributes which have values that repeat in different concurrent transactions.
-     * The goal is to make sure we don't introduce ghost vertices when running deduplication of attributes in a very
+     * The goal is to make sure we don't introduce ghost vertices when running merging attributes in a very
      * concurrent scenario.
      */
 
@@ -100,7 +100,7 @@ public class ConcurrencyE2E {
 
         // Retrieve all the attribute values to make sure we don't have any person linked to a broken vertex.
         // This step is needed because it's only when retrieving attributes that we would be able to spot a
-        // ghost vertex (which is usually introduced by attribute deduplicator).
+        // ghost vertex (which is might be introduced while merging 2 attribute nodes)
         tx = session.transaction().write();
         List<ConceptMap> conceptMaps = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         conceptMaps.forEach(map -> {

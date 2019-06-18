@@ -36,6 +36,7 @@ import org.janusgraph.core.JanusGraph;
 
 import javax.annotation.CheckReturnValue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
 /**
@@ -62,6 +63,7 @@ public class SessionImpl implements Session {
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final ConcurrentHashMap<String, ConceptId> attributesMap;
+    private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
 
     private boolean isClosed = false;
@@ -73,8 +75,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap) {
-        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesMap);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesMap, graphLock);
     }
 
     /**
@@ -84,8 +86,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
-                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, ConcurrentHashMap<String, ConceptId> attributesMap) {
+    private SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
+                        KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -97,6 +99,7 @@ public class SessionImpl implements Session {
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
         this.attributesMap = attributesMap;
+        this.graphLock = graphLock;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
 
@@ -109,6 +112,10 @@ public class SessionImpl implements Session {
         }
         tx.commit();
 
+    }
+
+    public ReadWriteLock graphLock() {
+        return graphLock;
     }
 
     @Override
@@ -180,7 +187,6 @@ public class SessionImpl implements Session {
     /**
      * Copy schema concept and all its subs labels to keyspace cache
      *
-     * @param schemaConcept
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
@@ -208,7 +214,7 @@ public class SessionImpl implements Session {
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
-    public void setOnClose(Consumer<SessionImpl> onClose) {
+    void setOnClose(Consumer<SessionImpl> onClose) {
         this.onClose = onClose;
     }
 

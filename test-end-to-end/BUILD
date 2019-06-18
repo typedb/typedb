@@ -23,6 +23,6 @@ test_suite(
         "//test-end-to-end/distribution:grakn-graql-commands-with-a-running-grakn-e2e",
         "//test-end-to-end/distribution:concurrency-e2e",
         "//test-end-to-end/client-java:client-java-e2e",
-        "//test-end-to-end/deduplicator:attribute-deduplicator-e2e",
+        "//test-end-to-end/distribution:attribute-uniqueness-e2e",
     ]
 )
