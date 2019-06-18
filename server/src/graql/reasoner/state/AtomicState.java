@@ -30,6 +30,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 import java.util.Set;
@@ -39,6 +40,9 @@ import java.util.Set;
  */
 @SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class AtomicState extends QueryState<ReasonerAtomicQuery> {
+
+    //TODO: remove it once we introduce multi answer states
+    private MultiUnifier ruleUnifier = null;
 
     private MultiUnifier cacheUnifier = null;
     private CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = null;
@@ -95,6 +99,11 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         return cacheUnifier;
     }
 
+    private MultiUnifier getRuleUnifier(InferenceRule rule) {
+        if (ruleUnifier == null) this.ruleUnifier = rule.getHead().getMultiUnifier(this.getQuery(), UnifierType.RULE);
+        return ruleUnifier;
+    }
+
     private ConceptMap recordAnswer(ReasonerAtomicQuery query, ConceptMap answer) {
         if (answer.isEmpty()) return answer;
         if (cacheEntry == null) {
@@ -122,11 +131,12 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         ReasonerAtomicQuery query = getQuery();
         ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
         ConceptMap sub = ruleHead.getSubstitution();
-        if(materialised.get(rule.getRule().id()).contains(sub)) return new ConceptMap();
+        if(materialised.get(rule.getRule().id()).contains(sub)
+            && getRuleUnifier(rule).isUnique()){
+            return new ConceptMap();
+        }
         materialised.put(rule.getRule().id(), sub);
 
-        ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(query, answer);
-        boolean queryEquivalentToHead = subbedQuery.isEquivalent(ruleHead);
         Set<Variable> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size() ?
                 unifier.keySet() :
                 ruleHead.getVarNames();
@@ -134,12 +144,9 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         //materialise exhibits put behaviour - duplicates won't be created
         ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
         if (materialisedSub != null) {
-            if (!queryEquivalentToHead) {
-                getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
-            }
+            getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
             answer = unifier.apply(materialisedSub.project(queryVars));
         }
-
         if (answer.isEmpty()) return answer;
 
         return ConceptUtils

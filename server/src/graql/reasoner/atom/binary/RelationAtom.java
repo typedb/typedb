@@ -993,6 +993,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
 
+
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
@@ -1006,11 +1007,16 @@ public abstract class RelationAtom extends IsaAtomBase {
             relation = substitution.get(getVarName()).asRelation();
         } else {
             Relation foundRelation = findRelation(substitution);
-            relation = foundRelation != null?
-                    foundRelation :
-                    RelationTypeImpl.from(relationType).addRelationInferred();
+            if (foundRelation == null) {
+                Relation insertedRelation = RelationTypeImpl.from(relationType).addRelationInferred();
+                relation = insertedRelation;
+            } else {
+                relation = foundRelation;
+            }
+
         }
 
+        //NB: this will potentially reify existing implicit relationships
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 
