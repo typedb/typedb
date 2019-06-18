@@ -86,7 +86,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    private SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
+    // NOTE: this method is used by Grakn KGMS and should be kept public
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
                         KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
@@ -214,7 +215,8 @@ public class SessionImpl implements Session {
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
-    void setOnClose(Consumer<SessionImpl> onClose) {
+    // NOTE: this method is used by Grakn KGMS and should be kept public
+    public void setOnClose(Consumer<SessionImpl> onClose) {
         this.onClose = onClose;
     }
 
