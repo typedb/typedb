@@ -256,6 +256,21 @@ public abstract class AttributeAtom extends Binary{
     public boolean isValueEquality(){ return getMultiPredicate().stream().anyMatch(p -> p.getPredicate().isValueEquality());}
 
     @Override
+    public boolean hasUniqueAnswer(){
+        ConceptMap sub = getParentQuery().getSubstitution();
+        if (sub.vars().containsAll(getVarNames())) return true;
+
+        SchemaConcept type = getSchemaConcept();
+        if (type == null) return false;
+
+        boolean isBottomType = !type.subs().anyMatch(t -> !t.equals(type));
+        boolean relationVarMapped = !getRelationVariable().isReturned() || sub.containsVar(getRelationVariable());
+        return isBottomType
+                && isValueEquality() && sub.containsVar(getVarName())
+                && relationVarMapped;
+    }
+
+    @Override
     public boolean requiresMaterialisation(){ return true;}
 
     @Override

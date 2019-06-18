@@ -127,6 +127,11 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
+     * @return true if the query corresponding to this atom has a unique (single) answer if any
+     */
+    public boolean hasUniqueAnswer(){ return isGround();}
+
+    /**
      * @return true if this atom is bounded - via substitution/specific resource or schema
      */
     public boolean isBounded() {
