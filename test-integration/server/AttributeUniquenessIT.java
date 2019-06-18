@@ -48,9 +48,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
-public class AttributeDeduplicatorIT {
+public class AttributeUniquenessIT {
     private SessionImpl session;
-    private SessionFactory sessionFactory;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -58,7 +57,6 @@ public class AttributeDeduplicatorIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        sessionFactory = server.sessionFactory();
     }
 
     @After
@@ -67,7 +65,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldDeduplicateAttributes() {
+    public void whenInsertingAttributesDuplicates_attributesInGraphShouldBeUnique() {
         String testAttributeLabel = "test-attribute";
         String testAttributeValue = "test-attribute-value";
 
@@ -82,7 +80,6 @@ public class AttributeDeduplicatorIT {
 
         insertConcurrently(query, 16);
 
-        // verify there are 16 attribute instances in the graph before deduplication
         try (TransactionOLTP tx = session.transaction().read()) {
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
             assertThat(conceptMaps, hasSize(1));
@@ -90,7 +87,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldAlsoMergeHasEdgesInTheDeduplicating1() {
+    public void shouldAlsoMergeHasEdgesInTheMerging1() {
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";
 
@@ -125,7 +122,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldAlsoMergeHasEdgesWhenDeduplicating2() {
+    public void shouldAlsoMergeHasEdgesWhenMerging2() {
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";
         String ownerLabel = "owner";
@@ -165,7 +162,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldAlsoMergeHasEdgesInTheDeduplicating3() {
+    public void shouldAlsoMergeHasEdgesInTheMerging3() {
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";
 
@@ -201,7 +198,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldAlsoMergeReifiedEdgesWhenDeduplicating() {
+    public void shouldAlsoMergeReifiedEdgesWhenMerging() {
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";
 
@@ -238,7 +235,7 @@ public class AttributeDeduplicatorIT {
     }
 
     @Test
-    public void shouldAlsoMergeRolePlayerEdgesInTheDeduplicating() {
+    public void shouldAlsoMergeRolePlayerEdgesInTheMerging() {
 
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";

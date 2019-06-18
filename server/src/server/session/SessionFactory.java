@@ -171,8 +171,7 @@ public class SessionFactory {
         private final KeyspaceStatistics keyspaceStatistics;
 
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
-        // so that AttributeDeduplicator and new transactions can all refer to the same ID when working with newly created attributes,
-        // eliminating the risk of fetching attribute ids that will be removed by deduplication (leading to ghost vertex)
+        // so that concurrent transactions can merge the same attribute indexes using a unique id
         private final ConcurrentHashMap<String, ConceptId> attributesMap;
 
         private final ReadWriteLock graphLock;

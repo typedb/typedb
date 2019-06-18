@@ -48,7 +48,6 @@ import java.util.stream.Stream;
  * Built Concepts -  Prevents rebuilding when the same vertex is encountered
  * The Schema - Optimises validation checks by preventing db read.
  * Label - Allows mapping type labels to type Ids
- * TransactionOLTP meta Data - Allows transactions to function in different ways
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
@@ -74,10 +73,11 @@ public class TransactionCache {
     //We Track the number of concept connections which have been made which may result in a new shard
     private final Map<ConceptId, Long> shardingCount = new HashMap<>();
 
-    //New attributes are tracked so that we can merge any duplicate attributes in post.
-    // This is a map of attribute indices to <label, concept id>
-    // The index and id are directly cached to prevent unneeded reads
+    //New attributes are tracked so that we can merge any duplicate attributes at commit time.
+    // The label, index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
+    // Track the removed attributes so that we can evict old attribute indexes from attributesMap in session
+    // after commit
     private Set<String> removedAttributes = new HashSet<>();
 
     public TransactionCache(KeyspaceCache keyspaceCache) {
@@ -151,8 +151,7 @@ public class TransactionCache {
         if (concept.isAttribute()) {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
             newAttributes.remove(new Pair<>(attr.type().label().toString(), attr.getIndex()));
-            Attribute<Object> attribute = concept.asAttribute();
-            removedAttributes.add(Schema.generateAttributeIndex(attribute.type().label(), attribute.value().toString()));
+            removedAttributes.add(Schema.generateAttributeIndex(attr.type().label(), attr.value().toString()));
         }
 
         if (concept.isRelation()) {

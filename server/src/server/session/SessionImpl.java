@@ -187,7 +187,6 @@ public class SessionImpl implements Session {
     /**
      * Copy schema concept and all its subs labels to keyspace cache
      *
-     * @param schemaConcept
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
@@ -215,7 +214,7 @@ public class SessionImpl implements Session {
      *
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
-    public void setOnClose(Consumer<SessionImpl> onClose) {
+    void setOnClose(Consumer<SessionImpl> onClose) {
         this.onClose = onClose;
     }
 

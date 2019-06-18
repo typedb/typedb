@@ -43,7 +43,6 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.executor.QueryExecutor;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;
@@ -94,9 +93,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -184,14 +181,25 @@ public class TransactionOLTP implements Transaction {
     }
 
 
-    private void commitTransactionInternal() {
+    /**
+     * This method handles 3 committing scenarios:
+     * - use a lock to serialise all commits that are trying to create new attributes, so that we can merge real-time
+     * - use a lock to serialise commits that are removing attributes, so concurrent txs dont use outdate attribute IDs from attributesMap
+     * - don't lock when added or removed attributes are not involved
+     */
+    private void commitInternal() {
         executeLockingMethod(() -> {
             LOG.trace("Graph is valid. Committing graph...");
             if (!cache().getNewAttributes().isEmpty()) {
                 mergeAttributesAndCommit();
             } else if (!cache().getRemovedAttributes().isEmpty()) {
+                // In this case we need to lock, so that other concurrent Transactions
+                // that are trying to create new attributes will read an updated version of attributesMap
+                // Not locking here might lead to concurrent transactions reading the attributesMap that still
+                // contains attributes that we are removing in this transaction.
                 session.graphLock().writeLock().lock();
                 try {
+                    session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                     janusTransaction.commit();
                     cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
                 } finally {
@@ -212,13 +220,13 @@ public class TransactionOLTP implements Transaction {
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
         try {
-            cache().getNewAttributes().forEach(((labelStringPair, conceptId) -> {
-                if (session.attributesMap().containsKey(labelStringPair.getValue())) {
-                    ConceptId targetId = session.attributesMap().get(labelStringPair.getValue());
-                    if (!targetId.equals(conceptId)) {
-                        merge(getTinkerTraversal(), conceptId, targetId);
-                        statisticsDelta().decrement(labelStringPair.getKey());
-                    }
+            cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
+                // If the same index is contained in attributesMap, it means
+                // another concurrent transaction inserted the same attribute, time to merge!
+                if (session.attributesMap().containsKey(labelIndexPair.getValue())) {
+                    ConceptId targetId = session.attributesMap().get(labelIndexPair.getValue());
+                    merge(getTinkerTraversal(), conceptId, targetId);
+                    statisticsDelta().decrement(labelIndexPair.getKey());
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
@@ -550,7 +558,7 @@ public class TransactionOLTP implements Transaction {
      * @param baseType The base type of the new type
      * @return The new type vertex
      */
-    protected VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
+    VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
@@ -915,9 +923,10 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Commits and closes the transaction without returning CommitLog
+     * Commits and closes the transaction
      *
-     * @throws InvalidKBException
+     * @throws InvalidKBException if graph does not comply with the grakn
+     *                            validation rules
      */
     @Override
     public void commit() throws InvalidKBException {
@@ -926,21 +935,20 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
-            int validateSpanId = ServerTracing.startScopedChildSpan("commitWithLogs validate");
+            int validateSpanId = ServerTracing.startScopedChildSpan("commit validate");
+
             checkMutationAllowed();
             removeInferredConcepts();
             validateGraph();
 
-            Map<Pair<Label, String>, ConceptId> newAttributes = transactionCache.getNewAttributes();
-
             ServerTracing.closeScopedChildSpan(validateSpanId);
 
-            int commitSpanId = ServerTracing.startScopedChildSpan("commitWithLogs commit");
+            int commitSpanId = ServerTracing.startScopedChildSpan("commit");
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
             synchronized (keyspaceCache) {
-                commitTransactionInternal();
+                commitInternal();
                 transactionCache.flushToKeyspaceCache();
             }
 

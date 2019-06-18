@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -78,30 +77,22 @@ public class AttributeUniquenessE2E {
     }
 
     @Test
-    public void shouldDeduplicateAttributes() throws InterruptedException, ExecutionException {
+    public void shouldMergeAttributesInConcurrentTransactions() throws InterruptedException, ExecutionException {
         int numOfUniqueNames = 10;
         int numOfDuplicatesPerName = 673;
         ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
 
-        LOG.info("initiating the shouldDeduplicate10AttributesWithDuplicates test...");
-        try (GraknClient.Session session = localhostGrakn.session("attribute_deduplicator_e2e")) {
+        try (GraknClient.Session session = localhostGrakn.session("attribute_merging_e2e")) {
             // insert attributes with duplicates
             LOG.info("defining the schema...");
             defineParentChildSchema(session);
             LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
             insertNameShuffled(session, numOfUniqueNames, numOfDuplicatesPerName, executorServiceForParallelInsertion);
 
-            // wait until queue is empty
-            LOG.info("names and duplicates have been inserted. waiting for the deduplication to finish...");
-            long timeoutMs = 10000;
-            waitUntilAllAttributesDeduplicated(timeoutMs);
-            LOG.info("deduplication has finished.");
-
-            // verify deduplicated attributes
             LOG.info("verifying the number of attributes");
-            int countAfterDeduplication = countTotalNames(session);
-            assertEquals(numOfUniqueNames, countAfterDeduplication);
-            LOG.info("test completed successfully. there are " + countAfterDeduplication + " unique names found");
+            int countAfterMerging = countTotalNames(session);
+            assertEquals(numOfUniqueNames, countAfterMerging);
+            LOG.info("test completed successfully. there are " + countAfterMerging + " unique names found");
         }
     }
 
@@ -144,11 +135,6 @@ public class AttributeUniquenessE2E {
 
         CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
     }
-
-    private void waitUntilAllAttributesDeduplicated(long timeoutMs) throws InterruptedException {
-        Thread.sleep(timeoutMs);
-    }
-
 
     private int countTotalNames(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction().read()) {
