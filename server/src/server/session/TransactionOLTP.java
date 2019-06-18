@@ -93,6 +93,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -223,6 +224,9 @@ public class TransactionOLTP implements Transaction {
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
                 // If the same index is contained in attributesMap, it means
                 // another concurrent transaction inserted the same attribute, time to merge!
+                // NOTE: we still need to rely on attributesMap instead of checking in the graph
+                // if the index exists, because apparently JanusGraph does not make indexes available
+                // in a Read Committed fashion
                 if (session.attributesMap().containsKey(labelIndexPair.getValue())) {
                     ConceptId targetId = session.attributesMap().get(labelIndexPair.getValue());
                     merge(getTinkerTraversal(), conceptId, targetId);
@@ -239,30 +243,35 @@ public class TransactionOLTP implements Transaction {
     }
 
     private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
-        Vertex duplicate = tinkerTraversal.V(Schema.elementId(duplicateId)).next();
-        Vertex mergeTargetV = tinkerTraversal.V(Schema.elementId(targetId)).next();
-        duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
-            // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-            GraphTraversal<Vertex, Edge> attributeEdge =
-                    tinkerTraversal.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
-            if (attributeEdge.hasNext()) {
-                mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
-            }
+        try {
+            Vertex duplicate = tinkerTraversal.V(Schema.elementId(duplicateId)).next();
+            Vertex mergeTargetV = tinkerTraversal.V(Schema.elementId(targetId)).next();
 
-            // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
-            GraphTraversal<Vertex, Edge> rolePlayerEdge =
-                    tinkerTraversal.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
-            if (rolePlayerEdge.hasNext()) {
-                mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
-            }
-            try {
-                attributeEdge.close();
-                rolePlayerEdge.close();
-            } catch (Exception e) {
-                LOG.warn("Error closing the merging traversals", e);
-            }
-        });
-        duplicate.remove();
+            duplicate.vertices(Direction.IN).forEachRemaining(connectedVertex -> {
+                // merge attribute edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                GraphTraversal<Vertex, Edge> attributeEdge =
+                        tinkerTraversal.V(duplicate).inE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).filter(__.outV().is(connectedVertex));
+                if (attributeEdge.hasNext()) {
+                    mergeAttributeEdge(mergeTargetV, connectedVertex, attributeEdge);
+                }
+
+                // merge role-player edge connecting 'duplicate' and 'connectedVertex' to 'mergeTargetV', if exists
+                GraphTraversal<Vertex, Edge> rolePlayerEdge =
+                        tinkerTraversal.V(duplicate).inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).filter(__.outV().is(connectedVertex));
+                if (rolePlayerEdge.hasNext()) {
+                    mergeRolePlayerEdge(mergeTargetV, rolePlayerEdge);
+                }
+                try {
+                    attributeEdge.close();
+                    rolePlayerEdge.close();
+                } catch (Exception e) {
+                    LOG.warn("Error closing the merging traversals", e);
+                }
+            });
+            duplicate.remove();
+        } catch (NoSuchElementException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {

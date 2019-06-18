@@ -279,6 +279,33 @@ public class AttributeUniquenessIT {
         }
     }
 
+    @Test
+    public void shouldNotTryToMergeRemovedAttributes(){
+        String testAttributeLabel = "test-attribute";
+        String testAttributeValue = "test-attribute-value";
+
+        // define the schema
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+            tx.commit();
+        }
+
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
+            tx.commit();
+        }
+
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+            tx.commit();
+        }
+
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
+            tx.commit();
+        }
+    }
+
     private void insertConcurrently(GraqlInsert query, int repetitions) {
         List<GraqlInsert> queries = new ArrayList<>();
         for (int i = 0; i < repetitions; i++) {
