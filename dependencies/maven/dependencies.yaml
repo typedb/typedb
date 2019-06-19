@@ -25,6 +25,9 @@ options:
     url: https://repo.maven.apache.org/maven2/
   - id: mavengraknai
     url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
+  - id: repograknai
+    type: default
+    url: https://repo.grakn.ai/repository/maven-snapshot/
   strictVisibility: true
   transitivity: runtime_deps
   versionConflictPolicy: highest
@@ -94,20 +97,6 @@ dependencies:
   com.google.protobuf:
     protobuf-java:
       version: "3.4.0"
-      lang: java
-
-  com.netflix.astyanax:
-    astyanax-cassandra:
-      version: "3.10.2"
-      lang: java
-    astyanax-core:
-      version: "3.10.2"
-      lang: java
-    astyanax-recipes:
-      version: "3.10.2"
-      lang: java
-    astyanax-thrift:
-      version: "3.10.2"
       lang: java
 
   com.pholser:
@@ -311,7 +300,7 @@ dependencies:
 
   org.janusgraph:
     janusgraph-cassandra:
-      version: "0.3.0"
+      version: "207b888ac1dc97411b78a83e95430eb758794653"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
@@ -326,7 +315,7 @@ dependencies:
       - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
       - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
     janusgraph-core:
-      version: "0.3.0"
+      version: "207b888ac1dc97411b78a83e95430eb758794653"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
@@ -341,7 +330,7 @@ dependencies:
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
     janusgraph-hadoop:
-      version: "0.3.0"
+      version: "207b888ac1dc97411b78a83e95430eb758794653"
       lang: java
       exclude:
       - "com.codahale.metrics:metrics-core" # PREVIOUSLY AVAILABLE

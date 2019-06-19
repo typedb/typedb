@@ -14,6 +14,22 @@ java_library(
 
 
 java_library(
+    name = "metrics-ganglia",
+    exports = [
+        "//external:jar/io/dropwizard/metrics/metrics-ganglia"
+    ],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/info/ganglia/gmetric4j:gmetric4j",
+        ":metrics-core"
+    ],
+    visibility = [
+        "//dependencies/maven/artifacts:__subpackages__"
+    ]
+)
+
+
+
+java_library(
     name = "metrics-graphite",
     exports = [
         "//external:jar/io/dropwizard/metrics/metrics-graphite"

@@ -69,6 +69,7 @@ import java.util.stream.Stream;
  * Grakn RPC Session Service
  */
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
+    private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
     private final OpenRequest requestOpener;
     private final Map<String, SessionImpl> openSessions;
     // The following set keeps track of all active transactions, so that if the user wants to stop the server
@@ -107,6 +108,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             responseObserver.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionId).build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
+            LOG.error("An error has occurred", e);
             responseObserver.onError(ResponseBuilder.exception(e));
         }
     }
@@ -119,6 +121,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
+            LOG.error("An error has occurred", e);
             responseObserver.onError(ResponseBuilder.exception(e));
         }
     }
