@@ -122,8 +122,6 @@ public class UncomittedStatisticsDeltaIT {
 
         // test Graql insertion
         tx.execute(Graql.parse("insert $a 99 isa age;").asInsert());
-
-        // test deduplication withing a single tx too
         tx.execute(Graql.parse("insert $a 1 isa age;").asInsert());
 
         UncomittedStatisticsDelta statisticsDelta = tx.statisticsDelta();

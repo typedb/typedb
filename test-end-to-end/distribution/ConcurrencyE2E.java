@@ -30,6 +30,7 @@ import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunn
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertEquals;
 
 public class ConcurrencyE2E {
 
@@ -57,7 +58,7 @@ public class ConcurrencyE2E {
 
     /**
      * This is testing insertion of attributes which have values that repeat in different concurrent transactions.
-     * The goal is to make sure we don't introduce ghost vertices when running deduplication of attributes in a very
+     * The goal is to make sure we don't introduce ghost vertices when running merging attributes in a very
      * concurrent scenario.
      */
 
@@ -65,14 +66,16 @@ public class ConcurrencyE2E {
     public void concurrentInsertionOfDuplicateAttributes_doesNotCreateGhostVertices() throws ExecutionException, InterruptedException {
         String[] names = new String[]{"Marco", "James", "Ganesh", "Haikal", "Kasper", "Tomas", "Joshua", "Max", "Syed", "Soroush"};
         String[] surnames = new String[]{"Surname1", "Surname2", "Surname3", "Surname4", "Surname5", "Surname6", "Surname7", "Surname8", "Surname9", "Surname10"};
+        int[] ages = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
         GraknClient graknClient = new GraknClient("localhost:48555");
         GraknClient.Session session = graknClient.session("concurrency");
         GraknClient.Transaction tx = session.transaction().write();
         tx.execute(Graql.parse("define " +
-                "person sub entity, has name, has surname; " +
+                "person sub entity, has name, has surname, has age; " +
                 "name sub attribute, datatype string;" +
-                "surname sub attribute, datatype string;").asDefine());
+                "surname sub attribute, datatype string;" +
+                "age sub attribute, datatype long;").asDefine());
 
         tx.commit();
         ExecutorService executorService = Executors.newFixedThreadPool(36);
@@ -80,15 +83,16 @@ public class ConcurrencyE2E {
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         // We need a good amount of parallelism to have a good chance to spot possible issues. Don't use smaller values.
         int numberOfConcurrentTransactions = 56;
-        int batchSize = 200;
+        int batchSize = 50;
         for (int i = 0; i < numberOfConcurrentTransactions; i++) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 Random random = new Random();
                 GraknClient.Transaction threadTx = session.transaction().write();
                 for (int j = 0; j < batchSize; j++) {
-                    threadTx.execute(Graql.parse("insert $x isa person, has name \"" + names[random.nextInt(10)] + "\";").asInsert());
-                    threadTx.execute(Graql.parse("insert $x isa person, has surname \"" + surnames[random.nextInt(10)] + "\";").asInsert());
-                }
+                    threadTx.execute(Graql.parse("insert $x isa person, has name \"" + names[random.nextInt(10)] + "\"," +
+                            "has surname \"" + surnames[random.nextInt(10)] + "\"," +
+                            "has age " + ages[random.nextInt(10)] + ";").asInsert());
+                    }
                 threadTx.commit();
 
                 return null;
@@ -100,7 +104,7 @@ public class ConcurrencyE2E {
 
         // Retrieve all the attribute values to make sure we don't have any person linked to a broken vertex.
         // This step is needed because it's only when retrieving attributes that we would be able to spot a
-        // ghost vertex (which is usually introduced by attribute deduplicator).
+        // ghost vertex (which is might be introduced while merging 2 attribute nodes)
         tx = session.transaction().write();
         List<ConceptMap> conceptMaps = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         conceptMaps.forEach(map -> {
@@ -113,5 +117,16 @@ public class ConcurrencyE2E {
             });
         });
         tx.close();
+
+
+        tx = session.transaction().write();
+        int numOfNames = tx.execute(Graql.parse("match $x isa name; get; count;").asGetAggregate()).get(0).number().intValue();
+        int numOfSurnames = tx.execute(Graql.parse("match $x isa surname; get; count;").asGetAggregate()).get(0).number().intValue();
+        int numOfAges = tx.execute(Graql.parse("match $x isa age; get; count;").asGetAggregate()).get(0).number().intValue();
+        tx.close();
+
+        assertEquals(10, numOfNames);
+        assertEquals(10, numOfSurnames);
+        assertEquals(10, numOfAges);
     }
 }

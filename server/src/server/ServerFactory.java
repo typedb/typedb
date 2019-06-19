@@ -21,7 +21,6 @@ package grakn.core.server;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.server.deduplicator.AttributeDeduplicatorDaemon;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
@@ -58,18 +57,15 @@ public class ServerFactory {
         // session factory
         SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, config);
 
-        // post-processing
-        AttributeDeduplicatorDaemon attributeDeduplicatorDaemon = new AttributeDeduplicatorDaemon(sessionFactory);
-
         // Enable server tracing
         if (benchmark) {
             ServerTracing.initInstrumentation("server-instrumentation");
         }
 
         // create gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, attributeDeduplicatorDaemon, keyspaceStore, janusGraphFactory);
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceStore, janusGraphFactory);
 
-        return createServer(serverID, serverRPC, lockManager, attributeDeduplicatorDaemon, keyspaceStore);
+        return createServer(serverID, serverRPC, lockManager, keyspaceStore);
     }
 
     /**
@@ -80,20 +76,20 @@ public class ServerFactory {
 
     public static Server createServer(
             ServerID serverID, io.grpc.Server rpcServer,
-            LockManager lockManager, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore) {
+            LockManager lockManager, KeyspaceManager keyspaceStore) {
 
-        Server server = new Server(serverID, lockManager, rpcServer, attributeDeduplicatorDaemon, keyspaceStore);
+        Server server = new Server(serverID, lockManager, rpcServer, keyspaceStore);
 
         Runtime.getRuntime().addShutdownHook(new Thread(server::close, "grakn-server-shutdown"));
 
         return server;
     }
 
-    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, AttributeDeduplicatorDaemon attributeDeduplicatorDaemon, KeyspaceManager keyspaceStore, JanusGraphFactory janusGraphFactory) {
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceStore, JanusGraphFactory janusGraphFactory) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
-        SessionService sessionService = new SessionService(requestOpener, attributeDeduplicatorDaemon);
+        SessionService sessionService = new SessionService(requestOpener);
 
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 

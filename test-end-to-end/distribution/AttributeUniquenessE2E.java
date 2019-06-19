@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.deduplicator;
+package grakn.core.distribution;
 
 
 import grakn.client.GraknClient;
@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,19 +41,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 
-import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknRunning;
-import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertGraknStopped;
-import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.assertZipExists;
-import static grakn.core.deduplicator.AttributeDeduplicatorE2EConstants.unzipGrakn;
+import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
+import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 
-public class AttributeDeduplicatorE2E {
-    private static Logger LOG = LoggerFactory.getLogger(AttributeDeduplicatorE2E.class);
+public class AttributeUniquenessE2E {
+    private static Logger LOG = LoggerFactory.getLogger(AttributeUniquenessE2E.class);
     private GraknClient localhostGrakn = new GraknClient("localhost:48555");
-    private Path queuePath = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("db").resolve("queue");
 
     private static ProcessExecutor commandExecutor = new ProcessExecutor()
             .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
@@ -66,43 +64,35 @@ public class AttributeDeduplicatorE2E {
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
         assertZipExists();
         unzipGrakn();
-        assertGraknStopped();
+        assertGraknIsNotRunning();
         commandExecutor.command("./grakn", "server", "start").execute();
-        assertGraknRunning();
+        assertGraknIsRunning();
     }
 
     @AfterClass
     public static void cleanup_cleanupDistribution() throws IOException, InterruptedException, TimeoutException {
         commandExecutor.command("./grakn", "server", "stop").execute();
-        assertGraknStopped();
+        assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
 
     @Test
-    public void shouldDeduplicateAttributes() throws InterruptedException, ExecutionException {
+    public void shouldMergeAttributesInConcurrentTransactions() throws InterruptedException, ExecutionException {
         int numOfUniqueNames = 10;
         int numOfDuplicatesPerName = 673;
         ExecutorService executorServiceForParallelInsertion = Executors.newFixedThreadPool(8);
 
-        LOG.info("initiating the shouldDeduplicate10AttributesWithDuplicates test...");
-        try (GraknClient.Session session = localhostGrakn.session("attribute_deduplicator_e2e")) {
+        try (GraknClient.Session session = localhostGrakn.session("attribute_merging_e2e")) {
             // insert attributes with duplicates
             LOG.info("defining the schema...");
             defineParentChildSchema(session);
             LOG.info("inserting " + numOfUniqueNames + " unique attributes with " + numOfDuplicatesPerName + " duplicates per attribute....");
             insertNameShuffled(session, numOfUniqueNames, numOfDuplicatesPerName, executorServiceForParallelInsertion);
 
-            // wait until queue is empty
-            LOG.info("names and duplicates have been inserted. waiting for the deduplication to finish...");
-            long timeoutMs = 10000;
-            waitUntilAllAttributesDeduplicated(timeoutMs);
-            LOG.info("deduplication has finished.");
-
-            // verify deduplicated attributes
             LOG.info("verifying the number of attributes");
-            int countAfterDeduplication = countTotalNames(session);
-            assertEquals(numOfUniqueNames, countAfterDeduplication);
-            LOG.info("test completed successfully. there are " + countAfterDeduplication + " unique names found");
+            int countAfterMerging = countTotalNames(session);
+            assertEquals(numOfUniqueNames, countAfterMerging);
+            LOG.info("test completed successfully. there are " + countAfterMerging + " unique names found");
         }
     }
 
@@ -132,7 +122,7 @@ public class AttributeDeduplicatorE2E {
         Collections.shuffle(duplicatedNames, new Random(1));
 
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
-        for (String name: duplicatedNames) {
+        for (String name : duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 try (GraknClient.Transaction tx = session.transaction().write()) {
                     List<ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
@@ -143,13 +133,8 @@ public class AttributeDeduplicatorE2E {
             asyncInsertions.add(asyncInsert);
         }
 
-        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[] {})).get();
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
     }
-
-    private void waitUntilAllAttributesDeduplicated(long timeoutMs) throws InterruptedException {
-        Thread.sleep(timeoutMs);
-    }
-
 
     private int countTotalNames(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction().read()) {

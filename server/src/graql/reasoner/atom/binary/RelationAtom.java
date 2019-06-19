@@ -95,6 +95,7 @@ import javax.annotation.Nullable;
 import static grakn.core.server.kb.concept.ConceptUtils.bottom;
 import static grakn.core.server.kb.concept.ConceptUtils.top;
 import static graql.lang.Graql.var;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -219,6 +220,38 @@ public abstract class RelationAtom extends IsaAtomBase {
         vars.addAll(getRolePlayers());
         vars.addAll(getRoleVariables());
         return vars;
+    }
+
+    /**
+     * Determines the roleplayer directionality in the form of variable pairs.
+     * NB: Currently we determine the directionality based on the role hashCode.
+     * @return set of pairs of roleplayers arranged in terms of directionality
+     */
+    public Set<Pair<Variable, Variable>> varDirectionality(){
+        Multimap<Role, Variable> roleVarMap = this.getRoleVarMap();
+        Multimap<Variable, Role> varRoleMap = HashMultimap.create();
+        roleVarMap.entries().forEach(e -> varRoleMap.put(e.getValue(), e.getKey()));
+
+        List<Role> roleOrdering = roleVarMap.keySet().stream()
+                .sorted(Comparator.comparing(r -> r.label().hashCode()))
+                .distinct()
+                .collect(toList());
+
+        Set<Pair<Variable, Variable>> varPairs = new HashSet<>();
+        roleVarMap.values().forEach(var -> {
+                    Collection<Role> rolePlayed = varRoleMap.get(var);
+                    rolePlayed.stream()
+                            .sorted(Comparator.comparing(Object::hashCode))
+                            .forEach(role -> {
+                                int index = roleOrdering.indexOf(role);
+                                List<Role> roles = roleOrdering.subList(index, roleOrdering.size());
+                                roles.forEach(role2 -> roleVarMap.get(role2).stream()
+                                        .filter(var2 -> !role.equals(role2) || !var.equals(var2))
+                                        .forEach(var2 -> varPairs.add(new Pair<>(var, var2))));
+                            });
+                }
+        );
+        return varPairs;
     }
 
     /**
@@ -993,6 +1026,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
 
+
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
@@ -1015,6 +1049,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
         }
 
+        //NB: this will potentially reify existing implicit relationships
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 

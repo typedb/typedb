@@ -63,7 +63,6 @@ public class Storage {
     private static final String DISPLAY_NAME = "Storage";
     private static final long STORAGE_STARTUP_TIMEOUT_SECOND = 60;
     private static final Path STORAGE_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-storage.pid");
-    private static final Path STORAGE_DATA = Paths.get("server", "db", "cassandra");
     private static final String JAVA_OPTS = SystemProperty.STORAGE_JAVAOPTS.value();
 
     private static final String EMPTY_VALUE = "";
@@ -158,15 +157,16 @@ public class Storage {
     }
 
     public void clean() {
+        Path dataDir = Paths.get(graknProperties.getProperty(ConfigKey.DATA_DIR));
         System.out.print("Cleaning " + DISPLAY_NAME + "...");
         System.out.flush();
-        try (Stream<Path> files = Files.walk(STORAGE_DATA)) {
+        try (Stream<Path> files = Files.walk(dataDir)) {
             files.map(Path::toFile)
                     .sorted(Comparator.comparing(File::isDirectory))
                     .forEach(File::delete);
-            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("data"));
-            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("commitlog"));
-            Files.createDirectories(graknHome.resolve(STORAGE_DATA).resolve("saved_caches"));
+            Files.createDirectories(dataDir.resolve(DATA_SUBDIR));
+            Files.createDirectories(dataDir.resolve(SAVED_CACHES_SUBDIR));
+            Files.createDirectories(dataDir.resolve(COMMITLOG_SUBDIR));
             System.out.println("SUCCESS");
         } catch (IOException e) {
             System.out.println("FAILED!");

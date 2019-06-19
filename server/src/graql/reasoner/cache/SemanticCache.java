@@ -134,7 +134,7 @@ public abstract class SemanticCache<
                 });
     }
 
-    private Set<QE> getParents(ReasonerAtomicQuery child){
+    public Set<QE> getParents(ReasonerAtomicQuery child){
         Set<QE> parents = this.parents.get(queryToKey(child));
         if (parents.isEmpty()) parents = computeParents(child);
         return parents.stream()
@@ -142,17 +142,21 @@ public abstract class SemanticCache<
                 .collect(toSet());
     }
 
+    public Set<QE> getFamily(SchemaConcept type){
+        return families.get(type);
+    }
+
     /**
      * @param query to find
      * @return queries that belong to the same family as input query
      */
-    private Set<QE> getFamily(ReasonerAtomicQuery query){
+    private Stream<QE> getFamily(ReasonerAtomicQuery query){
         SchemaConcept schemaConcept = query.getAtom().getSchemaConcept();
-        if (schemaConcept == null) return new HashSet<>();
+        if (schemaConcept == null) return Stream.empty();
         Set<QE> family = families.get(schemaConcept);
         return family != null?
-                family.stream().filter(q -> !q.equals(queryToKey(query))).collect(toSet()) :
-                new HashSet<>();
+                family.stream().filter(q -> !q.equals(queryToKey(query))) :
+                Stream.empty();
     }
 
     private void updateFamily(ReasonerAtomicQuery query){
@@ -169,9 +173,8 @@ public abstract class SemanticCache<
     }
 
     private Set<QE> computeParents(ReasonerAtomicQuery child){
-        Set<QE> family = getFamily(child);
         Set<QE> computedParents = new HashSet<>();
-        family.stream()
+        getFamily(child)
                 .map(this::keyToQuery)
                 .filter(child::subsumes)
                 .map(this::queryToKey)
@@ -217,7 +220,7 @@ public abstract class SemanticCache<
 
         assert(query.isPositive());
         validateAnswer(answer, query, query.getVarNames());
-        if (query.isGround()) ackCompleteness(query);
+        if (query.hasUniqueAnswer()) ackCompleteness(query);
 
         /*
          * find SE entry

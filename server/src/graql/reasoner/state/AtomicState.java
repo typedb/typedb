@@ -30,6 +30,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 import java.util.Set;
@@ -99,7 +100,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
     }
 
     private MultiUnifier getRuleUnifier(InferenceRule rule) {
-        if (ruleUnifier == null) this.ruleUnifier = rule.getHead().getMultiUnifier(this.getQuery());
+        if (ruleUnifier == null) this.ruleUnifier = rule.getHead().getMultiUnifier(this.getQuery(), UnifierType.RULE);
         return ruleUnifier;
     }
 
@@ -135,7 +136,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
             return new ConceptMap();
         }
         materialised.put(rule.getRule().id(), sub);
-        
+
         Set<Variable> queryVars = query.getVarNames().size() < ruleHead.getVarNames().size() ?
                 unifier.keySet() :
                 ruleHead.getVarNames();
@@ -146,7 +147,6 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
             getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
             answer = unifier.apply(materialisedSub.project(queryVars));
         }
-
         if (answer.isEmpty()) return answer;
 
         return ConceptUtils

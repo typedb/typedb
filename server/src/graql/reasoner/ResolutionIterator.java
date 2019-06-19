@@ -49,13 +49,11 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Stack<ResolutionState> states = new Stack<>();
 
     private ConceptMap nextAnswer = null;
-    private final boolean reiterationRequired;
 
     private static final Logger LOG = LoggerFactory.getLogger(ResolutionIterator.class);
 
-    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals, boolean reiterate){
+    public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals){
         this.query = q;
-        this.reiterationRequired = reiterate;
         this.subGoals = subGoals;
         states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
@@ -88,6 +86,15 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         return nextAnswer;
     }
 
+    private Boolean reiterate = null;
+
+    private boolean reiterate(){
+        if (reiterate == null) {
+            reiterate = query.requiresReiteration();
+        }
+        return reiterate;
+    }
+
     /**
      * check whether answers available, if answers not fully computed compute more answers
      * @return true if answers available
@@ -98,7 +105,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         if (nextAnswer != null) return true;
 
         //iter finished
-        if (reiterationRequired) {
+        if (reiterate()) {
             long dAns = answers.size() - oldAns;
             if (dAns != 0 || iter == 0) {
                 LOG.debug("iter: {} answers: {} dAns = {}", iter, answers.size(), dAns);

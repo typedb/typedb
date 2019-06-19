@@ -18,11 +18,15 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
@@ -30,7 +34,9 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
+import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
+import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -43,8 +49,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
@@ -462,5 +471,40 @@ public class GraqlGetIT {
         exception.expect(GraqlException.class);
         exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
+    }
+
+
+    @Test
+    /**
+     * This tests ensures that queries that match both vertices and edges in the query operate correctly
+     */
+    public void whenMatchingEdgeAndVertex_AnswerIsNotEmpty() {
+        Role work = tx.putRole("work");
+        EntityType somework = tx.putEntityType("somework").plays(work);
+        Role author = tx.putRole("author");
+        EntityType person = tx.putEntityType("person").plays(author);
+        AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
+        tx.putRelationType("authored-by").relates(work).relates(author).has(year);
+
+        Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
+                "$y isa somework; " +
+                "$a isa year; $a 2019; " +
+                "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp;").asInsert());
+
+        List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
+        tx.commit();
+        newTransaction();
+
+        List<Pattern> idPatterns = new ArrayList<>();
+        for (int i = 0; i < insertedIds.size(); i++) {
+            StatementThing id = var("v" + i).id(insertedIds.get(i).toString());
+            idPatterns.add(id);
+        }
+        List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
+        assertEquals(answersById.size(), 1);
+
+        // clean up, delete the IDs we inserted for this test
+        tx.execute(Graql.match(idPatterns).delete(idPatterns.stream().flatMap(pattern -> pattern.variables().stream()).collect(Collectors.toList())));
+        tx.commit();
     }
 }

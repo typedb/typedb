@@ -30,7 +30,6 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -583,27 +582,72 @@ public class QueryCacheIT {
             //record all partial queries
             query.getAtoms(RelationAtom.class)
                     .map(ReasonerQueries::atomic)
-                    .forEach(q -> q.resolve(new HashSet<>(),  q.requiresReiteration()).collect(Collectors.toSet()));
+                    .forEach(q -> q.resolve(new HashSet<>()).collect(Collectors.toSet()));
 
             Set<ConceptMap> preFetchCache = getCacheContent(tx);
 
             assertTrue(query.isCacheComplete());
-            Set<ConceptMap> answers = query.resolve(new HashSet<>(), query.requiresReiteration()).collect(toSet());
+            Set<ConceptMap> answers = query.resolve(new HashSet<>()).collect(toSet());
             assertEquals(preFetchCache, getCacheContent(tx));
         }
     }
 
     @Test
-    public void whenResolvingQueryWithVariableRoles_roleExpansionAnswersAreCached(){
+    public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
-            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("($r: $x) isa binary-symmetric;"), tx);
+            MultilevelSemanticCache cache = tx.queryCache();
+            ReasonerQueryImpl baseQuery = ReasonerQueries.create(conjunction("{$x has resource $r via $rel;};"), tx);
+            Set<ConceptMap> answers = baseQuery.resolve().collect(toSet());
 
-            Set<ConceptMap> answers = query.resolve().collect(toSet());
-            Set<ConceptMap> cachedAnswers = tx.queryCache().getAnswers(query);
-            assertTrue(answers.stream().anyMatch(ans -> ans.explanation().isRuleExplanation()));
-            assertTrue(answers.stream().anyMatch(ans -> Schema.MetaSchema.isMetaLabel(ans.get("r").asRole().label())));
-            assertEquals(answers,cachedAnswers);
+            ConceptMap answer = answers.iterator().next();
+            Concept owner = answer.get("x");
+            Concept attribute = answer.get("r");
+            Concept relation = answer.get("rel");
+            Object value = attribute.asAttribute().value();
+
+            ReasonerAtomicQuery ownerMapped = ReasonerQueries.atomic(conjunction("{$x has resource $r;$x id " + owner.id() + ";};"), tx);
+            ReasonerAtomicQuery ownerAndValueMapped = ReasonerQueries.atomic(conjunction("{$x has resource '" + value + "';$x id " + owner.id() +";};"), tx);
+            ReasonerAtomicQuery ownerAndValueMappedBaseType = ReasonerQueries.atomic(conjunction("{$x has attribute '" + value + "';$x id " + owner.id() +";};"), tx);
+            ReasonerAtomicQuery ownerMappedWithRelVariable = ReasonerQueries.atomic(conjunction("{$x has resource $r via $rel;$x id " + owner.id() + ";};"), tx);
+            ReasonerAtomicQuery ownerAndValueMappedWithRelVariable = ReasonerQueries.atomic(conjunction("{" +
+                    "$x has resource '" + value + "' via $rel;" +
+                    "$x id " + owner.id() + ";" +
+                    "};"
+            ), tx);
+            ReasonerAtomicQuery ownerAndRelationMapped = ReasonerQueries.atomic(conjunction("{" +
+                    "$x has resource $r via $rel;" +
+                    "$x id " + owner.id() + ";" +
+                    "$rel id " + relation.id() + ";" +
+                    "};"
+            ), tx);
+            ReasonerAtomicQuery allMapped = ReasonerQueries.atomic(conjunction("{" +
+                    "$x has resource $r;" +
+                    "$x id " + owner.id() + ";" +
+                    "$r id " + attribute.id() + ";" +
+                    "};"
+            ), tx);
+
+            assertTrue(ownerAndValueMapped.hasUniqueAnswer());
+            assertTrue(allMapped.hasUniqueAnswer());
+            assertFalse(ownerMapped.hasUniqueAnswer());
+            assertFalse(ownerAndValueMappedBaseType.hasUniqueAnswer());
+            assertFalse(ownerMappedWithRelVariable.hasUniqueAnswer());
+            assertFalse(ownerAndValueMappedWithRelVariable.hasUniqueAnswer());
+            assertFalse(ownerAndRelationMapped.hasUniqueAnswer());
+
+            ownerAndValueMapped.resolve()
+                    .map(ans -> ans.explain(new LookupExplanation(ownerAndValueMapped.getPattern())))
+                    .forEach(ans -> cache.record(ownerAndValueMapped, ans));
+            allMapped.resolve()
+                    .map(ans -> ans.explain(new LookupExplanation(allMapped.getPattern())))
+                    .forEach(ans -> cache.record(allMapped, ans));
+
+            assertTrue(cache.isComplete(ownerAndValueMapped));
+            assertTrue(cache.isDBComplete(ownerAndValueMapped));
+            assertTrue(cache.isComplete(allMapped));
+            assertTrue(cache.isDBComplete(allMapped));
         }
+
     }
 
     private Set<ConceptMap> getCacheContent(TransactionOLTP tx){

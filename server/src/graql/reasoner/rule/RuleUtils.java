@@ -23,15 +23,20 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.statement.Variable;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -128,11 +133,41 @@ public class RuleUtils {
 
     /**
      * @param rules set of rules of interest forming a rule subgraph
-     * @return true if the rule subgraph formed from provided rules contains loops
+     * @return true if the rule subgraph formed from provided rules contains loops AND corresponding relation instances also contain loops
      */
-    public static boolean subGraphIsCyclical(Set<InferenceRule> rules){
-        return !new TarjanSCC<>(persistedTypeSubGraph(rules))
-                .getCycles().isEmpty();
+    public static boolean subGraphIsCyclical(Set<InferenceRule> rules, TransactionOLTP tx){
+        HashMultimap<Type, Type> typeSubGraph = persistedTypeSubGraph(rules);
+        TarjanSCC<Type> typeSCC = new TarjanSCC<>(typeSubGraph);
+        List<Set<Type>> typeCycles = typeSCC.getCycles();
+        HashMultimap<Type, Type> typeTCinverse = HashMultimap.create();
+
+        typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
+
+        return typeCycles.stream().anyMatch(typeSet -> {
+            Set<ReasonerAtomicQuery> queries = typeSet.stream()
+                    .flatMap(type -> typeTCinverse.get(type).stream())
+                    .flatMap(type -> tx.queryCache().getFamily(type).stream())
+                    .map(Equivalence.Wrapper::get)
+                    .filter(q -> tx.queryCache().getParents(q).isEmpty())
+                    .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
+                    .collect(toSet());
+            if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))) return true;
+
+            HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
+            return queries.stream().anyMatch(q -> {
+                RelationAtom relationAtom = q.getAtom().toRelationAtom();
+                Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
+                IndexedAnswerSet answers = tx.queryCache().getEntry(q).cachedElement();
+                return answers.stream().anyMatch(ans ->
+                        varPairs.stream().anyMatch(p -> {
+                            Concept from = ans.get(p.getKey());
+                            Concept to = ans.get(p.getValue());
+                            if (conceptMap.get(to).contains(from)) return true;
+                            conceptMap.put(from, to);
+                            return false;
+                        }));
+            });
+        });
     }
 
     /**

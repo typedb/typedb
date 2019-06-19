@@ -27,9 +27,11 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -48,7 +50,7 @@ public class TypeConversionIT {
     @BeforeClass
     public static void newSession() {
         session = graknServer.sessionWithNewKeyspace();
-        try(TransactionOLTP tx = session.transaction().write()){
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.putAttributeType("resource-long", AttributeType.DataType.LONG);
             tx.putAttributeType("resource-double", AttributeType.DataType.DOUBLE);
             tx.putAttributeType("resource-float", AttributeType.DataType.FLOAT);
@@ -62,84 +64,78 @@ public class TypeConversionIT {
         session.close();
     }
 
-    private void verifyWrite(SessionImpl session, Pattern pattern){
+    private void verifyWrite(SessionImpl session, Pattern pattern) {
         GraqlInsert insert = Graql.insert(pattern.statements());
-        try(TransactionOLTP tx = session.transaction().write()){
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(insert);
             tx.commit();
         }
     }
 
-    private void verifyRead(SessionImpl session, Pattern pattern){
-        try(TransactionOLTP tx = session.transaction().read()) {
-            assertTrue(!tx.execute(Graql.match(pattern)).isEmpty());
-        }
-    }
-
-    private void cleanup(SessionImpl session, Pattern pattern){
+    private void cleanup(SessionImpl session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
-        try(TransactionOLTP tx = session.transaction().write()){
+        try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(match.delete());
             tx.commit();
         }
     }
 
     @Test
-    public void whenAddressingDoubleAsInteger_ConversionHappens(){
+    public void whenAddressingDoubleAsInteger_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10).isa("resource-double");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
     @Test
-    public void whenAddressingDoubleAsLong_ConversionHappens(){
+    public void whenAddressingDoubleAsLong_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10L).isa("resource-double");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
     @Test
-    public void whenAddressingDoubleAsFloat_ConversionHappens(){
+    public void whenAddressingDoubleAsFloat_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10f).isa("resource-double");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
     }
 
     @Test
-    public void whenAddressingLongAsInt_ConversionHappens(){
+    public void whenAddressingLongAsInt_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10).isa("resource-long");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
     @Test
-    public void whenAddressingDateAsLocalDate_ConversionHappens(){
+    public void whenAddressingDateAsLocalDate_ConversionHappens() {
         LocalDate now = LocalDate.now();
 
         Pattern pattern = Graql.parsePattern("$x " + now + " isa resource-date;");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
     @Test
-    public void whenAddressingDateAsLocalDateTime_ConversionHappens(){
+    public void whenAddressingDateAsLocalDateTime_ConversionHappens() {
         LocalDateTime now = LocalDateTime.now();
 
         Pattern pattern = Graql.parsePattern("$x " + now + " isa resource-date;");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
     @Test
-    public void whenAddressingLongAsConvertibleDouble_exceptionIsThrown() throws TransactionException{
+    public void whenAddressingLongAsConvertibleDouble_exceptionIsThrown() throws TransactionException {
         double value = 10.0;
         Pattern pattern = Graql.var("x").val(value).isa("resource-long");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
         //TODO verifyRead(session, pattern);
         cleanup(session, pattern);
     }
@@ -148,29 +144,29 @@ public class TypeConversionIT {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws TransactionException{
+    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws TransactionException {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("resource-date");
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.time.LocalDateTime]");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
     }
 
     @Test
-    public void whenAddressingDoubleAsBoolean_exceptionIsThrown() throws TransactionException{
+    public void whenAddressingDoubleAsBoolean_exceptionIsThrown() throws TransactionException {
         boolean value = true;
         Pattern pattern = Graql.var("x").val(value).isa("resource-double");
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of datatype [java.lang.Double]");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
     }
 
     @Test
-    public void whenAddressingLongAsDouble_exceptionIsThrown() throws TransactionException{
+    public void whenAddressingLongAsDouble_exceptionIsThrown() throws TransactionException {
         double value = 10.1;
         Pattern pattern = Graql.var("x").val(value).isa("resource-long");
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.lang.Long]");
-        verifyWrite(session,pattern);
+        verifyWrite(session, pattern);
     }
 }

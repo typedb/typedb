@@ -76,6 +76,7 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
             TransactionOLTP tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
+
         GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
 
         // Filter by any provided type labels
@@ -99,10 +100,5 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     @Override
     public double internalFragmentCost() {
         return roleLabels() != null ? COST_ROLE_PLAYERS_PER_ROLE : COST_ROLE_PLAYERS_PER_RELATION;
-    }
-
-    @Override
-    public boolean canOperateOnEdges() {
-        return true;
     }
 }
