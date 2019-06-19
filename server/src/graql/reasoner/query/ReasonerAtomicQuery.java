@@ -105,6 +105,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public boolean isAtomic(){ return true;}
 
+    public boolean hasUniqueAnswer(){ return getAtom().hasUniqueAnswer();}
+
     /**
      * Determines whether the subsumption relation between this (C) and provided query (P) holds,
      * i. e. determines if:

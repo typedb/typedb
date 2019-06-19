@@ -126,7 +126,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
-        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attributeUsingMap(value), instanceBuilder, isInferred);
+        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attributeWithLock(value), instanceBuilder, isInferred);
     }
 
     /**
@@ -174,17 +174,15 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     /**
      * This is only used when checking if attribute exists before trying to create a new one.
-     * It checks if in AttributesMap exists an entry with the supplied INDEX:
-     * - if an entry is found, it uses that ID to refer to the current attribute.
-     * - if no entry is found then check with the Graph.
+     * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
-    private Attribute<D> attributeUsingMap(D value) {
+    private Attribute<D> attributeWithLock(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-        ConceptId id = vertex().tx().session().attributesMap().get(index);
-        if (id != null) {
-            return vertex().tx().getConcept(id);
-        } else {
+        vertex().tx().session().graphLock().readLock().lock();
+        try {
             return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+        } finally {
+            vertex().tx().session().graphLock().readLock().unlock();
         }
     }
 
