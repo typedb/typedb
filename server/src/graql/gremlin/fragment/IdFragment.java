@@ -56,7 +56,11 @@ public abstract class IdFragment extends Fragment {
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
         if (canOperateOnEdges()) {
-            // Handle both edges and vertices
+            // if the ID may be for an edge,
+            // we must extend the traversal that normally just operates on vertices
+            // to operate on both edges and vertices
+            traversal = traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
+
             return traversal.or(
                     edgeTraversal(),
                     vertexTraversal(__.identity())
@@ -94,8 +98,7 @@ public abstract class IdFragment extends Fragment {
         return true;
     }
 
-    @Override
-    public boolean canOperateOnEdges() {
+    private boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
     }
 

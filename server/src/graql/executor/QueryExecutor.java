@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -71,6 +72,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -356,19 +358,18 @@ public class QueryExecutor {
                 .sorted(Comparator.comparing(concept -> !concept.isRelation()))
                 .collect(Collectors.toList());
 
+        Set<ConceptId> deletedConceptIds = new HashSet<>();
         conceptsToDelete.forEach(concept -> {
             // a concept is either a schema concept or a thing
             if (concept.isSchemaConcept()) {
                 throw GraqlSemanticException.deleteSchemaConcept(concept.asSchemaConcept());
             } else if (concept.isThing()) {
                 try {
-                    // if it's not inferred, we can delete it
-                    if (!concept.asThing().isInferred()) {
-                        concept.delete();
-                    }
+                    deletedConceptIds.add(concept.id());
+                    concept.delete();
                 } catch (IllegalStateException janusVertexDeleted) {
                     if (janusVertexDeleted.getMessage().contains("was removed")) {
-                        // Tinkerpop throws this exception if we try to operate (including check `isInferred()`) on a vertex that was already deleted
+                        // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
                         // With the ordering of deletes, this edge case should only be hit when relations play roles in relations
                         LOG.debug("Trying to deleted concept that was already removed", janusVertexDeleted);
                     } else {
@@ -381,7 +382,7 @@ public class QueryExecutor {
         });
 
         // TODO: return deleted Concepts instead of ConceptIds
-        return new ConceptSet(conceptsToDelete.stream().map(Concept::id).collect(toSet()));
+        return new ConceptSet(deletedConceptIds);
     }
 
     public Stream<ConceptMap> get(GraqlGet query) {
