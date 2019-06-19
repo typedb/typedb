@@ -502,5 +502,9 @@ public class GraqlGetIT {
         }
         List<ConceptMap> answersById = tx.execute(Graql.match(idPatterns).get());
         assertEquals(answersById.size(), 1);
+
+        // clean up, delete the IDs we inserted for this test
+        tx.execute(Graql.match(idPatterns).delete(idPatterns.stream().flatMap(pattern -> pattern.variables().stream()).collect(Collectors.toList())));
+        tx.commit();
     }
 }
