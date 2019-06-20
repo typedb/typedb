@@ -22,14 +22,14 @@ def graknlabs_build_tools():
     git_repository(
         name = "graknlabs_build_tools",
         remote = "https://github.com/graknlabs/build-tools",
-        commit = "3907e539713cb55e39c167616b669027335e25b7", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+        commit = "79e6e624e845894b7ca6d85505600dc414e2eaa6", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
 
 def graknlabs_graql():
      git_repository(
          name = "graknlabs_graql",
          remote = "https://github.com/graknlabs/graql",
-         commit = "75c6ed9b6a4e557328b6ce895925a706f05e1352", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+         commit = "48593d1288f5611f45e3024e27827d5874d2ac50", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
      )
 
 def graknlabs_client_java():
