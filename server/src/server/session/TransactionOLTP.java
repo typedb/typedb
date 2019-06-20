@@ -221,6 +221,7 @@ public class TransactionOLTP implements Transaction {
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
         try {
+            cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
                 // If the same index is contained in attributesMap, it means
                 // another concurrent transaction inserted the same attribute, time to merge!
@@ -235,7 +236,6 @@ public class TransactionOLTP implements Transaction {
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             janusTransaction.commit();
-            cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
             updateAttributesMapInSession();
         } finally {
             session.graphLock().writeLock().unlock();
