@@ -24,9 +24,12 @@ import grakn.core.concept.Label;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -38,18 +41,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 
 /**
- *
  * Interesting takeaways:
  * - Creating a new type, we retrieve and cache the entire hierarchy up to `Thing` (top level meta concept)
  * - When fetching an existing type, we only cache that single type, not the entire hierarchy
  * - When fetching instances of a type, we cache both the instances and that type (but again, no supertypes)
- *
  */
 
 @SuppressWarnings("CheckReturnValue")
@@ -177,9 +182,9 @@ public class TransactionCacheIT {
 
         personInstance.delete();
 
-        List<String> cachedConceptLabels = conceptCache.values().stream().map(concept-> concept.asType().label().toString()).collect(Collectors.toList());
+        List<String> cachedConceptLabels = conceptCache.values().stream().map(concept -> concept.asType().label().toString()).collect(Collectors.toList());
         assertEquals(3, conceptCache.size());
-        assertThat(cachedConceptLabels,containsInAnyOrder("person", "entity", "thing"));
+        assertThat(cachedConceptLabels, containsInAnyOrder("person", "entity", "thing"));
     }
 
     @Test
@@ -194,6 +199,24 @@ public class TransactionCacheIT {
 
         assertEquals(2, schemaConceptCache.size());
         List<String> cachedSchemaConceptLabels = schemaConceptCache.values().stream().map(schemaConcept -> schemaConcept.label().toString()).collect(Collectors.toList());
-        assertThat(cachedSchemaConceptLabels, containsInAnyOrder( "entity", "thing"));
+        assertThat(cachedSchemaConceptLabels, containsInAnyOrder("entity", "thing"));
+    }
+
+    @Test
+    public void whenAddingAndDeletingSameAttributeInSameTx_transactionCacheIsInSync() {
+        String testAttributeLabel = "test-attribute";
+        String testAttributeValue = "test-attribute-value";
+        String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
+
+        // define the schema
+        tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+        tx.commit();
+
+
+        tx = session.transaction().write();
+        tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
+        tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+        assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
+        assertTrue(tx.cache().getRemovedAttributes().contains(index));
     }
 }
