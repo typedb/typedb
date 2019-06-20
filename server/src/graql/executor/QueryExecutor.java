@@ -366,7 +366,11 @@ public class QueryExecutor {
             } else if (concept.isThing()) {
                 try {
                     deletedConceptIds.add(concept.id());
-                    concept.delete();
+                    if (!concept.isDeleted()) {
+                        // a concept may have been cleaned up already
+                        // for instance if role players of an implicit attribute relation are deleted, the janus edge disappears
+                        concept.delete();
+                    }
                 } catch (IllegalStateException janusVertexDeleted) {
                     if (janusVertexDeleted.getMessage().contains("was removed")) {
                         // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted
