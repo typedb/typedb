@@ -47,6 +47,7 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//concept",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "@graknlabs_graql//java:graql"
     ],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
