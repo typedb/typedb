@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner.state;
 
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+//import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
  * predicates to ans(Q').
  *
  */
-@SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
+//@SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class VariableComparisonState extends QueryStateBase {
 
     private final ResolutionState complementState;

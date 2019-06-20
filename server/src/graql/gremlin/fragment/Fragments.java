@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.concept.printer.StringPrinter;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.server.kb.Schema;
@@ -235,7 +234,7 @@ public class Fragments {
 
     static String displayOptionalTypeLabels(String name, @Nullable Set<Label> typeLabels) {
         if (typeLabels != null) {
-            return " " + name + ":" + typeLabels.stream().map(StringPrinter::label).collect(joining(","));
+            return " " + name + ":" + typeLabels.stream().map(Label::getValue).collect(joining(","));
         } else {
             return "";
         }

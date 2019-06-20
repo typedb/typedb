@@ -22,7 +22,6 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.Label;
-import grakn.core.concept.printer.StringPrinter;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
@@ -44,7 +43,6 @@ import static java.util.stream.Collectors.toSet;
 
 /**
  * A fragment representing traversing a label.
- *
  */
 
 @AutoValue
@@ -70,7 +68,7 @@ public abstract class LabelFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[label:" + labels().stream().map(StringPrinter::label).collect(joining(",")) + "]";
+        return "[label:" + labels().stream().map(Label::getValue).collect(joining(",")) + "]";
     }
 
     @Override

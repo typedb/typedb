@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.concept.printer;
+package grakn.core.console.printer;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.AnswerGroup;
@@ -51,7 +51,7 @@ public abstract class Printer<Builder> {
      * @param attributeTypes list of attribute types that should be included in the String output
      * @return a new StringPrinter object
      */
-    public static StringPrinter stringPrinter(boolean colorize, AttributeType... attributeTypes) {
+    public static grakn.core.console.printer.StringPrinter stringPrinter(boolean colorize, AttributeType... attributeTypes) {
         return new StringPrinter(colorize, attributeTypes);
     }
 
