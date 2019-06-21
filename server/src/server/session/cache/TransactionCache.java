@@ -76,7 +76,7 @@ public class TransactionCache {
     //New attributes are tracked so that we can merge any duplicate attributes at commit time.
     // The label, index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
-    // Track the removed attributes so that we can evict old attribute indexes from attributesMap in session
+    // Track the removed attributes so that we can evict old attribute indexes from attributesCache in session
     // after commit
     private Set<String> removedAttributes = new HashSet<>();
 

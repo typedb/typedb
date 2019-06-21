@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -45,6 +44,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
+    private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
+    private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
     private final JanusGraphFactory janusGraphFactory;
     protected final KeyspaceManager keyspaceManager;
     protected Config config;
@@ -72,7 +73,7 @@ public class SessionFactory {
         JanusGraph graph;
         KeyspaceCache cache;
         KeyspaceStatistics keyspaceStatistics;
-        Cache<String, ConceptId> attributesMap;
+        Cache<String, ConceptId> attributesCache;
         ReadWriteLock graphLock;
 
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
@@ -85,19 +86,22 @@ public class SessionFactory {
                 graph = cacheContainer.graph();
                 cache = cacheContainer.cache();
                 keyspaceStatistics = cacheContainer.keyspaceStatistics();
-                attributesMap = cacheContainer.attributesMap();
+                attributesCache = cacheContainer.attributesCache();
                 graphLock = cacheContainer.graphLock();
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 cache = new KeyspaceCache();
                 keyspaceStatistics = new KeyspaceStatistics();
-                attributesMap = CacheBuilder.newBuilder().expireAfterAccess(2, TimeUnit.MINUTES).maximumSize(10000).build();
+                attributesCache = CacheBuilder.newBuilder()
+                        .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
+                        .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
+                        .build();
                 graphLock = new ReentrantReadWriteLock();
-                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesMap, graphLock);
+                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, keyspaceStatistics, attributesMap, graphLock);
+            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, keyspaceStatistics, attributesCache, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
@@ -175,16 +179,16 @@ public class SessionFactory {
 
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that concurrent transactions can merge the same attribute indexes using a unique id
-        private final Cache<String, ConceptId> attributesMap;
+        private final Cache<String, ConceptId> attributesCache;
 
         private final ReadWriteLock graphLock;
 
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.sessions = new ArrayList<>();
             this.keyspaceStatistics = keyspaceStatistics;
-            this.attributesMap = attributesMap;
+            this.attributesCache = attributesCache;
             this.graphLock = graphLock;
         }
 
@@ -220,8 +224,8 @@ public class SessionFactory {
             return keyspaceStatistics;
         }
 
-        public Cache<String, ConceptId> attributesMap() {
-            return attributesMap;
+        public Cache<String, ConceptId> attributesCache() {
+            return attributesCache;
         }
 
     }

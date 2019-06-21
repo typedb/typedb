@@ -36,7 +36,6 @@ import grakn.core.server.statistics.KeyspaceStatistics;
 import org.janusgraph.core.JanusGraph;
 
 import javax.annotation.CheckReturnValue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
@@ -63,7 +62,7 @@ public class SessionImpl implements Session {
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
-    private final Cache<String, ConceptId> attributesMap;
+    private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
 
@@ -76,8 +75,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesMap, graphLock);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesCache, graphLock);
     }
 
     /**
@@ -89,7 +88,7 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
-                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, Cache<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -100,7 +99,7 @@ public class SessionImpl implements Session {
 
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
-        this.attributesMap = attributesMap;
+        this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
@@ -274,7 +273,7 @@ public class SessionImpl implements Session {
         return config;
     }
 
-    public Cache<String, ConceptId> attributesMap() {
-        return attributesMap;
+    public Cache<String, ConceptId> attributesCache() {
+        return attributesCache;
     }
 }
