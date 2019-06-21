@@ -18,6 +18,8 @@
 
 package grakn.core.server.session;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -32,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -69,7 +72,7 @@ public class SessionFactory {
         JanusGraph graph;
         KeyspaceCache cache;
         KeyspaceStatistics keyspaceStatistics;
-        ConcurrentHashMap<String, ConceptId> attributesMap;
+        Cache<String, ConceptId> attributesMap;
         ReadWriteLock graphLock;
 
         Lock lock = lockManager.getLock(getLockingKey(keyspace));
@@ -89,7 +92,7 @@ public class SessionFactory {
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 cache = new KeyspaceCache();
                 keyspaceStatistics = new KeyspaceStatistics();
-                attributesMap = new ConcurrentHashMap<>();
+                attributesMap = CacheBuilder.newBuilder().expireAfterAccess(2, TimeUnit.MINUTES).maximumSize(10000).build();
                 graphLock = new ReentrantReadWriteLock();
                 cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesMap, graphLock);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
@@ -172,11 +175,11 @@ public class SessionFactory {
 
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that concurrent transactions can merge the same attribute indexes using a unique id
-        private final ConcurrentHashMap<String, ConceptId> attributesMap;
+        private final Cache<String, ConceptId> attributesMap;
 
         private final ReadWriteLock graphLock;
 
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.sessions = new ArrayList<>();
@@ -217,7 +220,7 @@ public class SessionFactory {
             return keyspaceStatistics;
         }
 
-        public ConcurrentHashMap<String, ConceptId> attributesMap() {
+        public Cache<String, ConceptId> attributesMap() {
             return attributesMap;
         }
 

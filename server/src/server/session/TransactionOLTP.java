@@ -202,7 +202,7 @@ public class TransactionOLTP implements Transaction {
                 try {
                     session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                     janusTransaction.commit();
-                    cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
+                    cache().getRemovedAttributes().forEach(index -> session.attributesMap().invalidate(index));
                 } finally {
                     session.graphLock().writeLock().unlock();
                 }
@@ -221,22 +221,23 @@ public class TransactionOLTP implements Transaction {
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
         try {
-            cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
+            cache().getRemovedAttributes().forEach(index -> session.attributesMap().invalidate(index));
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
                 // If the same index is contained in attributesMap, it means
                 // another concurrent transaction inserted the same attribute, time to merge!
                 // NOTE: we still need to rely on attributesMap instead of checking in the graph
                 // if the index exists, because apparently JanusGraph does not make indexes available
                 // in a Read Committed fashion
-                if (session.attributesMap().containsKey(labelIndexPair.getValue())) {
-                    ConceptId targetId = session.attributesMap().get(labelIndexPair.getValue());
+                ConceptId targetId = session.attributesMap().getIfPresent(labelIndexPair.getValue());
+                if (targetId != null) {
                     merge(getTinkerTraversal(), conceptId, targetId);
                     statisticsDelta().decrement(labelIndexPair.getKey());
+                }else {
+                    session.attributesMap().put(labelIndexPair.getValue(), conceptId);
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             janusTransaction.commit();
-            updateAttributesMapInSession();
         } finally {
             session.graphLock().writeLock().unlock();
         }
@@ -292,15 +293,6 @@ public class TransactionOLTP implements Transaction {
             propertiesAsObj.add(property.value());
         }
         return propertiesAsObj.toArray();
-    }
-
-    // Register new committed Attributes in AttributesMap (if the map doesnt already contain the same INDEX),
-    // so that all following Transactions will be able to use the same ConceptId
-    // when in need of same attribute with same value.
-    private void updateAttributesMapInSession() {
-        cache().getNewAttributes().forEach((labelStringPair, conceptId) -> {
-            session.attributesMap().putIfAbsent(labelStringPair.getValue(), conceptId);
-        });
     }
 
     public VertexElement addVertexElement(Schema.BaseType baseType) {

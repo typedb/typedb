@@ -48,6 +48,8 @@ import java.util.concurrent.Future;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
@@ -303,7 +305,7 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
-        assertTrue(session.attributesMap().containsKey(index));
+        assertNotNull(session.attributesMap().getIfPresent(index));
 
 
         try (TransactionOLTP tx = session.transaction().write()) {
@@ -311,14 +313,14 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
-        assertFalse(session.attributesMap().containsKey(index));
+        assertNull(session.attributesMap().getIfPresent(index));
 
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
 
-        assertTrue(session.attributesMap().containsKey(index));
+        assertNotNull(session.attributesMap().getIfPresent(index));
 
     }
 
@@ -326,6 +328,7 @@ public class AttributeUniquenessIT {
     public void whenDeletingAndReaddingSameAttributeInSameTx_shouldNotTryToMergeAndThereShouldBeOneAttributeNodeWithDifferentId() {
         String testAttributeLabel = "test-attribute";
         String testAttributeValue = "test-attribute-value";
+        String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
         try (TransactionOLTP tx = session.transaction().write()) {
@@ -349,7 +352,7 @@ public class AttributeUniquenessIT {
             assertEquals(1, attribute.size());
             String newAttributeId = attribute.get(0).get("x").id().getValue();
             assertNotEquals(newAttributeId, oldAttributeId);
-            assertTrue(session.attributesMap().containsValue(ConceptId.of(newAttributeId)));
+            assertEquals(ConceptId.of(newAttributeId), session.attributesMap().getIfPresent(index));
         }
     }
 
@@ -369,7 +372,7 @@ public class AttributeUniquenessIT {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
             tx.commit();
-            assertFalse(session.attributesMap().containsKey(index));
+            assertNull(session.attributesMap().getIfPresent(index));
         }
         try (TransactionOLTP tx = session.transaction().write()) {
             List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());

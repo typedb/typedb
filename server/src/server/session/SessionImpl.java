@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
 import grakn.core.api.Session;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
@@ -62,7 +63,7 @@ public class SessionImpl implements Session {
     private final JanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
-    private final ConcurrentHashMap<String, ConceptId> attributesMap;
+    private final Cache<String, ConceptId> attributesMap;
     private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
 
@@ -75,7 +76,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
         this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesMap, graphLock);
     }
 
@@ -88,7 +89,7 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
-                        KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, Cache<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -124,7 +125,7 @@ public class SessionImpl implements Session {
         return new TransactionOLTP.Builder(this);
     }
 
-    public TransactionOLTP transaction(Transaction.Type type) {
+    TransactionOLTP transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -187,7 +188,6 @@ public class SessionImpl implements Session {
 
     /**
      * Copy schema concept and all its subs labels to keyspace cache
-     *
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
@@ -274,7 +274,7 @@ public class SessionImpl implements Session {
         return config;
     }
 
-    public ConcurrentHashMap<String, ConceptId> attributesMap() {
+    public Cache<String, ConceptId> attributesMap() {
         return attributesMap;
     }
 }
