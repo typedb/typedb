@@ -37,6 +37,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -82,6 +83,11 @@ public class ConversionIT {
         Statement xId = Graql.var("x").id("V456");
         Statement yId = Graql.var("y").id("V789");
         implicitRelationPattern = Graql.and(Sets.newHashSet(implicitRel, xId, yId));
+    }
+
+    @AfterClass
+    public static void finalise(){
+        session.close();
     }
 
     @Test
