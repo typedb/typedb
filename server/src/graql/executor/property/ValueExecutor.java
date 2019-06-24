@@ -19,6 +19,7 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
@@ -26,8 +27,8 @@ import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
-import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.Serialiser;
@@ -42,14 +43,18 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+
+import static grakn.core.common.util.Collections.set;
 
 public class ValueExecutor implements PropertyExecutor.Insertable {
 
@@ -161,13 +166,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         protected abstract P<U> predicate();
 
-        public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
-            // Compare to a given value
-            AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
-            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
-            traversal.has(property.name(), predicate());
-            return traversal;
-        }
+        public abstract <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal);
 
         public boolean test(Object otherValue) {
             if (this.value().getClass().isInstance(otherValue)) {
@@ -313,6 +312,14 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
             }
 
+            public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
+                // Compare to a given value
+                AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
+                Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+                traversal.has(property.name(), predicate());
+                return traversal;
+            }
+
             @Override
             protected P<U> predicate() {
                 return P.eq(valueSerialised());
@@ -434,6 +441,20 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 return false;
             }
 
+            public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
+                List<GraphTraversal<?, E>> valueTraversals = new ArrayList<>();
+                for (AttributeType.DataType<?> dataType : comparableDataTypes()) {
+                    Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+                    valueTraversals.add(__.has(property.name(), predicate()));
+                }
+
+                GraphTraversal<?, E>[] array = (GraphTraversal<?, E>[]) Iterables.toArray(valueTraversals, GraphTraversal.class);
+
+                return traversal.union(array);
+            }
+
+            protected abstract Set<AttributeType.DataType<?>> comparableDataTypes();
+
             @Override
             protected P<U> predicate() {
                 Function<U, P<U>> predicate = PREDICATES_COMPARABLE.get(comparator());
@@ -452,9 +473,19 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.DOUBLE,
+                               //AttributeType.DataType.FLOAT,
+                               //AttributeType.DataType.INTEGER,
+                               AttributeType.DataType.LONG);
+                }
+
+                @Override
                 N valueSerialised() {
                     return new Serialiser.Default<N>().serialise(value());
                 }
+
+
             }
 
             static class Boolean extends Comparison<java.lang.Boolean, java.lang.Boolean> {
@@ -467,12 +498,22 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 java.lang.Boolean valueSerialised() {
                     return Serialiser.BOOLEAN.serialise(value());
                 }
+
+                @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.BOOLEAN);
+                }
             }
 
             static class DateTime extends Comparison<LocalDateTime, Long> {
 
                 DateTime(Graql.Token.Comparator comparator, LocalDateTime value) {
                     super(comparator, value);
+                }
+
+                @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.DATE);
                 }
 
                 @Override
@@ -487,6 +528,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 public String(Graql.Token.Comparator comparator, java.lang.String value) {
                     super(comparator, value);
+                }
+
+                @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.STRING);
                 }
 
                 @Override
@@ -538,6 +584,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                     predicates.put(Graql.Token.Comparator.CONTAINS, containsPredicate());
 
                     return Collections.unmodifiableMap(predicates);
+                }
+
+                @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return null;
                 }
 
                 @Override
