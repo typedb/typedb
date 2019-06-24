@@ -28,8 +28,8 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,8 +47,8 @@ public class NumberCastingIT {
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static SessionImpl session;
 
-    @BeforeClass
-    public static void newSession() {
+    @Before
+    public void newSession() {
         session = graknServer.sessionWithNewKeyspace();
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.putAttributeType("attr-long", AttributeType.DataType.LONG);
@@ -58,8 +58,8 @@ public class NumberCastingIT {
         }
     }
 
-    @AfterClass
-    public static void closeSession() {
+    @After
+    public void closeSession() {
         session.close();
     }
 
