@@ -37,7 +37,7 @@ java_test(
 )
 
 java_test(
-    name = "conversion-it",
+    name = "atomic-conversion-it",
     size = "medium",
     srcs = ["ConversionIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
@@ -118,6 +118,7 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
+        ":atomic-conversion-it",
         ":atomic-equivalence-it",
         ":atomic-unification-it",
         ":type-inference-it",

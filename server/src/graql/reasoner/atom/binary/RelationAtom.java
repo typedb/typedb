@@ -1069,7 +1069,6 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     public Stream<ConceptMap> materialise(){
-        System.out.println("materialise: " + this);
         RelationType relationType = getSchemaConcept().asRelationType();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
