@@ -37,6 +37,24 @@ java_test(
 )
 
 java_test(
+    name = "conversion-it",
+    size = "medium",
+    srcs = ["ConversionIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
+    test_class = "grakn.core.graql.reasoner.atomic.ConversionIT",
+    deps = [
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
     name = "rule-applicability-it",
     size = "medium",
     srcs = ["RuleApplicabilityIT.java"],

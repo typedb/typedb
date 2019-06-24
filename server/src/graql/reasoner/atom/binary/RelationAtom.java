@@ -68,6 +68,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
@@ -192,7 +193,46 @@ public abstract class RelationAtom extends IsaAtomBase {
     public RelationAtom toRelationAtom(){ return this;}
 
     @Override
-    public IsaAtom toIsaAtom(){ return IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery()); }
+    public AttributeAtom toAttributeAtom(){
+        SchemaConcept type = getSchemaConcept();
+        if (type == null || !type.isImplicit()) {
+            throw GraqlQueryException.illegalAtomConversion(this, AttributeAtom.class);
+        }
+        TransactionOLTP tx = getParentQuery().tx();
+        Label explicitLabel = Schema.ImplicitType.explicitLabel(type.label());
+        Role ownerRole = tx.getRole(Schema.ImplicitType.HAS_OWNER.getLabel(explicitLabel).getValue());
+        Role valueRole = tx.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(explicitLabel).getValue());
+        Multimap<Role, Variable> roleVarMap = getRoleVarMap();
+        Variable relationVariable = getVarName();
+        Variable ownerVariable = Iterables.getOnlyElement(roleVarMap.get(ownerRole));
+        Variable attributeVariable = Iterables.getOnlyElement(roleVarMap.get(valueRole));
+
+        Statement attributeStatement = relationVariable.isReturned() ?
+                var(ownerVariable).has(explicitLabel.getValue(), var(attributeVariable), var(relationVariable)) :
+                var(ownerVariable).has(explicitLabel.getValue(), var(attributeVariable));
+        AttributeAtom attributeAtom = AttributeAtom.create(
+                attributeStatement,
+                attributeVariable,
+                relationVariable,
+                getPredicateVariable(),
+                tx.getSchemaConcept(explicitLabel).id(),
+                new HashSet<>(),
+                getParentQuery()
+        );
+
+        Set<Statement> patterns = new HashSet<>(attributeAtom.getCombinedPattern().statements());
+        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
+        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toAttributeAtom();
+    }
+
+
+    @Override
+    public IsaAtom toIsaAtom(){
+        IsaAtom isaAtom = IsaAtom.create(getVarName(), getPredicateVariable(), getTypeId(), false, getParentQuery());
+        Set<Statement> patterns = new HashSet<>(isaAtom.getCombinedPattern().statements());
+        this.getPredicates().map(Predicate::getPattern).forEach(patterns::add);
+        return ReasonerQueries.atomic(Graql.and(patterns), tx()).getAtom().toIsaAtom();
+    }
 
     @Override
     public Set<Atom> rewriteToAtoms(){
@@ -1029,6 +1069,7 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     public Stream<ConceptMap> materialise(){
+        System.out.println("materialise: " + this);
         RelationType relationType = getSchemaConcept().asRelationType();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();

@@ -32,16 +32,11 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
@@ -50,8 +45,6 @@ import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class RoleInferenceIT {
-
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -62,6 +55,7 @@ public class RoleInferenceIT {
 
     @BeforeClass
     public static void loadContext(){
+        final String resourcePath = "test-integration/graql/reasoner/resources/";
         roleInferenceSetSession = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath, "roleInferenceTest.gql", roleInferenceSetSession);
         genericSchemaSession = server.sessionWithNewKeyspace();
