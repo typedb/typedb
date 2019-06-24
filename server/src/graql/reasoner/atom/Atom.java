@@ -67,6 +67,8 @@ public abstract class Atom extends AtomicBase {
         throw GraqlQueryException.illegalAtomConversion(this, RelationAtom.class);
     }
 
+    public AttributeAtom toAttributeAtom() { throw GraqlQueryException.illegalAtomConversion(this, AttributeAtom.class); }
+
     public IsaAtom toIsaAtom() {
         throw GraqlQueryException.illegalAtomConversion(this, IsaAtom.class);
     }
