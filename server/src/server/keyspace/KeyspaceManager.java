@@ -19,6 +19,7 @@
 package grakn.core.server.keyspace;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
@@ -61,7 +62,7 @@ public class KeyspaceManager {
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
         KeyspaceCache keyspaceCache = new KeyspaceCache();
         this.graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, new KeyspaceStatistics(), new ConcurrentHashMap<>(), new ReentrantReadWriteLock());
+        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, new KeyspaceStatistics(), CacheBuilder.newBuilder().build(), new ReentrantReadWriteLock());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 

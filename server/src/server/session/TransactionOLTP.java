@@ -93,7 +93,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -185,7 +184,7 @@ public class TransactionOLTP implements Transaction {
     /**
      * This method handles 3 committing scenarios:
      * - use a lock to serialise all commits that are trying to create new attributes, so that we can merge real-time
-     * - use a lock to serialise commits that are removing attributes, so concurrent txs dont use outdate attribute IDs from attributesMap
+     * - use a lock to serialise commits that are removing attributes, so concurrent txs dont use outdate attribute IDs from attributesCache
      * - don't lock when added or removed attributes are not involved
      */
     private void commitInternal() {
@@ -195,14 +194,14 @@ public class TransactionOLTP implements Transaction {
                 mergeAttributesAndCommit();
             } else if (!cache().getRemovedAttributes().isEmpty()) {
                 // In this case we need to lock, so that other concurrent Transactions
-                // that are trying to create new attributes will read an updated version of attributesMap
-                // Not locking here might lead to concurrent transactions reading the attributesMap that still
+                // that are trying to create new attributes will read an updated version of attributesCache
+                // Not locking here might lead to concurrent transactions reading the attributesCache that still
                 // contains attributes that we are removing in this transaction.
                 session.graphLock().writeLock().lock();
                 try {
                     session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                     janusTransaction.commit();
-                    cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
+                    cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
                 } finally {
                     session.graphLock().writeLock().unlock();
                 }
@@ -221,22 +220,23 @@ public class TransactionOLTP implements Transaction {
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
         try {
-            cache().getRemovedAttributes().forEach(index -> session.attributesMap().remove(index));
+            cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
-                // If the same index is contained in attributesMap, it means
+                // If the same index is contained in attributesCache, it means
                 // another concurrent transaction inserted the same attribute, time to merge!
-                // NOTE: we still need to rely on attributesMap instead of checking in the graph
+                // NOTE: we still need to rely on attributesCache instead of checking in the graph
                 // if the index exists, because apparently JanusGraph does not make indexes available
                 // in a Read Committed fashion
-                if (session.attributesMap().containsKey(labelIndexPair.getValue())) {
-                    ConceptId targetId = session.attributesMap().get(labelIndexPair.getValue());
+                ConceptId targetId = session.attributesCache().getIfPresent(labelIndexPair.getValue());
+                if (targetId != null) {
                     merge(getTinkerTraversal(), conceptId, targetId);
                     statisticsDelta().decrement(labelIndexPair.getKey());
+                } else {
+                    session.attributesCache().put(labelIndexPair.getValue(), conceptId);
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             janusTransaction.commit();
-            updateAttributesMapInSession();
         } finally {
             session.graphLock().writeLock().unlock();
         }
@@ -292,15 +292,6 @@ public class TransactionOLTP implements Transaction {
             propertiesAsObj.add(property.value());
         }
         return propertiesAsObj.toArray();
-    }
-
-    // Register new committed Attributes in AttributesMap (if the map doesnt already contain the same INDEX),
-    // so that all following Transactions will be able to use the same ConceptId
-    // when in need of same attribute with same value.
-    private void updateAttributesMapInSession() {
-        cache().getNewAttributes().forEach((labelStringPair, conceptId) -> {
-            session.attributesMap().putIfAbsent(labelStringPair.getValue(), conceptId);
-        });
     }
 
     public VertexElement addVertexElement(Schema.BaseType baseType) {
