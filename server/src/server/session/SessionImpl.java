@@ -256,6 +256,10 @@ public class SessionImpl implements Session {
         isClosed = true;
     }
 
+    void closeLocalTx(){
+        localOLTPTransactionContainer.set(null);
+    }
+
     @Override
     public KeyspaceImpl keyspace() {
         return keyspace;

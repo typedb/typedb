@@ -18,6 +18,7 @@
 
 package grakn.core.server.keyspace;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import grakn.core.common.config.Config;
 import grakn.core.concept.Label;
@@ -91,6 +92,7 @@ public class KeyspaceManager {
         }
     }
 
+    @VisibleForTesting
     public void closeStore() {
         this.systemKeyspaceSession.close();
         this.graph.close();

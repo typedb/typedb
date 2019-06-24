@@ -974,6 +974,7 @@ public class TransactionOLTP implements Transaction {
             this.isTxOpen = false;
             ruleCache().clear();
             queryCache().clear();
+            session().closeLocalTx();
         }
     }
 
