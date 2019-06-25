@@ -88,8 +88,10 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
             if (labels.size() == 1) {
                 Label label = Iterables.getOnlyElement(labels);
-                optimise(fragmentSets, valueSet, isaSet, label);
-                return true;
+                if (graph.getAttributeType(label.getValue()).dataType().dataClass().isInstance(valueSet.operation().value())) {
+                    optimise(fragmentSets, valueSet, isaSet, label);
+                    return true;
+                }
             }
         }
 

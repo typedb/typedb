@@ -19,6 +19,7 @@
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.cache.Cache;
 import grakn.core.api.Session;
 import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
@@ -32,10 +33,9 @@ import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
-import org.janusgraph.core.JanusGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
@@ -59,10 +59,10 @@ public class SessionImpl implements Session {
 
     private final KeyspaceImpl keyspace;
     private final Config config;
-    private final JanusGraph graph;
+    private final StandardJanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
-    private final ConcurrentHashMap<String, ConceptId> attributesMap;
+    private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
 
@@ -75,8 +75,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesMap, graphLock);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesCache, graphLock);
     }
 
     /**
@@ -87,8 +87,8 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
-                        KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, ConcurrentHashMap<String, ConceptId> attributesMap, ReadWriteLock graphLock) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
+                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
@@ -99,7 +99,7 @@ public class SessionImpl implements Session {
 
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
-        this.attributesMap = attributesMap;
+        this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
@@ -124,7 +124,7 @@ public class SessionImpl implements Session {
         return new TransactionOLTP.Builder(this);
     }
 
-    public TransactionOLTP transaction(Transaction.Type type) {
+    TransactionOLTP transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -136,7 +136,7 @@ public class SessionImpl implements Session {
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
-        TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
+        TransactionOLTP tx = new TransactionOLTP(this, graph.newThreadBoundTransaction(), keyspaceCache);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 
@@ -187,7 +187,6 @@ public class SessionImpl implements Session {
 
     /**
      * Copy schema concept and all its subs labels to keyspace cache
-     *
      */
     private void copyToCache(SchemaConcept schemaConcept) {
         schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
@@ -274,7 +273,7 @@ public class SessionImpl implements Session {
         return config;
     }
 
-    public ConcurrentHashMap<String, ConceptId> attributesMap() {
-        return attributesMap;
+    public Cache<String, ConceptId> attributesCache() {
+        return attributesCache;
     }
 }
