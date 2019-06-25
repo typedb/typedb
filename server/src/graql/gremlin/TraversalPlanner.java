@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Tuple;
+import grakn.core.concept.type.Type;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -212,23 +213,37 @@ public class TraversalPlanner {
 
     private static Set<Node> chooseStartingNodeSet(Set<Fragment> fragmentSet, Map<NodeId, Node> allNodes, SparseWeightedGraph sparseWeightedGraph, TransactionOLTP tx) {
         final Set<Node> highPriorityStartingNodeSet = new HashSet<>();
+        final Set<Node> lowPriorityStartingNodeSet = new HashSet<>();
 
         fragmentSet.stream()
-            .filter(Fragment::hasFixedFragmentCost)
-            .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(tx)))
-            .limit(MAX_STARTING_POINTS)
-            .forEach(fragment -> {
-                Node node = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
-                highPriorityStartingNodeSet.add(node);
-            });
+                .filter(Fragment::hasFixedFragmentCost)
+                .sorted(Comparator.comparing(fragment -> fragment.estimatedCostAsStartingPoint(tx)))
+                .limit(MAX_STARTING_POINTS)
+                .forEach(fragment -> {
+                    Node node = allNodes.get(NodeId.of(NodeId.Type.VAR, fragment.start()));
+                    //TODO: this behaviour should be incorporated into the MST weight calculation
+                    if (fragment instanceof LabelFragment) {
+                        Type type = tx.getType(Iterators.getOnlyElement(((LabelFragment) fragment).labels().iterator()));
+                        if (type != null && type.isImplicit()) {
+                            // implicit types have low priority because their instances may be edges
+                            lowPriorityStartingNodeSet.add(node);
+                        } else {
+                            // other labels/types are the ideal starting point as they are indexed
+                            highPriorityStartingNodeSet.add(node);
+                        }
+                    } else {
+                        highPriorityStartingNodeSet.add(node);
+                    }
+                });
 
         Set<Node> startingNodes;
         if (!highPriorityStartingNodeSet.isEmpty()) {
             startingNodes = highPriorityStartingNodeSet;
         } else {
             // if we have no good starting points, use any valid nodes
-            startingNodes = sparseWeightedGraph.getNodes().stream()
-                    .filter(Node::isValidStartingPoint).collect(Collectors.toSet());
+            startingNodes = !lowPriorityStartingNodeSet.isEmpty()?
+                    lowPriorityStartingNodeSet :
+                    sparseWeightedGraph.getNodes().stream().filter(Node::isValidStartingPoint).collect(Collectors.toSet());
         }
         return startingNodes;
     }
