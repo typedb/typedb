@@ -78,11 +78,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphException;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.janusgraph.diskstorage.locking.TemporaryLockingException;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,7 +113,6 @@ public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     // Shared Variables
     private final SessionImpl session;
-    private final JanusGraph janusGraph;
     private final ElementFactory elementFactory;
 
     // Caches
@@ -122,7 +122,7 @@ public class TransactionOLTP implements Transaction {
     private final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
-    private final org.apache.tinkerpop.gremlin.structure.Transaction janusTransaction;
+    private final JanusGraphTransaction janusTransaction;
     private Transaction.Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
@@ -153,15 +153,14 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraph janusGraph, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, KeyspaceCache keyspaceCache) {
         createdInCurrentThread.set(true);
 
         this.session = session;
-        this.janusGraph = janusGraph;
 
-        this.janusTransaction = janusGraph.tx();
+        this.janusTransaction = janusTransaction;
 
-        this.elementFactory = new ElementFactory(this, janusGraph);
+        this.elementFactory = new ElementFactory(this);
 
         this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
@@ -176,7 +175,6 @@ public class TransactionOLTP implements Transaction {
     void open(Type type) {
         this.txType = type;
         this.isTxOpen = true;
-        this.janusTransaction.open();
         this.transactionCache.updateSchemaCacheFromKeyspaceCache();
     }
 
@@ -496,7 +494,7 @@ public class TransactionOLTP implements Transaction {
     public GraphTraversalSource getTinkerTraversal() {
         checkGraphIsOpen();
         if (graphTraversalSource == null) {
-            graphTraversalSource = janusGraph.traversal().withStrategies(ReadOnlyStrategy.instance());
+            graphTraversalSource = janusTransaction.traversal().withStrategies(ReadOnlyStrategy.instance());
         }
         return graphTraversalSource;
     }
@@ -915,7 +913,11 @@ public class TransactionOLTP implements Transaction {
         if (isClosed()) {
             return;
         }
-        closeTransaction(closeMessage);
+        try {
+            janusTransaction.rollback();
+        } finally {
+            closeTransaction(closeMessage);
+        }
     }
 
     /**
@@ -958,14 +960,10 @@ public class TransactionOLTP implements Transaction {
 
 
     private void closeTransaction(String closedReason) {
-        try {
-            janusTransaction.close();
-        } finally {
-            this.closedReason = closedReason;
-            this.isTxOpen = false;
-            ruleCache().clear();
-            queryCache().clear();
-        }
+        this.closedReason = closedReason;
+        this.isTxOpen = false;
+        ruleCache().clear();
+        queryCache().clear();
     }
 
 
@@ -1031,5 +1029,9 @@ public class TransactionOLTP implements Transaction {
 
     public List<ConceptMap> execute(MatchClause matchClause, boolean infer) {
         return stream(matchClause, infer).collect(Collectors.toList());
+    }
+
+    public JanusGraphTransaction janusTx(){
+        return janusTransaction;
     }
 }

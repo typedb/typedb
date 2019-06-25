@@ -28,6 +28,7 @@ import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -70,7 +71,7 @@ public class SessionFactory {
      */
     public SessionImpl session(KeyspaceImpl keyspace) {
         SharedKeyspaceData cacheContainer;
-        JanusGraph graph;
+        StandardJanusGraph graph;
         KeyspaceCache cache;
         KeyspaceStatistics keyspaceStatistics;
         Cache<String, ConceptId> attributesCache;
@@ -170,7 +171,7 @@ public class SessionFactory {
 
         private final KeyspaceCache keyspaceCache;
         // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
-        private final JanusGraph graph;
+        private final StandardJanusGraph graph;
         // Keep track of sessions so that if a user deletes a keyspace we make sure to invalidate all associated sessions
         private final List<SessionImpl> sessions;
 
@@ -183,7 +184,7 @@ public class SessionFactory {
 
         private final ReadWriteLock graphLock;
 
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.sessions = new ArrayList<>();
@@ -216,7 +217,7 @@ public class SessionFactory {
             sessions.forEach(SessionImpl::invalidate);
         }
 
-        public JanusGraph graph() {
+        public StandardJanusGraph graph() {
             return graph;
         }
 
