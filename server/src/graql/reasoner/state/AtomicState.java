@@ -19,7 +19,6 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.cache.CacheEntry;
@@ -33,12 +32,12 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
+
 import java.util.Set;
 
 /**
  * Query state corresponding to an atomic query (ReasonerAtomicQuery) in the resolution tree.
  */
-@SuppressFBWarnings("BC_UNCONFIRMED_CAST_OF_RETURN_VALUE")
 public class AtomicState extends QueryState<ReasonerAtomicQuery> {
 
     //TODO: remove it once we introduce multi answer states

@@ -21,7 +21,7 @@ package grakn.core.console;
 import grakn.client.GraknClient;
 import grakn.core.common.exception.GraknException;
 import grakn.core.console.exception.GraknConsoleException;
-import grakn.core.concept.printer.Printer;
+import grakn.core.console.printer.Printer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
 import jline.console.ConsoleReader;

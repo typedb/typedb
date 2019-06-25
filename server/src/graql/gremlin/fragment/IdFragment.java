@@ -39,8 +39,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.concept.printer.StringPrinter.conceptId;
-
 @AutoValue
 public abstract class IdFragment extends Fragment {
 
@@ -85,7 +83,7 @@ public abstract class IdFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[id:" + conceptId(id()) + "]";
+        return "[id:" + id().getValue() + "]";
     }
 
     @Override
