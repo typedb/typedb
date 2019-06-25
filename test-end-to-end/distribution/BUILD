@@ -13,6 +13,7 @@ java_test(
         "@graknlabs_client_java//:client-java",
     ],
     data = ["//:assemble-mac-zip"],
+    size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
