@@ -19,9 +19,11 @@
 package grakn.core.server;
 
 import grakn.core.common.util.Collections;
+import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionFactory;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -44,8 +46,14 @@ import java.util.concurrent.Future;
 
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
+import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertNotNull;
+import static junit.framework.TestCase.assertNull;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AttributeUniquenessIT {
@@ -280,9 +288,10 @@ public class AttributeUniquenessIT {
     }
 
     @Test
-    public void shouldNotTryToMergeRemovedAttributes(){
+    public void whenDeletingAndReaddingSameAttributeInDifferentTx_attributesCacheIsInSyncAndShouldNotTryToMerge() {
         String testAttributeLabel = "test-attribute";
         String testAttributeValue = "test-attribute-value";
+        String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
 
         // define the schema
         try (TransactionOLTP tx = session.transaction().write()) {
@@ -295,14 +304,78 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
+        assertNotNull(session.attributesCache().getIfPresent(index));
+
+
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
             tx.commit();
         }
 
+        assertNull(session.attributesCache().getIfPresent(index));
+
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
+        }
+
+        assertNotNull(session.attributesCache().getIfPresent(index));
+
+    }
+
+    @Test
+    public void whenDeletingAndReaddingSameAttributeInSameTx_shouldNotTryToMergeAndThereShouldBeOneAttributeNodeWithDifferentId() {
+        String testAttributeLabel = "test-attribute";
+        String testAttributeValue = "test-attribute-value";
+        String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
+
+        // define the schema
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+            tx.commit();
+        }
+        String oldAttributeId;
+        try (TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> x = tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
+            oldAttributeId = x.get(0).get("x").id().getValue();
+            tx.commit();
+        }
+
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+            tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
+            tx.commit();
+        }
+        try (TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());
+            assertEquals(1, attribute.size());
+            String newAttributeId = attribute.get(0).get("x").id().getValue();
+            assertNotEquals(newAttributeId, oldAttributeId);
+            assertEquals(ConceptId.of(newAttributeId), session.attributesCache().getIfPresent(index));
+        }
+    }
+
+    @Test
+    public void whenAddingAndDeletingSameAttributeInSameTx_thereShouldBeNoAttributeIndexInAttributesCache() {
+        String testAttributeLabel = "test-attribute";
+        String testAttributeValue = "test-attribute-value";
+        String index = Schema.generateAttributeIndex(Label.of(testAttributeLabel), testAttributeValue);
+
+        // define the schema
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.define(type(testAttributeLabel).sub("attribute").datatype(Graql.Token.DataType.STRING)));
+            tx.commit();
+        }
+
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
+            tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
+            tx.commit();
+            assertNull(session.attributesCache().getIfPresent(index));
+        }
+        try (TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());
+            assertEquals(0, attribute.size());
         }
     }
 
