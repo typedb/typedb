@@ -33,7 +33,7 @@ import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
-import org.janusgraph.core.JanusGraph;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -59,7 +59,7 @@ public class SessionImpl implements Session {
 
     private final KeyspaceImpl keyspace;
     private final Config config;
-    private final JanusGraph graph;
+    private final StandardJanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final Cache<String, ConceptId> attributesCache;
@@ -75,7 +75,7 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesCache, graphLock);
     }
 
@@ -87,7 +87,7 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, JanusGraph graph,
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
                        KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
@@ -136,7 +136,7 @@ public class SessionImpl implements Session {
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
         // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
-        TransactionOLTP tx = new TransactionOLTP(this, graph, keyspaceCache);
+        TransactionOLTP tx = new TransactionOLTP(this, graph.newThreadBoundTransaction(), keyspaceCache);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 
