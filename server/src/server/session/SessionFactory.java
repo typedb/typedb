@@ -45,8 +45,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
-    private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
-    private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
+    // NOTE: this field is used by Grakn KGMS and should be kept public
+    protected final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
+
+    // NOTE: this field is used by Grakn KGMS and should be kept public
+    protected final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
+
     private final JanusGraphFactory janusGraphFactory;
     protected final KeyspaceManager keyspaceManager;
     protected Config config;
