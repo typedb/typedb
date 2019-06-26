@@ -1063,13 +1063,12 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (answer == null) tx().queryCache().ackDBCompleteness(query);
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
-
-
+    
     @Override
     public Stream<ConceptMap> materialise(){
-        System.out.println("materialise: " + this);
         RelationType relationType = getSchemaConcept().asRelationType();
-        if (relationType.isImplicit()) return this.toAttributeAtom().materialise();
+        //if we have variable roles we wouldn't have enough information after conversion
+        if (relationType.isImplicit() && this.getRoleVariables().isEmpty()) return this.toAttributeAtom().materialise();
 
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
