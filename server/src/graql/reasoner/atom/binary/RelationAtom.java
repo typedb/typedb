@@ -353,7 +353,8 @@ public abstract class RelationAtom extends IsaAtomBase {
         return var;
     }
 
-    private boolean isBaseEquivalent(Object obj){
+    @Override
+    boolean isBaseEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         RelationAtom that = (RelationAtom) obj;
@@ -374,6 +375,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         return baseHashCode;
     }
 
+    /*
     @Override
     public boolean isAlphaEquivalent(Object obj) {
         if (!isBaseEquivalent(obj)) return false;
@@ -387,6 +389,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         RelationAtom that = (RelationAtom) obj;
         return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
+     */
 
     @Memoized
     @Override
@@ -1069,7 +1072,10 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     public Stream<ConceptMap> materialise(){
+        System.out.println("materialise: " + this);
         RelationType relationType = getSchemaConcept().asRelationType();
+        if (relationType.isImplicit()) return this.toAttributeAtom().materialise();
+
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 

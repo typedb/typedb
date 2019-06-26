@@ -186,8 +186,14 @@ public abstract class AttributeAtom extends Binary{
                 && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
     }
 
+    private boolean multiPredicateEquivalent(AttributeAtom that, AtomicEquivalence equiv){
+        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
+    }
+
+    /*
     @Override
     public boolean isAlphaEquivalent(Object obj) {
+
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         AttributeAtom that = (AttributeAtom) obj;
@@ -200,13 +206,20 @@ public abstract class AttributeAtom extends Binary{
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
         AttributeAtom that = (AttributeAtom) obj;
+
         return super.isStructurallyEquivalent(that)
                 && this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
     }
+     */
 
-    private boolean multiPredicateEquivalent(AttributeAtom that, AtomicEquivalence equiv){
-        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
+        /*
+    @Override
+    boolean predicateBindingsEquivalent(Binary at, AtomicEquivalence equiv) {
+        if (!(at instanceof AttributeAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
+        AttributeAtom that = (AttributeAtom) at;
+        return predicateBindingsEquivalent(this.getAttributeVariable(), that.getAttributeVariable(), that, equiv);
     }
+     */
 
     @Override
     public final int hashCode() {
@@ -221,13 +234,6 @@ public abstract class AttributeAtom extends Binary{
         hashCode = hashCode * 37 + (this.getTypeId() != null? this.getTypeId().hashCode() : 0);
         hashCode = hashCode * 37 + AtomicEquivalence.equivalenceHash(this.getMultiPredicate(), AtomicEquivalence.AlphaEquivalence);
         return hashCode;
-    }
-
-    @Override
-    boolean predicateBindingsEquivalent(Binary at, AtomicEquivalence equiv) {
-        if (!(at instanceof AttributeAtom && super.predicateBindingsEquivalent(at, equiv))) return false;
-        AttributeAtom that = (AttributeAtom) at;
-        return predicateBindingsEquivalent(this.getAttributeVariable(), that.getAttributeVariable(), that, equiv);
     }
 
     @Override

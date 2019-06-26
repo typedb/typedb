@@ -26,11 +26,9 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -39,14 +37,12 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 /**
  *
@@ -75,6 +71,11 @@ public abstract class Binary extends Atom {
         return typePredicate;
     }
 
+    public boolean isDirect(){
+        return getPattern().getProperties(IsaProperty.class).findFirst()
+                .map(IsaProperty::isExplicit).orElse(false);
+    }
+
     @Nullable
     @Override
     public SchemaConcept getSchemaConcept(){
@@ -91,27 +92,18 @@ public abstract class Binary extends Atom {
         if (getTypePredicate() != null) getTypePredicate().checkValid();
     }
 
-    public boolean isDirect(){
-        return getPattern().getProperties(IsaProperty.class).findFirst()
-                .map(IsaProperty::isExplicit).orElse(false);
-    }
-
     @Override
     public boolean isAlphaEquivalent(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        Binary that = (Binary) obj;
-        return equivalenceBase(that)
-                && this.predicateBindingsEquivalent(that, AtomicEquivalence.AlphaEquivalence);
+        if (!isBaseEquivalent(obj)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        Binary that = (Binary) obj;
-        return equivalenceBase(that)
-                && this.predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
+        if (!isBaseEquivalent(obj)) return false;
+        Atom that = (Atom) obj;
+        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Override
@@ -126,12 +118,17 @@ public abstract class Binary extends Atom {
         return alphaEquivalenceHashCode();
     }
 
-    private boolean equivalenceBase(Binary that){
+
+    boolean isBaseEquivalent(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        Binary that = (Binary) obj;
         return (this.isUserDefined() == that.isUserDefined())
                 && (this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned())
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId());
     }
+    /*
 
     boolean predicateBindingsEquivalent(Binary that, AtomicEquivalence equiv) {
         IdPredicate thisTypePredicate = this.getTypePredicate();
@@ -141,6 +138,7 @@ public abstract class Binary extends Atom {
                 && predicateBindingsEquivalent(this.getVarName(), that.getVarName(), that, equiv)
                 && predicateBindingsEquivalent(this.getPredicateVariable(), that.getPredicateVariable(), that, equiv);
     }
+
 
     boolean predicateBindingsEquivalent(Variable thisVar, Variable thatVar, Binary that, AtomicEquivalence equiv){
         Set<IdPredicate> thisIdPredicate = this.getPredicates(thisVar, IdPredicate.class).collect(Collectors.toSet());
@@ -156,6 +154,8 @@ public abstract class Binary extends Atom {
                 && equiv.equivalentCollection(thisValuePredicate, valuePredicate)
                 && equiv.equivalentCollection(thisNeqPredicate, neqPredicate);
     }
+
+     */
 
     @Override
     protected Pattern createCombinedPattern(){

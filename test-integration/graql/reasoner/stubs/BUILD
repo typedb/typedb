@@ -36,6 +36,7 @@ filegroup(
         "resourceHierarchy.gql",
         "resourceOwnership.gql",
         "resourcesAsRolePlayers.gql",
+        "risk.gql",
         "testSet10.gql",
         "testSet11.gql",
         "testSet12.gql",
