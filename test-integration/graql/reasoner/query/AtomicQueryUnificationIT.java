@@ -926,7 +926,6 @@ public class AtomicQueryUnificationIT {
         int j = 0;
         for (String child : children) {
             for (String parent : parents) {
-                System.out.println("(i, j): " + i + ", " + j);
                 unification(child, parent, resultMatrix[i][j] == 1, unifierType, tx);
                 j++;
             }
@@ -951,9 +950,6 @@ public class AtomicQueryUnificationIT {
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, unifierType);
 
         assertEquals("Unexpected unifier: " + multiUnifier + " between the child - parent pair:\n" + child + " :\n" + parent, unifierExists, !multiUnifier.isEmpty());
-        if (unifierExists != !multiUnifier.isEmpty()){
-            System.out.println();
-        }
         if (unifierExists && unifierType.equivalence() != null){
             MultiUnifier multiUnifierInverse = parent.getMultiUnifier(child, unifierType);
             assertEquals("Unexpected unifier inverse: " + multiUnifier + " of type " + unifierType.name() + " between the child - parent pair:\n" + parent + " :\n" + child, unifierExists, !multiUnifierInverse.isEmpty());
