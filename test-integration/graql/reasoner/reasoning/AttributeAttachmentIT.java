@@ -161,6 +161,48 @@ public class AttributeAttachmentIT {
     }
 
     @Test
+    public void whenReasoningWithAttributesInRelationForm_attributesAreMaterialisedCorrectly() {
+        /*
+        int noOfAttributes;
+        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+            String queryString = "match " +
+                    "$x isa attribute;" +
+                    "get;";
+
+            List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(queryString).asGet());
+            noOfAttributes = attributeAnswers.size();
+        }
+
+         */
+        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+            String queryString = "match " +
+                    "$rel ($x, $y);" +
+                    "$x isa attribute;" +
+                    //"$y isa genericEntity;" +
+                    "get;";
+
+            List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(queryString).asGet());
+            /*
+            assertEquals(
+                    noOfAttributes,
+                    attributeRelationAnswers.stream().map(ans -> ans.project(Sets.newHashSet(new Variable("x")))).distinct().count()
+            );
+
+             */
+            System.out.println();
+        }
+
+        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+            String queryString = "match " +
+                    "$rel ($x); " +
+                    "get;";
+
+            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(queryString).asGet());
+            System.out.println();
+        }
+    }
+
+    @Test
     public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
 

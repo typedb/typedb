@@ -1051,6 +1051,8 @@ public abstract class RelationAtom extends IsaAtomBase {
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
+        //in case the roles are variable, we wouldn't have enough information if converted to attribute
+        if (relationType.isImplicit() && this.getRoleVariables().isEmpty()) return this.toAttributeAtom().materialise();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 

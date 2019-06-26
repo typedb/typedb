@@ -21,11 +21,13 @@ package grakn.core.graql.reasoner.state;
 import com.google.common.collect.HashMultimap;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.CacheEntry;
 import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -143,7 +145,14 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         //materialise exhibits put behaviour - duplicates won't be created
         ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
         if (materialisedSub != null) {
-            getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(new RuleExplanation(query.getPattern(), rule.getRule().id())));
+            RuleExplanation ruleExplanation = new RuleExplanation(query.getPattern(), rule.getRule().id());
+            getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(ruleExplanation));
+            Atom ruleAtom = ruleHead.getAtom();
+            //if it's an implicit relation also record it as an attribute
+            if (ruleAtom.isRelation() && ruleAtom.getSchemaConcept() != null && ruleAtom.getSchemaConcept().isImplicit()) {
+                ReasonerAtomicQuery attributeHead = ReasonerQueries.atomic(ruleHead.getAtom().toAttributeAtom());
+                getQuery().tx().queryCache().record(attributeHead, materialisedSub.explain(ruleExplanation));
+            }
             answer = unifier.apply(materialisedSub.project(queryVars));
         }
         if (answer.isEmpty()) return answer;
