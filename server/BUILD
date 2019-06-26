@@ -37,10 +37,10 @@ java_library(
         "//api:api",
         "//common:common",
         "//concept:concept",
-        "//protocol:protocol-java",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_protocol//:protocol-java",
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven

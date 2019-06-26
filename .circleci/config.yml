@@ -230,7 +230,6 @@ jobs:
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run //protocol:deploy-maven -- snapshot $CIRCLE_SHA1
           bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1
           bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1
 
@@ -329,7 +328,6 @@ jobs:
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           grakn-kgms:master benchmark:master workbase:master \
-          client-java:master client-python:master client-nodejs:master \
           docs:master examples:master
 
   release-approval:
@@ -418,7 +416,6 @@ jobs:
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run //api:deploy-maven -- release $(cat VERSION)
-          bazel run //protocol:deploy-maven -- release $(cat VERSION)
           bazel run //concept:deploy-maven -- release $(cat VERSION)
           bazel run //common:deploy-maven -- release $(cat VERSION)
 
