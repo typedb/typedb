@@ -370,22 +370,6 @@ public abstract class RelationAtom extends IsaAtomBase {
         return baseHashCode;
     }
 
-    /*
-    @Override
-    public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
-    }
-
-    @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
-    }
-     */
-
     @Memoized
     @Override
     public int alphaEquivalenceHashCode() {
@@ -1067,9 +1051,6 @@ public abstract class RelationAtom extends IsaAtomBase {
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
-        //if we have variable roles we wouldn't have enough information after conversion
-        if (relationType.isImplicit() && this.getRoleVariables().isEmpty()) return this.toAttributeAtom().materialise();
-
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 
