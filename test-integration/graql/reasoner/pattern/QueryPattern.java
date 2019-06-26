@@ -39,6 +39,8 @@ public abstract class QueryPattern {
 
     public abstract int[][] ruleMatrix();
 
+    public int[][] subsumptionMatrix(){return zeroMatrix(size(), size());}
+
     public static int[][] identity(int N){
         int[][] matrix = new int[N][N];
         for(int i = 0; i < N ; i++) {
