@@ -127,34 +127,6 @@ public abstract class Binary extends Atom {
                 && this.isDirect() == that.isDirect()
                 && Objects.equals(this.getTypeId(), that.getTypeId());
     }
-    /*
-
-    boolean predicateBindingsEquivalent(Binary that, AtomicEquivalence equiv) {
-        IdPredicate thisTypePredicate = this.getTypePredicate();
-        IdPredicate typePredicate = that.getTypePredicate();
-
-        return (thisTypePredicate == null && typePredicate == null || thisTypePredicate != null && equiv.equivalent(thisTypePredicate, typePredicate))
-                && predicateBindingsEquivalent(this.getVarName(), that.getVarName(), that, equiv)
-                && predicateBindingsEquivalent(this.getPredicateVariable(), that.getPredicateVariable(), that, equiv);
-    }
-
-
-    boolean predicateBindingsEquivalent(Variable thisVar, Variable thatVar, Binary that, AtomicEquivalence equiv){
-        Set<IdPredicate> thisIdPredicate = this.getPredicates(thisVar, IdPredicate.class).collect(Collectors.toSet());
-        Set<IdPredicate> idPredicate = that.getPredicates(thatVar, IdPredicate.class).collect(Collectors.toSet());
-
-        Set<ValuePredicate> thisValuePredicate = this.getPredicates(thisVar, ValuePredicate.class).collect(Collectors.toSet());
-        Set<ValuePredicate> valuePredicate = that.getPredicates(thatVar, ValuePredicate.class).collect(Collectors.toSet());
-
-        Set<VariablePredicate> thisNeqPredicate = this.getPredicates(thisVar, VariablePredicate.class).collect(Collectors.toSet());
-        Set<VariablePredicate> neqPredicate = that.getPredicates(thatVar, VariablePredicate.class).collect(Collectors.toSet());
-
-        return equiv.equivalentCollection(thisIdPredicate, idPredicate)
-                && equiv.equivalentCollection(thisValuePredicate, valuePredicate)
-                && equiv.equivalentCollection(thisNeqPredicate, neqPredicate);
-    }
-
-     */
 
     @Override
     protected Pattern createCombinedPattern(){
