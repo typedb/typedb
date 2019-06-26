@@ -355,15 +355,10 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     @Override
     boolean isBaseEquivalent(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
+        if (!super.isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
-        return this. isUserDefined() == that.isUserDefined()
-                && this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned()
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId())
-                //check relation players equivalent
-                && this.getRolePlayers().size() == that.getRolePlayers().size()
+        //check relation players equivalent
+        return this.getRolePlayers().size() == that.getRolePlayers().size()
                 && this.getRelationPlayers().size() == that.getRelationPlayers().size()
                 && this.getRoleLabels().equals(that.getRoleLabels());
     }

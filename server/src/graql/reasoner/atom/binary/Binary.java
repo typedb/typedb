@@ -118,7 +118,6 @@ public abstract class Binary extends Atom {
         return alphaEquivalenceHashCode();
     }
 
-
     boolean isBaseEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
