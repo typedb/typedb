@@ -38,6 +38,8 @@ import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.server.exception.GraknServerException;
+import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.kb.concept.RelationReified;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -72,7 +74,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -82,7 +83,6 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * QueryExecutor is the class that executes Graql queries onto the database
@@ -351,11 +351,26 @@ public class QueryExecutor {
         answers = filter(query, answers);
 
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
-        // Stream.distinct() will then work properly when it calls ConceptImpl.equals()
+//        List<Concept> conceptsToDelete = answers
+//                .flatMap(answer -> answer.concepts().stream())
+//                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it here
+//                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
+//                .collect(Collectors.toList());
+
         List<Concept> conceptsToDelete = answers
                 .flatMap(answer -> answer.concepts().stream())
-                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it here
-                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
+                .sorted(Comparator.comparing(concept -> {
+                    if (concept.isRelation()) {
+                        if (concept.asRelation().type().isImplicit()) {
+                            return 0;
+                        } else {
+                            // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it here
+                            return -1;
+                        }
+                    } else {
+                        return 1;
+                    }
+                }))
                 .collect(Collectors.toList());
 
         Set<ConceptId> deletedConceptIds = new HashSet<>();
@@ -366,11 +381,9 @@ public class QueryExecutor {
             } else if (concept.isThing()) {
                 try {
                     deletedConceptIds.add(concept.id());
-                    if (!concept.isDeleted()) {
-                        // a concept may have been cleaned up already
-                        // for instance if role players of an implicit attribute relation are deleted, the janus edge disappears
-                        concept.delete();
-                    }
+                    // a concept may have been cleaned up already
+                    // for instance if role players of an implicit attribute relation are deleted, the janus edge disappears
+                    concept.delete();
                 } catch (IllegalStateException janusVertexDeleted) {
                     if (janusVertexDeleted.getMessage().contains("was removed")) {
                         // Tinkerpop throws this exception if we try to operate on a vertex that was already deleted

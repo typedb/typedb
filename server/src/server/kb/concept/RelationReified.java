@@ -167,20 +167,21 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     public Stream<Casting> castingsRelation(Role... roles) {
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         if (roleSet.isEmpty()) {
-            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER).
-                    map(edge -> Casting.withRelation(edge, owner));
+            return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
+                    .map(edge -> Casting.withRelation(edge, owner));
         }
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
-        return vertex().tx().getTinkerTraversal().V().
-                hasId(elementId()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).
-                toStream().
-                map(edge -> vertex().tx().factory().buildEdgeElement(edge)).
-                map(edge -> Casting.withRelation(edge, owner));
+        return vertex().tx().getTinkerTraversal().V()
+                .hasId(elementId())
+                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue())
+                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
+                .toStream()
+                .filter(edge -> vertex().tx().isValidElement(edge)) // filter out invalid or deleted edges that are cached
+                .map(edge -> vertex().tx().factory().buildEdgeElement(edge))
+                .map(edge -> Casting.withRelation(edge, owner));
     }
 
     @Override

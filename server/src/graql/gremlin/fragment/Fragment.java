@@ -187,6 +187,8 @@ public abstract class Fragment {
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx,
             Collection<Variable> vars, @Nullable Variable currentVar) {
+
+
         if (currentVar != null) {
             if (!currentVar.equals(start())) {
                 if (vars.contains(start())) {
@@ -194,11 +196,18 @@ public abstract class Fragment {
                     traversal.select(start().symbol());
                 } else {
                     // Restart traversal when fragments are disconnected
-                    traversal.V().as(start().symbol());
+                    traversal.V();
+                    if (canOperateOnEdges()) {
+                        traverseToEdges(traversal);
+                    }
+                    traversal.as(start().symbol());
                 }
             }
         } else {
-            // If the variable name has not been visited yet, remember it and use the 'as' step
+            // this is the very start of the traversal, record the step using `as` as we haven't visited the variable yet
+            if (canOperateOnEdges()) {
+                traverseToEdges(traversal);
+            }
             traversal.as(start().symbol());
         }
 
@@ -282,6 +291,14 @@ public abstract class Fragment {
 
     public Fragment getInverse() {
         return this;
+    }
+
+    boolean canOperateOnEdges() {
+        return false;
+    }
+
+    void traverseToEdges(GraphTraversal<Vertex, ? extends Element> traversal) {
+        return;
     }
 
 

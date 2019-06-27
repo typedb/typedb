@@ -32,6 +32,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
@@ -56,11 +57,6 @@ public abstract class IdFragment extends Fragment {
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
         if (canOperateOnEdges()) {
-            // if the ID may be for an edge,
-            // we must extend the traversal that normally just operates on vertices
-            // to operate on both edges and vertices
-            traversal = traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
-
             return traversal.or(
                     edgeTraversal(),
                     vertexTraversal(__.identity())
@@ -98,8 +94,17 @@ public abstract class IdFragment extends Fragment {
         return true;
     }
 
-    private boolean canOperateOnEdges() {
+    @Override
+    boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
+    }
+
+    @Override
+    void traverseToEdges(GraphTraversal<Vertex, ? extends Element> traversal) {
+        // if the ID may be for an edge,
+        // we must extend the traversal that normally just operates on vertices
+        // to operate on both edges and vertices
+        traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
     }
 
     @Override
