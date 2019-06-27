@@ -353,16 +353,12 @@ public abstract class RelationAtom extends IsaAtomBase {
         return var;
     }
 
-    private boolean isBaseEquivalent(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
+    @Override
+    boolean isBaseEquivalent(Object obj){
+        if (!super.isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
-        return this. isUserDefined() == that.isUserDefined()
-                && this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned()
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId())
-                //check relation players equivalent
-                && this.getRolePlayers().size() == that.getRolePlayers().size()
+        //check relation players equivalent
+        return this.getRolePlayers().size() == that.getRolePlayers().size()
                 && this.getRelationPlayers().size() == that.getRelationPlayers().size()
                 && this.getRoleLabels().equals(that.getRoleLabels());
     }
@@ -372,20 +368,6 @@ public abstract class RelationAtom extends IsaAtomBase {
         baseHashCode = baseHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
         baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
         return baseHashCode;
-    }
-
-    @Override
-    public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
-    }
-
-    @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Memoized
@@ -1065,8 +1047,7 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (answer == null) tx().queryCache().ackDBCompleteness(query);
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
-
-
+    
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
