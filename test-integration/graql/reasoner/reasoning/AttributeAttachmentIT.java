@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
+import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
@@ -29,6 +30,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -162,43 +164,44 @@ public class AttributeAttachmentIT {
 
     @Test
     public void whenReasoningWithAttributesInRelationForm_attributesAreMaterialisedCorrectly() {
-        /*
         int noOfAttributes;
+        int noOfGeneralAnswers;
+        String attributeQuery = "match $x isa attribute;get;";
+        String attributeRelationQuery = "match " +
+                "$rel ($x, $y);" +
+                "$x isa attribute;" +
+                "get;";
+        String generalQuery = "match " +
+                "$rel ($x); " +
+                "get;";
         try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-            String queryString = "match " +
-                    "$x isa attribute;" +
-                    "get;";
-
-            List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(queryString).asGet());
+            List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(attributeQuery).asGet());
             noOfAttributes = attributeAnswers.size();
         }
-
-         */
         try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-            String queryString = "match " +
-                    "$rel ($x, $y);" +
-                    "$x isa attribute;" +
-                    //"$y isa genericEntity;" +
-                    "get;";
+            List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(attributeRelationQuery).asGet());
 
-            List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(queryString).asGet());
-            /*
             assertEquals(
                     noOfAttributes,
                     attributeRelationAnswers.stream().map(ans -> ans.project(Sets.newHashSet(new Variable("x")))).distinct().count()
             );
 
-             */
-            System.out.println();
+            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
+            Set<Concept> expectedAttributeRelations = attributeRelationAnswers.stream()
+                    .map(ans -> ans.project(Sets.newHashSet(var("rel").var())))
+                    .map(ans -> ans.get("rel"))
+                    .collect(toSet());
+            Set<Concept> attributeRelations = genericAnswers.stream()
+                    .filter(ans -> ans.get("rel").asRelation().type().isImplicit())
+                    .map(ans -> ans.get("rel"))
+                    .collect(Collectors.toSet());
+            assertEquals(expectedAttributeRelations, attributeRelations);
+            noOfGeneralAnswers = genericAnswers.size();
         }
 
         try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-            String queryString = "match " +
-                    "$rel ($x); " +
-                    "get;";
-
-            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(queryString).asGet());
-            System.out.println();
+            List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
+            assertEquals(noOfGeneralAnswers, genericAnswers.size());
         }
     }
 
