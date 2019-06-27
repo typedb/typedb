@@ -51,14 +51,6 @@ public class GraknServerException extends GraknException {
         return new GraknServerException(error);
     }
 
-    /**
-     * Thrown when the persistence layer throws an unexpected exception.
-     * This can include timeouts
-     */
-    public static GraknServerException unknown(Exception e) {
-        return new GraknServerException(BACKEND_EXCEPTION.getMessage(), e);
-    }
-
     public static GraknServerException initializationException(KeyspaceImpl keyspace) {
         return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }

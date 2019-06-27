@@ -81,7 +81,7 @@ public class SessionFactory {
         Cache<String, ConceptId> attributesCache;
         ReadWriteLock graphLock;
 
-        Lock lock = lockManager.getLock(getLockingKey(keyspace));
+        Lock lock = lockManager.getLock(keyspace.name());
         lock.lock();
 
         try {
@@ -123,7 +123,7 @@ public class SessionFactory {
      * @param keyspace keyspace that is being deleted
      */
     public void deleteKeyspace(KeyspaceImpl keyspace) {
-        Lock lock = lockManager.getLock(getLockingKey(keyspace));
+        Lock lock = lockManager.getLock(keyspace.name());
         lock.lock();
         try {
             if (sharedKeyspaceDataMap.containsKey(keyspace)) {
@@ -144,7 +144,7 @@ public class SessionFactory {
      * @param session SessionImpl that is being closed
      */
     protected void onSessionClose(SessionImpl session) {
-        Lock lock = lockManager.getLock(getLockingKey(session.keyspace()));
+        Lock lock = lockManager.getLock(session.keyspace().name());
         lock.lock();
         try {
             if (sharedKeyspaceDataMap.containsKey(session.keyspace())) {
@@ -162,11 +162,6 @@ public class SessionFactory {
             lock.unlock();
         }
     }
-
-    protected static String getLockingKey(KeyspaceImpl keyspace) {
-        return "/keyspace-lock/" + keyspace.name();
-    }
-
 
     /**
      * Helper class used to hold in memory a reference to a graph together with its schema cache and a reference to all sessions open to the graph.

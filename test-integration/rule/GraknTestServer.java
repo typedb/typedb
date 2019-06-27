@@ -32,9 +32,8 @@ import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
-import grakn.core.server.util.ServerLockManager;
+import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -209,7 +208,7 @@ public class GraknTestServer extends ExternalResource {
         ServerID id = ServerID.me();
 
         // distributed locks
-        LockManager lockManager = new ServerLockManager();
+        LockManager lockManager = new LockManager();
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
 
         keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
@@ -222,6 +221,6 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
-        return ServerFactory.createServer(id, serverRPC, lockManager, keyspaceStore);
+        return ServerFactory.createServer(id, serverRPC, keyspaceStore);
     }
 }
