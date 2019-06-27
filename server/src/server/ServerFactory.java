@@ -28,9 +28,8 @@ import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
-import grakn.core.server.util.LockManager;
 import grakn.core.server.util.ServerID;
-import grakn.core.server.util.ServerLockManager;
+import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
 
 /**
@@ -50,7 +49,7 @@ public class ServerFactory {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
 
         // locks
-        LockManager lockManager = new ServerLockManager();
+        LockManager lockManager = new LockManager();
 
         KeyspaceManager keyspaceStore = new KeyspaceManager(janusGraphFactory, config);
 
@@ -65,7 +64,7 @@ public class ServerFactory {
         // create gRPC server
         io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceStore, janusGraphFactory);
 
-        return createServer(serverID, serverRPC, lockManager, keyspaceStore);
+        return createServer(serverID, serverRPC, keyspaceStore);
     }
 
     /**
@@ -74,11 +73,8 @@ public class ServerFactory {
      * @return a Server instance
      */
 
-    public static Server createServer(
-            ServerID serverID, io.grpc.Server rpcServer,
-            LockManager lockManager, KeyspaceManager keyspaceStore) {
-
-        Server server = new Server(serverID, lockManager, rpcServer, keyspaceStore);
+    public static Server createServer(ServerID serverID, io.grpc.Server rpcServer, KeyspaceManager keyspaceStore) {
+        Server server = new Server(serverID, rpcServer, keyspaceStore);
 
         Runtime.getRuntime().addShutdownHook(new Thread(server::close, "grakn-server-shutdown"));
 
