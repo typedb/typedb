@@ -97,12 +97,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A TransactionOLTP using JanusGraph as a vendor backend.
- * <p>
- * Wraps a TinkerPop transaction (the graph is still needed as we use to retrieve tinker traversals)
- * <p>
- * With this vendor some issues to be aware of:
- * 2. Clearing the graph explicitly closes the connection as well.
+ * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
@@ -630,7 +625,6 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-
     /**
      * @param label A unique label for the RelationType
      * @return A new or existing RelationType with the provided label.
@@ -933,7 +927,6 @@ public class TransactionOLTP implements Transaction {
             }
 
             ServerTracing.closeScopedChildSpan(commitSpanId);
-
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);

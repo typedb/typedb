@@ -112,7 +112,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     /**
      * Checks if an Thing is allowed to be created and linked to this Type.
-     * This can fail is the Transaction.Type is read only.
      * It can also fail when attempting to attach an Attribute to a meta type
      */
     private void preCheckForInstanceCreation() {
