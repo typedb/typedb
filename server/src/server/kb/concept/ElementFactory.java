@@ -299,30 +299,4 @@ public final class ElementFactory {
         return new VertexElement(tx, vertex);
     }
 
-    /**
-     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
-     *
-     * @param baseType The Schema.BaseType
-     * @return a new VertexElement
-     */
-    public VertexElement addVertexElement(Schema.BaseType baseType) {
-        Vertex vertex = tx.janusTx().addVertex(baseType.name());
-        return new VertexElement(tx, vertex);
-    }
-
-    /**
-     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
-     *
-     * @param baseType  The Schema.BaseType
-     * @param conceptId the ConceptId to set as the new ConceptId
-     * @return a new VertexElement
-     * <p>
-     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
-     */
-    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
-        Objects.requireNonNull(conceptId);
-        Vertex vertex = tx.janusTx().addVertex(baseType.name());
-        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
-        return new VertexElement(tx, vertex);
-    }
 }
