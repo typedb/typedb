@@ -52,7 +52,7 @@ public abstract class IdFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
         if (canOperateOnEdges()) {
             // if the ID may be for an edge,
             // we must extend the traversal that normally just operates on vertices

@@ -178,10 +178,10 @@ public class CompositeQuery implements ResolvableQuery {
      * @param pattern pattern to be validated
      * @return set of error messages applicable
      */
-    public static Set<String> validateAsRuleBody(Conjunction<Pattern> pattern, Rule rule, TransactionOLTP graph){
+    public static Set<String> validateAsRuleBody(Conjunction<Pattern> pattern, Rule rule, TransactionOLTP tx){
         Set<String> errors = new HashSet<>();
         try{
-            CompositeQuery body = ReasonerQueries.composite(pattern, graph);
+            CompositeQuery body = ReasonerQueries.composite(pattern, tx);
             Set<ResolvableQuery> complementQueries = body.getComplementQueries();
             if(complementQueries.size() > 1){
                 errors.add(ErrorMessage.VALIDATION_RULE_MULTIPLE_NEGATION_BLOCKS.getMessage(rule.label()));

@@ -72,7 +72,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
     abstract Label label();
     abstract Object value();
 
-    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, graph) -> {
+    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, tx) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
@@ -90,7 +90,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
             if (labels.size() == 1) {
                 Label label = Iterables.getOnlyElement(labels);
-                optimise(graph, fragmentSets, valueSet, isaSet, label);
+                optimise(tx, fragmentSets, valueSet, isaSet, label);
                 return true;
             }
         }
@@ -99,7 +99,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
     };
 
     private static void optimise(
-            TransactionOLTP graph, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
+            TransactionOLTP tx, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
             Label label
     ) {
         // Remove fragment sets we are going to replace
@@ -115,7 +115,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
         Object value = valueSet.operation().value();
 
-        AttributeType.DataType<?> dataType = graph.getAttributeType(label.getValue()).dataType();
+        AttributeType.DataType<?> dataType = tx.getAttributeType(label.getValue()).dataType();
         if (Number.class.isAssignableFrom(dataType.dataClass())) {
             if (dataType.dataClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
                 value = ((Double) value).longValue();
