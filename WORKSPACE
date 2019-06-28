@@ -67,6 +67,7 @@ pip_import(
     name = "graknlabs_build_tools_ci_pip",
     requirements = "@graknlabs_build_tools//ci:requirements.txt",
 )
+
 load("@graknlabs_build_tools_ci_pip//:requirements.bzl",
 graknlabs_build_tools_ci_pip_install = "pip_install")
 graknlabs_build_tools_ci_pip_install()
