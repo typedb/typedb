@@ -47,7 +47,7 @@ public abstract class OutSubFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
         return Fragments.outSubs(Fragments.isVertex(traversal), this.subTraversalDepthLimit());
     }
 

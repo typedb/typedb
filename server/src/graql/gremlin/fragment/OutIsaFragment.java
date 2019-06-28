@@ -52,7 +52,7 @@ public abstract class OutIsaFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
 
         // from the traversal, branch to take either of these paths
         return Fragments.union(traversal, ImmutableSet.of(

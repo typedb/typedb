@@ -742,8 +742,8 @@ public abstract class RelationAtom extends IsaAtomBase {
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
-        TransactionOLTP graph = getParentQuery().tx();
-        Role metaRole = graph.getMetaRole();
+        TransactionOLTP tx = getParentQuery().tx();
+        Role metaRole = tx.getMetaRole();
         List<RelationProperty.RolePlayer> allocatedRelationPlayers = new ArrayList<>();
         SchemaConcept schemaConcept = getSchemaConcept();
         RelationType relType = null;
@@ -826,19 +826,19 @@ public abstract class RelationAtom extends IsaAtomBase {
     public Multimap<Role, Variable> getRoleVarMap() {
         ImmutableMultimap.Builder<Role, Variable> builder = ImmutableMultimap.builder();
 
-        TransactionOLTP graph = getParentQuery().tx();
+        TransactionOLTP tx = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
             Variable varName = c.getPlayer().var();
             Statement rolePattern = c.getRole().orElse(null);
             if (rolePattern != null) {
                 //try directly
                 String typeLabel = rolePattern.getType().orElse(null);
-                Role role = typeLabel != null ? graph.getRole(typeLabel) : null;
+                Role role = typeLabel != null ? tx.getRole(typeLabel) : null;
                 //try indirectly
                 if (role == null && rolePattern.var().isReturned()) {
                     IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
                     if (rolePredicate != null){
-                        Role r = graph.getConcept(rolePredicate.getPredicate());
+                        Role r = tx.getConcept(rolePredicate.getPredicate());
                         if (r == null) throw GraqlCheckedException.idNotFound(rolePredicate.getPredicate());
                         role = r;
                     }
