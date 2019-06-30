@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static grakn.core.server.kb.Schema.ImplicitType.HAS;
@@ -162,7 +163,7 @@ public class AttributeAttachmentIT {
         }
     }
 
-    @Test
+    @Test @Ignore
     public void whenReasoningWithAttributesInRelationForm_attributesAreMaterialisedCorrectly() {
         int noOfAttributes;
         int noOfGeneralAnswers;
