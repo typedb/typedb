@@ -18,7 +18,7 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.protocol.SessionProto;
+import grakn.protocol.session.SessionProto;
 import grakn.core.server.session.SessionImpl;
 
 /**

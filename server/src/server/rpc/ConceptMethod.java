@@ -22,9 +22,9 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Entity;
-import grakn.core.protocol.ConceptProto;
-import grakn.core.protocol.SessionProto;
-import grakn.core.protocol.SessionProto.Transaction;
+import grakn.protocol.session.ConceptProto;
+import grakn.protocol.session.SessionProto;
+import grakn.protocol.session.SessionProto.Transaction;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.session.TransactionOLTP;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 /**
  * Wrapper for describing methods on {@link Concept}s that can be executed over gRPC.
  * This unifies client and server behaviour for each possible method on a concept.
- * This class maps one-to-one with the gRPC message {@link grakn.core.protocol.ConceptProto.Method.Req}.
+ * This class maps one-to-one with the gRPC message {@link grakn.protocol.session.ConceptProto.Method.Req}.
  */
 public class ConceptMethod {
 

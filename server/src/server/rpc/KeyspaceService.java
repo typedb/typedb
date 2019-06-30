@@ -18,8 +18,8 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.protocol.KeyspaceProto;
-import grakn.core.protocol.KeyspaceServiceGrpc;
+import grakn.protocol.keyspace.KeyspaceProto;
+import grakn.protocol.keyspace.KeyspaceServiceGrpc;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.JanusGraphFactory;
