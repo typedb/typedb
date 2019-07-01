@@ -18,20 +18,24 @@
 
 package grakn.core.console.exception;
 
-import grakn.client.exception.GraknClientException;
+/**
+ * Enum containing error messages.
+ *
+ * Each error message contains a single format string, with a method {@link ErrorMessage#getMessage(Object...)} that
+ * accepts arguments to be passed to the format string.
+ *
+ */
+public enum ErrorMessage {
 
-public class GraknConsoleException extends GraknClientException {
+    COULD_NOT_CONNECT("Could not connect to Grakn. Have you run 'grakn server start'?");
 
-    public GraknConsoleException(String error) {
-        super(error);
+    private final String message;
+
+    ErrorMessage(String message) {
+        this.message = message;
     }
 
-    public GraknConsoleException(String error, RuntimeException e) {
-        super(error, e);
-    }
-
-    @Override
-    public String getName() {
-        return this.getClass().getName();
+    public String getMessage(Object... args) {
+        return String.format(message, args);
     }
 }

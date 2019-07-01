@@ -16,22 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.console.exception;
+package grakn.core.console;
 
-import grakn.client.exception.GraknClientException;
-
-public class GraknConsoleException extends GraknClientException {
-
-    public GraknConsoleException(String error) {
-        super(error);
-    }
-
-    public GraknConsoleException(String error, RuntimeException e) {
-        super(error, e);
-    }
-
-    @Override
-    public String getName() {
-        return this.getClass().getName();
-    }
+/**
+ * Class for storing the Grakn Version.
+ */
+public class Version {
+    public static final String VERSION = "VERSION_PLACEHOLDER";
 }

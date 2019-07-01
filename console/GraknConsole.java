@@ -19,9 +19,8 @@
 package grakn.core.console;
 
 import grakn.client.GraknClient;
-import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.exception.GraknException;
-import grakn.core.common.util.GraknVersion;
+import grakn.client.exception.GraknClientException;
+import grakn.core.console.exception.ErrorMessage;
 import grakn.core.console.exception.GraknConsoleException;
 import io.grpc.Status;
 import org.apache.commons.cli.CommandLine;
@@ -132,7 +131,7 @@ public class GraknConsole {
     public static void main(String[] args) {
         String action = args.length > 1 ? args[1] : "";
         if(action.equals("version")){
-            System.out.println(GraknVersion.VERSION);
+            System.out.println(Version.VERSION);
             System.exit(0);
         }
 
@@ -146,7 +145,7 @@ public class GraknConsole {
             System.err.println(e.getCause().getMessage());
             System.exit(1);
 
-        } catch (GraknException e) {
+        } catch (GraknClientException e) {
             // TODO: don't do if-checks. Use different catch-clauses by class
             if (e.getMessage().startsWith(Status.Code.UNAVAILABLE.name())) {
                 System.err.println(ErrorMessage.COULD_NOT_CONNECT.getMessage());

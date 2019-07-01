@@ -23,14 +23,21 @@ load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
+genrule(
+    name = "version",
+    srcs = [
+        "templates/Version.java",
+        ":VERSION",
+    ],
+    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/Version.java) >> $@",
+    outs = ["Version.java"],
+)
 
 java_library(
     name = "console",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["**/*.java"], exclude=["templates/**", "**/test/**"]) + [":version"],
     deps = [
-        # Grakn Core dependencies
-        "//common:common",
-        "//concept",
+        "//concept", # TODO: To be removed with issue #5288
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
 
@@ -106,6 +113,7 @@ assemble_zip(
     visibility = ["//visibility:public"]
 )
 
+# TODO: To be removed with issue #5269
 assemble_maven(
     name = "assemble-maven",
     target = ":console",
@@ -114,6 +122,7 @@ assemble_maven(
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 
+# TODO: To be removed with issue #5269
 deploy_maven(
     name = "deploy-maven",
     target = ":assemble-maven"
@@ -164,9 +173,4 @@ deploy_rpm(
     name = "deploy-rpm",
     target = ":assemble-linux-rpm",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
-)
-
-test_suite(
-    name = "console-test-integration",
-    tests = []
 )

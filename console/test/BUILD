@@ -29,8 +29,6 @@ java_test(
         "//console",
 
         # Internal dependencies
-        "//common",
-        "//server",
         "//test-integration/rule:grakn-test-server",
 
         # External dependencies from @graknlabs
