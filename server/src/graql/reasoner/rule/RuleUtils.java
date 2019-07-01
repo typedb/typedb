@@ -223,4 +223,28 @@ public class RuleUtils {
         return rules;
     }
 
+    /**
+     * @param entryType type of interest
+     * @return all types that are dependent on the entryType - deletion of which triggers possible retraction of inferences
+     */
+    public static Set<Type> getDependentTypes(Type entryType){
+        Set<Type> types = new HashSet<>();
+        types.add(entryType);
+        Set<Type> visitedTypes = new HashSet<>();
+        Stack<Type> typeStack = new Stack<>();
+        typeStack.add(entryType);
+        while(!typeStack.isEmpty()) {
+            Type type = typeStack.pop();
+            if (!visitedTypes.contains(type) && type != null){
+                type.whenRules()
+                        .flatMap(Rule::thenTypes)
+                        .peek(types::add)
+                        .filter(at -> !visitedTypes.contains(at))
+                        .forEach(typeStack::add);
+                visitedTypes.add(type);
+            }
+        }
+        return types;
+    }
+
 }

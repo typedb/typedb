@@ -99,6 +99,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         vertex().tx().ruleCache().ackTypeInstance(this);
         if (!Schema.MetaSchema.isMetaLabel(label())) {
             vertex().tx().cache().addedInstance(id());
+            vertex().tx().queryCache().ackInsertion();
             if (isInferred) instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
         }
 
