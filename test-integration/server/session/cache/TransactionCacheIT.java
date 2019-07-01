@@ -274,8 +274,9 @@ public class TransactionCacheIT {
         relationVertex.property("testKey", "testValue");
 
         // do a bunch of janus ops to evict the relation
+        person = tx.getEntityType("person");
         for (int i = 0; i < Integer.parseInt(server.serverConfig().properties().get("cache.tx-cache-size").toString()); i++) {
-            tx.janusTx().addVertex("v" + i);
+            person.create();
         }
 
         Vertex janusVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
@@ -311,9 +312,9 @@ public class TransactionCacheIT {
         aRelation.has(aProvenance);
 
         // create vertices that we will later read to force a cache eviction
-        List<Long> fillerJanusVertices = new ArrayList<>();
+        List<String> fillerJanusVertices = new ArrayList<>();
         for (int i = 0; i < Integer.parseInt(server.serverConfig().properties().get("cache.tx-cache-size").toString()); i++) {
-            fillerJanusVertices.add(tx.janusTx().addVertex("v" + i).longId());
+            fillerJanusVertices.add(Schema.elementId(person.create().id()));
         }
         tx.commit();
         tx = session.transaction().write();

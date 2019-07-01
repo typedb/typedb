@@ -37,7 +37,7 @@ import java.util.stream.Stream;
  * This class forms the basis of assuring the graph follows the Grakn object model.
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
-    private VertexElement vertexElement;
+    private final VertexElement vertexElement;
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = new Cache<>(() -> {
