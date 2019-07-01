@@ -240,6 +240,7 @@ checkstyle_test(
         ":atomic-query-it",
         ":query-equivalence-it",
         ":explanation-it",
+        ":materialisation-it",
         ":negation-it",
         ":query-unification-it",
         ":query-it",
