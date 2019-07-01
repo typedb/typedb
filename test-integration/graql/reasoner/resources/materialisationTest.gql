@@ -1,23 +1,23 @@
 define
 
-role1 sub role;
-role2 sub role;
+someRole sub role;
+anotherRole sub role;
 
 newEntity sub entity;
 
-entity1 sub entity,
-    plays role1,
-    plays role2,
+someEntity sub entity,
+    plays someRole,
+    plays anotherRole,
     has resource;
 
-entity2 sub entity,
-    plays role1,
-    plays role2,
+anotherEntity sub entity,
+    plays someRole,
+    plays anotherRole,
     has resource;
 
-relation0 sub relation,
-    relates role1,
-    relates role2,
+someRelation sub relation,
+    relates someRole,
+    relates anotherRole,
     has resource;
 
 #Resources
@@ -27,5 +27,5 @@ insert
 
 #Data
 
-$x isa entity1, has resource 'resource';
-$y isa entity2;
+$x isa someEntity, has resource 'resource';
+$y isa anotherEntity;
