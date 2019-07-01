@@ -20,7 +20,6 @@ package grakn.core.distribution;
 
 import grakn.core.common.util.GraknVersion;
 import org.apache.commons.io.FileUtils;
-import org.hamcrest.CoreMatchers;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -124,12 +123,6 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
     @Test
     public void graknServerVersion_shouldPrintCurrentVersion() throws InterruptedException, TimeoutException, IOException {
         String output = commandExecutor.command("./grakn", "server", "version").execute().outputUTF8();
-        assertThat(output, containsString(GraknVersion.VERSION));
-    }
-
-    @Test
-    public void graknConsoleVersion_shouldPrintCurrentVersion() throws InterruptedException, TimeoutException, IOException {
-        String output = commandExecutor.command("./grakn", "console", "version").execute().outputUTF8();
         assertThat(output, containsString(GraknVersion.VERSION));
     }
 }
