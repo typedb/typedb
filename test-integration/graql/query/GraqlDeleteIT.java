@@ -60,7 +60,6 @@ import java.util.stream.Stream;
 
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
-import static graql.lang.Graql.rel;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.VARIABLE_OUT_OF_SCOPE;
@@ -295,6 +294,9 @@ public class GraqlDeleteIT {
         This test illustrates the failure case but doesn't cause it usually (fails more when there are around 2k instances in DB)
         */
 
+        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        TransactionOLTP tx = session.transaction().write();
+
         tx.execute(Graql.parse("define" +
                 "    unique-key sub attribute, datatype long;" +
                 "    name sub attribute, datatype string," +
@@ -331,7 +333,7 @@ public class GraqlDeleteIT {
         List<ConceptId> insertedIds = answers.stream().flatMap(conceptMap -> conceptMap.concepts().stream()).map(Concept::id).collect(Collectors.toList());
 
         tx.commit();
-        newTransaction();
+        tx = session.transaction().write();
 
         List<Pattern> idPatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
@@ -348,9 +350,11 @@ public class GraqlDeleteIT {
 
     @Test
     public void deleteRelationWithReifiedImplicitWithAttribute() {
+        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        TransactionOLTP tx = session.transaction().write();
+
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
-        year = tx.getAttributeType("year");
         Role work = tx.putRole("work");
         EntityType somework = tx.putEntityType("somework").plays(work);
         Role author = tx.putRole("author");
@@ -361,12 +365,12 @@ public class GraqlDeleteIT {
         Stream<ConceptMap> answers = tx.stream(Graql.parse("insert $x isa person;" +
                 "$y isa somework; " +
                 "$a isa year; $a 2019; " +
-                "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp;").asInsert());// +
-//                "$imp has name $name; $name \"testing\";").asInsert());
+                "$r (author: $x, work: $y) isa authored-by; $r has year $a via $imp; " +
+                "$imp has name $name; $name \"testing\";").asInsert());
 
         List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
         tx.commit();
-        newTransaction();
+        tx = session.transaction().write();
 
         List<Pattern> idPatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
@@ -379,31 +383,32 @@ public class GraqlDeleteIT {
         tx.commit();
     }
 
-
-
     @Test
     public void deleteRelation_AttributeOwnershipsDeleted() {
-        RelationType directedBy = tx.getRelationType("authored-by");
-        EntityType person = tx.getEntityType("person");
-        EntityType production = tx.getEntityType("production");
-        AttributeType<String> provenance = tx.getAttributeType("provenance");
-        Role author = tx.getRole("author");
-        Role work = tx.getRole("work");
+        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        TransactionOLTP tx = session.transaction().write();
+
+        Role author = tx.putRole("author");
+        Role work = tx.putRole("work");
+        RelationType authoredBy = tx.putRelationType("authored-by").relates(author).relates(work);
+        EntityType person = tx.putEntityType("person").plays(author);
+        EntityType production = tx.putEntityType("production").plays(work);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        authoredBy.has(provenance);
 
         Entity aPerson = person.create();
-        ConceptId personid = aPerson.id();
-        Relation aRelation = directedBy.create();
+        Relation aRelation = authoredBy.create();
         aRelation.assign(author, aPerson);
-        ConceptId relationId = aRelation.id();
         Attribute<String> aProvenance = provenance.create("hello");
         aRelation.has(aProvenance);
+        ConceptId relationId = aRelation.id();
 
         tx.commit();
+        tx = session.transaction().write();
 
-        newTransaction();
         aProvenance = tx.getAttributesByValue("hello").iterator().next();
         assertTrue(aProvenance.type().label().toString().equals("provenance"));
-        assertEquals(aProvenance.owners().collect(Collectors.toList()).size(), 1);
+        assertEquals(aProvenance.owners().count(), 1);
 
         aRelation = tx.getConcept(relationId);
         aRelation.delete();
@@ -414,35 +419,38 @@ public class GraqlDeleteIT {
 
     @Test
     public void deleteLastRolePlayer_RelationAndAttrOwnershipIsRemoved() {
-        RelationType directedBy = tx.getRelationType("authored-by");
-        EntityType person = tx.getEntityType("person");
-        EntityType production = tx.getEntityType("production");
-        AttributeType<String> provenance = tx.getAttributeType("provenance");
-        Role author = tx.getRole("author");
-        Role work = tx.getRole("work");
+        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        TransactionOLTP tx = session.transaction().write();
+
+        Role author = tx.putRole("author");
+        Role work = tx.putRole("work");
+        RelationType authoredBy = tx.putRelationType("authored-by").relates(author).relates(work);
+        EntityType person = tx.putEntityType("person").plays(author);
+        EntityType production = tx.putEntityType("production").plays(work);
+        AttributeType<String> provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+        authoredBy.has(provenance);
 
         Entity aPerson = person.create();
-        ConceptId personid = aPerson.id();
-        Relation aRelation = directedBy.create();
+        ConceptId personId = aPerson.id();
+        Relation aRelation = authoredBy.create();
         aRelation.assign(author, aPerson);
-        ConceptId relationId = aRelation.id();
         Attribute<String> aProvenance = provenance.create("hello");
         aRelation.has(aProvenance);
+        ConceptId relationId = aRelation.id();
 
         tx.commit();
+        tx = session.transaction().write();
 
-        newTransaction();
         aProvenance = tx.getAttributesByValue("hello").iterator().next();
         assertTrue(aProvenance.type().label().toString().equals("provenance"));
-        assertEquals(aProvenance.owners().collect(Collectors.toList()).size(), 1);
+        assertEquals(aProvenance.owners().count(), 1);
 
         aRelation = tx.getConcept(relationId);
-        tx.getConcept(personid).delete();
+        tx.getConcept(personId).delete();
         assertTrue(aRelation.isDeleted());
 
         assertEquals(aProvenance.owners().collect(Collectors.toList()).size(), 0);
     }
-
 
 
     @Test
