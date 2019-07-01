@@ -15,13 +15,21 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
 package grakn.core.server.util;
+
+import com.google.common.util.concurrent.Striped;
 
 import java.util.concurrent.locks.Lock;
 
 /**
- * Distributed lock interface
+ * Simple locking mechanism that can be used in case of single server execution
  */
-public interface LockManager {
-    Lock getLock(String lockName);
+public class LockManager {
+
+    private Striped<Lock> locks = Striped.lazyWeakLock(128);
+
+    public Lock getLock(String lockToObtain) {
+        return locks.get(lockToObtain);
+    }
 }

@@ -26,14 +26,14 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
-import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-
 import graql.lang.Graql;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
@@ -95,6 +95,8 @@ public class GenericSchemaGraph {
         Attribute<Object> resource = resources.next();
         Attribute<Object> anotherResource = resources.next();
 
+        Relation implicitRelation = resource.relations().iterator().next();
+
         this.differentTypeResourceVariants = new TypePattern(
                 resourceType.label(), anotherResourceType.label(), tx.getMetaAttributeType().label(),
                 resource.id(), anotherResource.id());
@@ -106,7 +108,9 @@ public class GenericSchemaGraph {
         this.differentResourceVariants = new AttributePattern(
                 resourceType.label(), anotherResourceType.label(),
                 entityType.label(), anotherEntityType.label(),
-                baseRoleEntity.id(), anotherEntity.id(), resource.id(), anotherResource.id());
+                baseRoleEntity.id(), anotherEntity.id(),
+                resource.id(), anotherResource.id(),
+                implicitRelation.id());
 
         this.differentRelationVariants = new RelationPattern(
                 ImmutableMultimap.of(

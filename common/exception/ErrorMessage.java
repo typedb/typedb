@@ -161,7 +161,6 @@ public enum ErrorMessage {
     UNKNOWN_AGGREGATE("unknown aggregate '%s'"),
 
     MATCH_INVALID("cannot match on property of type [%s]"),
-    MULTIPLE_TX("a graph has been specified twice for this query"),
 
     INSERT_UNDEFINED_VARIABLE("%s doesn't have an 'isa', a 'sub' or an 'id'"),
     INSERT_PREDICATE("cannot insert a concept with a predicate"),

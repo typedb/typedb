@@ -327,25 +327,13 @@ public class InferenceRule {
 
     private InferenceRule rewriteVariables(Atom parentAtom){
         if (parentAtom.isUserDefined() || parentAtom.requiresRoleExpansion()) {
-            ReasonerAtomicQuery rewrittenHead = ReasonerQueries.atomic(head.getAtom().rewriteToUserDefined(parentAtom));
-
-            Stream<Atom> bodyConjAtoms = getBody().isComposite()?
-                    getBody().asComposite().getConjunctiveQuery().getAtoms(Atom.class) : getBody().getAtoms(Atom.class);
-            //NB: only rewriting atoms from the same type hierarchy
-            List<Atom> rewrittenBodyConjAtoms = bodyConjAtoms
-                    .map(at ->
-                            ConceptUtils.areDisjointTypes(at.getSchemaConcept(), head.getAtom().getSchemaConcept(), false) ?
-                                    at : at.rewriteToUserDefined(parentAtom)
-                    )
-                    .collect(Collectors.toList());
-            ReasonerQueryImpl rewrittenBodyConj = ReasonerQueries.create(rewrittenBodyConjAtoms, tx);
-            ResolvableQuery rewrittenBody = getBody().isComposite() ?
-                    ReasonerQueries.composite(rewrittenBodyConj, getBody().asComposite().getComplementQueries(), tx) :
-                    rewrittenBodyConj;
-
             //NB we don't have to rewrite complements as we don't allow recursion atm
-
-            return new InferenceRule(rewrittenHead, rewrittenBody, rule, tx);
+            return new InferenceRule(
+                    ReasonerQueries.atomic(getHead().getAtom().rewriteToUserDefined(parentAtom)),
+                    getBody(),
+                    rule,
+                    tx
+            );
         }
         return this;
     }

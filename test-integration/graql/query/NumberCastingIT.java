@@ -198,6 +198,14 @@ public class NumberCastingIT {
         }
 
         try (TransactionOLTP tx = session.transaction().read()) {
+            answers = tx.execute(Graql.match(Graql.var("x").val(one_double).isa("attr-long")).get());
+            assertEquals(1, answers.size());
+
+            answers = tx.execute(Graql.match(Graql.var("x").val(two_int).isa("attr-double")).get());
+            assertEquals(1, answers.size());
+        }
+
+        try (TransactionOLTP tx = session.transaction().read()) {
             answers = tx.execute(Graql.match(Graql.var("x").gte(one_int).isa("attribute")).get());
             assertEquals(2, answers.size());
 

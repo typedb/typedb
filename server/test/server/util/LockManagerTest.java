@@ -29,7 +29,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 
-public class ServerLockManagerTest {
+public class LockManagerTest {
 
     private final String LOCK_NAME = "lock";
 
@@ -38,12 +38,12 @@ public class ServerLockManagerTest {
 
     @Test
     public void whenGivenLock_ReturnsLockWithSameClass() {
-        assertThat(new ServerLockManager().getLock(LOCK_NAME).getClass(), equalTo(ReentrantLock.class));
+        assertThat(new LockManager().getLock(LOCK_NAME).getClass(), equalTo(ReentrantLock.class));
     }
 
     @Test
     public void whenUsingSameString_LocksAreTheSame() {
-        ServerLockManager l = new ServerLockManager();
+        LockManager l = new LockManager();
 
         Lock lock1 = l.getLock(LOCK_NAME);
         Lock lock2 = l.getLock(LOCK_NAME);

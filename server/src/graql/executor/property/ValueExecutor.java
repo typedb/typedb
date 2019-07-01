@@ -166,7 +166,19 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         protected abstract P<U> predicate();
 
-        public abstract <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal);
+        protected abstract Set<AttributeType.DataType<?>> comparableDataTypes();
+
+        public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
+            List<GraphTraversal<?, E>> valueTraversals = new ArrayList<>();
+            for (AttributeType.DataType<?> dataType : comparableDataTypes()) {
+                Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+                valueTraversals.add(__.has(property.name(), predicate()));
+            }
+
+            GraphTraversal<?, E>[] array = (GraphTraversal<?, E>[]) Iterables.toArray(valueTraversals, GraphTraversal.class);
+
+            return traversal.union(array);
+        }
 
         public boolean test(Object otherValue) {
             if (this.value().getClass().isInstance(otherValue)) {
@@ -312,14 +324,6 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
             }
 
-            public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
-                // Compare to a given value
-                AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
-                Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
-                traversal.has(property.name(), predicate());
-                return traversal;
-            }
-
             @Override
             protected P<U> predicate() {
                 return P.eq(valueSerialised());
@@ -329,6 +333,14 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 Number(N value) {
                     super(value);
+                }
+
+                @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.DOUBLE,
+                               //AttributeType.DataType.FLOAT,
+                               //AttributeType.DataType.INTEGER,
+                               AttributeType.DataType.LONG);
                 }
 
                 @Override
@@ -344,6 +356,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.BOOLEAN);
+                }
+
+                @Override
                 java.lang.Boolean valueSerialised() {
                     return Serialiser.BOOLEAN.serialise(value());
                 }
@@ -356,6 +373,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.DATE);
+                }
+
+                @Override
                 Long valueSerialised() {
                     return Serialiser.DATE.serialise(value());
                 }
@@ -365,6 +387,11 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
                 String(java.lang.String value) {
                     super(value);
+                }
+
+                @Override
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.STRING);
                 }
 
                 @Override
@@ -441,20 +468,6 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 return false;
             }
 
-            public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
-                List<GraphTraversal<?, E>> valueTraversals = new ArrayList<>();
-                for (AttributeType.DataType<?> dataType : comparableDataTypes()) {
-                    Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
-                    valueTraversals.add(__.has(property.name(), predicate()));
-                }
-
-                GraphTraversal<?, E>[] array = (GraphTraversal<?, E>[]) Iterables.toArray(valueTraversals, GraphTraversal.class);
-
-                return traversal.union(array);
-            }
-
-            protected abstract Set<AttributeType.DataType<?>> comparableDataTypes();
-
             @Override
             protected P<U> predicate() {
                 Function<U, P<U>> predicate = PREDICATES_COMPARABLE.get(comparator());
@@ -495,13 +508,13 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                 }
 
                 @Override
-                java.lang.Boolean valueSerialised() {
-                    return Serialiser.BOOLEAN.serialise(value());
+                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
+                    return set(AttributeType.DataType.BOOLEAN);
                 }
 
                 @Override
-                protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-                    return set(AttributeType.DataType.BOOLEAN);
+                java.lang.Boolean valueSerialised() {
+                    return Serialiser.BOOLEAN.serialise(value());
                 }
             }
 

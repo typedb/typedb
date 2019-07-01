@@ -66,8 +66,8 @@ public class IdPredicate extends Predicate<ConceptId> {
         return new Statement(varName).id(typeId.getValue());
     }
 
-    private static Statement createIdVar(Variable varName, Label label, TransactionOLTP graph) {
-        SchemaConcept schemaConcept = graph.getSchemaConcept(label);
+    private static Statement createIdVar(Variable varName, Label label, TransactionOLTP tx) {
+        SchemaConcept schemaConcept = tx.getSchemaConcept(label);
         if (schemaConcept == null) throw GraqlSemanticException.labelNotFound(label);
         return new Statement(varName).id(schemaConcept.id().getValue());
     }

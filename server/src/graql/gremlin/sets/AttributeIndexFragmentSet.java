@@ -22,9 +22,11 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.Label;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -70,7 +72,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
     abstract Label label();
     abstract Object value();
 
-    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, graph) -> {
+    static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, tx) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
 
         for (ValueFragmentSet valueSet : valueSets) {
@@ -88,10 +90,8 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
 
             if (labels.size() == 1) {
                 Label label = Iterables.getOnlyElement(labels);
-                if (graph.getAttributeType(label.getValue()).dataType().dataClass().isInstance(valueSet.operation().value())) {
-                    optimise(fragmentSets, valueSet, isaSet, label);
-                    return true;
-                }
+                optimise(tx, fragmentSets, valueSet, isaSet, label);
+                return true;
             }
         }
 
@@ -99,7 +99,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
     };
 
     private static void optimise(
-            Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
+            TransactionOLTP tx, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
             Label label
     ) {
         // Remove fragment sets we are going to replace
@@ -114,6 +114,15 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
         }
 
         Object value = valueSet.operation().value();
+
+        AttributeType.DataType<?> dataType = tx.getAttributeType(label.getValue()).dataType();
+        if (Number.class.isAssignableFrom(dataType.dataClass())) {
+            if (dataType.dataClass() == Long.class && value instanceof Double && ((Double) value % 1 == 0)) {
+                value = ((Double) value).longValue();
+            } else if (dataType.dataClass() == Double.class && value instanceof Long) {
+                value = ((Long) value).doubleValue();
+            }
+        }
         AttributeIndexFragmentSet indexFragmentSet = AttributeIndexFragmentSet.of(attribute, label, value);
         fragmentSets.add(indexFragmentSet);
     }

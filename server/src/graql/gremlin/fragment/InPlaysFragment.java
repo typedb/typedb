@@ -45,7 +45,7 @@ abstract class InPlaysFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
         GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
         if (required()) {
             vertexTraversal.inE(PLAYS.getLabel()).has(Schema.EdgeProperty.REQUIRED.name()).otherV();

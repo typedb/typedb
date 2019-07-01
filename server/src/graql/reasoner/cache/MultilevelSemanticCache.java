@@ -131,6 +131,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         ReasonerAtomicQuery equivalentQuery = entry.query();
         AnswerSet answers = entry.cachedElement();
         MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
+        assert(!multiUnifier.isEmpty());
 
         return new Pair<>(
                 multiUnifier.inverse()

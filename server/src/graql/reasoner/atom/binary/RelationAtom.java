@@ -353,16 +353,12 @@ public abstract class RelationAtom extends IsaAtomBase {
         return var;
     }
 
-    private boolean isBaseEquivalent(Object obj){
-        if (obj == null || this.getClass() != obj.getClass()) return false;
-        if (obj == this) return true;
+    @Override
+    boolean isBaseEquivalent(Object obj){
+        if (!super.isBaseEquivalent(obj)) return false;
         RelationAtom that = (RelationAtom) obj;
-        return this. isUserDefined() == that.isUserDefined()
-                && this.getPredicateVariable().isReturned() == that.getPredicateVariable().isReturned()
-                && this.isDirect() == that.isDirect()
-                && Objects.equals(this.getTypeId(), that.getTypeId())
-                //check relation players equivalent
-                && this.getRolePlayers().size() == that.getRolePlayers().size()
+        //check relation players equivalent
+        return this.getRolePlayers().size() == that.getRolePlayers().size()
                 && this.getRelationPlayers().size() == that.getRelationPlayers().size()
                 && this.getRoleLabels().equals(that.getRoleLabels());
     }
@@ -372,20 +368,6 @@ public abstract class RelationAtom extends IsaAtomBase {
         baseHashCode = baseHashCode * 37 + (this.getTypeId() != null ? this.getTypeId().hashCode() : 0);
         baseHashCode = baseHashCode * 37 + this.getRoleLabels().hashCode();
         return baseHashCode;
-    }
-
-    @Override
-    public boolean isAlphaEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.EXACT).equals(MultiUnifierImpl.nonExistent());
-    }
-
-    @Override
-    public boolean isStructurallyEquivalent(Object obj) {
-        if (!isBaseEquivalent(obj)) return false;
-        RelationAtom that = (RelationAtom) obj;
-        return !this.getMultiUnifier(that, UnifierType.STRUCTURAL).equals(MultiUnifierImpl.nonExistent());
     }
 
     @Memoized
@@ -760,8 +742,8 @@ public abstract class RelationAtom extends IsaAtomBase {
         boolean roleRecomputationViable = allRolesMeta && (!sub.isEmpty() || !Sets.intersection(varTypeMap.keySet(), getRolePlayers()).isEmpty());
         if (explicitRoles.size() == getRelationPlayers().size() && !roleRecomputationViable) return this;
 
-        TransactionOLTP graph = getParentQuery().tx();
-        Role metaRole = graph.getMetaRole();
+        TransactionOLTP tx = getParentQuery().tx();
+        Role metaRole = tx.getMetaRole();
         List<RelationProperty.RolePlayer> allocatedRelationPlayers = new ArrayList<>();
         SchemaConcept schemaConcept = getSchemaConcept();
         RelationType relType = null;
@@ -844,19 +826,19 @@ public abstract class RelationAtom extends IsaAtomBase {
     public Multimap<Role, Variable> getRoleVarMap() {
         ImmutableMultimap.Builder<Role, Variable> builder = ImmutableMultimap.builder();
 
-        TransactionOLTP graph = getParentQuery().tx();
+        TransactionOLTP tx = getParentQuery().tx();
         getRelationPlayers().forEach(c -> {
             Variable varName = c.getPlayer().var();
             Statement rolePattern = c.getRole().orElse(null);
             if (rolePattern != null) {
                 //try directly
                 String typeLabel = rolePattern.getType().orElse(null);
-                Role role = typeLabel != null ? graph.getRole(typeLabel) : null;
+                Role role = typeLabel != null ? tx.getRole(typeLabel) : null;
                 //try indirectly
                 if (role == null && rolePattern.var().isReturned()) {
                     IdPredicate rolePredicate = getIdPredicate(rolePattern.var());
                     if (rolePredicate != null){
-                        Role r = graph.getConcept(rolePredicate.getPredicate());
+                        Role r = tx.getConcept(rolePredicate.getPredicate());
                         if (r == null) throw GraqlCheckedException.idNotFound(rolePredicate.getPredicate());
                         role = r;
                     }
@@ -1065,11 +1047,12 @@ public abstract class RelationAtom extends IsaAtomBase {
         if (answer == null) tx().queryCache().ackDBCompleteness(query);
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
-
-
+    
     @Override
     public Stream<ConceptMap> materialise(){
         RelationType relationType = getSchemaConcept().asRelationType();
+        //in case the roles are variable, we wouldn't have enough information if converted to attribute
+        if (relationType.isImplicit() && this.getRoleVariables().isEmpty()) return this.toAttributeAtom().materialise();
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
 

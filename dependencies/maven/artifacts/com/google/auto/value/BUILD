@@ -15,6 +15,7 @@ java_plugin(
     deps = [
         "//external:jar/com/google/auto/value/auto-value"
     ],
+    generates_api = False,
     processor_class = "com.google.auto.value.processor.AutoValueProcessor",
     visibility = [
         "//visibility:public"

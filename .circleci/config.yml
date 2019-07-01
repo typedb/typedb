@@ -30,10 +30,6 @@ commands:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-mac.sh
       - run: bash ./install-bazel-mac.sh && rm ./install-bazel-mac.sh
 
-  install-rpm:
-    steps:
-      - run: sudo apt update && sudo apt install rpm -y
-
   run-bazel-rbe:
     parameters:
       command:
@@ -47,7 +43,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
-      - install-rpm
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
@@ -67,7 +62,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
-      - install-rpm
       - checkout
       - run-bazel-rbe:
           command: bazel test //console/... --test_output=errors
@@ -77,7 +71,6 @@ jobs:
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
-      - install-rpm
       - checkout
       - run-bazel-rbe:
           command: bazel test //server/... --test_output=errors
@@ -230,7 +223,6 @@ jobs:
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run //protocol:deploy-maven -- snapshot $CIRCLE_SHA1
           bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1
           bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1
 
@@ -328,9 +320,9 @@ jobs:
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
-          grakn-kgms:master benchmark:master workbase:master \
-          client-java:master client-python:master client-nodejs:master \
-          docs:master examples:master
+          grakn-kgms:master workbase:master docs:master examples:master \
+          benchmark:master client-java:master
+        # TODO: Remove benchmark and client-java once #5272 is solved
 
   release-approval:
     machine: true
@@ -418,7 +410,6 @@ jobs:
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
           bazel run //api:deploy-maven -- release $(cat VERSION)
-          bazel run //protocol:deploy-maven -- release $(cat VERSION)
           bazel run //concept:deploy-maven -- release $(cat VERSION)
           bazel run //common:deploy-maven -- release $(cat VERSION)
 

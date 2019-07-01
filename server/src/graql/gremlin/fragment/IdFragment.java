@@ -40,8 +40,6 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.concept.printer.StringPrinter.conceptId;
-
 @AutoValue
 public abstract class IdFragment extends Fragment {
 
@@ -55,7 +53,7 @@ public abstract class IdFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP graph, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
         if (canOperateOnEdges()) {
             return traversal.or(
                     edgeTraversal(),
@@ -81,7 +79,7 @@ public abstract class IdFragment extends Fragment {
 
     @Override
     public String name() {
-        return "[id:" + conceptId(id()) + "]";
+        return "[id:" + id().getValue() + "]";
     }
 
     @Override

@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -36,9 +35,9 @@ import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.reasoner.state.CacheCompletionState;
-import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -59,7 +58,6 @@ import java.util.stream.Stream;
  * Base reasoner atomic query. An atomic query is a query constrained to having at most one rule-resolvable atom
  * together with its accompanying constraints (predicates and types).
  */
-@SuppressFBWarnings("EQ_DOESNT_OVERRIDE_EQUALS")
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
