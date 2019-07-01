@@ -41,7 +41,9 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -72,37 +74,33 @@ public class QueryIT {
         geoSession.close();
     }
 
-    @Ignore ("to be updated")
-    @Test
-    public void testQueryReiterationCondition_CyclicalRuleGraph(){
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
-            String patternString = "{ ($x, $y) isa is-located-in; };";
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-            assertTrue(query.requiresReiteration());
-        }
-    }
-
-    @Ignore ("to be updated")
     @Test
     public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInBodies(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             try (TransactionOLTP tx = session.transaction().write()) {
 
                 Role someRole = tx.putRole("someRole");
-                Entity entity = tx.putEntityType("genericEntity")
-                        .plays(someRole)
-                        .create();
+                EntityType genericEntity = tx.putEntityType("genericEntity")
+                        .plays(someRole);
 
-                tx.putRelationType("someRelation")
-                        .relates(someRole)
-                        .create()
-                        .assign(someRole, entity);
+                Entity entity = genericEntity.create();
+                Entity anotherEntity = genericEntity.create();
+                Entity yetAnotherEntity = genericEntity.create();
+
+                RelationType someRelation = tx.putRelationType("someRelation")
+                        .relates(someRole);
+
+                someRelation.create()
+                        .assign(someRole, entity)
+                        .assign(someRole, anotherEntity);
 
                 RelationType inferredBase = tx.putRelationType("inferredBase")
                         .relates(someRole);
-                inferredBase
-                        .create()
-                        .assign(someRole, entity);
+
+                inferredBase.create()
+                        .assign(someRole, anotherEntity)
+                        .assign(someRole, yetAnotherEntity);
+
                 tx.putRelationType("inferred")
                         .relates(someRole).sup(inferredBase);
 
@@ -120,46 +118,20 @@ public class QueryIT {
             try (TransactionOLTP tx = session.transaction().write()) {
                 String patternString = "{ ($x, $y) isa inferred; };";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-                assertTrue(RuleUtils.subGraphIsCyclical(
-                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()),
-                        tx)
-                );
-                assertTrue(query.requiresReiteration());
+                Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet());
+
+                //with cache empty no loops are found
+                assertFalse(RuleUtils.subGraphIsCyclical(rules, tx));
+                assertFalse(query.requiresReiteration());
+
+                List<ConceptMap> answers = query.resolve().collect(Collectors.toList());
+
+                //with populated cache we find a loop
+                assertTrue(RuleUtils.subGraphIsCyclical(rules, tx));
             }
         }
     }
 
-    @Ignore ("to be updated")
-    @Test
-    public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInHead(){
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP tx = session.transaction().write()) {
-
-                tx.putEntityType("genericEntity").create();
-                EntityType baseEntity = tx.putEntityType("baseEntity");
-                baseEntity.create();
-                tx.putEntityType("subEntity").sup(baseEntity);
-
-                tx.putRule("rule1",
-                        Graql.parsePattern("{$x isa genericEntity;};"),
-                        Graql.parsePattern("{$x isa subEntity;};"));
-                tx.putRule("rule2",
-                        Graql.parsePattern("{$x isa baseEntity;};"),
-                        Graql.parsePattern("{$x isa genericEntity;};"));
-
-                tx.commit();
-            }
-            try (TransactionOLTP tx = session.transaction().write()) {
-                String patternString = "{ $x isa baseEntity;};";
-                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-                assertTrue(RuleUtils.subGraphIsCyclical(
-                        tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet()),
-                        tx)
-                );
-                assertTrue(query.requiresReiteration());
-            }
-        }
-    }
 
     @Test
     public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched(){
@@ -191,17 +163,8 @@ public class QueryIT {
         }
     }
 
-    @Test //simple equality tests between original and a copy of a query
-    public void testAlphaEquivalence_QueryCopyIsAlphaEquivalent(){
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
-            String patternString = "{ $x isa city;$y isa country;($x, $y) isa is-located-in; };";
-            ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-            queryEquivalence(query, query.copy(), true);
-        }
-    }
-
-    @Test //check two queries are alpha-equivalent - equal up to the choice of free variables
-    public void testAlphaEquivalence() {
+    @Test
+    public void testAlphaEquivalence_simpleChainWithAttributeAndTypeGuards() {
         try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ " +
                     "$x isa city, has name 'Warsaw';" +
@@ -223,8 +186,7 @@ public class QueryIT {
         }
     }
 
-    //TODO
-    @Ignore
+    @Ignore ("we currently do not fully support equivalence checks for non-atomic queries")
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
         try(TransactionOLTP tx = geoSession.transaction().write()) {
@@ -351,21 +313,8 @@ public class QueryIT {
         }
     }
 
-//    Bug #11150 Relations with resources as single VarPatternAdmin
-//    TODO: replace this with different schema than genealogySchema
-//    @Test //tests whether directly and indirectly reified relations are equivalent
-//    public void testAlphaEquivalence_reifiedRelation(){
-//        TransactionImpl<?> tx = genealogySchema.tx();
-//        String patternString = "{ $rel (happening: $b, protagonist: $p) isa event-protagonist has event-role 'parent'; };";
-//        String patternString2 = "{ $rel (happening: $c, protagonist: $r) isa event-protagonist; $rel has event-role 'parent'; };";
-//
-//        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
-//        ReasonerQueryImpl query2 = ReasonerQueries.create(conjunction(patternString2, tx), tx);
-//        queryEquivalence(query, query2, true);
-//    }
-
     @Test
-    public void testWhenReifyingRelation_ExtraAtomIsCreatedWithUserDefinedName(){
+    public void whenReifyingRelation_extraAtomIsCreatedWithUserDefinedName(){
         try(TransactionOLTP tx = geoSession.transaction().write()) {
             String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ ($x, $y) has name 'Poland'; };";
