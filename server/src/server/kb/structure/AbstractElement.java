@@ -41,7 +41,7 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  *            Schema.EdgeProperty
  */
 public abstract class AbstractElement<E extends Element, P extends Enum> {
-    private final E element;
+    private E element;
     private final TransactionOLTP tx;
 
     AbstractElement(TransactionOLTP tx, E element) {
@@ -61,6 +61,11 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * Deletes the element from the graph
      */
     public void delete() {
+        if (this instanceof VertexElement) {
+            element = (E)tx.getTinkerTraversal().V(id()).next();
+        } else {
+            element = (E)tx.getTinkerTraversal().E(id()).next();
+        }
         element().remove();
     }
 
