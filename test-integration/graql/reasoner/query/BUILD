@@ -22,7 +22,7 @@ java_test(
     size = "medium",
     srcs = ["AtomicQueryIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = ["//test-integration/graql/reasoner/resources:materialisation"],
+    resources = [],
     test_class = "grakn.core.graql.reasoner.query.AtomicQueryIT",
     deps = [
         "//concept",
@@ -51,6 +51,25 @@ java_test(
         "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//server",
+        "//test-integration/graql/reasoner/graph:geo-graph",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "materialisation-it",
+    size = "medium",
+    srcs = ["MaterialisationIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    resources = ["//test-integration/graql/reasoner/resources:materialisation"],
+    test_class = "grakn.core.graql.reasoner.query.MaterialisationIT",
+    deps = [
+        "//concept",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/graql/reasoner/graph:geo-graph",
@@ -221,6 +240,7 @@ checkstyle_test(
         ":atomic-query-it",
         ":query-equivalence-it",
         ":explanation-it",
+        ":materialisation-it",
         ":negation-it",
         ":query-unification-it",
         ":query-it",
