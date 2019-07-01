@@ -151,6 +151,7 @@ public class RuleUtils {
                     .filter(q -> tx.queryCache().getParents(q).isEmpty())
                     .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
                     .collect(toSet());
+            //if we don't have full information (query answers in cache), we assume reiteration is needed
             if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();

@@ -81,7 +81,7 @@ public class AtomicQueryIT {
     @Test
     public void whenCopyingQuery_TheCopyIsAlphaEquivalentToOriginal() {
         TransactionOLTP tx = geoGraphSession.transaction().write();
-        String patternString = "{ ($x, $y) isa is-located-in; };";
+        String patternString = "{ $x isa city;$y isa country;($x, $y) isa is-located-in; };";
         Conjunction<Statement> pattern = conjunction(patternString);
         ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
         ReasonerAtomicQuery copy = atomicQuery.copy();
