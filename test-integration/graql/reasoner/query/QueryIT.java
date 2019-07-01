@@ -223,8 +223,7 @@ public class QueryIT {
         }
     }
 
-    //TODO
-    @Ignore
+    @Ignore ("we currently do not support equivalence checks for non-atomic queries")
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
         try(TransactionOLTP tx = geoSession.transaction().write()) {
