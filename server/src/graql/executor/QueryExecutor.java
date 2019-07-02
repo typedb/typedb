@@ -351,27 +351,14 @@ public class QueryExecutor {
         answers = filter(query, answers);
 
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
-//        List<Concept> conceptsToDelete = answers
-//                .flatMap(answer -> answer.concepts().stream())
-//                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it here
-//                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
-//                .collect(Collectors.toList());
-
         List<Concept> conceptsToDelete = answers
                 .flatMap(answer -> answer.concepts().stream())
-                .sorted(Comparator.comparing(concept -> {
-                    if (concept.isRelation()) {
-                        if (concept.asRelation().type().isImplicit()) {
-                            return 0;
-                        } else {
-                            // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it here
-                            return -1;
-                        }
-                    } else {
-                        return 1;
-                    }
-                }))
+                .distinct()
+                // delete relations first: if the RPs are deleted, the relation is removed, so null by the time we try to delete it
+                // this minimises number of `concept was already removed` exceptions
+                .sorted(Comparator.comparing(concept -> !concept.isRelation()))
                 .collect(Collectors.toList());
+
 
         Set<ConceptId> deletedConceptIds = new HashSet<>();
         conceptsToDelete.forEach(concept -> {

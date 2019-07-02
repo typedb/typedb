@@ -316,7 +316,7 @@ public class GraqlDeleteIT {
                 "    @has-region-code key unique-key;").asDefine());
 
         tx.commit();
-        newTransaction();
+        tx = session.transaction().write();
 
         List<ConceptMap> answers = tx.execute(Graql.parse("insert" +
                 "      $intersection1 (endpoint: $r1, endpoint: $r2, endpoint: $r3) isa intersection, has unique-key $k1, has region-code $rc via $imp1; $k1 -128;" +

@@ -61,6 +61,12 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * Deletes the element from the graph
      */
     public void delete() {
+        /*
+        Here we force a re-fetch from janus right before deleting an element
+        This is because the element contained within this object may have been evicted from the Janus transaction cache -
+        doing the re-read here brings a new copy back in before deleting in, which then pins it to the cache for
+        the remainder of the transaction
+         */
         if (this instanceof VertexElement) {
             element = (E)tx.getTinkerTraversal().V(id()).next();
         } else {
