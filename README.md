@@ -1,4 +1,4 @@
-![GRAKN.AI](https://grakn.ai/assets/img/Grakn%20logo%20-%20transparent.png)
+![GRAKN.AI](https://grakn.ai/assets/img/grakn-logo-name.png)
 
 ---
 [![CircleCI](https://circleci.com/gh/graknlabs/grakn/tree/master.svg?style=shield)](https://circleci.com/gh/graknlabs/grakn/tree/master)
