@@ -144,12 +144,13 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
         ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
         if (materialisedSub != null) {
             RuleExplanation ruleExplanation = new RuleExplanation(query.getPattern(), rule.getRule().id());
-            getQuery().tx().queryCache().record(ruleHead, materialisedSub.explain(ruleExplanation));
+            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
+            getQuery().tx().queryCache().record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
             if (ruleAtom.isRelation() && ruleAtom.getSchemaConcept() != null && ruleAtom.getSchemaConcept().isImplicit()) {
                 ReasonerAtomicQuery attributeHead = ReasonerQueries.atomic(ruleHead.getAtom().toAttributeAtom());
-                getQuery().tx().queryCache().record(attributeHead, materialisedSub.explain(ruleExplanation));
+                getQuery().tx().queryCache().record(attributeHead, ruleAnswer.project(attributeHead.getVarNames()));
             }
             answer = unifier.apply(materialisedSub.project(queryVars));
         }

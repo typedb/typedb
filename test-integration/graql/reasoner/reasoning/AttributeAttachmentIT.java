@@ -71,7 +71,6 @@ public class AttributeAttachmentIT {
     @AfterClass
     public static void closeSession(){
         attributeAttachmentSession.close();
-
     }
 
     @Test
@@ -156,10 +155,19 @@ public class AttributeAttachmentIT {
             //TODO: currently we will reify the implicit relations and have duplicate reified and non-reified versions in the answers
             assertEquals(
                     concepts.size() * baseResourceRoles +
-                            subResources.size() * baseResourceRoles +
                             subResources.size() * subResourceRoles,
                     answers.size());
             answers.forEach(ans -> assertEquals(3, ans.size()));
+        }
+    }
+
+    @Test
+    public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
+        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+            Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
+            List<ConceptMap> answers = tx.execute(Graql.match(has).get());
+            assertEquals(5, answers.size());
+            answers.forEach(a -> assertTrue(a.vars().contains(new Variable("r"))));
         }
     }
 
@@ -203,19 +211,6 @@ public class AttributeAttachmentIT {
         try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
             List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
             assertEquals(noOfGeneralAnswers, genericAnswers.size());
-        }
-    }
-
-    @Ignore
-    @Test
-    /* Flaky test */
-    public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
-
-            Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
-            List<ConceptMap> answers = tx.execute(Graql.match(has).get());
-            assertEquals(5, answers.size());
-            answers.forEach(a -> assertTrue(a.vars().contains(new Variable("r"))));
         }
     }
 
