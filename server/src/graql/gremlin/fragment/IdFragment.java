@@ -35,6 +35,7 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
@@ -49,6 +50,15 @@ public abstract class IdFragment extends Fragment {
         ConceptId toId = transform.get(start());
         if (toId == null) return this;
         return new AutoValue_IdFragment(new IdProperty(toId.getValue()), start(), toId);
+    }
+
+    @Override
+    public GraphTraversal<Vertex, ? extends Element> selectVariable(GraphTraversal<Vertex, ? extends Element> traversal) {
+        if (canOperateOnEdges()) {
+            traverseToEdges(traversal);
+        }
+        traversal.as(start().symbol());
+        return traversal;
     }
 
     @Override
@@ -92,12 +102,10 @@ public abstract class IdFragment extends Fragment {
         return true;
     }
 
-    @Override
     boolean canOperateOnEdges() {
         return Schema.isEdgeId(id());
     }
 
-    @Override
     void traverseToEdges(GraphTraversal<Vertex, ? extends Element> traversal) {
         // if the ID may be for an edge,
         // we must extend the traversal that normally just operates on vertices

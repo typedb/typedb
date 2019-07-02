@@ -43,7 +43,7 @@ import java.util.Set;
 
 /**
  * represents a graph traversal, with one start point and optionally an end point
- *
+ * <p>
  * A fragment is composed of four things:
  * <ul>
  * <li>A gremlin traversal function, that takes a gremlin traversal and appends some new gremlin steps</li>
@@ -51,13 +51,13 @@ import java.util.Set;
  * <li>An optional ending variable name, if the gremlin traversal navigates to a new Graql variable</li>
  * <li>A priority, that describes how efficient this traversal is to help with ordering the traversals</li>
  * </ul>
- *
+ * <p>
  * Variable names refer to Graql variables. Some of these variable names may be randomly-generated UUIDs, such as for
  * castings.
- *
+ * <p>
  * A {@code Fragment} is usually contained in a {@code EquivalentFragmentSet}, which contains multiple fragments describing
  * the different directions the traversal can be followed in, with different starts and ends.
- *
+ * <p>
  * A gremlin traversal is created from a {@code Query} by appending together fragments in order of priority, one from
  * each {@code EquivalentFragmentSet} describing the {@code Query}.
  */
@@ -148,6 +148,7 @@ public abstract class Fragment {
      * These require another variable for the end() variable, and to force the MST algorithm to
      * traverse these JanusGraph edges too, we insert a fake middle node representing the edge.
      * We default to an INSTANCE_NODE node type, which is the most general node
+     *
      * @return
      */
     public Set<Node> getNodes() {
@@ -162,6 +163,7 @@ public abstract class Fragment {
      * convert the fake middle node back into a Fragment after query planning is complete.
      * For pairs of nodes we may have two edges (node1, node2) and (node2, node1). These stem from the two
      * fragments that are `Equivalent` in EquivalentFragmentSet - directionality is used to disambiguate which choice to use
+     *
      * @param nodes
      * @return
      */
@@ -182,11 +184,11 @@ public abstract class Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param tx     the graph to execute the traversal on
+     * @param tx        the graph to execute the traversal on
      */
     public final GraphTraversal<Vertex, ? extends Element> applyTraversal(
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx,
-            Collection<Variable> vars, @Nullable Variable currentVar) {
+            Collection<Variable> vars, Variable currentVar) {
 
 
         if (currentVar != null) {
@@ -197,18 +199,12 @@ public abstract class Fragment {
                 } else {
                     // Restart traversal when fragments are disconnected
                     traversal.V();
-                    if (canOperateOnEdges()) {
-                        traverseToEdges(traversal);
-                    }
-                    traversal.as(start().symbol());
+                    selectVariable(traversal);
                 }
             }
         } else {
             // this is the very start of the traversal, record the step using `as` as we haven't visited the variable yet
-            if (canOperateOnEdges()) {
-                traverseToEdges(traversal);
-            }
-            traversal.as(start().symbol());
+            selectVariable(traversal);
         }
 
         vars.add(start());
@@ -225,6 +221,11 @@ public abstract class Fragment {
         return traversal;
     }
 
+    public GraphTraversal<Vertex, ? extends Element> selectVariable(GraphTraversal<Vertex, ? extends Element> traversal) {
+        traversal.as(start().symbol());
+        return traversal;
+    }
+
     static <T, U> GraphTraversal<T, U> assignVar(GraphTraversal<T, U> traversal, Variable var, Collection<Variable> vars) {
         if (!vars.contains(var)) {
             // This variable name has not been encountered before, remember it and use the 'as' step
@@ -237,7 +238,7 @@ public abstract class Fragment {
 
     /**
      * @param traversal the traversal to extend with this Fragment
-     * @param tx     the transaction to execute the traversal on
+     * @param tx        the transaction to execute the traversal on
      * @param vars
      */
     abstract GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -275,6 +276,7 @@ public abstract class Fragment {
     /**
      * Estimate the "cost" of a starting point for each type of fixed cost fragment
      * These are cost heuristic proxies using statistics
+     *
      * @return
      */
     public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
@@ -292,15 +294,6 @@ public abstract class Fragment {
     public Fragment getInverse() {
         return this;
     }
-
-    boolean canOperateOnEdges() {
-        return false;
-    }
-
-    void traverseToEdges(GraphTraversal<Vertex, ? extends Element> traversal) {
-        return;
-    }
-
 
     /**
      * Get all variables in the fragment including the start and end (if present)
