@@ -174,7 +174,7 @@ public class CompositeQuery implements ResolvableQuery {
      * - no negation nesting
      * - no disjunctions
      * - at most single negation block
-     * @param graph transaction to be validated against
+     * @param tx transaction to be validated against
      * @param pattern pattern to be validated
      * @return set of error messages applicable
      */

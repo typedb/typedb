@@ -183,7 +183,7 @@ public abstract class AttributeAtom extends Binary{
         AttributeAtom a2 = (AttributeAtom) obj;
         return Objects.equals(this.getTypeId(), a2.getTypeId())
                 && this.getVarName().equals(a2.getVarName())
-                && this.multiPredicateEquivalent(a2, AtomicEquivalence.Equality);
+                && this.multiPredicateEqual(a2);
     }
 
     @Override
@@ -193,8 +193,8 @@ public abstract class AttributeAtom extends Binary{
         return this.getRelationVariable().isReturned() == that.getRelationVariable().isReturned();
     }
 
-    private boolean multiPredicateEquivalent(AttributeAtom that, AtomicEquivalence equiv){
-        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), equiv);
+    private boolean multiPredicateEqual(AttributeAtom that){
+        return isEquivalentCollection(this.getMultiPredicate(), that.getMultiPredicate(), AtomicEquivalence.Equality);
     }
 
     @Override
@@ -255,7 +255,7 @@ public abstract class AttributeAtom extends Binary{
         SchemaConcept type = getSchemaConcept();
         if (type == null) return false;
 
-        boolean isBottomType = !type.subs().anyMatch(t -> !t.equals(type));
+        boolean isBottomType = type.subs().allMatch(t -> t.equals(type));
         boolean relationVarMapped = !getRelationVariable().isReturned() || sub.containsVar(getRelationVariable());
         return isBottomType
                 && isValueEquality() && sub.containsVar(getVarName())

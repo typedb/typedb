@@ -81,7 +81,7 @@ public class SemanticDifference {
                 .collect(Collectors.toSet());
     }
 
-    public boolean satisfiedBy(ConceptMap answer) {
+    private boolean satisfiedBy(ConceptMap answer) {
         if (isEmpty()) return true;
 
         Map<Variable, Set<Role>> roleRequirements = this.definition.stream()

@@ -65,7 +65,7 @@ public class RuleUtils {
     private static HashMultimap<Type, Type> persistedTypeSubGraph(Set<InferenceRule> rules){
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules.stream()
-                .flatMap(rule -> persistedRuleToTypePair.apply(rule))
+                .flatMap(persistedRuleToTypePair)
                 .forEach(p -> graph.put(p.getKey(), p.getValue()));
         return graph;
     }
@@ -77,12 +77,12 @@ public class RuleUtils {
         HashMultimap<Type, Type> graph = HashMultimap.create();
         tx.getMetaRule().subs()
                 .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
-                .flatMap(rule -> ruleToTypePair.apply(rule))
+                .flatMap(ruleToTypePair)
                 .forEach(p -> graph.put(p.getKey(), p.getValue()));
         return graph;
     }
 
-    private static Function<InferenceRule, Stream<Pair<Type, Type>>> persistedRuleToTypePair = rule ->
+    final private static Function<InferenceRule, Stream<Pair<Type, Type>>> persistedRuleToTypePair = rule ->
             rule.getBody()
                     .getAtoms(Atom.class)
                     .flatMap(at -> at.getPossibleTypes().stream())
@@ -100,7 +100,7 @@ public class RuleUtils {
                                     .map(thenType -> new Pair<>(whenType, thenType))
                     );
 
-    private static Function<Rule, Stream<Pair<Type, Type>>> ruleToTypePair = rule ->
+    final private static Function<Rule, Stream<Pair<Type, Type>>> ruleToTypePair = rule ->
             rule.whenTypes()
                     .flatMap(Type::subs)
                     .filter(t -> !t.isAbstract())
