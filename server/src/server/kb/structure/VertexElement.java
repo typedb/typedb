@@ -51,8 +51,9 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      */
     public Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label) {
         Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
-        return StreamSupport.stream(iterable.spliterator(), false).
-                map(edge -> tx().factory().buildEdgeElement(edge));
+        return StreamSupport.stream(iterable.spliterator(), false)
+                .filter(edge -> tx().isValidElement(edge)) // filter out deleted but cached available edges
+                .map(edge -> tx().factory().buildEdgeElement(edge));
     }
 
     /**

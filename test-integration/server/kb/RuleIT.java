@@ -584,8 +584,6 @@ public class RuleIT {
 
     @Test
     public void whenAddingAddingStratifiableRules_correctStratificationIsProduced(){
-        List<Rule> expected1;
-        List<Rule> expected2;
         try(TransactionOLTP tx = session.transaction().write()) {
             EntityType p = tx.putEntityType("p");
             EntityType q = tx.putEntityType("q");
@@ -609,14 +607,18 @@ public class RuleIT {
             Rule Rs = tx.putRule("Rs",
                     Graql.parsePattern("$x isa u;"),
                     Graql.parsePattern("$x isa s;"));
-            expected1 = Lists.newArrayList(Rs, Rr, Rp1, Rp2);
-            expected2 = Lists.newArrayList(Rs, Rr, Rp2, Rp1);
 
             tx.commit();
         }
         try(TransactionOLTP tx = session.transaction().write()) {
             List<Rule> rules = RuleUtils.stratifyRules(tx.ruleCache().getRules().map(rule -> new InferenceRule(rule, tx)).collect(Collectors.toSet()))
                     .map(InferenceRule::getRule).collect(Collectors.toList());
+            Rule Rp1 = tx.getRule("Rp1");
+            Rule Rp2 = tx.getRule("Rp2");
+            Rule Rr = tx.getRule("Rr");
+            Rule Rs = tx.getRule("Rs");
+            List<Rule> expected1 = Lists.newArrayList(Rs, Rr, Rp1, Rp2);
+            List<Rule> expected2 = Lists.newArrayList(Rs, Rr, Rp2, Rp1);
             assertTrue(rules.equals(expected1) || rules.equals(expected2));
             expected1.forEach(Concept::delete);
             tx.commit();

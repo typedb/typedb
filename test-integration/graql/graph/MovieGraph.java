@@ -75,6 +75,16 @@ public class MovieGraph {
 
 
     private static void buildSchema(TransactionOLTP tx) {
+
+        tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
+        tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
+        releaseDate = tx.putAttributeType("release-date", AttributeType.DataType.DATE);
+        runtime = tx.putAttributeType("runtime", AttributeType.DataType.LONG);
+        gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).regex("(fe)?male");
+        realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
+        name = tx.putAttributeType("name", AttributeType.DataType.STRING);
+        provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
+
         work = tx.putRole("work");
         author = tx.putRole("author");
         authoredBy = tx.putRelationType("authored-by").relates(work).relates(author);
@@ -103,17 +113,8 @@ public class MovieGraph {
         title = tx.putAttributeType("title", AttributeType.DataType.STRING);
         title.has(title);
 
-        tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
-        tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
-        releaseDate = tx.putAttributeType("release-date", AttributeType.DataType.DATE);
-        runtime = tx.putAttributeType("runtime", AttributeType.DataType.LONG);
-        gender = tx.putAttributeType("gender", AttributeType.DataType.STRING).regex("(fe)?male");
-        realName = tx.putAttributeType("real-name", AttributeType.DataType.STRING);
-        name = tx.putAttributeType("name", AttributeType.DataType.STRING);
-        provenance = tx.putAttributeType("provenance", AttributeType.DataType.STRING);
-
         production = tx.putEntityType("production")
-                .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast)
+                .plays(productionWithCluster).plays(productionBeingDirected).plays(productionWithCast).plays(work)
                 .plays(productionWithGenre);
 
         production.has(title);
@@ -127,7 +128,7 @@ public class MovieGraph {
         tx.putEntityType("tv-show").sup(production);
 
         person = tx.putEntityType("person")
-                .plays(director).plays(actor).plays(characterBeingPlayed);
+                .plays(director).plays(actor).plays(characterBeingPlayed).plays(author);
 
         person.has(gender);
         person.has(name);
@@ -150,6 +151,7 @@ public class MovieGraph {
         cluster.has(name);
 
         tx.getType(Schema.ImplicitType.HAS.getLabel("title")).has(provenance);
+        authoredBy.has(provenance);
     }
 
     private static void buildInstances(TransactionOLTP tx) {

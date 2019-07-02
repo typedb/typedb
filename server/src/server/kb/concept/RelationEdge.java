@@ -136,7 +136,7 @@ public class RelationEdge implements RelationStructure {
                 result.add(value());
             }
         }
-        return result.stream();
+        return result.stream().filter(thing -> !this.isDeleted());
     }
 
     private Role ownerRole() {

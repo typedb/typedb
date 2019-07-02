@@ -47,9 +47,11 @@ java_test(
         "//test-integration/rule:grakn-test-server",
         "//concept",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "@graknlabs_graql//java:graql"
+        "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    data = ["//test-integration/resources:grakn-small-tx-cache"]
 )
 
 checkstyle_test(

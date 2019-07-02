@@ -48,6 +48,7 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
@@ -191,8 +192,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      * @return All the Casting which this instance is cast into the role
      */
     Stream<Casting> castingsInstance() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER).
-                map(edge -> Casting.withThing(edge, this));
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER)
+                .map(edge -> Casting.withThing(edge, this));
     }
 
     private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes) {

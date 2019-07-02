@@ -153,6 +153,10 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory;
     }
 
+    public Config serverConfig() {
+        return serverConfig;
+    }
+
     // Cassandra Helpers
 
     protected void generateCassandraRandomPorts() throws IOException {

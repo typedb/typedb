@@ -206,7 +206,9 @@ public class AttributeAttachmentIT {
         }
     }
 
+    @Ignore
     @Test
+    /* Flaky test */
     public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
         try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
 
