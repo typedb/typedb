@@ -81,7 +81,7 @@ public class GraqlTraversalPlanner {
                 .findFirst().orElse(null);
     }
 
-    private static String PLACEHOLDER_ID = "placeholderId";
+    final private static String PLACEHOLDER_ID = "placeholderId";
 
     /**
      * @param query top level query for which the plan is constructed

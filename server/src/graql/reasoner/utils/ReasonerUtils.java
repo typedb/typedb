@@ -280,7 +280,7 @@ public class ReasonerUtils {
 
     private static <B, S extends B> Map<Equivalence.Wrapper<B>, Integer> getCardinalityMap(Collection<S> coll, Equivalence<B> equiv) {
         Map<Equivalence.Wrapper<B>, Integer> count = new HashMap<>();
-        for (S obj : coll) count.merge(equiv.wrap(obj), 1, (a, b) -> a + b);
+        for (S obj : coll) count.merge(equiv.wrap(obj), 1, Integer::sum);
         return count;
     }
 
