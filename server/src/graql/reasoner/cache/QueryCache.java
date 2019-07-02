@@ -46,24 +46,6 @@ public interface QueryCache<
         SE extends Collection<ConceptMap>> {
 
     /**
-     * record answer iterable for a specific query and retrieve the updated answers
-     *
-     * @param query   to be recorded
-     * @param answers to this query
-     * @return updated entry
-     */
-    CacheEntry<Q, SE> record(Q query, S answers);
-
-    /**
-     * record answer stream for a specific query and retrieve the updated stream
-     *
-     * @param query   to be recorded
-     * @param answers answer stream of the query
-     * @return updated entry
-     */
-    CacheEntry<Q, SE> record(Q query, Stream<ConceptMap> answers);
-
-    /**
      * record single answer to a specific query
      *
      * @param query  of interest
@@ -73,8 +55,6 @@ public interface QueryCache<
     CacheEntry<Q, SE> record(Q query, ConceptMap answer);
 
     CacheEntry<Q, SE> record(Q query, ConceptMap answer, @Nullable CacheEntry<Q, SE> entry, @Nullable MultiUnifier unifier);
-
-    CacheEntry<Q, SE> record(Q query, ConceptMap answer, @Nullable MultiUnifier unifier);
 
     /**
      * retrieve (possibly) cached answers for provided query

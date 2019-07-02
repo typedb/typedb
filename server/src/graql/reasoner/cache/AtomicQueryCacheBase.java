@@ -77,13 +77,39 @@ public abstract class AtomicQueryCacheBase<
         }
     }
 
-    @Override
-    public void clear(){
-        super.clear();
+    void unackCompleteness(ReasonerAtomicQuery query) {
+        unackDBCompleteness(query);
+        if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
+            completeQueries.remove(query);
+        } else {
+            completeEntries.remove(queryToKey(query));
+        }
+    }
+
+    private void unackDBCompleteness(ReasonerAtomicQuery query){
+        if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
+            dbCompleteQueries.remove(query);
+        } else {
+            dbCompleteEntries.remove(queryToKey(query));
+        }
+    }
+
+    void clearQueryCompleteness(){
+        dbCompleteQueries.clear();
+        completeQueries.clear();
+    }
+
+    void clearCompleteness(){
         dbCompleteQueries.clear();
         dbCompleteEntries.clear();
 
         completeQueries.clear();
         completeEntries.clear();
+    }
+
+    @Override
+    public void clear(){
+        super.clear();
+        clearCompleteness();
     }
 }

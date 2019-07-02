@@ -123,6 +123,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         this.edgeRelations().forEach(Concept::delete);
 
         vertex().tx().cache().removedInstance(type().id());
+        vertex().tx().queryCache().ackDeletion(type());
         deleteNode();
 
         relations.forEach(relation -> {

@@ -23,6 +23,8 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Relation;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
@@ -38,6 +40,7 @@ import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -46,6 +49,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -593,6 +597,76 @@ public class QueryCacheIT {
     }
 
     @Test
+    public void whenInstancesAreInserted_weUpdateCompleteness(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = tx.queryCache();
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
+                            "};"
+            ), tx);
+
+            List<ConceptMap> answers = tx.execute(query.getQuery());
+            assertTrue(cache.isComplete(query));
+            assertTrue(cache.isDBComplete(query));
+
+            Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
+
+            tx.getRelationType("binary").create()
+                    .assign(tx.getRole("baseRole1"), entity)
+                    .assign(tx.getRole("baseRole2"), entity);
+
+            assertFalse(cache.isComplete(query));
+            assertFalse(cache.isDBComplete(query));
+
+            ConceptMap answer = new ConceptMap(ImmutableMap.of(Graql.var("x").var(), entity, Graql.var("y").var(), entity));
+            List<ConceptMap> requeriedAnswers = tx.execute(query.getQuery());
+            assertTrue(requeriedAnswers.contains(answer));
+        }
+    }
+
+    @Test
+    public void whenInstancesAreDeleted_weUpdateCompleteness(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = tx.queryCache();
+            Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
+            Entity anotherBaseRoleEntity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
+                            "};"
+            ), tx);
+
+            ReasonerAtomicQuery boundedQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
+                            "$x id " + subRoleEntity.id() + ";" +
+                            "};"
+            ), tx);
+
+            Relation relation = tx.getRelationType("binary").create()
+                    .assign(tx.getRole("baseRole1"), anotherBaseRoleEntity)
+                    .assign(tx.getRole("baseRole2"), anotherBaseRoleEntity);
+
+            List<ConceptMap> answers = tx.execute(query.getQuery());
+            List<ConceptMap> boundedAnswers = tx.execute(boundedQuery.getQuery());
+            assertTrue(cache.isComplete(query));
+            assertTrue(cache.isDBComplete(query));
+
+            relation.delete();
+
+            assertFalse(cache.isComplete(query));
+            assertFalse(cache.isDBComplete(query));
+
+            ConceptMap answer = new ConceptMap(ImmutableMap.of(Graql.var("x").var(), anotherBaseRoleEntity, Graql.var("y").var(), anotherBaseRoleEntity));
+            List<ConceptMap> requeriedAnswers = tx.execute(query.getQuery());
+            List<ConceptMap> requeriedBoundedAnswers = tx.execute(boundedQuery.getQuery());
+            assertFalse(requeriedAnswers.contains(answer));
+            assertCollectionsNonTriviallyEqual(boundedAnswers, requeriedBoundedAnswers);
+        }
+    }
+
+    @Test
     public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = tx.queryCache();
@@ -656,7 +730,6 @@ public class QueryCacheIT {
                 .flatMap(e -> e.cachedElement().getAll().stream())
                 .collect(toSet());
     }
-
 
     private Conjunction<Statement> conjunction(String patternString) {
         Set<Statement> vars = Graql.parsePattern(patternString)

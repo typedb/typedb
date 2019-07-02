@@ -24,8 +24,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.statement.Variable;
-
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -77,11 +75,6 @@ public abstract class QueryCacheBase<
     }
 
     @Override
-    public CacheEntry<Q, SE> record(Q query, ConceptMap answer, @Nullable MultiUnifier unifier) {
-        return record(query, answer, null, unifier);
-    }
-
-    @Override
     public R getAnswers(Q query) { return getAnswersWithUnifier(query).getKey(); }
 
     @Override
@@ -108,6 +101,14 @@ public abstract class QueryCacheBase<
      */
     public CacheEntry<Q, SE> getEntry(Q query) {
         return cache.get(queryToKey(query));
+    }
+
+    /**
+     * @param query for which the entry is to be removed
+     * @return corresponding cache entry to which this map previously associated the key or null
+     */
+    CacheEntry<Q, SE> removeEntry(Q query) {
+        return cache.remove(queryToKey(query));
     }
 
     /**
