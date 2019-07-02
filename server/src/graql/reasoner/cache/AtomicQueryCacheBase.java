@@ -77,7 +77,7 @@ public abstract class AtomicQueryCacheBase<
         }
     }
 
-    public void unackCompleteness(ReasonerAtomicQuery query) {
+    void unackCompleteness(ReasonerAtomicQuery query) {
         unackDBCompleteness(query);
         if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
             completeQueries.remove(query);
@@ -86,7 +86,7 @@ public abstract class AtomicQueryCacheBase<
         }
     }
 
-    public void unackDBCompleteness(ReasonerAtomicQuery query){
+    private void unackDBCompleteness(ReasonerAtomicQuery query){
         if (query.getAtom().getPredicates(IdPredicate.class).findFirst().isPresent()) {
             dbCompleteQueries.remove(query);
         } else {
@@ -94,7 +94,12 @@ public abstract class AtomicQueryCacheBase<
         }
     }
 
-    public void clearCompleteness(){
+    void clearQueryCompleteness(){
+        dbCompleteQueries.clear();
+        completeQueries.clear();
+    }
+
+    void clearCompleteness(){
         dbCompleteQueries.clear();
         dbCompleteEntries.clear();
 

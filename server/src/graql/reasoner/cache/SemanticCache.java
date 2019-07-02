@@ -122,11 +122,15 @@ public abstract class SemanticCache<
     }
 
     public void ackInsertion(){
-        //NB: we do a full completion flush to not add too much overhead
+        //NB: we do a full completion flush to not add too much overhead to inserts
         clearCompleteness();
     }
 
     public void ackDeletion(Type type){
+        //flush db complete queries
+        clearQueryCompleteness();
+
+        //evict entries of the type and those that might be affected by the type
         RuleUtils.getDependentTypes(type).stream()
                 .flatMap(Type::sups)
                 .flatMap(t -> getFamily(t).stream())

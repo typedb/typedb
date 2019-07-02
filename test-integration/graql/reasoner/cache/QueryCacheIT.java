@@ -49,6 +49,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -628,18 +629,27 @@ public class QueryCacheIT {
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = tx.queryCache();
+            Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
+            Entity anotherBaseRoleEntity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
                     "{" +
                             "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
                             "};"
             ), tx);
 
-            Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
+            ReasonerAtomicQuery boundedQuery = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
+                            "$x id " + subRoleEntity.id() + ";" +
+                            "};"
+            ), tx);
+
             Relation relation = tx.getRelationType("binary").create()
-                    .assign(tx.getRole("baseRole1"), entity)
-                    .assign(tx.getRole("baseRole2"), entity);
+                    .assign(tx.getRole("baseRole1"), anotherBaseRoleEntity)
+                    .assign(tx.getRole("baseRole2"), anotherBaseRoleEntity);
 
             List<ConceptMap> answers = tx.execute(query.getQuery());
+            List<ConceptMap> boundedAnswers = tx.execute(boundedQuery.getQuery());
             assertTrue(cache.isComplete(query));
             assertTrue(cache.isDBComplete(query));
 
@@ -648,9 +658,11 @@ public class QueryCacheIT {
             assertFalse(cache.isComplete(query));
             assertFalse(cache.isDBComplete(query));
 
-            ConceptMap answer = new ConceptMap(ImmutableMap.of(Graql.var("x").var(), entity, Graql.var("y").var(), entity));
+            ConceptMap answer = new ConceptMap(ImmutableMap.of(Graql.var("x").var(), anotherBaseRoleEntity, Graql.var("y").var(), anotherBaseRoleEntity));
             List<ConceptMap> requeriedAnswers = tx.execute(query.getQuery());
+            List<ConceptMap> requeriedBoundedAnswers = tx.execute(boundedQuery.getQuery());
             assertFalse(requeriedAnswers.contains(answer));
+            assertCollectionsNonTriviallyEqual(boundedAnswers, requeriedBoundedAnswers);
         }
     }
 
