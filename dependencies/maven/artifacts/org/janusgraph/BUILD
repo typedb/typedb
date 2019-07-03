@@ -58,6 +58,25 @@ java_library(
 
 
 java_library(
+    name = "janusgraph-cql",
+    exports = [
+        "//external:jar/org/janusgraph/janusgraph-cql"
+    ],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/io/netty:netty-handler",
+        "//dependencies/maven/artifacts/io/vavr:vavr",
+        ":janusgraph-core"
+    ],
+    visibility = [
+        "//visibility:public"
+    ]
+)
+
+
+
+java_library(
     name = "janusgraph-hadoop",
     exports = [
         "//external:jar/org/janusgraph/janusgraph-hadoop"

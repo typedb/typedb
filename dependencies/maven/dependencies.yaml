@@ -299,7 +299,7 @@ dependencies:
       lang: java
 
   org.janusgraph:
-    janusgraph-cassandra:
+    janusgraph-cql:
       version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
       lang: java
       exclude:
@@ -347,7 +347,21 @@ dependencies:
       - "org.janusgraph:janusgraph-hbase"
       - "org.janusgraph:janusgraph-es"
       - "io.netty:netty"
-
+    janusgraph-cassandra:
+      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
+      lang: java
+      exclude:
+        - "ch.qos.logback:logback-classic"
+        - "com.boundary:high-scale-lib" # PREVIOUSLY AVAILABLE
+        - "javax.servlet:javax.servlet-api"
+        - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
+        - "org.mortbay.jetty:servlet-api"
+        - "org.mortbay.jetty:servlet-api-2.5"
+        - "org.slf4j:slf4j-api"
+        - "org.slf4j:slf4j-log4j12"
+        - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
+        - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
+        - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
   org.mockito:
     mockito-core:
       version: "2.6.4"
