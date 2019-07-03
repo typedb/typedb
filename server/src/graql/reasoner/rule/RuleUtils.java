@@ -144,8 +144,6 @@ public class RuleUtils {
         typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
         return typeCycles.stream().anyMatch(typeSet -> {
-            //for complicated patterns we reiterate
-            if (typeSet.size() > 1) return true;
             Set<ReasonerAtomicQuery> queries = typeSet.stream()
                     .flatMap(type -> typeTCinverse.get(type).stream())
                     .flatMap(type -> tx.queryCache().getFamily(type).stream())
