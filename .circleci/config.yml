@@ -423,7 +423,7 @@ jobs:
           bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$(cat VERSION) \
           --targets \
-          grakn-kgms:master benchmark:master workbase:master \
+          grakn-kgms:master benchmark:master workbase:master biograkn:master \
           client-java:master client-python:master client-nodejs:master \
           docs:master examples:master
 
