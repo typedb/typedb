@@ -111,7 +111,7 @@ public class InferenceRule {
     /**
      * @return the priority with which the rule should be fired
      */
-    public long resolutionPriority(){
+    long resolutionPriority(){
         if (priority == Long.MAX_VALUE) {
             //NB: this has to be relatively lightweight as it is called on each rule
             //TODO come with a more useful metric
@@ -121,6 +121,7 @@ public class InferenceRule {
                     .map(Concept::asType)
                     .anyMatch(t -> t.thenRules().findFirst().isPresent());
             priority = bodyRuleResolvable? -1 : 0;
+            priority -= getHead().getAtom().getSchemaConcept().sups().count();
         }
         return priority;
     }
@@ -140,20 +141,7 @@ public class InferenceRule {
     private boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
-
-    /**
-     * @return true if head satisfies the pattern specified in the body of the rule
-     */
-    boolean headSatisfiesBody(){
-        Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
-        Set<Variable> headVars = getHead().getVarNames();
-        getBody().getAtoms(TypeAtom.class)
-                .filter(t -> !t.isRelation())
-                .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
-                .forEach(atoms::add);
-        return getBody().isEquivalent(ReasonerQueries.create(atoms, tx));
-    }
-
+    
     /**
      * rule requires materialisation in the context of resolving parent atom
      * if parent atom requires materialisation, head atom requires materialisation or if the head contains only fresh variables
