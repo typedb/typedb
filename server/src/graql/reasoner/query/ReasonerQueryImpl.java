@@ -556,7 +556,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     public boolean requiresReiteration() {
         if (isCacheComplete()) return false;
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
-        return RuleUtils.subGraphIsCyclical(dependentRules, tx());
+        return RuleUtils.subGraphIsCyclical(dependentRules, tx())
+                || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
     }
 
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
