@@ -82,16 +82,20 @@ public class HadoopGraphFactory {
         // Janus configurations
         String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
         String inputKeyspaceConf = "cassandra.input.keyspace";
-        String keyspaceConf = "storage.cassandra.keyspace";
-        String hostnameConf = "storage.hostname";
+        String keyspaceConf = "storage.cql.keyspace"; // probably should change this to storage.cql.keyspace? but on PR https://github.com/JanusGraph/janusgraph/pull/1436/files does not change
+//        String hostnameConf = "storage.hostname";
 
         // Values
         String keyspaceValue = keyspace.name();
         String hostnameValue = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
 
-        config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
+//        config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
         config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceValue);
+        config.properties().setProperty(graphMrPrefixConf + inputKeyspaceConf, keyspaceValue);
         config.properties().setProperty(inputKeyspaceConf, keyspaceValue);
+        config.properties().setProperty("storage.cql.keyspace", keyspaceValue);
+        config.properties().setProperty(graphMrPrefixConf + inputKeyspaceConf, keyspaceValue);
+
 
         return config;
     }

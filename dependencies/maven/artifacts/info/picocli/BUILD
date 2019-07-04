@@ -1,7 +1,7 @@
 java_library(
-    name = "scala-xml-2-11",
+    name = "picocli",
     exports = [
-        "//external:jar/org/scala-lang/modules/scala-xml-2-11"
+        "//external:jar/info/picocli/picocli"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
