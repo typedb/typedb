@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["@graknlabs_grakn_core//__subpackages__"])
 
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
