@@ -35,9 +35,40 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+java_test(
+    name = "grakn-client-it",
+    srcs = ["GraknClientIT.java"],
+    test_class = "grakn.core.server.GraknClientIT",
+    deps = [
+        # Package dependencies
+        "@graknlabs_client_java//:client-java",
+
+        # Internal dependencies
+        "//api:api",
+        "//concept:concept",
+        "//server:server", # TODO: NEEDS TO GO
+        "//test-integration/rule:grakn-test-server",
+
+        # External depencies from @graknlabs
+        "@graknlabs_graql//java:graql",
+
+        # External depencncies from Maven
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/guava:guava"
+    ],
+    size = "large",
+    classpath_resources = [
+        "//test-integration/resources:logback-test",
+        "//test-integration/resources:cassandra-embedded",
+        "//server:conf/grakn.properties"
+    ]
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":attribute-uniqueness-it"
+        ":attribute-uniqueness-it",
+        ":grakn-client-it"
     ],
 )

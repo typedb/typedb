@@ -36,7 +36,7 @@ import java.util.Objects;
 import java.util.Scanner;
 
 /**
- * The {@link GraknDaemon} class is responsible for starting, stopping and cleaning the keyspaces of Grakn
+ * The GraknDaemon class is responsible for starting, stopping and cleaning the keyspaces of Grakn
  */
 public class GraknDaemon {
     private static final Logger LOG = LoggerFactory.getLogger(GraknDaemon.class);
