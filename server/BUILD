@@ -40,8 +40,7 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_protocol//keyspace:keyspace",
-        "@graknlabs_protocol//session:session",
+        "@graknlabs_protocol//grpc/java:protocol",
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
