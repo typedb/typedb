@@ -29,7 +29,7 @@ genrule(
         "templates/Version.java",
         ":VERSION",
     ],
-    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/Version.java) >> $@",
+    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     outs = ["Version.java"],
 )
 

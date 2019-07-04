@@ -30,6 +30,7 @@ java_library(
 
         # Grakn Core dependencies
         "//common",
+        "//server",
 
         # External dependencies
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",

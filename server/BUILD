@@ -29,9 +29,21 @@ exports_files(
     visibility = ["//visibility:public"]
 )
 
+
+genrule(
+    name = "version",
+    srcs = [
+        "src/server/templates/Version.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location src/server/templates/Version.java) >> $@",
+    outs = ["Version.java"],
+    visibility = ["//common:__subpackages__"],
+)
+
 java_library(
     name = "server",
-    srcs = glob(["src/**/*.java"]),
+    srcs = glob(["src/**/*.java"], exclude=["**/templates/**", "**/test/**"]) + [":version"],
     deps = [
         # Internal dependencies
         "//api:api",

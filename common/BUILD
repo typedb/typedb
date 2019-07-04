@@ -23,9 +23,7 @@ load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "
 
 java_library(
     name = "common",
-    srcs = glob(["**/*.java"], exclude=["templates/**", "**/test/**"]) + [
-        "//common/templates/util:grakn-version"
-    ],
+    srcs = glob(["**/*.java"]),
     deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
