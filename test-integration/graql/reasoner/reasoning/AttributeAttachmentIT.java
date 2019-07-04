@@ -158,7 +158,6 @@ public class AttributeAttachmentIT {
             */
             final int baseResourceRoles = 4;
             final int subResourceRoles = 5;
-            //TODO: currently we will reify the implicit relations and have duplicate reified and non-reified versions in the answers
             assertEquals(
                     concepts.size() * baseResourceRoles +
                             subResources.size() * subResourceRoles,

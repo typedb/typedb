@@ -396,7 +396,7 @@ public abstract class AttributeAtom extends Binary{
     }
 
     private ConceptMap findAnswer(ConceptMap sub){
-        //AttributeAtom atom = getRelationVariable().isReturned()? this.rewriteWithRelationVariable() : this;
+        //NB: we are only interested in this atom and its subs, not any other constraints
         ReasonerAtomicQuery query = ReasonerQueries.atomic(Collections.singleton(this), tx()).withSubstitution(sub);
         ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
 
