@@ -141,6 +141,20 @@ public class InferenceRule {
     private boolean hasDisconnectedHead(){
         return Sets.intersection(body.getVarNames(), head.getVarNames()).isEmpty();
     }
+
+    /**
+     * @return true if head satisfies the pattern specified in the body of the rule
+     */
+    boolean headSatisfiesBody(){
+        if (!getBody().isAtomic()) return false;
+        Set<Atomic> atoms = new HashSet<>(getHead().getAtoms());
+        Set<Variable> headVars = getHead().getVarNames();
+        getBody().getAtoms(TypeAtom.class)
+                .filter(t -> !t.isRelation())
+                .filter(t -> !Sets.intersection(t.getVarNames(), headVars).isEmpty())
+                .forEach(atoms::add);
+        return ReasonerQueries.create(atoms, tx).isEquivalent(getBody());
+    }
     
     /**
      * rule requires materialisation in the context of resolving parent atom

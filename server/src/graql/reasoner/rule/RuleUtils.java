@@ -188,6 +188,15 @@ public class RuleUtils {
     }
 
     /**
+     * @param rules set of rules of interest forming a rule subgraph
+     * @return true if the rule subgraph formed from provided rules contains any rule with head satisfying the body pattern
+     */
+    public static boolean subGraphHasRulesWithHeadSatisfyingBody(Set<InferenceRule> rules){
+        return rules.stream()
+                .anyMatch(InferenceRule::headSatisfiesBody);
+    }
+
+    /**
      * @param query top query
      * @return all rules that are reachable from the entry types
      */

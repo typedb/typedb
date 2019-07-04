@@ -102,6 +102,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             if (isInferred){
                 instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
             } else {
+                //creation of inferred concepts is an integral part of reasoning
+                //hence we only acknowledge non-inferred insertions
                 vertex().tx().queryCache().ackInsertion();
             }
         }
