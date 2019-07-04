@@ -20,7 +20,7 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.common.util.Streams;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
@@ -237,10 +237,10 @@ public class NodesUtil {
                     .map(rule ->
                             rule.whenTypes()
                                     .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx, t2.label()))))
-                                    .flatMap(CommonUtil::optionalToStream)
+                                    .flatMap(Streams::optionalToStream)
                                     .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.label())))
                     )
-                    .flatMap(CommonUtil::optionalToStream)
+                    .flatMap(Streams::optionalToStream)
                     .collect(toSet());
 
             if (!visitedTypes.contains(type) && !dependants.isEmpty()){

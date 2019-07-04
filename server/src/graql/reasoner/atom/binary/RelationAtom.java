@@ -29,7 +29,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.common.util.Streams;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -77,6 +77,8 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.StatementInstance;
 import graql.lang.statement.StatementThing;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -91,7 +93,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.server.kb.concept.ConceptUtils.bottom;
 import static grakn.core.server.kb.concept.ConceptUtils.top;
@@ -119,9 +120,9 @@ public abstract class RelationAtom extends IsaAtomBase {
         ImmutableSet<Label> roleLabels = ImmutableSet.<Label>builder().addAll(
                 relationPlayers.stream()
                         .map(RelationProperty.RolePlayer::getRole)
-                        .flatMap(CommonUtil::optionalToStream)
+                        .flatMap(Streams::optionalToStream)
                         .map(Statement::getType)
-                        .flatMap(CommonUtil::optionalToStream)
+                        .flatMap(Streams::optionalToStream)
                         .map(Label::of).iterator()
         ).build();
         return new AutoValue_RelationAtom(pattern.var(), pattern, parent, predicateVar, predicateId, relationPlayers, roleLabels);
@@ -168,8 +169,8 @@ public abstract class RelationAtom extends IsaAtomBase {
     private void checkPattern(){
         getPattern().getProperties(RelationProperty.class)
                 .flatMap(p -> p.relationPlayers().stream())
-                .map(RelationProperty.RolePlayer::getRole).flatMap(CommonUtil::optionalToStream)
-                .map(Statement::getType).flatMap(CommonUtil::optionalToStream)
+                .map(RelationProperty.RolePlayer::getRole).flatMap(Streams::optionalToStream)
+                .map(Statement::getType).flatMap(Streams::optionalToStream)
                 .map(Label::of)
                 .forEach(roleId -> {
                     SchemaConcept schemaConcept = tx().getSchemaConcept(roleId);
@@ -307,7 +308,7 @@ public abstract class RelationAtom extends IsaAtomBase {
     private Set<Variable> getRoleVariables(){
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::optionalToStream)
                 .map(Statement::var)
                 .filter(Variable::isReturned)
                 .collect(Collectors.toSet());
@@ -485,7 +486,7 @@ public abstract class RelationAtom extends IsaAtomBase {
     public Stream<IdPredicate> getRolePredicates(){
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::optionalToStream)
                 .filter(var -> var.var().isReturned())
                 .filter(vp -> vp.getType().isPresent())
                 .map(vp -> {
@@ -543,9 +544,9 @@ public abstract class RelationAtom extends IsaAtomBase {
 
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::optionalToStream)
                 .map(Statement::getType)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::optionalToStream)
                 .map(tx::getRole)
                 .filter(Objects::nonNull);
     }
@@ -709,7 +710,7 @@ public abstract class RelationAtom extends IsaAtomBase {
     public Set<Variable> getRoleExpansionVariables(){
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
-                .flatMap(CommonUtil::optionalToStream)
+                .flatMap(Streams::optionalToStream)
                 .filter(p -> p.var().isReturned())
                 .filter(p -> !p.getType().isPresent())
                 .map(Statement::var)
@@ -722,7 +723,7 @@ public abstract class RelationAtom extends IsaAtomBase {
                 super.getInnerPredicates(),
                 getRelationPlayers().stream()
                         .map(RelationProperty.RolePlayer::getRole)
-                        .flatMap(CommonUtil::optionalToStream)
+                        .flatMap(Streams::optionalToStream)
                         .filter(vp -> vp.var().isReturned())
                         .map(vp -> new Pair<>(vp.var(), vp.getType().orElse(null)))
                         .filter(p -> Objects.nonNull(p.getValue()))
@@ -957,7 +958,7 @@ public abstract class RelationAtom extends IsaAtomBase {
             Set<List<Pair<RelationProperty.RolePlayer, RelationProperty.RolePlayer>>> rpMappings = getRelationPlayerMappings(parent, unifierType);
             boolean containsRoleVariables = parent.getRelationPlayers().stream()
                     .map(RelationProperty.RolePlayer::getRole)
-                    .flatMap(CommonUtil::optionalToStream)
+                    .flatMap(Streams::optionalToStream)
                     .anyMatch(rp -> rp.var().isReturned());
 
             //NB: if two atoms are equal and their rp mappings are complete we return the identity unifier
@@ -1025,10 +1026,10 @@ public abstract class RelationAtom extends IsaAtomBase {
             if(parentRoleVars.contains(parentVar)){
                 Set<Label> roleLabels = this.getRelationPlayers().stream()
                         .map(RelationProperty.RolePlayer::getRole)
-                        .flatMap(CommonUtil::optionalToStream)
+                        .flatMap(Streams::optionalToStream)
                         .filter(roleStatement -> roleStatement.var().equals(childVar))
                         .map(Statement::getType)
-                        .flatMap(CommonUtil::optionalToStream)
+                        .flatMap(Streams::optionalToStream)
                         .map(Label::of)
                         .collect(toSet());
                 if (!roleLabels.isEmpty()){
