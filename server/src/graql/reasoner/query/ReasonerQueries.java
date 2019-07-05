@@ -152,6 +152,16 @@ public class ReasonerQueries {
     }
 
     /**
+     * create a reasoner atomic query from provided set of atomics
+     * @param as set of atomics that define the query
+     * @param tx corresponding transaction
+     * @return reasoner query defined by the provided set of atomics
+     */
+    public static ReasonerAtomicQuery atomic(Set<Atomic> as, TransactionOLTP tx){
+        return new ReasonerAtomicQuery(as, tx).inferTypes();
+    }
+
+    /**
      * create an atomic query by combining an existing atomic query and a substitution
      * @param q base query for substitution to be attached
      * @param sub (partial) substitution

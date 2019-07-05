@@ -44,6 +44,7 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -60,6 +61,7 @@ import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -394,8 +396,8 @@ public abstract class AttributeAtom extends Binary{
     }
 
     private ConceptMap findAnswer(ConceptMap sub){
-        AttributeAtom atom = getRelationVariable().isReturned()? this.rewriteWithRelationVariable() : this;
-        ReasonerAtomicQuery query = ReasonerQueries.atomic(atom).withSubstitution(sub);
+        //NB: we are only interested in this atom and its subs, not any other constraints
+        ReasonerAtomicQuery query = ReasonerQueries.atomic(Collections.singleton(this), tx()).withSubstitution(sub);
         ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) tx().queryCache().ackDBCompleteness(query);
@@ -410,7 +412,7 @@ public abstract class AttributeAtom extends Binary{
      * @return inserted implicit relation if didn't exist, null otherwise
      */
     private Relation putImplicitRelation(ConceptMap sub, Concept owner, Attribute attribute){
-        ConceptMap answer = findAnswer(ConceptUtils.mergeAnswers(sub, new ConceptMap(ImmutableMap.of(getAttributeVariable(), attribute))));
+        ConceptMap answer = findAnswer(sub);
         if (answer == null) return attachAttribute(owner, attribute);
         return getRelationVariable().isReturned()? answer.get(getRelationVariable()).asRelation() : null;
     }
@@ -424,22 +426,36 @@ public abstract class AttributeAtom extends Binary{
         Variable resourceVariable = getAttributeVariable();
 
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
-        Attribute attribute;
+        Attribute attribute = null;
         if(this.isValueEquality()){
             Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().value();
             Attribute existingAttribute = attributeType.attribute(value);
             attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
         } else {
-            attribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
+            Attribute existingAttribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
+            //even if the attribute exists but is of different type (supertype for instance) we create a new one
+            //to make sure the attribute index will be different
+            if (existingAttribute != null){
+                Object value = existingAttribute.value();
+                attribute = existingAttribute;
+                if (!existingAttribute.type().equals(attributeType)){
+                    existingAttribute = attributeType.attribute(value);
+                    attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
+                }
+            }
         }
 
         if (attribute != null) {
-            Relation relation = putImplicitRelation(substitution, owner, attribute);
-            ConceptMap answer = new ConceptMap(ImmutableMap.of(resourceVariable, attribute));
+            ConceptMap answer = new ConceptMap(ImmutableMap.of(
+                    getVarName(), substitution.get(getVarName()),
+                    resourceVariable, attribute));
+
+            Relation relation = putImplicitRelation(answer, owner, attribute);
+
             if (getRelationVariable().isReturned()){
                 answer = ConceptUtils.mergeAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
             }
-            return Stream.of(ConceptUtils.mergeAnswers(substitution, answer));
+            return Stream.of(answer);
         }
         return Stream.empty();
     }

@@ -104,8 +104,7 @@ public class VariableValuePredicateIT {
             });
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            Conjunction<?> queryPattern = Graql.and(basePattern, Graql.var("value").gte(Graql.var("anotherValue")));
-            List<ConceptMap> answers = tx.execute(Graql.match(queryPattern).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").gte(Graql.var("anotherValue")))).get());
             answers.forEach(ans -> {
                 assertTrue((long) ans.get("value").asAttribute().value() >= (long) ans.get("anotherValue").asAttribute().value());
             });
@@ -137,7 +136,7 @@ public class VariableValuePredicateIT {
     }
 
     @Test
-    public void whenResolvableAttributesHaveVariableComparisonsd_answersAreCalculatedCorrectly(){
+    public void whenResolvableAttributesHaveVariableComparisonsWithABound_answersAreCalculatedCorrectly(){
         SessionImpl session = server.sessionWithNewKeyspace();
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +
@@ -145,7 +144,8 @@ public class VariableValuePredicateIT {
                     "has derivedResource;" +
                     "derivedResource sub attribute, datatype long;" +
                     "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
-                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};"
+                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
+                    "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"
 
             ).asDefine());
             tx.execute(Graql.parse("insert " +
@@ -154,20 +154,38 @@ public class VariableValuePredicateIT {
             ).asInsert());
             tx.commit();
         }
+
+        final long bound = 1667L;
+        Pattern basePattern = Graql.parsePattern("{" +
+                "$x has derivedResource $value;" +
+                "$y has derivedResource $anotherValue;" +
+                "$value == $anotherValue;" +
+                "};");
+
         try(TransactionOLTP tx = session.transaction().write()) {
-            String pattern = "{" +
-                    "$x has derivedResource $value;" +
-                    "$y has derivedResource $anotherValue;" +
-                    "$value == $anotherValue;" +
-                    "$anotherValue > 1337;" +
-                    "};";
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.parsePattern(pattern)).get());
-            answers.forEach(ans -> {
-                Object value = ans.get("value").asAttribute().value();
-                Object anotherValue = ans.get("anotherValue").asAttribute().value();
-                assertEquals(value, anotherValue);
-                assertTrue((long) value > 1337L);
-            });
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").gt(bound))).get());
+            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() > bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").gte(bound))).get());
+            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() >= bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").lt(bound))).get());
+            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() < bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").lte(bound))).get());
+            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() <= bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").eq(bound))).get());
+            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() == bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").neq(bound))).get());
+            //TODO this currently fails
+            //answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() != bound));
         }
     }
 

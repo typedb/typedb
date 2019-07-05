@@ -121,6 +121,7 @@ public class InferenceRule {
                     .map(Concept::asType)
                     .anyMatch(t -> t.thenRules().findFirst().isPresent());
             priority = bodyRuleResolvable? -1 : 0;
+            //resolve base types first
             priority -= getHead().getAtom().getSchemaConcept().sups().count();
         }
         return priority;
