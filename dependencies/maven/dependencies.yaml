@@ -250,13 +250,13 @@ dependencies:
 
   org.apache.tinkerpop:
     gremlin-core:
-      version: "3.4.1"
+      version: "3.4.0"
       lang: java
       exclude:
       - "org.slf4j:jcl-over-slf4j"
       - "org.slf4j:slf4j-log4j12"
     hadoop-gremlin:
-      version: "3.4.1"
+      version: "3.4.0"
       lang: java
       exclude:
       - "com.fasterxml.jackson.core:jackson-core"
@@ -272,7 +272,7 @@ dependencies:
       - "org.slf4j:slf4j-log4j12"
       - "org.slf4j:slf4j-nop"
     spark-gremlin:
-      version: "3.4.1"
+      version: "3.4.0"
       lang: java
       exclude:
       - "com.fasterxml.jackson.core:jackson-annotations" # PREVIOUSLY AVAILABLE
@@ -282,7 +282,7 @@ dependencies:
       - "io.netty:netty"
       - "javax.servlet:javax.servlet-api"
     tinkergraph-gremlin:
-      version: "3.4.1"
+      version: "3.4.0"
       lang: java
       exclude:
       - "org.slf4j:slf4j-log4j12"

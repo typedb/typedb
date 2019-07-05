@@ -27,6 +27,7 @@ import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
+import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
@@ -53,6 +54,7 @@ public class SessionFactory {
 
     private final JanusGraphFactory janusGraphFactory;
     protected final KeyspaceManager keyspaceManager;
+    private final HadoopGraphFactory hadoopGraphFactory;
     protected Config config;
     protected final LockManager lockManager;
 
@@ -60,6 +62,7 @@ public class SessionFactory {
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceManager, Config config) {
         this.janusGraphFactory = janusGraphFactory;
+        this.hadoopGraphFactory = new HadoopGraphFactory(config);
         this.lockManager = lockManager;
         this.keyspaceManager = keyspaceManager;
         this.config = config;
@@ -106,7 +109,8 @@ public class SessionFactory {
                 cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, keyspaceStatistics, attributesCache, graphLock);
+            HadoopGraph hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
+            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;

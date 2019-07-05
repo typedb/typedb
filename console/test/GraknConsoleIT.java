@@ -26,6 +26,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.console.GraknConsole;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.session.SessionImpl;
 import graql.lang.Graql;
 import io.grpc.Status;
 import org.apache.commons.io.output.TeeOutputStream;
@@ -295,6 +297,9 @@ public class GraknConsoleIT {
 
     @Test
     public void when_writingComputeQueries_expect_correctCount() throws Exception {
+//        SessionImpl grakn1 = server.sessionFactory().session(KeyspaceImpl.of("grakn1"));
+//        grakn1.transaction().read().close();
+//        grakn1.close();
         assertConsoleSessionMatches(
                 analyticsDataset,
                 anything(),
