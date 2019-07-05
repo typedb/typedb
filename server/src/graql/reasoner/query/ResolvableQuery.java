@@ -58,10 +58,10 @@ public interface ResolvableQuery extends ReasonerQuery {
     ResolvableQuery withSubstitution(ConceptMap sub);
 
     /**
-     * @return corresponding neqPositive query (with neq predicates removed)
+     * @return corresponding query with variable predicates removed
      */
     @CheckReturnValue
-    ResolvableQuery neqPositive();
+    ResolvableQuery constantValuePredicateQuery();
 
     /**
      * @return corresponding reasoner query with inferred types

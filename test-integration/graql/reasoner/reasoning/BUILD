@@ -17,12 +17,12 @@ java_test(
 )
 
 java_test(
-    name = "variable-valuepredicate-it",
+    name = "valuepredicate-it",
     size = "medium",
-    srcs = ["VariableValuePredicateIT.java"],
+    srcs = ["ValuePredicateIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.graql.reasoner.reasoning.VariableValuePredicateIT",
+    test_class = "grakn.core.graql.reasoner.reasoning.ValuePredicateIT",
     deps = [
         "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -139,7 +139,7 @@ checkstyle_test(
     targets = [
         ":attribute-attachment-it",
         ":neq-idpredicate-it",
-        ":variable-valuepredicate-it",
+        ":valuepredicate-it",
         ":recursion-it",
         ":type-generation-it",
         ":type-hierarchies-it",

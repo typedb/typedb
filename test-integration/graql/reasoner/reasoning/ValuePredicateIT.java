@@ -52,11 +52,10 @@ import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 
-public class VariableValuePredicateIT {
-
-    private static String resourcePath = "test-integration/graql/reasoner/stubs/";
+public class ValuePredicateIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -65,12 +64,69 @@ public class VariableValuePredicateIT {
     @BeforeClass
     public static void loadContext(){
         attributeAttachmentSession = server.sessionWithNewKeyspace();
+        String resourcePath = "test-integration/graql/reasoner/stubs/";
         loadFromFileAndCommit(resourcePath, "resourceAttachment.gql", attributeAttachmentSession);
     }
 
     @AfterClass
     public static void closeSession(){
         attributeAttachmentSession.close();
+    }
+
+    @Test
+    public void whenResolvingInferrableAttributesWithBounds_answersAreCalculatedCorrectly(){
+        SessionImpl session = server.sessionWithNewKeyspace();
+        try(TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.parse("define " +
+                    "someEntity sub entity," +
+                    "has derivedResource;" +
+                    "derivedResource sub attribute, datatype long;" +
+                    "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};" +
+                    "rule2 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1667;};" +
+                    "rule3 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1997;};"
+
+            ).asDefine());
+            tx.execute(Graql.parse("insert " +
+                    "$x isa someEntity;" +
+                    "$y isa someEntity;"
+            ).asInsert());
+            tx.commit();
+        }
+
+        final long bound = 1667L;
+        Statement value = Graql.var("value");
+        Pattern basePattern = Graql.var("x").has("derivedResource", value);
+
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gt(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() > bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gte(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() >= bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lt(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() < bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lte(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() <= bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.eq(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() == bound));
+        }
+        try(TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.neq(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
+        }
     }
 
     @Test
@@ -92,45 +148,53 @@ public class VariableValuePredicateIT {
             tx.commit();
         }
 
-        Pattern basePattern = Graql.parsePattern("{" +
-                "$x has derivedResource $value;" +
-                "$y has derivedResource $anotherValue;" +
-                "};");
+        Statement value = Graql.var("value");
+        Statement anotherValue = Graql.var("anotherValue");
+        Pattern basePattern = Graql.and(
+                Graql.var("x").has("derivedResource", value),
+                Graql.var("y").has("derivedResource", anotherValue)
+        );
 
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").gt(Graql.var("anotherValue")))).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gt(anotherValue))).get());
+            assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
-                assertTrue((long) ans.get("value").asAttribute().value() > (long) ans.get("anotherValue").asAttribute().value());
+                assertTrue((long) ans.get(value.var()).asAttribute().value() > (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").gte(Graql.var("anotherValue")))).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gte(anotherValue))).get());
+            assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
-                assertTrue((long) ans.get("value").asAttribute().value() >= (long) ans.get("anotherValue").asAttribute().value());
+                assertTrue((long) ans.get(value.var()).asAttribute().value() >= (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").lt(Graql.var("anotherValue")))).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lt(anotherValue))).get());
+            assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
-                assertTrue((long) ans.get("value").asAttribute().value() < (long) ans.get("anotherValue").asAttribute().value());
+                assertTrue((long) ans.get(value.var()).asAttribute().value() < (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").lte(Graql.var("anotherValue")))).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lte(anotherValue))).get());
+            assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
-                assertTrue((long) ans.get("value").asAttribute().value() <= (long) ans.get("anotherValue").asAttribute().value());
+                assertTrue((long) ans.get(value.var()).asAttribute().value() <= (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").eq(Graql.var("anotherValue")))).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.eq(anotherValue))).get());
+            assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
-                assertEquals((long) ans.get("value").asAttribute().value(), (long) ans.get("anotherValue").asAttribute().value());
+                assertEquals((long) ans.get(value.var()).asAttribute().value(), (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("value").neq(Graql.var("anotherValue")))).get());
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.neq(anotherValue))).get());
+            assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
-                assertTrue((long) ans.get("value").asAttribute().value() != (long) ans.get("anotherValue").asAttribute().value());
+                assertTrue((long) ans.get(value.var()).asAttribute().value() != (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
     }
@@ -156,36 +220,43 @@ public class VariableValuePredicateIT {
         }
 
         final long bound = 1667L;
-        Pattern basePattern = Graql.parsePattern("{" +
-                "$x has derivedResource $value;" +
-                "$y has derivedResource $anotherValue;" +
-                "$value == $anotherValue;" +
-                "};");
+        Statement value = Graql.var("value");
+        Statement anotherValue = Graql.var("anotherValue");
+        Pattern basePattern = Graql.and(
+                Graql.var("x").has("derivedResource", value),
+                Graql.var("y").has("derivedResource", anotherValue),
+                value.eq(anotherValue)
+        );
 
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").gt(bound))).get());
-            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() > bound));
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.gt(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() > bound));
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").gte(bound))).get());
-            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() >= bound));
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.gte(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() >= bound));
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").lt(bound))).get());
-            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() < bound));
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.lt(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() < bound));
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").lte(bound))).get());
-            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() <= bound));
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.lte(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() <= bound));
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").eq(bound))).get());
-            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() == bound));
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.eq(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() == bound));
         }
         try(TransactionOLTP tx = session.transaction().write()) {
-            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").neq(bound))).get());
-            //TODO this currently fails
-            //answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() != bound));
+            List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.neq(bound))).get());
+            assertFalse(answers.isEmpty());
+            answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
         }
     }
 
@@ -495,8 +566,8 @@ public class VariableValuePredicateIT {
             answers.forEach(ans -> {
                 Type type = ans.get("type").asType();
                 Object value = ans.get("value").asAttribute().value();
-                assertTrue(!value.equals("unattached"));
-                assertTrue(!type.equals(unwantedType));
+                assertNotEquals("unattached", value);
+                assertNotEquals(unwantedType, type);
             });
         }
     }

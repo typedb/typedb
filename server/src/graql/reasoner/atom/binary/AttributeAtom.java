@@ -106,20 +106,6 @@ public abstract class AttributeAtom extends Binary{
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
 
     @Override
-    public Atomic neqPositive(){
-        return create(
-                this.getPattern(),
-                this.getAttributeVariable(),
-                this.getRelationVariable(),
-                this.getPredicateVariable(),
-                this.getTypeId(),
-                this.getMultiPredicate().stream()
-                        .filter(at -> !(at.getPredicate().comparator().equals(Graql.Token.Comparator.NEQV)))
-                        .collect(Collectors.toSet()),
-                this.getParentQuery());
-    }
-
-    @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
 
     @Override
