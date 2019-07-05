@@ -31,6 +31,7 @@ genrule(
     ],
     cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     outs = ["Version.java"],
+    visibility = ["//visibility:public"]
 )
 
 java_library(
