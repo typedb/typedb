@@ -75,7 +75,7 @@ public class QueryIT {
     }
 
     @Test
-    public void testQueryReiterationCondition_CyclicalRuleGraphWithTypeHierarchiesInBodies(){
+    public void whenQueryHasCyclicalRuleGraphTypeHierarchiesInBodies_weReiterate(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             try (TransactionOLTP tx = session.transaction().write()) {
 
@@ -123,11 +123,37 @@ public class QueryIT {
                 //with cache empty no loops are found
                 assertFalse(RuleUtils.subGraphIsCyclical(rules, tx));
                 assertFalse(query.requiresReiteration());
-
                 List<ConceptMap> answers = query.resolve().collect(Collectors.toList());
 
                 //with populated cache we find a loop
                 assertTrue(RuleUtils.subGraphIsCyclical(rules, tx));
+            }
+        }
+    }
+
+    @Test
+    public void whenQueryHasMultipleDisconnectedInferrableAtoms_weReiterate(){
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+            try(TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(Graql.parse("define " +
+                        "someEntity sub entity," +
+                        "has derivedResource;" +
+                        "derivedResource sub attribute, datatype long;" +
+                        "rule1 sub rule, when{ $x isa someEntity;}, then { $x has derivedResource 1337;};"
+                ).asDefine());
+                tx.execute(Graql.parse("insert " +
+                        "$x isa someEntity;" +
+                        "$y isa someEntity;"
+                ).asInsert());
+                tx.commit();
+            }
+            Pattern pattern = Graql.and(
+                    Graql.var("x").has("derivedResource", Graql.var("value")),
+                    Graql.var("y").has("derivedResource", Graql.var("anotherValue"))
+            );
+            try (TransactionOLTP tx = session.transaction().write()) {
+                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(pattern.toString(), tx), tx);
+                assertTrue(query.requiresReiteration());
             }
         }
     }
