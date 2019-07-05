@@ -155,10 +155,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ReasonerQueryImpl neqPositive(){
+    public ReasonerQueryImpl constantValuePredicateQuery(){
         return ReasonerQueries.create(
                 getAtoms().stream()
-                        .map(Atomic::neqPositive)
                         .filter(at -> !(at instanceof VariablePredicate))
                         .collect(Collectors.toSet()),
                 tx());

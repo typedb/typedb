@@ -184,8 +184,7 @@ public class VariableValuePredicateIT {
         }
         try(TransactionOLTP tx = session.transaction().write()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, Graql.var("anotherValue").neq(bound))).get());
-            //TODO this currently fails
-            //answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() != bound));
+            answers.forEach(ans -> assertTrue((long) ans.get("value").asAttribute().value() != bound));
         }
     }
 
