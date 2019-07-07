@@ -50,7 +50,7 @@ jobs:
       - run: |
           SONAR_SCANNER_VERSION=3.3.0.1492
 
-          wget /home/circleci/.sonar/sonar-scanner.zip http://repo1.maven.org/maven2/org/sonarsource/scanner/cli/sonar-scanner-cli/$SONAR_SCANNER_VERSION/sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
+          wget http://repo1.maven.org/maven2/org/sonarsource/scanner/cli/sonar-scanner-cli/$SONAR_SCANNER_VERSION/sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
           unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
 
           ./sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner \
