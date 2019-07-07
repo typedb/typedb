@@ -47,7 +47,21 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel build //...
+      - run: |
+          SONAR_SCANNER_VERSION=3.3.0.1492
 
+          wget /home/circleci/.sonar/sonar-scanner.zip http://repo1.maven.org/maven2/org/sonarsource/scanner/cli/sonar-scanner-cli/$SONAR_SCANNER_VERSION/sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
+          unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
+
+          ./sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner \
+            -Dsonar.projectKey=$CIRCLE_PROJECT_USERNAME-$CIRCLE_PROJECT_REPONAME \
+            -Dsonar.organization=$CIRCLE_PROJECT_USERNAME \
+            -Dsonar.sources=. \
+            -Dsonar.java.binaries=$(cd "$(dirname "${path}")" && pwd -P) \
+            -Dsonar.java.libraries=$(cd "$(dirname "${path}")" && pwd -P) \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.login=$SONARCLOUD_CREDENTIAL
+  
   test-common:
     machine: true
     working_directory: ~/grakn
