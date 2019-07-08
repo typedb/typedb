@@ -47,6 +47,7 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel build //...
+      # - run: bazel run @graknlabs_build_tools//sonarcloud:analyze $SONARCLOUD_CREDENTIAL $SONARCLOUD_ORGANISATION $SONARCLOUD_PROJECT
       - run: |
           SONAR_SCANNER_VERSION=3.3.0.1492
 
@@ -57,8 +58,8 @@ jobs:
             -Dsonar.projectKey=$SONARCLOUD_PROJECT \
             -Dsonar.organization=$SONARCLOUD_ORGANISATION \
             -Dsonar.sources=. \
-            -Dsonar.java.binaries=$(cd "$(dirname "${path}")" && pwd -P) \
-            -Dsonar.java.libraries=$(cd "$(dirname "${path}")" && pwd -P) \
+            -Dsonar.java.binaries=. \
+            -Dsonar.java.libraries=. \
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.login=$SONARCLOUD_CREDENTIAL
   
