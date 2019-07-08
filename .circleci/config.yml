@@ -54,8 +54,8 @@ jobs:
           unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
 
           ./sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner \
-            -Dsonar.projectKey=$CIRCLE_PROJECT_USERNAME-$CIRCLE_PROJECT_REPONAME \
-            -Dsonar.organization=$CIRCLE_PROJECT_USERNAME \
+            -Dsonar.projectKey=$SONARCLOUD_PROJECT \
+            -Dsonar.organization=$SONARCLOUD_ORGANISATION \
             -Dsonar.sources=. \
             -Dsonar.java.binaries=$(cd "$(dirname "${path}")" && pwd -P) \
             -Dsonar.java.libraries=$(cd "$(dirname "${path}")" && pwd -P) \
