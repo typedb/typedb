@@ -262,26 +262,33 @@ public class PatternIT {
     }
 
     @Test
-    public void testNeq() {
+    public void whenMatchingWithValueInequality_resultsAreFilteredCorrectly() {
         assertExists(tx, var().isa("movie").has("title", "Godfather"));
-        Set<Concept> result1 = tx.stream(Graql.match(
+        Set<Concept> allMoviesWithoutGodfatherMovies = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y")),
                 var("y").neq("Godfather")).get("x"))
-                .map(ans -> ans.get("x")).collect(Collectors.toSet());
-        assertFalse(result1.isEmpty());
+                .map(ans -> ans.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(allMoviesWithoutGodfatherMovies.isEmpty());
 
-        Set<Concept> result2 = tx.stream(Graql.match(
+        Set<Concept> allMovies = tx.stream(Graql.match(
                 var("x").isa("movie").has("title", var("y"))).get("x"))
-                .map(ans -> ans.get("x")).collect(Collectors.toSet());
-        assertFalse(result2.isEmpty());
+                .map(ans -> ans.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(allMovies.isEmpty());
 
-        result2.removeAll(result1);
-        assertEquals(1, result2.size());
+        Set<Concept> godfatherMovies = tx.stream(Graql.match(
+                var("x").isa("movie").has("title", "Godfather")).get("x"))
+                .map(ans -> ans.get("x"))
+                .collect(Collectors.toSet());
+        assertFalse(godfatherMovies.isEmpty());
+
+        assertEquals(Sets.difference(allMovies, godfatherMovies), allMoviesWithoutGodfatherMovies);
     }
 
 
     @Test
-    public void testStatementsWithoutPropertyThrows() {
+    public void whenStatementDoesntHaveProperties_weThrow() {
         // empty `match $x; get;` not allowed
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Require statement to have at least one property");
@@ -289,13 +296,13 @@ public class PatternIT {
     }
 
     @Test
-    public void testValueComparisonDoesNotFail() {
+    public void whenComputingValueComparisons_weDontGetShardErrors() {
         // this case can throw [SHARD] errors if not handled correctly - unbound variable may cause issues
         tx.execute(Graql.match(var("x").neq(100)).get());
     }
 
     @Test
-    public void testUnboundComparisonThrows() {
+    public void whenValueComparisonIsUnbound_weThrow() {
         // value comparison
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage("Variables used in comparisons cannot be unbound");
