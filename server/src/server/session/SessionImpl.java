@@ -77,7 +77,7 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics , attributesCache, graphLock);
+        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
     /**
@@ -251,6 +251,8 @@ public class SessionImpl implements Session {
         }
 
         isClosed = true;
+        if (hadoopGraph != null)
+            hadoopGraph.close();
     }
 
     @Override

@@ -34,7 +34,7 @@ import java.util.Properties;
 /**
  * This class produces a graph on top of {@link HadoopGraph}.
  * With this vendor some exceptions are in places:
- * 1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
+ * 1. The Grakn API cannot work on {@link HadoopGraph} this is due to not being able to directly write to a
  * {@link HadoopGraph}.
  * 2. This factory primarily exists as a means of producing a
  * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
@@ -65,21 +65,17 @@ public class HadoopGraphFactory {
         String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
         String keyspaceConf = "storage.cql.keyspace";
 
-        if (graph == null) {
 
-            //Load Defaults
-            DEFAULT_PROPERTIES.forEach((key, value) -> {
-                if (!config.properties().containsKey(key)) {
-                   config.properties().put(key, value);
-                }
-            });
-            config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspace.name());
+        //Load Defaults
+        DEFAULT_PROPERTIES.forEach((key, value) -> {
+            if (!config.properties().containsKey(key)) {
+                config.properties().put(key, value);
+            }
+        });
+        config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspace.name());
 
 
-            graph = (HadoopGraph) GraphFactory.open(config.properties());
-        }
-
-        return graph;
+        return (HadoopGraph) GraphFactory.open(config.properties());
     }
 
     protected Config addHadoopProperties(Config config) {

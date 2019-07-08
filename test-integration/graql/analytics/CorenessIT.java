@@ -72,31 +72,31 @@ public class CorenessIT {
     @After
     public void closeSession() { session.close(); }
 
-    @Test(expected = GraqlSemanticException.class)
-    public void testKSmallerThan2_ThrowsException() {
-        try (TransactionOLTP tx = session.transaction().read()) {
-            tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(1)));
-        }
-    }
-
-    @Test
-    public void testOnEmptyGraph_ReturnsEmptyMap() {
-        try (TransactionOLTP tx = session.transaction().read()) {
-            List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
-            assertTrue(result.isEmpty());
-        }
-    }
-
-    @Test
-    public void testOnGraphWithoutRelations_ReturnsEmptyMap() {
-        try (TransactionOLTP tx = session.transaction().write()) {
-            tx.putEntityType(thing).create();
-            tx.putEntityType(anotherThing).create();
-            List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
-            assertTrue(result.isEmpty());
-        }
-    }
-
+//    @Test(expected = GraqlSemanticException.class)
+//    public void testKSmallerThan2_ThrowsException() {
+//        try (TransactionOLTP tx = session.transaction().read()) {
+//            tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(1)));
+//        }
+//    }
+//
+//    @Test
+//    public void testOnEmptyGraph_ReturnsEmptyMap() {
+//        try (TransactionOLTP tx = session.transaction().read()) {
+//            List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
+//            assertTrue(result.isEmpty());
+//        }
+//    }
+//
+//    @Test
+//    public void testOnGraphWithoutRelations_ReturnsEmptyMap() {
+//        try (TransactionOLTP tx = session.transaction().write()) {
+//            tx.putEntityType(thing).create();
+//            tx.putEntityType(anotherThing).create();
+//            List<ConceptSetMeasure> result = tx.execute(Graql.compute().centrality().using(K_CORE));
+//            assertTrue(result.isEmpty());
+//        }
+//    }
+//
     @Test
     public void testOnGraphWithTwoEntitiesAndTwoRelations() {
         try (TransactionOLTP tx = session.transaction().write()) {
@@ -149,168 +149,168 @@ public class CorenessIT {
         }
     }
 
-    @Test
-    public void testImplicitTypeShouldBeIncluded() {
-        addSchemaAndEntities();
+//    @Test
+//    public void testImplicitTypeShouldBeIncluded() {
+//        addSchemaAndEntities();
+//
+//        try (TransactionOLTP tx = session.transaction().write()) {
+//            String aResourceTypeLabel = "aResourceTypeLabel";
+//            AttributeType<String> attributeType =
+//                    tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
+//            tx.getEntityType(thing).has(attributeType);
+//            tx.getEntityType(anotherThing).has(attributeType);
+//
+//            Attribute Attribute1 = attributeType.create("blah");
+//            tx.getConcept(entityId1).asEntity().has(Attribute1);
+//            tx.getConcept(entityId2).asEntity().has(Attribute1);
+//            tx.getConcept(entityId3).asEntity().has(Attribute1);
+//            tx.getConcept(entityId4).asEntity().has(Attribute1);
+//
+//            Attribute Attribute2 = attributeType.create("bah");
+//            tx.getConcept(entityId1).asEntity().has(Attribute2);
+//            tx.getConcept(entityId2).asEntity().has(Attribute2);
+//            tx.getConcept(entityId3).asEntity().has(Attribute2);
+//
+//            tx.commit();
+//        }
+//
+//        List<ConceptSetMeasure> result;
+//        try (TransactionOLTP tx = session.transaction().read()) {
+//            result = tx.execute(Graql.compute().centrality().using(K_CORE));
+//            System.out.println("result = " + result);
+//            assertEquals(2, result.size());
+//
+//            assertEquals(1, result.get(0).set().size());
+//            assertEquals(3, result.get(0).measurement().intValue());
+//
+//            assertEquals(5, result.get(1).set().size());
+//            assertEquals(4, result.get(1).measurement().intValue());
+//
+//            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(4L)));
+//            assertEquals(1, result.size());
+//            assertEquals(5, result.get(0).set().size());
+//            assertEquals(4, result.get(0).measurement().intValue());
+//        }
+//    }
 
-        try (TransactionOLTP tx = session.transaction().write()) {
-            String aResourceTypeLabel = "aResourceTypeLabel";
-            AttributeType<String> attributeType =
-                    tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
-            tx.getEntityType(thing).has(attributeType);
-            tx.getEntityType(anotherThing).has(attributeType);
-
-            Attribute Attribute1 = attributeType.create("blah");
-            tx.getConcept(entityId1).asEntity().has(Attribute1);
-            tx.getConcept(entityId2).asEntity().has(Attribute1);
-            tx.getConcept(entityId3).asEntity().has(Attribute1);
-            tx.getConcept(entityId4).asEntity().has(Attribute1);
-
-            Attribute Attribute2 = attributeType.create("bah");
-            tx.getConcept(entityId1).asEntity().has(Attribute2);
-            tx.getConcept(entityId2).asEntity().has(Attribute2);
-            tx.getConcept(entityId3).asEntity().has(Attribute2);
-
-            tx.commit();
-        }
-
-        List<ConceptSetMeasure> result;
-        try (TransactionOLTP tx = session.transaction().read()) {
-            result = tx.execute(Graql.compute().centrality().using(K_CORE));
-            System.out.println("result = " + result);
-            assertEquals(2, result.size());
-
-            assertEquals(1, result.get(0).set().size());
-            assertEquals(3, result.get(0).measurement().intValue());
-
-            assertEquals(5, result.get(1).set().size());
-            assertEquals(4, result.get(1).measurement().intValue());
-
-            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(4L)));
-            assertEquals(1, result.size());
-            assertEquals(5, result.get(0).set().size());
-            assertEquals(4, result.get(0).measurement().intValue());
-        }
-    }
-
-    @Test
-    public void testDisconnectedCores() {
-        try (TransactionOLTP tx = session.transaction().write()) {
-            EntityType entityType1 = tx.putEntityType(thing);
-            EntityType entityType2 = tx.putEntityType(anotherThing);
-
-            Role role1 = tx.putRole("role1");
-            Role role2 = tx.putRole("role2");
-            RelationType relationType1 = tx.putRelationType(related)
-                    .relates(role1).relates(role2);
-
-            Role role3 = tx.putRole("role3");
-            Role role4 = tx.putRole("role4");
-            RelationType relationType2 = tx.putRelationType(veryRelated)
-                    .relates(role3).relates(role4);
-
-            entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
-            entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
-
-            Entity entity0 = entityType1.create();
-            Entity entity1 = entityType1.create();
-            Entity entity2 = entityType1.create();
-            Entity entity3 = entityType1.create();
-            Entity entity4 = entityType1.create();
-            Entity entity5 = entityType1.create();
-            Entity entity6 = entityType1.create();
-            Entity entity7 = entityType1.create();
-            Entity entity8 = entityType1.create();
-
-            relationType1.create()
-                    .assign(role1, entity1)
-                    .assign(role2, entity2);
-            relationType1.create()
-                    .assign(role1, entity2)
-                    .assign(role2, entity3);
-            relationType1.create()
-                    .assign(role1, entity3)
-                    .assign(role2, entity4);
-            relationType1.create()
-                    .assign(role1, entity1)
-                    .assign(role2, entity3);
-            relationType1.create()
-                    .assign(role1, entity1)
-                    .assign(role2, entity4);
-            relationType1.create()
-                    .assign(role1, entity2)
-                    .assign(role2, entity4);
-
-            relationType1.create()
-                    .assign(role1, entity5)
-                    .assign(role2, entity6);
-            relationType2.create()
-                    .assign(role3, entity5)
-                    .assign(role4, entity7);
-            relationType2.create()
-                    .assign(role3, entity5)
-                    .assign(role4, entity8);
-            relationType2.create()
-                    .assign(role3, entity6)
-                    .assign(role4, entity7);
-            relationType2.create()
-                    .assign(role3, entity6)
-                    .assign(role4, entity8);
-            relationType2.create()
-                    .assign(role3, entity7)
-                    .assign(role4, entity8);
-
-            relationType1.create()
-                    .assign(role1, entity0)
-                    .assign(role2, entity1);
-            relationType1.create()
-                    .assign(role1, entity0)
-                    .assign(role2, entity8);
-
-            tx.commit();
-        }
-
-        List<ConceptSetMeasure> result;
-        try (TransactionOLTP tx = session.transaction().read()) {
-            result = tx.execute(Graql.compute().centrality().using(K_CORE));
-            assertEquals(2, result.size());
-
-            assertEquals(1, result.get(0).set().size());
-            assertEquals(2, result.get(0).measurement().intValue());
-
-            assertEquals(8, result.get(1).set().size());
-            assertEquals(3, result.get(1).measurement().intValue());
-
-            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(3L)));
-            assertEquals(1, result.size());
-            assertEquals(8, result.get(0).set().size());
-            assertEquals(3, result.get(0).measurement().intValue());
-        }
-    }
-
-    @Test
-    public void testConcurrency() {
-        addSchemaAndEntities();
-
-        List<Long> list = new ArrayList<>(4);
-        long workerNumber = 4L;
-        for (long i = 0L; i < workerNumber; i++) {
-            list.add(i);
-        }
-
-        Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
-            try (TransactionOLTP tx = session.transaction().read()) {
-                return tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(3L)));
-            }
-        }).collect(Collectors.toSet());
-        assertEquals(1, result.size());
-        result.forEach(map -> {
-            assertEquals(1, map.size());
-            assertEquals(4, map.get(0).set().size());
-            assertEquals(3, map.get(0).measurement().intValue());
-        });
-    }
-
+//    @Test
+//    public void testDisconnectedCores() {
+//        try (TransactionOLTP tx = session.transaction().write()) {
+//            EntityType entityType1 = tx.putEntityType(thing);
+//            EntityType entityType2 = tx.putEntityType(anotherThing);
+//
+//            Role role1 = tx.putRole("role1");
+//            Role role2 = tx.putRole("role2");
+//            RelationType relationType1 = tx.putRelationType(related)
+//                    .relates(role1).relates(role2);
+//
+//            Role role3 = tx.putRole("role3");
+//            Role role4 = tx.putRole("role4");
+//            RelationType relationType2 = tx.putRelationType(veryRelated)
+//                    .relates(role3).relates(role4);
+//
+//            entityType1.plays(role1).plays(role2).plays(role3).plays(role4);
+//            entityType2.plays(role1).plays(role2).plays(role3).plays(role4);
+//
+//            Entity entity0 = entityType1.create();
+//            Entity entity1 = entityType1.create();
+//            Entity entity2 = entityType1.create();
+//            Entity entity3 = entityType1.create();
+//            Entity entity4 = entityType1.create();
+//            Entity entity5 = entityType1.create();
+//            Entity entity6 = entityType1.create();
+//            Entity entity7 = entityType1.create();
+//            Entity entity8 = entityType1.create();
+//
+//            relationType1.create()
+//                    .assign(role1, entity1)
+//                    .assign(role2, entity2);
+//            relationType1.create()
+//                    .assign(role1, entity2)
+//                    .assign(role2, entity3);
+//            relationType1.create()
+//                    .assign(role1, entity3)
+//                    .assign(role2, entity4);
+//            relationType1.create()
+//                    .assign(role1, entity1)
+//                    .assign(role2, entity3);
+//            relationType1.create()
+//                    .assign(role1, entity1)
+//                    .assign(role2, entity4);
+//            relationType1.create()
+//                    .assign(role1, entity2)
+//                    .assign(role2, entity4);
+//
+//            relationType1.create()
+//                    .assign(role1, entity5)
+//                    .assign(role2, entity6);
+//            relationType2.create()
+//                    .assign(role3, entity5)
+//                    .assign(role4, entity7);
+//            relationType2.create()
+//                    .assign(role3, entity5)
+//                    .assign(role4, entity8);
+//            relationType2.create()
+//                    .assign(role3, entity6)
+//                    .assign(role4, entity7);
+//            relationType2.create()
+//                    .assign(role3, entity6)
+//                    .assign(role4, entity8);
+//            relationType2.create()
+//                    .assign(role3, entity7)
+//                    .assign(role4, entity8);
+//
+//            relationType1.create()
+//                    .assign(role1, entity0)
+//                    .assign(role2, entity1);
+//            relationType1.create()
+//                    .assign(role1, entity0)
+//                    .assign(role2, entity8);
+//
+//            tx.commit();
+//        }
+//
+//        List<ConceptSetMeasure> result;
+//        try (TransactionOLTP tx = session.transaction().read()) {
+//            result = tx.execute(Graql.compute().centrality().using(K_CORE));
+//            assertEquals(2, result.size());
+//
+//            assertEquals(1, result.get(0).set().size());
+//            assertEquals(2, result.get(0).measurement().intValue());
+//
+//            assertEquals(8, result.get(1).set().size());
+//            assertEquals(3, result.get(1).measurement().intValue());
+//
+//            result = tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(3L)));
+//            assertEquals(1, result.size());
+//            assertEquals(8, result.get(0).set().size());
+//            assertEquals(3, result.get(0).measurement().intValue());
+//        }
+//    }
+//
+//    @Test
+//    public void testConcurrency() {
+//        addSchemaAndEntities();
+//
+//        List<Long> list = new ArrayList<>(4);
+//        long workerNumber = 4L;
+//        for (long i = 0L; i < workerNumber; i++) {
+//            list.add(i);
+//        }
+//
+//        Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
+//            try (TransactionOLTP tx = session.transaction().read()) {
+//                return tx.execute(Graql.compute().centrality().using(K_CORE).where(minK(3L)));
+//            }
+//        }).collect(Collectors.toSet());
+//        assertEquals(1, result.size());
+//        result.forEach(map -> {
+//            assertEquals(1, map.size());
+//            assertEquals(4, map.get(0).set().size());
+//            assertEquals(3, map.get(0).measurement().intValue());
+//        });
+//    }
+//
     private void addSchemaAndEntities() throws InvalidKBException {
         try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thing);
