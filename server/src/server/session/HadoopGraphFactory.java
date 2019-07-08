@@ -66,7 +66,6 @@ public class HadoopGraphFactory {
         String keyspaceConf = "storage.cql.keyspace";
 
         if (graph == null) {
-            LOG.warn("Hadoop graph ignores parameter address.");
 
             //Load Defaults
             DEFAULT_PROPERTIES.forEach((key, value) -> {

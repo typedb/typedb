@@ -297,9 +297,6 @@ public class GraknConsoleIT {
 
     @Test
     public void when_writingComputeQueries_expect_correctCount() throws Exception {
-//        SessionImpl grakn1 = server.sessionFactory().session(KeyspaceImpl.of("grakn1"));
-//        grakn1.transaction().read().close();
-//        grakn1.close();
         assertConsoleSessionMatches(
                 analyticsDataset,
                 anything(),
