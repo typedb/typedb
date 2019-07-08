@@ -49,7 +49,7 @@ jobs:
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT \
-            --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
+            --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH  --pr-id 5320 --branch test-sonarcloud --target-branch master
       - run-bazel-rbe:
           command: bazel build //...
   
