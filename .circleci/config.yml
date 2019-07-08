@@ -45,11 +45,12 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run: |
+          SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
+            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT
       - run-bazel-rbe:
           command: bazel build //...
-      - run: |
-          SONARCLOUD_ANALYSE_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run //sonarcloud:analyse -- --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT
   
   test-common:
     machine: true
