@@ -251,8 +251,9 @@ public class SessionImpl implements Session {
         }
 
         isClosed = true;
-        if (hadoopGraph != null)
+        if (hadoopGraph != null) {
             hadoopGraph.close();
+        }
     }
 
     @Override
