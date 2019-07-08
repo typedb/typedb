@@ -19,10 +19,11 @@
 load("@bazel_tools//tools/build_defs/repo:git.bzl", "git_repository")
 
 def graknlabs_build_tools():
+    # TODO(lolski): revert to graknlabs
     git_repository(
         name = "graknlabs_build_tools",
-        remote = "https://github.com/graknlabs/build-tools",
-        commit = "e1875797063b86386072034e65af2f40dc1fb07c", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+        remote = "https://github.com/lolski/build-tools",
+        commit = "a794a2f450cd65101ddd0c301855087c65d7e49b", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
 
 def graknlabs_graql():

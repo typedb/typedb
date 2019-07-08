@@ -47,21 +47,9 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel build //...
-      # - run: bazel run @graknlabs_build_tools//sonarcloud:analyze $SONARCLOUD_CREDENTIAL $SONARCLOUD_ORGANISATION $SONARCLOUD_PROJECT
       - run: |
-          SONAR_SCANNER_VERSION=3.3.0.1492
-
-          wget http://repo1.maven.org/maven2/org/sonarsource/scanner/cli/sonar-scanner-cli/$SONAR_SCANNER_VERSION/sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
-          unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
-
-          ./sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner \
-            -Dsonar.projectKey=$SONARCLOUD_PROJECT \
-            -Dsonar.organization=$SONARCLOUD_ORGANISATION \
-            -Dsonar.sources=. \
-            -Dsonar.java.binaries=. \
-            -Dsonar.java.libraries=. \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=$SONARCLOUD_CREDENTIAL
+          SONARCLOUD_ANALYSE_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
+            bazel run //sonarcloud:analyse -- --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT
   
   test-common:
     machine: true
