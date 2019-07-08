@@ -31,7 +31,7 @@ import java.lang.management.ManagementFactory;
  */
 public class GraknStorage {
     private static final Logger LOG = LoggerFactory.getLogger(GraknStorage.class);
-
+    public String wow = "wow";
     public static void main(String[] args) {
         try {
             CassandraDaemon instance = new CassandraDaemon();
