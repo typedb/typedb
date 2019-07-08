@@ -26,8 +26,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.console.GraknConsole;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.SessionImpl;
 import graql.lang.Graql;
 import io.grpc.Status;
 import org.apache.commons.io.output.TeeOutputStream;

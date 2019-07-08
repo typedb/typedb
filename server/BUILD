@@ -70,7 +70,6 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cql",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cassandra",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library", # PREVIOUSLY UNDECLARED
