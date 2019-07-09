@@ -46,7 +46,7 @@ jobs:
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
-        command: bazel build //...
+          command: bazel build //...
   code-analysis-pr:
     machine: true
     working_directory: ~/grakn
