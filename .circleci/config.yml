@@ -51,6 +51,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - checkout
       - run: |
           export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
           bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
@@ -63,12 +64,13 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - checkout
       - run: |
           export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
           bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --mode master \
             --sonar-org $SONARCLOUD_ORGANISATION --sonar-project-key $SONARCLOUD_PROJECT \
-            --branch $CIRCLE_BRANCH --commit $CIRCLE_SHA1 \
+            --branch $CIRCLE_BRANCH --commit $CIRCLE_SHA1
   test-common:
     machine: true
     working_directory: ~/grakn
