@@ -51,6 +51,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
       - run: |
           export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
@@ -64,6 +65,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
       - checkout
       - run: |
           export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
