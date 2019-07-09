@@ -56,7 +56,7 @@ jobs:
       - run: |
           export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
           bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --mode pr \
+            --type pr \
             --sonar-org $SONARCLOUD_ORGANISATION --sonar-project-key $SONARCLOUD_PROJECT \
             --github-org graknlabs --github-repo $CIRCLE_PROJECT_NAME \
             --branch $CIRCLE_BRANCH --commit $CIRCLE_SHA1 \
@@ -70,7 +70,7 @@ jobs:
       - run: |
           export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
           bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --mode master \
+            --type master \
             --sonar-org $SONARCLOUD_ORGANISATION --sonar-project-key $SONARCLOUD_PROJECT \
             --branch $CIRCLE_BRANCH --commit $CIRCLE_SHA1
   test-common:
