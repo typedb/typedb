@@ -465,14 +465,14 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - code-analysis-pr:
-          filters:
-            branches:
-              ignore: master
-      - code-analysis-master:
+      - build-analysis:
           filters:
             branches:
               only: master
+      - build-analysis-pr:
+          filters:
+            branches:
+              ignore: master
       - test-common:
           filters:
             branches:
