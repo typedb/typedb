@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.kb.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -107,7 +107,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
         try {
             return (GraknVertexProgram) super.clone();
         } catch (final CloneNotSupportedException e) {
-            throw CommonUtil.unreachableStatement(e);
+            throw GraknServerException.unreachableStatement(e);
         }
     }
 

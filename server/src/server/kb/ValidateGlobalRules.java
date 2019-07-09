@@ -20,7 +20,7 @@ package grakn.core.server.kb;
 
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.common.util.Streams;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
@@ -152,7 +152,7 @@ class ValidateGlobalRules {
                     satisfiesPlays = true;
 
                     // Assert unique relation for this role type
-                    if (required && !CommonUtil.containsOnly(thing.relations(role), 1)) {
+                    if (required && !Streams.containsOnly(thing.relations(role), 1)) {
                         return Optional.of(VALIDATION_REQUIRED_RELATION.getMessage(thing.id(), thing.type().label(), role.label(), thing.relations(role).count()));
                     }
                 }
@@ -250,7 +250,7 @@ class ValidateGlobalRules {
                     Label attributeType = Schema.ImplicitType.explicitLabel(role.label());
 
                     // Assert there is a relation for this type
-                    if (!CommonUtil.containsOnly(thing.relations(role), 1)) {
+                    if (!Streams.containsOnly(thing.relations(role), 1)) {
                         return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeType));
                     }
 

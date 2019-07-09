@@ -29,8 +29,9 @@ genrule(
         "templates/Version.java",
         ":VERSION",
     ],
-    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/VERSION_PLACEHOLDER/$$VERSION/g\" $(location templates/Version.java) >> $@",
+    cmd = "VERSION=`cat $(location :VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     outs = ["Version.java"],
+    visibility = ["//visibility:public"]
 )
 
 java_library(
@@ -53,7 +54,7 @@ java_library(
     visibility = ["//visibility:public"],
     resources = ["LICENSE"],
     resource_strip_prefix = "console",
-    tags = ["maven_coordinates=io.grakn.core:console:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-console:{pom_version}"],
 )
 
 checkstyle_test(

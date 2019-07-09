@@ -64,7 +64,7 @@ public class VariableComparisonState extends QueryStateBase {
         this.variablePredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
                 .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        this.complementState = query.neqPositive().subGoal(sub, u, this, subGoals);
+        this.complementState = query.constantValuePredicateQuery().subGoal(sub, u, this, subGoals);
     }
 
     @Override

@@ -30,6 +30,7 @@ java_library(
 
         # Grakn Core dependencies
         "//common",
+        "//server",
 
         # External dependencies
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -41,7 +42,7 @@ java_library(
     resources = ["LICENSE"],
     resource_strip_prefix = "daemon",
     visibility = ["//visibility:public"],
-    tags = ["maven_coordinates=io.grakn.core:daemon:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-daemon:{pom_version}"],
 )
 
 assemble_maven(

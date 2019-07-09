@@ -626,6 +626,31 @@ public class QueryCacheIT {
     }
 
     @Test
+    public void whenInferredInstancesAreInserted_weDoNotUpdateCompleteness(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+            MultilevelSemanticCache cache = tx.queryCache();
+            Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
+            ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
+                    "{" +
+                            "(baseRole1: $x, baseRole2: $y) isa binary;" +
+                            "$x id " + entity.id().getValue() + ";" +
+                            "$y id " + entity.id().getValue() + ";" +
+                            "};"
+            ), tx);
+
+            cache.ackCompleteness(query);
+
+            assertTrue(cache.isComplete(query));
+            assertTrue(cache.isDBComplete(query));
+
+            query.materialise(new ConceptMap()).collect(Collectors.toList());
+
+            assertTrue(cache.isComplete(query));
+            assertTrue(cache.isDBComplete(query));
+        }
+    }
+
+    @Test
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
             MultilevelSemanticCache cache = tx.queryCache();

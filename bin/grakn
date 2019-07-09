@@ -23,8 +23,8 @@ JAVA_BIN=java
 GRAKN_HOME=$(cd "$(dirname "${path}")" && pwd -P)
 GRAKN_CONFIG="server/conf/grakn.properties"
 
-CONSOLE_JAR_FILENAME=(${GRAKN_HOME}/console/services/lib/io-grakn-core-console*.jar)
-SERVER_JAR_FILENAME=(${GRAKN_HOME}/server/services/lib/io-grakn-core-server*.jar)
+CONSOLE_JAR_FILENAME=(${GRAKN_HOME}/console/services/lib/io-grakn-core-grakn-console*.jar)
+SERVER_JAR_FILENAME=(${GRAKN_HOME}/server/services/lib/io-grakn-core-grakn-server*.jar)
 
 # ================================================
 # common helper functions

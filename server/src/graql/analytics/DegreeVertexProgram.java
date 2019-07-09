@@ -19,8 +19,8 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.LabelId;
+import grakn.core.server.exception.GraknServerException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
@@ -90,7 +90,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
                 degreeMessageCounting(messenger, vertex);
                 break;
             default:
-                throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
+                throw GraknServerException.unreachableStatement("Exceeded expected maximum number of iterations");
         }
     }
 

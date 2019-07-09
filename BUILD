@@ -156,6 +156,8 @@ checksum(
 deploy_github(
     name = "deploy-github",
     deployment_properties = "//:deployment.properties",
+    title = "Grakn Core",
+    title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
     archive = ":assemble-versioned-all",
     version_file = "//:VERSION"

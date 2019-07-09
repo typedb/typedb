@@ -45,8 +45,8 @@ import java.util.Optional;
  * steps together.
  *
  */
-public class JanusPreviousPropertyStepStrategy
-        extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {
+@SuppressWarnings("ComparableType")
+public class JanusPreviousPropertyStepStrategy extends AbstractTraversalStrategy<ProviderOptimizationStrategy> implements ProviderOptimizationStrategy {
 
     private static final long serialVersionUID = 6888929702831948298L;
 
