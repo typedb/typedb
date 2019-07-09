@@ -83,6 +83,7 @@ public class SessionFactory {
         KeyspaceStatistics keyspaceStatistics;
         Cache<String, ConceptId> attributesCache;
         ReadWriteLock graphLock;
+        HadoopGraph hadoopGraph;
 
         Lock lock = lockManager.getLock(keyspace.name());
         lock.lock();
@@ -96,9 +97,12 @@ public class SessionFactory {
                 keyspaceStatistics = cacheContainer.keyspaceStatistics();
                 attributesCache = cacheContainer.attributesCache();
                 graphLock = cacheContainer.graphLock();
+                hadoopGraph = cacheContainer.hadoopGraph();
+
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 keyspaceManager.putKeyspace(keyspace);
                 graph = janusGraphFactory.openGraph(keyspace.name());
+                hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceCache();
                 keyspaceStatistics = new KeyspaceStatistics();
                 attributesCache = CacheBuilder.newBuilder()
@@ -106,10 +110,10 @@ public class SessionFactory {
                         .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                         .build();
                 graphLock = new ReentrantReadWriteLock();
-                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock);
+                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock, hadoopGraph);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
-            HadoopGraph hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
+
             SessionImpl session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
@@ -133,6 +137,7 @@ public class SessionFactory {
             if (sharedKeyspaceDataMap.containsKey(keyspace)) {
                 SharedKeyspaceData container = sharedKeyspaceDataMap.remove(keyspace);
                 container.graph().close();
+                container.hadoopGraph().close();
                 container.invalidateSessions();
             }
         } finally {
@@ -157,8 +162,8 @@ public class SessionFactory {
                 // If there are no more sessions associated to current keyspace,
                 // close graph and remove reference from cache.
                 if (cacheContainer.referenceCount() == 0) {
-                    JanusGraph graph = cacheContainer.graph();
-                    graph.close();
+                    cacheContainer.graph().close();
+                    cacheContainer.hadoopGraph().close();
                     sharedKeyspaceDataMap.remove(session.keyspace());
                 }
             }
@@ -175,6 +180,7 @@ public class SessionFactory {
         private final KeyspaceCache keyspaceCache;
         // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
         private final StandardJanusGraph graph;
+        private final HadoopGraph hadoopGraph;
         // Keep track of sessions so that if a user deletes a keyspace we make sure to invalidate all associated sessions
         private final List<SessionImpl> sessions;
 
@@ -187,9 +193,10 @@ public class SessionFactory {
 
         private final ReadWriteLock graphLock;
 
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
+            this.hadoopGraph = hadoopGraph;
             this.sessions = new ArrayList<>();
             this.keyspaceStatistics = keyspaceStatistics;
             this.attributesCache = attributesCache;
@@ -231,6 +238,8 @@ public class SessionFactory {
         public Cache<String, ConceptId> attributesCache() {
             return attributesCache;
         }
+
+        public HadoopGraph hadoopGraph(){ return hadoopGraph; }
 
     }
 
