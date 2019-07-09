@@ -45,14 +45,30 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
-      - run: |
-          SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT \
-            --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
       - run-bazel-rbe:
-          command: bazel build //...
-  
+        command: bazel build //...
+  code-analysis-pr:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: |
+          export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
+          bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            --mode pr \
+            --sonar-org $SONARCLOUD_ORGANISATION --sonar-project-key $SONARCLOUD_PROJECT \
+            --github-org graknlabs --github-repo $CIRCLE_PROJECT_NAME \
+            --branch $CIRCLE_BRANCH --commit $CIRCLE_SHA1 \
+            --pr 5320 --target-branch master
+  code-analysis-master:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: |
+          export SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL
+          bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            --mode master \
+            --sonar-org $SONARCLOUD_ORGANISATION --sonar-project-key $SONARCLOUD_PROJECT \
+            --branch $CIRCLE_BRANCH --commit $CIRCLE_SHA1 \
   test-common:
     machine: true
     working_directory: ~/grakn
@@ -445,6 +461,14 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - code-analysis-pr:
+          filters:
+            branches:
+              ignore: master
+      - code-analysis-master:
+          filters:
+            branches:
+              only: master
       - test-common:
           filters:
             branches:
