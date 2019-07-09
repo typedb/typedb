@@ -45,7 +45,7 @@ dependencies:
 
   com.datastax.cassandra:
     cassandra-driver-core:
-      version: "3.5.1"
+      version: "3.7.1"
       lang: java
       exclude:
       - "io.netty:netty-handler"
@@ -67,11 +67,6 @@ dependencies:
   com.fasterxml.jackson.module:
     jackson-module-scala_2.11:
       version: "2.9.9"
-      lang: java
-
-  com.github.rholder:
-    guava-retrying:
-      version: "2.0.0"
       lang: java
 
   com.google.auto.value:
@@ -97,11 +92,6 @@ dependencies:
   com.google.protobuf:
     protobuf-java:
       version: "3.4.0"
-      lang: java
-
-  com.pholser:
-    junit-quickcheck-generators:
-      version: "0.7"
       lang: java
 
   commons-cli:
@@ -181,14 +171,6 @@ dependencies:
       - "it.unimi.dsi:fastutil"
       - "com.addthis.metrics:reporter-config3" # include this if we need to debug cassandra
       - "org.eclipse.jdt.core.compiler:ecj"
-
-    cassandra-thrift:
-      version: "3.11.3"
-      lang: java
-      exclude:
-      - "ch.qos.logback:logback-classic"
-      - "ch.qos.logback:logback-core"
-      - "it.unimi.dsi:fastutil"
 
   org.apache.commons:
     commons-lang3:
