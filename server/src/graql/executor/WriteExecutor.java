@@ -30,8 +30,11 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.Role;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.util.Partition;
@@ -42,6 +45,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -270,17 +274,44 @@ public class WriteExecutor {
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
 
         //mark inferred concepts for persistence explicitly
-        namedConcepts.values().stream()
+        markConceptsForPersistence(namedConcepts.values());
+
+        return new ConceptMap(namedConcepts);
+    }
+
+    private void markConceptsForPersistence(Collection<Concept> concepts){
+        concepts.stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
+                //expand roleplayers of relations to mark for persistence all inferred concepts the inferred thing depends on
+                .flatMap(t -> t.isRelation()?
+                        t.asRelation().rolePlayers() :
+                        Stream.of(t)
+                )
                 .filter(Thing::isInferred)
+                .flatMap(t -> {
+                            if (t.isAttribute()) {
+                                Label typeLabel = t.type().label();
+                                Role hasRole = tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
+                                Role keyRole = tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
+                                Stream<Relation> implicitRelationStream = keyRole == null ?
+                                        t.asAttribute().relations(hasRole) :
+                                        Stream.concat(
+                                                t.asAttribute().relations(hasRole),
+                                                t.asAttribute().relations(keyRole));
+                                return Stream.concat(
+                                        Stream.of(t),
+                                        implicitRelationStream
+                                );
+                            }
+                            return Stream.of(t);
+                        }
+                )
                 .forEach(t -> {
                     //as we are going to persist the concepts, reset the inferred flag
                     ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
                     transaction.cache().inferredThingToPersist(t);
                 });
-
-        return new ConceptMap(namedConcepts);
     }
 
     public void toDelete(Concept concept) {

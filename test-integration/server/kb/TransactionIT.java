@@ -513,8 +513,11 @@ public class TransactionIT {
         tx = session.transaction().read();
         List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
                 "match " +
-                "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
-                "$rel has nonInferrableAttribute 'relation with inferred roleplayer'; get;")
+                        "$p isa someEntity;" +
+                        "$q isa someEntity, has inferrableAttribute $r; $r 'inferred';" +
+                        "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
+                        "$rel has nonInferrableAttribute 'relation with inferred roleplayer';" +
+                        "get $rel, $p, $r;")
                 .asGet(), false);
 
         List<ConceptMap> inferredRelationWithAttributeAttachedPostCommit = tx.execute(Graql.parse(
