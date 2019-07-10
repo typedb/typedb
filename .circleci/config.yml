@@ -437,7 +437,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-    steps:
       - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/requirements.txt
       - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/send_email.py
       - run: pyenv install 3.6.3
