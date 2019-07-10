@@ -43,7 +43,6 @@ public class HadoopGraphFactory {
 
     private final Logger LOG = LoggerFactory.getLogger(HadoopGraphFactory.class);
     private Config config;
-    private HadoopGraph graph = null;
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_PROPERTIES;
 
@@ -58,35 +57,31 @@ public class HadoopGraphFactory {
     }
 
     public HadoopGraphFactory(Config config) {
-        this.config = addHadoopProperties(config);
+        this.config = config;
     }
 
     public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+
+        return (HadoopGraph) GraphFactory.open(addHadoopProperties(config, keyspace.name()).properties());
+    }
+
+    protected Config addHadoopProperties(Config config, String keyspaceName) {
+        // Janus configurations
         String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
+        String hostnameConf = "storage.hostname";
         String keyspaceConf = "storage.cql.keyspace";
 
+        // Values
+        String hostnameValue = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
 
+        config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
         //Load Defaults
         DEFAULT_PROPERTIES.forEach((key, value) -> {
             if (!config.properties().containsKey(key)) {
                 config.properties().put(key, value);
             }
         });
-        config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspace.name());
-
-
-        return (HadoopGraph) GraphFactory.open(config.properties());
-    }
-
-    protected Config addHadoopProperties(Config config) {
-        // Janus configurations
-        String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
-        String hostnameConf = "storage.hostname";
-
-        // Values
-        String hostnameValue = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
-
-        config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
+        config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceName);
 
 
         return config;
