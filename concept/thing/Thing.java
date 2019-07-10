@@ -120,6 +120,11 @@ public interface Thing extends Concept {
      */
     boolean isInferred();
 
+    /**
+     * Return concepts that are dependants of this concept - concepts required to be persisted if we persist this concept.
+     */
+    Stream<Thing> getDependentConcepts();
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

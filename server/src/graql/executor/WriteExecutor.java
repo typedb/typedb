@@ -273,7 +273,7 @@ public class WriteExecutor {
 
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
 
-        //mark inferred concepts for persistence explicitly
+        //mark all inferred concepts that are required for the insert for persistence explicitly
         markConceptsForPersistence(namedConcepts.values());
 
         return new ConceptMap(namedConcepts);
@@ -283,30 +283,8 @@ public class WriteExecutor {
         concepts.stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
-                //expand roleplayers of relations to mark for persistence all inferred concepts the inferred thing depends on
-                .flatMap(t -> t.isRelation()?
-                        t.asRelation().rolePlayers() :
-                        Stream.of(t)
-                )
+                .flatMap(Thing::getDependentConcepts)
                 .filter(Thing::isInferred)
-                .flatMap(t -> {
-                            if (t.isAttribute()) {
-                                Label typeLabel = t.type().label();
-                                Role hasRole = tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
-                                Role keyRole = tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
-                                Stream<Relation> implicitRelationStream = keyRole == null ?
-                                        t.asAttribute().relations(hasRole) :
-                                        Stream.concat(
-                                                t.asAttribute().relations(hasRole),
-                                                t.asAttribute().relations(keyRole));
-                                return Stream.concat(
-                                        Stream.of(t),
-                                        implicitRelationStream
-                                );
-                            }
-                            return Stream.of(t);
-                        }
-                )
                 .forEach(t -> {
                     //as we are going to persist the concepts, reset the inferred flag
                     ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
