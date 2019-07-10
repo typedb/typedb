@@ -18,9 +18,12 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.Role;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
@@ -116,5 +119,16 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public String innerToString() {
         return super.innerToString() + "- Value [" + value() + "] ";
+    }
+
+    @Override
+    public Stream<Thing> getDependentConcepts() {
+        Label typeLabel = type().label();
+        Role hasRole = vertex().tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
+        Role keyRole = vertex().tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
+        Stream<Thing> conceptStream = Stream.of(this);
+        if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
+        if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));
+        return conceptStream;
     }
 }

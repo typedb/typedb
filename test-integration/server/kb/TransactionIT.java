@@ -513,8 +513,11 @@ public class TransactionIT {
         tx = session.transaction().read();
         List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
                 "match " +
-                "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
-                "$rel has nonInferrableAttribute 'relation with inferred roleplayer'; get;")
+                        "$p isa someEntity;" +
+                        "$q isa someEntity, has inferrableAttribute $r; $r 'inferred';" +
+                        "$rel (someRole: $p, anotherRole: $r) isa inferrableRelation;" +
+                        "$rel has nonInferrableAttribute 'relation with inferred roleplayer';" +
+                        "get $rel, $p, $r;")
                 .asGet(), false);
 
         List<ConceptMap> inferredRelationWithAttributeAttachedPostCommit = tx.execute(Graql.parse(
@@ -526,6 +529,60 @@ public class TransactionIT {
 
         assertCollectionsNonTriviallyEqual(relationsWithInferredRolePlayer, relationsWithInferredRolePlayerPostCommit);
         assertCollectionsNonTriviallyEqual(inferredRelationWithAttributeAttached, inferredRelationWithAttributeAttachedPostCommit);
+    }
+
+    @Test
+    public void whenInsertedConceptsDependOnAChainOfInferredConcepts_conceptsAndDependantsArePersisted(){
+        String inferrableSchema = "define " +
+                "someEntity sub entity, plays someRole, plays anotherRole;" +
+                "anotherEntity sub entity, plays someRole, plays anotherRole;" +
+                "nonInferredRelation sub relation, relates someRole, relates anotherRole;" +
+                "inferredRelation sub relation, relates someRole, relates anotherRole, plays someRole;" +
+                "anotherInferredRelation sub relation, relates someRole, relates anotherRole, plays someRole;" +
+                "yetAnotherInferredRelation sub relation, relates someRole, relates anotherRole, plays someRole;" +
+
+                "infer-relation sub rule," +
+                "when { $p isa someEntity; $q isa anotherEntity;}, " +
+                "then { (someRole: $p, anotherRole: $q) isa inferredRelation;};" +
+
+                "infer-anotherRelation sub rule," +
+                "when { $p isa inferredRelation; $q isa anotherEntity;}, " +
+                "then { (someRole: $p, anotherRole: $q) isa anotherInferredRelation;};" +
+
+                "infer-yetAnotherRelation sub rule," +
+                "when { $p isa anotherInferredRelation; $q isa anotherEntity;}, " +
+                "then { (someRole: $p, anotherRole: $q) isa yetAnotherInferredRelation;};";
+
+        tx.execute(Graql.<GraqlDefine>parse(inferrableSchema));
+
+        tx.execute(Graql.<GraqlInsert>parse(
+                "insert " +
+                        "$p isa someEntity;" +
+                        "$q isa anotherEntity;"
+        ));
+        tx.commit();
+
+        tx = session.transaction().write();
+        List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
+                "match " +
+                        "$finalRel (someRole: $p, anotherRole: $q) isa yetAnotherInferredRelation;" +
+                        "insert " +
+                        "(someRole: $finalRel, anotherRole: $q) isa nonInferredRelation;"
+        ));
+        tx.commit();
+
+        tx = session.transaction().read();
+        List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
+                "match " +
+                        "$rel  (someRole: $p, anotherRole: $q) isa inferredRelation;" +
+                        "$anotherRel (someRole: $rel, anotherRole: $q) isa anotherInferredRelation;" +
+                        "$finalRel (someRole: $anotherRel, anotherRole: $q) isa yetAnotherInferredRelation;" +
+                        "(someRole: $finalRel, anotherRole: $q) isa nonInferredRelation;" +
+                        "get $finalRel, $q;")
+                .asGet(), false);
+        tx.close();
+
+        assertCollectionsNonTriviallyEqual(relationsWithInferredRolePlayer, relationsWithInferredRolePlayerPostCommit);
     }
 
     @Test
