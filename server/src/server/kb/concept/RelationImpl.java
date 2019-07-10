@@ -43,7 +43,7 @@ public class RelationImpl implements Relation, ConceptVertex {
     private RelationImpl(RelationStructure relationStructure) {
         this.relationStructure = relationStructure;
         if (relationStructure.isReified()) {
-            relationStructure.reify().owner(/*.flatMap(Thing::getDependentConcepts)*/this);
+            relationStructure.reify().owner(this);
         }
     }
 
