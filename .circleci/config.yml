@@ -657,15 +657,15 @@ workflows:
             - deploy-brew
             - deploy-docker
             - deploy-maven
+      - email-db-engines:
+          filters:
+            branches:
+              only: grakn-release-branch
+          requires:
+            - sync-dependencies-release
       - release-cleanup:
           filters:
             branches:
               only: grakn-release-branch
           requires:
             - sync-dependencies-release
-      - email-db-engines:
-          filters:
-            branches:
-              only: grakn-release-branch
-          requires:
-            - release-cleanup
