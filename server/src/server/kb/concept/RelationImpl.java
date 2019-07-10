@@ -43,7 +43,7 @@ public class RelationImpl implements Relation, ConceptVertex {
     private RelationImpl(RelationStructure relationStructure) {
         this.relationStructure = relationStructure;
         if (relationStructure.isReified()) {
-            relationStructure.reify().owner(this);
+            relationStructure.reify().owner(/*.flatMap(Thing::getDependentConcepts)*/this);
         }
     }
 
@@ -240,6 +240,6 @@ public class RelationImpl implements Relation, ConceptVertex {
 
     @Override
     public Stream<Thing> getDependentConcepts() {
-        return Stream.concat(Stream.of(this), rolePlayers().flatMap(Thing::getDependentConcepts));
+        return Stream.concat(Stream.of(this), rolePlayers());
     }
 }

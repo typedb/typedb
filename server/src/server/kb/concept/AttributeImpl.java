@@ -127,8 +127,8 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         Role hasRole = vertex().tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
         Role keyRole = vertex().tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
         Stream<Thing> conceptStream = Stream.of(this);
-        if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole).flatMap(Thing::getDependentConcepts));
-        if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole).flatMap(Thing::getDependentConcepts));
+        if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
+        if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));
         return conceptStream;
     }
 }

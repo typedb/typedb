@@ -121,7 +121,7 @@ public interface Thing extends Concept {
     boolean isInferred();
 
     /**
-     * Return concepts that are dependants of this concept - concepts required to be persisted if we persist this concept.
+     * Return concepts that are DIRECT dependants of this concept - concepts required to be persisted if we persist this concept.
      */
     default Stream<Thing> getDependentConcepts(){ return Stream.of(this);}
 
