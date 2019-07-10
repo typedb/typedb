@@ -123,7 +123,7 @@ public interface Thing extends Concept {
     /**
      * Return concepts that are dependants of this concept - concepts required to be persisted if we persist this concept.
      */
-    Stream<Thing> getDependentConcepts();
+    default Stream<Thing> getDependentConcepts(){ return Stream.of(this);}
 
     //------------------------------------- Other ---------------------------------
     @Deprecated
