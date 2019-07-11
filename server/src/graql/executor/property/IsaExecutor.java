@@ -21,7 +21,6 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlSemanticException;
@@ -39,7 +38,6 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
@@ -123,17 +121,12 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
             Type type = executor.getConcept(property.type().var()).asType();
             if (executor.isConceptDefined(var)) {
                 Concept concept = executor.getConcept(var); // retrieve the existing concept
-                // we silently "allow" redefining attributes, while actually doing a no-op, as long as the type hasn't changed
-                if (!concept.isAttribute()) {
-                    // however, non-attribute still throw exceptions
-                    throw GraqlSemanticException.insertExistingConcept(executor.printableRepresentation(var), concept);
-                } else if ((type instanceof AttributeType)) {
-                    if (type.subs().map(SchemaConcept::label).noneMatch(label -> label.equals(concept.asThing().type().label()))) {
-                        //downcasting is bad
-                        throw GraqlSemanticException.attributeDowncast(concept.asThing().type(), type);
-                    }
-                    // upcasting we silently accept
+                // we silently "allow" redefining concepts, while actually doing a no-op, as long as the type hasn't changed
+                if (type.subs().map(SchemaConcept::label).noneMatch(label -> label.equals(concept.asThing().type().label()))) {
+                    //downcasting is bad
+                    throw GraqlSemanticException.conceptDowncast(concept.asThing().type(), type);
                 }
+                //upcasting we silently accept
             } else {
                 executor.getBuilder(var).isa(type);
             }

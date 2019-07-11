@@ -64,6 +64,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.insert;
@@ -71,6 +72,7 @@ import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static graql.lang.exception.ErrorMessage.NO_PATTERNS;
 import static java.util.stream.Collectors.toSet;
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.arrayContaining;
@@ -626,36 +628,45 @@ public class GraqlInsertIT {
 
     // ------ match-insert the same resource/extending resources tests
     @Test
-    public void testMatchInsertSameEntityThrows() {
+    public void whenMatchInsertingExistingConcept_weDoNoOp() {
+        Statement matchStatement = var("x").isa("movie");
+        Statement insertStatement = var("x");
+
+        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
+        tx.execute(Graql.match(matchStatement).insert(insertStatement));
+        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
+    }
+    @Test
+    public void whenMatchInsertingExistingEntity_weDoNoOp() {
         Statement matchStatement = var("x").isa("movie");
         Statement insertStatement = var("x").isa("movie");
 
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("cannot overwrite properties");
-
+        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
         tx.execute(Graql.match(matchStatement).insert(insertStatement));
+        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
     }
 
     @Test
-    public void testMatchInsertSameRelationThrows() {
+    public void whenMatchInsertingExistingRelation_weDoNoOp() {
         Statement matchStatement = var("r").isa("directed-by");
         Statement insertStatement = var("r").isa("directed-by");
 
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("cannot overwrite properties");
-
+        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
         tx.execute(Graql.match(matchStatement).insert(insertStatement));
+        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
     }
 
     @Test
-    public void testMatchInsertSameAttributeDoesntThrow() {
+    public void whenMatchInsertingExistingAttribute_weDoNoOp() {
         Statement matchStatement = var("a").isa("name");
         Statement insertStatement = var("a").isa("name");
+        List<ConceptMap> before = tx.execute(Graql.match(matchStatement));
         tx.execute(Graql.match(matchStatement).insert(insertStatement));
+        assertCollectionsNonTriviallyEqual(before, tx.execute(Graql.match(matchStatement)));
     }
 
     @Test
-    public void testAddRolePlayerDoesntThrow() {
+    public void whenAppendingRolePlayerToARelation_additionIsSuccessful() {
         Statement matchStatement = var("r").isa("directed-by");
         Statement insertStatement = var("r").rel("director", "player");
         Statement insertStatement2 = var("player").isa("person");
@@ -663,25 +674,24 @@ public class GraqlInsertIT {
     }
 
     @Test
-    public void testAddRolePlayerWithRelationTypeThrows() {
-        /*
-        We have the convention that providing the type via `isa` indicates that we wish to instantiate the type
-        So if we do `match $x isa someRelation; sert $x (role: $rp) isa relation` fails,
-        whereas `match $x isa someRelation; insert $x (role: $rp);` should work
-        */
+    public void whenAppendingRolePlayerToASpecificRelation_additionIsSuccessful() {
+        Set<Statement> matchStatements = Sets.newHashSet(
+                var("r").rel("production-being-directed", var("x")).isa("directed-by"),
+                var("x").has("title", "Chinese Coffee")
+        );
+        Set<Statement> insertStatements = Sets.newHashSet(
+                var("y").isa("person"),
+                var("r").rel("director", var("y"))
+        );
+        ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(matchStatements).insert(insertStatements)));
 
-        Statement matchStatement = var("r").isa("directed-by");
-        Statement insertStatement = var("r").rel("director", "player").isa("directed-by");
-        Statement insertStatement2 = var("player").isa("person");
-
-        exception.expect(GraqlSemanticException.class);
-        exception.expectMessage("cannot overwrite properties");
-
-        tx.execute(Graql.match(matchStatement).insert(insertStatement, insertStatement2));
+        assertTrue(
+                tx.getConcept(answer.get("r").id()).asRelation().rolePlayers().anyMatch(rp -> rp.id().equals(answer.get("y").id()))
+        );
     }
 
     @Test
-    public void testAddNewAttributeOwnerDoesntThrow() {
+    public void whenAddingNewAttributeOwner_operationIsSuccessful() {
         Statement matchStatement = var("x").isa("production").has("title", var("attr"));
         Statement insertStatement = var("newProduction").isa("production").has("title", var("attr"));
         List<Numeric> oldCount = tx.execute(Graql.match(matchStatement).get("x").count());
@@ -692,7 +702,6 @@ public class GraqlInsertIT {
         List<Numeric> newCount = tx.execute(Graql.match(matchStatement).get("x").count());
         assertEquals(oldCount.get(0).number().intValue() * 2, newCount.get(0).number().intValue());
     }
-
 
     private void assertInsert(Statement... vars) {
         // Make sure vars don't exist
