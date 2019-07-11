@@ -441,6 +441,7 @@ jobs:
       - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/send_email.py
       - run: pyenv install 3.6.3
       - run: pyenv global 3.6.3
+      - run: pip3 install -r requirements.txt
       - run: |
           python send_email.py \
           --recipients "paul.andlinger@solid-it.at, tomas@grakn.ai" \
