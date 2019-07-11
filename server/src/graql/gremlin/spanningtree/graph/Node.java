@@ -41,6 +41,8 @@ public abstract class Node {
     private Set<Fragment> fragmentsWithDependencyVisited = new HashSet<>();
     private Set<Fragment> dependants = new HashSet<>();
 
+    private int cachedHashcode = 0;
+
 
     public Node(NodeId nodeId) {
         this.nodeId = nodeId;
@@ -127,7 +129,10 @@ public abstract class Node {
 
     @Override
     public int hashCode() {
-        return nodeId.hashCode();
+        if (cachedHashcode == 0) {
+            cachedHashcode = nodeId.hashCode();
+        }
+        return cachedHashcode;
     }
 
     @Override

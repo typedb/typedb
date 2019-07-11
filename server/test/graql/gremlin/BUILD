@@ -31,9 +31,24 @@ java_test(
     size = "small"
 )
 
+java_test(
+    name = "optimal-tree-traversal-test",
+    srcs = ["OptimalTreeTraversalTest.java"],
+    test_class = "grakn.core.graql.gremlin.OptimalTreeTraversalTest",
+    deps = [
+        "//server:server",
+        "//concept:concept",
+        "@graknlabs_graql//java:graql",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core"
+    ],
+    size = "small"
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":nodes-util-test"
+        ":nodes-util-test",
+        ":optimal-tree-traversal-test"
     ],
 )
