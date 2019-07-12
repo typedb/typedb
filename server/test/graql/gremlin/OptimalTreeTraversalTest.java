@@ -155,7 +155,7 @@ public class OptimalTreeTraversalTest {
             double bestCost = traversal.optimal_cost_stack(root, memoisedResults, parentToChild);
             long endTime = System.nanoTime();
 
-            System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations);
+            System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
         }
     }
 

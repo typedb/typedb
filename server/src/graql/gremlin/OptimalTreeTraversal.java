@@ -24,12 +24,14 @@ public class OptimalTreeTraversal {
     private TransactionOLTP tx;
     int iterations;
     int productIterations;
+//    int shortCircuits;
 
     public OptimalTreeTraversal(TransactionOLTP tx) {
 
         this.tx = tx;
         iterations = 0;
         productIterations = 0;
+//        shortCircuits = 0;
     }
 
     public Map<Set<Node>, Pair<Double, Set<Node>>> traverse(Arborescence<Node> arborescence,
@@ -143,48 +145,71 @@ public class OptimalTreeTraversal {
         long start2;
         long start3;
 
+//        double currentCost = 0.0;
+//        double bestFoundCost = Double.MAX_VALUE;
+
         while (stack.size() != 0) {
             iterations++;
             StackEntry entry = stack.peek();
 
+            // compute the cost of the current visited set
+            start3 = System.nanoTime();
+            double cost = product(entry.visited);
+            timeSpentInProduct += (System.nanoTime() - start3);
+
             if (entry.haveVisited) {
-                start3 = System.nanoTime();
                 // actually remove this stack entry when we see it the second time
                 stack.pop();
-                // compute the cost of the current visited set
-                double cost = product(entry.visited);
-
-                timeSpentInProduct += (System.nanoTime() - start3);
 
                 // find the best child to choose next
                 Set<Node> bestChild = null;
+                double bestChildCost = 0.0;
                 if (entry.children.size() > 0) {
                     // update the cost to include the path from the best to child to the finish
                     // if there are any children
-                    double bestCost = 0;
                     for (Set<Node> child : entry.children) {
                         start1 = System.nanoTime();
                         Pair<Double, Set<Node>> memoisedResult = memoised.get(child.hashCode());
                         timeSpentInMemoised += (System.nanoTime() - start1);
-                        if (bestChild == null || memoisedResult.getKey() < bestCost) {
+                        if (memoisedResult != null && (bestChild == null || memoisedResult.getKey() < bestChildCost)) {
                             bestChild = child;
-                            bestCost = memoisedResult.getKey();
+                            bestChildCost = memoisedResult.getKey();
                         }
                     }
-                    // update the  cost
-                    cost += bestCost;
                 }
 
                 // memoise the cost
                 start1 = System.nanoTime();
-                memoised.put(entry.visited.hashCode(), new Pair<>(cost, bestChild));
+                memoised.put(entry.visited.hashCode(), new Pair<>(cost + bestChildCost, bestChild));
                 timeSpentInMemoised += (System.nanoTime() - start1);
 
+//                // update the global best cost found yet if we are the top of the stack and have no more paths to explore
+//                if (entry.children.size() == 0 && currentCost < bestFoundCost) {
+//                    bestFoundCost = currentCost;
+//                }
+
+//                 remove the cost from the current total as we have finished processing this stack entry
+//                currentCost -= cost;
 
             } else {
                 start2 = System.nanoTime();
                 // set that we have visited the entry for the first time
+
+//                // this branch means we are expanding this path of exploration
+//                // so the current cost includes this branch
+//                currentCost += cost;
+
                 entry.setHaveVisited();
+
+//                // This never short circuits because the last term of the cost always dominates
+//                if (currentCost > bestFoundCost) {
+//                    // we can short circuit the execution if we are on a more expensive branch than the best yet
+//                    shortCircuits++;
+//                    stack.pop();
+//                    currentCost -= cost;
+//                    continue;
+//                }
+
                 for (Node nextNode : entry.reachable) {
                     Set<Node> nextVisited = new HashSet<>(entry.visited);
                     nextVisited.add(nextNode);
@@ -220,8 +245,9 @@ public class OptimalTreeTraversal {
     private double product(Set<Node> nodes) {
         productIterations++;
         double cost = 1.0;
+        // this is an expensive operation - it may be the mocks in tests that are slow, as writing constants for node.matchingElementsEstimate() is much faster
         for (Node node : nodes) {
-            cost = cost * 2;
+            cost = cost * node.matchingElementsEstimate(tx);
         }
         return cost;
     }
