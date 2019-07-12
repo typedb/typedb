@@ -22,5 +22,5 @@ package grakn.core.console;
  * Class for storing the Grakn Version.
  */
 public class Version {
-    public static final String VERSION = "VERSION_PLACEHOLDER";
+    public static final String VERSION = "{version}";
 }

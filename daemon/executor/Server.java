@@ -23,7 +23,6 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.daemon.exception.GraknDaemonException;
 import grakn.core.server.Grakn;
-import grakn.core.server.GraknStorage;
 
 import java.io.File;
 import java.io.IOException;

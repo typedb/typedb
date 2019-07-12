@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.util;
+package grakn.core.server;
 
 /**
  * Class for storing the Grakn Version.
  */
-public class GraknVersion {
-    public static final String VERSION = "VERSION_PLACEHOLDER";
+public class Version {
+    public static final String VERSION = "{version}";
 }

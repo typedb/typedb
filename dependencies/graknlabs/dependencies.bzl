@@ -22,33 +22,33 @@ def graknlabs_build_tools():
     git_repository(
         name = "graknlabs_build_tools",
         remote = "https://github.com/graknlabs/build-tools",
-        commit = "2832af3c237551cd132907dfd1790ed503208e78", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
+        commit = "cce427d89b4e916c5d40fa2222d45e1ecd7f5776", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_build_tools
     )
 
 def graknlabs_graql():
      git_repository(
          name = "graknlabs_graql",
          remote = "https://github.com/graknlabs/graql",
-         commit = "b0561cc06f545323a1fcc40e10db5c65dbffb07f", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
+         commit = "8c7f3c07661e88def70a58a7598d3cb248ea0697", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_graql
      )
 
 def graknlabs_protocol():
     git_repository(
         name = "graknlabs_protocol",
         remote = "https://github.com/graknlabs/protocol",
-        commit = "a37a83e10bb897056d3baa482655e683180a604b", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
+        commit = "a25b0803a192a9f3c390d9a58527e24ef8d6874d", # sync-marker: do not remove this comment, this is used for sync-dependencies by @graknlabs_protocol
     )
 
 def graknlabs_client_java():
      git_repository(
          name = "graknlabs_client_java",
          remote = "https://github.com/graknlabs/client-java",
-         commit = "06f91f00a5cce29bfa78c4dc7b3a76ed1b74174f",
+         commit = "d2c3d0c6a764e939d64005d45075c5795055084e",
      )
 
 def graknlabs_benchmark():
     git_repository(
         name = "graknlabs_benchmark",
         remote = "https://github.com/graknlabs/benchmark.git",
-        commit = "a2d31c7a0e7a478a909792e12aa1198d8a56c16c" # keep in sync with protocol changes
+        commit = "186eeabf8122c209cc7d0ab290c9fe82b2185cc8" # keep in sync with protocol changes
     )

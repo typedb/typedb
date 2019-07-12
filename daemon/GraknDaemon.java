@@ -20,10 +20,10 @@ package grakn.core.daemon;
 
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.common.util.GraknVersion;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
+import grakn.core.server.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +36,7 @@ import java.util.Objects;
 import java.util.Scanner;
 
 /**
- * The {@link GraknDaemon} class is responsible for starting, stopping and cleaning the keyspaces of Grakn
+ * The GraknDaemon class is responsible for starting, stopping and cleaning the keyspaces of Grakn
  */
 public class GraknDaemon {
     private static final Logger LOG = LoggerFactory.getLogger(GraknDaemon.class);
@@ -111,10 +111,10 @@ public class GraknDaemon {
             try {
                 String logoString = new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8);
                 int lineLength = logoString.split("\n")[0].length();
-                int spaces = lineLength - VERSION_LABEL.length() - GraknVersion.VERSION.length();
+                int spaces = lineLength - VERSION_LABEL.length() - Version.VERSION.length();
 
                 System.out.println(logoString);
-                System.out.printf("%" + spaces + "s"+ VERSION_LABEL +"%s\n", " ", GraknVersion.VERSION);
+                System.out.printf("%" + spaces + "s"+ VERSION_LABEL +"%s\n", " ", Version.VERSION);
             } catch (IOException e) {
                 // DO NOTHING
             }
@@ -210,7 +210,7 @@ public class GraknDaemon {
     }
 
     private void version() {
-        System.out.println(GraknVersion.VERSION);
+        System.out.println(Version.VERSION);
     }
 
     private void help() {

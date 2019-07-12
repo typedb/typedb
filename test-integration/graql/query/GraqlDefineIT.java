@@ -244,7 +244,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void testKey() {
+    public void whenDefiningAKey_appropriateSchemaConceptsAreCreated() {
         String resourceType = "a-new-resource-type";
 
         tx.execute(Graql.define(
@@ -273,7 +273,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void testResourceTypeRegex() {
+    public void whenDefiningResourceTypeWithRegex_regexIsAppliedCorrectly() {
         tx.execute(Graql.define(type("greeting").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING).regex("hello|good day")));
 
         MatchClause match = Graql.match(var("x").type("greeting"));
@@ -304,17 +304,31 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void whenDefiningARule_TheRuleIsInTheKB() {
+    public void whenDefiningARuleUsingParsedPatterns_ruleIsPersistedCorrectly() {
         Pattern when = Graql.parsePattern("$x isa entity;");
         Pattern then = Graql.parsePattern("$x isa entity;");
-        Statement vars = type("my-rule").sub(Graql.Token.Type.RULE).when(when).then(then);
-        tx.execute(Graql.define(vars));
+        Statement rule = type("my-rule").sub(Graql.Token.Type.RULE).when(when).then(then);
+        tx.execute(Graql.define(rule));
 
         assertNotNull(tx.getRule("my-rule"));
     }
 
     @Test
-    public void testErrorResourceTypeWithoutDataType() {
+    public void whenDefiningARuleUsingCoreAPI_ruleIsPersistedCorrectly(){
+        tx.execute(Graql.define(type("good-movie").sub("movie")));
+        GraqlDefine ruleDefinition = Graql.define(
+                type("high-average-movies-are-good").sub("rule")
+                        .when(
+                                var("m").isa("movie").has("tmdb-vote-average", Graql.gte(7.5)))
+                        .then(
+                                var("m").isa("good-movie")
+                )
+        );
+        tx.execute(ruleDefinition);
+    }
+
+    @Test
+    public void whenDefiningAttributeTypeWithoutDataType_weThrow() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
                 allOf(containsString("my-resource"), containsString("datatype"), containsString("resource"))
@@ -323,7 +337,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void testErrorRecursiveType() {
+    public void whenDefiningRecursiveTypes_weThrow() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(allOf(containsString("thingy"), containsString("itself")));
         tx.execute(Graql.define(type("thingy").sub("thingy")));
@@ -337,7 +351,7 @@ public class GraqlDefineIT {
     }
 
     @Test
-    public void testErrorWhenNonExistentResource() {
+    public void whenATypeHasNonExistentResource_weThrow() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage("nothing");
         tx.execute(Graql.define(type("blah this").sub("entity").has("nothing")));

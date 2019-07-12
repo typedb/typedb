@@ -22,7 +22,9 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.server.keyspace.KeyspaceImpl;
 
-import static grakn.core.common.exception.ErrorMessage.BACKEND_EXCEPTION;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+
 import static grakn.core.common.exception.ErrorMessage.INITIALIZATION_EXCEPTION;
 
 /**
@@ -40,6 +42,21 @@ public class GraknServerException extends GraknException {
 
     GraknServerException(String error, Exception e) {
         super(error, e);
+    }
+
+    @CheckReturnValue
+    public static GraknServerException unreachableStatement(Exception cause) {
+        return unreachableStatement(null, cause);
+    }
+
+    @CheckReturnValue
+    public static GraknServerException unreachableStatement(String message) {
+        return unreachableStatement(message, null);
+    }
+
+    @CheckReturnValue
+    private static GraknServerException unreachableStatement(@Nullable String message, Exception cause) {
+        return new GraknServerException("Statement expected to be unreachable: " + message, cause);
     }
 
     @Override

@@ -18,14 +18,9 @@
 
 package grakn.core.common.util;
 
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * Common utility methods used within Grakn.
@@ -33,9 +28,7 @@ import java.util.stream.StreamSupport;
  * Some of these methods are Grakn-specific, others add important "missing" methods to Java/Guava classes.
  *
  */
-public class CommonUtil {
-
-    private CommonUtil() {}
+public class Streams {
 
     /**
      * @param optional the optional to change into a stream
@@ -44,10 +37,6 @@ public class CommonUtil {
      */
     public static <T> Stream<T> optionalToStream(Optional<T> optional) {
         return optional.map(Stream::of).orElseGet(Stream::empty);
-    }
-
-    public static <T> Stream<T> stream(Iterator<T> iterator) {
-        return StreamSupport.stream(Spliterators.spliteratorUnknownSize(iterator, Spliterator.ORDERED), false);
     }
 
     /**
@@ -68,21 +57,6 @@ public class CommonUtil {
         }
 
         return size == count;
-    }
-
-    @CheckReturnValue
-    public static RuntimeException unreachableStatement(Throwable cause) {
-        return unreachableStatement(null, cause);
-    }
-
-    @CheckReturnValue
-    public static RuntimeException unreachableStatement(String message) {
-        return unreachableStatement(message, null);
-    }
-
-    @CheckReturnValue
-    public static RuntimeException unreachableStatement(@Nullable String message, Throwable cause) {
-        return new RuntimeException("Statement expected to be unreachable: " + message, cause);
     }
 
 }

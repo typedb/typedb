@@ -155,10 +155,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ReasonerQueryImpl neqPositive(){
+    public ReasonerQueryImpl constantValuePredicateQuery(){
         return ReasonerQueries.create(
                 getAtoms().stream()
-                        .map(Atomic::neqPositive)
                         .filter(at -> !(at instanceof VariablePredicate))
                         .collect(Collectors.toSet()),
                 tx());
@@ -556,8 +555,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     public boolean requiresReiteration() {
         if (isCacheComplete()) return false;
         Set<InferenceRule> dependentRules = RuleUtils.getDependentRules(this);
-        return RuleUtils.subGraphIsCyclical(dependentRules, tx())||
-                RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules);
+        return RuleUtils.subGraphIsCyclical(dependentRules, tx())
+                || RuleUtils.subGraphHasRulesWithHeadSatisfyingBody(dependentRules)
+                || selectAtoms().filter(Atom::isDisconnected).filter(Atom::isRuleResolvable).count() > 1;
     }
 
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){

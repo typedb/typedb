@@ -237,4 +237,9 @@ public class RelationImpl implements Relation, ConceptVertex {
     public Relation attributeInferred(Attribute attribute) {
         return reify().attributeInferred(attribute);
     }
+
+    @Override
+    public Stream<Thing> getDependentConcepts() {
+        return Stream.concat(Stream.of(this), rolePlayers());
+    }
 }

@@ -18,7 +18,6 @@
 
 package grakn.core.graql.executor;
 
-import grakn.core.common.util.CommonUtil;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -30,6 +29,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
 import graql.lang.Graql;
@@ -396,7 +396,7 @@ public class ConceptBuilder {
         } else if (type.label().equals(Schema.MetaSchema.THING.getLabel())) {
             throw GraqlSemanticException.createInstanceOfMetaConcept(var, type);
         } else {
-            throw CommonUtil.unreachableStatement("Can't recognize type " + type);
+            throw GraknServerException.unreachableStatement("Can't recognize type " + type);
         }
     }
 

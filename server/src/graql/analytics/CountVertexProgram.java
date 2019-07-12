@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.common.util.CommonUtil;
+import grakn.core.server.exception.GraknServerException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;
@@ -64,7 +64,7 @@ public class CountVertexProgram extends GraknVertexProgram<Long> {
                 }
                 break;
             default:
-                throw CommonUtil.unreachableStatement("Exceeded expected maximum number of iterations");
+                throw GraknServerException.unreachableStatement("Exceeded expected maximum number of iterations");
         }
     }
 

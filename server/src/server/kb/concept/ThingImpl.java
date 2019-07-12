@@ -284,8 +284,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if (!roleSet.isEmpty()) {
             stream = stream.filter(edge -> {
-                Role roleOwner = vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID)));
-                return roleSet.contains(roleOwner);
+                Set<Role> edgeRoles = new HashSet<>();
+                edgeRoles.add(vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+                if (this.isAttribute()){
+                    edgeRoles.add(vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+                }
+                return !Sets.intersection(roleSet, edgeRoles).isEmpty();
             });
         }
 

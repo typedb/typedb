@@ -37,9 +37,6 @@ public interface Atomic {
     @CheckReturnValue
     Atomic copy(ReasonerQuery parent);
 
-    @CheckReturnValue
-    Atomic neqPositive();
-
     /**
      * @return variable name of this atomic
      */

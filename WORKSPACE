@@ -57,6 +57,9 @@ bazel_toolchain()
 load("@graknlabs_build_tools//checkstyle:dependencies.bzl", "checkstyle_dependencies")
 checkstyle_dependencies()
 
+load("@graknlabs_build_tools//sonarcloud:dependencies.bzl", "sonarcloud_dependencies")
+sonarcloud_dependencies()
+
 load("@graknlabs_build_tools//bazel:dependencies.bzl", "bazel_rules_python")
 bazel_rules_python()
 
@@ -154,7 +157,7 @@ google_common_workspace_rules()
 
 
 # Generate a JSON document of commit hashes of all external workspace dependencies
-load("@graknlabs_build_tools//bazel:rules.bzl", "workspace_refs")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "workspace_refs")
 workspace_refs(
     name = "graknlabs_grakn_core_workspace_refs"
 )

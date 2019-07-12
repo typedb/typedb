@@ -29,9 +29,21 @@ exports_files(
     visibility = ["//visibility:public"]
 )
 
+
+genrule(
+    name = "version",
+    srcs = [
+        "src/server/templates/Version.java",
+        "//:VERSION",
+    ],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location src/server/templates/Version.java) >> $@",
+    outs = ["Version.java"],
+    visibility = ["//common:__subpackages__"],
+)
+
 java_library(
     name = "server",
-    srcs = glob(["src/**/*.java"]),
+    srcs = glob(["src/**/*.java"], exclude=["**/templates/**", "**/test/**"]) + [":version"],
     deps = [
         # Internal dependencies
         "//api:api",
@@ -40,8 +52,7 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_protocol//keyspace:keyspace",
-        "@graknlabs_protocol//session:session",
+        "@graknlabs_protocol//grpc/java:protocol",
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
@@ -83,8 +94,7 @@ java_library(
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
-    tags = ["maven_coordinates=io.grakn.core:server:{pom_version}"],
-    javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
+    tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
     visibility = ["//visibility:public"]
 
 )

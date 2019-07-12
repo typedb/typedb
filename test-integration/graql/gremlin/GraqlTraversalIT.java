@@ -21,7 +21,7 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.common.util.CommonUtil;
+import grakn.core.common.util.Streams;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -328,7 +328,7 @@ public class GraqlTraversalIT {
         return lists.stream()
                 .map(Sets::newHashSet)
                 .map(GraqlTraversalIT::createTraversal)
-                .flatMap(CommonUtil::optionalToStream);
+                .flatMap(Streams::optionalToStream);
     }
 
     // Returns a traversal only if the fragment ordering is valid
