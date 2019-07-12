@@ -24,12 +24,13 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
+import java.util.Iterator;
 import java.util.Set;
 
 /**
  * Query state corresponding to a conjunctive query (ReasonerQueryImpl) in the resolution tree.
  */
-public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
+public class ConjunctiveState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     public ConjunctiveState(ReasonerQueryImpl q,
                             ConceptMap sub,
@@ -37,6 +38,11 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
                             AnswerPropagatorState parent,
                             Set<ReasonerAtomicQuery> visitedSubGoals) {
         super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals);
+    }
+
+    @Override
+    Iterator<ResolutionState> generateSubGoalIterator() {
+        return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 
     @Override

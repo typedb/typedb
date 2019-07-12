@@ -33,19 +33,17 @@ import java.util.Set;
  *
  *
  */
-public class AtomicStateProducer extends AnswerPropagatorState {
-
-    private final Iterator<ResolutionState> subGoalIterator;
+public class AtomicStateProducer extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     public AtomicStateProducer(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
-        super(sub, u, parent, subGoals);
-        this.subGoalIterator = query.expandedStates(sub, u, parent, subGoals).iterator();
+        super(query, sub, u, parent, subGoals);
     }
 
     @Override
-    public ResolutionState generateSubGoal() {
-        return subGoalIterator.hasNext() ? subGoalIterator.next() : null;
+    Iterator<ResolutionState> generateSubGoalIterator() {
+        return getQuery().expandedStates(getSubstitution(), getUnifier(), getParentState(), getVisitedSubGoals()).iterator();
     }
+
 
     @Override
     ResolutionState propagateAnswer(AnswerState state) {

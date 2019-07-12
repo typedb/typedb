@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 /**
  * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query (ReasonerQueryImpl) in the resolution tree.
  */
-public class CumulativeState extends QueryState<ReasonerQueryImpl> {
+public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
 
@@ -49,7 +49,6 @@ public class CumulativeState extends QueryState<ReasonerQueryImpl> {
         this.subQueries = new LinkedList<>(qs);
         subQueries.removeFirst();
     }
-
 
     @Override
     protected Iterator<ResolutionState> generateSubGoalIterator() {

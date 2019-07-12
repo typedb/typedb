@@ -24,6 +24,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -56,7 +57,7 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public class CompositeState extends QueryState<CompositeQuery> {
+public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
 
     private final Set<ResolvableQuery> complements;
 
@@ -68,6 +69,11 @@ public class CompositeState extends QueryState<CompositeQuery> {
     @Override
     public String toString(){
         return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString();
+    }
+
+    @Override
+    Iterator<ResolutionState> generateSubGoalIterator() {
+        return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 
     @Override

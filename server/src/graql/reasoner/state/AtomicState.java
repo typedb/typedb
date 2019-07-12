@@ -39,7 +39,7 @@ import java.util.Set;
 /**
  * Query state corresponding to an atomic query (ReasonerAtomicQuery) in the resolution tree.
  */
-public class AtomicState extends QueryState<ReasonerAtomicQuery> {
+public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     //TODO: remove it once we introduce multi answer states
     private MultiUnifier ruleUnifier = null;
@@ -53,11 +53,12 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
                 Unifier u,
                 AnswerPropagatorState parent,
                 Set<ReasonerAtomicQuery> subGoals) {
-        super(ReasonerQueries.atomic(query, sub),
-              sub,
-              u,
-              parent,
-              subGoals);
+        super(ReasonerQueries.atomic(query, sub), sub, u, parent, subGoals);
+    }
+
+    @Override
+    Iterator<ResolutionState> generateSubGoalIterator() {
+        return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 
     @Override
