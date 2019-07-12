@@ -40,7 +40,7 @@ public class AtomicStateProducer extends AnswerPropagatorState<ReasonerAtomicQue
     }
 
     @Override
-    Iterator<ResolutionState> generateSubGoalIterator() {
+    Iterator<ResolutionState> generateChildStateIterator() {
         return getQuery().expandedStates(getSubstitution(), getUnifier(), getParentState(), getVisitedSubGoals()).iterator();
     }
 

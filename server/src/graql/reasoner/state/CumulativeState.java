@@ -51,7 +51,7 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
     }
 
     @Override
-    protected Iterator<ResolutionState> generateSubGoalIterator() {
+    protected Iterator<ResolutionState> generateChildStateIterator() {
         //NB: we need lazy resolutionState initialisation here, otherwise they are marked as visited before visit happens
         return getQuery().expandedStates(getSubstitution(), getUnifier(), this, getVisitedSubGoals()).iterator();
     }

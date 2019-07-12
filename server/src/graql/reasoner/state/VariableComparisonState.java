@@ -65,7 +65,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
     }
 
     @Override
-    Iterator<ResolutionState> generateSubGoalIterator() {
+    Iterator<ResolutionState> generateChildStateIterator() {
         return Iterators.singletonIterator(
                 getQuery().constantValuePredicateQuery().resolutionState(getSubstitution(), getUnifier(), this, getVisitedSubGoals())
         );

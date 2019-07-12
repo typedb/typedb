@@ -57,7 +57,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
     }
 
     @Override
-    Iterator<ResolutionState> generateSubGoalIterator() {
+    Iterator<ResolutionState> generateChildStateIterator() {
         return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 

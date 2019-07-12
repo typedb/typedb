@@ -47,7 +47,7 @@ class RoleExpansionState extends ResolutionState {
     }
 
     @Override
-    public ResolutionState generateSubGoal() {
+    public ResolutionState generateChildState() {
         if (!answerStateIterator.hasNext()) return null;
         AnswerState state = answerStateIterator.next();
         return getParentState() != null ? getParentState().propagateAnswer(state) : state;

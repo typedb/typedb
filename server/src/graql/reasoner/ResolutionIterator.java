@@ -68,7 +68,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 return state.getSubstitution();
             }
 
-            ResolutionState newState = state.generateSubGoal();
+            ResolutionState newState = state.generateChildState();
             if (newState != null) {
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);

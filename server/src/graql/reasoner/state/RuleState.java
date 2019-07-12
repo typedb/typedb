@@ -46,7 +46,7 @@ public class RuleState extends AnswerPropagatorState<ResolvableQuery> {
     }
 
     @Override
-    Iterator<ResolutionState> generateSubGoalIterator() {
+    Iterator<ResolutionState> generateChildStateIterator() {
         //NB; sub gets propagated to the body here
         return Iterators.singletonIterator(getQuery().resolutionState(getSubstitution(), getUnifier(), this, getVisitedSubGoals()));
     }

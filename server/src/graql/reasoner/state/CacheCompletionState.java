@@ -22,7 +22,9 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 
 /**
+ *
  * State used to acknowledge db completion of a query in the cache - all db answers to the query are cached.
+ *
  */
 public class CacheCompletionState extends ResolutionState {
 
@@ -34,7 +36,7 @@ public class CacheCompletionState extends ResolutionState {
     }
 
     @Override
-    public ResolutionState generateSubGoal() {
+    public ResolutionState generateChildState() {
         query.tx().queryCache().ackDBCompleteness(query);
         return null;
     }

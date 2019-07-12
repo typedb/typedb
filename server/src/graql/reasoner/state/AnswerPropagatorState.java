@@ -29,13 +29,17 @@ import java.util.Set;
 /**
  *
  * <p>
- * Base abstract class for resolution states that involve:
+ * Base abstract class for resolution states that exhibit the following behaviours:
+ *
  * - answer propagation
- * - have an underlying query
+ *   The state serves as a proxy state for propagating answer states up the tree to the root state.
+ *   When an answer state propagates via this state, it is consumed - a specific action is performed on the answer state.
  *
- * The state generates an iterator for inner states that it produces.
+ * - possibility of production of multiple states
+ *   The state has internal query states coming from an underlying query.
+ *   The state defines an iterator for inner states that's used for state generation.
+ *
  * </p>
- *
  *
  */
 public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends ResolutionState {
@@ -50,14 +54,14 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
         this.query = query;
         this.unifier = u;
         this.visitedSubGoals = subGoals;
-        this.subGoalIterator = generateSubGoalIterator();
+        this.subGoalIterator = generateChildStateIterator();
     }
 
     @Override
     public String toString(){ return super.toString() + "\n" + getQuery() + "\n"; }
 
     @Override
-    public ResolutionState generateSubGoal() {
+    public ResolutionState generateChildState() {
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
 
@@ -66,8 +70,7 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
      */
     Q getQuery(){ return query;}
 
-    /**
-     * @return set of already visited subGoals (atomic queries)
+    /**@return set of already visited subGoals (atomic queries)
      */
     Set<ReasonerAtomicQuery> getVisitedSubGoals(){ return visitedSubGoals;}
 
@@ -76,7 +79,11 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
      */
     public Unifier getUnifier(){ return unifier;}
 
-    abstract Iterator<ResolutionState> generateSubGoalIterator();
+    /**
+     *
+     * @return
+     */
+    abstract Iterator<ResolutionState> generateChildStateIterator();
 
     /**
      * propagates the answer state up the tree and acknowledges (caches) its substitution

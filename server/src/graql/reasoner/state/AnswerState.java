@@ -56,7 +56,7 @@ public class AnswerState extends ResolutionState {
     public boolean isAnswerState(){ return true;}
 
     @Override
-    public ResolutionState generateSubGoal() {
+    public ResolutionState generateChildState() {
         return getParentState().propagateAnswer(this);
     }
 

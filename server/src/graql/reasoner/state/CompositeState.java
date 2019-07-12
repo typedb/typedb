@@ -72,7 +72,7 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
     }
 
     @Override
-    Iterator<ResolutionState> generateSubGoalIterator() {
+    Iterator<ResolutionState> generateChildStateIterator() {
         return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 
