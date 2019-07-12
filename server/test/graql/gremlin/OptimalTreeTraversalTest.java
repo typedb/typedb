@@ -115,7 +115,7 @@ public class OptimalTreeTraversalTest {
     }
 
     @Test
-    public void scalingOptimalTraversal() {
+    public void scalingOptimalRecursiveTraversal() {
         for (int i = 1; i < 30; i++) {
             Map<Node, Set<Node>> parentToChild = generateMockTree(i);
 
@@ -129,7 +129,7 @@ public class OptimalTreeTraversalTest {
             OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
             Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
             long startTime = System.nanoTime();
-            double bestCost = traversal.optimal_cost(Sets.newHashSet(root), parentToChild.get(root), memoisedResults, parentToChild);
+            double bestCost = traversal.optimal_cost_recursive(Sets.newHashSet(root), parentToChild.get(root), memoisedResults, parentToChild);
             long endTime = System.nanoTime();
 
             System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations);
@@ -155,6 +155,27 @@ public class OptimalTreeTraversalTest {
             double bestCost = traversal.optimal_cost_stack(root, memoisedResults, parentToChild);
             long endTime = System.nanoTime();
 
+            System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations);
+        }
+    }
+
+    @Test
+    public void scalingOptimalBottomUpStackTraversal() {
+        for (int i = 1; i < 30; i++) {
+            Map<Node, Set<Node>> parentToChild = generateMockTree(i);
+
+            Set<Node> children = parentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
+            Set<Node> parents = new HashSet<>(parentToChild.keySet());
+            Set<Node> allNodes = Sets.union(children, parents);
+            int numNodes = allNodes.size();
+
+            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
+//            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
+            Map<Integer, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
+            long startTime = System.nanoTime();
+            double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild);
+            long endTime = System.nanoTime();
+
             System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
         }
     }
@@ -171,61 +192,70 @@ public class OptimalTreeTraversalTest {
         when(edge1_1.matchingElementsEstimate(any())).thenReturn(1L);
         Node edge1_2 = Mockito.mock(EdgeNode.class);
         when(edge1_2.matchingElementsEstimate(any())).thenReturn(1L);
-        Node edge1_3 = Mockito.mock(EdgeNode.class);
-        when(edge1_3.matchingElementsEstimate(any())).thenReturn(1L);
+//        Node edge1_3 = Mockito.mock(EdgeNode.class);
+//        when(edge1_3.matchingElementsEstimate(any())).thenReturn(1L);
 
 
         Node instance2_1 = Mockito.mock(InstanceNode.class);
         when(instance2_1.matchingElementsEstimate(any())).thenReturn(10L);
         Node instance2_2 = Mockito.mock(InstanceNode.class);
         when(instance2_2.matchingElementsEstimate(any())).thenReturn(8L);
-        Node instance2_3 = Mockito.mock(InstanceNode.class);
-        when(instance2_3.matchingElementsEstimate(any())).thenReturn(3L);
+//        Node instance2_3 = Mockito.mock(InstanceNode.class);
+//        when(instance2_3.matchingElementsEstimate(any())).thenReturn(3L);
 
-        Node edge3_1 = Mockito.mock(EdgeNode.class);
-        when(edge3_1.matchingElementsEstimate(any())).thenReturn(1L);
-        Node edge3_2 = Mockito.mock(EdgeNode.class);
-        when(edge3_2.matchingElementsEstimate(any())).thenReturn(1L);
-        Node edge3_3 = Mockito.mock(EdgeNode.class);
-        when(edge3_3.matchingElementsEstimate(any())).thenReturn(1L);
-        Node edge3_4 = Mockito.mock(EdgeNode.class);
-        when(edge3_4.matchingElementsEstimate(any())).thenReturn(1L);
+//        Node edge3_1 = Mockito.mock(EdgeNode.class);
+//        when(edge3_1.matchingElementsEstimate(any())).thenReturn(1L);
+//        Node edge3_2 = Mockito.mock(EdgeNode.class);
+//        when(edge3_2.matchingElementsEstimate(any())).thenReturn(1L);
+//        Node edge3_3 = Mockito.mock(EdgeNode.class);
+//        when(edge3_3.matchingElementsEstimate(any())).thenReturn(1L);
+//        Node edge3_4 = Mockito.mock(EdgeNode.class);
+//        when(edge3_4.matchingElementsEstimate(any())).thenReturn(1L);
 
-        Node instance4_1 = Mockito.mock(SchemaNode.class);
-        when(instance4_1.matchingElementsEstimate(any())).thenReturn(1L);
-        Node instance4_2 = Mockito.mock(InstanceNode.class);
-        when(instance4_2.matchingElementsEstimate(any())).thenReturn(5L);
-        Node instance4_3 = Mockito.mock(InstanceNode.class);
-        when(instance4_3.matchingElementsEstimate(any())).thenReturn(10L);
-        Node instance4_4 = Mockito.mock(InstanceNode.class);
-        when(instance4_4.matchingElementsEstimate(any())).thenReturn(100L);
+//        Node instance4_1 = Mockito.mock(SchemaNode.class);
+//        when(instance4_1.matchingElementsEstimate(any())).thenReturn(1L);
+//        Node instance4_2 = Mockito.mock(InstanceNode.class);
+//        when(instance4_2.matchingElementsEstimate(any())).thenReturn(5L);
+//        Node instance4_3 = Mockito.mock(InstanceNode.class);
+//        when(instance4_3.matchingElementsEstimate(any())).thenReturn(10L);
+//        Node instance4_4 = Mockito.mock(InstanceNode.class);
+//        when(instance4_4.matchingElementsEstimate(any())).thenReturn(100L);
 
-        mockParentToChild.put(root, Sets.newHashSet(edge1_1, edge1_2, edge1_3));
+        mockParentToChild.put(root, Sets.newHashSet(edge1_1, edge1_2));//, edge1_3));
         mockParentToChild.put(edge1_1, Sets.newHashSet(instance2_1));
         mockParentToChild.put(edge1_2, Sets.newHashSet(instance2_2));
-        mockParentToChild.put(edge1_3, Sets.newHashSet(instance2_3));
+//        mockParentToChild.put(edge1_3, Sets.newHashSet(instance2_3));
 
-        mockParentToChild.put(instance2_1, Sets.newHashSet(edge3_1, edge3_2));
-        mockParentToChild.put(instance2_2, Sets.newHashSet(edge3_3));
-        mockParentToChild.put(instance2_3, Sets.newHashSet(edge3_4));
-
-        mockParentToChild.put(edge3_1, Sets.newHashSet(instance4_1));
-        mockParentToChild.put(edge3_2, Sets.newHashSet(instance4_2));
-        mockParentToChild.put(edge3_3, Sets.newHashSet(instance4_3));
-        mockParentToChild.put(edge3_4, Sets.newHashSet(instance4_4));
-
-
-        OptimalTreeTraversal traversal = new OptimalTreeTraversal(mockTx);
-
-        Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
-        long startTime = System.nanoTime();
-        double bestCost = traversal.optimal_cost(Sets.newHashSet(root), mockParentToChild.get(root), memoisedResults, mockParentToChild);
-        long endTime = System.nanoTime();
+//        mockParentToChild.put(instance2_1, Sets.newHashSet(edge3_1, edge3_2));
+//        mockParentToChild.put(instance2_2, Sets.newHashSet(edge3_3));
+//        mockParentToChild.put(instance2_3, Sets.newHashSet(edge3_4));
+//
+//        mockParentToChild.put(edge3_1, Sets.newHashSet(instance4_1));
+//        mockParentToChild.put(edge3_2, Sets.newHashSet(instance4_2));
+//        mockParentToChild.put(edge3_3, Sets.newHashSet(instance4_3));
+//        mockParentToChild.put(edge3_4, Sets.newHashSet(instance4_4));
 
 
+//        OptimalTreeTraversal traversal = new OptimalTreeTraversal(mockTx);
+//
+//        Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
+//        long startTime = System.nanoTime();
+//        double bestCost = traversal.optimal_cost_recursive(Sets.newHashSet(root), mockParentToChild.get(root), memoisedResults, mockParentToChild);
+//        long endTime = System.nanoTime();
 
-        System.out.println(bestCost);
-        System.out.println("Time elapsed: " + (endTime - startTime)/1000000.0 + " ms");
-        System.out.println("Iterations: " + traversal.iterations);
+        OptimalTreeTraversal traversal2 = new OptimalTreeTraversal(mockTx);
+
+        Map<Integer, Pair<Double, Set<Node>>> memoised = new HashMap<>();
+        Set<Node> children = mockParentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
+        Set<Node> parents = new HashSet<>(mockParentToChild.keySet());
+        Set<Node> allNodes = Sets.union(children, parents);
+        long startTime2 = System.nanoTime();
+        double bestCost = traversal2.optimalCostBottomUpStack(allNodes, memoised, mockParentToChild);
+        long endTime2 = System.nanoTime();
+
+        System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime2 - startTime2)/1000000.0 + " ms" + ", iterations: " + traversal2.iterations + ", products: " + traversal2.productIterations);
+//        System.out.println(bestCost);
+//        System.out.println("Time elapsed: " + (endTime - startTime)/1000000.0 + " ms");
+//        System.out.println("Iterations: " + traversal.iterations);
     }
 }
