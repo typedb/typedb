@@ -23,7 +23,6 @@ import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
 
@@ -66,7 +65,7 @@ public class  VariableComparisonState extends AnswerPropagatorState {
         this.variablePredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
                 .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 
-        this.complementState = query.constantValuePredicateQuery().subGoal(sub, u, this, subGoals);
+        this.complementState = query.constantValuePredicateQuery().resolutionState(sub, u, this, subGoals);
     }
 
     @Override

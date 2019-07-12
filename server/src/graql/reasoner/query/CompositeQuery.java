@@ -386,14 +386,14 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return isPositive()?
-                getConjunctiveQuery().subGoal(sub, u, parent, subGoals) :
+                getConjunctiveQuery().resolutionState(sub, u, parent, subGoals) :
                 new CompositeState(this, sub, u, parent, subGoals);
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
-        return Iterators.singletonIterator(getConjunctiveQuery().subGoal(getSubstitution(), parent.getUnifier(), parent, subGoals));
+    public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
+        return Iterators.singletonIterator(getConjunctiveQuery().resolutionState(getSubstitution(), parent.getUnifier(), parent, subGoals));
     }
 }

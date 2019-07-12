@@ -39,7 +39,7 @@ public class AtomicStateProducer extends AnswerPropagatorState {
 
     public AtomicStateProducer(ReasonerAtomicQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         super(sub, u, parent, subGoals);
-        this.subGoalIterator = query.subGoals(sub, u, parent, subGoals).iterator();
+        this.subGoalIterator = query.expandedStates(sub, u, parent, subGoals).iterator();
     }
 
     @Override

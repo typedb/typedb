@@ -20,7 +20,6 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
@@ -52,7 +51,7 @@ public abstract class QueryState<Q extends ResolvableQuery> extends AnswerPropag
     }
 
     protected Iterator<ResolutionState> generateSubGoalIterator() {
-        return getQuery().queryStateIterator(this, getVisitedSubGoals());
+        return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 
     /**

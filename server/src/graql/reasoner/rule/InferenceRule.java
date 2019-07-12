@@ -379,7 +379,7 @@ public class InferenceRule {
      * @param ruleUnifier unifier with parent state
      * @param parent parent state
      * @param visitedSubGoals set of visited sub goals
-     * @return resolution subGoal formed from this rule
+     * @return resolution resolutionState formed from this rule
      */
     public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals){
         Unifier ruleUnifierInverse = ruleUnifier.inverse();

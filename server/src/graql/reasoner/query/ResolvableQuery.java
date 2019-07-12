@@ -127,16 +127,16 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @param u unifier with parent state
      * @param parent parent state
      * @param subGoals set of visited sub goals
-     * @return resolution subGoal formed from this query
+     * @return resolution state formed from this query
      */
     @CheckReturnValue
-    ResolutionState subGoal(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
+    ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 
     /**
      * @param parent parent state
      * @param subGoals set of visited sub goals
-     * @return query state iterator (db iter + unifier + state iter) for this query
+     * @return inner query state iterator (db iter + unifier + state iter) for this query
      */
     @CheckReturnValue
-    Iterator<ResolutionState> queryStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
+    Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 }

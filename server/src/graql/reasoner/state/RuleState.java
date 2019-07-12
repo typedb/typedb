@@ -43,7 +43,7 @@ public class RuleState extends AnswerPropagatorState {
     public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         super(sub, unifier, parent, visitedSubGoals);
         //NB; sub gets propagated to the body here
-        this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals));
+        this.bodyIterator = Iterators.singletonIterator(rule.getBody().resolutionState(sub, unifier, this, visitedSubGoals));
         this.rule = rule;
     }
 

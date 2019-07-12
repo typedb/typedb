@@ -567,7 +567,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return !containsVariablePredicates() ?
                 new ConjunctiveState(this, sub, u, parent, subGoals) :
                 new VariableComparisonState(this, sub, u, parent, subGoals);
@@ -580,9 +580,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
      * @param subGoals set of visited sub goals
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
+    public Stream<ResolutionState> expandedStates(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return getQueryStream(sub)
-                .map(q -> q.subGoal(sub, u, parent, subGoals));
+                .map(q -> q.resolutionState(sub, u, parent, subGoals));
     }
 
     /**
@@ -601,7 +601,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
+    public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         Iterator<AnswerState> dbIterator;
         Iterator<AnswerPropagatorState> subGoalIterator;
 

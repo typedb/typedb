@@ -50,11 +50,13 @@ public class CumulativeState extends QueryState<ReasonerQueryImpl> {
         subQueries.removeFirst();
     }
 
+
     @Override
     protected Iterator<ResolutionState> generateSubGoalIterator() {
-        //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
-        return getQuery().subGoals(getSubstitution(), getUnifier(), this, getVisitedSubGoals()).iterator();
+        //NB: we need lazy resolutionState initialisation here, otherwise they are marked as visited before visit happens
+        return getQuery().expandedStates(getSubstitution(), getUnifier(), this, getVisitedSubGoals()).iterator();
     }
+
 
     @Override
     public String toString(){

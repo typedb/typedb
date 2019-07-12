@@ -55,7 +55,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals){
         this.query = q;
         this.subGoals = subGoals;
-        states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, subGoals));
+        states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals));
     }
 
     private ConceptMap findNextAnswer(){
@@ -110,7 +110,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (dAns != 0 || iter == 0) {
                 LOG.debug("iter: {} answers: {} dAns = {}", iter, answers.size(), dAns);
                 iter++;
-                states.push(query.subGoal(new ConceptMap(), new UnifierImpl(), null, new HashSet<>()));
+                states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, new HashSet<>()));
                 oldAns = answers.size();
                 return hasNext();
             }
