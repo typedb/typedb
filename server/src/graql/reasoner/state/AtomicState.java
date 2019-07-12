@@ -33,6 +33,7 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -50,7 +51,7 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
     public AtomicState(ReasonerAtomicQuery query,
                 ConceptMap sub,
                 Unifier u,
-                QueryStateBase parent,
+                AnswerPropagatorState parent,
                 Set<ReasonerAtomicQuery> subGoals) {
         super(ReasonerQueries.atomic(query, sub),
               sub,

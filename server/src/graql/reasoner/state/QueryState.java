@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.state;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
 import java.util.Iterator;
@@ -31,15 +32,15 @@ import java.util.Set;
  *
  * @param <Q> the type of query that this state is corresponding to
  */
-public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryStateBase{
+public abstract class QueryState<Q extends ResolvableQuery> extends AnswerPropagatorState {
 
     private final Q query;
     private final Iterator<ResolutionState> subGoalIterator;
 
-    QueryState(Q query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals) {
+    QueryState(Q query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         super(sub, u, parent, subGoals);
         this.query = query;
-        this.subGoalIterator = query.queryStateIterator(this, subGoals);
+        this.subGoalIterator = generateSubGoalIterator();
     }
 
     @Override
@@ -48,6 +49,10 @@ public abstract class QueryState<Q extends ReasonerQueryImpl> extends QueryState
     @Override
     public ResolutionState generateSubGoal() {
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
+    }
+
+    protected Iterator<ResolutionState> generateSubGoalIterator() {
+        return getQuery().queryStateIterator(this, getVisitedSubGoals());
     }
 
     /**

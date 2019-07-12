@@ -54,7 +54,7 @@ import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.ConjunctiveState;
 import grakn.core.graql.reasoner.state.CumulativeState;
 import grakn.core.graql.reasoner.state.VariableComparisonState;
-import grakn.core.graql.reasoner.state.QueryStateBase;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -567,7 +567,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionState subGoal(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return !containsVariablePredicates() ?
                 new ConjunctiveState(this, sub, u, parent, subGoals) :
                 new VariableComparisonState(this, sub, u, parent, subGoals);
@@ -580,7 +580,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
      * @param subGoals set of visited sub goals
      * @return resolution subGoals formed from this query obtained by expanding the inferred types contained in the query
      */
-    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+    public Stream<ResolutionState> subGoals(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return getQueryStream(sub)
                 .map(q -> q.subGoal(sub, u, parent, subGoals));
     }
@@ -600,14 +600,10 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             .collect(Collectors.toList());
     }
 
-    /**
-     * @param parent parent state
-     * @param subGoals set of visited sub goals
-     * @return query state iterator (db iter + unifier + state iter) for this query
-     */
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+    @Override
+    public Iterator<ResolutionState> queryStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         Iterator<AnswerState> dbIterator;
-        Iterator<QueryStateBase> subGoalIterator;
+        Iterator<AnswerPropagatorState> subGoalIterator;
 
         if(!this.isRuleResolvable()) {
             Set<Type> queryTypes = new HashSet<>(this.getVarTypeMap().values());

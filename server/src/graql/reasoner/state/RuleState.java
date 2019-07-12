@@ -35,12 +35,12 @@ import java.util.Set;
  *
  *
  */
-public class RuleState extends QueryStateBase{
+public class RuleState extends AnswerPropagatorState {
 
     private final InferenceRule rule;
     private final Iterator<ResolutionState> bodyIterator;
 
-    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
+    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         super(sub, unifier, parent, visitedSubGoals);
         //NB; sub gets propagated to the body here
         this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals));

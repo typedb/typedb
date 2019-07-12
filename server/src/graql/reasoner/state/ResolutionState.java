@@ -31,9 +31,9 @@ import grakn.core.concept.answer.ConceptMap;
 public abstract class ResolutionState {
 
     private final ConceptMap sub;
-    private final QueryStateBase parentState;
+    private final AnswerPropagatorState parentState;
 
-    ResolutionState(ConceptMap sub, QueryStateBase parent){
+    ResolutionState(ConceptMap sub, AnswerPropagatorState parent){
         this.sub = sub;
         this.parentState = parent;
     }
@@ -66,5 +66,5 @@ public abstract class ResolutionState {
     /**
      * @return parent state of this state
      */
-    QueryStateBase getParentState(){ return parentState;}
+    AnswerPropagatorState getParentState(){ return parentState;}
 }

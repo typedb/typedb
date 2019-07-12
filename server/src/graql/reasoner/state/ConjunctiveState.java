@@ -34,7 +34,7 @@ public class ConjunctiveState extends QueryState<ReasonerQueryImpl> {
     public ConjunctiveState(ReasonerQueryImpl q,
                             ConceptMap sub,
                             Unifier u,
-                            QueryStateBase parent,
+                            AnswerPropagatorState parent,
                             Set<ReasonerAtomicQuery> visitedSubGoals) {
         super(ReasonerQueries.create(q, sub), sub, u, parent, visitedSubGoals);
     }

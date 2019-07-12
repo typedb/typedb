@@ -24,7 +24,6 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
-
 import java.util.Set;
 
 /**
@@ -57,24 +56,18 @@ import java.util.Set;
  * @author Kasper Piskorski
  *
  */
-public class CompositeState extends QueryStateBase {
+public class CompositeState extends QueryState<CompositeQuery> {
 
-    private final ResolutionState baseConjunctionState;
-    private boolean visited = false;
-
-    private final CompositeQuery query;
     private final Set<ResolvableQuery> complements;
 
-    public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals) {
-        super(sub, u, parent, subGoals);
-        this.query = query.withSubstitution(sub);
-        this.baseConjunctionState = query.getConjunctiveQuery().subGoal(getSubstitution(), getUnifier(), this, getVisitedSubGoals());
-        this.complements = query.getComplementQueries();
+    public CompositeState(CompositeQuery query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
+        super(query.withSubstitution(sub), sub, u, parent, subGoals);
+        this.complements = getQuery().getComplementQueries();
     }
 
     @Override
     public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + query.toString();
+        return getClass().getSimpleName() + "@" + Integer.toHexString(hashCode()) + "\n" + getQuery().toString();
     }
 
     @Override
@@ -91,14 +84,5 @@ public class CompositeState extends QueryStateBase {
         return isNegationSatisfied?
                 new AnswerState(answer, getUnifier(), getParentState()) :
                 null;
-    }
-
-    @Override
-    public ResolutionState generateSubGoal() {
-        if (!visited){
-            visited = true;
-            return baseConjunctionState;
-        }
-        return null;
     }
 }

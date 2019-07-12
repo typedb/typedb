@@ -32,12 +32,12 @@ import java.util.Set;
  *
  *
  */
-public abstract class QueryStateBase extends ResolutionState {
+public abstract class AnswerPropagatorState extends ResolutionState {
 
     private final Unifier unifier;
     private final Set<ReasonerAtomicQuery> visitedSubGoals;
 
-    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals) {
+    AnswerPropagatorState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         super(sub, parent);
         this.unifier = u;
         this.visitedSubGoals = subGoals;

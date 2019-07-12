@@ -20,13 +20,14 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.graql.reasoner.state.QueryStateBase;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -129,5 +130,13 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @return resolution subGoal formed from this query
      */
     @CheckReturnValue
-    ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals);
+    ResolutionState subGoal(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
+
+    /**
+     * @param parent parent state
+     * @param subGoals set of visited sub goals
+     * @return query state iterator (db iter + unifier + state iter) for this query
+     */
+    @CheckReturnValue
+    Iterator<ResolutionState> queryStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 }

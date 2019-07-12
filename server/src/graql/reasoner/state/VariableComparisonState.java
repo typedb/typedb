@@ -22,6 +22,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
@@ -45,7 +46,7 @@ import java.util.stream.Collectors;
  * predicates to ans(Q').
  *
  */
-public class VariableComparisonState extends QueryStateBase {
+public class  VariableComparisonState extends AnswerPropagatorState {
 
     private final ResolutionState complementState;
     private boolean visited = false;
@@ -53,14 +54,15 @@ public class VariableComparisonState extends QueryStateBase {
     private final ConceptMap variablePredicateSub;
     private final Set<VariablePredicate> variablePredicates;
 
-    public VariableComparisonState(ResolvableQuery q,
+    public VariableComparisonState(ReasonerQueryImpl q,
                                    ConceptMap sub,
                                    Unifier u,
-                                   QueryStateBase parent,
+                                   AnswerPropagatorState parent,
                                    Set<ReasonerAtomicQuery> subGoals) {
         super(sub, u, parent, subGoals);
-        ResolvableQuery query = ReasonerQueries.resolvable(q, sub);
-        this.variablePredicates = q.getAtoms(VariablePredicate.class).collect(Collectors.toSet());
+
+        ReasonerQueryImpl query = ReasonerQueries.create(q, sub);
+        this.variablePredicates = query.getAtoms(VariablePredicate.class).collect(Collectors.toSet());
         this.variablePredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
                 .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
 

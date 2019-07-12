@@ -28,7 +28,7 @@ public class CacheCompletionState extends ResolutionState {
 
     final private ReasonerAtomicQuery query;
 
-    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, QueryStateBase parent) {
+    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, AnswerPropagatorState parent) {
         super(sub, parent);
         this.query = query;
     }
