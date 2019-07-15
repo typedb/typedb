@@ -438,6 +438,21 @@ jobs:
       - checkout
       - run: git push --delete origin grakn-release-branch
 
+  email-db-engines:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/requirements.txt
+      - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/send_email.py
+      - run: pyenv install 3.6.3
+      - run: pyenv global 3.6.3
+      - run: pip3 install -r requirements.txt
+      - run: |
+          python send_email.py \
+          --recipients "paul.andlinger@solid-it.at, tomas@grakn.ai" \
+          --subject "Please update Grakn version" \
+          --body "This is an automated email to inform you that Grakn $(cat VERSION) has been released. Please update the Grakn version accordingly."
+
 workflows:
   grakn-core:
     jobs:
@@ -648,6 +663,12 @@ workflows:
             - deploy-brew
             - deploy-docker
             - deploy-maven
+      - email-db-engines:
+          filters:
+            branches:
+              only: grakn-release-branch
+          requires:
+            - sync-dependencies-release
       - release-cleanup:
           filters:
             branches:
