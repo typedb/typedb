@@ -393,7 +393,7 @@ public class QueryExecutor {
         answers = filter(query, answers);
 
 
-        return answers.distinct();
+        return answers;
     }
 
     public Stream<Numeric> aggregate(GraqlGet.Aggregate query) {
