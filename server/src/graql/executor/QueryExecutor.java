@@ -391,8 +391,7 @@ public class QueryExecutor {
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
         answers = filter(query, answers);
-
-
+        
         return answers;
     }
 
