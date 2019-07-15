@@ -28,6 +28,7 @@ import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import jline.internal.Preconditions;
 
 /**
  * Class used to handle value predicates with a variable:
@@ -51,7 +52,7 @@ public class VariableValuePredicate extends VariablePredicate {
     private VariableValuePredicate(Variable varName, Variable predicateVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);
         //comparisons only valid for variable predicates (ones having a reference variable)
-        assert (op.innerStatement() != null);
+        Preconditions.checkNotNull(op.innerStatement());
         this.op = op;
     }
 

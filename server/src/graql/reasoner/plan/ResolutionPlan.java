@@ -38,7 +38,6 @@ public final class ResolutionPlan {
     public ResolutionPlan(ReasonerQueryImpl q){
         this.query = q;
         this.plan = GraqlTraversalPlanner.plan(query);
-        assert(q.isPositive());
         validatePlan();
     }
 

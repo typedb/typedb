@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import com.google.common.base.Preconditions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
@@ -109,7 +110,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         }
 
         V instance = producer.apply(instanceVertex, getThis());
-        assert instance != null : "producer should never return null";
+        Preconditions.checkNotNull(instance, "producer should never return null");
 
         vertex().tx().statisticsDelta().increment(label());
 

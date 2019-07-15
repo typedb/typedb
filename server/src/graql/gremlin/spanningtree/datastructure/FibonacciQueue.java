@@ -24,6 +24,7 @@ import java.util.AbstractQueue;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.function.Function;
+import jline.internal.Preconditions;
 
 /**
  * A PriorityQueue built on top of a FibonacciHeap
@@ -33,7 +34,7 @@ import java.util.function.Function;
 public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final FibonacciHeap<E, E> heap;
     private final Function<FibonacciHeap<E, ?>.Entry, E> getValue = input -> {
-        assert input != null;
+        Preconditions.checkNotNull(input);
         return input.value;
     };
 

@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 import java.util.Set;
+import jline.internal.Preconditions;
 
 /**
  * An edge in a directed graph.
@@ -80,7 +81,7 @@ public class DirectedEdge {
 
     public static Predicate<DirectedEdge> hasDestination(final Node node) {
         return input -> {
-            assert input != null;
+            Preconditions.checkNotNull(input);
             return input.destination.equals(node);
         };
     }
@@ -92,7 +93,7 @@ public class DirectedEdge {
         }
         final Map<Node, Node> requiredSourceByDest = requiredSourceByDestinationBuilder.build();
         return input -> {
-            assert input != null;
+            Preconditions.checkNotNull(input);
             return (requiredSourceByDest.containsKey(input.destination) &&
                     !input.source.equals(requiredSourceByDest.get(input.destination)));
         };
@@ -100,7 +101,7 @@ public class DirectedEdge {
 
     public static Predicate<DirectedEdge> isAutoCycle() {
         return input -> {
-            assert input != null;
+            Preconditions.checkNotNull(input);
             return input.source.equals(input.destination);
         };
     }

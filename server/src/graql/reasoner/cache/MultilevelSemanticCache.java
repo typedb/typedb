@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.base.Equivalence;
+import com.google.common.base.Preconditions;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
@@ -131,7 +132,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         ReasonerAtomicQuery equivalentQuery = entry.query();
         AnswerSet answers = entry.cachedElement();
         MultiUnifier multiUnifier = equivalentQuery.getMultiUnifier(query, unifierType());
-        assert(!multiUnifier.isEmpty());
+        Preconditions.checkState(!multiUnifier.isEmpty());
 
         return new Pair<>(
                 multiUnifier.inverse()
