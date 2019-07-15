@@ -40,15 +40,10 @@ public class Tuple<A, B> {
 
     public boolean equals(Object obj) {
         if (obj == this) return true;
-
-        if (obj.getClass() == this.getClass()) {
-            Tuple<?, ?> other = (Tuple) obj;
-
-            return (Objects.equals(this.first, other.first) &&
-                    Objects.equals(this.second, other.second));
-        }
-
-        return false;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
+        Tuple<?, ?> other = (Tuple) obj;
+        return (Objects.equals(this.first, other.first) &&
+                Objects.equals(this.second, other.second));
     }
 
     public int hashCode() {

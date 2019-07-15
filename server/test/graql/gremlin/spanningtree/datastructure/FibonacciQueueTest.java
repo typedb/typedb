@@ -36,6 +36,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class FibonacciQueueTest {
+
+    final private Random random = new Random();
+
     @Test
     public void testIterator() {
         // insert lots of numbers in order
@@ -52,7 +55,6 @@ public class FibonacciQueueTest {
         final FibonacciQueue<Integer> queue = FibonacciQueue.create();
         // Insert lots of random numbers.
         final ImmutableMultiset.Builder<Integer> insertedBuilder = ImmutableMultiset.builder();
-        final Random random = new Random();
         for (int i = 0; i < lots; i++) {
             int r = random.nextInt();
             insertedBuilder.add(r);
