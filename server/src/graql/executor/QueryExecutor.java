@@ -126,8 +126,7 @@ public class QueryExecutor {
 
                 int disjunctionSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
 
-                Stream<ConceptMap> stream = new DisjunctionIterator(matchClause, transaction).hasStream();
-                answerStream = stream.map(result -> result.project(matchClause.getSelectedNames()));
+                answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
 
                 ServerTracing.closeScopedChildSpan(disjunctionSpanId);
             }
@@ -277,7 +276,6 @@ public class QueryExecutor {
     public Stream<ConceptMap> insert(GraqlInsert query) {
         int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
 
-
         Collection<Statement> statements = query.statements().stream()
                 .flatMap(statement -> statement.innerStatements().stream())
                 .collect(Collectors.toList());
@@ -292,7 +290,6 @@ public class QueryExecutor {
         ServerTracing.closeScopedChildSpan(createExecSpanId);
 
         int answerStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create answer stream");
-
 
         Stream<ConceptMap> answerStream;
         if (query.match() != null) {
@@ -390,8 +387,13 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> get(GraqlGet query) {
-        Stream<ConceptMap> answers = match(query.match()).map(result -> result.project(query.vars())).distinct();
+        MatchClause matchClause = query.match();
+        Set<Variable> variablesToGet = query.vars();
+        Stream<ConceptMap> answers = match(matchClause);
 
+        if (!matchClause.getSelectedNames().equals(variablesToGet)){
+            answers = answers.map(ans -> ans.project(variablesToGet));
+        }
         answers = filter(query, answers);
 
         return answers;
