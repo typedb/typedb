@@ -31,7 +31,7 @@ public abstract class ReasonerQueryIterator implements Iterator<ConceptMap> {
 
     public Stream<ConceptMap> hasStream() {
         Iterable<ConceptMap> iterable = () -> this;
-        return StreamSupport.stream(iterable.spliterator(), false).distinct();
+        return StreamSupport.stream(iterable.spliterator(), false);
     }
 }
 
