@@ -51,14 +51,14 @@ public class NodesUtilTest {
         Node inIsaMiddleNode = inIsaNodes.stream()
                 .filter(node -> node instanceof EdgeNode)
                 .findAny()
-                .get();
+                .orElse(null);
 
         assertNotNull(inIsaMiddleNode);
 
         InstanceNode instanceVarNode = (InstanceNode) inIsaNodes.stream()
                 .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
                 .findAny()
-                .get();
+                .orElse(null);
 
         assertNotNull(instanceVarNode);
 
@@ -87,14 +87,14 @@ public class NodesUtilTest {
         Node outIsaMiddleNode = outIsaNodes.stream()
                 .filter(node -> node instanceof EdgeNode)
                 .findAny()
-                .get();
+                .orElse(null);
 
         assertNotNull(outIsaMiddleNode);
 
         InstanceNode instanceVarNode = (InstanceNode) outIsaNodes.stream()
                 .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
                 .findAny()
-                .get();
+                .orElse(null);
 
         assertNotNull(instanceVarNode);
 

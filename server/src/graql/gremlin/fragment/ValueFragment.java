@@ -164,7 +164,7 @@ public class ValueFragment extends Fragment {
             // short circuiting can be done quickly if starting here
             return 0.0;
         } else {
-            return totalImplicitRels / totalAttributes;
+            return (double) totalImplicitRels / totalAttributes;
         }
     }
 }
