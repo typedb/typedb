@@ -136,7 +136,7 @@ public class OptimalTreeTraversalTest {
 
     @Test
     public void scalingOptimalStackTraversal() {
-        for (int i = 1; i < 30; i++) {
+        for (int i = 1; i <  10; i++) {
             Map<Node, Set<Node>> parentToChild = generateMockTree(i);
 
             Set<Node> children = parentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
@@ -160,6 +160,7 @@ public class OptimalTreeTraversalTest {
     @Test
     public void scalingOptimalBottomUpStackTraversal() {
         for (int i = 1; i < 30; i++) {
+//        int i = 40;
             Map<Node, Set<Node>> parentToChild = generateMockTree(i);
 
             Map<Node, Node> parents = new HashMap<>();
@@ -174,7 +175,7 @@ public class OptimalTreeTraversalTest {
 
             OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
 //            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
-            Map<Integer, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
+            Map<Integer, Pair<Double, OptimalTreeTraversal.NodeSet>> memoisedResults = new HashMap<>();
             long startTime = System.nanoTime();
             double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
             long endTime = System.nanoTime();
@@ -246,23 +247,23 @@ public class OptimalTreeTraversalTest {
 //        double bestCost = traversal.optimal_cost_recursive(Sets.newHashSet(root), mockParentToChild.get(root), memoisedResults, mockParentToChild);
 //        long endTime = System.nanoTime();
 
-        OptimalTreeTraversal traversal2 = new OptimalTreeTraversal(mockTx);
+//        OptimalTreeTraversal traversal2 = new OptimalTreeTraversal(mockTx);
+//        Map<Integer, Pair<Double, Set<Node>>> memoised = new HashMap<>();
+//        Map<Node, Node> parents = new HashMap<>();
+//        for (Map.Entry<Node, Set<Node>> entry : mockParentToChild.entrySet()) {
+//            for (Node child : entry.getValue()) {
+//                parents.put(child, entry.getKey());
+//            }
+//        }
 
-        Map<Integer, Pair<Double, Set<Node>>> memoised = new HashMap<>();
-        Map<Node, Node> parents = new HashMap<>();
-        for (Map.Entry<Node, Set<Node>> entry : mockParentToChild.entrySet()) {
-            for (Node child : entry.getValue()) {
-                parents.put(child, entry.getKey());
-            }
-        }
+//        Set<Node> allNodes = parents.keySet();
+//        allNodes.addAll(parents.values());
+//        long startTime2 = System.nanoTime();
+//        double bestCost = traversal2.optimalCostBottomUpStack(allNodes, memoised, mockParentToChild, parents);
+//        long endTime2 = System.nanoTime();
 
-        Set<Node> allNodes = parents.keySet();
-        allNodes.addAll(parents.values());
-        long startTime2 = System.nanoTime();
-        double bestCost = traversal2.optimalCostBottomUpStack(allNodes, memoised, mockParentToChild, parents);
-        long endTime2 = System.nanoTime();
+//        System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime2 - startTime2)/1000000.0 + " ms" + ", iterations: " + traversal2.iterations + ", products: " + traversal2.productIterations);
 
-        System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime2 - startTime2)/1000000.0 + " ms" + ", iterations: " + traversal2.iterations + ", products: " + traversal2.productIterations);
 //        System.out.println(bestCost);
 //        System.out.println("Time elapsed: " + (endTime - startTime)/1000000.0 + " ms");
 //        System.out.println("Iterations: " + traversal.iterations);

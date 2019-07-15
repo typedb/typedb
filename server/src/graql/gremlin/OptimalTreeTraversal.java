@@ -11,6 +11,7 @@ import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -154,6 +155,7 @@ public class OptimalTreeTraversal {
         long start2;
         long start3;
 
+
 //        double currentCost = 0.0;
 //        double bestFoundCost = Double.MAX_VALUE;
 
@@ -252,18 +254,18 @@ public class OptimalTreeTraversal {
 
     class StackEntryBottomUp {
         boolean haveVisited;
-        Set<Node> visited;
-        Set<Node> removable;
-        List<Set<Node>> children;
+        NodeSet visited;
+        NodeSet removable;
+        List<NodeSet> children;
 
-        public StackEntryBottomUp(Set<Node> visited, Set<Node> removable) {
+        public StackEntryBottomUp(NodeSet visited, NodeSet removable) {
             this.visited = visited;
             this.removable = removable;
             haveVisited = false;
             children = new ArrayList<>();
         }
 
-        public void addChild(Set<Node> child) {
+        public void addChild(NodeSet child) {
             this.children.add(child);
         }
 
@@ -272,28 +274,59 @@ public class OptimalTreeTraversal {
         }
     }
 
+    /*
+    A semi-dangerous extension of HashSet that caches hash codes
+    When using, ensure that the values never change after the first call of hash codes!
+    // TODO only make this available via a constructor function and make the set implementation immutable
+    Provides a 25-50% speedup of calls to memoised map, which is dominated by hashCode()
+     */
+    class NodeSet extends HashSet<Node> {
+        int cachedHashCode = 0;
+
+        public NodeSet(Set<Node> nodes) {
+            super(nodes);
+        }
+
+        public NodeSet(Collection<Node> nodes) {
+            super(nodes);
+        }
+
+        @Override
+        public int hashCode() {
+            if (cachedHashCode == 0) {
+                cachedHashCode = super.hashCode();
+            }
+            return cachedHashCode;
+        }
+    }
+
     public double optimalCostBottomUpStack(Set<Node> allNodes,
-                                           Map<Integer, Pair<Double, Set<Node>>> memoised,
+                                           Map<Integer, Pair<Double, NodeSet>> memoised,
                                            Map<Node, Set<Node>> edgesParentToChild,
                                            Map<Node, Node> parents) {
 
         Stack<StackEntryBottomUp> stack = new Stack<>();
 
         // find all leaves as the starting removable node set
-        Set<Node> leaves = new HashSet<>(parents.keySet());
-        Set<Node> allParents = new HashSet<>(parents.values());
+        NodeSet leaves = new NodeSet(parents.keySet());
+        NodeSet allParents = new NodeSet(parents.values());
         leaves.removeAll(allParents);
 
-        stack.push(new StackEntryBottomUp(allNodes, leaves));
+        stack.push(new StackEntryBottomUp(new NodeSet(allNodes), leaves));
 
         long timeSpentInMemoised = 0l;
         long timeSpentInElse = 0l;
         long timeSpentInProduct = 0l;
         long timeSpentInRemovable = 0l;
+        long timeSpentInNextRemovable = 0l;
+        long timeSpentInNextVisited = 0;
         long start1;
         long start2;
         long start3;
         long start4;
+        long start5;
+        long start6;
+
 
         double bestCostFound = Double.MAX_VALUE;
         double currentCost = 0.0;
@@ -313,14 +346,14 @@ public class OptimalTreeTraversal {
                 stack.pop();
 
                 // find the best child to choose next
-                Set<Node> bestChild = null;
+                NodeSet bestChild = null;
                 double bestChildCost = 0.0;
                 if (entry.children.size() > 0) {
                     // update the cost to include the path from the best to child to the finish
                     // if there are any children
-                    for (Set<Node> child : entry.children) {
+                    for (NodeSet child : entry.children) {
                         start1 = System.nanoTime();
-                        Pair<Double, Set<Node>> memoisedResult = memoised.get(child.hashCode());
+                        Pair<Double, NodeSet> memoisedResult = memoised.get(child.hashCode());
                         timeSpentInMemoised += (System.nanoTime() - start1);
                         if (memoisedResult != null && (bestChild == null || memoisedResult.getKey() < bestChildCost)) {
                             bestChild = child;
@@ -352,7 +385,6 @@ public class OptimalTreeTraversal {
 
                 entry.setHaveVisited();
 
-//                // This never short circuits because the last term of the cost always dominates
 //                if (currentCost > bestCostFound) {
 //                    // we can short circuit the execution if we are on a more expensive branch than the best yet
 //                    shortCircuits++;
@@ -361,19 +393,31 @@ public class OptimalTreeTraversal {
 //                    continue;
 //                }
 
+                // small optimisation: when visited has size 1, we can skip because we are going
+                // to remove the last element, resulting in a 0-element next visited set
+                // which we can safely skip some extra computation
+                if (entry.visited.size() == 1) {
+                    continue;
+                }
+
+
                 start4 = System.nanoTime();
                 List<Node> removableNodes = new ArrayList<>(entry.removable);
-                removableNodes.sort(Comparator.comparing(node -> 2);//node.matchingElementsEstimate(tx)));
+                removableNodes.sort(Comparator.comparing(node -> 2));//node.matchingElementsEstimate(tx)));
                 timeSpentInRemovable += (System.nanoTime() - start4);
 
                 for (Node nextNode : removableNodes) {
-                    Set<Node> nextVisited = new HashSet<>(entry.visited);
-                    nextVisited.remove(nextNode);
-                    if (nextVisited.size() == 0) {
-                        continue;
-                    }
 
-                    Set<Node> nextRemovable = new HashSet<>(entry.removable);
+                    start6 = System.nanoTime();
+                    NodeSet nextVisited = new NodeSet(entry.visited);
+                    nextVisited.remove(nextNode);
+
+                    // record that this child is a dependant of the currently stack entry
+                    entry.addChild(nextVisited);
+                    timeSpentInNextVisited += (System.nanoTime() - start6);
+
+                    start5 = System.nanoTime();
+                    NodeSet nextRemovable = new NodeSet(entry.removable);
                     nextRemovable.remove(nextNode);
                     Node parent = parents.get(nextNode);
                     if (parent != null) {
@@ -383,10 +427,9 @@ public class OptimalTreeTraversal {
                             nextRemovable.add(parent);
                         }
                     }
+                    timeSpentInNextRemovable += (System.nanoTime() - start5);
 
 
-                    // record that this child is a dependant of the currently stack entry
-                    entry.addChild(nextVisited);
 
                     // compute child if we don't already have the result for the child
                     start1 = System.nanoTime();
@@ -403,7 +446,9 @@ public class OptimalTreeTraversal {
 
         System.out.println("Time spent in memoised: " + (timeSpentInMemoised / 1000000.0));
         System.out.println("Time spent in else: " + (timeSpentInElse / 1000000.0));
-        System.out.println("Time spent in removable(): " + (timeSpentInRemovable/1000000.0));
+        System.out.println("Time spent in sortRemovable: " + (timeSpentInRemovable/1000000.0));
+        System.out.println("Time spent generating nextVisited: " + (timeSpentInNextVisited/ 1000000.0));
+        System.out.println("Time spent generating nextRemovable: " + (timeSpentInNextRemovable / 1000000.0));
         System.out.println("Time spent in product: " + (timeSpentInProduct / 1000000.0));
         return memoised.get(allNodes.hashCode()).getKey();
     }
