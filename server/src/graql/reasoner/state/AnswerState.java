@@ -63,6 +63,4 @@ public class AnswerState extends ResolutionState {
     InferenceRule getRule(){ return rule;}
 
     Unifier getUnifier(){ return unifier;}
-
-    ConceptMap getAnswer(){ return getParentState().consumeAnswer(this);}
 }

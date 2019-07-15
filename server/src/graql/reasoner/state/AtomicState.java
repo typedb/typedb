@@ -63,7 +63,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap answer = state.getAnswer();
+        ConceptMap answer = consumeAnswer(state);
         ReasonerAtomicQuery query = getQuery();
         if (answer.isEmpty()) return null;
 

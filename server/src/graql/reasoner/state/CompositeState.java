@@ -81,7 +81,7 @@ public class CompositeState extends AnswerPropagatorState<CompositeQuery> {
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap answer = state.getAnswer();
+        ConceptMap answer = consumeAnswer(state);
 
         boolean isNegationSatisfied = complements.stream()
                 .map(q -> ReasonerQueries.resolvable(q, answer))

@@ -60,7 +60,7 @@ public class RuleState extends AnswerPropagatorState<ResolvableQuery> {
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
-        ConceptMap answer = state.getAnswer();
+        ConceptMap answer = consumeAnswer(state);
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState(), rule) : null;
     }
 
