@@ -176,7 +176,7 @@ public class OptimalTreeTraversalTest {
     @Test
     public void scalingOptimalBottomUpStackTraversal() {
         for (int i = 1; i < 30; i++) {
-//        int i = 40;
+//        int i = 55;
             Map<Node, Set<Node>> parentToChild = generateMockTree(i);
 
             Map<Node, Node> parents = new HashMap<>();

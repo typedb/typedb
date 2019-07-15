@@ -1,7 +1,6 @@
 package grakn.core.graql.gremlin;
 
 import com.google.common.collect.Sets;
-import grakn.core.api.Transaction;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.spanningtree.Arborescence;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
@@ -10,9 +9,7 @@ import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,7 +18,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 
 import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 
@@ -398,11 +394,10 @@ public class OptimalTreeTraversal {
 
 
                 start4 = System.nanoTime();
-                List<Node> removableNodes = new ArrayList<>(entry.removable);
-                removableNodes.sort(Comparator.comparing(node -> node.matchingElementsEstimate(tx)));
+                entry.removable.sort(Comparator.comparing(node -> node.matchingElementsEstimate(tx)));
                 timeSpentInRemovable += (System.nanoTime() - start4);
 
-                for (Node nextNode : removableNodes) {
+                for (Node nextNode : entry.removable) {
 
                     start6 = System.nanoTime();
                     NodeList nextVisited = new NodeList(entry.visited);
@@ -420,12 +415,11 @@ public class OptimalTreeTraversal {
                         Set<Node> siblings = edgesParentToChild.get(parent);
                         // if none of the siblings are in entry.removable, we can add the parent to removable
                         // avoiding the set intersection by checking size first can save 10% of time spent in this check
-                        if (siblings.size() == 1 || Sets.intersection(new HashSet<>(nextVisited), siblings).size() == 0) {
+                        if (siblings.size() == 1 || isEmptyIntersection(siblings, nextVisited)) {
                             nextRemovable.add(parent);
                         }
                     }
                     timeSpentInNextRemovable += (System.nanoTime() - start5);
-
 
                     // compute child if we don't already have the result for the child
                     start1 = System.nanoTime();
@@ -447,6 +441,15 @@ public class OptimalTreeTraversal {
         System.out.println("Time spent generating nextRemovable: " + (timeSpentInNextRemovable / 1000000.0));
         System.out.println("Time spent in product: " + (timeSpentInProduct / 1000000.0));
         return memoised.get(new NodeList(allNodes).hashCode()).getKey();
+    }
+
+    private boolean isEmptyIntersection(Set<Node> visited, NodeList siblings) {
+        for (Node node : siblings) {
+            if (visited.contains(node)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private Set<Node> removable(Set<Node> nodes, Map<Node, Set<Node>> parentToChild) {
