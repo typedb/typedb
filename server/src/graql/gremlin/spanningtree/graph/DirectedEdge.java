@@ -20,12 +20,12 @@ package grakn.core.graql.gremlin.spanningtree.graph;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
 import java.util.Set;
-import jline.internal.Preconditions;
 
 /**
  * An edge in a directed graph.

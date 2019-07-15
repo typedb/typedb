@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
+import com.google.common.base.Preconditions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
@@ -28,7 +29,6 @@ import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import jline.internal.Preconditions;
 
 /**
  * Class used to handle value predicates with a variable:

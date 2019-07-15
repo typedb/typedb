@@ -18,13 +18,13 @@
 
 package grakn.core.graql.gremlin.spanningtree.datastructure;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 
 import java.util.AbstractQueue;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.function.Function;
-import jline.internal.Preconditions;
 
 /**
  * A PriorityQueue built on top of a FibonacciHeap
