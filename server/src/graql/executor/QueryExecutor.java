@@ -389,7 +389,7 @@ public class QueryExecutor {
     public Stream<ConceptMap> get(GraqlGet query) {
         MatchClause matchClause = query.match();
         Set<Variable> variablesToGet = query.vars();
-        Stream<ConceptMap> answers = match(matchClause);
+        Stream<ConceptMap> answers = match(matchClause).distinct();
 
         if (!matchClause.getSelectedNames().equals(variablesToGet)){
             answers = answers.map(ans -> ans.project(variablesToGet));
