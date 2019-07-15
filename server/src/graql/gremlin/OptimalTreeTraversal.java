@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.Stack;
 
@@ -28,16 +27,12 @@ public class OptimalTreeTraversal {
     int productIterations;
     int shortCircuits;
 
-    Random testingRandom;
-
     public OptimalTreeTraversal(TransactionOLTP tx) {
 
         this.tx = tx;
         iterations = 0;
         productIterations = 0;
         shortCircuits = 0;
-
-        this.testingRandom = new Random(0);
     }
 
     public Map<Set<Node>, Pair<Double, Set<Node>>> traverse(Arborescence<Node> arborescence,
@@ -60,201 +55,22 @@ public class OptimalTreeTraversal {
 
         Set<Node> visited = Sets.newHashSet(root);
         Set<Node> reachable = edgesParentToChild.get(root);
-        Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
+        Map<Set<Node>, Pair<Double, NodeList>> memoisedResults = new HashMap<>();
 
-        optimal_cost_recursive(visited, reachable, memoisedResults, edgesParentToChild);
-
-        return memoisedResults;
+//        optimalCostBottomUpStack(visited, reachable, memoisedResults, edgesParentToChild);
+//
+//        return memoisedResults;
+        return null;
     }
 
-    public double optimal_cost_recursive(Set<Node> visited,
-                                         Set<Node> reachable,
-                                         Map<Set<Node>, Pair<Double, Set<Node>>> memoised,
-                                         Map<Node, Set<Node>> edgesParentToChild) {
-        iterations++;
-        // if we have visited this exact set before, we can return
-        if (memoised.containsKey(visited)) {
-            return memoised.get(visited).getKey();
-        }
-
-        double cost = product(visited);
-        if (reachable.size() == 0) {
-            memoised.put(visited, new Pair<>(cost, null));
-            return cost;
-        }
-
-        double bestCost = 0;
-        Set<Node> bestNextVisited = null;
-        for (Node node : reachable) {
-            // copy
-            Set<Node> nextVisited = new HashSet<>(visited);
-            nextVisited.add(node);
-
-            // copy
-            Set<Node> nextReachable = new HashSet<>(reachable);
-            if (edgesParentToChild.containsKey(node)) {
-                nextReachable.addAll(edgesParentToChild.get(node));
-            }
-            nextReachable.remove(node);
-
-            double nextCost = cost + optimal_cost_recursive(nextVisited, nextReachable, memoised, edgesParentToChild);
-
-            if (bestNextVisited == null || nextCost < bestCost) {
-                bestCost = nextCost;
-                bestNextVisited = nextVisited;
-            }
-        }
-
-        // update memoised result
-        memoised.put(visited, new Pair<>(bestCost, bestNextVisited));
-
-        return bestCost;
-    }
 
     class StackEntry {
-        boolean haveVisited;
-        Set<Node> visited;
-        Set<Node> reachable;
-        List<Set<Node>> children;
-
-        public StackEntry(Set<Node> visited, Set<Node> reachable) {
-            this.visited = visited;
-            this.reachable = reachable;
-            haveVisited = false;
-            children = new ArrayList<>();
-        }
-
-        public void addChild(Set<Node> child) {
-            this.children.add(child);
-        }
-
-        public void setHaveVisited() {
-            haveVisited = true;
-        }
-    }
-
-    public double optimal_cost_stack(Node root,
-//                                     Map<Set<Node>, Pair<Double, Set<Node>>> memoised,
-                                     Map<Integer, Pair<Double, Set<Node>>> memoised,
-                                     Map<Node, Set<Node>> edgesParentToChild) {
-
-        Set<Node> visited = Sets.newHashSet(root);
-        Set<Node> reachable = edgesParentToChild.get(root);
-
-        Stack<StackEntry> stack = new Stack<>();
-        stack.push(new StackEntry(visited, reachable));
-
-        long timeSpentInMemoised = 0l;
-        long timeSpentInElse = 0l;
-        long timeSpentInProduct = 0l;
-        long start1;
-        long start2;
-        long start3;
-
-
-//        double currentCost = 0.0;
-//        double bestFoundCost = Double.MAX_VALUE;
-
-        while (stack.size() != 0) {
-            iterations++;
-            StackEntry entry = stack.peek();
-
-            // compute the cost of the current visited set
-            start3 = System.nanoTime();
-            double cost = product(entry.visited);
-            timeSpentInProduct += (System.nanoTime() - start3);
-
-            if (entry.haveVisited) {
-                // actually remove this stack entry when we see it the second time
-                stack.pop();
-
-                // find the best child to choose next
-                Set<Node> bestChild = null;
-                double bestChildCost = 0.0;
-                if (entry.children.size() > 0) {
-                    // update the cost to include the path from the best to child to the finish
-                    // if there are any children
-                    for (Set<Node> child : entry.children) {
-                        start1 = System.nanoTime();
-                        Pair<Double, Set<Node>> memoisedResult = memoised.get(child.hashCode());
-                        timeSpentInMemoised += (System.nanoTime() - start1);
-                        if (memoisedResult != null && (bestChild == null || memoisedResult.getKey() < bestChildCost)) {
-                            bestChild = child;
-                            bestChildCost = memoisedResult.getKey();
-                        }
-                    }
-                }
-
-                // memoise the cost
-                start1 = System.nanoTime();
-                memoised.put(entry.visited.hashCode(), new Pair<>(cost + bestChildCost, bestChild));
-                timeSpentInMemoised += (System.nanoTime() - start1);
-
-//                // update the global best cost found yet if we are the top of the stack and have no more paths to explore
-//                if (entry.children.size() == 0 && currentCost < bestFoundCost) {
-//                    bestFoundCost = currentCost;
-//                }
-
-//                 remove the cost from the current total as we have finished processing this stack entry
-//                currentCost -= cost;
-
-            } else {
-                start2 = System.nanoTime();
-                // set that we have visited the entry for the first time
-
-//                // this branch means we are expanding this path of exploration
-//                // so the current cost includes this branch
-//                currentCost += cost;
-
-                entry.setHaveVisited();
-
-//                // This never short circuits because the last term of the cost always dominates
-//                if (currentCost > bestFoundCost) {
-//                    // we can short circuit the execution if we are on a more expensive branch than the best yet
-//                    shortCircuits++;
-//                    stack.pop();
-//                    currentCost -= cost;
-//                    continue;
-//                }
-
-                for (Node nextNode : entry.reachable) {
-                    Set<Node> nextVisited = new HashSet<>(entry.visited);
-                    nextVisited.add(nextNode);
-
-                    // record that this child is a dependant of the currently stack entry
-                    entry.addChild(nextVisited);
-
-                    // compute child if we don't already have the result for the child
-                    start1 = System.nanoTime();
-                    boolean isComputed = memoised.containsKey(nextVisited.hashCode());
-                    timeSpentInMemoised += (System.nanoTime() - start1);
-                    if (!isComputed) {
-                        Set<Node> nextReachable = new HashSet<>(entry.reachable);
-                        if (edgesParentToChild.get(nextNode) != null) {
-                            nextReachable.addAll(edgesParentToChild.get(nextNode));
-                        }
-                        nextReachable.remove(nextNode);
-                        stack.add(new StackEntry(nextVisited, nextReachable));
-                    }
-                }
-                timeSpentInElse += (System.nanoTime() - start2);
-            }
-        }
-
-
-        System.out.println("Time spent in memoised: " + (timeSpentInMemoised / 1000000.0));
-        System.out.println("Time spent in else: " + (timeSpentInElse / 1000000.0));
-        System.out.println("Time spent in product: " + (timeSpentInProduct / 1000000.0));
-        return memoised.get(Sets.newHashSet(root).hashCode()).getKey();
-    }
-
-    class StackEntryBottomUp {
         boolean haveVisited;
         NodeList visited;
         NodeList removable;
         List<NodeList> children;
 
-        public StackEntryBottomUp(NodeList visited, NodeList removable) {
+        public StackEntry(NodeList visited, NodeList removable) {
             this.visited = visited;
             this.removable = removable;
             haveVisited = false;
@@ -278,6 +94,7 @@ public class OptimalTreeTraversal {
      */
     class NodeList extends ArrayList<Node> {
         int cachedHashCode = 0;
+
         public NodeList(Collection<Node> nodes) {
             super(nodes);
         }
@@ -292,72 +109,65 @@ public class OptimalTreeTraversal {
     }
 
 
+    private NodeList leaves(Map<Node, Node> parents) {
+        Set<Node> keys = new HashSet<>(parents.keySet());
+        keys.removeAll(parents.values());
+        return new NodeList(keys);
+    }
+
+    private NodeList findBestChild(StackEntry entry, Map<Integer, Pair<Double, NodeList>> memoised) {
+        // find the best child to choose after the current entry -
+        // each child has either been calculated or skipped for having too high a cost (pruned out)
+        NodeList bestChild = null;
+        double bestChildCost = Double.MAX_VALUE;
+        // update the cost to include the path from the best to child to the finish
+        // if there are any children
+        for (NodeList child : entry.children) {
+            Pair<Double, NodeList> memoisedResult = memoised.get(child.hashCode());
+            if (memoisedResult != null && (bestChild == null || memoisedResult.getKey() < bestChildCost)) {
+                bestChild = child;
+                bestChildCost = memoisedResult.getKey();
+            }
+        }
+        return bestChild;
+    }
+
     public double optimalCostBottomUpStack(Set<Node> allNodes,
                                            Map<Integer, Pair<Double, NodeList>> memoised,
                                            Map<Node, Set<Node>> edgesParentToChild,
                                            Map<Node, Node> parents) {
 
-        Stack<StackEntryBottomUp> stack = new Stack<>();
+        Stack<StackEntry> stack = new Stack<>();
 
         // find all leaves as the starting removable node set
-        NodeList leaves = new NodeList(parents.keySet());
-        NodeList allParents = new NodeList(parents.values());
-        leaves.removeAll(allParents);
+        NodeList leafNodes = leaves(parents);
+        stack.push(new StackEntry(new NodeList(allNodes), leafNodes));
 
-        stack.push(new StackEntryBottomUp(new NodeList(allNodes), leaves));
-
-        long timeSpentInMemoised = 0l;
-        long timeSpentInElse = 0l;
-        long timeSpentInProduct = 0l;
-        long timeSpentInRemovable = 0l;
-        long timeSpentInNextRemovable = 0l;
-        long timeSpentInNextVisited = 0;
-        long start1;
-        long start2;
-        long start3;
-        long start4;
-        long start5;
-        long start6;
-
-
-        double bestCostFound = Double.MAX_VALUE;
-        double currentCost = 0.0;
+        // we can prune the search space by stopping the search when the current cost exceeds the best cost we have found yet
+        double bestCostFound = Double.MAX_VALUE; // best tree traversal cost found yet
+        double currentCost = 0.0;                // partial cost of the tree traversal we are calculating
 
         while (stack.size() != 0) {
             iterations++;
-            StackEntryBottomUp entry = stack.peek();
+            StackEntry entry = stack.peek();
 
-            // compute the cost of the current visited set
-            start3 = System.nanoTime();
-            double cost = product(entry.visited);
-            timeSpentInProduct += (System.nanoTime() - start3);
+            // compute the cost of the current visited set of nodes
+            double cost = product(entry.visited); // cost of enumerating all n-tuples for the currently visited nodes
 
 
+            // if this set of nodes has been visited once already, we are in the stack size reduction
+            // phase, where entries are being popped off. This also means we have guaranteed all the
+            // children of this stack entry have been calculated, we can calculate the optimal
+            // cost and path to take from this `visited` node set.
             if (entry.haveVisited) {
                 // actually remove this stack entry when we see it the second time
                 stack.pop();
 
-                // find the best child to choose next
-                NodeList bestChild = null;
-                double bestChildCost = 0.0;
-                if (entry.children.size() > 0) {
-                    // update the cost to include the path from the best to child to the finish
-                    // if there are any children
-                    for (NodeList child : entry.children) {
-                        start1 = System.nanoTime();
-                        Pair<Double, NodeList> memoisedResult = memoised.get(child.hashCode());
-                        timeSpentInMemoised += (System.nanoTime() - start1);
-                        if (memoisedResult != null && (bestChild == null || memoisedResult.getKey() < bestChildCost)) {
-                            bestChild = child;
-                            bestChildCost = memoisedResult.getKey();
-                        }
-                    }
-                }
+                NodeList bestChild = findBestChild(entry, memoised);
 
-                // memoise the cost
-                start1 = System.nanoTime();
+                // memoise the cost of the cost of the entry.visited set plus traversing via the chosen next child set
+                double bestChildCost = bestChild == null ? 0 : memoised.get(bestChild.hashCode()).getKey();
                 memoised.put(entry.visited.hashCode(), new Pair<>(cost + bestChildCost, bestChild));
-                timeSpentInMemoised += (System.nanoTime() - start1);
 
                 // update the global best cost found yet if we are the top of the stack and have no more paths to explore
                 if (entry.children.size() == 0 && currentCost < bestCostFound) {
@@ -368,16 +178,18 @@ public class OptimalTreeTraversal {
                 currentCost -= cost;
 
             } else {
-                start2 = System.nanoTime();
+                // if this stack entry has not been visited, before we expand all of its children onto the stack
+                // and mark this entry as visited. So when we finish processing its children, we are guaranteed to
+                // be able to evaluate this entry
 
                 // set that we have visited the entry for the first time
                 entry.setHaveVisited();
 
-                // this branch means we are expanding this path of exploration
+                // include the cost of taking this branch in the best current cost
                 // so the current cost includes this branch
                 currentCost += cost;
 
-                if (currentCost > bestCostFound) {
+                if (currentCost >= bestCostFound) {
                     // we can short circuit the execution if we are on a more expensive branch than the best yet
                     shortCircuits++;
                     stack.pop();
@@ -393,21 +205,16 @@ public class OptimalTreeTraversal {
                 }
 
 
-                start4 = System.nanoTime();
                 entry.removable.sort(Comparator.comparing(node -> node.matchingElementsEstimate(tx)));
-                timeSpentInRemovable += (System.nanoTime() - start4);
 
                 for (Node nextNode : entry.removable) {
 
-                    start6 = System.nanoTime();
                     NodeList nextVisited = new NodeList(entry.visited);
                     nextVisited.remove(nextNode);
 
                     // record that this child is a dependant of the currently stack entry
                     entry.addChild(nextVisited);
-                    timeSpentInNextVisited += (System.nanoTime() - start6);
 
-                    start5 = System.nanoTime();
                     NodeList nextRemovable = new NodeList(entry.removable);
                     nextRemovable.remove(nextNode);
                     Node parent = parents.get(nextNode);
@@ -419,28 +226,19 @@ public class OptimalTreeTraversal {
                             nextRemovable.add(parent);
                         }
                     }
-                    timeSpentInNextRemovable += (System.nanoTime() - start5);
 
                     // compute child if we don't already have the result for the child
-                    start1 = System.nanoTime();
                     boolean isComputed = memoised.containsKey(nextVisited.hashCode());
-                    timeSpentInMemoised += (System.nanoTime() - start1);
                     if (!isComputed) {
-                        stack.add(new StackEntryBottomUp(nextVisited, nextRemovable));
+                        stack.add(new StackEntry(nextVisited, nextRemovable));
                     }
                 }
-                timeSpentInElse += (System.nanoTime() - start2);
             }
         }
 
-
-        System.out.println("Time spent in memoised: " + (timeSpentInMemoised / 1000000.0));
-        System.out.println("Time spent in else: " + (timeSpentInElse / 1000000.0));
-        System.out.println("Time spent in sortRemovable: " + (timeSpentInRemovable/1000000.0));
-        System.out.println("Time spent generating nextVisited: " + (timeSpentInNextVisited/ 1000000.0));
-        System.out.println("Time spent generating nextRemovable: " + (timeSpentInNextRemovable / 1000000.0));
-        System.out.println("Time spent in product: " + (timeSpentInProduct / 1000000.0));
-        return memoised.get(new NodeList(allNodes).hashCode()).getKey();
+        double finalCost = memoised.get(new NodeList(allNodes).hashCode()).getKey();
+        assert finalCost == bestCostFound;
+        return finalCost;
     }
 
     private boolean isEmptyIntersection(Set<Node> visited, NodeList siblings) {
@@ -450,25 +248,6 @@ public class OptimalTreeTraversal {
             }
         }
         return true;
-    }
-
-    private Set<Node> removable(Set<Node> nodes, Map<Node, Set<Node>> parentToChild) {
-        Set<Node> removableNodes = new HashSet<>();
-        for (Node node : nodes) {
-            Set<Node> children = parentToChild.get(node);
-            if (children == null) {
-                removableNodes.add(node);
-                continue;
-            }
-            // if none of the children are in `nodes`, then we can remove it
-            // ie. intersection(children, removableNodes) == empty set, then can remove
-            Set<Node> intersection = new HashSet<>(children); // have to make a new set so we don't end up modifying parentToChild
-            intersection.retainAll(nodes);
-            if (intersection.size() == 0) {
-                removableNodes.add(node);
-            }
-        }
-        return removableNodes;
     }
 
     private double product(Collection<Node> nodes) {

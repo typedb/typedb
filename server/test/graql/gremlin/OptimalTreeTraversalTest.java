@@ -1,24 +1,16 @@
 package grakn.core.graql.gremlin;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Label;
-import grakn.core.graql.gremlin.fragment.Fragment;
-import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
-import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
-import graql.lang.statement.Variable;
 import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,45 +18,16 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class OptimalTreeTraversalTest {
-    @Test
-    public void testPropagateLabelsOverInIsa() {
-        Map<Node, Set<Node>> mockParentToChildQPGraph = new HashMap<>();
-        Fragment labelFragment = Fragments.label(null, new Variable("typeVar"), ImmutableSet.of(Label.of("someLabel")));
-        Fragment inIsaFragment = Fragments.inIsa(null, new Variable("typeVar"), new Variable("instanceVar"), true);
 
-        Node labelNode = labelFragment.getNodes().iterator().next();
-        labelNode.getFragmentsWithoutDependency().add(labelFragment);
-        Set<Node> inIsaNodes = inIsaFragment.getNodes();
-        Node inIsaMiddleNode = inIsaNodes.stream()
-                .filter(node -> node instanceof EdgeNode)
-                .findAny()
-                .get();
-
-        assertNotNull(inIsaMiddleNode);
-
-        InstanceNode instanceVarNode = (InstanceNode) inIsaNodes.stream()
-                .filter(node -> node instanceof InstanceNode && node.getNodeId().toString().contains("instanceVar"))
-                .findAny()
-                .get();
-
-        assertNotNull(instanceVarNode);
-
-        mockParentToChildQPGraph.put(labelNode, Collections.singleton(inIsaMiddleNode));
-        mockParentToChildQPGraph.put(inIsaMiddleNode, Collections.singleton(instanceVarNode));
-
-        propagateLabels(mockParentToChildQPGraph);
-
-        assertEquals(Label.of("someLabel"), instanceVarNode.getInstanceLabel());
-    }
-
+    /**
+     * A mock node that isn't actually a mock for testing/optimising the operations in OptimalTreeTraversal
+     * Allows us to build a realistic query tree structure with randomised values for estimates of matching elements
+     */
     class TestingNode extends Node {
 
         private long matchingElements;
@@ -84,6 +47,11 @@ public class OptimalTreeTraversalTest {
         }
     }
 
+
+    /**
+     * Builds a fake query planner tree, following the structure of having an EdgeNode equivalent
+     * between each pair of vertex nodes
+     */
     private Map<Node, Set<Node>> generateMockTree(int numVertexNodes) {
         Map<Node, Set<Node>> mockParentToChild = new HashMap<>();
         NodeId rootId = Mockito.mock(NodeId.class);
@@ -128,55 +96,11 @@ public class OptimalTreeTraversalTest {
         return mockParentToChild;
     }
 
-    @Test
-    public void scalingOptimalRecursiveTraversal() {
-        for (int i = 1; i < 30; i++) {
-            Map<Node, Set<Node>> parentToChild = generateMockTree(i);
-
-            Set<Node> children = parentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
-            Set<Node> parents = parentToChild.keySet();
-            int numNodes = Sets.union(children, parents).size();
-            // root is the parent that is not also a child
-            parents.removeAll(children);
-            Node root = parents.iterator().next();
-
-            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
-            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
-            long startTime = System.nanoTime();
-            double bestCost = traversal.optimal_cost_recursive(Sets.newHashSet(root), parentToChild.get(root), memoisedResults, parentToChild);
-            long endTime = System.nanoTime();
-
-            System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations);
-        }
-    }
-
-    @Test
-    public void scalingOptimalStackTraversal() {
-        for (int i = 1; i <  10; i++) {
-            Map<Node, Set<Node>> parentToChild = generateMockTree(i);
-
-            Set<Node> children = parentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
-            Set<Node> parents = new HashSet<>(parentToChild.keySet());
-            int numNodes = Sets.union(children, parents).size();
-            // root is the parent that is not also a child
-            parents.removeAll(children);
-            Node root = parents.iterator().next();
-
-            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
-//            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
-            Map<Integer, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
-            long startTime = System.nanoTime();
-            double bestCost = traversal.optimal_cost_stack(root, memoisedResults, parentToChild);
-            long endTime = System.nanoTime();
-
-            System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations);
-        }
-    }
 
     @Test
     public void scalingOptimalBottomUpStackTraversal() {
-        for (int i = 1; i < 30; i++) {
-//        int i = 55;
+//        for (int i = 1; i < 50; i++) {
+        int i = 5;
             Map<Node, Set<Node>> parentToChild = generateMockTree(i);
 
             Map<Node, Node> parents = new HashMap<>();
@@ -187,17 +111,16 @@ public class OptimalTreeTraversalTest {
             }
 
             Set<Node> allNodes = new HashSet<>(parentToChild.keySet());
-            parentToChild.values().forEach(nodeSet -> allNodes.addAll(nodeSet));
+            parentToChild.values().forEach(allNodes::addAll);
 
             OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
-//            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
             Map<Integer, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
             long startTime = System.nanoTime();
             double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
             long endTime = System.nanoTime();
 
             System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
-        }
+//        }
     }
 
     @Test
