@@ -254,18 +254,18 @@ public class OptimalTreeTraversal {
 
     class StackEntryBottomUp {
         boolean haveVisited;
-        NodeSet visited;
-        NodeSet removable;
-        List<NodeSet> children;
+        NodeList visited;
+        NodeList removable;
+        List<NodeList> children;
 
-        public StackEntryBottomUp(NodeSet visited, NodeSet removable) {
+        public StackEntryBottomUp(NodeList visited, NodeList removable) {
             this.visited = visited;
             this.removable = removable;
             haveVisited = false;
             children = new ArrayList<>();
         }
 
-        public void addChild(NodeSet child) {
+        public void addChild(NodeList child) {
             this.children.add(child);
         }
 
@@ -275,19 +275,14 @@ public class OptimalTreeTraversal {
     }
 
     /*
-    A semi-dangerous extension of HashSet that caches hash codes
+    A semi-dangerous extension of List that caches hash codes
     When using, ensure that the values never change after the first call of hash codes!
-    // TODO only make this available via a constructor function and make the set implementation immutable
-    Provides a 25-50% speedup of calls to memoised map, which is dominated by hashCode() on sets of nodes
+    // TODO only make this available via a constructor function and make the implementation immutable
+    Provides a 25-50% speedup of calls to memoised map, which has costs dominated by hashCode()
      */
-    class NodeSet extends HashSet<Node> {
+    class NodeList extends ArrayList<Node> {
         int cachedHashCode = 0;
-
-        public NodeSet(Set<Node> nodes) {
-            super(nodes);
-        }
-
-        public NodeSet(Collection<Node> nodes) {
+        public NodeList(Collection<Node> nodes) {
             super(nodes);
         }
 
@@ -300,19 +295,20 @@ public class OptimalTreeTraversal {
         }
     }
 
+
     public double optimalCostBottomUpStack(Set<Node> allNodes,
-                                           Map<Integer, Pair<Double, NodeSet>> memoised,
+                                           Map<Integer, Pair<Double, NodeList>> memoised,
                                            Map<Node, Set<Node>> edgesParentToChild,
                                            Map<Node, Node> parents) {
 
         Stack<StackEntryBottomUp> stack = new Stack<>();
 
         // find all leaves as the starting removable node set
-        NodeSet leaves = new NodeSet(parents.keySet());
-        NodeSet allParents = new NodeSet(parents.values());
+        NodeList leaves = new NodeList(parents.keySet());
+        NodeList allParents = new NodeList(parents.values());
         leaves.removeAll(allParents);
 
-        stack.push(new StackEntryBottomUp(new NodeSet(allNodes), leaves));
+        stack.push(new StackEntryBottomUp(new NodeList(allNodes), leaves));
 
         long timeSpentInMemoised = 0l;
         long timeSpentInElse = 0l;
@@ -346,14 +342,14 @@ public class OptimalTreeTraversal {
                 stack.pop();
 
                 // find the best child to choose next
-                NodeSet bestChild = null;
+                NodeList bestChild = null;
                 double bestChildCost = 0.0;
                 if (entry.children.size() > 0) {
                     // update the cost to include the path from the best to child to the finish
                     // if there are any children
-                    for (NodeSet child : entry.children) {
+                    for (NodeList child : entry.children) {
                         start1 = System.nanoTime();
-                        Pair<Double, NodeSet> memoisedResult = memoised.get(child.hashCode());
+                        Pair<Double, NodeList> memoisedResult = memoised.get(child.hashCode());
                         timeSpentInMemoised += (System.nanoTime() - start1);
                         if (memoisedResult != null && (bestChild == null || memoisedResult.getKey() < bestChildCost)) {
                             bestChild = child;
@@ -409,7 +405,7 @@ public class OptimalTreeTraversal {
                 for (Node nextNode : removableNodes) {
 
                     start6 = System.nanoTime();
-                    NodeSet nextVisited = new NodeSet(entry.visited);
+                    NodeList nextVisited = new NodeList(entry.visited);
                     nextVisited.remove(nextNode);
 
                     // record that this child is a dependant of the currently stack entry
@@ -417,14 +413,14 @@ public class OptimalTreeTraversal {
                     timeSpentInNextVisited += (System.nanoTime() - start6);
 
                     start5 = System.nanoTime();
-                    NodeSet nextRemovable = new NodeSet(entry.removable);
+                    NodeList nextRemovable = new NodeList(entry.removable);
                     nextRemovable.remove(nextNode);
                     Node parent = parents.get(nextNode);
                     if (parent != null) {
                         Set<Node> siblings = edgesParentToChild.get(parent);
                         // if none of the siblings are in entry.removable, we can add the parent to removable
                         // avoiding the set intersection by checking size first can save 10% of time spent in this check
-                        if (siblings.size() == 1 || Sets.intersection(nextVisited, siblings).size() == 0) {
+                        if (siblings.size() == 1 || Sets.intersection(new HashSet<>(nextVisited), siblings).size() == 0) {
                             nextRemovable.add(parent);
                         }
                     }
@@ -450,7 +446,7 @@ public class OptimalTreeTraversal {
         System.out.println("Time spent generating nextVisited: " + (timeSpentInNextVisited/ 1000000.0));
         System.out.println("Time spent generating nextRemovable: " + (timeSpentInNextRemovable / 1000000.0));
         System.out.println("Time spent in product: " + (timeSpentInProduct / 1000000.0));
-        return memoised.get(allNodes.hashCode()).getKey();
+        return memoised.get(new NodeList(allNodes).hashCode()).getKey();
     }
 
     private Set<Node> removable(Set<Node> nodes, Map<Node, Set<Node>> parentToChild) {
@@ -472,7 +468,7 @@ public class OptimalTreeTraversal {
         return removableNodes;
     }
 
-    private double product(Set<Node> nodes) {
+    private double product(Collection<Node> nodes) {
         productIterations++;
         double cost = 1.0;
         for (Node node : nodes) {

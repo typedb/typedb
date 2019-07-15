@@ -191,7 +191,7 @@ public class OptimalTreeTraversalTest {
 
             OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
 //            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
-            Map<Integer, Pair<Double, OptimalTreeTraversal.NodeSet>> memoisedResults = new HashMap<>();
+            Map<Integer, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
             long startTime = System.nanoTime();
             double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
             long endTime = System.nanoTime();
