@@ -278,7 +278,7 @@ public class OptimalTreeTraversal {
     A semi-dangerous extension of HashSet that caches hash codes
     When using, ensure that the values never change after the first call of hash codes!
     // TODO only make this available via a constructor function and make the set implementation immutable
-    Provides a 25-50% speedup of calls to memoised map, which is dominated by hashCode()
+    Provides a 25-50% speedup of calls to memoised map, which is dominated by hashCode() on sets of nodes
      */
     class NodeSet extends HashSet<Node> {
         int cachedHashCode = 0;
@@ -367,31 +367,31 @@ public class OptimalTreeTraversal {
                 memoised.put(entry.visited.hashCode(), new Pair<>(cost + bestChildCost, bestChild));
                 timeSpentInMemoised += (System.nanoTime() - start1);
 
-//                // update the global best cost found yet if we are the top of the stack and have no more paths to explore
-//                if (entry.children.size() == 0 && currentCost < bestCostFound) {
-//                    bestCostFound = currentCost;
-//                }
-//
-//                // remove the cost from the current total as we have finished processing this stack entry
-//                currentCost -= cost;
+                // update the global best cost found yet if we are the top of the stack and have no more paths to explore
+                if (entry.children.size() == 0 && currentCost < bestCostFound) {
+                    bestCostFound = currentCost;
+                }
+
+                // remove the cost from the current total as we have finished processing this stack entry
+                currentCost -= cost;
 
             } else {
                 start2 = System.nanoTime();
+
                 // set that we have visited the entry for the first time
+                entry.setHaveVisited();
 
                 // this branch means we are expanding this path of exploration
                 // so the current cost includes this branch
-//                currentCost += cost;
+                currentCost += cost;
 
-                entry.setHaveVisited();
-
-//                if (currentCost > bestCostFound) {
-//                    // we can short circuit the execution if we are on a more expensive branch than the best yet
-//                    shortCircuits++;
-//                    stack.pop();
-//                    currentCost -= cost;
-//                    continue;
-//                }
+                if (currentCost > bestCostFound) {
+                    // we can short circuit the execution if we are on a more expensive branch than the best yet
+                    shortCircuits++;
+                    stack.pop();
+                    currentCost -= cost;
+                    continue;
+                }
 
                 // small optimisation: when visited has size 1, we can skip because we are going
                 // to remove the last element, resulting in a 0-element next visited set
@@ -403,7 +403,7 @@ public class OptimalTreeTraversal {
 
                 start4 = System.nanoTime();
                 List<Node> removableNodes = new ArrayList<>(entry.removable);
-                removableNodes.sort(Comparator.comparing(node -> 2));//node.matchingElementsEstimate(tx)));
+                removableNodes.sort(Comparator.comparing(node -> node.matchingElementsEstimate(tx)));
                 timeSpentInRemovable += (System.nanoTime() - start4);
 
                 for (Node nextNode : removableNodes) {
@@ -423,12 +423,12 @@ public class OptimalTreeTraversal {
                     if (parent != null) {
                         Set<Node> siblings = edgesParentToChild.get(parent);
                         // if none of the siblings are in entry.removable, we can add the parent to removable
-                        if (Sets.intersection(nextVisited, siblings).size() == 0) {
+                        // avoiding the set intersection by checking size first can save 10% of time spent in this check
+                        if (siblings.size() == 1 || Sets.intersection(nextVisited, siblings).size() == 0) {
                             nextRemovable.add(parent);
                         }
                     }
                     timeSpentInNextRemovable += (System.nanoTime() - start5);
-
 
 
                     // compute child if we don't already have the result for the child
@@ -475,9 +475,8 @@ public class OptimalTreeTraversal {
     private double product(Set<Node> nodes) {
         productIterations++;
         double cost = 1.0;
-        // this is an expensive operation - it may be the mocks in tests that are slow, as writing constants for node.matchingElementsEstimate() is much faster
         for (Node node : nodes) {
-            cost = cost * 2;//node.matchingElementsEstimate(tx);
+            cost = cost * node.matchingElementsEstimate(tx);
         }
         return cost;
     }

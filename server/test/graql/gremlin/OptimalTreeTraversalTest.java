@@ -9,6 +9,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
@@ -64,10 +65,29 @@ public class OptimalTreeTraversalTest {
         assertEquals(Label.of("someLabel"), instanceVarNode.getInstanceLabel());
     }
 
+    class TestingNode extends Node {
+
+        private long matchingElements;
+        public TestingNode(NodeId nodeId, long matchingElements) {
+            super(nodeId);
+            this.matchingElements = matchingElements;
+        }
+
+        @Override
+        public long matchingElementsEstimate(TransactionOLTP tx) {
+            return matchingElements;
+        }
+
+        @Override
+        public int getNodeTypePriority() {
+            return 0;
+        }
+    }
+
     private Map<Node, Set<Node>> generateMockTree(int numVertexNodes) {
         Map<Node, Set<Node>> mockParentToChild = new HashMap<>();
-        Node root = Mockito.mock(InstanceNode.class);
-        when(root.matchingElementsEstimate(any())).thenReturn(1L);
+        NodeId rootId = Mockito.mock(NodeId.class);
+        Node root = new TestingNode(rootId, 1L);
         mockParentToChild.put(root, new HashSet<>());
         Random random = new Random(0);
 
@@ -81,32 +101,28 @@ public class OptimalTreeTraversalTest {
             // insert it with a new edgeNode in between
 
             Node newNode;
+            NodeId newNodeId = Mockito.mock(NodeId.class);
             int type = random.nextInt(5);
             if (type < 3) {
-                // 3x more likely than others
-                newNode = mock(InstanceNode.class);
+                // emulating having an InstanceNode, 3/5 of the time
                 // between 1 and 100 instances
                 int instances = 1 + random.nextInt(100);
-                when(newNode.matchingElementsEstimate(any())).thenReturn((long)instances);
-            } else if (type == 3) {
-                newNode = mock(SchemaNode.class);
-                when(newNode.matchingElementsEstimate(any())).thenReturn(1L);
+                newNode = new TestingNode(newNodeId, instances);
             } else {
-                newNode = mock(IdNode.class);
-                when(newNode.matchingElementsEstimate(any())).thenReturn(1L);
+                // emulating either an IdNode or SchemaNode, occurs 2/5 of time
+                newNode = new TestingNode(newNodeId, 1L);
             }
 
             int parentIndex = random.nextInt(vertexNodes.size());
             Node parent = vertexNodes.get(parentIndex);
             vertexNodes.add(newNode);
 
-            Node edgeNode = mock(EdgeNode.class);
-            when(edgeNode.matchingElementsEstimate(any())).thenReturn(1L);
+            // emulating an EdgeNode, always inserting an EdgeNode between VertexNode instances
+            Node edgeNode = new TestingNode(mock(NodeId.class), 1L);
             mockParentToChild.putIfAbsent(parent, new HashSet<>());
             mockParentToChild.get(parent).add(edgeNode);
             mockParentToChild.putIfAbsent(edgeNode, new HashSet<>());
             mockParentToChild.put(edgeNode, Sets.newHashSet(newNode));
-
         }
 
         return mockParentToChild;
