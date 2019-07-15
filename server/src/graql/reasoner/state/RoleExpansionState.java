@@ -39,7 +39,7 @@ class RoleExpansionState extends ResolutionState {
 
     private final Iterator<AnswerState> answerStateIterator;
 
-    RoleExpansionState(ConceptMap sub, Unifier u, Set<Variable> toExpand, QueryStateBase parent) {
+    RoleExpansionState(ConceptMap sub, Unifier u, Set<Variable> toExpand, AnswerPropagatorState parent) {
         super(sub, parent);
         this.answerStateIterator = expandHierarchies(getSubstitution(), toExpand)
                 .map(ans -> new AnswerState(ans, u, getParentState()))
@@ -47,7 +47,7 @@ class RoleExpansionState extends ResolutionState {
     }
 
     @Override
-    public ResolutionState generateSubGoal() {
+    public ResolutionState generateChildState() {
         if (!answerStateIterator.hasNext()) return null;
         AnswerState state = answerStateIterator.next();
         return getParentState() != null ? getParentState().propagateAnswer(state) : state;
@@ -59,9 +59,8 @@ class RoleExpansionState extends ResolutionState {
      */
     private static Stream<ConceptMap> expandHierarchies(ConceptMap answer, Set<Variable> toExpand) {
         if (toExpand.isEmpty()) return Stream.of(answer);
-        List<Set<AbstractMap.SimpleImmutableEntry<Variable, Concept>>> entryOptions = answer.map().entrySet().stream()
-                .map(e -> {
-                    Variable var = e.getKey();
+        List<Set<AbstractMap.SimpleImmutableEntry<Variable, Concept>>> entryOptions = answer.map().keySet().stream()
+                .map(var -> {
                     Concept concept = answer.get(var);
                     if (toExpand.contains(var)) {
                         if (concept.isSchemaConcept()) {

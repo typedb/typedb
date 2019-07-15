@@ -35,7 +35,7 @@ import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.reasoner.state.CacheCompletionState;
-import grakn.core.graql.reasoner.state.QueryStateBase;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -192,7 +192,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
         return !containsVariablePredicates()?
                 new AtomicState(this, sub, u, parent, subGoals) :
@@ -205,7 +205,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
+    public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = tx().queryCache().getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))

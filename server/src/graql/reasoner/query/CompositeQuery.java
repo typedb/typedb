@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Label;
@@ -31,7 +32,7 @@ import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.state.CompositeState;
-import grakn.core.graql.reasoner.state.QueryStateBase;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -45,6 +46,7 @@ import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -384,9 +386,14 @@ public class CompositeQuery implements ResolvableQuery {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return isPositive()?
-                getConjunctiveQuery().subGoal(sub, u, parent, subGoals) :
+                getConjunctiveQuery().resolutionState(sub, u, parent, subGoals) :
                 new CompositeState(this, sub, u, parent, subGoals);
+    }
+
+    @Override
+    public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
+        return Iterators.singletonIterator(getConjunctiveQuery().resolutionState(getSubstitution(), parent.getUnifier(), parent, subGoals));
     }
 }

@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.state;
 
+import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
@@ -25,9 +26,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
-
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,32 +36,32 @@ import java.util.stream.Collectors;
 /**
  * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query (ReasonerQueryImpl) in the resolution tree.
  */
-public class CumulativeState extends QueryStateBase{
+public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
-    private final Iterator<ResolutionState> feederStateIterator;
-    private final ReasonerQueryImpl query;
 
     public CumulativeState(List<ReasonerQueryImpl> qs,
                            ConceptMap sub,
                            Unifier u,
-                           QueryStateBase parent,
+                           AnswerPropagatorState parent,
                            Set<ReasonerAtomicQuery> subGoals) {
-        super(sub, u, parent, subGoals);
+        super(Iterables.getFirst(qs, null), sub, u, parent, subGoals);
         this.subQueries = new LinkedList<>(qs);
-
-        this.query = subQueries.getFirst();
-        //NB: we need lazy subGoal initialisation here, otherwise they are marked as visited before visit happens
-        this.feederStateIterator = !subQueries.isEmpty()?
-                subQueries.removeFirst().subGoals(sub, u, this, subGoals).iterator() :
-                Collections.emptyIterator();
+        subQueries.removeFirst();
     }
+
+    @Override
+    protected Iterator<ResolutionState> generateChildStateIterator() {
+        //NB: we need lazy resolutionState initialisation here, otherwise they are marked as visited before visit happens
+        return getQuery().expandedStates(getSubstitution(), getUnifier(), this, getVisitedSubGoals()).iterator();
+    }
+
 
     @Override
     public String toString(){
         return super.toString() +  "\n" +
                 getSubstitution() + "\n" +
-                query + "\n" +
+                getQuery() + "\n" +
                 subQueries.stream().map(ReasonerQueryImpl::toString).collect(Collectors.joining("\n")) + "\n";
     }
 
@@ -77,11 +76,6 @@ public class CumulativeState extends QueryStateBase{
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
         return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
-    }
-
-    @Override
-    public ResolutionState generateSubGoal(){
-        return feederStateIterator.hasNext()? feederStateIterator.next() : null;
     }
 
     @Override
