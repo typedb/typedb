@@ -387,16 +387,13 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> get(GraqlGet query) {
-        MatchClause matchClause = query.match();
-        Set<Variable> variablesToGet = query.vars();
-        Stream<ConceptMap> answers = match(matchClause).distinct();
+        //NB: we need distinct as projection can produce duplicates
+        Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
-        if (!matchClause.getSelectedNames().equals(variablesToGet)){
-            answers = answers.map(ans -> ans.project(variablesToGet));
-        }
         answers = filter(query, answers);
 
-        return answers;
+
+        return answers.distinct();
     }
 
     public Stream<Numeric> aggregate(GraqlGet.Aggregate query) {
