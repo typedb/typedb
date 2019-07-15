@@ -11,7 +11,6 @@ import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.graql.reasoner.utils.Pair;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Test;
@@ -30,7 +29,6 @@ import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.intThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -164,19 +162,24 @@ public class OptimalTreeTraversalTest {
         for (int i = 1; i < 30; i++) {
             Map<Node, Set<Node>> parentToChild = generateMockTree(i);
 
-            Set<Node> children = parentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
-            Set<Node> parents = new HashSet<>(parentToChild.keySet());
-            Set<Node> allNodes = Sets.union(children, parents);
-            int numNodes = allNodes.size();
+            Map<Node, Node> parents = new HashMap<>();
+            for (Map.Entry<Node, Set<Node>> entry : parentToChild.entrySet()) {
+                for (Node child : entry.getValue()) {
+                    parents.put(child, entry.getKey());
+                }
+            }
+
+            Set<Node> allNodes = new HashSet<>(parentToChild.keySet());
+            parentToChild.values().forEach(nodeSet -> allNodes.addAll(nodeSet));
 
             OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
 //            Map<Set<Node>, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
             Map<Integer, Pair<Double, Set<Node>>> memoisedResults = new HashMap<>();
             long startTime = System.nanoTime();
-            double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild);
+            double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
             long endTime = System.nanoTime();
 
-            System.out.println("Tree size: " + numNodes + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
+            System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
         }
     }
 
@@ -246,11 +249,17 @@ public class OptimalTreeTraversalTest {
         OptimalTreeTraversal traversal2 = new OptimalTreeTraversal(mockTx);
 
         Map<Integer, Pair<Double, Set<Node>>> memoised = new HashMap<>();
-        Set<Node> children = mockParentToChild.values().stream().reduce((a,b) -> Sets.union(a,b).immutableCopy()).get();
-        Set<Node> parents = new HashSet<>(mockParentToChild.keySet());
-        Set<Node> allNodes = Sets.union(children, parents);
+        Map<Node, Node> parents = new HashMap<>();
+        for (Map.Entry<Node, Set<Node>> entry : mockParentToChild.entrySet()) {
+            for (Node child : entry.getValue()) {
+                parents.put(child, entry.getKey());
+            }
+        }
+
+        Set<Node> allNodes = parents.keySet();
+        allNodes.addAll(parents.values());
         long startTime2 = System.nanoTime();
-        double bestCost = traversal2.optimalCostBottomUpStack(allNodes, memoised, mockParentToChild);
+        double bestCost = traversal2.optimalCostBottomUpStack(allNodes, memoised, mockParentToChild, parents);
         long endTime2 = System.nanoTime();
 
         System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime2 - startTime2)/1000000.0 + " ms" + ", iterations: " + traversal2.iterations + ", products: " + traversal2.productIterations);

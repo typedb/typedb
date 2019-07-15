@@ -10,6 +10,8 @@ import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -251,10 +253,12 @@ public class OptimalTreeTraversal {
     class StackEntryBottomUp {
         boolean haveVisited;
         Set<Node> visited;
+        Set<Node> removable;
         List<Set<Node>> children;
 
-        public StackEntryBottomUp(Set<Node> visited) {
+        public StackEntryBottomUp(Set<Node> visited, Set<Node> removable) {
             this.visited = visited;
+            this.removable = removable;
             haveVisited = false;
             children = new ArrayList<>();
         }
@@ -270,10 +274,17 @@ public class OptimalTreeTraversal {
 
     public double optimalCostBottomUpStack(Set<Node> allNodes,
                                            Map<Integer, Pair<Double, Set<Node>>> memoised,
-                                           Map<Node, Set<Node>> edgesParentToChild) {
+                                           Map<Node, Set<Node>> edgesParentToChild,
+                                           Map<Node, Node> parents) {
 
         Stack<StackEntryBottomUp> stack = new Stack<>();
-        stack.push(new StackEntryBottomUp(allNodes));
+
+        // find all leaves as the starting removable node set
+        Set<Node> leaves = new HashSet<>(parents.keySet());
+        Set<Node> allParents = new HashSet<>(parents.values());
+        leaves.removeAll(allParents);
+
+        stack.push(new StackEntryBottomUp(allNodes, leaves));
 
         long timeSpentInMemoised = 0l;
         long timeSpentInElse = 0l;
@@ -323,13 +334,13 @@ public class OptimalTreeTraversal {
                 memoised.put(entry.visited.hashCode(), new Pair<>(cost + bestChildCost, bestChild));
                 timeSpentInMemoised += (System.nanoTime() - start1);
 
-                // update the global best cost found yet if we are the top of the stack and have no more paths to explore
-                if (entry.children.size() == 0 && currentCost < bestCostFound) {
-                    bestCostFound = currentCost;
-                }
-
-                // remove the cost from the current total as we have finished processing this stack entry
-                currentCost -= cost;
+//                // update the global best cost found yet if we are the top of the stack and have no more paths to explore
+//                if (entry.children.size() == 0 && currentCost < bestCostFound) {
+//                    bestCostFound = currentCost;
+//                }
+//
+//                // remove the cost from the current total as we have finished processing this stack entry
+//                currentCost -= cost;
 
             } else {
                 start2 = System.nanoTime();
@@ -337,21 +348,22 @@ public class OptimalTreeTraversal {
 
                 // this branch means we are expanding this path of exploration
                 // so the current cost includes this branch
-                currentCost += cost;
+//                currentCost += cost;
 
                 entry.setHaveVisited();
 
-                // This never short circuits because the last term of the cost always dominates
-                if (currentCost > bestCostFound) {
-                    // we can short circuit the execution if we are on a more expensive branch than the best yet
-                    shortCircuits++;
-                    stack.pop();
-                    currentCost -= cost;
-                    continue;
-                }
+//                // This never short circuits because the last term of the cost always dominates
+//                if (currentCost > bestCostFound) {
+//                    // we can short circuit the execution if we are on a more expensive branch than the best yet
+//                    shortCircuits++;
+//                    stack.pop();
+//                    currentCost -= cost;
+//                    continue;
+//                }
 
                 start4 = System.nanoTime();
-                List<Node> removableNodes = removable(entry.visited, edgesParentToChild).stream().sorted(Comparator.comparing(a -> a.matchingElementsEstimate(tx))).collect(Collectors.toList());
+                List<Node> removableNodes = new ArrayList<>(entry.removable);
+                removableNodes.sort(Comparator.comparing(node -> 2);//node.matchingElementsEstimate(tx)));
                 timeSpentInRemovable += (System.nanoTime() - start4);
 
                 for (Node nextNode : removableNodes) {
@@ -361,6 +373,18 @@ public class OptimalTreeTraversal {
                         continue;
                     }
 
+                    Set<Node> nextRemovable = new HashSet<>(entry.removable);
+                    nextRemovable.remove(nextNode);
+                    Node parent = parents.get(nextNode);
+                    if (parent != null) {
+                        Set<Node> siblings = edgesParentToChild.get(parent);
+                        // if none of the siblings are in entry.removable, we can add the parent to removable
+                        if (Sets.intersection(nextVisited, siblings).size() == 0) {
+                            nextRemovable.add(parent);
+                        }
+                    }
+
+
                     // record that this child is a dependant of the currently stack entry
                     entry.addChild(nextVisited);
 
@@ -369,7 +393,7 @@ public class OptimalTreeTraversal {
                     boolean isComputed = memoised.containsKey(nextVisited.hashCode());
                     timeSpentInMemoised += (System.nanoTime() - start1);
                     if (!isComputed) {
-                        stack.add(new StackEntryBottomUp(nextVisited));
+                        stack.add(new StackEntryBottomUp(nextVisited, nextRemovable));
                     }
                 }
                 timeSpentInElse += (System.nanoTime() - start2);
@@ -408,11 +432,9 @@ public class OptimalTreeTraversal {
         double cost = 1.0;
         // this is an expensive operation - it may be the mocks in tests that are slow, as writing constants for node.matchingElementsEstimate() is much faster
         for (Node node : nodes) {
-            testingRandom.setSeed(node.hashCode());
-            cost = cost * testingRandom.nextInt(100);
+            cost = cost * 2;//node.matchingElementsEstimate(tx);
         }
         return cost;
     }
-
 }
 
