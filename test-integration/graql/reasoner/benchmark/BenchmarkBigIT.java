@@ -64,6 +64,7 @@ public class BenchmarkBigIT {
     public static final GraknTestServer server = new GraknTestServer();
 
     private String keyspace;
+    final private Random rand = new Random();
 
     @Before
     public void randomiseKeyspace() {
@@ -71,9 +72,10 @@ public class BenchmarkBigIT {
     }
 
     private void loadOntology(String fileName, GraknClient.Session session) {
-        try {
-            InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/" + fileName);
-            String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
+        try (
+                InputStream inputStream = new FileInputStream("test-integration/graql/reasoner/resources/" + fileName);
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream))) {
+            String s = bufferedReader.lines().collect(Collectors.joining("\n"));
             GraknClient.Transaction tx = session.transaction().write();
             tx.execute(Graql.parse(s).asDefine());
             tx.commit();
@@ -106,7 +108,6 @@ public class BenchmarkBigIT {
             Role toRole = transaction.getRole(toRoleLabel);
             RelationType relationType = transaction.getRelationType(relationLabel);
 
-            Random rand = new Random();
             Multimap<Integer, Integer> assignmentMap = HashMultimap.create();
             for (int i = 0; i < N; i++) {
                 int from = rand.nextInt(N - 1);
@@ -384,7 +385,7 @@ public class BenchmarkBigIT {
             for (int i = 0; i < 8; i++) {
                 CompletableFuture<Void> asyncMatch = CompletableFuture.supplyAsync(() -> {
                     try (GraknClient.Transaction tx = session.transaction().read()) {
-                        int randomRelation = new Random().nextInt(N - 1);
+                        int randomRelation = rand.nextInt(N - 1);
                         String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + (randomRelation + 1) + ";";
                         String queryString = "match " + queryPattern + " get;";
                         executeQuery(queryString, tx, "full");
