@@ -18,6 +18,7 @@
 
 package grakn.core.graql.gremlin;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.spanningtree.Arborescence;
@@ -66,7 +67,7 @@ public class GreedyTreeTraversal {
             Node nodeWithMinCost = reachableNodes.stream().min(Comparator.comparingDouble(node ->
                     branchWeight(node, arborescence, edgesParentToChild, edgeFragmentChildToParent))).orElse(null);
 
-            assert nodeWithMinCost != null : "reachableNodes is never empty, so there is always a minimum";
+            Preconditions.checkNotNull(nodeWithMinCost, "reachableNodes is never empty, so there is always a minimum");
 
             // add fragments without dependencies first (eg. could be the index fragments)
             nodeFragmentsWithoutDependencies(nodeWithMinCost).forEach(fragment -> {

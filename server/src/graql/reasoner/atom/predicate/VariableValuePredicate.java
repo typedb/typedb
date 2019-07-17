@@ -18,13 +18,13 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
+import com.google.common.base.Preconditions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
-import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -50,14 +50,14 @@ public class VariableValuePredicate extends VariablePredicate {
 
     private VariableValuePredicate(Variable varName, Variable predicateVar, ValueProperty.Operation op, Statement pattern, ReasonerQuery parentQuery) {
         super(varName, predicateVar, pattern, parentQuery);
-        //comparisons only valid for variable predicates (ones having a reference variable)
-        assert (op.innerStatement() != null);
         this.op = op;
     }
 
     public static VariableValuePredicate create(Variable varName, ValueProperty.Operation op, ReasonerQuery parent) {
         Statement innerStatement = op.innerStatement();
-        Variable predicateVar = innerStatement != null? innerStatement.var() : Graql.var().var().asReturnedVar();
+        //comparisons only valid for variable predicates (ones having a reference variable)
+        Preconditions.checkNotNull(innerStatement);
+        Variable predicateVar = innerStatement.var();
         Statement pattern = new Statement(varName).operation(op);
         return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
     }

@@ -104,8 +104,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
                 comparator.compare(newPriority, entry.priority) <= 0,
                 "Cannot increase priority"
         );
-
-        assert oMinEntry != null;
+        Preconditions.checkNotNull(oMinEntry);
 
         entry.priority = newPriority;
         Entry oParent = entry.oParent;
@@ -291,7 +290,7 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
 
         // update parent's `oFirstChild` pointer
         Entry oFirstChild = oParent.oFirstChild;
-        assert oFirstChild != null;
+        Preconditions.checkNotNull(oFirstChild);
 
         if (oFirstChild.equals(entry)) {
             if (oParent.degree == 0) {
