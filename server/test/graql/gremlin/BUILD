@@ -42,7 +42,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
-    size = "large"
+    size = "enormous"
 )
 
 checkstyle_test(

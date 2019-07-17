@@ -2,11 +2,13 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
+import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.statement.Variable;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -30,10 +32,13 @@ public class OptimalTreeTraversalTest {
      */
     class TestingNode extends Node {
 
-        private long matchingElements;
-        public TestingNode(NodeId nodeId, long matchingElements) {
+        private final long matchingElements;
+        private final String mockType;
+
+        public TestingNode(NodeId nodeId, long matchingElements, String mockType) {
             super(nodeId);
             this.matchingElements = matchingElements;
+            this.mockType = mockType;
         }
 
         @Override
@@ -52,12 +57,14 @@ public class OptimalTreeTraversalTest {
      * Builds a fake query planner tree, following the structure of having an EdgeNode equivalent
      * between each pair of vertex nodes
      */
-    private Map<Node, Set<Node>> generateMockTree(int numVertexNodes) {
+    private Map<Node, Set<Node>> generateMockTree(int numVertexNodes, int seed) {
         Map<Node, Set<Node>> mockParentToChild = new HashMap<>();
-        NodeId rootId = Mockito.mock(NodeId.class);
-        Node root = new TestingNode(rootId, 1L);
+        NodeId rootId = NodeId.of(NodeId.Type.VAR, new Variable("root"));
+        Node root = new TestingNode(rootId, 1L, InstanceNode.class.getName());
         mockParentToChild.put(root, new HashSet<>());
-        Random random = new Random(0);
+//        Random random = new Random(-192934);
+//        Random random = new Random(3);
+        Random random = new Random(seed);
 
         List<Node> vertexNodes = new ArrayList<>();
         vertexNodes.add(root);
@@ -69,16 +76,16 @@ public class OptimalTreeTraversalTest {
             // insert it with a new edgeNode in between
 
             Node newNode;
-            NodeId newNodeId = Mockito.mock(NodeId.class);
+            NodeId newNodeId = NodeId.of(NodeId.Type.VAR, new Variable("v" + i));
             int type = random.nextInt(5);
             if (type < 3) {
                 // emulating having an InstanceNode, 3/5 of the time
                 // between 1 and 100 instances
                 int instances = 1 + random.nextInt(100);
-                newNode = new TestingNode(newNodeId, instances);
+                newNode = new TestingNode(newNodeId, instances, InstanceNode.class.getName());
             } else {
                 // emulating either an IdNode or SchemaNode, occurs 2/5 of time
-                newNode = new TestingNode(newNodeId, 1L);
+                newNode = new TestingNode(newNodeId, 1L, IdNode.class.getName());
             }
 
             int parentIndex = random.nextInt(vertexNodes.size());
@@ -86,7 +93,7 @@ public class OptimalTreeTraversalTest {
             vertexNodes.add(newNode);
 
             // emulating an EdgeNode, always inserting an EdgeNode between VertexNode instances
-            Node edgeNode = new TestingNode(mock(NodeId.class), 1L);
+            Node edgeNode = new TestingNode(NodeId.of(NodeId.Type.PLAYS, new Variable("e" + i)), 1L, EdgeNode.class.getName());
             mockParentToChild.putIfAbsent(parent, new HashSet<>());
             mockParentToChild.get(parent).add(edgeNode);
             mockParentToChild.putIfAbsent(edgeNode, new HashSet<>());
@@ -99,9 +106,11 @@ public class OptimalTreeTraversalTest {
 
     @Test
     public void scalingOptimalBottomUpStackTraversal() {
-//        for (int i = 1; i < 50; i++) {
-        int i = 5;
-            Map<Node, Set<Node>> parentToChild = generateMockTree(i);
+        for (int i = 1; i < 500; i++) {
+//        int seed = -182953;
+//        int i = 10;
+
+            Map<Node, Set<Node>> parentToChild = generateMockTree(i, 0);
 
             Map<Node, Node> parents = new HashMap<>();
             for (Map.Entry<Node, Set<Node>> entry : parentToChild.entrySet()) {
@@ -113,14 +122,14 @@ public class OptimalTreeTraversalTest {
             Set<Node> allNodes = new HashSet<>(parentToChild.keySet());
             parentToChild.values().forEach(allNodes::addAll);
 
-            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
-            Map<Integer, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
-            long startTime = System.nanoTime();
-            double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
-            long endTime = System.nanoTime();
-
-            System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " +  + (endTime - startTime)/1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
-//        }
+//            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
+//            Map<OptimalTreeTraversal.NodeList, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
+//            long startTime = System.nanoTime();
+//            double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
+//            long endTime = System.nanoTime();
+//
+//            System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " + +(endTime - startTime) / 1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
+        }
     }
 
     @Test
@@ -170,7 +179,7 @@ public class OptimalTreeTraversalTest {
 //        mockParentToChild.put(edge1_3, Sets.newHashSet(instance2_3));
 
 //        mockParentToChild.put(instance2_1, Sets.newHashSet(edge3_1, edge3_2));
-//        mockParentToChild.put(instance2_2, Sets.newHashSet(edge3_3));
+//        mockParentToChild.put(nstance2_2, Sets.newHashSet(edge3_3));
 //        mockParentToChild.put(instance2_3, Sets.newHashSet(edge3_4));
 //
 //        mockParentToChild.put(edge3_1, Sets.newHashSet(instance4_1));
