@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
@@ -49,7 +50,9 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -97,7 +100,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public String toString(){
-        return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));
+        SchemaConcept type = getAtom().getSchemaConcept();
+        long ruleCount = type != null ? type.thenRules().count() : 0;
+        return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", ")) +
+                (ruleCount != 0? "*(" + ruleCount +")" : "");
     }
 
     @Override
@@ -215,27 +221,31 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Iterator<ResolutionState> dbCompletionIterator =
                 Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null));
 
-        Iterator<ResolutionState> subGoalIterator;
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
         boolean doNotResolveFurther = visited
                 || tx().queryCache().isComplete(this)
                 || (this.isGround() && dbIterator.hasNext());
-        if(doNotResolveFurther){
-            subGoalIterator = Collections.emptyIterator();
-        } else {
+        Iterator<ResolutionState> subGoalIterator = !doNotResolveFurther?
+                ruleStateIterator(parent, visitedSubGoals) :
+                Collections.emptyIterator();
 
-            subGoalIterator = getRuleStream()
-                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
-                    .iterator();
-        }
         if (!visited) visitedSubGoals.add(this);
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 
-    private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
+    /**
+     * Constructs an iterator of RuleStates this query can generate - rule states correspond to rules that can be applied to this query.
+     * NB: we need this iterator to be fully lazy, hence we need to ensure that the base stream doesn't have any stateful ops.
+     * @param parent parent state
+     * @param visitedSubGoals set of visited sub goals
+     * @return ruleState iterator corresponding to rules that are matchable with this query
+     */
+    private Iterator<ResolutionState> ruleStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         return RuleUtils
                 .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
-                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)));
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
+                .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
+                .iterator();
     }
 }
