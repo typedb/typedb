@@ -117,6 +117,8 @@ public class TraversalPlanner {
             // one of two cases - either we have a connected graph > 1 node, which is used to compute a MST, OR exactly 1 node
             Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, allQueryGraphNodes, tx);
             if (subgraphArborescence != null) {
+
+                // extract all the nodes in this particular subgraph
                 Set<Node> connectedNodes = Sets.union(subgraphArborescence.getParents().keySet(), new HashSet<>(subgraphArborescence.getParents().values()));
 
                 // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes

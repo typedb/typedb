@@ -42,6 +42,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static graql.lang.Graql.and;
@@ -307,6 +308,8 @@ public class QueryPlannerIT {
         }
     }
 
+
+    @Ignore
     @Test
     public void indexedFragmentsAreListedFirst() {
         Pattern pattern = and(
@@ -391,6 +394,11 @@ public class QueryPlannerIT {
                 .filter(fragment -> fragment instanceof OutIsaFragment || fragment instanceof InIsaFragment).count());
     }
 
+
+    /**
+     * Remove/Update this test because we no longer use shard count - have direct access to statistics
+     */
+    @Ignore
     @Test @SuppressWarnings("Duplicates")
     public void shardCountIsUsed() {
         // force the concept to get a new shard

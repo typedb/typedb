@@ -494,9 +494,9 @@ public class ResolutionPlanIT {
 
     /**
      follows the two-branch pattern
-     / (b, c)* - (c, d)
+         / (b, c)* - (c, d)
      (b, g) - (a, b)
-     \ (b, e)* - (e, f)*
+         \ (b, e)* - (e, f)*
      */
     @Test
     @Repeat( times = repeat )

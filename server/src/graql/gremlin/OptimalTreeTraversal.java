@@ -30,7 +30,6 @@ import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +41,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
-import static grakn.core.graql.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 
@@ -86,7 +84,7 @@ public class OptimalTreeTraversal {
         long startTime = System.nanoTime();
         double cost = optimalCostBottomUpStack(connectedNodes, memoisedResults, parentToChild);
         double elapsedTimeMs = (System.nanoTime() - startTime)/1000000.0;
-        LOG.info("QP stage 2: took " + elapsedTimeMs + " ms (" + iterations + " iterations, " + shortCircuits + ", short circuits)  to find plan with best cost: " + cost);
+        LOG.info("QP stage 2: took " + elapsedTimeMs + " ms (" + connectedNodes.size() + " nodes in " + iterations + " iterations, " + shortCircuits + " short circuits)  to find plan with best cost: " + cost);
 
         // extract optimal node ordering from memoised
         List<Node> optimalNodeOrder = extractOptimalNodeOrder(memoisedResults);
