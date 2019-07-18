@@ -49,6 +49,7 @@ public class OptimalTreeTraversal {
     private static final Logger LOG = LoggerFactory.getLogger(OptimalTreeTraversal.class);
 
     private final Map<Node, Node> childToParent;
+    private double timeoutMs;
     private final Map<Node, Set<Node>> parentToChild;
     private Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent;
     private TransactionOLTP tx;
@@ -57,19 +58,13 @@ public class OptimalTreeTraversal {
     private int iterations;
     private int shortCircuits;
 
-    public OptimalTreeTraversal(TransactionOLTP tx, Set<Node> connectedNodes, Map<NodeId, Node> allNodesById, Arborescence<Node> arborescence, Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+    public OptimalTreeTraversal(TransactionOLTP tx, Set<Node> connectedNodes, Map<NodeId, Node> allNodesById, Arborescence<Node> arborescence, Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent, double timeoutMs) {
         this.tx = tx;
         this.connectedNodes = connectedNodes;
         this.allNodesById = allNodesById;
         this.childToParent = arborescence.getParents();
-        this.parentToChild = new HashMap<>();
-        arborescence.getParents().forEach((child, parent) -> {
-            if (!parentToChild.containsKey(parent)) {
-                parentToChild.put(parent, new HashSet<>());
-            }
-            parentToChild.get(parent).add(child);
-        });
-
+        this.timeoutMs = timeoutMs;
+        this.parentToChild = parentToChildMapping(arborescence);
         this.edgeFragmentChildToParent = edgeFragmentChildToParent;
         iterations = 0;
         shortCircuits = 0;
@@ -79,11 +74,11 @@ public class OptimalTreeTraversal {
 
         propagateLabels(parentToChild);
 
-        Map<NodeList, Pair<Double, NodeList>> memoisedResults = new HashMap<>();
 
         long startTime = System.nanoTime();
-        double cost = optimalCostBottomUpStack(connectedNodes, memoisedResults, parentToChild);
-        double elapsedTimeMs = (System.nanoTime() - startTime)/1000000.0;
+        Map<NodeList, Pair<Double, NodeList>> memoisedResults = new HashMap<>();
+        double cost = optimalCostBottomUpStack(connectedNodes, memoisedResults);
+        double elapsedTimeMs = (System.nanoTime() - startTime) / 1000000.0;
         LOG.info("QP stage 2: took " + elapsedTimeMs + " ms (" + connectedNodes.size() + " nodes in " + iterations + " iterations, " + shortCircuits + " short circuits)  to find plan with best cost: " + cost);
 
         // extract optimal node ordering from memoised
@@ -110,8 +105,11 @@ public class OptimalTreeTraversal {
 
             // add node's dependant fragments
             nodeVisitedDependenciesFragments(node, allNodesById).forEach(frag -> {
-                if (frag.hasFixedFragmentCost()) { plan.add(0, frag); }
-                else { plan.add(frag); }
+                if (frag.hasFixedFragmentCost()) {
+                    plan.add(0, frag);
+                } else {
+                    plan.add(frag);
+                }
             });
 
         }
@@ -139,9 +137,7 @@ public class OptimalTreeTraversal {
     }
 
 
-    public double optimalCostBottomUpStack(Set<Node> allNodes,
-                                           Map<NodeList, Pair<Double, NodeList>> memoised,
-                                           Map<Node, Set<Node>> edgesParentToChild) {
+    double optimalCostBottomUpStack(Set<Node> allNodes, Map<NodeList, Pair<Double, NodeList>> memoised) {
 
         Stack<StackEntry> stack = new Stack<>();
 
@@ -153,7 +149,15 @@ public class OptimalTreeTraversal {
         double bestCostFound = Double.MAX_VALUE; // best tree traversal cost found yet
         double currentCost = 0.0;                // partial cost of the tree traversal we are calculating
 
+        long startTime = System.nanoTime();
+        long timeLimit = (long) (timeoutMs * 1000000);
+
         while (stack.size() != 0) {
+            // exit early if the timeout has been hit and we have at least 1 plan
+            if ((System.nanoTime() - startTime) > timeLimit && bestCostFound != Double.MAX_VALUE) {
+                break;
+            }
+
             iterations++;
             StackEntry entry = stack.peek();
 
@@ -164,22 +168,7 @@ public class OptimalTreeTraversal {
             if (entry.haveVisited) {
 
                 double cost = entry.visitedNodeListCost;
-
-                NodeList bestChild = findBestChild(entry, memoised);
-
-                // memoise the cost of the cost of the entry.visited set plus traversing via the chosen next child set
-                double bestChildCost;
-                if (bestChild == null) {
-                    if (entry.visited.size() == 1) {
-                        bestChildCost = 0.0;
-                    } else {
-                        bestChildCost = Double.MAX_VALUE;
-                    }
-                } else {
-                    bestChildCost = memoised.get(bestChild).getKey();
-                }
-//                double bestChildCost = bestChild == null ? 0 : memoised.get(bestChild).getKey();
-                memoised.put(entry.visited, new Pair<>(cost + bestChildCost, bestChild));
+                double bestChildCost = memoiseEntryUsingBestChild(entry, memoised);
 
                 // the current cost to completion -- cost from start of stack up to a final value
                 // is currentCost + bestChildCost
@@ -235,31 +224,67 @@ public class OptimalTreeTraversal {
                     // record that this child is a dependant of the currently stack entry
                     entry.addChild(nextVisited);
 
-                    NodeList nextRemovable = copyExceptElement(entry.removable, nextNode);
-                    Node parent = childToParent.get(nextNode);
-                    if (parent != null) {
-                        Set<Node> siblings = edgesParentToChild.get(parent);
-                        // if none of the siblings are in entry.removable, we can add the parent to removable
-                        // avoiding the set intersection by checking size first can save 20% of time spent in this check
-                        if (siblings.size() == 1 || isEmptyIntersection(siblings, nextVisited)) {
-                            nextRemovable.add(parent);
-                        }
-                    }
-
                     // compute child if we don't already have the result for the child
                     boolean isComputed = memoised.containsKey(nextVisited);
                     if (!isComputed) {
+                        NodeList nextRemovable = copyExceptElement(entry.removable, nextNode);
+                        Node parent = childToParent.get(nextNode);
+                        if (parent != null) {
+                            Set<Node> siblings = parentToChild.get(parent);
+                            // if none of the siblings are in entry.removable, we can add the parent to removable
+                            // avoiding the set intersection by checking size first can save 20% of time spent in this check
+                            if (siblings.size() == 1 || isEmptyIntersection(siblings, nextVisited)) {
+                                nextRemovable.add(parent);
+                            }
+                        }
                         stack.push(new StackEntry(nextVisited, nextRemovable));
                     }
                 }
             }
         }
 
+        if (stack.size() != 0) {
+            // we have timed out - abort the search
+            // to finish, we deconstruct the stack and fill in the paths that we can from the processing completed on the stack
+            // then we can continue as before, as the stack is emptied
+            clearStack(stack, memoised);
+        }
+
         double finalCost = memoised.get(new NodeList(allNodes)).getKey();
         // these assertions fail because we start adding very small numbers (eg. 1) to very big doubles (eg. 3.11111E200)
-//        assert currentCost == 0;
-//        assert finalCost == bestCostFound;
+        // assert currentCost == 0;
+        // assert finalCost == bestCostFound;
         return finalCost;
+    }
+
+    private double memoiseEntryUsingBestChild(StackEntry entry, Map<NodeList, Pair<Double, NodeList>> memoised) {
+        NodeList bestChild = findBestChild(entry, memoised);
+        // memoise the cost of the cost of the entry.visited set plus traversing via the chosen next child set
+        double bestChildCost;
+        if (bestChild == null) {
+            if (entry.visited.size() == 1) {
+                bestChildCost = 0.0;
+            } else {
+                // we can hit this branch if all the children of an entry have short circuited (?)
+                // thus they are not in the map and bestChild is null
+                // just use a very large number as a substitute
+                bestChildCost = Double.MAX_VALUE;
+            }
+        } else {
+            bestChildCost = memoised.get(bestChild).getKey();
+        }
+        memoised.put(entry.visited, new Pair<>(entry.visitedNodeListCost + bestChildCost, bestChild));
+        return bestChildCost;
+    }
+
+    private void clearStack(Stack<StackEntry> stack, Map<NodeList, Pair<Double, NodeList>> memoised) {
+        while (!stack.isEmpty()) {
+            StackEntry entry = stack.pop();
+            if (entry.haveVisited) {
+                // work our way back down the stack
+                memoiseEntryUsingBestChild(entry, memoised);
+            }
+        }
     }
 
 
@@ -317,6 +342,17 @@ public class OptimalTreeTraversal {
         return new NodeList(keys);
     }
 
+    private Map<Node, Set<Node>> parentToChildMapping(Arborescence<Node> arborescence) {
+        HashMap<Node, Set<Node>> parentToChildMap = new HashMap<>();
+        arborescence.getParents().forEach((child, parent) -> {
+            if (!parentToChildMap.containsKey(parent)) {
+                parentToChildMap.put(parent, new HashSet<>());
+            }
+            parentToChildMap.get(parent).add(child);
+        });
+        return parentToChildMap;
+    }
+
     class StackEntry {
         boolean haveVisited;
         NodeList visited;
@@ -370,7 +406,6 @@ public class OptimalTreeTraversal {
             return cachedHashCode;
         }
     }
-
 
 
 }

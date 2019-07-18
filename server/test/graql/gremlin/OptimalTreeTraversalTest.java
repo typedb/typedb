@@ -132,6 +132,14 @@ public class OptimalTreeTraversalTest {
         }
     }
 
+    /**
+     * 1. test tiny timeout still returns plan
+     * 2. test medium timeout aborts early without optimal plan
+     * 3.
+     */
+
+
+
     @Test
     public void testOptimalTraversalGreedyFails() {
         Map<Node, Set<Node>> mockParentToChild = new HashMap<>();
