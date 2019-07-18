@@ -23,20 +23,18 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.reasoner.state.CacheCompletionState;
-import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -48,11 +46,8 @@ import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -99,12 +94,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public String toString(){
-        SchemaConcept type = getAtom().getSchemaConcept();
-        long ruleCount = type != null ? type.thenRules().count() : 0;
-        return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", ")) +
-                (ruleCount != 0? "*(" + ruleCount +")" : "");
-    }
+    public String toString(){ return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));}
 
     @Override
     public boolean isAtomic(){ return true;}
