@@ -118,13 +118,12 @@ public class TraversalPlanner {
             Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, allQueryGraphNodes, tx);
             if (subgraphArborescence != null) {
                 Set<Node> connectedNodes = Sets.union(subgraphArborescence.getParents().keySet(), new HashSet<>(subgraphArborescence.getParents().values()));
-                Map<NodeId, Node> connectedNodesById = allQueryGraphNodes.entrySet().stream().filter(entry -> connectedNodes.contains(entry.getValue())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
                 // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
                 Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, allQueryGraphNodes);
 
-                OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, connectedNodesById, subgraphArborescence);
-                List<Fragment> subplan = optimalTreeTraversal.traverse(middleNodeFragmentMapping);
+                OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, connectedNodes, allQueryGraphNodes, subgraphArborescence, middleNodeFragmentMapping);
+                List<Fragment> subplan = optimalTreeTraversal.traverse();
 
 //                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);

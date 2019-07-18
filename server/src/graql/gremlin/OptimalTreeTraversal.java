@@ -50,29 +50,21 @@ public class OptimalTreeTraversal {
 
     private static final Logger LOG = LoggerFactory.getLogger(OptimalTreeTraversal.class);
 
-    private final Map<Node, Node> parents;
+    private final Map<Node, Node> childToParent;
+    private final Map<Node, Set<Node>> parentToChild;
+    private Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent;
     private TransactionOLTP tx;
-    private Set<Node> allNodes;
-    private Map<NodeId, Node> nodes;
-    private Arborescence<Node> arborescence;
+    private Set<Node> connectedNodes;
+    private Map<NodeId, Node> allNodesById;
     private int iterations;
-    private int productIterations;
     private int shortCircuits;
 
-    public OptimalTreeTraversal(TransactionOLTP tx, Map<NodeId, Node> nodes, Arborescence<Node> arborescence) {
+    public OptimalTreeTraversal(TransactionOLTP tx, Set<Node> connectedNodes, Map<NodeId, Node> allNodesById, Arborescence<Node> arborescence, Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
         this.tx = tx;
-        this.nodes = nodes;
-        this.allNodes = new HashSet<>(nodes.values());
-        this.arborescence = arborescence;
-        this.parents = arborescence.getParents();
-        iterations = 0;
-        productIterations = 0;
-        shortCircuits = 0;
-    }
-
-    public List<Fragment> traverse(Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
-
-        Map<Node, Set<Node>> parentToChild = new HashMap<>();
+        this.connectedNodes = connectedNodes;
+        this.allNodesById = allNodesById;
+        this.childToParent = arborescence.getParents();
+        this.parentToChild = new HashMap<>();
         arborescence.getParents().forEach((child, parent) -> {
             if (!parentToChild.containsKey(parent)) {
                 parentToChild.put(parent, new HashSet<>());
@@ -80,44 +72,46 @@ public class OptimalTreeTraversal {
             parentToChild.get(parent).add(child);
         });
 
+        this.edgeFragmentChildToParent = edgeFragmentChildToParent;
+        iterations = 0;
+        shortCircuits = 0;
+    }
+
+    public List<Fragment> traverse() {
+
         propagateLabels(parentToChild);
 
         Map<NodeList, Pair<Double, NodeList>> memoisedResults = new HashMap<>();
 
-        optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild);
+        long startTime = System.nanoTime();
+        double cost = optimalCostBottomUpStack(connectedNodes, memoisedResults, parentToChild);
+        double elapsedTimeMs = (System.nanoTime() - startTime)/1000000.0;
+        LOG.info("QP stage 2: took " + elapsedTimeMs + " ms (" + iterations + " iterations, " + shortCircuits + ", short circuits)  to find plan with best cost: " + cost);
 
         // extract optimal node ordering from memoised
-        List<Node> nodeOrdering = extractOptimalNodeOrder(memoisedResults);
+        List<Node> optimalNodeOrder = extractOptimalNodeOrder(memoisedResults);
 
-        List<Fragment> plan = orderedNodesToPlan(nodeOrdering, edgeFragmentChildToParent);
+        List<Fragment> plan = orderedNodesToPlan(optimalNodeOrder);
 
         return plan;
     }
 
-    private List<Fragment> orderedNodesToPlan(List<Node> orderedNodes, Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+    private List<Fragment> orderedNodesToPlan(List<Node> optimalNodeOrder) {
         List<Fragment> plan = new ArrayList<>();
 
-        for (Node node : orderedNodes) {
-            nodeFragmentsWithoutDependencies(node).forEach(fragment -> {
-//                if (fragment.hasFixedFragmentCost()) {
-//                    plan.add(0, fragment);
-//                } else {
-                    plan.add(fragment);
-//                }
-            });
+        for (Node node : optimalNodeOrder) {
+            // TODO we may want to sort the order of fragments from each node based on some cost
+            plan.addAll(node.getFragmentsWithoutDependency());
             node.getFragmentsWithoutDependency().clear();
 
-            // add edge fragment first
-            Fragment fragment = getEdgeFragment(node, arborescence, edgeFragmentChildToParent);
-            Fragment fragment1 = null;
+            // add edge fragment if this node represents an edge fragment
             if (node instanceof EdgeNode) {
-                fragment1 = edgeFragmentChildToParent.get(node).get(parents.get(node));
+                // look up the edge fragment based on which direction the parent is (MST has chosen between In/Out already)
+                plan.add(edgeFragmentChildToParent.get(node).get(childToParent.get(node)));
             }
-            assert fragment1 == fragment;
-            if (fragment != null) plan.add(fragment);
 
             // add node's dependant fragments
-            nodeVisitedDependenciesFragments(node, nodes).forEach(frag -> {
+            nodeVisitedDependenciesFragments(node, allNodesById).forEach(frag -> {
                 if (frag.hasFixedFragmentCost()) { plan.add(0, frag); }
                 else { plan.add(frag); }
             });
@@ -126,19 +120,10 @@ public class OptimalTreeTraversal {
         return plan;
     }
 
-    @Nullable
-    private static Fragment getEdgeFragment(Node node, Arborescence<Node> arborescence,
-                                            Map<Node, Map<Node, Fragment>> edgeToFragment) {
-        if (edgeToFragment.containsKey(node) &&
-                edgeToFragment.get(node).containsKey(arborescence.getParents().get(node))) {
-            return edgeToFragment.get(node).get(arborescence.getParents().get(node));
-        }
-        return null;
-    }
 
     private List<Node> extractOptimalNodeOrder(Map<NodeList, Pair<Double, NodeList>> memoisedResults) {
         List<Node> orderedNodes = new ArrayList<>();
-        NodeList next = new NodeList(allNodes);
+        NodeList next = new NodeList(connectedNodes);
         while (true) {
             NodeList nextNodeList = memoisedResults.get(next).getValue();
             if (nextNodeList == null) {
@@ -150,7 +135,7 @@ public class OptimalTreeTraversal {
                 next = nextNodeList;
             }
         }
-        // we extract the nodes in reverse order, so flip
+        // we extract the nodes in reverse order, ending with the root, so flip the list
         Collections.reverse(orderedNodes);
         return orderedNodes;
     }
@@ -163,7 +148,7 @@ public class OptimalTreeTraversal {
         Stack<StackEntry> stack = new Stack<>();
 
         // find all leaves as the starting removable node set
-        NodeList leafNodes = leaves(parents);
+        NodeList leafNodes = leaves(childToParent);
         stack.push(new StackEntry(new NodeList(allNodes), leafNodes));
 
         // we can prune the search space by stopping the search when the current cost exceeds the best cost we have found yet
@@ -253,7 +238,7 @@ public class OptimalTreeTraversal {
                     entry.addChild(nextVisited);
 
                     NodeList nextRemovable = copyExceptElement(entry.removable, nextNode);
-                    Node parent = parents.get(nextNode);
+                    Node parent = childToParent.get(nextNode);
                     if (parent != null) {
                         Set<Node> siblings = edgesParentToChild.get(parent);
                         // if none of the siblings are in entry.removable, we can add the parent to removable
@@ -317,8 +302,7 @@ public class OptimalTreeTraversal {
     }
 
     private double product(Collection<Node> nodes) {
-        productIterations++;
-        if (nodes.size() == 0) {
+        if (nodes.isEmpty()) {
             return 0.0;
         }
 
