@@ -1,13 +1,34 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2018 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.graql.gremlin;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.spanningtree.Arborescence;
+import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -27,14 +48,16 @@ import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 
 public class OptimalTreeTraversal {
 
+    private static final Logger LOG = LoggerFactory.getLogger(OptimalTreeTraversal.class);
+
     private final Map<Node, Node> parents;
     private TransactionOLTP tx;
     private Set<Node> allNodes;
     private Map<NodeId, Node> nodes;
     private Arborescence<Node> arborescence;
-    int iterations;
-    int productIterations;
-    int shortCircuits;
+    private int iterations;
+    private int productIterations;
+    private int shortCircuits;
 
     public OptimalTreeTraversal(TransactionOLTP tx, Map<NodeId, Node> nodes, Arborescence<Node> arborescence) {
         this.tx = tx;
@@ -86,6 +109,11 @@ public class OptimalTreeTraversal {
 
             // add edge fragment first
             Fragment fragment = getEdgeFragment(node, arborescence, edgeFragmentChildToParent);
+            Fragment fragment1 = null;
+            if (node instanceof EdgeNode) {
+                fragment1 = edgeFragmentChildToParent.get(node).get(parents.get(node));
+            }
+            assert fragment1 == fragment;
             if (fragment != null) plan.add(fragment);
 
             // add node's dependant fragments

@@ -107,7 +107,7 @@ public class TraversalPlanner {
         allFragments.addAll(inferredFragments);
 
         // convert fragments into nodes - some fragments create virtual middle nodes to ensure the Janus edge is traversed
-        ImmutableMap<NodeId, Node> queryGraphNodes = buildNodesWithDependencies(allFragments);
+        ImmutableMap<NodeId, Node> allQueryGraphNodes= buildNodesWithDependencies(allFragments);
 
         // it's possible that some (or all) fragments are disconnected, e.g. $x isa person; $y isa dog;
         Collection<Set<Fragment>> connectedFragmentSets = getConnectedFragmentSets(allFragments);
@@ -115,12 +115,15 @@ public class TraversalPlanner {
         // build a query plan for each query subgraph separately
         for (Set<Fragment> connectedFragments : connectedFragmentSets) {
             // one of two cases - either we have a connected graph > 1 node, which is used to compute a MST, OR exactly 1 node
-            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, queryGraphNodes, tx);
+            Arborescence<Node> subgraphArborescence = computeArborescence(connectedFragments, allQueryGraphNodes, tx);
             if (subgraphArborescence != null) {
-                // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
-                Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, queryGraphNodes);
+                Set<Node> connectedNodes = Sets.union(subgraphArborescence.getParents().keySet(), new HashSet<>(subgraphArborescence.getParents().values()));
+                Map<NodeId, Node> connectedNodesById = allQueryGraphNodes.entrySet().stream().filter(entry -> connectedNodes.contains(entry.getValue())).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-                OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, queryGraphNodes, subgraphArborescence);
+                // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
+                Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, allQueryGraphNodes);
+
+                OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, connectedNodesById, subgraphArborescence);
                 List<Fragment> subplan = optimalTreeTraversal.traverse(middleNodeFragmentMapping);
 
 //                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
@@ -129,17 +132,17 @@ public class TraversalPlanner {
                // find and include all the nodes not touched in the MST in the plan
                Set<Node> unhandledNodes = connectedFragments.stream()
                         .flatMap(fragment -> fragment.getNodes().stream())
-                        .map(node -> queryGraphNodes.get(node.getNodeId()))
+                        .map(node -> allQueryGraphNodes.get(node.getNodeId()))
                         .collect(Collectors.toSet());
                if (unhandledNodes.size() != 1) {
                    throw GraknServerException.create("Query planner exception - expected one unhandled node, found " + unhandledNodes.size());
                }
-               plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), queryGraphNodes));
+               plan.addAll(nodeVisitedDependenciesFragments(Iterators.getOnlyElement(unhandledNodes.iterator()), allQueryGraphNodes));
             }
         }
 
         // this shouldn't be necessary, but we keep it just in case of an edge case that we haven't thought of
-        List<Fragment> remainingFragments = fragmentsForUnvisitedNodes(queryGraphNodes, queryGraphNodes.values());
+        List<Fragment> remainingFragments = fragmentsForUnvisitedNodes(allQueryGraphNodes, allQueryGraphNodes.values());
         if (remainingFragments.size() > 0) {
             LOG.warn("Expected all fragments to be handled, but found these: " + remainingFragments);
             plan.addAll(remainingFragments);
