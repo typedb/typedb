@@ -70,8 +70,6 @@ public class ResolutionPlanIT {
 
     private static final int repeat = 20;
 
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
-
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
 
@@ -84,6 +82,7 @@ public class ResolutionPlanIT {
     @BeforeClass
     public static void loadContext(){
         planSession = server.sessionWithNewKeyspace();
+        String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "resolutionPlanTest.gql", planSession);
     }
 
@@ -295,6 +294,7 @@ public class ResolutionPlanIT {
      */
     @Ignore ("should be fixed once we provide an estimate for inferred concepts count")
     @Test
+    @Repeat( times = repeat )
     public void whenRelationLinkWithSubbedEndsAndRuleRelationInTheMiddle_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
                 "$start id V123;" +
@@ -321,6 +321,7 @@ public class ResolutionPlanIT {
      *
      */
     @Test
+    @Repeat( times = repeat )
     public void whenRelationLinkWithSubbedEndsAndRuleRelationAtEnd_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
                 "$start id Vsomesampleid;" +
@@ -351,6 +352,7 @@ public class ResolutionPlanIT {
      *    anotherResource 'someValue'
      */
     @Test
+    @Repeat( times = repeat )
     public void whenRelationLinkWithEndsSharingAResource_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
                 "$start id V123;" +
@@ -417,8 +419,10 @@ public class ResolutionPlanIT {
         checkPlanSanity(queryX);
         checkPlanSanity(queryY);
 
-        assertNotEquals(new ResolutionPlan(queryX).plan().get(0), getAtomOfType(queryX, "anotherResource", tx));
-        assertNotEquals(new ResolutionPlan(queryY).plan().get(0), getAtomOfType(queryX, "resource", tx));
+        ImmutableList<Atom> xPlan = new ResolutionPlan(queryX).plan();
+        ImmutableList<Atom> yPlan = new ResolutionPlan(queryY).plan();
+        assertNotEquals(xPlan.get(0), getAtomOfType(queryX, "anotherResource", tx));
+        assertNotEquals(yPlan.get(0), getAtomOfType(queryY, "resource", tx));
     }
 
     @Test
@@ -452,9 +456,9 @@ public class ResolutionPlanIT {
 
     /**
      follows the two-branch pattern
-                                /   (d, e) - (e, f)*
-        (a, b)* - (b, c) - (c, d)*
-                                 \   (d, g) - (g, h)*
+     /   (d, e) - (e, f)*
+     (a, b)* - (b, c) - (c, d)*
+     \   (d, g) - (g, h)*
      */
     @Test
     @Ignore ("flaky - need to reintroduce inferred concept counts")
