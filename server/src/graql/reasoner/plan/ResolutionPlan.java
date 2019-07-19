@@ -78,7 +78,7 @@ public final class ResolutionPlan {
             Set<Variable> varNames = next.getVarNames();
             boolean planDisconnected = Sets.intersection(varNames, vars).isEmpty();
             if (planDisconnected) {
-                LOG.warn("Disconnected resolution plan produced:\n{}", this);
+                LOG.debug("Disconnected resolution plan produced:\n{}", this);
                 break;
             }
             vars.addAll(varNames);
