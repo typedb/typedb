@@ -83,7 +83,10 @@ public class Executor {
                     stderr.toString(StandardCharsets.UTF_8.name()),
                     result.getExitValue()
             );
-        } catch (IOException | InterruptedException | TimeoutException e) {
+        } catch (IOException | TimeoutException e) {
+            throw new RuntimeException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         }
     }
@@ -107,7 +110,7 @@ public class Executor {
             try {
                 Thread.sleep(WAIT_INTERVAL_SECOND * 1000);
             } catch (InterruptedException e) {
-                // DO NOTHING
+                Thread.currentThread().interrupt();
             }
         }
         System.out.println("SUCCESS");

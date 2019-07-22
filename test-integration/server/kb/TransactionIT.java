@@ -282,7 +282,6 @@ public class TransactionIT {
         } catch (TransactionException e) {
             exception = e;
         }
-        assertNotNull(exception);
         assertThat(exception, instanceOf(TransactionException.class));
         assertNotNull(exception);
         assertEquals(exception.getMessage(), ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(keyspace));

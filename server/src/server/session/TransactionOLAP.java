@@ -76,6 +76,7 @@ public class TransactionOLAP {
         } catch (ExecutionException e) {
             throw asRuntimeException(e.getCause());
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw asRuntimeException(e);
         }
     }
