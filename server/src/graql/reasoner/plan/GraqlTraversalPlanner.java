@@ -31,16 +31,17 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.OntologicalAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.VarProperty;
-
-import javax.annotation.Nullable;
+import graql.lang.statement.Variable;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -66,59 +67,72 @@ public class GraqlTraversalPlanner {
      * @return list of atoms in order they should be resolved using a refined GraqlTraversal procedure.
      */
     public static ImmutableList<Atom> plan(ReasonerQueryImpl query) {
-        List<Atom> startCandidates = query.getAtoms(Atom.class)
-                .filter(Atomic::isSelectable)
-                .collect(Collectors.toList());
-        Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
-        return ImmutableList.copyOf(refinePlan(query, startCandidates, subs));
+        return ImmutableList.copyOf(refinedPlan(query));
     }
 
-    @Nullable
-    private static Atom optimalCandidate(List<Atom> candidates){
+    private static long atomPredicates(Atom at, Set<IdPredicate> subs){
+        return Stream.concat(
+                subs.stream().filter(sub -> !Sets.intersection(sub.getVarNames(), at.getVarNames()).isEmpty()),
+                Stream.concat(
+                        at.getPredicates(ValuePredicate.class),
+                        at.getInnerPredicates(ValuePredicate.class)
+                )
+                        .filter(vp -> vp.getPredicate().isValueEquality())
+        )
+                .count();
+    }
+
+    private static List<Atom> optimiseCandidates(List<Atom> candidates, Set<IdPredicate> subs, Set<Variable> vars){
         return candidates.stream()
+                .filter(at -> vars.isEmpty() || !Sets.intersection(at.getVarNames(), vars).isEmpty())
                 .sorted(Comparator.comparing(at -> !at.isGround()))
-                .sorted(Comparator.comparing(at -> -at.getPredicates().count()))
-                .findFirst().orElse(null);
+                .sorted(Comparator.comparing(at -> -atomPredicates(at, subs)))
+                .collect(Collectors.toList());
+    }
+
+    private static List<Atom> getCandidates(List<Atom> atoms, Set<IdPredicate> subs, Set<Variable> vars){
+        List<Atom> preCandidates = optimiseCandidates(atoms, subs, vars);
+        long MAX_CANDIDATES = preCandidates.size();
+        if (MAX_CANDIDATES > 1) {
+            boolean maxExists = atomPredicates(preCandidates.get(0), subs) > atomPredicates(preCandidates.get(1), subs);
+            if (maxExists) MAX_CANDIDATES = 1;
+        }
+        return preCandidates.stream().limit(MAX_CANDIDATES).collect(Collectors.toList());
     }
 
     final private static String PLACEHOLDER_ID = "placeholderId";
 
     /**
      * @param query top level query for which the plan is constructed
-     * @param atoms list of current atoms of interest
-     * @param subs extra substitutions
      * @return an optimally ordered list of provided atoms
      */
-    private static List<Atom> refinePlan(ReasonerQueryImpl query, List<Atom> atoms, Set<IdPredicate> subs){
-        List<Atom> candidates = subs.isEmpty()?
-                atoms :
-                atoms.stream()
-                        .filter(at -> at.getPredicates(IdPredicate.class).findFirst().isPresent())
-                        .collect(Collectors.toList());
+    private static List<Atom> refinedPlan(ReasonerQueryImpl query){
+        List<Atom> atomsToProcess = query.getAtoms(Atom.class).filter(Atomic::isSelectable).collect(Collectors.toList());
+        Set<IdPredicate> subs = query.getAtoms(IdPredicate.class).collect(Collectors.toSet());
+        Set<Variable> vars = atomsToProcess.stream().anyMatch(Atom::isDisconnected)? query.getVarNames() : new HashSet<>();
+        List<Atom> orderedAtoms = new ArrayList<>();
 
-        ImmutableList<Atom> initialPlan = planFromTraversal(atoms, atomsToPattern(atoms, subs), query.tx());
-        if (candidates.contains(initialPlan.get(0)) || candidates.isEmpty()) {
-            return initialPlan;
-        } else {
-            Atom first = optimalCandidate(candidates);
-            List<Atom> atomsToPlan = new ArrayList<>(atoms);
+        while(!atomsToProcess.isEmpty()){
+            List<Atom> candidates = getCandidates(atomsToProcess, subs, vars);
+            ImmutableList<Atom> initialPlan = planFromTraversal(atomsToProcess, atomsToPattern(atomsToProcess, subs), query.tx());
 
-            if(first != null){
-                atomsToPlan.remove(first);
-
-                Set<IdPredicate> extraSubs = first.getVarNames().stream()
-                        .filter(v -> subs.stream().noneMatch(s -> s.getVarName().equals(v)))
-                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
-                        .collect(Collectors.toSet());
-
-                return Stream.concat(
-                        Stream.of(first),
-                        refinePlan(query, atomsToPlan, Sets.union(subs, extraSubs)).stream()
-                ).collect(Collectors.toList());
+            if (candidates.contains(initialPlan.get(0)) || candidates.isEmpty()) {
+                orderedAtoms.addAll(initialPlan);
+                break;
             } else {
-                return refinePlan(query, atomsToPlan, subs);
+                Atom first = candidates.stream().findFirst().orElse(null);
+                orderedAtoms.add(first);
+                atomsToProcess.remove(first);
+
+                Set<Variable> subVariables = subs.stream().flatMap(sub -> sub.getVarNames().stream()).collect(Collectors.toSet());
+                first.getVarNames().stream()
+                        .peek(vars::add)
+                        .filter(v -> !subVariables.contains(v))
+                        .map(v -> IdPredicate.create(v, ConceptId.of(PLACEHOLDER_ID), query))
+                        .forEach(subs::add);
             }
         }
+        return orderedAtoms;
     }
 
     /**
@@ -141,7 +155,7 @@ public class GraqlTraversalPlanner {
     /**
      *
      * @param atoms list of current atoms of interest
-     * @param queryPattern corresponding pattern
+     * @param queryPattern corresponding (possible augmented with subs) pattern
      * @return an optimally ordered list of provided atoms
      */
     private static ImmutableList<Atom> planFromTraversal(List<Atom> atoms, Conjunction<?> queryPattern, TransactionOLTP tx){
