@@ -408,7 +408,10 @@ public class AttributeUniquenessIT {
         for (Future future : futures) {
             try {
                 future.get();
-            } catch (InterruptedException | ExecutionException e) {
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                e.printStackTrace();
+            } catch (ExecutionException e) {
                 e.printStackTrace();
             }
         }

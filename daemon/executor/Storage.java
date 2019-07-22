@@ -220,7 +220,10 @@ public class Storage {
             String errorMessage = "Process exited with code '" + result.get().exitCode() + "': '" + result.get().stderr() + "'";
             System.err.println(errorMessage);
             throw new GraknDaemonException(errorMessage);
-        } catch (InterruptedException | ExecutionException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new GraknDaemonException(e.getMessage(), e);
+        } catch (ExecutionException e) {
             throw new GraknDaemonException(e.getMessage(), e);
         }
     }
