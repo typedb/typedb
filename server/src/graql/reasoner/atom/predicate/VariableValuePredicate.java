@@ -24,6 +24,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
@@ -62,16 +63,46 @@ public class VariableValuePredicate extends VariablePredicate {
         return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
     }
 
-    @Override
-    public Atomic copy(ReasonerQuery parent) {
-        return create(this.getVarName(), this.operation(), parent);
-    }
-
     public static Atomic fromValuePredicate(ValuePredicate predicate){
         return create(predicate.getVarName(), predicate.getPredicate(), predicate.getParentQuery());
     }
 
     public ValueProperty.Operation operation(){ return op;}
+
+    @Override
+    public Atomic copy(ReasonerQuery parent) {
+        return create(this.getVarName(), this.operation(), parent);
+    }
+
+    /*
+    @Override
+    public boolean isAlphaEquivalent(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        if (!super.isAlphaEquivalent(obj)) return false;
+        VariablePredicate that = (VariablePredicate) obj;
+        return this.operation().equals;
+    }
+
+    @Override
+    public int alphaEquivalenceHashCode() {
+        return bindingHash(AtomicEquivalence.AlphaEquivalence);
+    }
+
+    @Override
+    public boolean isStructurallyEquivalent(Object obj){
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        VariablePredicate that = (VariablePredicate) obj;
+        return predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
+    }
+
+    @Override
+    public int structuralEquivalenceHashCode() {
+        return bindingHash(AtomicEquivalence.StructuralEquivalence);
+    }
+
+     */
 
     @Override
     public String toString(){

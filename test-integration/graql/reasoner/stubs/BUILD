@@ -62,5 +62,6 @@ filegroup(
         "typeDerivationFromRelations.gql",
         "typeDerivationRelationsWithDirect.gql",
         "typeDerivationWithDirect.gql",
+        "valueTransfer.gql",
     ],
 )

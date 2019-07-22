@@ -125,13 +125,4 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
     public String getPredicateValue() {
         return getPattern().toString();
     }
-
-    @Override
-    public Set<Variable> getVarNames(){
-        Set<Variable> vars = super.getVarNames();
-        if (getPredicate() instanceof ValueProperty.Operation.Comparison.Variable) {
-            vars.add(((ValueProperty.Operation.Comparison.Variable) getPredicate()).value().var());
-        }
-        return vars;
-    }
 }

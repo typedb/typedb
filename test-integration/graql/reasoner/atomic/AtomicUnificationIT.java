@@ -43,6 +43,10 @@ import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,25 +54,16 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
-
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicUnificationIT {
-
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -80,6 +75,7 @@ public class AtomicUnificationIT {
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
+        String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath,"genericSchema.gql", genericSchemaSession);
     }
 
@@ -493,9 +489,9 @@ public class AtomicUnificationIT {
             assertEquals(unifier, unifier2.inverse());
         }
 
-        assertTrue(!childAnswers.isEmpty());
-        assertTrue(!unifiedAnswers.isEmpty());
-        assertTrue(!parentAnswers.isEmpty());
+        assertFalse(childAnswers.isEmpty());
+        assertFalse(unifiedAnswers.isEmpty());
+        assertFalse(parentAnswers.isEmpty());
 
         if (!checkEquality){
             assertTrue(parentAnswers.containsAll(unifiedAnswers));
