@@ -35,9 +35,9 @@ public class InstanceNode extends Node {
     @Override
     public long matchingElementsEstimate(TransactionOLTP tx) {
         if (instanceTypeLabel == null) {
-            return 5+tx.session().keyspaceStatistics().count(tx, Schema.MetaSchema.THING.getLabel());
+            return tx.session().keyspaceStatistics().count(tx, Schema.MetaSchema.THING.getLabel());
         } else {
-            return 5+tx.session().keyspaceStatistics().count(tx, instanceTypeLabel);
+            return tx.session().keyspaceStatistics().count(tx, instanceTypeLabel);
         }
     }
 

@@ -42,7 +42,7 @@ abstract class IsaFragmentSet extends EquivalentFragmentSet {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-//                Fragments.outIsa(varProperty(), instance(), type()),
+                Fragments.outIsa(varProperty(), instance(), type()),
                 Fragments.inIsa(varProperty(), type(), instance(), mayHaveEdgeInstances())
         );
     }
