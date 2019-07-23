@@ -49,7 +49,7 @@ jobs:
       - run: bazel run --config=quiet @graknlabs_build_tools//checkstyle:test-coverage
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            bazel run --config=quiet @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT \
             --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
       - run-bazel-rbe:
