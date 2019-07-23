@@ -99,9 +99,19 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     ReasonerQueryImpl(Conjunction<Statement> pattern, TransactionOLTP tx) {
         this.tx = tx;
-        this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
-                .build();
+        ImmutableSet.Builder<Atomic> builder = ImmutableSet.<Atomic>builder();
+
+        Set<Atomic> set = AtomicFactory.createAtoms(pattern, this).collect(Collectors.toSet());
+        List<Atomic> list = AtomicFactory.createAtoms(pattern, this).collect(Collectors.toList());
+        if (set.size() != list.size()){
+            System.out.println();
+        }
+        builder.addAll(set);
+        this.atomSet = builder.build();
+        if (atomSet.size() != list.size()){
+            System.out.println();
+            ImmutableSet<Set<Atomic>> of = ImmutableSet.of(set);
+        }
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, TransactionOLTP tx){

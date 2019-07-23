@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.query;
 
-import com.google.common.collect.Lists;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
@@ -30,9 +29,8 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-import graql.lang.statement.StatementAttribute;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.junit.AfterClass;
@@ -44,7 +42,6 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 
 
 public class SubsumptionIT {
@@ -590,11 +587,11 @@ public class SubsumptionIT {
             Statement lt = value.lt(bound);
             Statement neq = value.neq(bound);
 
-            subsumption(eq, Arrays.asList(gte, gt, lte, lt), Arrays.asList(neq), tx);
+            subsumption(eq, Arrays.asList(gte, lte), Arrays.asList(neq, gt, lt), tx);
             subsumption(gte, Arrays.asList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
             subsumption(gt, Arrays.asList(gte), Arrays.asList(eq, lte, lt, neq), tx);
             subsumption(lte, Arrays.asList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Arrays.asList(lte), Arrays.asList(eq, gte, gt, lt, neq), tx);
+            subsumption(lt, Arrays.asList(lte), Arrays.asList(eq, gte, gt, neq), tx);
             subsumption(neq, Arrays.asList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
         }
     }
@@ -612,7 +609,7 @@ public class SubsumptionIT {
             Statement neq = value.neq(bound);
             Statement contains = value.contains(bound);
 
-            subsumption(eq, Arrays.asList(gte, gt, lte, lt, contains), Arrays.asList(neq), tx);
+            subsumption(eq, Arrays.asList(gte, lte, contains), Arrays.asList(gt, lt, neq), tx);
             /*
             subsumption(gte, Arrays.asList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
             subsumption(gt, Arrays.asList(gte), Arrays.asList(eq, lte, lt, neq), tx);
@@ -621,11 +618,12 @@ public class SubsumptionIT {
             subsumption(neq, Arrays.asList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
 
              */
+
         }
     }
 
     @Test
-    public void testEquivalence_DifferentVariablePredicateVariants(){
+    public void testSubsumption_DifferentVariablePredicateVariants(){
         Statement value = Graql.var("value");
         Statement anotherValue = Graql.var("anotherValue");
         try(TransactionOLTP tx = genericSchemaSession.transaction().read() ) {
@@ -636,12 +634,12 @@ public class SubsumptionIT {
             Statement lt = value.lt(anotherValue);
             Statement neq = value.neq(anotherValue);
 
-            subsumption(eq, Arrays.asList(gte, gt, lte, lt), Arrays.asList(neq), tx);
-            subsumption(gte, Arrays.asList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
-            subsumption(gt, Arrays.asList(gte), Arrays.asList(eq, lte, lt, neq), tx);
-            subsumption(lte, Arrays.asList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Arrays.asList(lte), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(neq, Arrays.asList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
+            subsumption(eq, Collections.emptyList(), Arrays.asList(gte, gt, lte, lt, neq), tx);
+            subsumption(gte, Collections.emptyList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
+            subsumption(gt, Collections.emptyList(), Arrays.asList(eq, gte, lte, lt, neq), tx);
+            subsumption(lte, Collections.emptyList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
+            subsumption(lt, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, neq), tx);
+            subsumption(neq, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
         }
     }
 
@@ -654,12 +652,12 @@ public class SubsumptionIT {
         subsumes.forEach(parentStatement -> {
             Conjunction<Statement> conj2 = (Conjunction<Statement>) Graql.and(parentStatement);
             Atomic parent = ReasonerQueries.create(conj2, tx).getAtoms().stream().findFirst().orElse(null);
-            assertTrue("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + childCopy + "\n", child.subsumes(parent));
+            assertTrue("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", child.subsumes(parent));
         });
         doesntSubsume.forEach(parentStatement -> {
             Conjunction<Statement> conj2 = (Conjunction<Statement>) Graql.and(parentStatement);
             Atomic parent = ReasonerQueries.create(conj2, tx).getAtoms().stream().findFirst().orElse(null);
-            assertFalse("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + childCopy + "\n", child.subsumes(parent));
+            assertFalse("Unexpected subsumption outcome: between the child - parent pair:\n" + child + " :\n" + parent + "\n", child.subsumes(parent));
         });
     }
 

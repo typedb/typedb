@@ -24,7 +24,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.ValueExecutor;
 import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
@@ -78,9 +77,10 @@ public class VariableValuePredicate extends VariablePredicate {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || this.getClass() != obj.getClass()) return false;
-        Predicate that = (Predicate) obj;
+        VariableValuePredicate that = (VariableValuePredicate) obj;
         return this.getVarName().equals(that.getVarName())
-                && this.getPredicate().equals(that.getPredicate());
+                && this.getPredicate().equals(that.getPredicate())
+                && this.operation().equals(that.operation());
     }
 
     @Override
@@ -90,6 +90,8 @@ public class VariableValuePredicate extends VariablePredicate {
         h ^= this.getVarName().hashCode();
         h *= 1000003;
         h ^= this.getPredicate().hashCode();
+        h *= 1000003;
+        h ^= this.operation().hashCode();
         return h;
     }
 

@@ -243,6 +243,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                     this.predicate().test((U) other.valueSerialised()));
         }
 
+        //checks if the intersection of this and that is not empty
         public boolean isCompatible(ValueExecutor.Operation<?, ?> other) {
             if (other.comparator().equals(Graql.Token.Comparator.NEQV)) {
                 return other.isCompatibleWithNEQ(this);
@@ -262,22 +263,59 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
                     (this.predicate().test(that.valueSerialised()) || ((that.predicate()).test(this.valueSerialised())));
         }
 
+        //for subsumption to take place, this needs to define a subset of that
         public boolean subsumes(ValueExecutor.Operation<?, ?> other) {
             if (this.comparator().equals(Graql.Token.Comparator.LIKE)) {
-                return isCompatibleWithRegex(other);
+                return this.isCompatibleWithRegex(other);
             } else if (other.comparator().equals(Graql.Token.Comparator.LIKE)) {
                 return false;
             }
 
-            if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
-            //NB this is potentially dangerous e.g. if a user types a long as a char in the query
-            if (!this.valueSerialised().getClass().equals(other.valueSerialised().getClass())) return false;
-
             ValueExecutor.Operation<?, U> that = (ValueExecutor.Operation<?, U>) other;
-            return (that.predicate()).test(this.valueSerialised()) &&
-                    (this.valueSerialised().equals(that.valueSerialised()) ?
-                            (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
-                            (!this.predicate().test(that.valueSerialised())));
+            if (this instanceof Comparison.Variable || that instanceof Comparison.Variable) return false;
+            //NB this is potentially dangerous e.g. if a user types a long as a char in the query
+            if (!this.valueSerialised().getClass().equals(that.valueSerialised().getClass())) return false;
+            if (this.valueSerialised().getClass() == String.class){
+                return (that.predicate()).test(this.valueSerialised()) &&
+                        (this.valueSerialised().equals(that.valueSerialised()) ?
+                                (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
+                                (!this.predicate().test(that.valueSerialised())));
+            }
+
+            double thatValue = Double.parseDouble(that.valueSerialised().toString());
+            double thatLeftBound, thatRightBound;
+            boolean thatHardLeftBound, thatHardRightBound;
+            int thatSignum = that.signum();
+            if (thatSignum < 0){
+                thatLeftBound = Double.NEGATIVE_INFINITY;
+                thatRightBound = thatValue;
+                thatHardLeftBound = true;
+                thatHardRightBound = that.containsEquality();
+            } else if (thatSignum > 0){
+                thatLeftBound = thatValue;
+                thatRightBound = Double.POSITIVE_INFINITY;
+                thatHardLeftBound = that.containsEquality();
+                thatHardRightBound = true;
+            } else {
+                thatLeftBound = thatValue;
+                thatRightBound = thatValue;
+                thatHardLeftBound = thatHardRightBound = true;
+            }
+
+            int thisSignum = this.signum();
+            double thisValue = Double.parseDouble(this.valueSerialised().toString());
+            double thisLeftBound = thisSignum < 0? Double.NEGATIVE_INFINITY : thisValue;
+            double thisRightBound = thisSignum > 0? Double.POSITIVE_INFINITY : thisValue;
+
+            boolean singleNeqPresent = this.comparator().equals(Graql.Token.Comparator.NEQV)
+                    != that.comparator().equals(Graql.Token.Comparator.NEQV);
+            boolean eqInconsistency = thisSignum == 0 && thatSignum == 0
+                    && this.containsEquality() != that.containsEquality()
+                    || singleNeqPresent;
+            return !eqInconsistency
+                    && thisLeftBound >= thatLeftBound && thisRightBound <= thatRightBound
+                    && (thisLeftBound != thatLeftBound || thatHardLeftBound)
+                    && (thisRightBound != thatRightBound || thatHardRightBound);
         }
 
         @Override
