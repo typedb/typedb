@@ -6,7 +6,7 @@ import sys
 import time
 
 print('Building the image...')
-sp.check_call(['bazel', 'run', '--config=quiet', '//:assemble-docker'])
+sp.check_call(['bazel', 'run', '//:assemble-docker'])
 
 print('Starting the image...')
 sp.check_call(['docker', 'run', '-v', '{}:/grakn-core-all-linux/logs/'.format(os.getcwd()), '--name', 'grakn','-d', '--rm', '-ti', '-p', '127.0.0.1:48555:48555/tcp', 'bazel:assemble-docker'])
@@ -25,7 +25,7 @@ while sp.call(['curl', '--output', '/dev/null', '--silent', '--head', '--fail', 
 print()
 
 print('Running the test...')
-sp.check_call(['bazel', 'test', '--config=quiet', '//test/common:grakn-application-test', '--test_output=streamed',
+sp.check_call(['bazel', 'test', '//test/common:grakn-application-test', '--test_output=streamed',
                           '--spawn_strategy=standalone', '--cache_test_results=no'])
 
 print('Stopping the container...')
