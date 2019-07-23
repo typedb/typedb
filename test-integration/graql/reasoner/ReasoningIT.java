@@ -67,23 +67,6 @@ public class ReasoningIT {
     //as specified in the respective comments below.
 
     @Test
-    public void test(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
-            loadFromFileAndCommit(resourcePath, "valueTransfer.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
-                List<ConceptMap> answers = tx.execute(Graql.parse(
-                        "match " +
-                                "$x isa car;" +
-                                "$x has proposed-speed $z;" +
-                                "get;")
-                        .asGet());
-                System.out.println();
-                //assertEquals(25, answers.size());
-            }
-        }
-    }
-
-    @Test
     public void whenMaterialising_duplicatesAreNotCreated(){
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "duplicateMaterialisation.gql", session);
