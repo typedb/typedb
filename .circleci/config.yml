@@ -35,7 +35,9 @@ commands:
       command:
         type: string
     steps:
-      - run: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
+      - run:
+          command: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
+          no_output_timeout: 1h
 
 jobs:
   build:
