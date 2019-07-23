@@ -36,7 +36,7 @@ commands:
         type: string
     steps:
       - run:
-          command: bazel run --config=quiet @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
+          command: bazel run @graknlabs_build_tools//ci:run-bazel-rbe -- << parameters.command >>
           no_output_timeout: 1h
 
 jobs:
@@ -46,14 +46,14 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run --config=quiet @graknlabs_build_tools//checkstyle:test-coverage
+      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
-            bazel run --config=quiet @graknlabs_build_tools//sonarcloud:code-analysis -- \
+            bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT \
             --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
       - run-bazel-rbe:
-          command: bazel build --config=quiet //...
+          command: bazel build //...
   
   test-common:
     machine: true
@@ -62,7 +62,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //common/... --test_output=errors
+          command: bazel test //common/... --test_output=errors
 
   test-console:
     machine: true
@@ -71,7 +71,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //console/... --test_output=errors
+          command: bazel test //console/... --test_output=errors
 
   test-server:
     machine: true
@@ -80,7 +80,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //server/... --test_output=errors
+          command: bazel test //server/... --test_output=errors
 
   test-integration:
     machine: true
@@ -89,11 +89,11 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //test-integration/server/... --test_output=errors
+          command: bazel test //test-integration/server/... --test_output=errors
       - run-bazel-rbe:
-          command: bazel test --config=quiet //test-integration/graql/executor/... --test_output=errors
+          command: bazel test //test-integration/graql/executor/... --test_output=errors
       - run-bazel-rbe:
-          command: bazel test --config=quiet //test-integration/graql/query/... --test_output=errors
+          command: bazel test //test-integration/graql/query/... --test_output=errors
 
   test-integration-reasoner:
     machine: true
@@ -102,7 +102,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //test-integration/graql/reasoner/... --test_output=errors
+          command: bazel test //test-integration/graql/reasoner/... --test_output=errors
 
   test-integration-analytics:
     machine: true
@@ -111,7 +111,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //test-integration/graql/analytics/... --test_output=errors
+          command: bazel test //test-integration/graql/analytics/... --test_output=errors
 
   test-end-to-end:
     machine: true
@@ -120,7 +120,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel test --config=quiet //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
+          command: bazel test //test-end-to-end:test-end-to-end --test_output=streamed --spawn_strategy=standalone
 
   test-assembly-mac-zip:
     macos:
@@ -130,13 +130,13 @@ jobs:
       - install-bazel-mac
       - checkout
       - run-bazel-rbe:
-          command: bazel build --config=quiet //:assemble-mac-zip
-      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run --config=quiet @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --get
+          command: bazel build //:assemble-mac-zip
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --get
       - run: unzip bazel-genfiles/grakn-core-all-mac.zip -d bazel-genfiles/
       - run: nohup bazel-genfiles/grakn-core-all-mac/grakn server start
-      - run: bazel test --config=quiet //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-mac/grakn server stop
-      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run --config=quiet @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --save-success
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-mac.zip --save-success
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-mac/logs/grakn.log
           destination: logs/grakn.log
@@ -166,13 +166,13 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel build --config=quiet //:assemble-linux-targz
-      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run --config=quiet @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --get
+          command: bazel build //:assemble-linux-targz
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --get
       - run: tar -xf bazel-genfiles/grakn-core-all-linux.tar.gz -C bazel-genfiles
       - run: nohup bazel-genfiles/grakn-core-all-linux/grakn server start
-      - run: bazel test --config=quiet //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: bazel-genfiles/grakn-core-all-linux/grakn server stop
-      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel --config=quiet run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --save-success
+      - run: RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN bazel run @graknlabs_build_tools//ci:test-cache -- --file $(pwd)/bazel-genfiles/grakn-core-all-linux.tar.gz --save-success
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-linux/logs/grakn.log
           destination: logs/grakn.log
@@ -187,17 +187,17 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel build --config=quiet //bin:assemble-linux-apt
+          command: bazel build //bin:assemble-linux-apt
       - run-bazel-rbe:
-          command: bazel build --config=quiet //server:assemble-linux-apt
+          command: bazel build //server:assemble-linux-apt
       - run-bazel-rbe:
-          command: bazel build --config=quiet //console:assemble-linux-apt
+          command: bazel build //console:assemble-linux-apt
       - run: sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
       - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
       - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
-      - run: bazel test --config=quiet //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
@@ -229,9 +229,9 @@ jobs:
       - run: |
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --config=quiet //api:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run --config=quiet //concept:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run --config=quiet //common:deploy-maven -- snapshot $CIRCLE_SHA1
+          bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1
+          bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1
+          bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1
 
   deploy-apt-snapshot:
     machine: true
@@ -243,10 +243,10 @@ jobs:
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --config=quiet //bin:deploy-apt -- snapshot
-          bazel run --config=quiet //console:deploy-apt -- snapshot
-          bazel run --config=quiet //server:deploy-apt -- snapshot
-          bazel run --config=quiet //:deploy-apt -- snapshot
+          bazel run //bin:deploy-apt -- snapshot
+          bazel run //console:deploy-apt -- snapshot
+          bazel run //server:deploy-apt -- snapshot
+          bazel run //:deploy-apt -- snapshot
       - run: cp VERSION VERSION.apt
       - persist_to_workspace:
           root: ~/grakn
@@ -264,10 +264,10 @@ jobs:
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --config=quiet //bin:deploy-rpm -- snapshot
-          bazel run --config=quiet //server:deploy-rpm -- snapshot
-          bazel run --config=quiet //console:deploy-rpm -- snapshot
-          bazel run --config=quiet //:deploy-rpm -- snapshot
+          bazel run //bin:deploy-rpm -- snapshot
+          bazel run //server:deploy-rpm -- snapshot
+          bazel run //console:deploy-rpm -- snapshot
+          bazel run //:deploy-rpm -- snapshot
       - run: cp VERSION VERSION.rpm
       - persist_to_workspace:
           root: ~/grakn
@@ -292,7 +292,7 @@ jobs:
                            grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
-      - run: bazel test --config=quiet //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
+      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
       - run: grakn server stop
       - store_artifacts:
           path: /opt/grakn/core/logs/grakn.log
@@ -324,7 +324,7 @@ jobs:
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run --config=quiet @graknlabs_build_tools//ci:sync-dependencies -- \
+          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           grakn-kgms:master workbase:master docs:master examples:master \
@@ -339,7 +339,7 @@ jobs:
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run --config=quiet @graknlabs_build_tools//ci:release-approval
+          bazel run @graknlabs_build_tools//ci:release-approval
 
   deploy-github:
     machine: true
@@ -350,7 +350,7 @@ jobs:
       - run: |
           pip install certifi
           export RELEASE_NOTES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run --config=quiet @graknlabs_build_tools//ci:release-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
+          bazel run @graknlabs_build_tools//ci:release-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
           bazel run //:deploy-github -- $CIRCLE_SHA1
@@ -365,10 +365,10 @@ jobs:
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --config=quiet //bin:deploy-apt -- release
-          bazel run --config=quiet //console:deploy-apt -- release
-          bazel run --config=quiet //server:deploy-apt -- release
-          bazel run --config=quiet //:deploy-apt -- release
+          bazel run //bin:deploy-apt -- release
+          bazel run //console:deploy-apt -- release
+          bazel run //server:deploy-apt -- release
+          bazel run //:deploy-apt -- release
 
   deploy-rpm:
     machine: true
@@ -381,10 +381,10 @@ jobs:
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --config=quiet //bin:deploy-rpm -- release
-          bazel run --config=quiet //server:deploy-rpm -- release
-          bazel run --config=quiet //console:deploy-rpm -- release
-          bazel run --config=quiet //:deploy-rpm -- release
+          bazel run //bin:deploy-rpm -- release
+          bazel run //server:deploy-rpm -- release
+          bazel run //console:deploy-rpm -- release
+          bazel run //:deploy-rpm -- release
 
   deploy-brew:
     machine: true
@@ -394,7 +394,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run --config=quiet //:deploy-brew -- release
+          bazel run //:deploy-brew -- release
 
   deploy-docker:
     machine: true
@@ -404,7 +404,7 @@ jobs:
       - checkout
       - run: |
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
-          bazel run --config=quiet //:deploy-docker
+          bazel run //:deploy-docker
 
   deploy-maven:
     machine: true
@@ -416,9 +416,9 @@ jobs:
       - run: |
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run --config=quiet //api:deploy-maven -- release $(cat VERSION)
-          bazel run --config=quiet //concept:deploy-maven -- release $(cat VERSION)
-          bazel run --config=quiet //common:deploy-maven -- release $(cat VERSION)
+          bazel run //api:deploy-maven -- release $(cat VERSION)
+          bazel run //concept:deploy-maven -- release $(cat VERSION)
+          bazel run //common:deploy-maven -- release $(cat VERSION)
 
   sync-dependencies-release:
     machine: true
@@ -427,7 +427,7 @@ jobs:
       - checkout
       - run: |
           export SYNC_DEPENDENCIES_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run --config=quiet @graknlabs_build_tools//ci:sync-dependencies -- \
+          bazel run @graknlabs_build_tools//ci:sync-dependencies -- \
           --source grakn@$(cat VERSION) \
           --targets \
           grakn-kgms:master benchmark:master workbase:master biograkn:master \
