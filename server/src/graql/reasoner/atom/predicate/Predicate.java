@@ -79,20 +79,16 @@ public abstract class Predicate<T> extends AtomicBase {
     public boolean subsumes(Atomic atom) { return this.isAlphaEquivalent(atom); }
 
     @Override
-    public final boolean equals(Object o) {
-        if (o == this) {
-            return true;
-        }
-        if (o instanceof Predicate) {
-            Predicate that = (Predicate) o;
-            return (this.getVarName().equals(that.getVarName()))
-                    && (this.getPredicate().equals(that.getPredicate()));
-        }
-        return false;
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Predicate that = (Predicate) obj;
+        return this.getVarName().equals(that.getVarName())
+                && this.getPredicate().equals(that.getPredicate());
     }
 
     @Override
-    public final int hashCode() {
+    public int hashCode() {
         int h = 1;
         h *= 1000003;
         h ^= this.getVarName().hashCode();

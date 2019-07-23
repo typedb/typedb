@@ -108,7 +108,7 @@ public abstract class VariablePredicate extends Predicate<Variable> {
 
     /**
      * @param sub substitution to be checked against the predicate
-     * @return true if provided subsitution satisfies the predicate
+     * @return true if provided substitution satisfies the predicate
      */
     public abstract boolean isSatisfied(ConceptMap sub);
 }

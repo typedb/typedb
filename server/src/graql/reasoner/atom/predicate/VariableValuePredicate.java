@@ -74,35 +74,78 @@ public class VariableValuePredicate extends VariablePredicate {
         return create(this.getVarName(), this.operation(), parent);
     }
 
-    /*
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        Predicate that = (Predicate) obj;
+        return this.getVarName().equals(that.getVarName())
+                && this.getPredicate().equals(that.getPredicate());
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.getVarName().hashCode();
+        h *= 1000003;
+        h ^= this.getPredicate().hashCode();
+        return h;
+    }
+
     @Override
     public boolean isAlphaEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         if (!super.isAlphaEquivalent(obj)) return false;
-        VariablePredicate that = (VariablePredicate) obj;
-        return this.operation().equals;
+        VariableValuePredicate that = (VariableValuePredicate) obj;
+        return this.operation().comparator().equals(that.operation().comparator())
+                && this.operation().value().equals(that.operation().value());
     }
 
     @Override
     public int alphaEquivalenceHashCode() {
-        return bindingHash(AtomicEquivalence.AlphaEquivalence);
+        int hashCode = super.alphaEquivalenceHashCode();
+        hashCode = hashCode * 37 + this.operation().hashCode();
+        return hashCode;
     }
 
     @Override
     public boolean isStructurallyEquivalent(Object obj){
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
-        VariablePredicate that = (VariablePredicate) obj;
-        return predicateBindingsEquivalent(that, AtomicEquivalence.StructuralEquivalence);
+        if (!super.isStructurallyEquivalent(obj)) return false;
+        VariableValuePredicate that = (VariableValuePredicate) obj;
+        return this.operation().comparator().equals(that.operation().comparator())
+                && this.operation().value().equals(that.operation().value());
     }
 
     @Override
     public int structuralEquivalenceHashCode() {
-        return bindingHash(AtomicEquivalence.StructuralEquivalence);
+        int hashCode = super.structuralEquivalenceHashCode();
+        hashCode = hashCode * 37 + this.operation().hashCode();
+        return hashCode;
     }
 
-     */
+    @Override
+    public boolean isCompatibleWith(Object obj) {
+        if (this.isAlphaEquivalent(obj)) return true;
+        if (obj == null || this.getClass() != obj.getClass()) return false;
+        if (obj == this) return true;
+        VariableValuePredicate that = (VariableValuePredicate) obj;
+        return ValueExecutor.Operation.of(this.operation())
+                .isCompatible(ValueExecutor.Operation.of(that.operation()));
+    }
+
+    @Override
+    public boolean subsumes(Atomic atomic){
+        if (this.isAlphaEquivalent(atomic)) return true;
+        if (atomic == null || this.getClass() != atomic.getClass()) return false;
+        if (atomic == this) return true;
+        VariableValuePredicate that = (VariableValuePredicate) atomic;
+        return ValueExecutor.Operation.of(this.operation())
+                .subsumes(ValueExecutor.Operation.of(that.operation()));
+    }
 
     @Override
     public String toString(){

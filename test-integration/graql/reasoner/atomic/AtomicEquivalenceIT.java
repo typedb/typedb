@@ -42,6 +42,7 @@ import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AtomicEquivalenceIT {
@@ -140,7 +141,7 @@ public class AtomicEquivalenceIT {
                 value.lt(bound),
                 value.lte(bound),
                 value.eq(bound),
-                value.gte(bound),
+                value.neq(bound),
                 value.contains(bound)
         );
 
@@ -148,6 +149,7 @@ public class AtomicEquivalenceIT {
             Conjunction<Statement> conj = (Conjunction<Statement>) Graql.and(vp);
             Atomic atom = ReasonerQueries.create(conj, tx).getAtoms().stream().findFirst().orElse(null);
             Atomic atomCopy = atom.copy(atom.getParentQuery());
+            assertEquals(atom, atomCopy);
             assertTrue(atom.isAlphaEquivalent(atomCopy));
             assertTrue(atom.isStructurallyEquivalent(atomCopy));
             variablePredicates.stream()
@@ -155,6 +157,7 @@ public class AtomicEquivalenceIT {
                     .forEach(vp2 -> {
                         Conjunction<Statement> conj2 = (Conjunction<Statement>) Graql.and(vp2);
                         Atomic atom2 = ReasonerQueries.create(conj2, tx).getAtoms().stream().findFirst().orElse(null);
+                        assertNotEquals("Unexpected equality outcome: " + atom + "==" + atom2, atom, atom2);
                         assertFalse("Unexpected alpha-equivalence outcome: " + atom + "==" + atom2, atom.isAlphaEquivalent(atom2));
                         assertFalse("Unexpected struct-equivalence outcome: " + atom + "==" + atom2, atom.isStructurallyEquivalent(atom2));
                     });
@@ -171,7 +174,7 @@ public class AtomicEquivalenceIT {
                 value.lt(anotherValue),
                 value.lte(anotherValue),
                 value.eq(anotherValue),
-                value.gte(anotherValue),
+                value.neq(anotherValue),
                 value.contains(anotherValue)
         );
 
@@ -179,6 +182,7 @@ public class AtomicEquivalenceIT {
             Conjunction<Statement> conj = (Conjunction<Statement>) Graql.and(vp);
             Atomic atom = ReasonerQueries.create(conj, tx).getAtoms().stream().findFirst().orElse(null);
             Atomic atomCopy = atom.copy(atom.getParentQuery());
+            assertEquals(atom, atomCopy);
             assertTrue(atom.isAlphaEquivalent(atomCopy));
             assertTrue(atom.isStructurallyEquivalent(atomCopy));
             variablePredicates.stream()
@@ -186,6 +190,7 @@ public class AtomicEquivalenceIT {
                     .forEach(vp2 -> {
                         Conjunction<Statement> conj2 = (Conjunction<Statement>) Graql.and(vp2);
                         Atomic atom2 = ReasonerQueries.create(conj2, tx).getAtoms().stream().findFirst().orElse(null);
+                        assertNotEquals("Unexpected equality outcome: " + atom + "==" + atom2, atom, atom2);
                         assertFalse("Unexpected alpha-equivalence outcome: " + atom + "==" + atom2, atom.isAlphaEquivalent(atom2));
                         assertFalse("Unexpected struct-equivalence outcome: " + atom + "==" + atom2, atom.isStructurallyEquivalent(atom2));
                     });

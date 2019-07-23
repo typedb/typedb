@@ -67,10 +67,7 @@ public class NeqIdPredicate extends VariablePredicate {
                 (refIdPredicate != null? refIdPredicate : "");
     }
 
-    /**
-     * @param sub substitution to be checked against the predicate
-     * @return true if provided subsitution satisfies the predicate
-     */
+    @Override
     public boolean isSatisfied(ConceptMap sub) {
         return !sub.containsVar(getVarName())
                 || !sub.containsVar(getPredicate())
