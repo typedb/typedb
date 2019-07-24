@@ -30,7 +30,7 @@ public class EdgeNode extends Node {
     @Override
     public long matchingElementsEstimate(TransactionOLTP tx) {
         // edge nodes for now return 1 so we don't affect the multiplication of other vertices' counts
-        return 1;
+        return 5;
     }
 
     @Override
