@@ -34,7 +34,7 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         super(Graql.Token.Comparator.EQV, value);
     }
 
-    static Assignment<?, ?> of(ValueProperty.Operation.Assignment<?> assignment) {
+    public static Assignment<?, ?> of(ValueProperty.Operation.Assignment<?> assignment) {
         if (assignment instanceof ValueProperty.Operation.Assignment.Number<?>) {
             return new Number<>(((ValueProperty.Operation.Assignment.Number<?>) assignment).value());
 

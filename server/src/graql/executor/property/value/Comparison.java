@@ -48,7 +48,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         super(comparator, value);
     }
 
-    static Comparison<?, ?> of(ValueProperty.Operation.Comparison<?> comparison) {
+    public static Comparison<?, ?> of(ValueProperty.Operation.Comparison<?> comparison) {
         Graql.Token.Comparator comparator = comparison.comparator();
 
         if (comparison instanceof ValueProperty.Operation.Comparison.Number<?>) {

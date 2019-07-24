@@ -23,6 +23,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.value.Operation;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
@@ -135,8 +136,8 @@ public class VariableValuePredicate extends VariablePredicate {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         VariableValuePredicate that = (VariableValuePredicate) obj;
-        return ValueExecutor.Operation.of(this.operation())
-                .isCompatible(ValueExecutor.Operation.of(that.operation()));
+        return Operation.of(this.operation())
+                .isCompatible(Operation.of(that.operation()));
     }
 
     @Override
@@ -145,8 +146,8 @@ public class VariableValuePredicate extends VariablePredicate {
         if (atomic == null || this.getClass() != atomic.getClass()) return false;
         if (atomic == this) return true;
         VariableValuePredicate that = (VariableValuePredicate) atomic;
-        return ValueExecutor.Operation.of(this.operation())
-                .subsumes(ValueExecutor.Operation.of(that.operation()));
+        return Operation.of(this.operation())
+                .subsumes(Operation.of(that.operation()));
     }
 
     @Override
@@ -168,7 +169,7 @@ public class VariableValuePredicate extends VariablePredicate {
         Object rhs = referenceConcept.asAttribute().value();
 
         ValueProperty.Operation subOperation = ValueProperty.Operation.Comparison.of(operation().comparator(), rhs);
-        ValueExecutor.Operation<?, ?> operationExecutorRHS = ValueExecutor.Operation.of(subOperation);
+        Operation<?, ?> operationExecutorRHS = Operation.of(subOperation);
         return operationExecutorRHS.test(lhs);
     }
 }
