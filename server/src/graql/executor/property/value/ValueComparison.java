@@ -40,31 +40,31 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 import static grakn.core.common.util.Collections.set;
 
-public abstract class Comparison<T, U> extends Operation<T, U> {
+public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
     private final Map<Graql.Token.Comparator, Function<U, P<U>>> PREDICATES_COMPARABLE = comparablePredicates();
 
-    Comparison(Graql.Token.Comparator comparator, T value) {
+    ValueComparison(Graql.Token.Comparator comparator, T value) {
         super(comparator, value);
     }
 
-    public static Comparison<?, ?> of(ValueProperty.Operation.Comparison<?> comparison) {
+    public static ValueComparison<?, ?> of(ValueProperty.Operation.Comparison<?> comparison) {
         Graql.Token.Comparator comparator = comparison.comparator();
 
         if (comparison instanceof ValueProperty.Operation.Comparison.Number<?>) {
-            return new Comparison.Number<>(comparator, ((ValueProperty.Operation.Comparison.Number<?>) comparison).value());
+            return new ValueComparison.Number<>(comparator, ((ValueProperty.Operation.Comparison.Number<?>) comparison).value());
 
         } else if (comparison instanceof ValueProperty.Operation.Comparison.Boolean) {
-            return new Comparison.Boolean(comparator, ((ValueProperty.Operation.Comparison.Boolean) comparison).value());
+            return new ValueComparison.Boolean(comparator, ((ValueProperty.Operation.Comparison.Boolean) comparison).value());
 
         } else if (comparison instanceof ValueProperty.Operation.Comparison.String) {
-            return new Comparison.String(comparator, ((ValueProperty.Operation.Comparison.String) comparison).value());
+            return new ValueComparison.String(comparator, ((ValueProperty.Operation.Comparison.String) comparison).value());
 
         } else if (comparison instanceof ValueProperty.Operation.Comparison.DateTime) {
-            return new Comparison.DateTime(comparator, ((ValueProperty.Operation.Comparison.DateTime) comparison).value());
+            return new ValueComparison.DateTime(comparator, ((ValueProperty.Operation.Comparison.DateTime) comparison).value());
 
         } else if (comparison instanceof ValueProperty.Operation.Comparison.Variable) {
-            return new Comparison.Variable(comparator, ((ValueProperty.Operation.Comparison.Variable) comparison).value());
+            return new ValueComparison.Variable(comparator, ((ValueProperty.Operation.Comparison.Variable) comparison).value());
 
         } else {
             throw new UnsupportedOperationException("Unsupported Value Comparison: " + comparison.getClass());
@@ -84,7 +84,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
     }
 
     private static Function<java.lang.String, P<java.lang.String>> containsPredicate() {
-        return v -> new P<>(Comparison::containsIgnoreCase, v);
+        return v -> new P<>(ValueComparison::containsIgnoreCase, v);
     }
 
     private static Function<java.lang.String, P<java.lang.String>> regexPredicate() {
@@ -118,7 +118,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         }
     }
 
-    static class Number<N extends java.lang.Number> extends Comparison<N, N> {
+    static class Number<N extends java.lang.Number> extends ValueComparison<N, N> {
 
         Number(Graql.Token.Comparator comparator, N value) {
             super(comparator, value);
@@ -138,7 +138,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         }
     }
 
-    static class Boolean extends Comparison<java.lang.Boolean, java.lang.Boolean> {
+    static class Boolean extends ValueComparison<java.lang.Boolean, java.lang.Boolean> {
 
         Boolean(Graql.Token.Comparator comparator, boolean value) {
             super(comparator, value);
@@ -155,7 +155,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         }
     }
 
-    static class DateTime extends Comparison<LocalDateTime, Long> {
+    static class DateTime extends ValueComparison<LocalDateTime, Long> {
 
         DateTime(Graql.Token.Comparator comparator, LocalDateTime value) {
             super(comparator, value);
@@ -172,7 +172,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         }
     }
 
-    public static class String extends Comparison<java.lang.String, java.lang.String> {
+    public static class String extends ValueComparison<java.lang.String, java.lang.String> {
 
         final Map<Graql.Token.Comparator, Function<java.lang.String, P<java.lang.String>>> PREDICATES_STRING = stringPredicates();
 
@@ -213,7 +213,7 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
 
     }
 
-    public static class Variable extends Comparison<Statement, java.lang.String> {
+    public static class Variable extends ValueComparison<Statement, java.lang.String> {
 
         private final java.lang.String gremlinVariable;
 

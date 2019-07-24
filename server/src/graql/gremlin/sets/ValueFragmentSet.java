@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.executor.property.value.Operation;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
@@ -32,11 +32,11 @@ import javax.annotation.Nullable;
 class ValueFragmentSet extends EquivalentFragmentSet {
 
     private final Variable var;
-    private final Operation<?, ?> operation;
+    private final ValueOperation<?, ?> operation;
 
     @Nullable private final VarProperty varProperty;
 
-    ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, Operation<?, ?> operation) {
+    ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, ValueOperation<?, ?> operation) {
         this.varProperty = varProperty;
         if (var == null) {
             throw new NullPointerException("Null var");
@@ -57,7 +57,7 @@ class ValueFragmentSet extends EquivalentFragmentSet {
         return varProperty;
     }
 
-    Operation<?, ?> operation() {
+    ValueOperation<?, ?> operation() {
         return operation;
     }
 

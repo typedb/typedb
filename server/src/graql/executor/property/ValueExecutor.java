@@ -21,8 +21,8 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.executor.property.value.Assignment;
-import grakn.core.graql.executor.property.value.Operation;
+import grakn.core.graql.executor.property.value.ValueAssignment;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -40,12 +40,12 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final ValueProperty property;
-    private final Operation<?, ?> operation;
+    private final ValueOperation<?, ?> operation;
 
     ValueExecutor(Variable var, ValueProperty property) {
         this.var = var;
         this.property = property;
-        this.operation = Operation.of(property.operation());
+        this.operation = ValueOperation.of(property.operation());
     }
 
     @Override
@@ -93,7 +93,7 @@ public class ValueExecutor implements PropertyExecutor.Insertable {
 
         @Override
         public void execute(WriteExecutor executor) {
-            if (!(operation instanceof Assignment)) {
+            if (!(operation instanceof ValueAssignment)) {
                 throw GraqlSemanticException.insertPredicate();
             } else {
                 executor.getBuilder(var).value(operation.value());

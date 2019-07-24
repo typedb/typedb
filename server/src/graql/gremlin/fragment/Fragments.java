@@ -23,8 +23,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.executor.property.ValueExecutor;
-import grakn.core.graql.executor.property.value.Operation;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.server.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -115,7 +114,7 @@ public class Fragments {
         return new AutoValue_LabelFragment(varProperty, start, labels);
     }
 
-    public static Fragment value(VarProperty varProperty, Variable start, Operation<?, ?> predicate) {
+    public static Fragment value(VarProperty varProperty, Variable start, ValueOperation<?, ?> predicate) {
         return new ValueFragment(varProperty, start, predicate);
     }
 

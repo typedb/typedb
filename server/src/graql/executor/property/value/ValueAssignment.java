@@ -28,24 +28,24 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import static grakn.core.common.util.Collections.set;
 
-public abstract class Assignment<T, U> extends Operation<T, U> {
+public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
-    Assignment(T value) {
+    ValueAssignment(T value) {
         super(Graql.Token.Comparator.EQV, value);
     }
 
-    public static Assignment<?, ?> of(ValueProperty.Operation.Assignment<?> assignment) {
+    public static ValueAssignment<?, ?> of(ValueProperty.Operation.Assignment<?> assignment) {
         if (assignment instanceof ValueProperty.Operation.Assignment.Number<?>) {
             return new Number<>(((ValueProperty.Operation.Assignment.Number<?>) assignment).value());
 
         } else if (assignment instanceof ValueProperty.Operation.Assignment.Boolean) {
-            return new Assignment.Boolean(((ValueProperty.Operation.Assignment.Boolean) assignment).value());
+            return new ValueAssignment.Boolean(((ValueProperty.Operation.Assignment.Boolean) assignment).value());
 
         } else if (assignment instanceof ValueProperty.Operation.Assignment.String) {
-            return new Assignment.String(((ValueProperty.Operation.Assignment.String) assignment).value());
+            return new ValueAssignment.String(((ValueProperty.Operation.Assignment.String) assignment).value());
 
         } else if (assignment instanceof ValueProperty.Operation.Assignment.DateTime) {
-            return new Assignment.DateTime(((ValueProperty.Operation.Assignment.DateTime) assignment).value());
+            return new ValueAssignment.DateTime(((ValueProperty.Operation.Assignment.DateTime) assignment).value());
 
         } else {
             throw new UnsupportedOperationException("Unsupported Value Assignment: " + assignment.getClass());
@@ -57,7 +57,7 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         return P.eq(valueSerialised());
     }
 
-    static class Number<N extends java.lang.Number> extends Assignment<N, N> {
+    static class Number<N extends java.lang.Number> extends ValueAssignment<N, N> {
 
         Number(N value) {
             super(value);
@@ -77,7 +77,7 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         }
     }
 
-    static class Boolean extends Assignment<java.lang.Boolean, java.lang.Boolean> {
+    static class Boolean extends ValueAssignment<java.lang.Boolean, java.lang.Boolean> {
 
         Boolean(boolean value) {
             super(value);
@@ -94,7 +94,7 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         }
     }
 
-    static class DateTime extends Assignment<LocalDateTime, Long> {
+    static class DateTime extends ValueAssignment<LocalDateTime, Long> {
 
         DateTime(LocalDateTime value) {
             super(value);
@@ -111,7 +111,7 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         }
     }
 
-    static class String extends Assignment<java.lang.String, java.lang.String> {
+    static class String extends ValueAssignment<java.lang.String, java.lang.String> {
 
         String(java.lang.String value) {
             super(value);

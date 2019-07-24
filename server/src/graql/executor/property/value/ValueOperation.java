@@ -35,21 +35,21 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
  * @param <T> compared type
  * @param <U> compared persisted type
  */
-public abstract class Operation<T, U> {
+public abstract class ValueOperation<T, U> {
 
     private final Graql.Token.Comparator comparator;
     private final T value;
 
-    Operation(Graql.Token.Comparator comparator, T value) {
+    ValueOperation(Graql.Token.Comparator comparator, T value) {
         this.comparator = comparator;
         this.value = value;
     }
 
-    public static Operation<?, ?> of(ValueProperty.Operation<?> operation) {
+    public static ValueOperation<?, ?> of(ValueProperty.Operation<?> operation) {
         if (operation instanceof ValueProperty.Operation.Assignment<?>) {
-            return Assignment.of((ValueProperty.Operation.Assignment<?>) operation);
+            return ValueAssignment.of((ValueProperty.Operation.Assignment<?>) operation);
         } else if (operation instanceof ValueProperty.Operation.Comparison<?>) {
-            return Comparison.of((ValueProperty.Operation.Comparison<?>) operation);
+            return ValueComparison.of((ValueProperty.Operation.Comparison<?>) operation);
         } else {
             throw new UnsupportedOperationException("Unsupported Value Operation: " + operation.getClass());
         }
@@ -69,7 +69,7 @@ public abstract class Operation<T, U> {
     }
 
     public boolean isValueEquality() {
-        return comparator.equals(Graql.Token.Comparator.EQV) && !(this instanceof Comparison.Variable);
+        return comparator.equals(Graql.Token.Comparator.EQV) && !(this instanceof ValueComparison.Variable);
     }
 
     public abstract U valueSerialised();
@@ -129,32 +129,32 @@ public abstract class Operation<T, U> {
         }
     }
 
-    private boolean isCompatibleWithNEQ(Operation<?, ?> other) {
+    private boolean isCompatibleWithNEQ(ValueOperation<?, ?> other) {
         if (!this.comparator().equals(Graql.Token.Comparator.NEQV)) return false;
-        if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
+        if (this instanceof ValueComparison.Variable || other instanceof ValueComparison.Variable) return true;
 
         //checks for !=/= contradiction
         return (!this.value().equals(other.value()) ||
                 this.value().equals(other.value()) && !(other.comparator().equals(Graql.Token.Comparator.EQV)));
     }
 
-    private boolean isCompatibleWithContains(Operation<?, ?> other) {
+    private boolean isCompatibleWithContains(ValueOperation<?, ?> other) {
         if (other.comparator().equals(Graql.Token.Comparator.CONTAINS)) return true;
         if (!other.comparator().equals(Graql.Token.Comparator.EQV)) return false;
 
-        return (other instanceof Comparison.Variable ||
+        return (other instanceof ValueComparison.Variable ||
                 other.value() instanceof String && this.predicate().test((U) other.valueSerialised()));
     }
 
-    private boolean isCompatibleWithRegex(Operation<?, ?> other) {
+    private boolean isCompatibleWithRegex(ValueOperation<?, ?> other) {
         if (!other.comparator().equals(Graql.Token.Comparator.EQV)) return false;
 
-        return (other instanceof Comparison.Variable ||
+        return (other instanceof ValueComparison.Variable ||
                 this.predicate().test((U) other.valueSerialised()));
     }
 
     //checks if the intersection of this and that is not empty
-    public boolean isCompatible(Operation<?, ?> other) {
+    public boolean isCompatible(ValueOperation<?, ?> other) {
         if (other.comparator().equals(Graql.Token.Comparator.NEQV)) {
             return other.isCompatibleWithNEQ(this);
         } else if (other.comparator().equals(Graql.Token.Comparator.CONTAINS)) {
@@ -163,28 +163,28 @@ public abstract class Operation<T, U> {
             return other.isCompatibleWithRegex(this);
         }
 
-        if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
+        if (this instanceof ValueComparison.Variable || other instanceof ValueComparison.Variable) return true;
         //NB this is potentially dangerous e.g. if a user types a long as a char in the query
         if (!this.valueSerialised().getClass().equals(other.valueSerialised().getClass())) return false;
 
-        Operation<?, U> that = (Operation<?, U>) other;
+        ValueOperation<?, U> that = (ValueOperation<?, U>) other;
         return this.valueSerialised().equals(that.valueSerialised()) ?
                 (this.signum() * that.signum() > 0 || this.containsEquality() && that.containsEquality()) :
                 (this.predicate().test(that.valueSerialised()) || ((that.predicate()).test(this.valueSerialised())));
     }
 
-    public boolean subsumes(Operation<?, ?> other) {
+    public boolean subsumes(ValueOperation<?, ?> other) {
         if (this.comparator().equals(Graql.Token.Comparator.LIKE)) {
             return isCompatibleWithRegex(other);
         } else if (other.comparator().equals(Graql.Token.Comparator.LIKE)) {
             return false;
         }
 
-        if (this instanceof Comparison.Variable || other instanceof Comparison.Variable) return true;
+        if (this instanceof ValueComparison.Variable || other instanceof ValueComparison.Variable) return true;
         //NB this is potentially dangerous e.g. if a user types a long as a char in the query
         if (!this.valueSerialised().getClass().equals(other.valueSerialised().getClass())) return false;
 
-        Operation<?, U> that = (Operation<?, U>) other;
+        ValueOperation<?, U> that = (ValueOperation<?, U>) other;
         return (that.predicate()).test(this.valueSerialised()) &&
                 (this.valueSerialised().equals(that.valueSerialised()) ?
                         (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
@@ -196,7 +196,7 @@ public abstract class Operation<T, U> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Operation that = (Operation) o;
+        ValueOperation that = (ValueOperation) o;
         return (comparator().equals(that.comparator()) &&
                 value().equals(that.value()));
     }
