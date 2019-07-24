@@ -81,16 +81,6 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
 
     @Override
-    protected Node startNode() {
-        return new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
-    }
-
-    @Override
-    protected Node endNode() {
-        return new InstanceNode(NodeId.of(NodeId.Type.VAR, end()));
-    }
-
-    @Override
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.VAR, edge());
     }

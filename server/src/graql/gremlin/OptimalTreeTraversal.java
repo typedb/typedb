@@ -94,6 +94,10 @@ public class OptimalTreeTraversal {
 
         for (Node node : optimalNodeOrder) {
             // TODO we may want to sort the order of fragments from each node based on some cost
+//            node.getFragmentsWithoutDependency().stream().forEach(fragment -> {
+//                if (fragment.hasFixedFragmentCost()) { plan.add(0, fragment); }
+//                else { plan.add(fragment); }
+//            });
             plan.addAll(node.getFragmentsWithoutDependency());
             node.getFragmentsWithoutDependency().clear();
 
@@ -104,13 +108,14 @@ public class OptimalTreeTraversal {
             }
 
             // add node's dependant fragments
-            nodeVisitedDependenciesFragments(node, allNodesById).forEach(frag -> {
-                if (frag.hasFixedFragmentCost()) {
-                    plan.add(0, frag);
-                } else {
-                    plan.add(frag);
-                }
-            });
+            plan.addAll(nodeVisitedDependenciesFragments(node, allNodesById));
+//            nodeVisitedDependenciesFragments(node, allNodesById).forEach(frag -> {
+//                if (frag.hasFixedFragmentCost()) {
+//                    plan.add(0, frag);
+//                } else {
+//                    plan.add(frag);
+//                }
+//            });
 
         }
         return plan;

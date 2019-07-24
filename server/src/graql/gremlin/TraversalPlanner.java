@@ -127,7 +127,7 @@ public class TraversalPlanner {
                 OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, connectedNodes, allQueryGraphNodes, subgraphArborescence, middleNodeFragmentMapping, 100);
                 List<Fragment> subplan = optimalTreeTraversal.traverse();
 
-//                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, queryGraphNodes, middleNodeFragmentMapping);
+//                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, allQueryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
             } else {
                // find and include all the nodes not touched in the MST in the plan

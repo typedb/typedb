@@ -22,23 +22,38 @@ import grakn.core.concept.Label;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 
+import java.util.HashSet;
+import java.util.Set;
+
 public class InstanceNode extends Node {
+
+    Long cachedMatchingElementsEstimate = null;
 
     private static final int INSTANCE_NODE_PRIORTIY = 3;
     // null instance type label indicates we have no information and we the total of all instance counts;
-    private Label instanceTypeLabel = null;
+    private Set<Label> instanceTypeLabels = new HashSet<>();
 
     public InstanceNode(NodeId nodeId) {
         super(nodeId);
     }
 
+    /*
+    This can be an expensive operation - cache it
+     */
     @Override
     public long matchingElementsEstimate(TransactionOLTP tx) {
-        if (instanceTypeLabel == null) {
-            return tx.session().keyspaceStatistics().count(tx, Schema.MetaSchema.THING.getLabel());
-        } else {
-            return tx.session().keyspaceStatistics().count(tx, instanceTypeLabel);
+        if (cachedMatchingElementsEstimate == null) {
+            if (instanceTypeLabels.isEmpty()) {
+                cachedMatchingElementsEstimate = tx.session().keyspaceStatistics().count(tx, Schema.MetaSchema.THING.getLabel());
+            } else {
+                long count = 0;
+                for (Label possibleLabel : instanceTypeLabels) {
+                    count += tx.session().keyspaceStatistics().count(tx, possibleLabel);
+                }
+                cachedMatchingElementsEstimate = count;
+            }
         }
+        return cachedMatchingElementsEstimate;
     }
 
     @Override
@@ -46,12 +61,12 @@ public class InstanceNode extends Node {
         return INSTANCE_NODE_PRIORTIY;
     }
 
-    public void setInstanceLabel(Label instanceTypeLabel) {
-        this.instanceTypeLabel = instanceTypeLabel;
+    public void setInstanceLabels(Set<Label> instanceTypeLabels) {
+        this.instanceTypeLabels = instanceTypeLabels;
     }
 
-    public Label getInstanceLabel() {
-        return instanceTypeLabel;
+    public Set<Label> getInstanceLabels() {
+        return instanceTypeLabels;
     }
 
 }

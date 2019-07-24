@@ -34,6 +34,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -196,7 +197,7 @@ public class NodesUtil {
                 children.stream()
                         .filter(childNode -> childNode instanceof InstanceNode)
                         .forEach(child -> ((InstanceNode) child)
-                                .setInstanceLabel(label));
+                                .setInstanceLabels(Collections.singleton(label)));
             } else {
                 // find the label fragment among the children if there is one
                 // then propagate the label to the parent
@@ -210,7 +211,7 @@ public class NodesUtil {
                 if (labelFragment != null && parent instanceof InstanceNode) {
                     // it's possible to have an ISA without a label at either end, so we may not end up here
                     Label label = Iterators.getOnlyElement(labelFragment.labels().iterator());
-                    ((InstanceNode) parent).setInstanceLabel(label);
+                    ((InstanceNode) parent).setInstanceLabels(Collections.singleton(label));
                 }
             }
         }

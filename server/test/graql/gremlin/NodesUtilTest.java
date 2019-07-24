@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
 import grakn.core.concept.Label;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
@@ -67,7 +68,7 @@ public class NodesUtilTest {
 
         propagateLabels(mockParentToChildQPGraph);
 
-        assertEquals(Label.of("someLabel"), instanceVarNode.getInstanceLabel());
+        assertEquals(Label.of("someLabel"), Iterators.getOnlyElement(instanceVarNode.getInstanceLabels().iterator()));
     }
 
     @Test
@@ -103,6 +104,6 @@ public class NodesUtilTest {
 
         propagateLabels(mockParentToChildQPGraph);
 
-        assertEquals(Label.of("someLabel"), instanceVarNode.getInstanceLabel());
+        assertEquals(Label.of("someLabel"), Iterators.getOnlyElement(instanceVarNode.getInstanceLabels().iterator()));
     }
 }

@@ -20,6 +20,10 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterators;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
@@ -91,6 +95,21 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
         return edgeTraversal.toV(direction);
     }
+
+    @Override
+    protected Node startNode() {
+        InstanceNode node = new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
+        if (relationTypeLabels() != null && relationTypeLabels().size() == 1) {
+            node.setInstanceLabels(relationTypeLabels());
+        }
+        return node;
+    }
+
+    @Override
+    protected Node endNode() {
+        return new InstanceNode(NodeId.of(NodeId.Type.VAR, end()));
+    }
+
 
     @Override
     public String name() {
