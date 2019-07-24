@@ -191,43 +191,6 @@ public abstract class Operation<T, U> {
     abstract BoundDefinition<U> operationBounds();
 
     private boolean hasSubRangeOf(Operation<?, U> that) {
-        double thatValue = Double.parseDouble(that.valueSerialised().toString());
-        double thatLeftBound, thatRightBound;
-        boolean thatHardLeftBound, thatHardRightBound;
-        int thatSignum = that.signum();
-        if (thatSignum < 0) {
-            thatLeftBound = Double.NEGATIVE_INFINITY;
-            thatRightBound = thatValue;
-            thatHardLeftBound = true;
-            thatHardRightBound = that.containsEquality();
-        } else if (thatSignum > 0) {
-            thatLeftBound = thatValue;
-            thatRightBound = Double.POSITIVE_INFINITY;
-            thatHardLeftBound = that.containsEquality();
-            thatHardRightBound = true;
-        } else {
-            thatLeftBound = thatValue;
-            thatRightBound = thatValue;
-            thatHardLeftBound = thatHardRightBound = true;
-        }
-
-        int thisSignum = this.signum();
-        double thisValue = Double.parseDouble(this.valueSerialised().toString());
-        double thisLeftBound = thisSignum < 0 ? Double.NEGATIVE_INFINITY : thisValue;
-        double thisRightBound = thisSignum > 0 ? Double.POSITIVE_INFINITY : thisValue;
-
-        boolean singleNeqPresent = this.comparator().equals(Graql.Token.Comparator.NEQV)
-                != that.comparator().equals(Graql.Token.Comparator.NEQV);
-        boolean eqInconsistency = thisSignum == 0 && thatSignum == 0
-                && this.containsEquality() != that.containsEquality()
-                || singleNeqPresent;
-        return !eqInconsistency
-                && thisLeftBound >= thatLeftBound && thisRightBound <= thatRightBound
-                && (thisLeftBound != thatLeftBound || thatHardLeftBound)
-                && (thisRightBound != thatRightBound || thatHardRightBound);
-    }
-
-    boolean hasSubRangeOf2(Operation<?, U> that) {
         U thatValue = that.valueSerialised();
         U thatLeftBound, thatRightBound;
         boolean thatHardLeftBound, thatHardRightBound;
