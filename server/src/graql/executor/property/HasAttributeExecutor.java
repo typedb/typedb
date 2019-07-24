@@ -40,7 +40,6 @@ import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.neq;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;

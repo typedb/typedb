@@ -23,6 +23,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.value.Operation;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
@@ -92,7 +93,7 @@ public class VariableValuePredicate extends VariablePredicate {
         Object rhs = referenceConcept.asAttribute().value();
 
         ValueProperty.Operation subOperation = ValueProperty.Operation.Comparison.of(operation().comparator(), rhs);
-        ValueExecutor.Operation<?, ?> operationExecutorRHS = ValueExecutor.Operation.of(subOperation);
+        Operation<?, ?> operationExecutorRHS = Operation.of(subOperation);
         return operationExecutorRHS.test(lhs);
     }
 }
