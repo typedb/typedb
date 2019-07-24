@@ -588,11 +588,11 @@ public class SubsumptionIT {
             Statement neq = value.neq(bound);
 
             subsumption(eq, Arrays.asList(gte, lte), Arrays.asList(neq, gt, lt), tx);
-            subsumption(gte, Arrays.asList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
-            subsumption(gt, Arrays.asList(gte), Arrays.asList(eq, lte, lt, neq), tx);
-            subsumption(lte, Arrays.asList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Arrays.asList(lte), Arrays.asList(eq, gte, gt, neq), tx);
-            subsumption(neq, Arrays.asList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
+            subsumption(gte, Collections.emptyList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
+            subsumption(gt, Collections.singletonList(gte), Arrays.asList(eq, lte, lt, neq), tx);
+            subsumption(lte, Collections.emptyList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
+            subsumption(lt, Collections.singletonList(lte), Arrays.asList(eq, gte, gt, neq), tx);
+            subsumption(neq, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
         }
     }
 
@@ -610,15 +610,12 @@ public class SubsumptionIT {
             Statement contains = value.contains(bound);
 
             subsumption(eq, Arrays.asList(gte, lte, contains), Arrays.asList(gt, lt, neq), tx);
-            /*
-            subsumption(gte, Arrays.asList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
-            subsumption(gt, Arrays.asList(gte), Arrays.asList(eq, lte, lt, neq), tx);
-            subsumption(lte, Arrays.asList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(lt, Arrays.asList(lte), Arrays.asList(eq, gte, gt, lt, neq), tx);
-            subsumption(neq, Arrays.asList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
 
-             */
-
+            subsumption(gte, Collections.emptyList(), Arrays.asList(eq, gt, lte, lt, neq), tx);
+            subsumption(gt, Collections.singletonList(gte), Arrays.asList(eq, lte, lt, neq), tx);
+            subsumption(lte, Collections.emptyList(), Arrays.asList(eq, gte, gt, lt, neq), tx);
+            subsumption(lt, Collections.singletonList(lte), Arrays.asList(eq, gte, gt, neq), tx);
+            subsumption(neq, Collections.emptyList(), Arrays.asList(eq, gte, gt, lte, lt), tx);
         }
     }
 

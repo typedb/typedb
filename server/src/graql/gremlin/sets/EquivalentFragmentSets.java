@@ -24,6 +24,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.value.Operation;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
@@ -122,7 +123,7 @@ public class EquivalentFragmentSets {
     /**
      * An EquivalentFragmentSet that indicates a variable represents a resource with value matching a predicate.
      */
-    public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, ValueExecutor.Operation<?, ?> predicate) {
+    public static EquivalentFragmentSet value(VarProperty varProperty, Variable resource, Operation<?, ?> predicate) {
         return new ValueFragmentSet(varProperty, resource, predicate);
     }
 

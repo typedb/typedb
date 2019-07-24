@@ -20,8 +20,8 @@ package grakn.core.graql.gremlin.fragment;
 
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.executor.property.ValueExecutor;
-import grakn.core.graql.executor.property.ValueExecutor.Operation.Comparison;
+import grakn.core.graql.executor.property.value.Comparison;
+import grakn.core.graql.executor.property.value.Operation;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.statistics.KeyspaceStatistics;
@@ -43,9 +43,9 @@ public class ValueFragment extends Fragment {
 
     private final VarProperty varProperty;
     private final Variable start;
-    private final ValueExecutor.Operation<?, ?> operation;
+    private final Operation<?, ?> operation;
 
-    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueExecutor.Operation<?, ?> operation) {
+    ValueFragment(@Nullable VarProperty varProperty, Variable start, Operation<?, ?> operation) {
         this.varProperty = varProperty;
         if (start == null) {
             throw new NullPointerException("Null start");
@@ -60,7 +60,7 @@ public class ValueFragment extends Fragment {
     /**
      * Operation between two values
      */
-    private ValueExecutor.Operation<?, ?> predicate() {
+    private Operation<?, ?> predicate() {
         return operation;
     }
 
