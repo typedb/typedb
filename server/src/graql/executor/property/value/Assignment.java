@@ -75,6 +75,11 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         N valueSerialised() {
             return new Serialiser.Default<N>().serialise(value());
         }
+
+        @Override
+        BoundDefinition<N> operationBounds() {
+            return (BoundDefinition<N>) new BoundDefinition.NumberBound();
+        }
     }
 
     static class Boolean extends Assignment<java.lang.Boolean, java.lang.Boolean> {
@@ -91,6 +96,11 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         @Override
         java.lang.Boolean valueSerialised() {
             return Serialiser.BOOLEAN.serialise(value());
+        }
+
+        @Override
+        BoundDefinition<java.lang.Boolean> operationBounds() {
+            return new BoundDefinition.BooleanBound();
         }
     }
 
@@ -109,6 +119,11 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         Long valueSerialised() {
             return Serialiser.DATE.serialise(value());
         }
+
+        @Override
+        BoundDefinition<Long> operationBounds() {
+            return new BoundDefinition.LongBound();
+        }
     }
 
     static class String extends Assignment<java.lang.String, java.lang.String> {
@@ -125,6 +140,11 @@ public abstract class Assignment<T, U> extends Operation<T, U> {
         @Override
         java.lang.String valueSerialised() {
             return Serialiser.STRING.serialise(value());
+        }
+
+        @Override
+        BoundDefinition<java.lang.String> operationBounds() {
+            return new BoundDefinition.StringBound();
         }
     }
 }

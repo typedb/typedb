@@ -185,13 +185,12 @@ public abstract class Operation<T, U> {
         if (this instanceof Comparison.Variable || that instanceof Comparison.Variable) return false;
         //NB this is potentially dangerous e.g. if a user types a long as a char in the query
         if (!this.valueSerialised().getClass().equals(that.valueSerialised().getClass())) return false;
-        if (this.valueSerialised().getClass() == String.class) {
-            return (that.predicate()).test(this.valueSerialised()) &&
-                    (this.valueSerialised().equals(that.valueSerialised()) ?
-                            (this.isValueEquality() || this.isValueEquality() == that.isValueEquality()) :
-                            (!this.predicate().test(that.valueSerialised())));
-        }
+        return this.hasSubRangeOf(that);
+    }
 
+    abstract BoundDefinition<U> operationBounds();
+
+    private boolean hasSubRangeOf(Operation<?, U> that) {
         double thatValue = Double.parseDouble(that.valueSerialised().toString());
         double thatLeftBound, thatRightBound;
         boolean thatHardLeftBound, thatHardRightBound;
@@ -224,6 +223,47 @@ public abstract class Operation<T, U> {
                 || singleNeqPresent;
         return !eqInconsistency
                 && thisLeftBound >= thatLeftBound && thisRightBound <= thatRightBound
+                && (thisLeftBound != thatLeftBound || thatHardLeftBound)
+                && (thisRightBound != thatRightBound || thatHardRightBound);
+    }
+
+    boolean hasSubRangeOf2(Operation<?, U> that) {
+        U thatValue = that.valueSerialised();
+        U thatLeftBound, thatRightBound;
+        boolean thatHardLeftBound, thatHardRightBound;
+        U lowerBound = operationBounds().lowerBound();
+        U upperBound = operationBounds().upperBound();
+
+        int thatSignum = that.signum();
+        if (thatSignum < 0) {
+            thatLeftBound = lowerBound;
+            thatRightBound = thatValue;
+            thatHardLeftBound = true;
+            thatHardRightBound = that.containsEquality();
+        } else if (thatSignum > 0) {
+            thatLeftBound = thatValue;
+            thatRightBound = upperBound;
+            thatHardLeftBound = that.containsEquality();
+            thatHardRightBound = true;
+        } else {
+            thatLeftBound = thatValue;
+            thatRightBound = thatValue;
+            thatHardLeftBound = thatHardRightBound = true;
+        }
+
+        int thisSignum = this.signum();
+        U thisValue = this.valueSerialised();
+        U thisLeftBound = thisSignum < 0 ? lowerBound : thisValue;
+        U thisRightBound = thisSignum > 0 ? upperBound : thisValue;
+
+        boolean singleNeqPresent = this.comparator().equals(Graql.Token.Comparator.NEQV)
+                != that.comparator().equals(Graql.Token.Comparator.NEQV);
+        boolean eqInconsistency = thisSignum == 0 && thatSignum == 0
+                && this.containsEquality() != that.containsEquality()
+                || singleNeqPresent;
+        return !eqInconsistency
+                && operationBounds().lowerBoundTest(thisLeftBound, thatLeftBound)
+                && operationBounds().upperBoundTest(thisRightBound, thatRightBound)
                 && (thisLeftBound != thatLeftBound || thatHardLeftBound)
                 && (thisRightBound != thatRightBound || thatHardRightBound);
     }

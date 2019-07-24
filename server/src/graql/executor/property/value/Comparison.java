@@ -136,6 +136,11 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         N valueSerialised() {
             return new Serialiser.Default<N>().serialise(value());
         }
+
+        @Override
+        BoundDefinition<N> operationBounds() {
+            return (BoundDefinition<N>) new BoundDefinition.NumberBound();
+        }
     }
 
     static class Boolean extends Comparison<java.lang.Boolean, java.lang.Boolean> {
@@ -153,6 +158,11 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         java.lang.Boolean valueSerialised() {
             return Serialiser.BOOLEAN.serialise(value());
         }
+
+        @Override
+        BoundDefinition<java.lang.Boolean> operationBounds() {
+            return new BoundDefinition.BooleanBound();
+        }
     }
 
     static class DateTime extends Comparison<LocalDateTime, Long> {
@@ -169,6 +179,11 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
         @Override
         Long valueSerialised() {
             return Serialiser.DATE.serialise(value());
+        }
+
+        @Override
+        BoundDefinition<Long> operationBounds() {
+            return new BoundDefinition.LongBound();
         }
     }
 
@@ -211,6 +226,10 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
             }
         }
 
+        @Override
+        BoundDefinition<java.lang.String> operationBounds() {
+            return new BoundDefinition.StringBound();
+        }
     }
 
     public static class Variable extends Comparison<Statement, java.lang.String> {
@@ -269,6 +288,11 @@ public abstract class Comparison<T, U> extends Operation<T, U> {
                             .toArray(Traversal[]::new)
             ).select(gremlinVariable2);
             return traversal;
+        }
+
+        @Override
+        BoundDefinition<java.lang.String> operationBounds() {
+            return new BoundDefinition.VariableBound();
         }
     }
 }
