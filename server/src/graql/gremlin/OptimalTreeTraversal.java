@@ -43,6 +43,7 @@ import java.util.Stack;
 
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
+import static grakn.core.graql.gremlin.NodesUtil.propagateRelationLabels;
 
 public class OptimalTreeTraversal {
 
@@ -62,8 +63,8 @@ public class OptimalTreeTraversal {
         this.tx = tx;
         this.connectedNodes = connectedNodes;
         this.allNodesById = allNodesById;
-        this.childToParent = arborescence.getParents();
         this.timeoutMs = timeoutMs;
+        this.childToParent = arborescence.getParents();
         this.parentToChild = parentToChildMapping(arborescence);
         this.edgeFragmentChildToParent = edgeFragmentChildToParent;
         iterations = 0;
@@ -73,7 +74,7 @@ public class OptimalTreeTraversal {
     public List<Fragment> traverse() {
 
         propagateLabels(parentToChild);
-
+        propagateRelationLabels(allNodesById, childToParent, edgeFragmentChildToParent);
 
         long startTime = System.nanoTime();
         Map<NodeList, Pair<Double, NodeList>> memoisedResults = new HashMap<>();
@@ -88,6 +89,8 @@ public class OptimalTreeTraversal {
 
         return plan;
     }
+
+
 
     private List<Fragment> orderedNodesToPlan(List<Node> optimalNodeOrder) {
         List<Fragment> plan = new ArrayList<>();

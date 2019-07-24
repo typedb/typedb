@@ -61,7 +61,7 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     abstract @Nullable ImmutableSet<Label> roleLabels();
 
-    abstract @Nullable ImmutableSet<Label> relationTypeLabels();
+    public abstract @Nullable ImmutableSet<Label> relationTypeLabels();
 
     final String innerName() {
         Variable role = role();
@@ -79,6 +79,16 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
         return builder.build();
     }
 
+
+    @Override
+    public Node startNode() {
+        return new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
+    }
+
+    @Override
+    public Node endNode() {
+        return new InstanceNode(NodeId.of(NodeId.Type.VAR, end()));
+    }
 
     @Override
     protected NodeId getMiddleNodeId() {

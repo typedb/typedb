@@ -21,7 +21,7 @@ package grakn.core.graql.gremlin.spanningtree.graph;
 import grakn.core.server.session.TransactionOLTP;
 
 public class EdgeNode extends Node {
-    private static final int EDGE_NODE_PRIORITY = 2;
+    private static final int EDGE_NODE_PRIORITY = 3;
 
     public EdgeNode(NodeId nodeId) {
         super(nodeId);

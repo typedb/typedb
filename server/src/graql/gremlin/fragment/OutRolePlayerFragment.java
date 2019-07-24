@@ -96,20 +96,6 @@ public abstract class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         return edgeTraversal.toV(direction);
     }
 
-    @Override
-    protected Node startNode() {
-        InstanceNode node = new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
-        if (relationTypeLabels() != null && relationTypeLabels().size() == 1) {
-            node.setInstanceLabels(relationTypeLabels());
-        }
-        return node;
-    }
-
-    @Override
-    protected Node endNode() {
-        return new InstanceNode(NodeId.of(NodeId.Type.VAR, end()));
-    }
-
 
     @Override
     public String name() {

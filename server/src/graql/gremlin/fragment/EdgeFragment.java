@@ -41,8 +41,8 @@ import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
 public abstract class EdgeFragment extends Fragment {
 
     abstract protected NodeId getMiddleNodeId();
-    abstract protected Node startNode();
-    abstract protected Node endNode();
+    public abstract Node startNode();
+    abstract Node endNode();
 
     @Override
     public Set<Node> getNodes() {

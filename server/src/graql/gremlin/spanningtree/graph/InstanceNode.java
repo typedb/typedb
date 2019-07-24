@@ -27,10 +27,9 @@ import java.util.Set;
 
 public class InstanceNode extends Node {
 
-    Long cachedMatchingElementsEstimate = null;
+    private Long cachedMatchingElementsEstimate = null;
 
-    private static final int INSTANCE_NODE_PRIORTIY = 3;
-    // null instance type label indicates we have no information and we the total of all instance counts;
+    private static final int INSTANCE_NODE_PRIORTIY = 4;
     private Set<Label> instanceTypeLabels = new HashSet<>();
 
     public InstanceNode(NodeId nodeId) {

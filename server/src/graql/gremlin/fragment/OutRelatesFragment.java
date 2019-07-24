@@ -58,7 +58,7 @@ abstract class OutRelatesFragment extends EdgeFragment {
     }
 
     @Override
-    protected Node startNode() {
+    public Node startNode() {
         return new SchemaNode(NodeId.of(NodeId.Type.VAR, start()));
     }
 

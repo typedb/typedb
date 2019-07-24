@@ -20,22 +20,21 @@ package grakn.core.graql.gremlin.spanningtree.graph;
 
 import grakn.core.server.session.TransactionOLTP;
 
-public class SchemaNode extends Node {
+public class IndexedNode extends Node {
+    private static final int ID_NODE_PRIORITY = 1;
 
-    private static final int SCHEMA_NODE_PRIORITY = 2;
-
-    public SchemaNode(NodeId nodeId) {
+    public IndexedNode(NodeId nodeId) {
         super(nodeId);
     }
 
     @Override
     public long matchingElementsEstimate(TransactionOLTP tx) {
-        // only 1 node ever matches a schema node
+        // only 1 node matches an indexed node
         return 1;
     }
 
     @Override
     public int getNodeTypePriority() {
-        return SCHEMA_NODE_PRIORITY;
+        return ID_NODE_PRIORITY;
     }
 }

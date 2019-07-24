@@ -76,7 +76,7 @@ public abstract class OutIsaFragment extends EdgeFragment {
     }
 
     @Override
-    protected Node startNode() {
+    public Node startNode() {
         return new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
     }
 

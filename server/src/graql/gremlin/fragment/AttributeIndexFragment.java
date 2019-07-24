@@ -23,6 +23,10 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.graql.gremlin.spanningtree.graph.IndexedNode;
+import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
+import grakn.core.graql.gremlin.spanningtree.graph.Node;
+import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.statistics.KeyspaceStatistics;
@@ -32,6 +36,8 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
@@ -48,6 +54,15 @@ public abstract class AttributeIndexFragment extends Fragment {
             GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
 
         return traversal.has(INDEX.name(), attributeIndex());
+    }
+
+    /**
+     * AttributeIndexFragment's produce a specific kind of node
+     */
+    @Override
+    public Set<Node> getNodes() {
+        NodeId startNodeId = NodeId.of(NodeId.Type.VAR, start());
+        return Collections.singleton(new IndexedNode(startNodeId));
     }
 
     @Override

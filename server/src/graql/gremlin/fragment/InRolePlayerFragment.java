@@ -51,7 +51,7 @@ import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
  *
  */
 @AutoValue
-abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
+public abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -92,20 +92,6 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
         traverseToRole(edgeTraversal, role(), roleProperty, vars);
 
         return edgeTraversal;
-    }
-
-    @Override
-    protected Node startNode() {
-        return new InstanceNode(NodeId.of(NodeId.Type.VAR, start()));
-    }
-
-    @Override
-    protected Node endNode() {
-        InstanceNode node = new InstanceNode(NodeId.of(NodeId.Type.VAR, end()));
-        if (relationTypeLabels() != null && relationTypeLabels().size() == 1) {
-            node.setInstanceLabels(relationTypeLabels());
-        }
-        return node;
     }
 
     @Override

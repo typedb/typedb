@@ -24,8 +24,12 @@ import grakn.core.common.util.Streams;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.gremlin.fragment.AbstractRolePlayerFragment;
+import grakn.core.graql.gremlin.fragment.EdgeFragment;
 import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.InRolePlayerFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
@@ -34,6 +38,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 
+import javax.management.relation.InvalidRoleInfoException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -153,6 +158,30 @@ public class NodesUtil {
         return subplan;
     }
 
+
+    static void propagateRelationLabels(Map<NodeId, Node> allNodesById, Map<Node, Node> childToParent, Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+        for (Node child : edgeFragmentChildToParent.keySet()) {
+            Map<Node, Fragment> mapping = edgeFragmentChildToParent.get(child);
+            for (Node parent : mapping.keySet()) {
+                Fragment edgeFragment = mapping.get(parent);
+                if (edgeFragment instanceof InRolePlayerFragment) {
+                    InRolePlayerFragment inRolePlayerFragment = (InRolePlayerFragment) edgeFragment;
+                    Node relationNode = allNodesById.get(inRolePlayerFragment.endNode().getNodeId());
+                    if (relationNode instanceof InstanceNode) {
+                        // its possible a instancenode has been swapped out for ID node by reasoner
+                        ((InstanceNode) relationNode).setInstanceLabels(inRolePlayerFragment.relationTypeLabels());
+                    }
+                } else if (edgeFragment instanceof OutRolePlayerFragment) {
+                    OutRolePlayerFragment inRolePlayerFragment = (OutRolePlayerFragment) edgeFragment;
+                    Node relationNode = allNodesById.get(inRolePlayerFragment.startNode().getNodeId());
+                    if (relationNode instanceof InstanceNode) {
+                        // its possible a instancenode has been swapped out for ID node by reasoner
+                        ((InstanceNode) relationNode).setInstanceLabels(inRolePlayerFragment.relationTypeLabels());
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * We propagate across ISA edges any labels that might be found on one side of the ISA to
