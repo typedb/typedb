@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -91,17 +92,16 @@ public class OptimalTreeTraversal {
     }
 
 
-
     private List<Fragment> orderedNodesToPlan(List<Node> optimalNodeOrder) {
         List<Fragment> plan = new ArrayList<>();
 
         for (Node node : optimalNodeOrder) {
             // TODO we may want to sort the order of fragments from each node based on some cost
-            node.getFragmentsWithoutDependency().stream().forEach(fragment -> {
-                if (fragment.hasFixedFragmentCost()) { plan.add(0, fragment); }
-                else { plan.add(fragment); }
-            });
-//            plan.addAll(node.getFragmentsWithoutDependency());
+//            node.getFragmentsWithoutDependency().stream().forEach(fragment -> {
+//                if (fragment.hasFixedFragmentCost()) { plan.add(0, fragment); }
+//                else { plan.add(fragment); }
+//            });
+            plan.addAll(node.getFragmentsWithoutDependency());
             node.getFragmentsWithoutDependency().clear();
 
             // add edge fragment if this node represents an edge fragment
@@ -111,14 +111,14 @@ public class OptimalTreeTraversal {
             }
 
             // add node's dependant fragments
-//            plan.addAll(nodeVisitedDependenciesFragments(node, allNodesById));
-            nodeVisitedDependenciesFragments(node, allNodesById).forEach(frag -> {
-                if (frag.hasFixedFragmentCost()) {
-                    plan.add(0, frag);
-                } else {
-                    plan.add(frag);
-                }
-            });
+            plan.addAll(nodeVisitedDependenciesFragments(node, allNodesById));
+//            nodeVisitedDependenciesFragments(node, allNodesById).forEach(frag -> {
+//                if (frag.hasFixedFragmentCost()) {
+//                    plan.add(0, frag);
+//                } else {
+//                    plan.add(frag);
+//                }
+//            });
 
         }
         return plan;
@@ -131,11 +131,27 @@ public class OptimalTreeTraversal {
         while (true) {
             NodeList nextNodeList = memoisedResults.get(next).getValue();
             if (nextNodeList == null) {
-                orderedNodes.add(next.get(0));
+                if (!next.isEmpty()) {
+                    orderedNodes.add(next.get(0));
+                }
                 break;
             } else {
-                Node newNode = Iterators.getOnlyElement(Sets.difference(new HashSet<>(next), new HashSet<>(nextNodeList)).iterator());
-                orderedNodes.add(newNode);
+//                Node newNode = Iterators.getOnlyElement(Sets.difference(new HashSet<>(next), new HashSet<>(nextNodeList)).iterator());
+                List<Node> newNodes = new ArrayList<>(Sets.difference(new HashSet<>(next), new HashSet<>(nextNodeList)));
+                // if there's an edge node and vertex node, add the edge node and then vertex nodes so these always alterate (vertex, edge, vertex, edge, vertex...)
+                if (newNodes.size() == 2) {
+                    if (newNodes.get(0) instanceof EdgeNode) {
+                        orderedNodes.add(newNodes.get(0));
+                        orderedNodes.add(newNodes.get(1));
+                    } else {
+                        orderedNodes.add(newNodes.get(1));
+                        orderedNodes.add(newNodes.get(0));
+                    }
+                } else {
+                    orderedNodes.add(newNodes.get(0));
+                }
+
+//                orderedNodes.add(newNode);
                 next = nextNodeList;
             }
         }
@@ -227,7 +243,15 @@ public class OptimalTreeTraversal {
 
                 for (Node nextNode : entry.removable) {
 
-                    NodeList nextVisited = copyExceptElement(entry.visited, nextNode);
+                    List<Node> removedNodes;
+                    if (!(nextNode instanceof EdgeNode) && childToParent.containsKey(nextNode)) {
+                        Node edgeNodeParent = childToParent.get(nextNode);
+                        removedNodes = Arrays.asList(edgeNodeParent, nextNode);
+                    } else {
+                        removedNodes = Arrays.asList(nextNode);
+                    }
+
+                    NodeList nextVisited = copyExceptElement(entry.visited, removedNodes);
 
                     // record that this child is a dependant of the currently stack entry
                     entry.addChild(nextVisited);
@@ -235,8 +259,8 @@ public class OptimalTreeTraversal {
                     // compute child if we don't already have the result for the child
                     boolean isComputed = memoised.containsKey(nextVisited);
                     if (!isComputed) {
-                        NodeList nextRemovable = copyExceptElement(entry.removable, nextNode);
-                        Node parent = childToParent.get(nextNode);
+                        NodeList nextRemovable = copyExceptElement(entry.removable, removedNodes);
+                        Node parent = childToParent.get(removedNodes.get(0));
                         if (parent != null) {
                             Set<Node> siblings = parentToChild.get(parent);
                             // if none of the siblings are in entry.removable, we can add the parent to removable
@@ -313,10 +337,10 @@ public class OptimalTreeTraversal {
         return bestChild;
     }
 
-    private NodeList copyExceptElement(NodeList list, Node notToInclude) {
+    private NodeList copyExceptElement(NodeList list, List<Node> notToInclude) {
         NodeList copy = new NodeList();
         for (Node node : list) {
-            if (node != notToInclude) {
+            if (!notToInclude.contains(node)) {
                 copy.add(node);
             }
         }

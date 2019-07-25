@@ -167,16 +167,16 @@ public class NodesUtil {
                 if (edgeFragment instanceof InRolePlayerFragment) {
                     InRolePlayerFragment inRolePlayerFragment = (InRolePlayerFragment) edgeFragment;
                     Node relationNode = allNodesById.get(inRolePlayerFragment.endNode().getNodeId());
-                    if (relationNode instanceof InstanceNode) {
+                    if (relationNode instanceof InstanceNode && inRolePlayerFragment.relationTypeLabels() != null) {
                         // its possible a instancenode has been swapped out for ID node by reasoner
                         ((InstanceNode) relationNode).setInstanceLabels(inRolePlayerFragment.relationTypeLabels());
                     }
                 } else if (edgeFragment instanceof OutRolePlayerFragment) {
-                    OutRolePlayerFragment inRolePlayerFragment = (OutRolePlayerFragment) edgeFragment;
-                    Node relationNode = allNodesById.get(inRolePlayerFragment.startNode().getNodeId());
-                    if (relationNode instanceof InstanceNode) {
+                    OutRolePlayerFragment outRolePlayerFragment = (OutRolePlayerFragment) edgeFragment;
+                    Node relationNode = allNodesById.get(outRolePlayerFragment.startNode().getNodeId());
+                    if (relationNode instanceof InstanceNode && outRolePlayerFragment.relationTypeLabels() != null) {
                         // its possible a instancenode has been swapped out for ID node by reasoner
-                        ((InstanceNode) relationNode).setInstanceLabels(inRolePlayerFragment.relationTypeLabels());
+                        ((InstanceNode) relationNode).setInstanceLabels(outRolePlayerFragment.relationTypeLabels());
                     }
                 }
             }
