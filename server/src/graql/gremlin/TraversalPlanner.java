@@ -124,10 +124,10 @@ public class TraversalPlanner {
                 // collect the mapping from directed edge back to fragments -- inverse operation of creating virtual middle nodes
                 Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = virtualMiddleNodeToFragmentMapping(connectedFragments, allQueryGraphNodes);
 
-//                OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, connectedNodes, allQueryGraphNodes, subgraphArborescence, middleNodeFragmentMapping, 100);
-//                List<Fragment> subplan = optimalTreeTraversal.traverse();
+                OptimalTreeTraversal optimalTreeTraversal = new OptimalTreeTraversal(tx, connectedNodes, allQueryGraphNodes, subgraphArborescence, middleNodeFragmentMapping, 100);
+                List<Fragment> subplan = optimalTreeTraversal.traverse();
 
-                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, allQueryGraphNodes, middleNodeFragmentMapping);
+//                List<Fragment> subplan = GreedyTreeTraversal.greedyTraversal(subgraphArborescence, allQueryGraphNodes, middleNodeFragmentMapping);
                 plan.addAll(subplan);
             } else {
                // find and include all the nodes not touched in the MST in the plan
