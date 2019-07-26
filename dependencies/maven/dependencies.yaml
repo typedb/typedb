@@ -269,7 +269,7 @@ dependencies:
 
   org.janusgraph:
     janusgraph-cql:
-      version: "0.4-quick4"
+      version: "0.4-quick5"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
@@ -284,7 +284,7 @@ dependencies:
       - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
       - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
     janusgraph-core:
-      version: "0.4-quick4"
+      version: "0.4-quick5"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
@@ -299,7 +299,7 @@ dependencies:
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
     janusgraph-hadoop:
-      version: "0.4-quick4"
+      version: "0.4-quick5"
       lang: java
       exclude:
       - "com.codahale.metrics:metrics-core"
