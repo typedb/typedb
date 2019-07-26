@@ -892,6 +892,7 @@ public class TransactionOLTP implements Transaction {
         }
         try {
             janusTransaction.rollback();
+            janusTransaction.close();
         } finally {
             closeTransaction(closeMessage);
         }
