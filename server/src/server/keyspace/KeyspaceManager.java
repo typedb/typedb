@@ -71,20 +71,7 @@ public class KeyspaceManager {
     public void putKeyspace(KeyspaceImpl keyspace) {
         if (containsKeyspace(keyspace)) return;
 
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
-            AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
-            if (keyspaceName == null) {
-                throw GraknServerException.initializationException(keyspace);
-            }
-            Attribute<String> attribute = keyspaceName.create(keyspace.name());
-            tx.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).create().has(attribute);
-            tx.commit();
-
-            // add to cache
-            existingKeyspaces.add(keyspace);
-        } catch (InvalidKBException e) {
-            throw new RuntimeException("Could not add keyspace [" + keyspace + "] to system graph", e);
-        }
+        existingKeyspaces.add(keyspace);
     }
 
     public void closeStore() {
@@ -94,16 +81,7 @@ public class KeyspaceManager {
 
     // TODO: rewrite
     private boolean containsKeyspace(KeyspaceImpl keyspace) {
-        //Check local cache
-        if (existingKeyspaces.contains(keyspace)) {
-            return true;
-        }
-
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction().read()) {
-            boolean keyspaceExists = (tx.getAttributeType(KEYSPACE_RESOURCE.getValue()).attribute(keyspace) != null);
-            if (keyspaceExists) existingKeyspaces.add(keyspace);
-            return keyspaceExists;
-        }
+        return existingKeyspaces.contains(keyspace);
     }
 
     // TODO: rewrite
@@ -115,57 +93,11 @@ public class KeyspaceManager {
     }
 
     private void deleteReferenceInSystemKeyspace(KeyspaceImpl keyspace) {
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
-            AttributeType<String> keyspaceName = tx.getSchemaConcept(KEYSPACE_RESOURCE);
-            Attribute<String> attribute = keyspaceName.attribute(keyspace.name());
-            if (attribute == null) {
-                throw GraknServerException.create("It is not possible to delete keyspace [" + keyspace.name() + "] as it does not exist.");
-            }
-            Thing thing = attribute.owner();
-            thing.delete();
-            attribute.delete();
-
-            existingKeyspaces.remove(keyspace);
-            tx.commit();
-        }
+        existingKeyspaces.remove(keyspace);
     }
 
     // TODO: rewrite: describe keyspaces
     public Set<KeyspaceImpl> keyspaces() {
-        try (TransactionOLTP graph = systemKeyspaceSession.transaction().write()) {
-            AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
-
-            return graph.<EntityType>getSchemaConcept(KEYSPACE_ENTITY).instances()
-                    .flatMap(keyspace -> keyspace.attributes(keyspaceName))
-                    .map(name -> (String) name.value())
-                    .map(KeyspaceImpl::of)
-                    .collect(Collectors.toSet());
-        }
-    }
-
-    // TODO: rewrite
-    public void loadSystemSchema() {
-        Stopwatch timer = Stopwatch.createStarted();
-        try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {
-            if (tx.getSchemaConcept(KEYSPACE_ENTITY) != null) {
-                LOG.info("System schema has been previously loaded");
-                return;
-            }
-            LOG.info("Loading schema");
-            loadSystemSchema(tx);
-            tx.commit();
-            LOG.info("Loaded system schema to system keyspace. Took: {}", timer.stop());
-        } catch (RuntimeException e) {
-            LOG.error("Error while loading system schema in {}. The error was: {}", timer.stop(), e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    /**
-     * Loads the system schema using the provided Transaction.
-     */
-    private void loadSystemSchema(TransactionOLTP tx) {
-        AttributeType<String> keyspaceName = tx.putAttributeType("keyspace-name", AttributeType.DataType.STRING);
-        tx.putEntityType("keyspace").key(keyspaceName);
+        return existingKeyspaces;
     }
 }

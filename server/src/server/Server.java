@@ -57,10 +57,4 @@ public class Server implements AutoCloseable {
             Thread.currentThread().interrupt();
         }
     }
-
-    private void initialiseSystemSchema() {
-        LOG.info("{} is checking the system schema", this.serverID);
-        keyspaceStore.loadSystemSchema();
-    }
 }
-
