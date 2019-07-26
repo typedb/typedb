@@ -67,6 +67,7 @@ public class KeyspaceManager {
      *
      * @param keyspace The new KeyspaceImpl we have just created
      */
+    // TODO: rewrite
     public void putKeyspace(KeyspaceImpl keyspace) {
         if (containsKeyspace(keyspace)) return;
 
@@ -91,6 +92,7 @@ public class KeyspaceManager {
         this.graph.close();
     }
 
+    // TODO: rewrite
     private boolean containsKeyspace(KeyspaceImpl keyspace) {
         //Check local cache
         if (existingKeyspaces.contains(keyspace)) {
@@ -104,6 +106,7 @@ public class KeyspaceManager {
         }
     }
 
+    // TODO: rewrite
     public void deleteKeyspace(KeyspaceImpl keyspace) {
         if (keyspace.equals(SYSTEM_KB_KEYSPACE)) {
             throw GraknServerException.create("It is not possible to delete the Grakn system keyspace.");
@@ -127,6 +130,7 @@ public class KeyspaceManager {
         }
     }
 
+    // TODO: rewrite: describe keyspaces
     public Set<KeyspaceImpl> keyspaces() {
         try (TransactionOLTP graph = systemKeyspaceSession.transaction().write()) {
             AttributeType<String> keyspaceName = graph.getSchemaConcept(KEYSPACE_RESOURCE);
@@ -139,6 +143,7 @@ public class KeyspaceManager {
         }
     }
 
+    // TODO: rewrite
     public void loadSystemSchema() {
         Stopwatch timer = Stopwatch.createStarted();
         try (TransactionOLTP tx = systemKeyspaceSession.transaction().write()) {

@@ -43,7 +43,6 @@ public class Server implements AutoCloseable {
     }
 
     public void start() throws IOException {
-        initialiseSystemSchema();
         serverRPC.start();
     }
 
