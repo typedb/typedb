@@ -52,13 +52,8 @@ public class KeyspaceManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
     private final Set<KeyspaceImpl> existingKeyspaces;
-    private final SessionImpl systemKeyspaceSession;
-    private final StandardJanusGraph graph;
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
-        KeyspaceCache keyspaceCache = new KeyspaceCache();
-        this.graph = janusGraphFactory.openGraph(SYSTEM_KB_KEYSPACE.name());
-        this.systemKeyspaceSession = new SessionImpl(SYSTEM_KB_KEYSPACE, config, keyspaceCache, graph, new KeyspaceStatistics(), CacheBuilder.newBuilder().build(), new ReentrantReadWriteLock());
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
     }
 
@@ -75,8 +70,6 @@ public class KeyspaceManager {
     }
 
     public void closeStore() {
-        this.systemKeyspaceSession.close();
-        this.graph.close();
     }
 
     // TODO: rewrite
