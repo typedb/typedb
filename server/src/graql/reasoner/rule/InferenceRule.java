@@ -34,7 +34,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.state.QueryStateBase;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.RuleState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -379,9 +379,9 @@ public class InferenceRule {
      * @param ruleUnifier unifier with parent state
      * @param parent parent state
      * @param visitedSubGoals set of visited sub goals
-     * @return resolution subGoal formed from this rule
+     * @return resolution resolutionState formed from this rule
      */
-    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals){
+    public ResolutionState subGoal(Atom parentAtom, Unifier ruleUnifier, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals){
         Unifier ruleUnifierInverse = ruleUnifier.inverse();
 
         //delta' = theta . thetaP . delta

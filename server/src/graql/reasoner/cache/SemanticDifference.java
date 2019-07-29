@@ -25,7 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -113,7 +113,7 @@ public class SemanticDifference {
             return (type == null || type.subs().anyMatch(t -> t.equals(concept.asThing().type()))) &&
                     (role == null || role.subs().anyMatch(r -> r.equals(concept.asRole()))) &&
                     (vps.isEmpty() || vps.stream().allMatch(
-                            vp -> ValueExecutor.Operation.of(vp.getPredicate()).test(concept.asAttribute().value())
+                            vp -> ValueOperation.of(vp.getPredicate()).test(concept.asAttribute().value())
                     ));
         });
     }

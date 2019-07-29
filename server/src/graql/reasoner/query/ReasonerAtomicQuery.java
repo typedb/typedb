@@ -29,13 +29,12 @@ import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
+import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.AnswerState;
 import grakn.core.graql.reasoner.state.AtomicState;
 import grakn.core.graql.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.reasoner.state.CacheCompletionState;
-import grakn.core.graql.reasoner.state.QueryStateBase;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -47,7 +46,6 @@ import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -96,9 +94,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public String toString(){
-        return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));
-    }
+    public String toString(){ return getAtoms(Atom.class).map(Atomic::toString).collect(Collectors.joining(", "));}
 
     @Override
     public boolean isAtomic(){ return true;}
@@ -192,7 +188,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public ResolutionState subGoal(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals){
+    public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         if (getAtom().getSchemaConcept() == null) return new AtomicStateProducer(this, sub, u, parent, subGoals);
         return !containsVariablePredicates()?
                 new AtomicState(this, sub, u, parent, subGoals) :
@@ -205,7 +201,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     }
 
     @Override
-    public Iterator<ResolutionState> queryStateIterator(QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
+    public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = tx().queryCache().getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))
@@ -215,27 +211,31 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         Iterator<ResolutionState> dbCompletionIterator =
                 Iterators.singletonIterator(new CacheCompletionState(this, new ConceptMap(), null));
 
-        Iterator<ResolutionState> subGoalIterator;
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
         boolean doNotResolveFurther = visited
                 || tx().queryCache().isComplete(this)
                 || (this.isGround() && dbIterator.hasNext());
-        if(doNotResolveFurther){
-            subGoalIterator = Collections.emptyIterator();
-        } else {
+        Iterator<ResolutionState> subGoalIterator = !doNotResolveFurther?
+                ruleStateIterator(parent, visitedSubGoals) :
+                Collections.emptyIterator();
 
-            subGoalIterator = getRuleStream()
-                    .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
-                    .iterator();
-        }
         if (!visited) visitedSubGoals.add(this);
         return Iterators.concat(dbIterator, dbCompletionIterator, subGoalIterator);
     }
 
-    private Stream<Pair<InferenceRule, Unifier>> getRuleStream() {
+    /**
+     * Constructs an iterator of RuleStates this query can generate - rule states correspond to rules that can be applied to this query.
+     * NB: we need this iterator to be fully lazy, hence we need to ensure that the base stream doesn't have any stateful ops.
+     * @param parent parent state
+     * @param visitedSubGoals set of visited sub goals
+     * @return ruleState iterator corresponding to rules that are matchable with this query
+     */
+    private Iterator<ResolutionState> ruleStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         return RuleUtils
                 .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
-                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)));
+                .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
+                .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
+                .iterator();
     }
 }

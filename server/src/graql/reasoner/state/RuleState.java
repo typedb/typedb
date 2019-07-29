@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.state;
 import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
@@ -35,16 +36,19 @@ import java.util.Set;
  *
  *
  */
-public class RuleState extends QueryStateBase{
+public class RuleState extends AnswerPropagatorState<ResolvableQuery> {
 
     private final InferenceRule rule;
-    private final Iterator<ResolutionState> bodyIterator;
 
-    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, QueryStateBase parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
-        super(sub, unifier, parent, visitedSubGoals);
-        //NB; sub gets propagated to the body here
-        this.bodyIterator = Iterators.singletonIterator(rule.getBody().subGoal(sub, unifier, this, visitedSubGoals));
+    public RuleState(InferenceRule rule, ConceptMap sub, Unifier unifier, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
+        super(rule.getBody(), sub, unifier, parent, visitedSubGoals);
         this.rule = rule;
+    }
+
+    @Override
+    Iterator<ResolutionState> generateChildStateIterator() {
+        //NB; sub gets propagated to the body here
+        return Iterators.singletonIterator(getQuery().resolutionState(getSubstitution(), getUnifier(), this, getVisitedSubGoals()));
     }
 
     @Override
@@ -56,13 +60,8 @@ public class RuleState extends QueryStateBase{
 
     @Override
     ResolutionState propagateAnswer(AnswerState state){
-        ConceptMap answer = state.getAnswer();
+        ConceptMap answer = consumeAnswer(state);
         return !answer.isEmpty()? new AnswerState(answer, getUnifier(), getParentState(), rule) : null;
-    }
-
-    @Override
-    public ResolutionState generateSubGoal() {
-        return bodyIterator.hasNext() ? bodyIterator.next() : null;
     }
 
     @Override

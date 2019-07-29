@@ -380,7 +380,7 @@ public class GraqlDefineIT {
     public void whenSpecifyingDataTypeOnAnEntityType_Throw() {
         exception.expect(GraqlSemanticException.class);
         exception.expectMessage(
-                allOf(containsString("unexpected property"), containsString("datatype"), containsString("my-type"))
+                allOf(containsString("Unexpected property"), containsString("datatype"), containsString("my-type"))
         );
 
         tx.execute(Graql.define(type("my-type").sub("entity").datatype(Graql.Token.DataType.BOOLEAN)));

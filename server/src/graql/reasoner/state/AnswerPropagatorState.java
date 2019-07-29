@@ -20,31 +20,57 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
 
+import java.util.Iterator;
 import java.util.Set;
 
 /**
  *
  * <p>
- * Base abstract class for resolution states corresponding to different forms of queries.
+ * Base abstract class for resolution states that exhibit the following behaviours:
+ *
+ * - answer propagation
+ *   The state serves as a proxy state for propagating answer states up the tree to the root state.
+ *   When an answer state propagates via this state, it is consumed - a specific action is performed on the answer state.
+ *
+ * - possibility of production of multiple states
+ *   The state has internal query states coming from an underlying query.
+ *   The state defines an iterator for inner states that's used for state generation.
+ *
  * </p>
  *
- *
  */
-public abstract class QueryStateBase extends ResolutionState {
+public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends ResolutionState {
 
+    private final Q query;
     private final Unifier unifier;
     private final Set<ReasonerAtomicQuery> visitedSubGoals;
+    private final Iterator<ResolutionState> subGoalIterator;
 
-    QueryStateBase(ConceptMap sub, Unifier u, QueryStateBase parent, Set<ReasonerAtomicQuery> subGoals) {
+    AnswerPropagatorState(Q query, ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals) {
         super(sub, parent);
+        this.query = query;
         this.unifier = u;
         this.visitedSubGoals = subGoals;
+        this.subGoalIterator = generateChildStateIterator();
+    }
+
+    @Override
+    public String toString(){ return super.toString() + "\n" + getQuery() + "\n"; }
+
+    @Override
+    public ResolutionState generateChildState() {
+        return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
 
     /**
-     * @return set of already visited subGoals (atomic queries)
+     * @return query corresponding to this query state
+     */
+    Q getQuery(){ return query;}
+
+    /**@return set of already visited subGoals (atomic queries)
      */
     Set<ReasonerAtomicQuery> getVisitedSubGoals(){ return visitedSubGoals;}
 
@@ -52,6 +78,12 @@ public abstract class QueryStateBase extends ResolutionState {
      * @return unifier of this state with parent state
      */
     public Unifier getUnifier(){ return unifier;}
+
+    /**
+     *
+     * @return
+     */
+    abstract Iterator<ResolutionState> generateChildStateIterator();
 
     /**
      * propagates the answer state up the tree and acknowledges (caches) its substitution

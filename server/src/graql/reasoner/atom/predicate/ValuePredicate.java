@@ -19,7 +19,8 @@
 package grakn.core.graql.reasoner.atom.predicate;
 
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.value.ValueComparison;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -96,7 +97,7 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
     public int alphaEquivalenceHashCode() {
         int hashCode = 1;
         hashCode = hashCode * 37 + this.getPredicate().comparator().hashCode();
-        boolean useValue = ! (ValueExecutor.Operation.of(getPredicate()) instanceof ValueExecutor.Operation.Comparison.Variable);
+        boolean useValue = ! (ValueOperation.of(getPredicate()) instanceof ValueComparison.Variable);
         hashCode = hashCode * 37 + (useValue? this.getPredicate().value().hashCode() : 0);
         return hashCode;
     }
@@ -107,8 +108,8 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
         if (obj == null || this.getClass() != obj.getClass()) return false;
         if (obj == this) return true;
         ValuePredicate that = (ValuePredicate) obj;
-        return ValueExecutor.Operation.of(this.getPredicate())
-                .isCompatible(ValueExecutor.Operation.of(that.getPredicate()));
+        return ValueOperation.of(this.getPredicate())
+                .isCompatible(ValueOperation.of(that.getPredicate()));
     }
 
     @Override
@@ -117,8 +118,8 @@ public class ValuePredicate extends Predicate<ValueProperty.Operation> {
         if (atomic == null || this.getClass() != atomic.getClass()) return false;
         if (atomic == this) return true;
         ValuePredicate that = (ValuePredicate) atomic;
-        return ValueExecutor.Operation.of(this.getPredicate())
-                .subsumes(ValueExecutor.Operation.of(that.getPredicate()));
+        return ValueOperation.of(this.getPredicate())
+                .subsumes(ValueOperation.of(that.getPredicate()));
     }
 
     @Override

@@ -35,11 +35,11 @@ public class AnswerState extends ResolutionState {
     private final InferenceRule rule;
     private final Unifier unifier;
 
-    public AnswerState(ConceptMap sub, Unifier u, QueryStateBase parent) {
+    public AnswerState(ConceptMap sub, Unifier u, AnswerPropagatorState parent) {
         this(sub, u, parent, null);
     }
 
-    AnswerState(ConceptMap sub, Unifier u, QueryStateBase parent, InferenceRule rule) {
+    AnswerState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, InferenceRule rule) {
         super(sub, parent);
         this.unifier = u;
         this.rule = rule;
@@ -56,13 +56,11 @@ public class AnswerState extends ResolutionState {
     public boolean isAnswerState(){ return true;}
 
     @Override
-    public ResolutionState generateSubGoal() {
+    public ResolutionState generateChildState() {
         return getParentState().propagateAnswer(this);
     }
 
     InferenceRule getRule(){ return rule;}
 
     Unifier getUnifier(){ return unifier;}
-
-    ConceptMap getAnswer(){ return getParentState().consumeAnswer(this);}
 }

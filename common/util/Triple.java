@@ -46,16 +46,12 @@ public class Triple<A, B, C> {
 
     public boolean equals(Object obj) {
         if (obj == this) return true;
+        if (obj == null || obj.getClass() != this.getClass()) return false;
 
-        if (obj.getClass() == this.getClass()) {
-            Triple<?, ?, ?> other = (Triple) obj;
-
-            return (Objects.equals(this.first, other.first) &&
+        Triple<?, ?, ?> other = (Triple) obj;
+        return (Objects.equals(this.first, other.first) &&
                     Objects.equals(this.second, other.second) &&
                     Objects.equals(this.third, other.third));
-        }
-
-        return false;
     }
 
     public int hashCode() {

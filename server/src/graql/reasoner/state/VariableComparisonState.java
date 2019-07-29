@@ -18,14 +18,16 @@
 
 package grakn.core.graql.reasoner.state;
 
+import com.google.common.collect.Iterators;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
 
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -45,26 +47,28 @@ import java.util.stream.Collectors;
  * predicates to ans(Q').
  *
  */
-public class VariableComparisonState extends QueryStateBase {
-
-    private final ResolutionState complementState;
-    private boolean visited = false;
+public class VariableComparisonState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     private final ConceptMap variablePredicateSub;
     private final Set<VariablePredicate> variablePredicates;
 
-    public VariableComparisonState(ResolvableQuery q,
+    public VariableComparisonState(ReasonerQueryImpl q,
                                    ConceptMap sub,
                                    Unifier u,
-                                   QueryStateBase parent,
+                                   AnswerPropagatorState parent,
                                    Set<ReasonerAtomicQuery> subGoals) {
-        super(sub, u, parent, subGoals);
-        ResolvableQuery query = ReasonerQueries.resolvable(q, sub);
-        this.variablePredicates = q.getAtoms(VariablePredicate.class).collect(Collectors.toSet());
-        this.variablePredicateSub = ConceptUtils.mergeAnswers(query.getSubstitution(), sub)
-                .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
+        super(ReasonerQueries.create(q, sub), sub, u, parent, subGoals);
 
-        this.complementState = query.constantValuePredicateQuery().subGoal(sub, u, this, subGoals);
+        this.variablePredicates = getQuery().getAtoms(VariablePredicate.class).collect(Collectors.toSet());
+        this.variablePredicateSub = ConceptUtils.mergeAnswers(getQuery().getSubstitution(), sub)
+                .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
+    }
+
+    @Override
+    Iterator<ResolutionState> generateChildStateIterator() {
+        return Iterators.singletonIterator(
+                getQuery().constantValuePredicateQuery().resolutionState(getSubstitution(), getUnifier(), this, getVisitedSubGoals())
+        );
     }
 
     @Override
@@ -81,14 +85,5 @@ public class VariableComparisonState extends QueryStateBase {
     @Override
     ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
-    }
-
-    @Override
-    public ResolutionState generateSubGoal() {
-        if (!visited){
-            visited = true;
-            return complementState;
-        }
-        return null;
     }
 }

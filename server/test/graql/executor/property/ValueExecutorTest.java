@@ -18,6 +18,7 @@
 
 package grakn.core.graql.executor.property;
 
+import grakn.core.graql.executor.property.value.ValueComparison;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import org.junit.Test;
@@ -30,8 +31,7 @@ public class ValueExecutorTest {
 
     @Test
     public void regexPredicateInterpretsCharacterClassesCorrectly() {
-        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Graql.Token.Comparator.LIKE, "\\d");
+        ValueComparison.String predicate = new ValueComparison.String(Graql.Token.Comparator.LIKE, "\\d");
 
         assertTrue(predicate.test("0"));
         assertTrue(predicate.test("1"));
@@ -40,8 +40,7 @@ public class ValueExecutorTest {
 
     @Test
     public void regexPredicateInterpretsQuotesCorrectly() {
-        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Graql.Token.Comparator.LIKE, "\"");
+        ValueComparison.String predicate = new ValueComparison.String(Graql.Token.Comparator.LIKE, "\"");
 
         assertTrue(predicate.test("\""));
         assertFalse(predicate.test("\\\""));
@@ -49,8 +48,7 @@ public class ValueExecutorTest {
 
     @Test
     public void regexPredicateInterpretsBackslashesCorrectly() {
-        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Graql.Token.Comparator.LIKE, "\\\\");
+        ValueComparison.String predicate = new ValueComparison.String(Graql.Token.Comparator.LIKE, "\\\\");
 
         assertTrue(predicate.test("\\"));
         assertFalse(predicate.test("\\\\"));
@@ -58,8 +56,7 @@ public class ValueExecutorTest {
 
     @Test
     public void regexPredicateInterpretsNewlineCorrectly() {
-        ValueExecutor.Operation.Comparison.String predicate = new ValueExecutor.Operation
-                .Comparison.String(Graql.Token.Comparator.LIKE, "\\n");
+        ValueComparison.String predicate = new ValueComparison.String(Graql.Token.Comparator.LIKE, "\\n");
 
         assertTrue(predicate.test("\n"));
         assertFalse(predicate.test("\\n"));

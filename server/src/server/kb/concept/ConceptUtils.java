@@ -22,15 +22,19 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.kb.Schema;
 import graql.lang.statement.Variable;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.Stack;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -123,6 +127,29 @@ public class ConceptUtils {
      */
     public static boolean areDisjointTypes(SchemaConcept parent, SchemaConcept child, boolean direct) {
         return parent != null && child == null || !typesCompatible(parent, child, direct) && !typesCompatible(child, parent, direct);
+    }
+
+    /**
+     * Computes dependent concepts of a thing - concepts that need to be persisted if we persist the provided thing.
+     * @param topThings things dependants of which we want to retrieve
+     * @return stream of things that are dependants of the provided thing - includes non-direct dependants.
+     */
+    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings){
+        Set<Thing> things = new HashSet<>(topThings);
+        Set<Thing> visitedThings = new HashSet<>();
+        Stack<Thing> thingStack = new Stack<>();
+        thingStack.addAll(topThings);
+        while(!thingStack.isEmpty()) {
+            Thing thing = thingStack.pop();
+            if (!visitedThings.contains(thing)){
+                thing.getDependentConcepts()
+                        .peek(things::add)
+                        .filter(t -> !visitedThings.contains(t))
+                        .forEach(thingStack::add);
+                visitedThings.add(thing);
+            }
+        }
+        return things.stream();
     }
 
     /**

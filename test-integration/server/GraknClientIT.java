@@ -789,7 +789,7 @@ public class GraknClientIT {
             GraqlGet.Aggregate stdAgeQuery =
                     Graql.match(var("x").isa("person").has("age", var("y"))).get().std("y");
             int n = 2;
-            double mean = (20 + 22) / n;
+            double mean = (double) (20 + 22) / n;
             double var = (Math.pow(20 - mean, 2) + Math.pow(22 - mean, 2)) / (n - 1);
             double std = Math.sqrt(var);
             assertEquals(std, tx.execute(stdAgeQuery).get(0).number().doubleValue(), 0.0001d);

@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -62,6 +63,7 @@ import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -69,8 +71,6 @@ import static org.junit.Assert.assertTrue;
 public class ResolutionPlanIT {
 
     private static final int repeat = 20;
-
-    private static String resourcePath = "test-integration/graql/reasoner/resources/";
 
     @Rule
     public RepeatRule repeatRule = new RepeatRule();
@@ -84,6 +84,7 @@ public class ResolutionPlanIT {
     @BeforeClass
     public static void loadContext(){
         planSession = server.sessionWithNewKeyspace();
+        String resourcePath = "test-integration/graql/reasoner/resources/";
         loadFromFileAndCommit(resourcePath, "resolutionPlanTest.gql", planSession);
     }
 
@@ -295,6 +296,7 @@ public class ResolutionPlanIT {
      */
     @Ignore ("should be fixed once we provide an estimate for inferred concepts count")
     @Test
+    @Repeat( times = repeat )
     public void whenRelationLinkWithSubbedEndsAndRuleRelationInTheMiddle_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
                 "$start id V123;" +
@@ -321,6 +323,7 @@ public class ResolutionPlanIT {
      *
      */
     @Test
+    @Repeat( times = repeat )
     public void whenRelationLinkWithSubbedEndsAndRuleRelationAtEnd_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
                 "$start id Vsomesampleid;" +
@@ -351,6 +354,7 @@ public class ResolutionPlanIT {
      *    anotherResource 'someValue'
      */
     @Test
+    @Repeat( times = repeat )
     public void whenRelationLinkWithEndsSharingAResource_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
                 "$start id V123;" +
@@ -417,8 +421,10 @@ public class ResolutionPlanIT {
         checkPlanSanity(queryX);
         checkPlanSanity(queryY);
 
-        assertNotEquals(new ResolutionPlan(queryX).plan().get(0), getAtomOfType(queryX, "anotherResource", tx));
-        assertNotEquals(new ResolutionPlan(queryY).plan().get(0), getAtomOfType(queryX, "resource", tx));
+        ImmutableList<Atom> xPlan = new ResolutionPlan(queryX).plan();
+        ImmutableList<Atom> yPlan = new ResolutionPlan(queryY).plan();
+        assertNotEquals(xPlan.get(0), getAtomOfType(queryX, "anotherResource", tx));
+        assertNotEquals(yPlan.get(0), getAtomOfType(queryY, "resource", tx));
     }
 
     @Test
@@ -452,9 +458,9 @@ public class ResolutionPlanIT {
 
     /**
      follows the two-branch pattern
-                                /   (d, e) - (e, f)*
-        (a, b)* - (b, c) - (c, d)*
-                                 \   (d, g) - (g, h)*
+     /   (d, e) - (e, f)*
+     (a, b)* - (b, c) - (c, d)*
+     \   (d, g) - (g, h)*
      */
     @Test
     @Ignore ("flaky - need to reintroduce inferred concept counts")
@@ -475,7 +481,6 @@ public class ResolutionPlanIT {
         String queryString = "{" + basePatternString + "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         checkPlanSanity(query);
-
 
         String attributedQueryString = "{" +
                 "$a has resource 'someValue';" +
@@ -593,7 +598,7 @@ public class ResolutionPlanIT {
      */
     @Test
     @Repeat( times = repeat )
-    public void whenDisconnectedConjunctionWithOntologicalAtomPresent_itIsResolvedFirst() {
+    public void whenDisconnectedConjunctionWithOntologicalAtomPresent_itIsResolvedLast() {
         String queryString = "{" +
                 "$x isa $type;" +
                 "$type has resource;" +
@@ -606,9 +611,35 @@ public class ResolutionPlanIT {
         checkAtomPlanComplete(query, resolutionPlan);
 
         Atom resolvableIsa = getAtomWithVariables(query, Sets.newHashSet(new Variable("x"), new Variable("type")));
-        assertThat(resolutionPlan.plan().get(3), is(resolvableIsa));
+        assertThat(resolutionPlan.plan().get(2), is(resolvableIsa));
 
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
+    }
+
+    @Test
+    @Repeat( times = repeat )
+    public void whenPlanningForAFullyLinkedReifiedRelation_optimalStartingPointIsPicked() {
+        Concept concept = tx.stream(Graql.match(var("x").isa("baseEntity")).get("x"))
+                .map(ans -> ans.get("x")).findAny().orElse(null);
+        String queryString = "{" +
+                "$x id " + concept.id() + ";" +
+                "($x, $link) isa someRelation;" +
+                "($link, $y) isa anotherRelation;" +
+
+                "$rel ($link, $z) isa derivedRelation;" +
+                "$rel has resource 'value';" +
+                "$rel has anotherResource $value;" +
+
+                "};";
+
+        ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
+        ResolutionPlan resolutionPlan = new ResolutionPlan(query);
+        checkPlanSanity(query);
+        checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
+
+        Atom specificResource = getAtomOfType(query, "resource", tx);
+        Atom someRelation = getAtomOfType(query, "someRelation", tx);
+        assertThat(resolutionPlan.plan().get(0), Matchers.isOneOf(specificResource, someRelation));
     }
 
     @Test
@@ -695,7 +726,7 @@ public class ResolutionPlanIT {
         while(iterator.hasNext()){
             Atom next = iterator.next();
             Set<Variable> varNames = next.getVarNames();
-            assertTrue("Disconnected plan produced:\n" + plan, !Sets.intersection(varNames, vars).isEmpty());
+            assertFalse("Disconnected plan produced:\n" + plan, Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);
         }
     }
@@ -709,7 +740,7 @@ public class ResolutionPlanIT {
             ReasonerQueryImpl next = iterator.next();
             Set<Variable> varNames = next.getVarNames();
             boolean isDisconnected = Sets.intersection(varNames, vars).isEmpty();
-            assertTrue("Disconnected query plan produced:\n" + plan, !isDisconnected);
+            assertFalse("Disconnected query plan produced:\n" + plan, isDisconnected);
             vars.addAll(varNames);
         }
     }
