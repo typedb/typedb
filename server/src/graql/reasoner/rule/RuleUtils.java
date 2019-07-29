@@ -116,19 +116,26 @@ public class RuleUtils {
      * @return stream of rules ordered in terms of priority (high priority first)
      */
     public static Stream<InferenceRule> stratifyRules(Set<InferenceRule> rules){
+        //NB: .sorted is a stateful intermediate op - it requires all elements to be processed.
+        //That's why we collect and stream again to ensure that returned stream is fully lazy
         if(rules.stream().allMatch(r -> r.getBody().isPositive())){
-            return rules.stream()
-                    .sorted(Comparator.comparing(r -> -r.resolutionPriority()));
+            List<InferenceRule> sortedRules = rules.stream()
+                    .sorted(Comparator.comparing(r -> -r.resolutionPriority()))
+                    .collect(toList());
+            return sortedRules.stream();
         }
         Multimap<Type, InferenceRule> typeMap = HashMultimap.create();
         rules.forEach(r -> r.getRule().thenTypes().flatMap(Type::sups).forEach(t -> typeMap.put(t, r)));
         HashMultimap<Type, Type> typeGraph = persistedTypeSubGraph(rules);
         List<Set<Type>> scc = new TarjanSCC<>(typeGraph).getSCC();
         return Lists.reverse(scc).stream()
-                .flatMap(strata -> strata.stream()
-                        .flatMap(t -> typeMap.get(t).stream())
-                        .sorted(Comparator.comparing(r -> -r.resolutionPriority()))
-                );
+                .flatMap(strata -> {
+                            List<InferenceRule> sortedRules = strata.stream()
+                                    .flatMap(t -> typeMap.get(t).stream())
+                                    .sorted(Comparator.comparing(r -> -r.resolutionPriority()))
+                                    .collect(toList());
+                            return sortedRules.stream();
+                        });
     }
 
     /**

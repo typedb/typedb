@@ -18,6 +18,7 @@
 
 package grakn.core.graql.gremlin.spanningtree.datastructure;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 
 import java.util.AbstractQueue;
@@ -33,7 +34,7 @@ import java.util.function.Function;
 public class FibonacciQueue<E> extends AbstractQueue<E> {
     private final FibonacciHeap<E, E> heap;
     private final Function<FibonacciHeap<E, ?>.Entry, E> getValue = input -> {
-        assert input != null;
+        Preconditions.checkNotNull(input);
         return input.value;
     };
 

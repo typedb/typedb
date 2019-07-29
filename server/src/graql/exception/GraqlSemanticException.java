@@ -112,8 +112,8 @@ public class GraqlSemanticException extends GraknException {
         return new GraqlSemanticException(ErrorMessage.MUST_BE_ATTRIBUTE_TYPE.getMessage(attributeType));
     }
 
-    public static GraqlSemanticException attributeDowncast(Type existingType, Type newType) {
-        return create("Downcasting attributes from type `%s` to type `%s` is not allowed", existingType, newType);
+    public static GraqlSemanticException conceptDowncast(Type existingType, Type newType) {
+        return create("Downcasting concepts from type `%s` to type `%s` is not allowed", existingType, newType);
     }
 
     public static GraqlSemanticException cannotGetInstancesOfNonType(Label label) {
@@ -145,7 +145,7 @@ public class GraqlSemanticException extends GraknException {
     public static GraqlSemanticException insertMultipleProperties(
             Statement varPattern, String property, Object value1, Object value2
     ) {
-        String message = "a concept `%s` cannot have multiple properties `%s` and `%s` for `%s`";
+        String message = "A concept `%s` cannot have multiple properties `%s` and `%s` for `%s`";
         return create(message, varPattern, value1, value2, property);
     }
 
@@ -156,7 +156,7 @@ public class GraqlSemanticException extends GraknException {
      * </p>
      */
     public static GraqlSemanticException insertPropertyOnExistingConcept(String property, Object value, Concept concept) {
-        return create("cannot insert property `%s %s` on existing concept `%s`", property, value, concept);
+        return create("Cannot insert property `%s %s` on existing concept `%s`", property, value, concept);
     }
 
     /**
@@ -166,7 +166,7 @@ public class GraqlSemanticException extends GraknException {
      * </p>
      */
     public static GraqlSemanticException insertUnexpectedProperty(String property, Object value, Concept concept) {
-        return create("unexpected property `%s %s` for concept `%s`", property, value, concept);
+        return create("Unexpected property `%s %s` for concept `%s`", property, value, concept);
     }
 
     /**
@@ -176,7 +176,7 @@ public class GraqlSemanticException extends GraknException {
      * </p>
      */
     public static GraqlSemanticException insertNoExpectedProperty(String property, Statement var) {
-        return create("missing expected property `%s` in `%s`", property, var);
+        return create("Missing an expected property `%s` in `%s`", property, var);
     }
 
 
@@ -187,7 +187,7 @@ public class GraqlSemanticException extends GraknException {
      * </p>
      */
     public static GraqlSemanticException insertExistingConcept(Statement pattern, Concept concept) {
-        return create("cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
+        return create("Cannot overwrite properties `%s` on  concept `%s`", pattern, concept);
     }
 
     public static GraqlSemanticException nonPositiveLimit(long limit) {

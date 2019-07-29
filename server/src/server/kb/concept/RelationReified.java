@@ -223,4 +223,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         return true;
     }
 
+    @Override
+    public Stream<Thing> getDependentConcepts() {
+        return owner != null? owner.getDependentConcepts() : Stream.empty();
+    }
 }

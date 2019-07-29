@@ -19,8 +19,10 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.concept.thing.Entity;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.structure.VertexElement;
+import java.util.stream.Stream;
 
 /**
  * An instance of Entity Type EntityType
@@ -48,4 +50,7 @@ public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity 
     public static EntityImpl from(Entity entity) {
         return (EntityImpl) entity;
     }
+
+    @Override
+    public Stream<Thing> getDependentConcepts() { return Stream.of(this); }
 }

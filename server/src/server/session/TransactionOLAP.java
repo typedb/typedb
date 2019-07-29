@@ -76,6 +76,7 @@ public class TransactionOLAP {
         } catch (ExecutionException e) {
             throw asRuntimeException(e.getCause());
         } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
             throw asRuntimeException(e);
         }
     }
@@ -110,14 +111,14 @@ public class TransactionOLAP {
 
         Traversal<Vertex, Edge> edgeFilter;
         if (filterAllEdges) {
-            edgeFilter = __.<Vertex>bothE().limit(0);
+            edgeFilter = __.bothE().limit(0);
         } else {
             edgeFilter = includesRolePlayerEdge ?
                     __.union(
-                            __.<Vertex>bothE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()),
-                            __.<Vertex>bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
+                            __.bothE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()),
+                            __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
                                     .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds))) :
-                    __.<Vertex>bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
+                    __.bothE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
                             .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), P.within(labelIds));
         }
 

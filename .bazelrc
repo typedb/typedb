@@ -1,4 +1,9 @@
-build --workspace_status_command bin/workspace_status.sh --java_toolchain @graknlabs_build_tools//bazel:java-toolchain
+# what is defined in this section will be applied at all times
+build --workspace_status_command bin/workspace_status.sh --java_toolchain @graknlabs_build_tools//bazel:java-toolchain --show_result=0 --show_progress=no
+test --show_result=0 --show_progress=no
+run --show_result=0 --show_progress=no
+
+# what is defined in this section will be applied when bazel is invoked like this: bazel ... --config=rbe ...
 build:rbe --project_id=grakn-dev
 build:rbe --remote_instance_name=projects/grakn-dev/instances/default_instance
 build:rbe --remote_cache=remotebuildexecution.googleapis.com

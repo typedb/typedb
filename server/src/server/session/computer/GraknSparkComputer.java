@@ -18,6 +18,7 @@
 
 package grakn.core.server.session.computer;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.configuration.ConfigurationUtils;
 import org.apache.commons.configuration.FileConfiguration;
 import org.apache.commons.configuration.PropertiesConfiguration;
@@ -325,10 +326,10 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                     this.logger.debug("Partitioning the loaded graphRDD: " + partitioner);
                     loadedGraphRDD = loadedGraphRDD.partitionBy(partitioner);
                     partitioned = true;
-                    assert loadedGraphRDD.partitioner().isPresent();
+                    Preconditions.checkState(loadedGraphRDD.partitioner().isPresent());
                 } else {
                     // no easy way to test this with a test case
-                    assert skipPartitioner == !loadedGraphRDD.partitioner().isPresent();
+                    Preconditions.checkState(skipPartitioner == !loadedGraphRDD.partitioner().isPresent());
 
                     this.logger.debug("Partitioning has been skipped for the loaded graphRDD via " +
                             Constants.GREMLIN_SPARK_SKIP_PARTITIONER);
@@ -408,10 +409,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                                 !this.mapReducers.isEmpty()) {
                             computedGraphRDD = GraknSparkExecutor.prepareFinalGraphRDD(
                                     loadedGraphRDD, viewIncomingRDD, this.vertexProgram.getVertexComputeKeys());
-                            assert null != computedGraphRDD && computedGraphRDD != loadedGraphRDD;
-                        } else {
-                            // ensure that the computedGraphRDD was not created
-                            assert null == computedGraphRDD;
+                            Preconditions.checkState(null != computedGraphRDD && computedGraphRDD != loadedGraphRDD);
                         }
                     }
                     /////////////////
@@ -419,7 +417,7 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                     // write the computed graph to the respective output (rdd or output format)
                     if (null != outputRDD && !this.persist.equals(Persist.NOTHING)) {
                         // the logic holds that a computeGraphRDD must be created at this point
-                        assert null != computedGraphRDD;
+                        Preconditions.checkNotNull(computedGraphRDD);
 
                         outputRDD.writeGraphRDD(graphComputerConfiguration, computedGraphRDD);
                     }
@@ -475,11 +473,11 @@ public final class GraknSparkComputer extends AbstractHadoopGraphComputer {
                     }
                     // if the mapReduceRDD is not simply the computed graph, unpersist the mapReduceRDD
                     if (computedGraphCreated && !outputToSpark) {
-                        assert loadedGraphRDD != computedGraphRDD;
-                        assert mapReduceRDD != computedGraphRDD;
+                        Preconditions.checkState(loadedGraphRDD != computedGraphRDD);
+                        Preconditions.checkState(mapReduceRDD != computedGraphRDD);
                         mapReduceRDD.unpersist();
                     } else {
-                        assert mapReduceRDD == computedGraphRDD;
+                        Preconditions.checkState(mapReduceRDD == computedGraphRDD);
                     }
                 }
 

@@ -84,9 +84,9 @@ public class ConcurrencyE2E {
         // We need a good amount of parallelism to have a good chance to spot possible issues. Don't use smaller values.
         int numberOfConcurrentTransactions = 56;
         int batchSize = 50;
+        Random random = new Random();
         for (int i = 0; i < numberOfConcurrentTransactions; i++) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                Random random = new Random();
                 GraknClient.Transaction threadTx = session.transaction().write();
                 for (int j = 0; j < batchSize; j++) {
                     threadTx.execute(Graql.parse("insert $x isa person, has name \"" + names[random.nextInt(10)] + "\"," +

@@ -33,12 +33,13 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
+import java.util.Iterator;
 import java.util.Set;
 
 /**
  * Query state corresponding to an atomic query (ReasonerAtomicQuery) in the resolution tree.
  */
-public class AtomicState extends QueryState<ReasonerAtomicQuery> {
+public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     //TODO: remove it once we introduce multi answer states
     private MultiUnifier ruleUnifier = null;
@@ -50,18 +51,19 @@ public class AtomicState extends QueryState<ReasonerAtomicQuery> {
     public AtomicState(ReasonerAtomicQuery query,
                 ConceptMap sub,
                 Unifier u,
-                QueryStateBase parent,
+                AnswerPropagatorState parent,
                 Set<ReasonerAtomicQuery> subGoals) {
-        super(ReasonerQueries.atomic(query, sub),
-              sub,
-              u,
-              parent,
-              subGoals);
+        super(ReasonerQueries.atomic(query, sub), sub, u, parent, subGoals);
+    }
+
+    @Override
+    Iterator<ResolutionState> generateChildStateIterator() {
+        return getQuery().innerStateIterator(this, getVisitedSubGoals());
     }
 
     @Override
     ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap answer = state.getAnswer();
+        ConceptMap answer = consumeAnswer(state);
         ReasonerAtomicQuery query = getQuery();
         if (answer.isEmpty()) return null;
 

@@ -24,6 +24,8 @@ import grakn.core.concept.answer.ConceptMap;
  *
  * <p>
  * Base abstract class for resolution states.
+ *
+ * All resolution states have an ability to generate states - produce further resolvable states in the resolution tree.
  * </p>
  *
  *
@@ -31,9 +33,9 @@ import grakn.core.concept.answer.ConceptMap;
 public abstract class ResolutionState {
 
     private final ConceptMap sub;
-    private final QueryStateBase parentState;
+    private final AnswerPropagatorState parentState;
 
-    ResolutionState(ConceptMap sub, QueryStateBase parent){
+    ResolutionState(ConceptMap sub, AnswerPropagatorState parent){
         this.sub = sub;
         this.parentState = parent;
     }
@@ -44,7 +46,7 @@ public abstract class ResolutionState {
     /**
      * @return new sub goal generated from this state
      */
-    public abstract ResolutionState generateSubGoal();
+    public abstract ResolutionState generateChildState();
 
     /**
      * @return substitution this state has
@@ -66,5 +68,5 @@ public abstract class ResolutionState {
     /**
      * @return parent state of this state
      */
-    QueryStateBase getParentState(){ return parentState;}
+    AnswerPropagatorState getParentState(){ return parentState;}
 }

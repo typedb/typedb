@@ -459,15 +459,16 @@ public class GraknConsoleIT {
             System.setIn(new ByteArrayInputStream(input.getBytes()));
             GraknConsole console = new GraknConsole(args, printOut, printErr);
             console.run();
+            printOut.flush();
+            printErr.flush();
         } catch (Exception e) {
             printErr.println(e.getMessage());
             printErr.flush();
         } finally {
             resetIO();
+            printErr.close();
+            printOut.close();
         }
-
-        printOut.flush();
-        printErr.flush();
 
         return Response.of(bufferOut.toString(), bufferErr.toString());
     }

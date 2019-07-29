@@ -19,12 +19,18 @@
 package grakn.core.graql.reasoner.plan;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-
+import graql.lang.statement.Variable;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class defining the resolution plan for a given ReasonerQueryImpl at an atom level.
@@ -32,13 +38,13 @@ import java.util.stream.Collectors;
  */
 public final class ResolutionPlan {
 
-    final private ImmutableList<Atom> plan;
-    final private ReasonerQueryImpl query;
+    private final ImmutableList<Atom> plan;
+    private final ReasonerQueryImpl query;
+    private static final Logger LOG = LoggerFactory.getLogger(ResolutionPlan.class);
 
     public ResolutionPlan(ReasonerQueryImpl q){
         this.query = q;
         this.plan = GraqlTraversalPlanner.plan(query);
-        assert(q.isPositive());
         validatePlan();
     }
 
@@ -59,11 +65,24 @@ public final class ResolutionPlan {
         return query.selectAtoms().allMatch(plan::contains);
     }
 
+
     private void validatePlan() {
         if (!isComplete()){
             throw GraqlQueryException.incompleteResolutionPlan(query);
         }
-    }
 
+        Iterator<Atom> iterator = plan.iterator();
+        Set<Variable> vars = new HashSet<>(iterator.next().getVarNames());
+        while (iterator.hasNext()) {
+            Atom next = iterator.next();
+            Set<Variable> varNames = next.getVarNames();
+            boolean planDisconnected = Sets.intersection(varNames, vars).isEmpty();
+            if (planDisconnected) {
+                LOG.debug("Disconnected resolution plan produced:\n{}", this);
+                break;
+            }
+            vars.addAll(varNames);
+        }
+    }
 }
 

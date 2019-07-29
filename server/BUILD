@@ -95,7 +95,6 @@ java_library(
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
     tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
-    javacopts = ["-XepDisableAllChecks"], # TODO: THIS NEEDS TO BE REMOVED
     visibility = ["//visibility:public"]
 
 )

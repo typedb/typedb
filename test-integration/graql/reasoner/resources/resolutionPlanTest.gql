@@ -37,7 +37,9 @@ yetAnotherRelation sub relation,
 
 derivedRelation sub relation,
     relates someRole,
-    relates otherRole;
+    relates otherRole,
+    has resource,
+    has anotherResource;
 
 anotherDerivedRelation sub relation,
     relates someRole,

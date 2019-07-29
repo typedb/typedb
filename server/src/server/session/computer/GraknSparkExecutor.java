@@ -18,6 +18,7 @@
 
 package grakn.core.server.session.computer;
 
+import com.google.common.base.Preconditions;
 import org.apache.commons.configuration.Configuration;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.Optional;
@@ -91,8 +92,7 @@ public class GraknSparkExecutor {
 
         boolean partitionedGraphRDD = graphRDD.partitioner().isPresent();
 
-        if (partitionedGraphRDD && null != viewIncomingRDD) // the graphRDD and the viewRDD must have the same partitioner
-        {assert graphRDD.partitioner().get().equals(viewIncomingRDD.partitioner().get());}
+        Preconditions.checkState(!partitionedGraphRDD || null == viewIncomingRDD || graphRDD.partitioner().get().equals(viewIncomingRDD.partitioner().get()));
         final JavaPairRDD<Object, ViewOutgoingPayload<M>> viewOutgoingRDD = ((null == viewIncomingRDD) ?
                 graphRDD.mapValues(vertexWritable -> new Tuple2<>(vertexWritable, Optional.<ViewIncomingPayload<M>>absent())) : // first iteration will not have any views or messages
                 graphRDD.leftOuterJoin(viewIncomingRDD))                                                   // every other iteration may have views and messages
@@ -120,11 +120,10 @@ public class GraknSparkExecutor {
                         vertex.dropVertexProperties(vertexComputeKeysArray);
                         final List<M> incomingMessages = hasViewAndMessages ? vertexViewIncoming._2()._2().get().getIncomingMessages() : Collections.emptyList();
                         IteratorUtils.removeOnNext(previousView.iterator()).forEachRemaining(property -> property.attach(Attachable.Method.create(vertex)));  // attach the view to the vertex
-                        assert previousView.isEmpty();
+                        Preconditions.checkState(previousView.isEmpty());
                         // do the vertex's vertex program iteration
                         messenger.setVertexAndIncomingMessages(vertex, incomingMessages); // set the messenger with the incoming messages
                         workerVertexProgram.execute(ComputerGraph.vertexProgram(vertex, workerVertexProgram), messenger, memory); // execute the vertex program on this vertex for this iteration
-                        // assert incomingMessages.isEmpty();  // maybe the program didn't read all the messages
                         incomingMessages.clear();
                         // detached the compute property view from the vertex
                         final List<DetachedVertexProperty<Object>> nextView = vertexComputeKeysArray.length == 0 ?  // not all vertex programs have compute keys
@@ -142,8 +141,7 @@ public class GraknSparkExecutor {
                 }, true)  // true means that the partition is preserved
                 .filter(tuple -> null != tuple); // if there are no messages or views, then the tuple is null (memory optimization)
         // the graphRDD and the viewRDD must have the same partitioner
-        if (partitionedGraphRDD){
-            assert graphRDD.partitioner().get().equals(viewOutgoingRDD.partitioner().get());}
+        Preconditions.checkState(!partitionedGraphRDD || graphRDD.partitioner().get().equals(viewOutgoingRDD.partitioner().get()));
         /////////////////////////////////////////////////////////////
         /////////////////////////////////////////////////////////////
         final PairFlatMapFunction<Tuple2<Object, ViewOutgoingPayload<M>>, Object, Payload> messageFunction =
@@ -181,8 +179,7 @@ public class GraknSparkExecutor {
                                 return new ViewIncomingPayload<>((MessagePayload<M>) payload);}
                         });
         // the graphRDD and the viewRDD must have the same partitioner
-        if (partitionedGraphRDD){
-            assert graphRDD.partitioner().get().equals(newViewIncomingRDD.partitioner().get());}
+        Preconditions.checkState(!partitionedGraphRDD || graphRDD.partitioner().get().equals(newViewIncomingRDD.partitioner().get()));
         newViewIncomingRDD
                 .foreachPartition(partitionIterator -> {
                     KryoShimServiceLoader.applyConfiguration(graphComputerConfiguration);
@@ -195,8 +192,7 @@ public class GraknSparkExecutor {
             final JavaPairRDD<Object, ViewIncomingPayload<M>> viewIncomingRDD,
             final Set<VertexComputeKey> vertexComputeKeys) {
         // the graphRDD and the viewRDD must have the same partitioner
-        if (graphRDD.partitioner().isPresent()){
-            assert (graphRDD.partitioner().get().equals(viewIncomingRDD.partitioner().get()));}
+        Preconditions.checkState(!graphRDD.partitioner().isPresent() || (graphRDD.partitioner().get().equals(viewIncomingRDD.partitioner().get())));
         final String[] vertexComputeKeysArray = VertexProgramHelper.vertexComputeKeysAsArray(vertexComputeKeys); // the compute keys as an array
         return graphRDD.leftOuterJoin(viewIncomingRDD)
                 .mapValues(tuple -> {
