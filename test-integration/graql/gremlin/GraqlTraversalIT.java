@@ -26,7 +26,7 @@ import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.executor.property.ValueExecutor;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.rule.GraknTestServer;
@@ -169,7 +169,7 @@ public class GraqlTraversalIT {
     @Ignore //TODO: No longer applicable. Think of a new test to replace this.
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
-        ValueExecutor.Operation<?,?> gt_1 = ValueExecutor.Operation.of(ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.GT, 1));
+        ValueOperation<?,?> gt_1 = ValueOperation.of(ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.GT, 1));
         GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), gt_1), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
         GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt_1));
 

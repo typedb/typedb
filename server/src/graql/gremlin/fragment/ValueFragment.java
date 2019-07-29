@@ -20,8 +20,8 @@ package grakn.core.graql.gremlin.fragment;
 
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.executor.property.ValueExecutor;
-import grakn.core.graql.executor.property.ValueExecutor.Operation.Comparison;
+import grakn.core.graql.executor.property.value.ValueComparison;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.statistics.KeyspaceStatistics;
@@ -43,9 +43,9 @@ public class ValueFragment extends Fragment {
 
     private final VarProperty varProperty;
     private final Variable start;
-    private final ValueExecutor.Operation<?, ?> operation;
+    private final ValueOperation<?, ?> operation;
 
-    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueExecutor.Operation<?, ?> operation) {
+    ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueOperation<?, ?> operation) {
         this.varProperty = varProperty;
         if (start == null) {
             throw new NullPointerException("Null start");
@@ -60,7 +60,7 @@ public class ValueFragment extends Fragment {
     /**
      * Operation between two values
      */
-    private ValueExecutor.Operation<?, ?> predicate() {
+    private ValueOperation<?, ?> predicate() {
         return operation;
     }
 
@@ -105,8 +105,8 @@ public class ValueFragment extends Fragment {
 
     @Override
     public Set<Variable> dependencies() {
-        if (operation instanceof Comparison.Variable) {
-            return Collections.singleton(((Comparison.Variable) operation).value().var());
+        if (operation instanceof ValueComparison.Variable) {
+            return Collections.singleton(((ValueComparison.Variable) operation).value().var());
         } else {
             return Collections.emptySet();
         }
