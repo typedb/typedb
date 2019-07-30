@@ -50,8 +50,8 @@ public class OptimalTreeTraversal {
 
     private static final Logger LOG = LoggerFactory.getLogger(OptimalTreeTraversal.class);
 
-    private final Map<Node, Node> childToParent;
     private double timeoutMs;
+    private final Map<Node, Node> childToParent;
     private final Map<Node, Set<Node>> parentToChild;
     private Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent;
     private TransactionOLTP tx;
@@ -79,7 +79,7 @@ public class OptimalTreeTraversal {
 
         long startTime = System.nanoTime();
         Map<NodeList, Pair<Double, NodeList>> memoisedResults = new HashMap<>();
-        double cost = optimalCostBottomUpStack(connectedNodes, memoisedResults);
+        double cost = optimalCostBottomUpStack(connectedNodes, childToParent, parentToChild, memoisedResults);
         double elapsedTimeMs = (System.nanoTime() - startTime) / 1000000.0;
         LOG.info("QP stage 2: took " + elapsedTimeMs + " ms (" + connectedNodes.size() + " nodes in " + iterations + " iterations, " + shortCircuits + " short circuits)  to find plan with best cost: " + cost);
 
@@ -125,7 +125,7 @@ public class OptimalTreeTraversal {
     }
 
 
-    private List<Node> extractOptimalNodeOrder(Map<NodeList, Pair<Double, NodeList>> memoisedResults) {
+    List<Node> extractOptimalNodeOrder(Map<NodeList, Pair<Double, NodeList>> memoisedResults) {
         List<Node> orderedNodes = new ArrayList<>();
         NodeList next = new NodeList(connectedNodes);
         while (true) {
@@ -161,7 +161,10 @@ public class OptimalTreeTraversal {
     }
 
 
-    double optimalCostBottomUpStack(Set<Node> allNodes, Map<NodeList, Pair<Double, NodeList>> memoised) {
+    double optimalCostBottomUpStack(Set<Node> allNodes,
+                                    Map<Node, Node> childToParent,
+                                    Map<Node, Set<Node>> parentToChild,
+                                    Map<NodeList, Pair<Double, NodeList>>memoised) {
 
         Stack<StackEntry> stack = new Stack<>();
 

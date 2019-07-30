@@ -33,7 +33,7 @@ java_test(
 
 java_test(
     name = "optimal-tree-traversal-test",
-    srcs = ["OptimalTreeTraversalTest.java"],
+    srcs = ["OptimalTreeTraversalScalingTest.java"],
     test_class = "grakn.core.graql.gremlin.OptimalTreeTraversalTest",
     deps = [
         "//server:server",

@@ -42,7 +42,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class OptimalTreeTraversalTest {
+/**
+ * Stress the OptimalTreeTraversal to determine implementation weak points, optimisations, and scalability of the algorithm
+ */
+public class OptimalTreeTraversalScalingTest {
 
     /**
      * A mock node that isn't actually a mock for testing/optimising the operations in OptimalTreeTraversal
@@ -80,8 +83,6 @@ public class OptimalTreeTraversalTest {
         NodeId rootId = NodeId.of(NodeId.Type.VAR, new Variable("root"));
         Node root = new TestingNode(rootId, 1L, InstanceNode.class.getName());
         mockParentToChild.put(root, new HashSet<>());
-//        Random random = new Random(-192934);
-//        Random random = new Random(3);
         Random random = new Random(seed);
 
         List<Node> vertexNodes = new ArrayList<>();
@@ -102,7 +103,7 @@ public class OptimalTreeTraversalTest {
                 int instances = 1 + random.nextInt(100);
                 newNode = new TestingNode(newNodeId, instances, InstanceNode.class.getName());
             } else {
-                // emulating either an IdNode or SchemaNode, occurs 2/5 of time
+                // emulating either an IdNode, IndexedNode, or SchemaNode, occurs 2/5 of time
                 newNode = new TestingNode(newNodeId, 1L, IdNode.class.getName());
             }
 
@@ -140,13 +141,13 @@ public class OptimalTreeTraversalTest {
             Set<Node> allNodes = new HashSet<>(parentToChild.keySet());
             parentToChild.values().forEach(allNodes::addAll);
 
-//            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class));
-//            Map<OptimalTreeTraversal.NodeList, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
-//            long startTime = System.nanoTime();
-//            double bestCost = traversal.optimalCostBottomUpStack(allNodes, memoisedResults, parentToChild, parents);
-//            long endTime = System.nanoTime();
-//
-//            System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " + +(endTime - startTime) / 1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
+            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class), null, null, null, null, 100);
+            Map<OptimalTreeTraversal.NodeList, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
+            long startTime = System.nanoTime();
+            double bestCost = traversal.optimalCostBottomUpStack(allNodes, parentToChild, parents,memoisedResults);
+            long endTime = System.nanoTime();
+
+            System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", time: " + +(endTime - startTime) / 1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", products: " + traversal.productIterations + ", short circuits: " + traversal.shortCircuits);
         }
     }
 
