@@ -29,20 +29,21 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -87,7 +88,7 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void sessionsToSameKeyspaceShareStatistics() {
-        SessionImpl session2 = server.session(localSession.keyspace().name());
+        SessionImpl session2 = server.session(localSession.keyspace());
         assertSame(localSession.keyspaceStatistics(), session2.keyspaceStatistics());
     }
 
@@ -227,7 +228,7 @@ public class KeyspaceStatisticsIT {
         remoteSession.close();
 
         // at this point, the graph and keyspace should be deleted from Grakn server cache
-        localSession = server.session(remoteSession.keyspace().name());
+        localSession = server.session(KeyspaceImpl.of(remoteSession.keyspace().name()));
 
         tx = localSession.transaction().write();
         long personCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("person"));

@@ -24,8 +24,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,18 +39,17 @@ import java.util.Properties;
  */
 public class HadoopGraphFactory {
 
-    private final Logger LOG = LoggerFactory.getLogger(HadoopGraphFactory.class);
     private Config config;
     //These properties are loaded in by default and can optionally be overwritten
-    private static final Properties DEFAULT_PROPERTIES;
+    private static final Properties DEFAULT_OLAP_PROPERTIES;
+    private static final String DEFAULT_OLAP_PATH = "resources/default-OLAP-configs.properties";
 
     static {
-        String DEFAULT_CONFIG = "resources/default-configs.properties";
-        DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = HadoopGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
-            DEFAULT_PROPERTIES.load(in);
+        DEFAULT_OLAP_PROPERTIES = new Properties();
+        try (InputStream in = HadoopGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_OLAP_PATH)) {
+            DEFAULT_OLAP_PROPERTIES.load(in);
         } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
+            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_OLAP_PATH), e);
         }
     }
 
@@ -61,7 +58,6 @@ public class HadoopGraphFactory {
     }
 
     public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
-
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(config, keyspace.name()).properties());
     }
 
@@ -76,7 +72,7 @@ public class HadoopGraphFactory {
 
         config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
         //Load Defaults
-        DEFAULT_PROPERTIES.forEach((key, value) -> {
+        DEFAULT_OLAP_PROPERTIES.forEach((key, value) -> {
             if (!config.properties().containsKey(key)) {
                 config.properties().put(key, value);
             }

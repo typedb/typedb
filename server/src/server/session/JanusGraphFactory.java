@@ -18,10 +18,8 @@
 
 package grakn.core.server.session;
 
-import com.google.common.collect.ImmutableMap;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.common.exception.ErrorMessage;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.optimisation.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
@@ -43,10 +41,6 @@ import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.Map;
-import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,25 +55,9 @@ import static java.util.Arrays.stream;
 final public class JanusGraphFactory {
     private final static Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
-    private static final String JANUS_PREFIX = "janusmr.ioformat.conf.";
-    private static final String STORAGE_BACKEND = "storage.backend";
-    private static final String STORAGE_HOSTNAME = ConfigKey.STORAGE_HOSTNAME.name();
     private static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
-    private static final String STORAGE_BATCH_LOADING = ConfigKey.STORAGE_BATCH_LOADING.name();
-    private static final String STORAGE_REPLICATION_FACTOR = ConfigKey.STORAGE_REPLICATION_FACTOR.name();
-
-    //These properties are loaded in by default and can optionally be overwritten
-    private static final Properties DEFAULT_PROPERTIES;
-
-    static {
-        String DEFAULT_CONFIG = "resources/default-configs.properties";
-        DEFAULT_PROPERTIES = new Properties();
-        try (InputStream in = JanusGraphFactory.class.getClassLoader().getResourceAsStream(DEFAULT_CONFIG)) {
-            DEFAULT_PROPERTIES.load(in);
-        } catch (IOException e) {
-            throw new RuntimeException(ErrorMessage.INVALID_PATH_TO_CONFIG.getMessage(DEFAULT_CONFIG), e);
-        }
-    }
+    private static final String STORAGE_BACKEND = ConfigKey.STORAGE_BACKEND.name();
+    private static final String CQL_BACKEND = "cql";
 
     private Config config;
 
@@ -90,17 +68,6 @@ final public class JanusGraphFactory {
     public Config config() {
         return config;
     }
-
-    /**
-     * This map is used to override hidden config files.
-     * The key of the map refers to the key of the properties file that gets passed in which provides the value to be injected.
-     * The value of the map specifies the key to inject into.
-     */
-    private static final Map<String, String> janusConfig = ImmutableMap.of(
-            STORAGE_BACKEND, JANUS_PREFIX + STORAGE_BACKEND,
-            STORAGE_HOSTNAME, JANUS_PREFIX + STORAGE_HOSTNAME,
-            STORAGE_REPLICATION_FACTOR, JANUS_PREFIX + STORAGE_REPLICATION_FACTOR
-    );
 
     public synchronized StandardJanusGraph openGraph(String keyspace) {
         StandardJanusGraph janusGraph = configureGraph(keyspace, config);
@@ -130,21 +97,12 @@ final public class JanusGraphFactory {
 
 
     private static StandardJanusGraph configureGraph(String keyspace, Config config) {
-        org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build().
-                set(STORAGE_HOSTNAME, config.getProperty(ConfigKey.STORAGE_HOSTNAME)).
-                set(STORAGE_KEYSPACE, keyspace).
-                set(STORAGE_BATCH_LOADING, false);
-
-        //Load Defaults
-        DEFAULT_PROPERTIES.forEach((key, value) -> builder.set(key.toString(), value));
+        org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build()
+                .set(STORAGE_BACKEND, CQL_BACKEND)
+                .set(STORAGE_KEYSPACE, keyspace);
 
         //Load Passed in properties
         config.properties().forEach((key, value) -> {
-            //Inject properties into other default properties
-            if (janusConfig.containsKey(key)) {
-                builder.set(janusConfig.get(key), value);
-            }
-
             builder.set(key.toString(), value);
         });
 
