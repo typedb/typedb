@@ -57,8 +57,8 @@ public class OptimalTreeTraversal {
     private TransactionOLTP tx;
     private Set<Node> connectedNodes;
     private Map<NodeId, Node> allNodesById;
-    private int iterations;
-    private int shortCircuits;
+    int iterations;
+    int shortCircuits;
 
     public OptimalTreeTraversal(TransactionOLTP tx, Set<Node> connectedNodes, Map<NodeId, Node> allNodesById, Arborescence<Node> arborescence, Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent, double timeoutMs) {
         this.tx = tx;
