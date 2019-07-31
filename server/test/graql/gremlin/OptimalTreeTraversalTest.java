@@ -31,7 +31,6 @@ import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -130,8 +129,6 @@ public class OptimalTreeTraversalTest {
 
         }
     }
-
-
 
     /**
      * A mock node that isn't actually a mock for testing/optimising the operations in OptimalTreeTraversal
