@@ -48,6 +48,7 @@ import org.junit.Test;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -350,12 +351,13 @@ public class QueryPlannerIT {
 
         ImmutableList<Fragment> plan = getPlan(pattern);
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
+        // first two fragments are Label, the Isa
         List<Fragment> nonLabelFragments = plan.stream().filter(f -> !(f instanceof LabelFragment)).collect(Collectors.toList());
         //first fragment after label fragments is an isa fragment so we skip it
         Fragment firstRolePlayerFragment = nonLabelFragments.get(1);
         String relationStartVarName = firstRolePlayerFragment.start().name();
 
-        // should start from relation
+        // should start from relation - TODO what's the use of this check?
         assertNotEquals(relationStartVarName, x.var().name());
         assertNotEquals(relationStartVarName, y.var().name());
 
@@ -365,12 +367,9 @@ public class QueryPlannerIT {
                 var().rel(x).rel(y));
         plan = getPlan(pattern);
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        String relationEndVarName = firstRolePlayerFragment.end().name();
 
-        // should start from a role player
-        assertTrue(relationEndVarName.equals(x.var().name()) || relationEndVarName.equals(y.var().name()));
-        //check next fragment after first role player fragment
-        assertTrue(nonLabelFragments.get(nonLabelFragments.indexOf(firstRolePlayerFragment)+1) instanceof OutIsaFragment);
+        assertTrue(plan.get(0) instanceof LabelFragment);
+        assertFalse(((LabelFragment) plan.get(0)).labels().iterator().next().toString().startsWith("@"));
     }
 
     @Test

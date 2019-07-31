@@ -43,7 +43,6 @@ java_test(
         "//dependencies/maven/artifacts/org/mockito:mockito-core"
     ],
     size = "medium",
-    flaky = 10
 )
 
 checkstyle_test(
