@@ -31,7 +31,6 @@ java_library(
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
-        "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
     ],
     data = [
         "//server:conf/grakn.properties",

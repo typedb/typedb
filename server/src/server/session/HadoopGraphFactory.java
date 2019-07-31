@@ -34,7 +34,7 @@ import java.util.Properties;
 /**
  * This class produces a graph on top of {@link HadoopGraph}.
  * With this vendor some exceptions are in places:
- * 1. The Grakn API cannnot work on {@link HadoopGraph} this is due to not being able to directly write to a
+ * 1. The Grakn API cannot work on {@link HadoopGraph} this is due to not being able to directly write to a
  * {@link HadoopGraph}.
  * 2. This factory primarily exists as a means of producing a
  * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
@@ -43,7 +43,6 @@ public class HadoopGraphFactory {
 
     private final Logger LOG = LoggerFactory.getLogger(HadoopGraphFactory.class);
     private Config config;
-    private HadoopGraph graph = null;
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_PROPERTIES;
 
@@ -57,41 +56,33 @@ public class HadoopGraphFactory {
         }
     }
 
-    public HadoopGraphFactory(Config config, KeyspaceImpl keyspace) {
-        this.config = addHadoopProperties(config, keyspace);
+    public HadoopGraphFactory(Config config) {
+        this.config = config;
     }
 
-    public synchronized HadoopGraph getGraph() {
-        if (graph == null) {
-            LOG.warn("Hadoop graph ignores parameter address.");
+    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
 
-            //Load Defaults
-            DEFAULT_PROPERTIES.forEach((key, value) -> {
-                if (!config.properties().containsKey(key)) {
-                   config.properties().put(key, value);
-                }
-            });
-
-            graph = (HadoopGraph) GraphFactory.open(config.properties());
-        }
-
-        return graph;
+        return (HadoopGraph) GraphFactory.open(addHadoopProperties(config, keyspace.name()).properties());
     }
 
-    protected Config addHadoopProperties(Config config, KeyspaceImpl keyspace) {
+    protected Config addHadoopProperties(Config config, String keyspaceName) {
         // Janus configurations
         String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
-        String inputKeyspaceConf = "cassandra.input.keyspace";
-        String keyspaceConf = "storage.cassandra.keyspace";
         String hostnameConf = "storage.hostname";
+        String keyspaceConf = "storage.cql.keyspace";
 
         // Values
-        String keyspaceValue = keyspace.name();
         String hostnameValue = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
 
         config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
-        config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceValue);
-        config.properties().setProperty(inputKeyspaceConf, keyspaceValue);
+        //Load Defaults
+        DEFAULT_PROPERTIES.forEach((key, value) -> {
+            if (!config.properties().containsKey(key)) {
+                config.properties().put(key, value);
+            }
+        });
+        config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceName);
+
 
         return config;
     }

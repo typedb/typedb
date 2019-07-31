@@ -33,6 +33,7 @@ import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
+import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
@@ -52,7 +53,7 @@ import java.util.function.Consumer;
  */
 public class SessionImpl implements Session {
 
-    private final HadoopGraphFactory hadoopGraphFactory;
+    private final HadoopGraph hadoopGraph;
 
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
@@ -76,7 +77,7 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, keyspaceStatistics, new HadoopGraphFactory(config, keyspace), attributesCache, graphLock);
+        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
     /**
@@ -88,12 +89,10 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
-                       KeyspaceStatistics keyspaceStatistics, HadoopGraphFactory hadoopGraphFactory, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+                       HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
-        // Only save a reference to the factory rather than opening an Hadoop graph immediately because that can be
-        // be an expensive operation TODO: refactor in the future
-        this.hadoopGraphFactory = hadoopGraphFactory;
+        this.hadoopGraph = hadoopGraph;
         // Open Janus Graph
         this.graph = graph;
 
@@ -135,7 +134,6 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-        // We are passing the graph to Transaction because there is the need to access graph tinkerpop traversal
         TransactionOLTP tx = new TransactionOLTP(this, graph.newThreadBoundTransaction(), keyspaceCache);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
@@ -205,7 +203,7 @@ public class SessionImpl implements Session {
      */
     @CheckReturnValue
     public TransactionOLAP transactionOLAP() {
-        return new TransactionOLAP(hadoopGraphFactory.getGraph());
+        return new TransactionOLAP(hadoopGraph);
     }
 
 
