@@ -133,7 +133,28 @@ public class OptimalTreeTraversalTest {
 
     @Test
     public void testTimeoutTerminatesLargeTraversal() {
+        int nodes = 50;
+        Map<Node, Set<Node>> parentToChild = generateMockTree(nodes, 0);
+        Map<Node, Node> childToParent = new HashMap<>();
+        for (Map.Entry<Node, Set<Node>> entry : parentToChild.entrySet()) {
+            for (Node child : entry.getValue()) {
+                childToParent.put(child, entry.getKey());
+            }
+        }
 
+        Set<Node> allNodes = new HashSet<>(parentToChild.keySet());
+        parentToChild.values().forEach(allNodes::addAll);
+        Arborescence<Node> mockArborescence = Mockito.mock(Arborescence.class);
+        when(mockArborescence.getParents()).thenReturn(ImmutableMap.<Node, Node>builder().build());
+        // allow up to 5 seconds to see how long processing actually is
+        OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class), allNodes, null, mockArborescence, null, 100);
+        Map<OptimalTreeTraversal.NodeList, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResultsBottomUp = new HashMap<>();
+
+        long startTime = System.nanoTime();
+        double bestCostBottomUp = traversal.optimalCostBottomUpStack(allNodes, childToParent, parentToChild, memoisedResultsBottomUp);
+        long endTime = System.nanoTime();
+
+        assertTrue((endTime-startTime)/1000000.0 < 105);
     }
 
 
