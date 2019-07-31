@@ -130,6 +130,16 @@ public class OptimalTreeTraversalTest {
         }
     }
 
+
+    @Test
+    public void testTimeoutTerminatesLargeTraversal() {
+
+    }
+
+
+
+
+
     /**
      * A mock node that isn't actually a mock for testing/optimising the operations in OptimalTreeTraversal
      * Allows us to build a realistic query tree structure with randomised values for estimates of matching elements
