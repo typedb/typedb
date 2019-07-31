@@ -53,42 +53,6 @@ import static org.mockito.Mockito.when;
  */
 public class OptimalTreeTraversalTest {
 
-    /**
-     * Ideally we should be able to handle up to 200 nodes (100 vertex nodes) in 100ms or something similar in this simplified environment
-     * Where we don't actually have to query janus for counts on types
-     */
-    @Test
-    public void scalingOptimalBottomUpStackTraversal() {
-        for (int i = 1; i < 100; i++) {
-            Map<Node, Set<Node>> parentToChild = generateMockTree(i, 0);
-
-            Map<Node, Node> childToParent = new HashMap<>();
-            for (Map.Entry<Node, Set<Node>> entry : parentToChild.entrySet()) {
-                for (Node child : entry.getValue()) {
-                    childToParent.put(child, entry.getKey());
-                }
-            }
-
-            Set<Node> allNodes = new HashSet<>(parentToChild.keySet());
-            parentToChild.values().forEach(allNodes::addAll);
-
-            Arborescence<Node> mockArborescence = Mockito.mock(Arborescence.class);
-            when(mockArborescence.getParents()).thenReturn(ImmutableMap.<Node, Node>builder().build());
-            // allow up to 5 seconds to see how long processing actually is
-            OptimalTreeTraversal traversal = new OptimalTreeTraversal(mock(TransactionOLTP.class), allNodes, null, mockArborescence, null, 5000);
-            Map<OptimalTreeTraversal.NodeList, Pair<Double, OptimalTreeTraversal.NodeList>> memoisedResults = new HashMap<>();
-            long startTime = System.nanoTime();
-            double bestCost = traversal.optimalCostBottomUpStack(allNodes, childToParent, parentToChild, memoisedResults);
-            long middleTime = System.nanoTime();
-            List<Node> nodesPlan = traversal.extractOptimalNodeOrder(memoisedResults);
-            long endTime = System.nanoTime();
-
-            System.out.println("Tree size: " + allNodes.size() + ", Cost: " + bestCost + ", plan time: " + +(middleTime - startTime) / 1000000.0 + " ms" + ", iterations: " + traversal.iterations + ", short circuits: " + traversal.shortCircuits + ", extract time: " + (endTime - middleTime) / 1000000.0 + " ms");
-
-            assertTrue((endTime - startTime) / 1000000.0 < 100);
-        }
-    }
-
 
     @Test
     public void testBottomUpStackTraversalCorrectness() {
@@ -156,8 +120,6 @@ public class OptimalTreeTraversalTest {
 
         assertTrue((endTime-startTime)/1000000.0 < 105);
     }
-
-
 
 
 
