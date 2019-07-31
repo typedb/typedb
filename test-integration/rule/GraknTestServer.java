@@ -32,8 +32,8 @@ import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.util.ServerID;
 import grakn.core.server.util.LockManager;
+import grakn.core.server.util.ServerID;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -73,7 +73,6 @@ public class GraknTestServer extends ExternalResource {
     protected final Path originalCassandraConfigPath;
     protected File updatedCassandraConfigPath;
     protected int storagePort;
-    protected int rpcPort;
     protected int nativeTransportPort;
 
 
@@ -132,17 +131,9 @@ public class GraknTestServer extends ExternalResource {
         return serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME) + ":" + serverConfig.getProperty(ConfigKey.GRPC_PORT);
     }
 
-    public int nativeTransportPort() {
-        return nativeTransportPort;
-    }
-
     public SessionImpl sessionWithNewKeyspace() {
         KeyspaceImpl randomKeyspace = KeyspaceImpl.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
         return session(randomKeyspace);
-    }
-
-    public SessionImpl session(String keyspace) {
-        return session(KeyspaceImpl.of(keyspace));
     }
 
     public SessionImpl session(KeyspaceImpl keyspace) {
@@ -162,7 +153,6 @@ public class GraknTestServer extends ExternalResource {
     protected void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
-        rpcPort = findUnusedLocalPort();
     }
 
     protected File buildCassandraConfigWithRandomPorts() throws IOException {
@@ -171,7 +161,6 @@ public class GraknTestServer extends ExternalResource {
 
         configString = configString + "\nstorage_port: " + storagePort;
         configString = configString + "\nnative_transport_port: " + nativeTransportPort;
-        configString = configString + "\nrpc_port: " + rpcPort;
         InputStream configStream = new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8));
 
         String directory = "target/embeddedCassandra";
@@ -197,12 +186,11 @@ public class GraknTestServer extends ExternalResource {
         config.setConfigProperty(ConfigKey.DATA_DIR, dataDir);
         //Override gRPC port with a random free port
         config.setConfigProperty(ConfigKey.GRPC_PORT, grpcPort);
-        //Override the default store.port with the RPC_PORT given that we still use Thrift protocol to talk to Cassandra
+        //Override Storage Port used by Janus to communicate with Cassandra Backend
         config.setConfigProperty(ConfigKey.STORAGE_PORT, nativeTransportPort);
-        //Hadoop cluster uses the Astyanax driver for some operations, so need to override the RPC_PORT (Thrift)
+
+        //Override ports used by HadoopGraph
         config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, nativeTransportPort);
-        //Hadoop cluster uses the CQL driver for some operations, so we need to instruct it to use the newly generated native transport port (CQL)
-        config.setConfigProperty(ConfigKey.CQL_STORAGE_PORT, nativeTransportPort);
         config.setConfigProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
 
         return config;
