@@ -19,6 +19,7 @@
 package grakn.core.server.keyspace;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.KeyspaceMetadata;
 import com.datastax.driver.core.Row;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
@@ -56,9 +57,9 @@ public class KeyspaceManager {
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
         Cluster storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build();
         LOG.info("listing keyspaces...");
-        List<Row> keyspaces = storage.connect().execute("DESCRIBE KEYSPACES;").all();
-        for (Row keyspace: keyspaces) {
-            LOG.info("- " + keyspace);
+        List<KeyspaceMetadata> keyspaces = storage.connect().getCluster().getMetadata().getKeyspaces();
+        for (KeyspaceMetadata keyspace: keyspaces) {
+            LOG.info("- " + keyspace.getName());
         }
         LOG.info("keyspaces listed.");
     }
