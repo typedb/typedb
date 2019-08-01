@@ -67,7 +67,7 @@ public class KeyspaceManager {
 
     // TODO: rewrite
     public void deleteKeyspace(KeyspaceImpl keyspace) {
-
+        storage.connect().execute("drop keyspace " + keyspace.name());
     }
 
     // TODO: rewrite: describe keyspaces
