@@ -19,6 +19,7 @@
 package grakn.core.server.keyspace;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Row;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
@@ -38,6 +39,7 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -52,8 +54,13 @@ public class KeyspaceManager {
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
-        Cluster storage = Cluster.builder().addContactPoint("localhost").build();
-        storage.connect().execute("DESCRIBE KEYSPACES");
+        Cluster storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build();
+        LOG.info("listing keyspaces...");
+        List<Row> keyspaces = storage.connect().execute("DESCRIBE KEYSPACES").all();
+        for (Row keyspace: keyspaces) {
+            LOG.info("- " + keyspace);
+        }
+        LOG.info("keyspaces listed.");
     }
 
     /**
