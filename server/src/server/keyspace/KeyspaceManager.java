@@ -40,6 +40,9 @@ import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,46 +54,27 @@ import java.util.stream.Collectors;
  */
 public class KeyspaceManager {
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
-    private final Set<KeyspaceImpl> existingKeyspaces;
+    private final Cluster storage;
+    private final Set<String> internals = new HashSet<>(Arrays.asList("system_traces", "system", "system_distributed", "system_schema", "system_auth"));
+
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
-        this.existingKeyspaces = ConcurrentHashMap.newKeySet();
-        Cluster storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build();
-        LOG.info("listing keyspaces...");
-        List<KeyspaceMetadata> keyspaces = storage.connect().getCluster().getMetadata().getKeyspaces();
-        for (KeyspaceMetadata keyspace: keyspaces) {
-            LOG.info("- " + keyspace.getName());
-        }
-        LOG.info("keyspaces listed.");
-    }
-
-    /**
-     * Add new keyspace in graknsystem if it does not exist already.
-     *
-     * @param keyspace The new KeyspaceImpl we have just created
-     */
-    // TODO: rewrite
-    public void putKeyspace(KeyspaceImpl keyspace) {
-        if (!containsKeyspace(keyspace)) {
-            existingKeyspaces.add(keyspace);
-        }
+        storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build();
     }
 
     public void closeStore() {
     }
 
     // TODO: rewrite
-    private boolean containsKeyspace(KeyspaceImpl keyspace) {
-        return existingKeyspaces.contains(keyspace);
-    }
-
-    // TODO: rewrite
     public void deleteKeyspace(KeyspaceImpl keyspace) {
-        existingKeyspaces.remove(keyspace);
+
     }
 
     // TODO: rewrite: describe keyspaces
     public Set<KeyspaceImpl> keyspaces() {
-        return existingKeyspaces;
+        Set<String> result = storage.connect().getCluster().getMetadata().getKeyspaces().stream()
+                .map(KeyspaceMetadata::getName).collect(Collectors.toSet());
+        result.removeAll(internals);
+        return result.stream().map(KeyspaceImpl::of).collect(Collectors.toSet());
     }
 }
