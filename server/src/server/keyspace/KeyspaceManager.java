@@ -18,6 +18,7 @@
 
 package grakn.core.server.keyspace;
 
+import com.datastax.driver.core.Cluster;
 import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
@@ -46,15 +47,13 @@ import java.util.stream.Collectors;
  * KeyspaceManager used to store all existing keyspaces inside Grakn system keyspace.
  */
 public class KeyspaceManager {
-    private static final Label KEYSPACE_RESOURCE = Label.of("keyspace-name");
-    private static final Label KEYSPACE_ENTITY = Label.of("keyspace");
-    private final static KeyspaceImpl SYSTEM_KB_KEYSPACE = KeyspaceImpl.of("graknsystem");
-
     private static final Logger LOG = LoggerFactory.getLogger(KeyspaceManager.class);
     private final Set<KeyspaceImpl> existingKeyspaces;
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
+        Cluster storage = Cluster.builder().addContactPoint("localhost").build();
+        storage.connect().execute("DESCRIBE KEYSPACES");
     }
 
     /**
@@ -64,9 +63,9 @@ public class KeyspaceManager {
      */
     // TODO: rewrite
     public void putKeyspace(KeyspaceImpl keyspace) {
-        if (containsKeyspace(keyspace)) return;
-
-        existingKeyspaces.add(keyspace);
+        if (!containsKeyspace(keyspace)) {
+            existingKeyspaces.add(keyspace);
+        }
     }
 
     public void closeStore() {
@@ -79,13 +78,6 @@ public class KeyspaceManager {
 
     // TODO: rewrite
     public void deleteKeyspace(KeyspaceImpl keyspace) {
-        if (keyspace.equals(SYSTEM_KB_KEYSPACE)) {
-            throw GraknServerException.create("It is not possible to delete the Grakn system keyspace.");
-        }
-        deleteReferenceInSystemKeyspace(keyspace);
-    }
-
-    private void deleteReferenceInSystemKeyspace(KeyspaceImpl keyspace) {
         existingKeyspaces.remove(keyspace);
     }
 
