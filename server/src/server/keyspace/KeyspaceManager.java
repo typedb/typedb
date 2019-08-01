@@ -56,7 +56,7 @@ public class KeyspaceManager {
         this.existingKeyspaces = ConcurrentHashMap.newKeySet();
         Cluster storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build();
         LOG.info("listing keyspaces...");
-        List<Row> keyspaces = storage.connect().execute("DESCRIBE KEYSPACES").all();
+        List<Row> keyspaces = storage.connect().execute("DESCRIBE KEYSPACES;").all();
         for (Row keyspace: keyspaces) {
             LOG.info("- " + keyspace);
         }
