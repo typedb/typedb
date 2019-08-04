@@ -197,6 +197,7 @@ public class GraknDaemon {
                                    "stop [" + SERVER + "|" + STORAGE + "]   Stop Grakn (or optionally, only one of the component)\n" +
                                    "status                         Check if Grakn is running\n" +
                                    "clean                          DANGEROUS: wipe data completely\n" +
+                                   "version                        Print version of Grakn server\n" +
                                    "\n" +
                                    "Tips:\n" +
                                    "- Start Grakn with 'grakn server start'\n" +
@@ -211,19 +212,6 @@ public class GraknDaemon {
 
     private void version() {
         System.out.println(Version.VERSION);
-    }
-
-    private void help() {
-        System.out.println("Usage: grakn COMMAND\n" +
-                                   "\n" +
-                                   "COMMAND:\n" +
-                                   "server     Manage Grakn components\n" +
-                                   "version    Print Grakn version\n" +
-                                   "help       Print this message\n" +
-                                   "\n" +
-                                   "Tips:\n" +
-                                   "- Start Grakn with 'grakn server start'\n" +
-                                   "- You can then perform queries by opening a console with 'grakn console'");
     }
 
     private void clean() {
