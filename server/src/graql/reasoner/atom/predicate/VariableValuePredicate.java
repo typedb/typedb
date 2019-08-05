@@ -85,14 +85,11 @@ public class VariableValuePredicate extends VariablePredicate {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.getVarName().hashCode();
-        h *= 1000003;
-        h ^= this.getPredicate().hashCode();
-        h *= 1000003;
-        h ^= this.operation().hashCode();
-        return h;
+        int hashCode = 1;
+        hashCode = hashCode * 37 + this.getVarName().hashCode();
+        hashCode = hashCode * 37 + this.getPredicate().hashCode();
+        hashCode = hashCode * 37 + this.operation().hashCode();
+        return hashCode;
     }
 
     @Override
