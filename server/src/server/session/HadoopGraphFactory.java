@@ -39,10 +39,13 @@ import java.util.Properties;
  */
 public class HadoopGraphFactory {
 
-    private Config config;
+    protected Config config;
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_OLAP_PROPERTIES;
     private static final String DEFAULT_OLAP_PATH = "resources/default-OLAP-configs.properties";
+    private static final String STORAGE_HOSTNAME = ConfigKey.STORAGE_HOSTNAME.name();
+    protected static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
+    protected static final String JANUSGRAPHMR_IOFORMAT_CONF = "janusgraphmr.ioformat.conf.";
 
     static {
         DEFAULT_OLAP_PROPERTIES = new Properties();
@@ -55,31 +58,28 @@ public class HadoopGraphFactory {
 
     public HadoopGraphFactory(Config config) {
         this.config = config;
+        String hostnameValue = this.config.getProperty(ConfigKey.STORAGE_HOSTNAME);
+        this.config.properties().setProperty(JANUSGRAPHMR_IOFORMAT_CONF + STORAGE_HOSTNAME, hostnameValue);
+        //Load Defaults
+        DEFAULT_OLAP_PROPERTIES.forEach((key, value) -> {
+            if (!this.config.properties().containsKey(key)) {
+                this.config.properties().put(key, value);
+            }
+        });
     }
 
     public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
-        return (HadoopGraph) GraphFactory.open(addHadoopProperties(config, keyspace.name()).properties());
+        return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 
-    protected Config addHadoopProperties(Config config, String keyspaceName) {
-        // Janus configurations
-        String graphMrPrefixConf = "janusgraphmr.ioformat.conf.";
-        String hostnameConf = "storage.hostname";
-        String keyspaceConf = "storage.cql.keyspace";
-
-        // Values
-        String hostnameValue = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
-
-        config.properties().setProperty(graphMrPrefixConf + hostnameConf, hostnameValue);
-        //Load Defaults
-        DEFAULT_OLAP_PROPERTIES.forEach((key, value) -> {
-            if (!config.properties().containsKey(key)) {
-                config.properties().put(key, value);
-            }
-        });
-        config.properties().setProperty(graphMrPrefixConf + keyspaceConf, keyspaceName);
-
-
-        return config;
+    /**
+     * Clone Grakn config and adds OLAP specific keyspace property
+     * @param keyspaceName keyspace value to add as a property
+     * @return new copy of configuration, specific for current keyspace
+     */
+    private Config addHadoopProperties(String keyspaceName) {
+        Config localConfig = Config.of(config.properties());
+        localConfig.properties().setProperty(JANUSGRAPHMR_IOFORMAT_CONF + STORAGE_KEYSPACE, keyspaceName);
+        return localConfig;
     }
 }
