@@ -26,6 +26,7 @@ import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
+import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.ServerID;
@@ -52,9 +53,10 @@ public class ServerFactory {
         LockManager lockManager = new LockManager();
 
         KeyspaceManager keyspaceStore = new KeyspaceManager(janusGraphFactory, config);
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
-        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, config);
+        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceStore, config);
 
         // Enable server tracing
         if (benchmark) {

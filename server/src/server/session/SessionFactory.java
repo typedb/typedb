@@ -46,23 +46,23 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
-    // NOTE: this field is used by Grakn KGMS and should be kept public
-    protected final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
-
-    // NOTE: this field is used by Grakn KGMS and should be kept public
-    protected final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
-
-    private final JanusGraphFactory janusGraphFactory;
+    private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
+    private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
+    // Keep visibility to protected as this is used by KGMS
+    protected final JanusGraphFactory janusGraphFactory;
+    // Keep visibility to protected as this is used by KGMS
     protected final KeyspaceManager keyspaceManager;
-    private final HadoopGraphFactory hadoopGraphFactory;
+    // Keep visibility to protected as this is used by KGMS
+    protected final HadoopGraphFactory hadoopGraphFactory;
     protected Config config;
+    // Keep visibility to protected as this is used by KGMS
     protected final LockManager lockManager;
 
-    protected final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
+    private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
 
-    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, KeyspaceManager keyspaceManager, Config config) {
+    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, KeyspaceManager keyspaceManager, Config config) {
         this.janusGraphFactory = janusGraphFactory;
-        this.hadoopGraphFactory = new HadoopGraphFactory(config);
+        this.hadoopGraphFactory = hadoopGraphFactory;
         this.lockManager = lockManager;
         this.keyspaceManager = keyspaceManager;
         this.config = config;
@@ -70,8 +70,8 @@ public class SessionFactory {
     }
 
     /**
-     * Retrieves the Session needed to open the Transaction.
-     * This will open a new one Session if it hasn't been opened before
+     * Creates a Session needed to open Transactions.
+     * This will open a new graph or retrieve one from shared cache.
      *
      * @param keyspace The keyspace of the Session to retrieve
      * @return a new Session connecting to the provided keyspace
@@ -105,10 +105,7 @@ public class SessionFactory {
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceCache();
                 keyspaceStatistics = new KeyspaceStatistics();
-                attributesCache = CacheBuilder.newBuilder()
-                        .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
-                        .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
-                        .build();
+                attributesCache = buildAttributeCache();
                 graphLock = new ReentrantReadWriteLock();
                 cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock, hadoopGraph);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
@@ -121,6 +118,14 @@ public class SessionFactory {
         } finally {
             lock.unlock();
         }
+    }
+
+    // Keep visibility to protected as this is used by KGMS
+    protected Cache<String, ConceptId> buildAttributeCache(){
+        return CacheBuilder.newBuilder()
+                .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
+                .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
+                .build();
     }
 
     /**
@@ -152,7 +157,7 @@ public class SessionFactory {
      *
      * @param session SessionImpl that is being closed
      */
-    protected void onSessionClose(SessionImpl session) {
+    private void onSessionClose(SessionImpl session) {
         Lock lock = lockManager.getLock(session.keyspace().name());
         lock.lock();
         try {
@@ -173,9 +178,10 @@ public class SessionFactory {
     }
 
     /**
-     * Helper class used to hold in memory a reference to a graph together with its schema cache and a reference to all sessions open to the graph.
+     * Helper class used to hold in memory a reference to a graph together with its schema cache
+     * and a reference to all sessions open to the graph.
      */
-    protected class SharedKeyspaceData {
+    private class SharedKeyspaceData {
 
         private final KeyspaceCache keyspaceCache;
         // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
@@ -193,7 +199,7 @@ public class SessionFactory {
 
         private final ReadWriteLock graphLock;
 
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
+        private SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.hadoopGraph = hadoopGraph;
@@ -203,11 +209,11 @@ public class SessionFactory {
             this.graphLock = graphLock;
         }
 
-        public ReadWriteLock graphLock() {
+        private ReadWriteLock graphLock() {
             return graphLock;
         }
 
-        public KeyspaceCache cache() {
+        private KeyspaceCache cache() {
             return keyspaceCache;
         }
 
@@ -215,7 +221,7 @@ public class SessionFactory {
             return sessions.size();
         }
 
-        public void addSessionReference(SessionImpl session) {
+        private void addSessionReference(SessionImpl session) {
             sessions.add(session);
         }
 
@@ -227,19 +233,19 @@ public class SessionFactory {
             sessions.forEach(SessionImpl::invalidate);
         }
 
-        public StandardJanusGraph graph() {
+        private StandardJanusGraph graph() {
             return graph;
         }
 
-        public KeyspaceStatistics keyspaceStatistics() {
+        private KeyspaceStatistics keyspaceStatistics() {
             return keyspaceStatistics;
         }
 
-        public Cache<String, ConceptId> attributesCache() {
+        private Cache<String, ConceptId> attributesCache() {
             return attributesCache;
         }
 
-        public HadoopGraph hadoopGraph(){ return hadoopGraph; }
+        private HadoopGraph hadoopGraph(){ return hadoopGraph; }
 
     }
 

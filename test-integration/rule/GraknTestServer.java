@@ -29,6 +29,7 @@ import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
+import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
@@ -202,9 +203,10 @@ public class GraknTestServer extends ExternalResource {
         // distributed locks
         LockManager lockManager = new LockManager();
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
+        HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
 
         keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
-        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, keyspaceStore, serverConfig);
+        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceStore, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
