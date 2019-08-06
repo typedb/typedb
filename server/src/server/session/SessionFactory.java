@@ -48,11 +48,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 public class SessionFactory {
     private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
     private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
-
+    // Keep visibility to protected as this is used by KGMS
     protected final JanusGraphFactory janusGraphFactory;
+    // Keep visibility to protected as this is used by KGMS
     protected final KeyspaceManager keyspaceManager;
+    // Keep visibility to protected as this is used by KGMS
     protected final HadoopGraphFactory hadoopGraphFactory;
     protected Config config;
+    // Keep visibility to protected as this is used by KGMS
     protected final LockManager lockManager;
 
     private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
@@ -117,6 +120,7 @@ public class SessionFactory {
         }
     }
 
+    // Keep visibility to protected as this is used by KGMS
     protected Cache<String, ConceptId> buildAttributeCache(){
         return CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)

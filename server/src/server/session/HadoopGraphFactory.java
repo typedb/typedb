@@ -38,13 +38,15 @@ import java.util.Properties;
  * {@link org.apache.tinkerpop.gremlin.process.computer.GraphComputer} on of {@link HadoopGraph}
  */
 public class HadoopGraphFactory {
-
+    // Keep visibility to protected as this is used by KGMS
     protected Config config;
     //These properties are loaded in by default and can optionally be overwritten
     private static final Properties DEFAULT_OLAP_PROPERTIES;
     private static final String DEFAULT_OLAP_PATH = "resources/default-OLAP-configs.properties";
     private static final String STORAGE_HOSTNAME = ConfigKey.STORAGE_HOSTNAME.name();
+    // Keep visibility to protected as this is used by KGMS
     protected static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
+    // Keep visibility to protected as this is used by KGMS
     protected static final String JANUSGRAPHMR_IOFORMAT_CONF = "janusgraphmr.ioformat.conf.";
 
     static {
@@ -68,7 +70,7 @@ public class HadoopGraphFactory {
         });
     }
 
-    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+    synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 
