@@ -55,7 +55,6 @@ public class Server implements AutoCloseable {
     @Override
     public void close() {
         try {
-            keyspaceStore.closeStore();
             serverRPC.shutdown();
             serverRPC.awaitTermination();
         } catch (InterruptedException e) {

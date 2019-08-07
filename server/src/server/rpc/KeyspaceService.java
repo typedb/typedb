@@ -72,8 +72,6 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
             KeyspaceImpl keyspace = KeyspaceImpl.of(request.getName());
             // removing references to open keyspaces JanusGraph instances
             sessionFactory.deleteKeyspace(keyspace);
-            // remove the keyspace from the system keyspace
-            keyspaceStore.deleteKeyspace(keyspace);
             // actually remove the keyspace
             janusGraphFactory.drop(keyspace.name());
 

@@ -59,18 +59,9 @@ public class KeyspaceManager {
 
 
     public KeyspaceManager(JanusGraphFactory janusGraphFactory, Config config) {
-        storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build();
+        storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build(); // TODO: don't hardcode ip and port
     }
 
-    public void closeStore() {
-    }
-
-    // TODO: rewrite
-    public void deleteKeyspace(KeyspaceImpl keyspace) {
-        storage.connect().execute("drop keyspace " + keyspace.name());
-    }
-
-    // TODO: rewrite: describe keyspaces
     public Set<KeyspaceImpl> keyspaces() {
         Set<String> result = storage.connect().getCluster().getMetadata().getKeyspaces().stream()
                 .map(KeyspaceMetadata::getName).collect(Collectors.toSet());
