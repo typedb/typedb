@@ -63,9 +63,14 @@ public class Grakn {
             Stopwatch timer = Stopwatch.createStarted();
             boolean benchmark = parseBenchmarkArg(args);
             Server server = ServerFactory.createServer(benchmark);
+            Runtime.getRuntime().addShutdownHook(new Thread(server::close));
             server.start();
-
             LOG.info("Grakn started in {}", timer.stop());
+            try {
+                server.block();
+            } catch (InterruptedException e) {
+                //
+            }
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
             System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()));

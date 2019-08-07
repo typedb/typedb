@@ -39,12 +39,10 @@ public class Server implements AutoCloseable {
 
     public void start() throws IOException {
         serverRPC.start();
-        try {
-            serverRPC.awaitTermination();
-        }
-        catch (InterruptedException e) {
-            close();
-        }
+    }
+
+    public void block() throws InterruptedException {
+        serverRPC.awaitTermination();
     }
 
     @Override
