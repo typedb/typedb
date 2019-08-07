@@ -52,7 +52,7 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
-        KeyspaceManager keyspaceStore = new KeyspaceManager(janusGraphFactory, config);
+        KeyspaceManager keyspaceStore = new KeyspaceManager();
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory

@@ -204,7 +204,7 @@ public class GraknTestServer extends ExternalResource {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
 
-        keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
+        keyspaceStore = new KeyspaceManager();
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceStore, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
