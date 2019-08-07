@@ -66,7 +66,7 @@ public class ServerFactory {
         // create gRPC server
         io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceStore, janusGraphFactory);
 
-        return createServer(serverID, serverRPC, keyspaceStore);
+        return createServer(serverRPC);
     }
 
     /**
@@ -75,8 +75,8 @@ public class ServerFactory {
      * @return a Server instance
      */
 
-    public static Server createServer(ServerID serverID, io.grpc.Server rpcServer, KeyspaceManager keyspaceStore) {
-        Server server = new Server(serverID, rpcServer, keyspaceStore);
+    public static Server createServer(io.grpc.Server rpcServer) {
+        Server server = new Server(rpcServer);
 
         Runtime.getRuntime().addShutdownHook(new Thread(server::close, "grakn-server-shutdown"));
 

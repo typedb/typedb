@@ -214,6 +214,6 @@ public class GraknTestServer extends ExternalResource {
                 .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
                 .build();
 
-        return ServerFactory.createServer(id, serverRPC, keyspaceStore);
+        return ServerFactory.createServer(serverRPC);
     }
 }

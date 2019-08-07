@@ -30,16 +30,11 @@ import java.io.IOException;
 public class Server implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
-    private final ServerID serverID;
     private final io.grpc.Server serverRPC;
 
-    private final KeyspaceManager keyspaceStore;
-
-    public Server(ServerID serverID, io.grpc.Server serverRPC, KeyspaceManager keyspaceStore) {
+    public Server(io.grpc.Server serverRPC) {
         // Lock provider
-        this.keyspaceStore = keyspaceStore;
         this.serverRPC = serverRPC;
-        this.serverID = serverID;
     }
 
     public void start() throws IOException {
