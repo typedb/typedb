@@ -113,7 +113,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         V instance = producer.apply(instanceVertex, getThis());
         Preconditions.checkNotNull(instance, "producer should never return null");
-        if(isInferred) vertex().tx().cache().cacheInferredInstance(instance);
+        if(isInferred) vertex().tx().cache().inferredInstance(instance);
 
         return instance;
     }

@@ -941,7 +941,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void removeInferredConcepts() {
-        Set<Thing> inferredThingsToDiscard = cache().getInferredThingsToDiscard().collect(Collectors.toSet());
+        Set<Thing> inferredThingsToDiscard = cache().getInferredInstancesToDiscard().collect(Collectors.toSet());
         inferredThingsToDiscard.forEach(inferred -> cache().remove(inferred));
         inferredThingsToDiscard.forEach(Concept::delete);
     }

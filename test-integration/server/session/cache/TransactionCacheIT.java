@@ -32,6 +32,8 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.EntityTypeImpl;
+import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -337,5 +339,14 @@ public class TransactionCacheIT {
         // confirm we have the exact same object from Janus
         assertSame(janusVertex, relationVertex);
         assertEquals("testValue", janusVertex.property("testKey").value().toString());
+    }
+
+    @Test
+    public void whenInsertingAndDeletingInferredInstance_instanceIsTracked(){
+        EntityType someEntity = tx.putEntityType("someEntity");
+        Entity entity = EntityTypeImpl.from(someEntity).addEntityInferred();
+        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
+        entity.delete();
+        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
     }
 }

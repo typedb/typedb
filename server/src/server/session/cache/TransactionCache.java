@@ -152,7 +152,11 @@ public class TransactionCache {
         }
 
         if (concept.isThing()){
-            if (concept.asThing().isInferred()) inferredConcepts.remove(concept.id());
+            Thing instance = concept.asThing();
+            if (instance.isInferred()){
+                inferredConcepts.remove(instance);
+                inferredConceptsToPersist.remove(instance);
+            }
         }
 
         conceptCache.remove(concept.id());
@@ -179,14 +183,6 @@ public class TransactionCache {
             schemaConceptCache.put(schemaConcept.label(), schemaConcept);
             labelCache.put(schemaConcept.label(), schemaConcept.labelId());
         }
-    }
-
-    /**
-     *
-     * @param thing
-     */
-    public void cacheInferredInstance(Thing thing){
-        inferredConcepts.add(thing);
     }
 
     /**
@@ -237,20 +233,28 @@ public class TransactionCache {
         return (X) conceptCache.get(id);
     }
 
-    public void inferredThingToPersist(Thing t) {
+    /**
+     * Caches an inferred instance for possible persistence later.
+     *
+     * @param thing The inferred instance to be cached.
+     */
+    public void inferredInstance(Thing thing){
+        inferredConcepts.add(thing);
+    }
+
+    public void inferredInstanceToPersist(Thing t) {
         inferredConceptsToPersist.add(t);
+    }
+
+    public Stream<Thing> getInferredInstances() {
+        return inferredConcepts.stream();
     }
 
     /**
      * @return cached things that are inferred
      */
-    public Stream<Thing> getInferredThingsToDiscard() {
-        return /*conceptCache.values().stream()
-                .filter(Concept::isThing)
-                .map(Concept::asThing)
-                .filter(Thing::isInferred)
-                */
-        inferredConcepts.stream()
+    public Stream<Thing> getInferredInstancesToDiscard() {
+        return inferredConcepts.stream()
                 .filter(t -> !inferredConceptsToPersist.contains(t));
     }
 
