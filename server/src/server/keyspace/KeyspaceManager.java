@@ -33,8 +33,8 @@ public class KeyspaceManager {
     private final Cluster storage;
     private final Set<String> internals = new HashSet<>(Arrays.asList("system_traces", "system", "system_distributed", "system_schema", "system_auth"));
     
-    public KeyspaceManager() {
-        storage = Cluster.builder().addContactPoint("localhost").withPort(9042).build(); // TODO: don't hardcode ip and port
+    public KeyspaceManager(int storageNativeTransportPort) {
+        storage = Cluster.builder().addContactPoint("localhost").withPort(storageNativeTransportPort).build(); // TODO: don't hardcode ip and port
     }
 
     public Set<KeyspaceImpl> keyspaces() {

@@ -66,7 +66,7 @@ public class GraknTestServer extends ExternalResource {
     protected Config serverConfig;
     protected Server graknServer;
     protected int grpcPort;
-    protected KeyspaceManager keyspaceStore;
+    protected KeyspaceManager keyspaceManager;
     protected SessionFactory sessionFactory;
     protected Path dataDirTmp;
 
@@ -197,21 +197,19 @@ public class GraknTestServer extends ExternalResource {
     }
 
     private Server createServer() {
-        ServerID id = ServerID.me();
-
         // distributed locks
         LockManager lockManager = new LockManager();
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
 
-        keyspaceStore = new KeyspaceManager();
-        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceStore, serverConfig);
+        keyspaceManager = new KeyspaceManager(nativeTransportPort);
+        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceManager, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener))
-                .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
+                .addService(new KeyspaceService(keyspaceManager, sessionFactory, janusGraphFactory))
                 .build();
 
         return ServerFactory.createServer(serverRPC);

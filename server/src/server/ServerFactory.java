@@ -37,6 +37,8 @@ import io.grpc.ServerBuilder;
  * This is a factory class which contains methods for instantiating a Server in different ways.
  */
 public class ServerFactory {
+    private static final int STORAGE_NATIVE_TRANSPORT_PORT = 9042;
+
     /**
      * Create a Server configured for Grakn Core.
      *
@@ -44,7 +46,6 @@ public class ServerFactory {
      */
     public static Server createServer(boolean benchmark) {
         // Grakn Server configuration
-        ServerID serverID = ServerID.me();
         Config config = Config.create();
 
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
@@ -52,7 +53,7 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
-        KeyspaceManager keyspaceStore = new KeyspaceManager();
+        KeyspaceManager keyspaceStore = new KeyspaceManager(STORAGE_NATIVE_TRANSPORT_PORT);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
