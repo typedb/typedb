@@ -98,6 +98,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
 
         vertex().tx().ruleCache().ackTypeInstance(this);
+        vertex().tx().statisticsDelta().increment(label());
+
         if (!Schema.MetaSchema.isMetaLabel(label())) {
             vertex().tx().cache().addedInstance(id());
             if (isInferred){
@@ -111,8 +113,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         V instance = producer.apply(instanceVertex, getThis());
         Preconditions.checkNotNull(instance, "producer should never return null");
-
-        vertex().tx().statisticsDelta().increment(label());
+        if(isInferred) vertex().tx().cache().cacheInferredInstance(instance);
 
         return instance;
     }

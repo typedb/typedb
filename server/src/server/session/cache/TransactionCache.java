@@ -68,6 +68,7 @@ public class TransactionCache {
     private final Set<RelationType> modifiedRelationTypes = new HashSet<>();
 
     private final Set<Rule> modifiedRules = new HashSet<>();
+    private final Set<Thing> inferredConcepts = new HashSet<>();
     private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
 
     //We Track the number of concept connections which have been made which may result in a new shard
@@ -124,19 +125,11 @@ public class TransactionCache {
     }
 
     /**
-     * @return All the types that have gained or lost instances and by how much
-     */
-    public Map<ConceptId, Long> getShardingCount() {
-        return shardingCount;
-    }
-
-    /**
      * @return All the types labels currently cached in the transaction.
      */
     Map<Label, LabelId> getLabelCache() {
         return labelCache;
     }
-
 
     /**
      * @param concept The concept to no longer track
@@ -156,6 +149,10 @@ public class TransactionCache {
 
         if (concept.isRelation()) {
             newRelations.remove(concept.asRelation());
+        }
+
+        if (concept.isThing()){
+            if (concept.asThing().isInferred()) inferredConcepts.remove(concept.id());
         }
 
         conceptCache.remove(concept.id());
@@ -184,6 +181,13 @@ public class TransactionCache {
         }
     }
 
+    /**
+     *
+     * @param thing
+     */
+    public void cacheInferredInstance(Thing thing){
+        inferredConcepts.add(thing);
+    }
 
     /**
      * Caches the mapping of a type label to a type id. This is necessary in order for ANY types to be looked up.
@@ -241,10 +245,12 @@ public class TransactionCache {
      * @return cached things that are inferred
      */
     public Stream<Thing> getInferredThingsToDiscard() {
-        return conceptCache.values().stream()
+        return /*conceptCache.values().stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)
                 .filter(Thing::isInferred)
+                */
+        inferredConcepts.stream()
                 .filter(t -> !inferredConceptsToPersist.contains(t));
     }
 
