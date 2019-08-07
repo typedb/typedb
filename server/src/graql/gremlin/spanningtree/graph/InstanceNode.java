@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.spanningtree.graph;
 
 import grakn.core.concept.Label;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 

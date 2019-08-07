@@ -142,6 +142,29 @@ public class QueryPlannerIT {
     }
 
     @Test
+    public void plansAreDeterministic() {
+        Pattern pattern = and(
+                x.isa(veryRelated),
+                x.isa(thingy2),
+                y.isa(thingy4),
+                var("r").rel(x).rel(y),
+                x.has(resourceType, "someString2"),
+                y.has(resourceType, "someString"));
+
+        List<Fragment> plan = getPlan(pattern);
+        for (int i = 0; i < 20; i++) {
+            List<Fragment> plan2 = getPlan(pattern);
+
+            // require alpha equivalent, but just check the fragment types are the same
+            for (int j = 0; j < plan.size(); j++) {
+                Fragment plan1Fragment = plan.get(i);
+                Fragment plan2Fragment = plan2.get(i);
+                assertEquals(plan1Fragment.getClass(), plan2Fragment.getClass());
+            }
+        }
+    }
+
+    @Test
     public void inferUniqueRelationType() {
         Pattern pattern;
         ImmutableList<Fragment> plan;
