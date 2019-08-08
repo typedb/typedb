@@ -51,8 +51,6 @@ public class SessionFactory {
     // Keep visibility to protected as this is used by KGMS
     protected final JanusGraphFactory janusGraphFactory;
     // Keep visibility to protected as this is used by KGMS
-    protected final KeyspaceManager keyspaceManager;
-    // Keep visibility to protected as this is used by KGMS
     protected final HadoopGraphFactory hadoopGraphFactory;
     protected Config config;
     // Keep visibility to protected as this is used by KGMS
@@ -60,11 +58,10 @@ public class SessionFactory {
 
     private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
 
-    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, KeyspaceManager keyspaceManager, Config config) {
+    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, Config config) {
         this.janusGraphFactory = janusGraphFactory;
         this.hadoopGraphFactory = hadoopGraphFactory;
         this.lockManager = lockManager;
-        this.keyspaceManager = keyspaceManager;
         this.config = config;
         this.sharedKeyspaceDataMap = new HashMap<>();
     }
@@ -120,7 +117,7 @@ public class SessionFactory {
     }
 
     // Keep visibility to protected as this is used by KGMS
-    protected Cache<String, ConceptId> buildAttributeCache(){
+    protected Cache<String, ConceptId> buildAttributeCache() {
         return CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
@@ -244,7 +241,9 @@ public class SessionFactory {
             return attributesCache;
         }
 
-        private HadoopGraph hadoopGraph(){ return hadoopGraph; }
+        private HadoopGraph hadoopGraph() {
+            return hadoopGraph;
+        }
 
     }
 

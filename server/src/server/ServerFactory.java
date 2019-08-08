@@ -53,12 +53,17 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
-        KeyspaceManager keyspaceStore = new KeyspaceManager(Cluster.builder().addContactPoint(
-                config.getProperty(ConfigKey.STORAGE_HOSTNAME)).withPort(config.getProperty(ConfigKey.STORAGE_PORT)).build());
+        // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
+        Cluster cluster = Cluster.builder()
+                .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
+                .withPort(config.getProperty(ConfigKey.STORAGE_PORT))
+                .build();
+
+        KeyspaceManager keyspaceManager = new KeyspaceManager(cluster);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
-        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceStore, config);
+        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
 
         // Enable server tracing
         if (benchmark) {
@@ -66,7 +71,7 @@ public class ServerFactory {
         }
 
         // create gRPC server
-        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceStore, janusGraphFactory);
+        io.grpc.Server serverRPC = createServerRPC(config, sessionFactory, keyspaceManager, janusGraphFactory);
 
         return createServer(serverRPC);
     }
@@ -85,7 +90,7 @@ public class ServerFactory {
         return server;
     }
 
-    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceStore, JanusGraphFactory janusGraphFactory) {
+    private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager, JanusGraphFactory janusGraphFactory) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
@@ -95,7 +100,7 @@ public class ServerFactory {
 
         return ServerBuilder.forPort(grpcPort)
                 .addService(sessionService)
-                .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
+                .addService(new KeyspaceService(keyspaceManager, sessionFactory, janusGraphFactory))
                 .build();
     }
 

@@ -205,7 +205,7 @@ public class GraknTestServer extends ExternalResource {
 
         keyspaceManager = new KeyspaceManager(Cluster.builder().addContactPoint(
                 serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME)).withPort(nativeTransportPort).build());
-        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceManager, serverConfig);
+        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
