@@ -70,8 +70,7 @@ public class HadoopGraphFactory {
         });
     }
 
-    // Keep visibility to public as this is used by KGMS
-    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+    synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 
@@ -80,8 +79,7 @@ public class HadoopGraphFactory {
      * @param keyspaceName keyspace value to add as a property
      * @return new copy of configuration, specific for current keyspace
      */
-    // Keep visibility to public as this is used by KGMS
-    protected Config addHadoopProperties(String keyspaceName) {
+    private Config addHadoopProperties(String keyspaceName) {
         Config localConfig = Config.of(config.properties());
         localConfig.properties().setProperty(JANUSGRAPHMR_IOFORMAT_CONF + STORAGE_KEYSPACE, keyspaceName);
         return localConfig;
