@@ -18,6 +18,7 @@
 
 package grakn.core.rule;
 
+import com.datastax.driver.core.Cluster;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.GraknStorage;
@@ -202,7 +203,8 @@ public class GraknTestServer extends ExternalResource {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
 
-        keyspaceManager = new KeyspaceManager(nativeTransportPort);
+        keyspaceManager = new KeyspaceManager(Cluster.builder().addContactPoint(
+                serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME)).withPort(nativeTransportPort).build());
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceManager, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);

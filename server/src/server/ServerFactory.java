@@ -18,6 +18,7 @@
 
 package grakn.core.server;
 
+import com.datastax.driver.core.Cluster;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
@@ -52,7 +53,8 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
-        KeyspaceManager keyspaceStore = new KeyspaceManager(config.getProperty(ConfigKey.STORAGE_PORT));
+        KeyspaceManager keyspaceStore = new KeyspaceManager(Cluster.builder().addContactPoint(
+                config.getProperty(ConfigKey.STORAGE_HOSTNAME)).withPort(config.getProperty(ConfigKey.STORAGE_PORT)).build());
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
