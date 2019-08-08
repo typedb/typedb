@@ -70,6 +70,7 @@ public class Grakn {
             } catch (InterruptedException e) {
                 // grakn server stop is called
                 server.close();
+                Thread.currentThread().interrupt();
             }
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
