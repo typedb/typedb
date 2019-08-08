@@ -19,7 +19,6 @@
 package grakn.core.server.keyspace;
 
 import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.KeyspaceMetadata;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -38,9 +37,10 @@ public class KeyspaceManager {
     }
 
     public Set<KeyspaceImpl> keyspaces() {
-        Set<String> result = storage.connect().getCluster().getMetadata().getKeyspaces().stream()
-                .map(KeyspaceMetadata::getName).collect(Collectors.toSet());
-        result.removeAll(internals);
-        return result.stream().map(KeyspaceImpl::of).collect(Collectors.toSet());
+        Set<KeyspaceImpl> result = storage.connect().getCluster().getMetadata().getKeyspaces().stream()
+                .map(keyspaceMetadata -> KeyspaceImpl.of(keyspaceMetadata.getName()))
+                .filter(keyspace -> !internals.contains(keyspace.name()))
+                .collect(Collectors.toSet());
+        return result;
     }
 }
