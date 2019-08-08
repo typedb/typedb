@@ -32,6 +32,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.concept.RelationTypeImpl;
@@ -354,7 +355,6 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredRelation_instanceIsTracked(){
         Role someRole = tx.putRole("someRole");
-        EntityType someEntity = tx.putEntityType("someEntity").plays(someRole);
         RelationType someRelation = tx.putRelationType("someRelation").relates(someRole);
         Relation relation = RelationTypeImpl.from(someRelation).addRelationInferred();
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
@@ -365,7 +365,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
-        Attribute<String> attribute = attributeType.create("banana");
+        Attribute attribute = AttributeTypeImpl.from(attributeType).putAttributeInferred("banana");
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
         attribute.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));

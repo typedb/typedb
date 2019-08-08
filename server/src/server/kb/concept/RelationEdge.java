@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.LabelId;
 import grakn.core.concept.thing.Thing;
@@ -27,6 +28,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionOLTP;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -158,6 +160,11 @@ public class RelationEdge implements RelationStructure {
     @Override
     public void delete() {
         if (!isDeleted()) edge().tx().statisticsDelta().decrement(type().label());
+        if (isInferred()){
+            TransactionOLTP tx = edge().tx();
+            Concept relation = tx.getConcept(id());
+            if (relation != null) tx.cache().removeInferredInstance(relation.asThing());
+        }
         edge().delete();
     }
 
