@@ -153,10 +153,7 @@ public class TransactionCache {
 
         if (concept.isThing()){
             Thing instance = concept.asThing();
-            if (instance.isInferred()){
-                inferredConcepts.remove(instance);
-                inferredConceptsToPersist.remove(instance);
-            }
+            if (instance.isInferred()) removeInferredInstance(instance);
         }
 
         conceptCache.remove(concept.id());
@@ -242,11 +239,21 @@ public class TransactionCache {
         inferredConcepts.add(thing);
     }
 
+    /**
+     * Remove an inferred instance from tracking.
+     * 
+     * @param thing The inferred instance to be cached.
+     */
+    public void removeInferredInstance(Thing thing){
+        inferredConcepts.remove(thing);
+        inferredConceptsToPersist.remove(thing);
+    }
+
     public void inferredInstanceToPersist(Thing t) {
         inferredConceptsToPersist.add(t);
     }
 
-    public Stream<Thing> getInferredInstances() {
+    Stream<Thing> getInferredInstances() {
         return inferredConcepts.stream();
     }
 

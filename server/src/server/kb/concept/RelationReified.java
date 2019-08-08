@@ -69,6 +69,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
         vertex().tx().cache().getNewRelations().remove(owner);
+        if(isInferred()) vertex().tx().cache().removeInferredInstance(owner);
         super.delete();
     }
 
