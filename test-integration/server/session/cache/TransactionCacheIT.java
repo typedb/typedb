@@ -32,6 +32,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.session.SessionImpl;
@@ -342,11 +343,43 @@ public class TransactionCacheIT {
     }
 
     @Test
-    public void whenInsertingAndDeletingInferredInstance_instanceIsTracked(){
+    public void whenInsertingAndDeletingInferredEntity_instanceIsTracked(){
         EntityType someEntity = tx.putEntityType("someEntity");
         Entity entity = EntityTypeImpl.from(someEntity).addEntityInferred();
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
         entity.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
+    }
+
+    @Test
+    public void whenInsertingAndDeletingInferredRelation_instanceIsTracked(){
+        Role someRole = tx.putRole("someRole");
+        EntityType someEntity = tx.putEntityType("someEntity").plays(someRole);
+        RelationType someRelation = tx.putRelationType("someRelation").relates(someRole);
+        Relation relation = RelationTypeImpl.from(someRelation).addRelationInferred();
+        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
+        relation.delete();
+        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
+    }
+
+    @Test
+    public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        Attribute<String> attribute = attributeType.create("banana");
+        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
+        attribute.delete();
+        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
+    }
+
+    @Test
+    public void whenInsertingAndDeletingInferredImplicitRelation_instanceIsTracked(){
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
+        Entity owner = someEntity.create();
+        Attribute<String> attribute = attributeType.create("banana");
+        Relation implicitRelation = EntityImpl.from(owner).attributeInferred(attribute);
+        assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));
+        implicitRelation.delete();
+        assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));
     }
 }

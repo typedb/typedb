@@ -241,7 +241,7 @@ public class TransactionCache {
 
     /**
      * Remove an inferred instance from tracking.
-     * 
+     *
      * @param thing The inferred instance to be cached.
      */
     public void removeInferredInstance(Thing thing){

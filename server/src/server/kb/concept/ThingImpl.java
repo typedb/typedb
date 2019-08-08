@@ -342,7 +342,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         vertex().tx().statisticsDelta().increment(hasAttribute.label());
 
-        return vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
+        RelationImpl attributeRelation = vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
+        if (isInferred) vertex().tx().cache().inferredInstance(attributeRelation);
+        return attributeRelation;
     }
 
     @Override
