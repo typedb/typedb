@@ -41,7 +41,8 @@ public class Server implements AutoCloseable {
         serverRPC.start();
     }
 
-    public void block() throws InterruptedException {
+    // NOTE: this method is used by Grakn KGMS and should be kept public
+    public void awaitTermination() throws InterruptedException {
         serverRPC.awaitTermination();
     }
 
