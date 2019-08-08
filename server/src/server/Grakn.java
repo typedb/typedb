@@ -68,6 +68,7 @@ public class Grakn {
             try {
                 server.awaitTermination();
             } catch (InterruptedException e) {
+                // grakn server stop is called
                 server.close();
             }
         } catch (RuntimeException | IOException e) {
