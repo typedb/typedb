@@ -64,8 +64,14 @@ public class Grakn {
             boolean benchmark = parseBenchmarkArg(args);
             Server server = ServerFactory.createServer(benchmark);
             server.start();
-
             LOG.info("Grakn started in {}", timer.stop());
+            try {
+                server.awaitTermination();
+            } catch (InterruptedException e) {
+                // grakn server stop is called
+                server.close();
+                Thread.currentThread().interrupt();
+            }
         } catch (RuntimeException | IOException e) {
             LOG.error(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()), e);
             System.err.println(ErrorMessage.UNCAUGHT_EXCEPTION.getMessage(e.getMessage()));
