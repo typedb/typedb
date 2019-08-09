@@ -58,7 +58,7 @@ import static org.hamcrest.Matchers.empty;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class RuleIT {
+public class RuleValidationIT {
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
     
@@ -125,7 +125,7 @@ public class RuleIT {
     public void whenAddingRuleWithDisjunctionInTheBody_Throw() throws InvalidKBException {
         validateIllegalRule(
                 Graql.parsePattern("{(role: $x);} or {(role: $x, role: $y);};"),
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY
         );
     }
@@ -133,7 +133,7 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithDisjunctionInTheHead_Throw() throws InvalidKBException {
         validateIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("{(someRole: $x);} or {(someRole: $x, anotherRole: $y);};"),
                 ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD
         );
@@ -142,13 +142,13 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithNonAtomicHead_Throw() throws InvalidKBException {
         validateIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("{(someRole: $x, anotherRole: $y) isa some-relation; $x has res1 'value';};"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("{(someRole: $x, anotherRole: $y) isa someRelation; $x has someAttribute 'value';};"),
                 ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC
         );
         validateIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("{someRole: $x, anotherRole: $y) isa some-relation; (someRole: $y, anotherRole: $z) isa some-relation;};"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("{someRole: $x, anotherRole: $y) isa someRelation; (someRole: $y, anotherRole: $z) isa someRelation;};"),
                 ErrorMessage.VALIDATION_RULE_HEAD_NON_ATOMIC
         );
     }
@@ -156,8 +156,8 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithUnboundRolePlayer_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("(someRole: $y, anotherRole: $z) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("(someRole: $y, anotherRole: $z) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE
         );
     }
@@ -166,10 +166,10 @@ public class RuleIT {
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithUnboundRelationVariable_Throw() throws InvalidKBException {
         validateIllegalHead(
                 Graql.parsePattern("{" +
-                        "$r1 (someRole: $x, anotherRole: $y) isa some-relation;" +
-                        "$r2 (someRole: $z, anotherRole: $u) isa some-relation;" +
+                        "$r1 (someRole: $x, anotherRole: $y) isa someRelation;" +
+                        "$r2 (someRole: $z, anotherRole: $u) isa someRelation;" +
                         "};"),
-                Graql.parsePattern("$r (someRole: $r1, anotherRole: $r2) isa some-relation;"),
+                Graql.parsePattern("$r (someRole: $r1, anotherRole: $r2) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE
         );
     }
@@ -177,8 +177,8 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithUnboundVariablePredicate_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("$x has res1 $r;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("$x has someAttribute $r;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_UNBOUND_VARIABLE
         );
     }
@@ -186,7 +186,7 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_IsaAtomWithoutType_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("{$x isa $z;};"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT
         );
@@ -195,34 +195,43 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithInequality_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("$x has res1 >10;"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("$x has someAttribute >10;"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_NONSPECIFIC_PREDICATE
         );
     }
 
     @Test
-    public void whenAddingRuleWithLegalAtomicInHead_ResourceWithBoundVariablePredicate_DoNotThrow(){
+    public void whenAddingARuleThatCopiesValuesBetweenCompatibleAttributes_DoNotThrow(){
         validateLegalHead(
-                Graql.parsePattern("$x has res1 $r;"),
-                Graql.parsePattern("$x has res2 $r;")
+                Graql.parsePattern("$x has someAttribute $r;"),
+                Graql.parsePattern("$x has anotherAttribute $r;")
+        );
+    }
+
+    @Test
+    public void whenAddingARuleThatCopiesValuesBetweenIncompatibleAttributes_Throw()  throws InvalidKBException{
+        validateIllegalHead(
+                Graql.parsePattern("$x has stringAttribute $r;"),
+                Graql.parsePattern("$x has anotherAttribute $r;"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES
         );
     }
 
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_ResourceWithAmbiguousPredicates_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("{$x has res1 $r; $r == 10; $r == 20;};"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("{$x has someAttribute $r; $r == 10; $r == 20;};"),
+                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_AMBIGUOUS_PREDICATES
         );
     }
 
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithMetaRoles_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("(role: $y, role: $x) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("(role: $y, role: $x) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE
         );
     }
@@ -230,8 +239,8 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithMissingRoles_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("($x, $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("($x, $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE
         );
     }
@@ -239,8 +248,8 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithVariableRoles_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("($r1: $x, $r2: $y) isa some-relation;"),
-                Graql.parsePattern("($r2: $x, $r1: $y) isa some-relation;"),
+                Graql.parsePattern("($r1: $x, $r2: $y) isa someRelation;"),
+                Graql.parsePattern("($r2: $x, $r1: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_AMBIGUOUS_ROLE
         );
     }
@@ -248,7 +257,7 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithoutType_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("(singleRole: $y, singleRole: $x);"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_AMBIGUOUS_SCHEMA_CONCEPT
         );
@@ -257,8 +266,8 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitType_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("($x, $y) isa " + Schema.ImplicitType.HAS.getLabel("res1;").getValue()),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("($x, $y) isa " + Schema.ImplicitType.HAS.getLabel("someAttribute;").getValue()),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATOM_WITH_IMPLICIT_SCHEMA_CONCEPT
         );
     }
@@ -266,8 +275,8 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_RelationWithImplicitRole_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("(" + Schema.ImplicitType.HAS_OWNER.getLabel("res1").getValue() + ": $x, $y);"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("(" + Schema.ImplicitType.HAS_OWNER.getLabel("someAttribute").getValue() + ": $x, $y);"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RELATION_WITH_IMPLICIT_ROLE
         );
     }
@@ -275,23 +284,23 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_IllegalTypeAtoms_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x sub someEntity;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x plays someRole;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("$x isa some-relation;"),
+                Graql.parsePattern("$x isa someRelation;"),
                 Graql.parsePattern("$x relates someRole;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("$x has res1;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("$x has someAttribute;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
     }
@@ -299,32 +308,32 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_Predicate_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x id V123;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x != $y';"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("($x, $y); $x isa res1;"),
+                Graql.parsePattern("($x, $y); $x isa someAttribute;"),
                 Graql.parsePattern("$x == '100';"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x != $y';"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalRule(
-                Graql.parsePattern("($x, $y); $x isa res1;"),
+                Graql.parsePattern("($x, $y); $x isa someAttribute;"),
                 Graql.parsePattern("$x == '100';"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x label 'someEntity';"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
@@ -333,12 +342,12 @@ public class RuleIT {
     @Test
     public void whenAddingRuleWithIllegalAtomicInHead_PropertyAtoms_Throw() throws InvalidKBException {
         validateIllegalHead(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("$x abstract;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
         validateIllegalHead(
-                Graql.parsePattern("$x has res1 $y;"),
+                Graql.parsePattern("$x has someAttribute $y;"),
                 Graql.parsePattern("$y datatype string;"),
                 ErrorMessage.VALIDATION_RULE_ILLEGAL_ATOMIC_IN_HEAD
         );
@@ -353,12 +362,12 @@ public class RuleIT {
     public void whenAddingRuleInvalidOntologically_RelationDoesntRelateARole_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
                 "someRole", "anotherRelation"
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
                 ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
                 "someRole", "anotherRelation"
@@ -375,12 +384,12 @@ public class RuleIT {
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("{$y isa someEntity; (singleRole: $x, singleRole: $y) isa anotherRelation;};"),
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE,
                 "someEntity", "singleRole", "anotherRelation"
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("{(someRole: $x, anotherRole: $y) isa some-relation;$y isa someEntity;};"),
+                Graql.parsePattern("{(someRole: $x, anotherRole: $y) isa someRelation;$y isa someEntity;};"),
                 Graql.parsePattern("{(singleRole: $x, singleRole: $y) isa anotherRelation;};"),
                 ErrorMessage.VALIDATION_RULE_TYPE_CANNOT_PLAY_ROLE,
                 "someEntity", "singleRole", "anotherRelation"
@@ -390,61 +399,61 @@ public class RuleIT {
     @Test
     public void whenAddingRuleInvalidOntologically_EntityCantHaveResource_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("$x isa some-relation;"),
-                Graql.parsePattern("$x has res1 'value';"),
+                Graql.parsePattern("$x isa someRelation;"),
+                Graql.parsePattern("$x has someAttribute 'value';"),
                 ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE,
-                "res1", "some-relation"
+                "someAttribute", "someRelation"
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("{$x isa some-relation, has res1 'value';};"),
+                Graql.parsePattern("{$x isa someRelation, has someAttribute 'value';};"),
                 Graql.parsePattern("$x isa anotherRelation;"),
                 ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE,
-                "res1", "some-relation"
+                "someAttribute", "someRelation"
         );
         validateOntologicallyIllegalRule(
                 Graql.parsePattern("$x isa anotherRelation;"),
-                Graql.parsePattern("{$x isa some-relation, has res1 'value';"),
+                Graql.parsePattern("{$x isa someRelation, has someAttribute 'value';"),
                 ErrorMessage.VALIDATION_RULE_ATTRIBUTE_OWNER_CANNOT_HAVE_ATTRIBUTE,
-                "res1", "some-relation"
+                "someAttribute", "someRelation"
         );
     }
 
     @Test
     public void whenAddingRuleInvalidOntologically_RelationWithInvalidType_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("(someRole: $x, singleRole: $y) isa res1;"),
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, singleRole: $y) isa someAttribute;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE,
-                "res1"
+                "someAttribute"
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("(someRole: $x, singleRole: $y) isa res1;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("(someRole: $x, singleRole: $y) isa someAttribute;"),
                 ErrorMessage.VALIDATION_RULE_INVALID_RELATION_TYPE,
-                "res1"
+                "someAttribute"
         );
     }
 
     @Test
     public void whenAddingRuleInvalidOntologically_ResourceWithInvalidType_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("$x has some-relation 'value';"),
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("$x has someRelation 'value';"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE,
-                "some-relation"
+                "someRelation"
         );
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
-                Graql.parsePattern("$x has some-relation 'value';"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
+                Graql.parsePattern("$x has someRelation 'value';"),
                 ErrorMessage.VALIDATION_RULE_INVALID_ATTRIBUTE_TYPE,
-                "some-relation"
+                "someRelation"
         );
     }
 
     @Test
     public void whenAddingRuleWithOntologicallyInvalidHead_RelationDoesntRelateARole_Throw() throws InvalidKBException {
         validateOntologicallyIllegalRule(
-                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa some-relation;"),
+                Graql.parsePattern("(someRole: $x, anotherRole: $y) isa someRelation;"),
                 Graql.parsePattern("(someRole: $x, singleRole: $y) isa anotherRelation;"),
                 ErrorMessage.VALIDATION_RULE_ROLE_CANNOT_BE_PLAYED,
                 "someRole", "anotherRelation"
@@ -458,7 +467,7 @@ public class RuleIT {
                 "{" +
                         "$x isa entity;" +
                         "not {$y isa someEntity;};" +
-                        "($x, $y) isa some-relation;" +
+                        "($x, $y) isa someRelation;" +
                         "};");
             Pattern then = Graql.parsePattern("$x isa someEntity;");
 
@@ -631,7 +640,7 @@ public class RuleIT {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa thing;" +
-                            "not {$x isa some-relation;};" +
+                            "not {$x isa someRelation;};" +
                             "not {$y isa attribute;};" +
                             "};");
             Pattern then = Graql.parsePattern("$x isa someEntity;");
@@ -651,10 +660,10 @@ public class RuleIT {
                     "{" +
                             "$x isa entity;" +
                             "not {" +
-                                "$y isa some-relation;" +
+                                "$y isa someRelation;" +
                                 "not {$y isa attribute;};" +
                             "};" +
-                            "($x, $y) isa some-relation;" +
+                            "($x, $y) isa someRelation;" +
                             "};");
             Pattern then = Graql.parsePattern("$x isa someEntity;");
 
@@ -672,9 +681,9 @@ public class RuleIT {
             Pattern when = Graql.parsePattern(
                     "{" +
                             "$x isa entity;" +
-                            "($x, $y) isa some-relation;" +
+                            "($x, $y) isa someRelation;" +
                             "not {" +
-                                "{$y isa some-relation;} or " +
+                                "{$y isa someRelation;} or " +
                                 "{$y isa attribute;};" +
                             "};" +
                             "};");
@@ -866,19 +875,21 @@ public class RuleIT {
     }
 
     private void initTx(TransactionOLTP tx){
-        AttributeType<Integer> res1 = tx.putAttributeType("res1", AttributeType.DataType.INTEGER);
-        AttributeType<Integer> res2 = tx.putAttributeType("res2", AttributeType.DataType.INTEGER);
+        AttributeType<Integer> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.INTEGER);
+        AttributeType<Integer> anotherAttribute = tx.putAttributeType("anotherAttribute", AttributeType.DataType.INTEGER);
+        AttributeType<String> stringAttribute = tx.putAttributeType("stringAttribute", AttributeType.DataType.STRING);
         Role someRole = tx.putRole("someRole");
         Role anotherRole = tx.putRole("anotherRole");
         Role singleRole = tx.putRole("singleRole");
 
         tx.putEntityType("someEntity")
-                .has(res1)
-                .has(res2)
+                .has(someAttribute)
+                .has(anotherAttribute)
+                .has(stringAttribute)
                 .plays(someRole)
                 .plays(anotherRole);
 
-        tx.putRelationType("some-relation")
+        tx.putRelationType("someRelation")
                 .relates(someRole)
                 .relates(anotherRole)
                 .relates(singleRole)
