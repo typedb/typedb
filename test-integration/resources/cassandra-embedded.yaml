@@ -337,7 +337,7 @@ start_native_transport: true
 # native_transport_max_frame_size_in_mb: 256
 
 # Whether to start the thrift rpc server.
-start_rpc: true
+start_rpc: false
 
 # The address to bind the Thrift RPC service and native transport
 # server -- clients factory here.
