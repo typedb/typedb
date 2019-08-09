@@ -74,7 +74,7 @@ public class TransactionOLAP {
             applyFilters(types, includesRolePlayerEdges);
             return graphComputer.submit().get();
         } catch (ExecutionException e) {
-            throw asRuntimeException(e.getCause());
+            throw asRuntimeException(e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw asRuntimeException(e);
