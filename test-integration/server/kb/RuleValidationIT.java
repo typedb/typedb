@@ -22,6 +22,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
+import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.Role;
@@ -211,11 +212,24 @@ public class RuleValidationIT {
 
     @Test
     public void whenAddingARuleThatCopiesValuesBetweenIncompatibleAttributes_Throw()  throws InvalidKBException{
-        validateIllegalHead(
-                Graql.parsePattern("$x has stringAttribute $r;"),
-                Graql.parsePattern("$x has anotherAttribute $r;"),
-                ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES
-        );
+        try(TransactionOLTP tx = session.transaction().write()) {
+            initTx(tx);
+            Rule rule = tx.putRule(
+                    UUID.randomUUID().toString(),
+                    Graql.parsePattern("$x has stringAttribute $r;"),
+                    Graql.parsePattern("$x has anotherAttribute $r;")
+            );
+
+            ErrorMessage message = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
+            expectedException.expect(InvalidKBException.class);
+            expectedException.expectMessage(
+                    message.getMessage(
+                            tx.getSchemaConcept(Label.of("anotherAttribute")).label(),
+                            rule.label(),
+                            tx.getSchemaConcept(Label.of("stringAttribute")).label())
+            );
+            tx.commit();
+        }
     }
 
     @Test

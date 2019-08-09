@@ -280,12 +280,13 @@ public abstract class AttributeAtom extends Binary{
             Variable attrVar = getAttributeVariable();
             AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
             ResolvableQuery body = tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())).getBody();
+            ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attrVar))
                     .map(Binary::getSchemaConcept)
                     .filter(type -> !type.asAttributeType().dataType().equals(dataType))
                     .forEach(type ->
-                            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES.getMessage(getSchemaConcept(), rule, type))
+                            errors.add(incompatibleValuesMsg.getMessage(getSchemaConcept().label(), rule.label(), type.label()))
                     );
         }
         return errors;
