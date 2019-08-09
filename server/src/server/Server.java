@@ -17,8 +17,6 @@
  */
 package grakn.core.server;
 
-import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.server.util.ServerID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
