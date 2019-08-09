@@ -28,6 +28,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Relation;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
@@ -44,7 +45,8 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -257,7 +259,7 @@ public abstract class AttributeAtom extends Binary{
     public Set<String> validateAsRuleHead(Rule rule){
         Set<String> errors = super.validateAsRuleHead(rule);
         if (getSchemaConcept() == null || getMultiPredicate().size() > 1){
-            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.then(), rule.label()));
+            errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_AMBIGUOUS_PREDICATES.getMessage(rule.then(), rule.label()));
         }
         if (getMultiPredicate().isEmpty()){
             boolean predicateBound = getParentQuery().getAtoms(Atom.class)
@@ -271,8 +273,22 @@ public abstract class AttributeAtom extends Binary{
         getMultiPredicate().stream()
                 .filter(p -> !p.getPredicate().isValueEquality())
                 .forEach( p ->
-                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_RESOURCE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.then(), rule.label()))
+                        errors.add(ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_ATTRIBUTE_WITH_NONSPECIFIC_PREDICATE.getMessage(rule.then(), rule.label()))
                 );
+
+        if(getMultiPredicate().isEmpty()) {
+            Variable attrVar = getAttributeVariable();
+            AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
+            ResolvableQuery body = tx().ruleCache().getRule(rule, () -> new InferenceRule(rule, tx())).getBody();
+            ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
+            body.getAtoms(AttributeAtom.class)
+                    .filter(at -> at.getAttributeVariable().equals(attrVar))
+                    .map(Binary::getSchemaConcept)
+                    .filter(type -> !type.asAttributeType().dataType().equals(dataType))
+                    .forEach(type ->
+                            errors.add(incompatibleValuesMsg.getMessage(getSchemaConcept().label(), rule.label(), type.label()))
+                    );
+        }
         return errors;
     }
 
