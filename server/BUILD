@@ -56,7 +56,7 @@ java_library(
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
-
+        "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",

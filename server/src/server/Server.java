@@ -17,8 +17,6 @@
  */
 package grakn.core.server;
 
-import grakn.core.server.keyspace.KeyspaceManager;
-import grakn.core.server.util.ServerID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,27 +28,25 @@ import java.io.IOException;
 public class Server implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
 
-    private final ServerID serverID;
     private final io.grpc.Server serverRPC;
 
-    private final KeyspaceManager keyspaceStore;
-
-    public Server(ServerID serverID, io.grpc.Server serverRPC, KeyspaceManager keyspaceStore) {
+    public Server(io.grpc.Server serverRPC) {
         // Lock provider
-        this.keyspaceStore = keyspaceStore;
         this.serverRPC = serverRPC;
-        this.serverID = serverID;
     }
 
     public void start() throws IOException {
-        initialiseSystemSchema();
         serverRPC.start();
+    }
+
+    // NOTE: this method is used by Grakn KGMS and should be kept public
+    public void awaitTermination() throws InterruptedException {
+        serverRPC.awaitTermination();
     }
 
     @Override
     public void close() {
         try {
-            keyspaceStore.closeStore();
             serverRPC.shutdown();
             serverRPC.awaitTermination();
         } catch (InterruptedException e) {
@@ -58,10 +54,4 @@ public class Server implements AutoCloseable {
             Thread.currentThread().interrupt();
         }
     }
-
-    private void initialiseSystemSchema() {
-        LOG.info("{} is checking the system schema", this.serverID);
-        keyspaceStore.loadSystemSchema();
-    }
 }
-

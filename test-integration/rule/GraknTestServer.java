@@ -18,6 +18,7 @@
 
 package grakn.core.rule;
 
+import com.datastax.driver.core.Cluster;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.server.GraknStorage;
@@ -34,7 +35,6 @@ import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.util.LockManager;
-import grakn.core.server.util.ServerID;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
 import org.junit.rules.ExternalResource;
@@ -66,7 +66,7 @@ public class GraknTestServer extends ExternalResource {
     protected Config serverConfig;
     protected Server graknServer;
     protected int grpcPort;
-    protected KeyspaceManager keyspaceStore;
+    protected KeyspaceManager keyspaceManager;
     protected SessionFactory sessionFactory;
     protected Path dataDirTmp;
 
@@ -116,7 +116,6 @@ public class GraknTestServer extends ExternalResource {
     @Override
     protected void after() {
         try {
-            keyspaceStore.closeStore();
             graknServer.close();
             FileUtils.deleteDirectory(dataDirTmp.toFile());
             updatedCassandraConfigPath.delete();
@@ -198,23 +197,22 @@ public class GraknTestServer extends ExternalResource {
     }
 
     private Server createServer() {
-        ServerID id = ServerID.me();
-
         // distributed locks
         LockManager lockManager = new LockManager();
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
 
-        keyspaceStore = new KeyspaceManager(janusGraphFactory, serverConfig);
-        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, keyspaceStore, serverConfig);
+        keyspaceManager = new KeyspaceManager(Cluster.builder().addContactPoint(
+                serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME)).withPort(nativeTransportPort).build());
+        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener))
-                .addService(new KeyspaceService(keyspaceStore, sessionFactory, janusGraphFactory))
+                .addService(new KeyspaceService(keyspaceManager, sessionFactory, janusGraphFactory))
                 .build();
 
-        return ServerFactory.createServer(id, serverRPC, keyspaceStore);
+        return ServerFactory.createServer(serverRPC);
     }
 }

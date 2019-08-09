@@ -18,6 +18,7 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.server.exception.GraknServerException;
 import grakn.protocol.keyspace.KeyspaceProto;
 import grakn.protocol.keyspace.KeyspaceServiceGrpc;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -38,12 +39,12 @@ import java.util.stream.Collectors;
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
     private final Logger LOG = LoggerFactory.getLogger(KeyspaceService.class);
 
-    private final KeyspaceManager keyspaceStore;
+    private final KeyspaceManager keyspaceManager;
     private SessionFactory sessionFactory;
     private JanusGraphFactory janusGraphFactory;
 
-    public KeyspaceService(KeyspaceManager keyspaceStore, SessionFactory sessionFactory, JanusGraphFactory janusGraphFactory) {
-        this.keyspaceStore = keyspaceStore;
+    public KeyspaceService(KeyspaceManager keyspaceManager, SessionFactory sessionFactory, JanusGraphFactory janusGraphFactory) {
+        this.keyspaceManager = keyspaceManager;
         this.sessionFactory = sessionFactory;
         this.janusGraphFactory = janusGraphFactory;
     }
@@ -56,7 +57,7 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         try {
-            Iterable<String> list = keyspaceStore.keyspaces().stream().map(KeyspaceImpl::name)
+            Iterable<String> list = keyspaceManager.keyspaces().stream().map(KeyspaceImpl::name)
                     .collect(Collectors.toSet());
             response.onNext(KeyspaceProto.Keyspace.Retrieve.Res.newBuilder().addAllNames(list).build());
             response.onCompleted();
@@ -70,16 +71,19 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     public void delete(KeyspaceProto.Keyspace.Delete.Req request, StreamObserver<KeyspaceProto.Keyspace.Delete.Res> response) {
         try {
             KeyspaceImpl keyspace = KeyspaceImpl.of(request.getName());
-            // removing references to open keyspaces JanusGraph instances
-            sessionFactory.deleteKeyspace(keyspace);
-            // remove the keyspace from the system keyspace
-            keyspaceStore.deleteKeyspace(keyspace);
-            // actually remove the keyspace
-            janusGraphFactory.drop(keyspace.name());
 
-            response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
-            response.onCompleted();
+            if (!keyspaceManager.keyspaces().contains(keyspace)) {
+                throw GraknServerException.create("It is not possible to delete keyspace [" + keyspace.name() + "] as it does not exist.");
+            }
+            else {
+                // removing references to open keyspaces JanusGraph instances
+                sessionFactory.deleteKeyspace(keyspace);
+                // actually remove the keyspace
+                janusGraphFactory.drop(keyspace.name());
 
+                response.onNext(KeyspaceProto.Keyspace.Delete.Res.getDefaultInstance());
+                response.onCompleted();
+            }
         } catch (RuntimeException e) {
             LOG.error("Exception during keyspace deletion.", e);
             response.onError(ResponseBuilder.exception(e));
