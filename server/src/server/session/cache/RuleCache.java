@@ -132,7 +132,6 @@ public class RuleCache {
     }
 
     private boolean instancePresent(Type type){
-        //return type.instances().findFirst().isPresent();
         return type.subs()
                 .anyMatch(t -> tx.session().keyspaceStatistics().count(tx, t.label()) != 0);
     }
@@ -141,7 +140,7 @@ public class RuleCache {
         if (checkedTypes.contains(type)) return !absentTypes.contains(type);
         checkedTypes.add(type);
         boolean instancePresent = instancePresent(type)
-                || type.thenRules().anyMatch(this::isRuleMatchable);
+                || type.subs().flatMap(SchemaConcept::thenRules).anyMatch(this::isRuleMatchable);
         if (!instancePresent){
             absentTypes.add(type);
             type.whenRules().forEach(r -> unmatchableRules.add(r));
