@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
+import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.HashMap;
@@ -41,7 +42,7 @@ import static java.util.stream.Collectors.toSet;
 public class RuleCache {
 
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
-    private final Map<Rule, Object> ruleConversionMap = new HashMap<>();
+    private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
     private final TransactionOLTP tx;
 
     //TODO: these should be eventually stored together with statistics
@@ -131,10 +132,16 @@ public class RuleCache {
                 .peek(rule -> ruleMap.put(type, rule));
     }
 
+    private boolean instancePresent(Type type){
+        //return type.instances().findFirst().isPresent();
+        return type.subs()
+                .anyMatch(t -> tx.session().keyspaceStatistics().count(tx, t.label()) != 0);
+    }
+
     private boolean typeHasInstances(Type type){
         if (checkedTypes.contains(type)) return !absentTypes.contains(type);
         checkedTypes.add(type);
-        boolean instancePresent = type.instances().findFirst().isPresent()
+        boolean instancePresent = instancePresent(type)
                 || type.thenRules().anyMatch(this::isRuleMatchable);
         if (!instancePresent){
             absentTypes.add(type);
@@ -158,15 +165,13 @@ public class RuleCache {
 
     /**
      * @param rule      for which the parsed rule should be retrieved
-     * @param converter rule converter
-     * @param <T>       type of object converter converts to
      * @return parsed rule object
      */
-    public <T> T getRule(Rule rule, Supplier<T> converter) {
-        T match = (T) ruleConversionMap.get(rule);
+    public InferenceRule getRule(Rule rule) {
+        InferenceRule match = ruleConversionMap.get(rule);
         if (match != null) return match;
 
-        T newMatch = converter.get();
+        InferenceRule newMatch = new InferenceRule(rule, tx);
         ruleConversionMap.put(rule, newMatch);
         return newMatch;
     }
