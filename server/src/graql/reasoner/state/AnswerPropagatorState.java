@@ -58,9 +58,6 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
     }
 
     @Override
-    public String toString(){ return super.toString() + "\n" + getQuery() + "\n"; }
-
-    @Override
     public ResolutionState generateChildState() {
         return subGoalIterator.hasNext()? subGoalIterator.next() : null;
     }
