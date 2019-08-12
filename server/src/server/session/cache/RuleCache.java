@@ -135,7 +135,7 @@ public class RuleCache {
         if (checkedTypes.contains(type)) return !absentTypes.contains(type);
         checkedTypes.add(type);
         boolean instancePresent = type.instances().findFirst().isPresent()
-                || type.thenRules().anyMatch(this::isRuleMatchable);
+                || type.subs().flatMap(SchemaConcept::thenRules).anyMatch(this::isRuleMatchable);
         if (!instancePresent){
             absentTypes.add(type);
             type.whenRules().forEach(r -> unmatchableRules.add(r));

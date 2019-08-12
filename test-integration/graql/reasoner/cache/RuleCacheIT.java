@@ -21,7 +21,9 @@ package grakn.core.graql.reasoner.cache;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
+import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
+import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.rule.InferenceRule;
@@ -134,16 +136,54 @@ public class RuleCacheIT {
     public void whenFetchingRules_fruitlessRulesAreNotReturned(){
         try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             Type description = tx.getType(Label.of("description"));
-            Set<Rule> filteredRules = description.thenRules()
+            Set<Rule> rulesWithInstances = description.thenRules()
                     .filter(r -> tx.stream(Graql.match(r.when())).findFirst().isPresent())
                     .collect(Collectors.toSet());
             Set<Rule> fetchedRules = tx.ruleCache().getRulesWithType(description).collect(Collectors.toSet());
             //NB:db lookup filters more aggressively, hence we check for containment
-            assertTrue(fetchedRules.containsAll(filteredRules));
+            assertTrue(fetchedRules.containsAll(rulesWithInstances));
 
             //even though rules are filtered, the type has instances
-            assertTrue(!fetchedRules.isEmpty());
+            assertFalse(fetchedRules.isEmpty());
             assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+        }
+    }
+
+    @Test
+    public void whenTypeHasDirectInstances_itIsNotAbsent(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            EntityType anotherNoRoleEntity = tx.getEntityType("anotherNoRoleEntity");
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(anotherNoRoleEntity)));
+        }
+    }
+
+    @Test
+    public void whenTypeHasIndirectInstances_itIsNotAbsent(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            //no direct instances present, however anotherTwoRoleEntity subs anotherSingleRoleEntity and has instances
+            EntityType anotherSingleRoleEntity = tx.getEntityType("anotherSingleRoleEntity");
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(anotherSingleRoleEntity)));
+        }
+    }
+
+    @Test
+    public void whenTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            Type description = tx.getType(Label.of("description"));
+            assertFalse(description.instances().findFirst().isPresent());
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
+        }
+    }
+
+    @Test
+    public void whenTypeSubTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
+        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+            RelationType binary = tx.getRelationType("binary");
+            binary.instances().forEach(Concept::delete);
+
+            RelationType reifiableRelation = tx.getRelationType("reifiable-relation");
+            assertFalse(reifiableRelation.instances().findFirst().isPresent());
+            assertFalse(tx.ruleCache().absentTypes(Collections.singleton(reifiableRelation)));
         }
     }
 
@@ -151,15 +191,11 @@ public class RuleCacheIT {
     public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
         try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
-
             singleRoleEntity.instances().forEach(Concept::delete);
-
             assertTrue(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
 
             singleRoleEntity.create();
-
             assertFalse(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));
         }
     }
-
 }
