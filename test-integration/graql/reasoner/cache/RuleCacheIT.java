@@ -83,10 +83,10 @@ public class RuleCacheIT {
             assertEquals(2, rulesWithTernary.size());
 
             rulesWithBinary.stream()
-                    .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
+                    .map(ruleCache::getRule)
                     .forEach(r -> assertEquals(reifyingRelation, r.getHead().getAtom().getSchemaConcept()));
             rulesWithTernary.stream()
-                    .map(r -> ruleCache.getRule(r, () -> new InferenceRule(r, tx)))
+                    .map(ruleCache::getRule)
                     .forEach(r -> assertEquals(ternary, r.getHead().getAtom().getSchemaConcept()));
         }
     }
