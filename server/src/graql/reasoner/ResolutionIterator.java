@@ -47,6 +47,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Set<ConceptMap> answers = new HashSet<>();
     private final Set<ReasonerAtomicQuery> subGoals;
     private final Stack<ResolutionState> states = new Stack<>();
+    private final ResolutionTree tree;
 
     private ConceptMap nextAnswer = null;
 
@@ -55,7 +56,9 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ResolutionIterator(ResolvableQuery q, Set<ReasonerAtomicQuery> subGoals){
         this.query = q;
         this.subGoals = subGoals;
-        states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals));
+        ResolutionState rootState = query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals);
+        states.push(rootState);
+        this.tree = new ResolutionTree(rootState);
     }
 
     private ConceptMap findNextAnswer(){
@@ -70,9 +73,11 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
+                tree.addChildToNode(state, newState);
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
+                tree.getNode(state).ackCompletion();
                 LOG.trace("new state: NULL");
             }
         }
@@ -85,6 +90,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         answers.add(nextAnswer);
         return nextAnswer;
     }
+
+    ResolutionTree getTree(){ return tree;}
 
     private Boolean reiterate = null;
 
