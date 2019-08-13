@@ -65,7 +65,6 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
-        "//dependencies/maven/artifacts/org/apache/commons:commons-compress",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-client",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",

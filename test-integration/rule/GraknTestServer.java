@@ -75,6 +75,7 @@ public class GraknTestServer extends ExternalResource {
     protected File updatedCassandraConfigPath;
     protected int storagePort;
     protected int nativeTransportPort;
+    protected int thriftPort;
 
 
     public GraknTestServer() {
@@ -153,6 +154,7 @@ public class GraknTestServer extends ExternalResource {
     protected void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
+        thriftPort = findUnusedLocalPort();
     }
 
     protected File buildCassandraConfigWithRandomPorts() throws IOException {
@@ -161,6 +163,7 @@ public class GraknTestServer extends ExternalResource {
 
         configString = configString + "\nstorage_port: " + storagePort;
         configString = configString + "\nnative_transport_port: " + nativeTransportPort;
+        configString = configString + "\nrpc_port: " + thriftPort;
         InputStream configStream = new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8));
 
         String directory = "target/embeddedCassandra";
@@ -187,10 +190,10 @@ public class GraknTestServer extends ExternalResource {
         //Override gRPC port with a random free port
         config.setConfigProperty(ConfigKey.GRPC_PORT, grpcPort);
         //Override Storage Port used by Janus to communicate with Cassandra Backend
-        config.setConfigProperty(ConfigKey.STORAGE_PORT, nativeTransportPort);
+        config.setConfigProperty(ConfigKey.STORAGE_PORT, thriftPort);
 
         //Override ports used by HadoopGraph
-        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, nativeTransportPort);
+        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, thriftPort);
         config.setConfigProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
 
         return config;
