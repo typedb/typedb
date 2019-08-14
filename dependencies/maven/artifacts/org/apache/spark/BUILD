@@ -80,12 +80,12 @@ java_library(
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-annotations",
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
         "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/org/apache/commons:commons-crypto",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/fusesource/leveldbjni:leveldbjni-all",
-        "//dependencies/maven/artifacts/org/spark-project/spark:unused"
+        "//dependencies/maven/artifacts/org/spark-project/spark:unused",
+        ":spark-tags-2-11"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -102,7 +102,8 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/io/dropwizard/metrics:metrics-core",
         "//dependencies/maven/artifacts/org/spark-project/spark:unused",
-        ":spark-network-common-2-11"
+        ":spark-network-common-2-11",
+        ":spark-tags-2-11"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
