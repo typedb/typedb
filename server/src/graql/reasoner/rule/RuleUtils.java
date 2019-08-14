@@ -162,19 +162,18 @@ public class RuleUtils {
             if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
-            return queries.stream().anyMatch(q -> {
+            queries.forEach(q -> {
                 RelationAtom relationAtom = q.getAtom().toRelationAtom();
                 Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
                 IndexedAnswerSet answers = tx.queryCache().getEntry(q).cachedElement();
-                return answers.stream().anyMatch(ans ->
-                        varPairs.stream().anyMatch(p -> {
+                answers.forEach(ans ->
+                        varPairs.forEach(p -> {
                             Concept from = ans.get(p.getKey());
                             Concept to = ans.get(p.getValue());
-                            if (conceptMap.get(to).contains(from)) return true;
                             conceptMap.put(from, to);
-                            return false;
                         }));
             });
+            return !new TarjanSCC<>(conceptMap).getCycles().isEmpty();
         });
     }
 
