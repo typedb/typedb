@@ -73,7 +73,6 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
-                //tree.addChildToNode(state, newState);
                 tree.addChildToNode(newState.getParentState(), newState);
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
@@ -103,6 +102,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         return reiterate;
     }
 
+    private long startTime = System.currentTimeMillis();
     /**
      * check whether answers available, if answers not fully computed compute more answers
      * @return true if answers available
@@ -116,10 +116,11 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         if (reiterate()) {
             long dAns = answers.size() - oldAns;
             if (dAns != 0 || iter == 0) {
-                LOG.debug("iter: {} answers: {} dAns = {}", iter, answers.size(), dAns);
+                LOG.info("iter: {} answers: {} dAns = {} time = {}", iter, answers.size(), dAns, System.currentTimeMillis() - startTime);
                 iter++;
                 states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, new HashSet<>()));
                 oldAns = answers.size();
+                startTime = System.currentTimeMillis();
                 return hasNext();
             }
         }

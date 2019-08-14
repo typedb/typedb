@@ -22,6 +22,7 @@ filegroup(
     name = "reasoning-stubs",
     srcs = [
         "appendingRPs.gql",
+        "brandon.gql",
         "duplicateMaterialisation.gql",
         "explanations.gql",
         "freshEntityDerivation.gql",

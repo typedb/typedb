@@ -31,6 +31,7 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
@@ -352,6 +353,11 @@ public class CompositeQuery implements ResolvableQuery {
 
     @Override
     public ImmutableSetMultimap<Variable, Type> getVarTypeMap(ConceptMap sub) { return getVarTypeMap(); }
+
+    @Override
+    public ResolutionPlan resolutionPlan() {
+        return getConjunctiveQuery().resolutionPlan();
+    }
 
     @Override
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){

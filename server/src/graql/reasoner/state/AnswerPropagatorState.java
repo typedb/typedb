@@ -69,18 +69,19 @@ public abstract class AnswerPropagatorState<Q extends ResolvableQuery> extends R
         if (o == null || getClass() != o.getClass()) return false;
         AnswerPropagatorState<?> that = (AnswerPropagatorState<?>) o;
         return Objects.equals(query, that.query) &&
+                Objects.equals(getSubstitution(), that.getSubstitution()) &&
                 Objects.equals(unifier, that.unifier);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(query, unifier);
+        return Objects.hash(query, unifier, getSubstitution());
     }
 
     /**
      * @return query corresponding to this query state
      */
-    Q getQuery(){ return query;}
+    public Q getQuery(){ return query;}
 
     /**@return set of already visited subGoals (atomic queries)
      */

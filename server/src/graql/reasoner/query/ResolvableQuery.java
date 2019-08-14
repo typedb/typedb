@@ -20,6 +20,7 @@ package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -98,6 +99,8 @@ public interface ResolvableQuery extends ReasonerQuery {
     default GraqlGet getQuery() {
         return Graql.match(getPattern()).get();
     }
+
+    ResolutionPlan resolutionPlan();
 
     /**
      * @return rewritten (decomposed) version of the query

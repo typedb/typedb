@@ -39,14 +39,17 @@ import java.util.stream.Collectors;
 public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     private final LinkedList<ReasonerQueryImpl> subQueries;
+    private final AnswerPropagatorState CSParent;
 
     public CumulativeState(List<ReasonerQueryImpl> qs,
                            ConceptMap sub,
                            Unifier u,
                            AnswerPropagatorState parent,
+                           AnswerPropagatorState CSParent,
                            Set<ReasonerAtomicQuery> subGoals) {
         super(Iterables.getFirst(qs, null), sub, u, parent, subGoals);
         this.subQueries = new LinkedList<>(qs);
+        this.CSParent = CSParent;
         subQueries.removeFirst();
     }
 
@@ -74,8 +77,9 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
                 mergeExplanations(accumulatedAnswer, toMerge));
 
         if (answer.isEmpty()) return null;
-        if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());
-        return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), getVisitedSubGoals());
+        if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), CSParent);
+        return new CumulativeState(subQueries, answer, getUnifier(), this, CSParent, getVisitedSubGoals());
+        //return new CumulativeState(subQueries, answer, getUnifier(), getParentState(), CSParent, getVisitedSubGoals());
     }
 
     @Override

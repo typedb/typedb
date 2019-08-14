@@ -1,0 +1,46 @@
+match
+
+#there is a function
+$function isa SourceArtifact, has name $function_name;
+($function) isa DECLARATION;
+($function) isa FUNCTION;
+
+#function has argument $n
+(is_parent: $function, is_child: $functionArguments);
+($functionArguments) isa FUNCTION;
+($functionArguments) isa DECLARATION;
+($functionArguments) isa ARGUMENT;
+(is_parent: $functionArguments, is_child: $arg);
+($arg) isa ARGUMENT;
+($arg) isa NAME;
+$arg has token $n;
+
+#function has a body
+(is_parent: $function, is_child: $functionBody);
+($functionBody) isa BODY;
+
+#function body contains an if statement
+(is_parent: $functionBody, is_child: $ifStatement);
+($ifStatement) isa IF;
+
+#if statement has conditional ($n < 2)
+(is_parent: $ifStatement, is_child: $ifConditional);
+$nToken has token $n; (is_parent: $ifConditional, is_child: $nToken);
+$lessThanCheck has token "<"; (is_parent: $ifConditional, is_child: $lessThanCheck);
+$twoLiteral has numberValue 2; (is_parent: $ifConditional, is_child: $twoLiteral);
+
+#if statement returns $n
+(is_parent: $ifStatement, is_child: $whenIfTrue);
+($whenIfTrue) isa THEN;
+($if_return) isa RETURN; (is_parent: $whenIfTrue, is_child: $if_return);
+$if_nToken has token $n; (is_parent: $if_return, is_child: $if_nToken);
+
+#if statement has else statement
+(is_parent: $ifStatement, is_child: $elseStatement);
+($elseStatement) isa ELSE;
+
+#else statement returns $f($n - 1) + $f($n - 2)
+(is_parent: $elseStatement, is_child: $else_return);
+($else_return) isa RETURN;
+
+get;
