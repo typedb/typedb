@@ -55,7 +55,7 @@ public class ServerFactory {
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
         Cluster cluster = Cluster.builder()
                 .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(config.getProperty(ConfigKey.STORAGE_PORT))
+                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
                 .build();
 
         KeyspaceManager keyspaceManager = new KeyspaceManager(cluster);

@@ -166,6 +166,13 @@ dependencies:
       - "it.unimi.dsi:fastutil"
       - "com.addthis.metrics:reporter-config3" # include this if we need to debug cassandra
       - "org.eclipse.jdt.core.compiler:ecj"
+    cassandra-thrift:
+      version: "3.11.3"
+      lang: java
+      exclude:
+        - "ch.qos.logback:logback-classic"
+        - "ch.qos.logback:logback-core"
+        - "it.unimi.dsi:fastutil"
 
   org.apache.commons:
     commons-lang3:
@@ -175,7 +182,15 @@ dependencies:
       version: "3.6.1"
       lang: java
 
+  org.apache.thrift:
+    libthrift:
+      version: "0.9.2"
+      lang: java
+
   org.apache.hadoop:
+    hadoop-annotations:
+      version: "2.7.2"
+      lang: java
     hadoop-common:
       version: "2.7.2"
       lang: java
@@ -219,13 +234,13 @@ dependencies:
 
   org.apache.tinkerpop:
     gremlin-core:
-      version: "3.4.0"
+      version: "3.3.3"
       lang: java
       exclude:
       - "org.slf4j:jcl-over-slf4j"
       - "org.slf4j:slf4j-log4j12"
     hadoop-gremlin:
-      version: "3.4.0"
+      version: "3.3.3"
       lang: java
       exclude:
       - "com.fasterxml.jackson.core:jackson-core"
@@ -241,7 +256,7 @@ dependencies:
       - "org.slf4j:slf4j-log4j12"
       - "org.slf4j:slf4j-nop"
     spark-gremlin:
-      version: "3.4.0"
+      version: "3.3.3"
       lang: java
       exclude:
       - "com.fasterxml.jackson.core:jackson-annotations"
@@ -251,7 +266,7 @@ dependencies:
       - "io.netty:netty"
       - "javax.servlet:javax.servlet-api"
     tinkergraph-gremlin:
-      version: "3.4.0"
+      version: "3.3.3"
       lang: java
       exclude:
       - "org.slf4j:slf4j-log4j12"
@@ -268,8 +283,8 @@ dependencies:
       lang: java
 
   org.janusgraph:
-    janusgraph-cql:
-      version: "0.4.0-custom-cql"
+    janusgraph-cassandra:
+      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
@@ -284,7 +299,7 @@ dependencies:
       - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
       - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
     janusgraph-core:
-      version: "0.4.0-custom-cql"
+      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
       lang: java
       exclude:
       - "ch.qos.logback:logback-classic"
@@ -299,7 +314,7 @@ dependencies:
       - "org.slf4j:slf4j-api"
       - "org.slf4j:slf4j-log4j12"
     janusgraph-hadoop:
-      version: "0.4.0-custom-cql"
+      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
       lang: java
       exclude:
       - "com.codahale.metrics:metrics-core"

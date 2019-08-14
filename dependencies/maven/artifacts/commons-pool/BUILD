@@ -1,7 +1,7 @@
 java_library(
-    name = "picocli",
+    name = "commons-pool",
     exports = [
-        "//external:jar/info/picocli/picocli"
+        "//external:jar/commons-pool/commons-pool"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

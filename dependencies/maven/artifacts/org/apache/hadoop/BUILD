@@ -4,7 +4,7 @@ java_library(
         "//external:jar/org/apache/hadoop/hadoop-annotations"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
