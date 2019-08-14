@@ -41,7 +41,7 @@ java_test(
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
     ],
-    data = ["file-(with-parentheses).gql"],
+    data = ["file-(with-parentheses).gql", "invalid-data.cql"],
     size = "large",
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
