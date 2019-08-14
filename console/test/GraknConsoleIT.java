@@ -158,6 +158,14 @@ public class GraknConsoleIT {
     }
 
     @Test
+    public void when_loadingInvalidDataFromFile_expectError() {
+        Response response = runConsoleSession("", "-f", "console/test/invalid-data.cql");
+
+        assertThat(response.err(), allOf(containsString("Failed to load file:"), containsString("A structural validation error has occurred.")));
+        assertThat(response.out(), not(containsString("Successful commit:")));
+    }
+
+    @Test
     public void when_loadingFileWithEscapes_expect_dataIsWritten() throws Exception {
         assertConsoleSessionMatches(
                 "load console/test/file-\\(with-parentheses\\).gql",

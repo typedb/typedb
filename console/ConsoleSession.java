@@ -108,11 +108,11 @@ public class ConsoleSession implements AutoCloseable {
         try {
             String queries = readFile(filePath);
             executeQuery(queries, false);
-            commit();
+            tx.commit();
             consoleReader.println("Successful commit: " + filePath.getFileName().toString());
-        } catch (GraknClientException e) {
-            String error = "Failed to load file: " + filePath.getFileName().toString();
-            throw new GraknConsoleException(error, e);
+        } catch (RuntimeException e) {
+            printErr.println("Failed to load file:");
+            printErr.println(e.getMessage());
         } finally {
             consoleReader.flush();
         }
