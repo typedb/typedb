@@ -150,6 +150,7 @@ public class RuleUtils {
 
         typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
+        //for each cycle in the type dependency graph, check for cycles in the instances
         return typeCycles.stream().anyMatch(typeSet -> {
             Set<ReasonerAtomicQuery> queries = typeSet.stream()
                     .flatMap(type -> typeTCinverse.get(type).stream())

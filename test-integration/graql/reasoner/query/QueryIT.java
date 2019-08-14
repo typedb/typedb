@@ -28,6 +28,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.graph.GeoGraph;
@@ -41,7 +42,6 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.AfterClass;
@@ -50,6 +50,7 @@ import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -75,7 +76,7 @@ public class QueryIT {
     }
 
     @Test
-    public void whenQueryHasCyclicalRuleGraphTypeHierarchiesInBodies_weReiterate(){
+    public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierarchies_weReiterate(){
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             try (TransactionOLTP tx = session.transaction().write()) {
 
@@ -123,7 +124,85 @@ public class QueryIT {
                 //with cache empty no loops are found
                 assertFalse(RuleUtils.subGraphIsCyclical(rules, tx));
                 assertFalse(query.requiresReiteration());
-                List<ConceptMap> answers = query.resolve().collect(Collectors.toList());
+                query.resolve().collect(Collectors.toList());
+
+                //with populated cache we find a loop
+                assertTrue(RuleUtils.subGraphIsCyclical(rules, tx));
+            }
+        }
+    }
+
+    @Test
+    public void whenTypeDependencyGraphHasCycles_instancesHaveNonTrivialCycles_weReiterate(){
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                Role fromRole = tx.putRole("fromRole");
+                Role toRole = tx.putRole("toRole");
+                EntityType someEntity = tx.putEntityType("someEntity")
+                        .plays(fromRole)
+                        .plays(toRole);
+
+                RelationType someRelation = tx.putRelationType("someRelation")
+                        .relates(fromRole)
+                        .relates(toRole);
+                RelationType transRelation = tx.putRelationType("transRelation")
+                        .relates(fromRole)
+                        .relates(toRole);
+
+                Rule rule1 = tx.putRule("transRule",
+                        Graql.and(
+                                Graql.var()
+                                        .rel(type(fromRole.label().getValue()), Graql.var("x"))
+                                        .rel(type(toRole.label().getValue()), Graql.var("y"))
+                                        .isa(type(transRelation.label().getValue())),
+                                Graql.var()
+                                        .rel(type(fromRole.label().getValue()), Graql.var("y"))
+                                        .rel(type(toRole.label().getValue()), Graql.var("z"))
+                                        .isa(type(transRelation.label().getValue()))
+                        ),
+                        Graql.var()
+                                .rel(type(fromRole.label().getValue()), Graql.var("x"))
+                                .rel(type(toRole.label().getValue()), Graql.var("z"))
+                                .isa(type(transRelation.label().getValue()))
+                );
+
+                Rule rule = tx.putRule("equivRule",
+                        Graql.var()
+                                .rel(type(fromRole.label().getValue()), Graql.var("x"))
+                                .rel(type(toRole.label().getValue()), Graql.var("z"))
+                                .isa(type(someRelation.label().getValue())),
+                        Graql.var()
+                                .rel(type(fromRole.label().getValue()), Graql.var("x"))
+                                .rel(type(toRole.label().getValue()), Graql.var("z"))
+                                .isa(type(transRelation.label().getValue()))
+                );
+
+                Entity entityA = someEntity.create();
+                Entity entityB = someEntity.create();
+                Entity entityC = someEntity.create();
+                Entity entityD = someEntity.create();
+                Entity entityE = someEntity.create();
+                Entity entityF = someEntity.create();
+                Entity entityG = someEntity.create();
+
+                someRelation.create().assign(fromRole, entityA).assign(toRole, entityB);
+                someRelation.create().assign(fromRole, entityA).assign(toRole, entityC);
+                someRelation.create().assign(fromRole, entityA).assign(toRole, entityD);
+                someRelation.create().assign(fromRole, entityD).assign(toRole, entityE);
+                someRelation.create().assign(fromRole, entityE).assign(toRole, entityF);
+                someRelation.create().assign(fromRole, entityF).assign(toRole, entityA);
+                someRelation.create().assign(fromRole, entityF).assign(toRole, entityG);
+                tx.commit();
+            }
+            try (TransactionOLTP tx = session.transaction().write()) {
+                String patternString = "{ (fromRole: $x, toRole: $y) isa transRelation; };";
+                ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
+                Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet());
+
+                //with cache empty no loops are found
+                assertFalse(RuleUtils.subGraphIsCyclical(rules, tx));
+                assertFalse(query.requiresReiteration());
+                query.resolve().collect(Collectors.toList());
 
                 //with populated cache we find a loop
                 assertTrue(RuleUtils.subGraphIsCyclical(rules, tx));
