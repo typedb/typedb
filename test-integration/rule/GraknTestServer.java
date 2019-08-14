@@ -97,7 +97,6 @@ public class GraknTestServer extends ExternalResource {
             updatedCassandraConfigPath = buildCassandraConfigWithRandomPorts();
             System.setProperty("cassandra.config", "file:" + updatedCassandraConfigPath.getAbsolutePath());
             System.setProperty("cassandra-foreground", "true");
-            System.out.println("cassandraConfig.getAbsolutePath() = " + updatedCassandraConfigPath.getAbsolutePath());
             GraknStorage.main(new String[]{});
             System.out.println("Grakn Storage started");
 
