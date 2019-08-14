@@ -1,10 +1,9 @@
 package grakn.core.graql.reasoner;
 
 import grakn.core.graql.reasoner.state.ResolutionState;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -13,7 +12,7 @@ public class ResolutionTree {
 
     class ResolutionNode{
         private final ResolutionState state;
-        private final List<ResolutionNode> children = new ArrayList<>();
+        private final LinkedHashSet<ResolutionNode> children = new LinkedHashSet<>();
         private long totalTime;
 
         ResolutionNode(ResolutionState state){
@@ -57,7 +56,7 @@ public class ResolutionTree {
         ResolutionNode childNode = childMatch != null? childMatch : new ResolutionNode(child);
 
         parentNode.addChild(childNode);
-        if (parentMatch == null) mapping.put(parent, parentNode);
+        if (parentMatch == null && parent != null) mapping.put(parent, parentNode);
         if (childMatch == null) mapping.put(child, childNode);
         return childNode;
     }

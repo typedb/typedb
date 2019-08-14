@@ -73,7 +73,8 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
-                tree.addChildToNode(state, newState);
+                //tree.addChildToNode(state, newState);
+                tree.addChildToNode(newState.getParentState(), newState);
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
