@@ -50,11 +50,6 @@ public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase
     }
 
     @Override
-    public void create(KeyspaceProto.Keyspace.Create.Req request, StreamObserver<KeyspaceProto.Keyspace.Create.Res> response) {
-        response.onError(new StatusRuntimeException(Status.UNIMPLEMENTED));
-    }
-
-    @Override
     public void retrieve(KeyspaceProto.Keyspace.Retrieve.Req request, StreamObserver<KeyspaceProto.Keyspace.Retrieve.Res> response) {
         try {
             Iterable<String> list = keyspaceManager.keyspaces().stream().map(KeyspaceImpl::name)
