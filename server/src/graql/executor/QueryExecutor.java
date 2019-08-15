@@ -109,7 +109,7 @@ public class QueryExecutor {
 
                 answerStream = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
                         .map(p -> ReasonerQueries.create(p, transaction))
-                        .flatMap(q -> transaction.stream(q.getQuery()));
+                        .flatMap(q -> transaction.stream(q.getQuery(), false));
 
                 ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
             } else {
