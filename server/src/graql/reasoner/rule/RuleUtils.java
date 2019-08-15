@@ -24,6 +24,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -150,6 +151,7 @@ public class RuleUtils {
 
         typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
+        //for each cycle in the type dependency graph, check for cycles in the instances
         return typeCycles.stream().anyMatch(typeSet -> {
             Set<ReasonerAtomicQuery> queries = typeSet.stream()
                     .flatMap(type -> typeTCinverse.get(type).stream())
@@ -162,19 +164,20 @@ public class RuleUtils {
             if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
-            return queries.stream().anyMatch(q -> {
+            for (ReasonerAtomicQuery q : queries) {
                 RelationAtom relationAtom = q.getAtom().toRelationAtom();
                 Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
                 IndexedAnswerSet answers = tx.queryCache().getEntry(q).cachedElement();
-                return answers.stream().anyMatch(ans ->
-                        varPairs.stream().anyMatch(p -> {
-                            Concept from = ans.get(p.getKey());
-                            Concept to = ans.get(p.getValue());
-                            if (conceptMap.get(to).contains(from)) return true;
-                            conceptMap.put(from, to);
-                            return false;
-                        }));
-            });
+                for (ConceptMap ans : answers) {
+                    for (Pair<Variable, Variable> p : varPairs) {
+                        Concept from = ans.get(p.getKey());
+                        Concept to = ans.get(p.getValue());
+                        if (conceptMap.get(to).contains(from)) return true;
+                        conceptMap.put(from, to);
+                    }
+                }
+            }
+            return !new TarjanSCC<>(conceptMap).getCycles().isEmpty();
         });
     }
 
