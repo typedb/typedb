@@ -34,8 +34,10 @@ import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -109,7 +111,8 @@ public class QueryExecutor {
 
                 answerStream = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
                         .map(p -> ReasonerQueries.create(p, transaction))
-                        .flatMap(q -> transaction.stream(q.getQuery(), false));
+                        .map(ReasonerQueryImpl::getPattern)
+                        .flatMap(p -> traversal(p, TraversalPlanner.createTraversal(p, transaction)));
 
                 ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
             } else {
@@ -193,13 +196,10 @@ public class QueryExecutor {
     }
 
     /**
-     * @param commonVars     set of variables of interest
-     * @param graqlTraversal graql traversal corresponding to the provided pattern
      * @return resulting answer stream
      */
-    public Stream<ConceptMap> traversal(Set<Variable> commonVars, GraqlTraversal graqlTraversal) {
-        Set<Variable> vars = Sets.filter(commonVars, Variable::isReturned);
-
+    public Stream<ConceptMap> traversal(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
+        Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
 
         return traversal.toStream()
