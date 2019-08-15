@@ -34,12 +34,9 @@ import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
-import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.server.exception.GraknServerException;
-import grakn.core.server.kb.concept.RelationImpl;
-import grakn.core.server.kb.concept.RelationReified;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -58,13 +55,6 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -79,6 +69,12 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
@@ -108,18 +104,12 @@ public class QueryExecutor {
             validateClause(matchClause);
 
             if (!infer) {
-                // time to create the traversal plan
-
-                int createTraversalSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match create traversal", createStreamSpanId);
-
-                GraqlTraversal graqlTraversal = TraversalPlanner.createTraversal(matchClause.getPatterns(), transaction);
-
-                ServerTracing.closeScopedChildSpan(createTraversalSpanId);
-
                 // time to convert plan into a answer stream
                 int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
 
-                answerStream = traversal(matchClause.getPatterns().variables(), graqlTraversal);
+                answerStream = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
+                        .map(p -> ReasonerQueries.create(p, transaction))
+                        .flatMap(q -> transaction.stream(q.getQuery()));
 
                 ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
             } else {
