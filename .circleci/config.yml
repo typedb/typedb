@@ -20,7 +20,7 @@ version: 2.1
 commands:
   install-bazel-linux-rbe:
     steps:
-      - run: curl -OL https://github.com/lolski/build-tools/blob/apt-wait/ci/apt-wait.sh
+      - run: curl -OL https://raw.githubusercontent.com/lolski/build-tools/apt-wait/ci/apt-wait.sh
       - run: bash ./apt-wait.sh
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
       - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
