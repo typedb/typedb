@@ -39,9 +39,9 @@ import java.util.stream.Collectors;
 public class KeyspaceService extends KeyspaceServiceGrpc.KeyspaceServiceImplBase {
     private final Logger LOG = LoggerFactory.getLogger(KeyspaceService.class);
 
-    private final KeyspaceManager keyspaceManager;
+    protected KeyspaceManager keyspaceManager;
     private SessionFactory sessionFactory;
-    private JanusGraphFactory janusGraphFactory;
+    protected JanusGraphFactory janusGraphFactory;
 
     public KeyspaceService(KeyspaceManager keyspaceManager, SessionFactory sessionFactory, JanusGraphFactory janusGraphFactory) {
         this.keyspaceManager = keyspaceManager;
