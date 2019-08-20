@@ -45,8 +45,9 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertTrue;
 
-public class ConversionIT {
+public class AtomicConversionIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -165,7 +166,7 @@ public class ConversionIT {
             Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             RelationAtom intermittentAtom = attribute.toRelationAtom();
             AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
-            //assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
+            assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
             assertEquals(attribute, equivalentAttribute);
         }
     }

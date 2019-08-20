@@ -40,6 +40,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class NumberCastingIT {
 
@@ -71,6 +72,14 @@ public class NumberCastingIT {
         }
     }
 
+    private void verifyRead(SessionImpl session, Pattern pattern) {
+        MatchClause match = Graql.match(pattern.statements());
+        try (TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptMap> answers = tx.execute(match);
+            assertFalse(answers.isEmpty());
+        }
+    }
+
     private void cleanup(SessionImpl session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
         try (TransactionOLTP tx = session.transaction().write()) {
@@ -83,7 +92,7 @@ public class NumberCastingIT {
     public void whenAddressingDoubleAsInteger_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10).isa("attr-double");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
@@ -91,7 +100,7 @@ public class NumberCastingIT {
     public void whenAddressingDoubleAsLong_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10L).isa("attr-double");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
@@ -99,14 +108,14 @@ public class NumberCastingIT {
     public void whenAddressingDoubleAsFloat_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10f).isa("attr-double");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
     }
 
     @Test
     public void whenAddressingLongAsInt_ConversionHappens() {
         Pattern pattern = Graql.var("x").val(10).isa("attr-long");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
@@ -116,7 +125,7 @@ public class NumberCastingIT {
 
         Pattern pattern = Graql.parsePattern("$x " + now + " isa attr-date;");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
@@ -126,7 +135,7 @@ public class NumberCastingIT {
 
         Pattern pattern = Graql.parsePattern("$x " + now + " isa attr-date;");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 
@@ -135,7 +144,7 @@ public class NumberCastingIT {
         double value = 10.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
         verifyWrite(session, pattern);
-        //TODO verifyRead(session, pattern);
+        verifyRead(session, pattern);
         cleanup(session, pattern);
     }
 

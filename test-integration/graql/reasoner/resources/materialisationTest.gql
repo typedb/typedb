@@ -5,27 +5,33 @@ anotherRole sub role;
 
 newEntity sub entity;
 
-someEntity sub entity,
+baseEntity sub entity,
     plays someRole,
     plays anotherRole,
-    has resource;
+    has resource-string,
+    has resource-long,
+    has resource-double,
+    has resource-boolean,
+    has resource-date;
 
-anotherEntity sub entity,
-    plays someRole,
-    plays anotherRole,
-    has resource;
+someEntity sub baseEntity;
+anotherEntity sub baseEntity;
 
 someRelation sub relation,
     relates someRole,
     relates anotherRole,
-    has resource;
+    has resource-string;
 
 #Resources
-resource sub attribute, datatype string;
+resource-string sub attribute, datatype string;
+resource-long sub attribute, datatype long;
+resource-double sub attribute, datatype double;
+resource-boolean sub attribute, datatype boolean;
+resource-date sub attribute, datatype date;
 
 insert
 
 #Data
 
-$x isa someEntity, has resource 'resource';
+$x isa someEntity, has resource-string 'resource';
 $y isa anotherEntity;
