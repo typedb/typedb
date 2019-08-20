@@ -112,9 +112,10 @@ public abstract class AttributeAtom extends Binary{
 
     private AttributeAtom convertValues(){
         Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
-            if (!vp.getPredicate().isValueEquality()) return vp;
+            Object value = vp.getPredicate().value();
+            if (value == null) return vp;
             AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
-            Object convertedValue = ValueConverter.of(dataType).convert(vp.getPredicate().value());
+            Object convertedValue = ValueConverter.of(dataType).convert(value);
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());
