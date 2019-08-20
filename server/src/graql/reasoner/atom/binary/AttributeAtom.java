@@ -60,6 +60,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
+import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -96,12 +97,28 @@ public abstract class AttributeAtom extends Binary{
     public abstract Variable getAttributeVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
+    public static AttributeAtom createWithValueConversion(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
+        AttributeAtom attributeAtom = new AutoValue_AttributeAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
+        return attributeAtom.convertValues();
+    }
+
     public static AttributeAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
         return new AutoValue_AttributeAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {
         return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
+    }
+
+    private AttributeAtom convertValues(){
+        Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
+            if (!vp.getPredicate().isValueEquality()) return vp;
+            AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
+            Object convertedValue = ValueConverter.of(dataType).convert(vp.getPredicate().value());
+            ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
+            return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
+        }).collect(Collectors.toSet());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery());
     }
 
     @Override

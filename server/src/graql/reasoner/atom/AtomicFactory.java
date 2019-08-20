@@ -135,12 +135,9 @@ public class AtomicFactory {
                 .anyMatch(v -> v.equals(predicateVar));
         ValueProperty.Operation indirectOperation = !predicateVarBound?
                 ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
-        ValueProperty.Operation operation;
 
-        if (indirectOperation == null) operation = directOperation;
-        else{
-            operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), indirectOperation.value());
-        }
+        Object value = indirectOperation == null ? directOperation.value() : indirectOperation.value();
+        ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), value);
         return ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
 }
