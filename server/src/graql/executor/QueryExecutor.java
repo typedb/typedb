@@ -35,9 +35,9 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
-import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -106,22 +106,14 @@ public class QueryExecutor {
             validateClause(matchClause);
 
             if (!infer) {
-                // time to convert plan into a answer stream
-                int traversalToStreamSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match traversal to stream", createStreamSpanId);
-
                 answerStream = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
                         .map(p -> ReasonerQueries.create(p, transaction))
                         .map(ReasonerQueryImpl::getPattern)
                         .flatMap(p -> traversal(p, TraversalPlanner.createTraversal(p, transaction)));
-
-                ServerTracing.closeScopedChildSpan(traversalToStreamSpanId);
             } else {
-
-                int disjunctionSpanId = ServerTracing.startScopedChildSpanWithParentContext("QueryExecutor.match disjunction iterator", createStreamSpanId);
-
-                answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
-
-                ServerTracing.closeScopedChildSpan(disjunctionSpanId);
+                answerStream = matchClause.getPatterns().getNegationDNF().getPatterns().stream()
+                        .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
+                        .flatMap(ResolvableQuery::resolve);
             }
         } catch (GraqlCheckedException e) {
             LOG.debug(e.getMessage());

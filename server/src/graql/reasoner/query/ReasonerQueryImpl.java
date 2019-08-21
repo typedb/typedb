@@ -560,10 +560,13 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 || selectAtoms().filter(Atom::isDisconnected).filter(Atom::isRuleResolvable).count() > 1;
     }
 
+    @Override
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        return isRuleResolvable()?
-                new ResolutionIterator(this, subGoals).hasStream() :
-                tx.stream(getQuery());
+        boolean doNotResolve = getAtoms().isEmpty()
+                || (isPositive() && !isRuleResolvable());
+        return doNotResolve ?
+                tx.stream(getQuery(), false) :
+                new ResolutionIterator(this, subGoals).hasStream();
     }
 
     @Override
