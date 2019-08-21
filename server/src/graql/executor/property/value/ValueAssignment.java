@@ -18,15 +18,11 @@
 
 package grakn.core.graql.executor.property.value;
 
-import grakn.core.concept.type.AttributeType;
 import grakn.core.server.kb.concept.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import java.time.LocalDateTime;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-
-import static grakn.core.common.util.Collections.set;
 
 public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
@@ -64,14 +60,6 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
         }
 
         @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.DOUBLE,
-                    //AttributeType.DataType.FLOAT,
-                    //AttributeType.DataType.INTEGER,
-                    AttributeType.DataType.LONG);
-        }
-
-        @Override
         public N valueSerialised() {
             return new Serialiser.Default<N>().serialise(value());
         }
@@ -81,11 +69,6 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
         Boolean(boolean value) {
             super(value);
-        }
-
-        @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.BOOLEAN);
         }
 
         @Override
@@ -101,11 +84,6 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
         }
 
         @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.DATE);
-        }
-
-        @Override
         public Long valueSerialised() {
             return Serialiser.DATE.serialise(value());
         }
@@ -115,11 +93,6 @@ public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 
         String(java.lang.String value) {
             super(value);
-        }
-
-        @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.STRING);
         }
 
         @Override

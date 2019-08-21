@@ -34,7 +34,6 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSemanticException;
-import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -71,7 +70,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
@@ -116,7 +114,12 @@ public abstract class AttributeAtom extends Binary{
         Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
             Object value = vp.getPredicate().value();
             if (value == null) return vp;
-            Object convertedValue = ValueConverter.of(dataType).convert(value);
+            Object convertedValue;
+            try {
+                convertedValue = ValueConverter.of(dataType).convert(value);
+            } catch (ClassCastException e){
+                throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
+            }
             ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
             return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
         }).collect(Collectors.toSet());

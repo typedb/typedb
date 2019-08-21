@@ -18,18 +18,25 @@
 
 package grakn.core.graql.reasoner.atomic;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import grakn.core.concept.type.AttributeType;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.kb.concept.ValueConverter;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -132,30 +139,38 @@ public class AtomicEquivalenceIT {
         atomicEquality(pattern, pattern8, false, tx);
     }
 
+    private static Map<AttributeType.DataType<?>, Object> testValues = ImmutableMap.<AttributeType.DataType<?>, Object>builder()
+            .put(AttributeType.DataType.BOOLEAN, true)
+            .put(AttributeType.DataType.DATE, LocalDateTime.now())
+            .put(AttributeType.DataType.DOUBLE, 10.0)
+            .put(AttributeType.DataType.FLOAT, 10.0)
+            .put(AttributeType.DataType.INTEGER, 10)
+            .put(AttributeType.DataType.LONG, 10L)
+            .put(AttributeType.DataType.STRING, "10")
+            .build();
+
     @Test
     public void testEquivalence_AttributesWithEquivalentValues(){
-        ArrayList<Statement> doubleAttributes = Lists.newArrayList(
-                Graql.var("x").has("resource-double", 10L),
-                Graql.var("x").has("resource-double", 10),
-                Graql.var("x").has("resource-double", 10.0)
-        );
+        AttributeType<?> metaAttributeType = tx.getMetaAttributeType();
+        Set<AttributeType> attributeTypes = metaAttributeType.subs().collect(toSet());
 
-        doubleAttributes.forEach(att -> doubleAttributes
-                .forEach(att2 -> {
-                    atomicEquivalence(att.toString(), att2.toString(),true, AtomicEquivalence.AlphaEquivalence, tx);
-                    atomicEquivalence(att.toString(), att2.toString(),true, AtomicEquivalence.StructuralEquivalence, tx);
-                }));
+        AttributeType.DataType.values().stream()
+                .filter(dataType -> attributeTypes.stream().anyMatch(t -> t.dataType() != null && t.dataType().equals(dataType)))
+                .forEach(dataType -> {
+                    Object value = testValues.get(dataType);
+                    attributeTypes.stream()
+                            .filter(t -> Objects.nonNull(t.dataType()))
+                            .filter(t -> t.dataType().equals(dataType)).forEach(attributeType -> {
 
-        ArrayList<Statement> longAttributes = Lists.newArrayList(
-                Graql.var("x").has("resource-long", 10.0),
-                Graql.var("x").has("resource-long", 10),
-                Graql.var("x").has("resource-long", 10L));
-
-        longAttributes.forEach(att -> longAttributes
-                .forEach(att2 -> {
-                    atomicEquivalence(att.toString(), att2.toString(),true, AtomicEquivalence.AlphaEquivalence, tx);
-                    atomicEquivalence(att.toString(), att2.toString(),true, AtomicEquivalence.StructuralEquivalence, tx);
-                }));
+                        Pattern basePattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + value + ";");
+                        dataType.comparableDataTypes().forEach(comparableDataType -> {
+                            ValueConverter<Object, ?> converter = ValueConverter.of(comparableDataType);
+                            Pattern convertedPattern = Graql.parsePattern("$x has " + attributeType.label().getValue() + " " + converter.convert(value) + ";");
+                            atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.AlphaEquivalence, tx);
+                            atomicEquivalence(basePattern.toString(), convertedPattern.toString(), true, AtomicEquivalence.StructuralEquivalence, tx);
+                        });
+            });
+        });
     }
 
     @Test
