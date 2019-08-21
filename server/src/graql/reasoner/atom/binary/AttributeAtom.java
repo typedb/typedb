@@ -111,8 +111,9 @@ public abstract class AttributeAtom extends Binary{
     }
 
     private AttributeAtom convertValues(){
-        AttributeType<Object> attributeType = getSchemaConcept().asAttributeType();
-        if (Schema.MetaSchema.isMetaLabel(attributeType.label())) return this;
+        SchemaConcept type = getSchemaConcept();
+        AttributeType<Object> attributeType = type.isAttributeType()? type.asAttributeType() : null;
+        if (attributeType == null || Schema.MetaSchema.isMetaLabel(attributeType.label())) return this;
 
         AttributeType.DataType<Object> dataType = attributeType.dataType();
         Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
