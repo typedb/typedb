@@ -97,6 +97,8 @@ resource-long sub attribute, datatype long,
     plays baseRole1,
     plays baseRole2;
 
+resource-double sub attribute, datatype double;
+
 
 binarySymmetricity sub rule,
 when {

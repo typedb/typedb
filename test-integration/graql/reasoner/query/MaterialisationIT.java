@@ -214,10 +214,6 @@ public class MaterialisationIT {
             materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10).id(entity.id().getValue()), tx);
             materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10L).id(entity.id().getValue()), tx);
 
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10.0).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10).id(entity.id().getValue()), tx);
-            materialiseWithoutDuplicates(Graql.var("x").has("resource-long", 10L).id(entity.id().getValue()), tx);
-
             materialiseWithoutDuplicates(Graql.var("x").has("resource-date", LocalDateTime.now()).id(entity.id().getValue()), tx);
             materialiseWithoutDuplicates(Graql.parsePattern("$x id " + entity.id().getValue() + ", has resource-date " + LocalDate.now() + ";").statements().iterator().next(), tx);
         }

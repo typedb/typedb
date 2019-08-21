@@ -71,6 +71,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 
@@ -98,11 +99,6 @@ public abstract class AttributeAtom extends Binary{
     public abstract Variable getAttributeVariable();
     public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
 
-    public static AttributeAtom createWithValueConversion(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        AttributeAtom attributeAtom = new AutoValue_AttributeAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
-        return attributeAtom.convertValues();
-    }
-
     public static AttributeAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
         return new AutoValue_AttributeAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
@@ -129,6 +125,11 @@ public abstract class AttributeAtom extends Binary{
 
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
+
+    @Override
+    public Atomic simplify() {
+        return this.convertValues();
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}

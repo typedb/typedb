@@ -244,7 +244,7 @@ public class InferenceRule {
                         .collect(toSet());
                 bodyConjunctionAtoms.addAll(innerVps);
 
-                headAtom = AttributeAtom.createWithValueConversion(
+                headAtom = AttributeAtom.create(
                         resourceHead.getPattern(),
                         resourceHead.getAttributeVariable(),
                         resourceHead.getRelationVariable(),
