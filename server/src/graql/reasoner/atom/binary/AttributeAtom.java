@@ -34,6 +34,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlQueryException;
 import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
@@ -56,6 +57,7 @@ import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.kb.concept.ValueConverter;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -430,9 +432,11 @@ public abstract class AttributeAtom extends Binary{
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
         Attribute attribute = null;
         if(this.isValueEquality()){
-            Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().value();
-            Attribute existingAttribute = attributeType.attribute(value);
-            attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
+            ValuePredicate vp = Iterables.getOnlyElement(getMultiPredicate());
+            Object value = vp.getPredicate().value();
+            Object persistedValue = ValueConverter.of(attributeType.dataType()).convert(value);
+            Attribute existingAttribute = attributeType.attribute(persistedValue);
+            attribute = existingAttribute == null? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
         } else {
             Attribute existingAttribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
             //even if the attribute exists but is of different type (supertype for instance) we create a new one
