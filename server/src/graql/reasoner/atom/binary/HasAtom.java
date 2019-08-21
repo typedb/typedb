@@ -39,11 +39,13 @@ public abstract class HasAtom extends OntologicalAtom {
     @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static HasAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
-        Variable varName = var.asReturnedVar();
-        Variable predicateVar = pVar.asReturnedVar();
+    public static HasAtom create(Statement pattern, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+        return new AutoValue_HasAtom(pattern.var(), predicateId, predicateVar, pattern, parent);
+    }
+
+    public static HasAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
         Label label = parent.tx().getConcept(predicateId).asType().label();
-        return new AutoValue_HasAtom(varName, predicateId, predicateVar, new Statement(varName).has(Graql.type(label.getValue())), parent);
+        return create(new Statement(var).has(Graql.type(label.getValue())), predicateVar, predicateId, parent);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {

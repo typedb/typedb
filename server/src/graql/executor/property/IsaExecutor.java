@@ -71,6 +71,7 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         //IsaProperty is unique within a var, so skip if this is a relation
         if (statement.hasProperty(RelationProperty.class)) return null;
 
+        Variable varName = var.asReturnedVar();
         Variable typeVar = property.type().var();
 
         IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);
@@ -80,12 +81,12 @@ public class IsaExecutor implements PropertyExecutor.Insertable {
         Statement isaVar;
 
         if (property.isExplicit()) {
-            isaVar = new Statement(var).isaX(new Statement(typeVar));
+            isaVar = new Statement(varName).isaX(new Statement(typeVar));
         } else {
-            isaVar = new Statement(var).isa(new Statement(typeVar));
+            isaVar = new Statement(varName).isa(new Statement(typeVar));
         }
 
-        return IsaAtom.create(var, typeVar, isaVar, predicateId, parent);
+        return IsaAtom.create(varName, typeVar, isaVar, predicateId, parent);
     }
 
     @Override

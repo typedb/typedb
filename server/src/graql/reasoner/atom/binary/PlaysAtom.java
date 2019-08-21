@@ -37,10 +37,8 @@ public abstract class PlaysAtom extends OntologicalAtom {
     @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static PlaysAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
-        Variable varName = var.asReturnedVar();
-        Variable predicateVar = pVar.asReturnedVar();
-        return new AutoValue_PlaysAtom(varName.asReturnedVar(), predicateId, predicateVar, new Statement(varName).plays(new Statement(predicateVar)), parent);
+    public static PlaysAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
+        return new AutoValue_PlaysAtom(var, predicateId, predicateVar, new Statement(var).plays(new Statement(predicateVar)), parent);
     }
 
     private static PlaysAtom create(PlaysAtom a, ReasonerQuery parent) {
@@ -49,7 +47,7 @@ public abstract class PlaysAtom extends OntologicalAtom {
 
     @Override
     OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return create(var, predicateVar, predicateId, parent);
+        return PlaysAtom.create(var, predicateVar, predicateId, parent);
     }
 
     @Override
