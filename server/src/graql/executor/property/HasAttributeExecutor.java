@@ -102,8 +102,7 @@ public class HasAttributeExecutor implements PropertyExecutor.Insertable {
         Statement resVar = relationVariable.isReturned() ?
                 new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
                 new Statement(varName).has(property.type(), new Statement(attributeVariable));
-        return AttributeAtom.create(resVar, attributeVariable, relationVariable,
-                                    predicateVariable, predicateId, predicates, parent);
+        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
     }
 
     @Override

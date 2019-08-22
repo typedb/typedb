@@ -61,7 +61,7 @@ public class PlaysExecutor implements PropertyExecutor.Definable {
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
         ConceptId predicateId = predicate == null ? null : predicate.getPredicate();
-        return PlaysAtom.create(var.asReturnedVar(), property.role().var(), predicateId, parent);
+        return PlaysAtom.create(var, property.role().var(), predicateId, parent);
     }
 
     @Override

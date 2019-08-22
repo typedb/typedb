@@ -60,6 +60,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
+import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -104,8 +105,34 @@ public abstract class AttributeAtom extends Binary{
         return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
     }
 
+    private AttributeAtom convertValues(){
+        SchemaConcept type = getSchemaConcept();
+        AttributeType<Object> attributeType = type.isAttributeType()? type.asAttributeType() : null;
+        if (attributeType == null || Schema.MetaSchema.isMetaLabel(attributeType.label())) return this;
+
+        AttributeType.DataType<Object> dataType = attributeType.dataType();
+        Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
+            Object value = vp.getPredicate().value();
+            if (value == null) return vp;
+            Object convertedValue;
+            try {
+                convertedValue = ValueConverter.of(dataType).convert(value);
+            } catch (ClassCastException e){
+                throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
+            }
+            ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
+            return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
+        }).collect(Collectors.toSet());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery());
+    }
+
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
+
+    @Override
+    public Atomic simplify() {
+        return this.convertValues();
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
