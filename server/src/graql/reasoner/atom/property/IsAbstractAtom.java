@@ -34,7 +34,8 @@ public abstract class IsAbstractAtom extends AtomicBase {
     @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static IsAbstractAtom create(Variable varName, ReasonerQuery parent) {
+    public static IsAbstractAtom create(Variable var, ReasonerQuery parent) {
+        Variable varName = var.asReturnedVar();
         return new AutoValue_IsAbstractAtom(varName, new Statement(varName).isAbstract(), parent);
     }
 

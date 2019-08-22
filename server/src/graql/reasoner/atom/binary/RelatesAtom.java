@@ -38,8 +38,10 @@ public abstract class RelatesAtom extends OntologicalAtom {
     @Override public abstract Statement getPattern();
     @Override public abstract ReasonerQuery getParentQuery();
 
-    public static RelatesAtom create(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_RelatesAtom(var, predicateId, predicateVar, new Statement(var).relates(new Statement(predicateVar)), parent);
+    public static RelatesAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
+        Variable varName = var.asReturnedVar();
+        Variable predicateVar = pVar.asReturnedVar();
+        return new AutoValue_RelatesAtom(varName, predicateId, predicateVar, new Statement(varName).relates(new Statement(predicateVar)), parent);
     }
 
     private static RelatesAtom create(RelatesAtom a, ReasonerQuery parent) {

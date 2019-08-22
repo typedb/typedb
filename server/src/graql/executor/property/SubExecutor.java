@@ -60,7 +60,7 @@ public class SubExecutor implements PropertyExecutor.Definable {
     public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
         IdPredicate predicate = getIdPredicate(property.type().var(), property.type(), otherStatements, parent);
         ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return SubAtom.create(var.asReturnedVar(), property.type().var(), predicateId, parent);
+        return SubAtom.create(var, property.type().var(), predicateId, parent);
     }
 
     @Override

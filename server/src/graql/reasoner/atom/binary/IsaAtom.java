@@ -64,7 +64,7 @@ public abstract class IsaAtom extends IsaAtomBase {
     @Override public abstract ReasonerQuery getParentQuery();
 
     public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
+        return new AutoValue_IsaAtom(var.asReturnedVar(), predicateId, predicateVar, pattern, parent);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {

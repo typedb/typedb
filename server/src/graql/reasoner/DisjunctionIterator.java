@@ -69,7 +69,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
         LOG.trace("Resolving conjunctive query ({}): {}", doNotResolve, query);
 
         return doNotResolve ?
-                tx.stream(Graql.match(conj), false).iterator() :
+                tx.stream(query.getQuery(), false).iterator() :
                 new ResolutionIterator(query, new HashSet<>());
     }
 

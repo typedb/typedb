@@ -43,6 +43,11 @@ public abstract class OntologicalAtom extends TypeAtom {
     abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent);
 
     @Override
+    public String toString(){
+        return getPattern().toString() +
+                (getTypePredicate() != null? getTypePredicate().toString() : ""); }
+
+    @Override
     public boolean isSelectable() {
         return true;
     }
