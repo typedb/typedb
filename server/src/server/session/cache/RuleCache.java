@@ -125,10 +125,11 @@ public class RuleCache {
         Set<Rule> match = ruleMap.get(type);
         if (!match.isEmpty()) return match.stream();
 
-        return getTypes(type, direct).stream()
+        getTypes(type, direct).stream()
                 .flatMap(SchemaConcept::thenRules)
                 .filter(this::isRuleMatchable)
-                .peek(rule -> ruleMap.put(type, rule));
+                .forEach(rule -> ruleMap.put(type, rule));
+        return match.stream();
     }
 
     private boolean typeHasInstances(Type type){

@@ -561,14 +561,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        boolean resolve = isRuleResolvable() && !getAtoms().isEmpty();
-        return resolve?
-                new ResolutionIterator(this, subGoals).hasStream() :
-                tx.stream(getQuery(), false);
-    }
-
-    @Override
     public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return !containsVariablePredicates() ?
                 new ConjunctiveState(this, sub, u, parent, subGoals) :
