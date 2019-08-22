@@ -124,7 +124,6 @@ public class AtomicFactory {
                 .collect(Collectors.toSet());
         //true if the VP has another VP that references it - a parent VP
         boolean hasParentVp = !parentVPs.isEmpty();
-        //if (hasParentVp) return null;
         if (hasParentVp && !partOfAttribute) return null;
 
         //if predicate variable is bound in another atom, we always need to create a NeqPredicate
