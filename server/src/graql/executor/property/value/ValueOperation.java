@@ -26,7 +26,6 @@ import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -76,12 +75,11 @@ public abstract class ValueOperation<T, U> {
 
     protected abstract P<U> predicate();
 
-    protected abstract Set<AttributeType.DataType<?>> comparableDataTypes();
-
     public <S, E> GraphTraversal<S, E> apply(GraphTraversal<S, E> traversal) {
         List<GraphTraversal<?, E>> valueTraversals = new ArrayList<>();
-        for (AttributeType.DataType<?> dataType : comparableDataTypes()) {
-            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+        AttributeType.DataType<?> dataType = AttributeType.DataType.of(value().getClass());
+        for (AttributeType.DataType<?> comparableDataType : dataType.comparableDataTypes()) {
+            Schema.VertexProperty property = Schema.VertexProperty.ofDataType(comparableDataType);
             valueTraversals.add(__.has(property.name(), predicate()));
         }
 
@@ -93,8 +91,7 @@ public abstract class ValueOperation<T, U> {
     public boolean test(Object otherValue) {
         if (this.value().getClass().isInstance(otherValue)) {
             // TODO: Remove this forced casting
-            AttributeType.DataType<T> dataType =
-                    (AttributeType.DataType<T>) AttributeType.DataType.of(value().getClass());
+            AttributeType.DataType<T> dataType = (AttributeType.DataType<T>) AttributeType.DataType.of(value().getClass());
             return predicate().test((U) Serialiser.of(dataType).serialise((T) otherValue));
         } else {
             return false;
