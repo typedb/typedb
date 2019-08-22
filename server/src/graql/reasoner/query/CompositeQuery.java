@@ -355,7 +355,7 @@ public class CompositeQuery implements ResolvableQuery {
 
     @Override
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && isRuleResolvable());
+        boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         return doNotResolve?
                 tx.stream(getQuery(), false) :
                 new ResolutionIterator(this, subGoals).hasStream();
