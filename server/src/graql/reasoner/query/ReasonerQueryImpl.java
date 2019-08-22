@@ -562,11 +562,10 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        boolean doNotResolve = getAtoms().isEmpty()
-                || (isPositive() && !isRuleResolvable());
-        return doNotResolve ?
-                tx.stream(getQuery(), false) :
-                new ResolutionIterator(this, subGoals).hasStream();
+        boolean resolve = isRuleResolvable() && !getAtoms().isEmpty();
+        return resolve?
+                new ResolutionIterator(this, subGoals).hasStream() :
+                tx.stream(getQuery(), false);
     }
 
     @Override
