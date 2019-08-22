@@ -174,4 +174,7 @@ public interface Atomic {
     @CheckReturnValue
     Atomic inferTypes();
 
+    @CheckReturnValue
+    default Atomic simplify(){ return this;}
+
 }

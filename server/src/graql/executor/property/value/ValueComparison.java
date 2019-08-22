@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -37,8 +36,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-
-import static grakn.core.common.util.Collections.set;
 
 public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
@@ -125,14 +122,6 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
         }
 
         @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.DOUBLE,
-                    //AttributeType.DataType.FLOAT,
-                    //AttributeType.DataType.INTEGER,
-                    AttributeType.DataType.LONG);
-        }
-
-        @Override
         public N valueSerialised() {
             return new Serialiser.Default<N>().serialise(value());
         }
@@ -142,11 +131,6 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
         Boolean(Graql.Token.Comparator comparator, boolean value) {
             super(comparator, value);
-        }
-
-        @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.BOOLEAN);
         }
 
         @Override
@@ -162,11 +146,6 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
         }
 
         @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.DATE);
-        }
-
-        @Override
         public Long valueSerialised() {
             return Serialiser.DATE.serialise(value());
         }
@@ -178,11 +157,6 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 
         public String(Graql.Token.Comparator comparator, java.lang.String value) {
             super(comparator, value);
-        }
-
-        @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return set(AttributeType.DataType.STRING);
         }
 
         @Override
@@ -234,11 +208,6 @@ public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
             predicates.put(Graql.Token.Comparator.CONTAINS, containsPredicate());
 
             return Collections.unmodifiableMap(predicates);
-        }
-
-        @Override
-        protected Set<AttributeType.DataType<?>> comparableDataTypes() {
-            return null;
         }
 
         @Override

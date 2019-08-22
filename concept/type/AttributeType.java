@@ -21,6 +21,9 @@ package grakn.core.concept.type;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.Collections.list;
+import static grakn.core.common.util.Collections.set;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -226,14 +230,46 @@ public interface AttributeType<D> extends Type {
      *
      * @param <D> The data type.
      */
-    class DataType<D> {
-        public static final DataType<Boolean> BOOLEAN = new DataType<>(Boolean.class);
-        public static final DataType<LocalDateTime> DATE = new DataType<>(LocalDateTime.class);
-        public static final DataType<Double> DOUBLE = new DataType<>(Double.class);
-        public static final DataType<Float> FLOAT = new DataType<>(Float.class);
-        public static final DataType<Integer> INTEGER = new DataType<>(Integer.class);
-        public static final DataType<Long> LONG = new DataType<>(Long.class);
-        public static final DataType<String> STRING = new DataType<>(String.class);
+    abstract class DataType<D> {
+        public static final DataType<Boolean> BOOLEAN = new DataType<Boolean>(Boolean.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() { return Collections.singleton(DataType.BOOLEAN); }
+        };
+        public static final DataType<LocalDateTime> DATE = new DataType<LocalDateTime>(LocalDateTime.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() { return Collections.singleton(DataType.DATE); }
+        };
+        public static final DataType<Double> DOUBLE = new DataType<Double>(Double.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() {
+                return set(DataType.DOUBLE,
+                        //DataType.FLOAT,
+                        //DataType.INTEGER,
+                        DataType.LONG);
+            }
+        };
+
+        public static final DataType<Float> FLOAT = new DataType<Float>(Float.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() { return new HashSet<>(); }
+        };
+        public static final DataType<Integer> INTEGER = new DataType<Integer>(Integer.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() { return new HashSet<>(); }
+        };
+        public static final DataType<Long> LONG = new DataType<Long>(Long.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() {
+                return set(DataType.DOUBLE,
+                        //DataType.FLOAT,
+                        //DataType.INTEGER,
+                        DataType.LONG);
+            }
+        };
+        public static final DataType<String> STRING = new DataType<String>(String.class){
+            @Override
+            public Set<DataType<?>> comparableDataTypes() { return Collections.singleton(DataType.STRING); }
+        };
 
         private static final List<DataType<?>> values = list(BOOLEAN, DATE, DOUBLE, FLOAT, INTEGER, LONG, STRING);
 
@@ -262,6 +298,9 @@ public interface AttributeType<D> extends Type {
         public static List<DataType<?>> values() {
             return values;
         }
+
+        @CheckReturnValue
+        public abstract Set<DataType<?>> comparableDataTypes();
 
         @SuppressWarnings("unchecked")
         @CheckReturnValue
