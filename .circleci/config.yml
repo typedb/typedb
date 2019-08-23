@@ -18,10 +18,13 @@
 
 version: 2.1
 commands:
-  install-bazel-linux-rbe:
+  apt-wait:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/apt-wait.sh
       - run: bash ./apt-wait.sh && rm ./apt-wait.sh
+
+  install-bazel-linux-rbe:
+    steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
       - run: bash ./install-bazel-linux.sh && rm ./install-bazel-linux.sh
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-rbe.sh
@@ -46,6 +49,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
@@ -61,6 +65,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -70,6 +75,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -79,6 +85,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -88,6 +95,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -101,6 +109,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -110,6 +119,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -119,6 +129,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -129,6 +140,7 @@ jobs:
       xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-mac
       - checkout
       - run-bazel-rbe:
@@ -150,6 +162,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - checkout
       - run:
           command: test/assembly/windows/windows-zip.py
@@ -165,6 +178,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -186,6 +200,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -212,6 +227,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: test/assembly/docker.py
@@ -226,6 +242,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -239,6 +256,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
@@ -259,6 +277,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt install rpm
@@ -280,6 +299,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - attach_workspace:
@@ -307,6 +327,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - checkout
       - attach_workspace:
           at: ~/circleci-workspace
@@ -322,6 +343,7 @@ jobs:
   sync-dependencies-snapshot:
     machine: true
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -336,6 +358,7 @@ jobs:
   release-approval:
     machine: true
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -347,6 +370,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -361,6 +385,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: cat VERSION
@@ -376,6 +401,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt install rpm
@@ -392,6 +418,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -402,6 +429,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -412,6 +440,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: cat VERSION
@@ -425,6 +454,7 @@ jobs:
   sync-dependencies-release:
     machine: true
     steps:
+      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -439,6 +469,7 @@ jobs:
   release-cleanup:
     machine: true
     steps:
+      - apt-wait
       - checkout
       - run: git push --delete origin grakn-release-branch
 
@@ -446,6 +477,7 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - apt-wait
       - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/requirements.txt
       - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/send_email.py
       - run: pyenv install 3.6.3
