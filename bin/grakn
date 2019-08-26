@@ -59,6 +59,7 @@ elif [ "$1" = "console" ]; then
     else
         echo "Grakn Core Console is not included in this Grakn distribution."
         echo "You may want to install Grakn Core Console or Grakn Core (all)."
+        exit 1
     fi
 elif [[ "$1" = "server" ]] || [[ "$1" = "version" ]]; then
     if [[ -f "${SERVER_JAR_FILENAME}" ]]; then
@@ -68,6 +69,7 @@ elif [[ "$1" = "server" ]] || [[ "$1" = "version" ]]; then
     else
         echo "Grakn Core Server is not included in this Grakn distribution."
         echo "You may want to install Grakn Core Server or Grakn Core (all)."
+        exit 1
     fi
 else
     echo "Invalid argument: $1. Possible commands are: "
