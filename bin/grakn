@@ -43,8 +43,6 @@ exit_if_java_not_found() {
 # main routine
 # =============================================
 
-exit_code=0
-
 pushd "$GRAKN_HOME" > /dev/null
 exit_if_java_not_found
 
@@ -52,6 +50,7 @@ if [ -z "$1" ]; then
     echo "Missing argument. Possible commands are:"
     echo "  Server:          grakn server [--help]"
     echo "  Console:         grakn console [--help]"
+    exit 1
 elif [ "$1" = "console" ]; then
     if [ -f "${CONSOLE_JAR_FILENAME}" ]; then
         SERVICE_LIB_CP="console/services/lib/*"
@@ -74,10 +73,8 @@ else
     echo "Invalid argument: $1. Possible commands are: "
     echo "  Server:          grakn server [--help]"
     echo "  Console:         grakn console [--help]"
+    exit 1
 fi
 
-exit_code=$?
+exit $?
 
-popd > /dev/null
-
-exit $exit_code
