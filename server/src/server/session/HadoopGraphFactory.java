@@ -70,7 +70,7 @@ public class HadoopGraphFactory {
         });
     }
 
-    synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 
