@@ -79,6 +79,7 @@ public class ReasoningIT {
                 assertEquals(25, answers.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -112,6 +113,7 @@ public class ReasoningIT {
                 assertEquals(newAttributes, newAttributesFromImplicitRelation);
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -143,6 +145,7 @@ public class ReasoningIT {
                 );
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -174,6 +177,7 @@ public class ReasoningIT {
                 assertCollectionsEqual(implicitAnswers, answers);
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
@@ -197,6 +201,7 @@ public class ReasoningIT {
                 answers2.forEach(x -> assertEquals(2, x.size()));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: Both queries should return a non-empty result, with $x/$y mapped to a unique entity.
@@ -217,6 +222,7 @@ public class ReasoningIT {
                 answers2.forEach(x -> assertEquals(2, x.size()));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
@@ -232,6 +238,7 @@ public class ReasoningIT {
                 assertEquals(tx.execute(Graql.parse(queryString).asGet(), false).size(), answers.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
@@ -249,6 +256,7 @@ public class ReasoningIT {
                 assertEquals(1, answers2.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     /**
@@ -266,6 +274,7 @@ public class ReasoningIT {
                 assertEquals(1, answers.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: The query should return a unique match
@@ -278,6 +287,7 @@ public class ReasoningIT {
                 assertEquals(1, tx.execute(Graql.parse(queryString).asGet()).size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: The query should return two unique matches
@@ -291,6 +301,7 @@ public class ReasoningIT {
                 assertEquals(2, answers.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -330,7 +341,7 @@ public class ReasoningIT {
                 assertEquals(answers5.size() - answers4.size(), answers6.size());
             }
         }
-
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -369,6 +380,7 @@ public class ReasoningIT {
                 assertEquals(answers6.size(), answers5.size() - answers4.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: Returns db and inferred relations + their inverses and relations with self for all entities
@@ -382,6 +394,7 @@ public class ReasoningIT {
                 assertEquals(16, answers.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: The same set of results is always returned
@@ -399,6 +412,7 @@ public class ReasoningIT {
                 }
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: Relations between all entity instances including relation between each instance and itself
@@ -416,6 +430,7 @@ public class ReasoningIT {
                 assertEquals(6, uniquePairs.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: Timeline is correctly recognised via applying resource comparisons in the rule body
@@ -459,6 +474,7 @@ public class ReasoningIT {
                 answers2.forEach(ans -> assertTrue(ans.vars().containsAll(vars)));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //Expected result: number of answers equal to specified limit (no duplicates produced)
@@ -483,6 +499,7 @@ public class ReasoningIT {
                 assertThat(tx.execute(Graql.parse(typeAmbiguousQuery).asGet()), empty());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -502,6 +519,7 @@ public class ReasoningIT {
                 answers.forEach(ans -> assertEquals(3, ans.size()));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -532,6 +550,7 @@ public class ReasoningIT {
                 answers.forEach(ans -> assertEquals(4, ans.size()));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     /**
@@ -573,6 +592,7 @@ public class ReasoningIT {
                 answers.forEach(ans -> assertEquals(4, ans.size()));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -610,6 +630,7 @@ public class ReasoningIT {
                 assertEquals("New relations were created!", persistedRelations, tx.execute(Graql.parse("match $r isa baseRelation; get;").asGet(), false));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //when rule are defined to append new RPs no new relation instances should be created
@@ -633,6 +654,7 @@ public class ReasoningIT {
                 assertCollectionsNonTriviallyEqual("Rules are not matched correctly!", variants, inferredRelations);
                 }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //when rule are defined to append new RPs no new relation instances should be created
@@ -650,6 +672,7 @@ public class ReasoningIT {
                 assertEquals(1, derivedRelations.stream().map(ans -> ans.get("r")).collect(Collectors.toSet()).size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test //tests whether shared resources are recognised correctly
@@ -694,6 +717,7 @@ public class ReasoningIT {
                         .forEach(a -> assertTrue(answers3.contains(a)));
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -740,6 +764,7 @@ public class ReasoningIT {
                 assertEquals(4, answers4.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 
     @Test
@@ -757,5 +782,6 @@ public class ReasoningIT {
                 assertEquals(64, pairs.size());
             }
         }
+        System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
     }
 }
