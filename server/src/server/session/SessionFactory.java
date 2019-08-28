@@ -56,7 +56,7 @@ public class SessionFactory {
     // Keep visibility to protected as this is used by KGMS
     protected final LockManager lockManager;
 
-    public final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
+    private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, Config config) {
         this.janusGraphFactory = janusGraphFactory;
