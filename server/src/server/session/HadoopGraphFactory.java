@@ -70,8 +70,7 @@ public class HadoopGraphFactory {
         });
     }
 
-    // Keep visibility to protected as this is used by KGMS
-    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+    synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 
