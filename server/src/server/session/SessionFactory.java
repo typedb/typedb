@@ -46,8 +46,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
-    public final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
-    public final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
+    private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
+    private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
     // Keep visibility to protected as this is used by KGMS
     protected final JanusGraphFactory janusGraphFactory;
     // Keep visibility to protected as this is used by KGMS
@@ -153,7 +153,8 @@ public class SessionFactory {
      *
      * @param session SessionImpl that is being closed
      */
-    public void onSessionClose(SessionImpl session) {
+    // Keep visibility to protected as this is used by KGMS
+    protected void onSessionClose(SessionImpl session) {
         Lock lock = lockManager.getLock(session.keyspace().name());
         lock.lock();
         try {
@@ -177,7 +178,8 @@ public class SessionFactory {
      * Helper class used to hold in memory a reference to a graph together with its schema cache
      * and a reference to all sessions open to the graph.
      */
-    public class SharedKeyspaceData {
+    // Keep visibility to protected as this is used by KGMS
+    protected class SharedKeyspaceData {
 
         private final KeyspaceCache keyspaceCache;
         // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
