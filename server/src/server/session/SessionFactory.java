@@ -197,6 +197,7 @@ public class SessionFactory {
 
         private final ReadWriteLock graphLock;
 
+        // Keep visibility to public as this is used by KGMS
         public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
@@ -207,6 +208,7 @@ public class SessionFactory {
             this.graphLock = graphLock;
         }
 
+        // Keep visibility to public as this is used by KGMS
         public ReadWriteLock graphLock() {
             return graphLock;
         }
@@ -219,6 +221,7 @@ public class SessionFactory {
             return sessions.size();
         }
 
+        // Keep visibility to public as this is used by KGMS
         public void addSessionReference(SessionImpl session) {
             sessions.add(session);
         }
@@ -239,10 +242,12 @@ public class SessionFactory {
             return keyspaceStatistics;
         }
 
+        // Keep visibility to public as this is used by KGMS
         public Cache<String, ConceptId> attributesCache() {
             return attributesCache;
         }
 
+        // Keep visibility to public as this is used by KGMS
         public HadoopGraph hadoopGraph() {
             return hadoopGraph;
         }
