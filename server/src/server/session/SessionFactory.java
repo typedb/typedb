@@ -213,6 +213,7 @@ public class SessionFactory {
             return graphLock;
         }
 
+        // Keep visibility to public as this is used by KGMS
         public KeyspaceCache cache() {
             return keyspaceCache;
         }
@@ -234,10 +235,12 @@ public class SessionFactory {
             sessions.forEach(SessionImpl::invalidate);
         }
 
+        // Keep visibility to public as this is used by KGMS
         public StandardJanusGraph graph() {
             return graph;
         }
 
+        // Keep visibility to public as this is used by KGMS
         public KeyspaceStatistics keyspaceStatistics() {
             return keyspaceStatistics;
         }
