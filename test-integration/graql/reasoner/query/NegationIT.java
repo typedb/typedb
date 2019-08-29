@@ -41,14 +41,12 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import junit.framework.TestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -568,7 +566,6 @@ public class NegationIT {
     public void allRecipesContainingAvailableIngredients(){
         try(TransactionOLTP tx = recipeSession.transaction().write()) {
             List<ConceptMap> allRecipes = tx.stream(match(var("r").isa("recipe")).get()).collect(Collectors.toList());
-
             List<ConceptMap> recipesWithUnavailableIngredientsExplicit = tx.execute(
                     match(
                             var("r").isa("recipe"),
@@ -580,40 +577,32 @@ public class NegationIT {
                     match(var("r").isa("recipe-with-unavailable-ingredient")).get("r"));
 
             assertCollectionsNonTriviallyEqual(recipesWithUnavailableIngredientsExplicit, recipesWithUnavailableIngredients);
-
             List<ConceptMap> recipesWithAllIngredientsAvailableSimple = tx.execute(
-                    Graql.<GraqlGet>parse("match " +
-                            "$r isa recipe;" +
-                            "not {$r isa recipe-with-unavailable-ingredient;};" +
-                            "get $r;"
-                    ));
+                    match(
+                            var("r").isa("recipe"),
+                            not(var("r").isa("recipe-with-unavailable-ingredient"))
+                    ).get("r"));
 
-            List<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.execute(Graql.<GraqlGet>parse("match " +
-                    "$r isa recipe;" +
-                    "not {" +
-                    "{" +
-                    "($r, $i) isa requires;" +
-                    "not {" +
-                    "{" +
-                    "$i isa ingredient;" +
-                    "($i) isa containes;" +
-                    "};" +
-                    "};" +
-                    "};" +
-                    "};" +
-                    "get;"
-            ));
+            List<ConceptMap> recipesWithAllIngredientsAvailableExplicit = tx.execute(match(
+                    var("r").isa("recipe"),
+                    not(and(
+                            var().rel("r").rel("i").isa("requires"),
+                            not(and(
+                                    var("i").isa("ingredient"),
+                                    var().rel("i").isa("containes")
+                                    )
+                            )
+                            )
+                    )
+            ).get());
 
-            List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(Graql.<GraqlGet>parse("match " +
-                    "$r isa recipe;" +
-                    "not {" +
-                    "{" +
-                    "($r, $i) isa requires;" +
-                    "not {$i isa available-ingredient;};" +
-                    "};" +
-                    "};" +
-                    "get;"
-            ));
+            List<ConceptMap> recipesWithAllIngredientsAvailable = tx.execute(match(
+                    var("r").isa("recipe"),
+                    not(and(
+                            var().rel("r").rel("i").isa("requires"),
+                            not(var("i").isa("available-ingredient"))
+                    ))
+            ).get());
 
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailable);
             assertCollectionsNonTriviallyEqual(recipesWithAllIngredientsAvailableExplicit, recipesWithAllIngredientsAvailableSimple);
