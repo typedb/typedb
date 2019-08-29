@@ -218,7 +218,8 @@ public class SessionFactory {
             return keyspaceCache;
         }
 
-        int referenceCount() {
+        // Keep visibility to public as this is used by KGMS
+        public int referenceCount() {
             return sessions.size();
         }
 
@@ -227,7 +228,8 @@ public class SessionFactory {
             sessions.add(session);
         }
 
-        void removeSessionReference(SessionImpl session) {
+        // Keep visibility to public as this is used by KGMS
+        public void removeSessionReference(SessionImpl session) {
             sessions.remove(session);
         }
 
