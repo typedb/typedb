@@ -164,14 +164,18 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     /**
      * Calculates:
-     * - subsumptive unifier between this (child) and parent query
-     * - semantic difference between this (child and parent query
-     * @param parent parent query
-     * @return pair of subsumptive unifier and semantic difference between this and parent query
+     * - unifier between this (parent, source) and child (target) query
+     * - semantic difference between this (parent, source) and child (target) query
+     * @param child query
+     * @return pair of: a parent->child unifier and a parent->child semantic difference between
      */
-    public Set<Pair<Unifier, SemanticDifference>> getMultiUnifierWithSemanticDiff(ReasonerAtomicQuery parent){
-        return this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE).stream()
-                .map(u -> new Pair<>(u, this.getAtom().semanticDifference(parent.getAtom(), u)))
+    public Set<Pair<Unifier, SemanticDifference>> getMultiUnifierWithSemanticDiff(ReasonerAtomicQuery child){
+        MultiUnifier unifier = child.getMultiUnifier(this, UnifierType.SUBSUMPTIVE);
+        return unifier.stream()
+                .map(childParentUnifier -> {
+                    Unifier inverse = childParentUnifier.inverse();
+                    return new Pair<>(inverse, this.getAtom().semanticDifference(child.getAtom(), inverse));
+                })
                 .collect(Collectors.toSet());
     }
 
