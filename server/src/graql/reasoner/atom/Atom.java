@@ -476,8 +476,8 @@ public abstract class Atom extends AtomicBase {
             Variable parentVar = m.getKey();
             Variable childVar = m.getValue();
 
-            Type parentType = this.getParentQuery().getUnambiguousType(childVar, false);
-            Type childType = childAtom.getParentQuery().getUnambiguousType(parentVar, false);
+            Type parentType = this.getParentQuery().getUnambiguousType(parentVar, false);
+            Type childType = childAtom.getParentQuery().getUnambiguousType(childVar, false);
             Type requiredType = childType != null ?
                     parentType != null ?
                             (!parentType.equals(childType) ? childType : null) :

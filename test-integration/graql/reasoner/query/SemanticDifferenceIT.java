@@ -33,8 +33,8 @@ import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
@@ -48,6 +48,10 @@ import org.junit.Test;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
+import static graql.lang.Graql.and;
+import static graql.lang.Graql.neq;
+import static graql.lang.Graql.val;
+import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 
@@ -75,9 +79,13 @@ public class SemanticDifferenceIT {
     public void whenChildSpecifiesType_typesAreFilteredCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
-            String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
-            String parentPattern = patternise(base);
-            String childPattern = patternise(base, "$x isa " + subRoleEntity.label() + ";");
+
+            Pattern parentPattern =
+                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
+            Pattern childPattern = and(
+                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var("x").isa(subRoleEntity.label().getValue())
+            );
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -86,7 +94,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -101,9 +109,14 @@ public class SemanticDifferenceIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
-            String base = "(baseRole1: $x, baseRole2: $y) isa binary;";
-            String parentPattern = patternise(base, "$x isa " + baseRoleEntity.label() + ";");
-            String childPattern = patternise(base, "$x isa " + subRoleEntity.label() + ";");
+
+            Pattern parentPattern = and(
+                    var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary"),
+                    var("z").isa(baseRoleEntity.label().getValue()));
+            Pattern childPattern = and(
+                    var().rel("baseRole1", var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var("x").isa(subRoleEntity.label().getValue()));
+
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -112,7 +125,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("x"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -126,9 +139,12 @@ public class SemanticDifferenceIT {
     public void whenChildSpecifiesRole_rolesAreFilteredCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role role = tx.getRole("baseRole1");
-            String base = "($role: $x, baseRole2: $y) isa binary;";
-            String parentPattern = patternise(base);
-            String childPattern = patternise(base, "$role type " + role.label() + ";");
+            Pattern parentPattern =
+                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary");
+            Pattern childPattern = and(
+                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var("role").type(role.label().getValue()));
+
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -138,7 +154,7 @@ public class SemanticDifferenceIT {
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
                             new VariableDefinition(new Variable("role"), null, role, new HashSet<>(), new HashSet<>()),
-                            new VariableDefinition(new Variable("x"), null, null, Sets.newHashSet(role), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(role), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -153,10 +169,13 @@ public class SemanticDifferenceIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
-            String childBase = "($role: $x, baseRole2: $y) isa binary;";
-            String parentBase = "($role: $z, baseRole2: $w) isa binary;";
-            String parentPattern = patternise(parentBase, "$role type " + baseRole.label() + ";");
-            String childPattern = patternise(childBase, "$role type " + subRole.label() + ";");
+
+            Pattern parentPattern = and(
+                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary"),
+                    var("role").type(baseRole.label().getValue()));
+            Pattern childPattern = and(
+                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var("role").type(subRole.label().getValue()));
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -182,9 +201,15 @@ public class SemanticDifferenceIT {
             Role subRole1 = tx.getRole("subRole1");
             Role baseRole2 = tx.getRole("baseRole2");
             Role subRole2 = tx.getRole("subRole2");
-            String base = "($role: $x, $role2: $x) isa binary;";
-            String parentPattern = patternise(base, "$role type " + baseRole1.label() + ";", "$role2 type " + baseRole2.label() + ";");
-            String childPattern = patternise(base, "$role type " + subRole1.label() + ";", "$role2 type " + subRole2.label() + ";");
+
+            Pattern parentPattern = and(
+                    var().rel(var("role"), var("z")).rel(var("role2"), var("z")).isa("binary"),
+                    var("role").type(baseRole1.label().getValue()),
+                    var("role2").type(baseRole2.label().getValue()));
+            Pattern childPattern = and(
+                    var().rel(var("role"), var("x")).rel(var("role2"), var("x")).isa("binary"),
+                    var("role").type(subRole1.label().getValue()),
+                    var("role2").type(subRole2.label().getValue()));
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -193,7 +218,7 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("x"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -206,9 +231,11 @@ public class SemanticDifferenceIT {
     @Test
     public void whenChildAndParentHaveVariableRoles_differenceIsCalculatedCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
-            String base = "($role: $x, $role2: $y) isa binary;";
-            String parentPattern = patternise(base);
-            String childPattern = patternise(base, "$y id V123;");
+            Pattern parentPattern =
+                    var().rel(var("role"), var("z")).rel(var("role2"), var("w")).isa("binary");
+            Pattern childPattern = and(
+                    var().rel(var("role"), var("x")).rel(var("role2"), var("y")).isa("binary"),
+                    var("y").id("V123"));
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -224,8 +251,8 @@ public class SemanticDifferenceIT {
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
-            String parentPattern = patternise("(baseRole1: $x, baseRole2: $y) isa binary;");
-            String childPattern = patternise("(" + subRole1.label() + ": $x, " + subRole2.label() + ": $y) isa binary;");
+            Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
+            Pattern childPattern = var().rel(subRole1.label().getValue(), var("x")).rel(subRole2.label().getValue(), var("y")).isa("binary");
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -234,8 +261,8 @@ public class SemanticDifferenceIT {
 
             SemanticDifference expected = new SemanticDifference(
                     ImmutableSet.of(
-                            new VariableDefinition(new Variable("x"), null, null, Sets.newHashSet(subRole1), new HashSet<>()),
-                            new VariableDefinition(new Variable("y"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
+                            new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1), new HashSet<>()),
+                            new VariableDefinition(new Variable("w"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
                     )
             );
             assertEquals(expected, semanticPair.getValue());
@@ -249,8 +276,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecifiesResourceValuePredicate_valuesAreFilteredCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             final String value = "m";
-            String parentPattern = patternise("$x has resource $r;");
-            String childPattern = patternise("$x has resource '" + value + "';");
+            Pattern parentPattern = var("z").has("resource", var("r"));
+            Pattern childPattern = var("x").has("resource", val(value));
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -280,8 +307,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecialisesResourceValuePredicate_valuesAreFilteredCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             final String value = "b";
-            String parentPattern = patternise("$x has resource !== 'm';");
-            String childPattern = patternise("$x has resource '" + value + "';");
+            Pattern parentPattern = var("z").has("resource", neq("m"));
+            Pattern childPattern = var("x").has("resource", val(value));
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -310,8 +337,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecifiesValuePredicateOnType_valuesAreFilteredCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             final long value = 0;
-            String parentPattern = patternise("$x isa resource-long;");
-            String childPattern = patternise("$x == " + value + " isa resource-long ;");
+            Pattern parentPattern = var("z").isa("resource-long");
+            Pattern childPattern = var("x").isa("resource-long").val(value);
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -338,8 +365,8 @@ public class SemanticDifferenceIT {
     public void whenChildSpecialisesValuePredicateOnType_valuesAreFilteredCorrectly2(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             final long value = 1;
-            String parentPattern = patternise("$x > 0 isa resource-long;");
-            String childPattern = patternise("$x == " + value + " isa resource-long;");
+            Pattern parentPattern = var("z").isa("resource-long").gt(0);
+            Pattern childPattern = var("x").isa("resource-long").eq(value);
             ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
             ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
 
@@ -371,14 +398,11 @@ public class SemanticDifferenceIT {
                 .collect(Collectors.toSet());
     }
 
-    private String patternise(String... patterns){
-        return "{ " + String.join("", Sets.newHashSet(patterns)) + " };";
-    }
-
-    private Conjunction<Statement> conjunction(String patternString){
-        Set<Statement> vars = Graql.parsePattern(patternString)
+    private Conjunction<Statement> conjunction(Pattern pattern){
+        Set<Statement> vars = pattern
                 .getDisjunctiveNormalForm().getPatterns()
-                .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
-        return Graql.and(vars);
+                .stream().flatMap(p -> p.getPatterns().stream())
+                .collect(toSet());
+        return and(vars);
     }
 }
