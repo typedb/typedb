@@ -93,7 +93,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
          * * calculate constraint difference
          * * apply constraints from the difference
          */
-        Set<Pair<Unifier, SemanticDifference>> parentToChildUnifierDelta = child.getMultiUnifierWithSemanticDiff(parent);
+        Set<Pair<Unifier, SemanticDifference>> parentToChildUnifierDelta = parent.getMultiUnifierWithSemanticDiff(child);
         Set<Variable> childVars = child.getVarNames();
         ConceptMap childPartialSub = child.getRoleSubstitution();
         Set<ConceptMap> newAnswers = new HashSet<>();
