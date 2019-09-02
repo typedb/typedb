@@ -19,6 +19,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
@@ -124,7 +125,7 @@ public interface ResolvableQuery extends ReasonerQuery {
     default Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         return doNotResolve?
-                tx().stream(getQuery(), false) :
+                tx().executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx())) :
                 new ResolutionIterator(this, subGoals).hasStream();
     }
 

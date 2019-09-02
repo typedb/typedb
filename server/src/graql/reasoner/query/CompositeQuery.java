@@ -317,11 +317,7 @@ public class CompositeQuery implements ResolvableQuery {
 
     @Override
     public ConceptMap getSubstitution() {
-        ConceptMap sub = getConjunctiveQuery().getSubstitution();
-        for (ResolvableQuery comp : getComplementQueries()) {
-            sub = ConceptUtils.mergeAnswers(sub, comp.getSubstitution());
-        }
-        return sub;
+        return getConjunctiveQuery().getSubstitution();
     }
 
     @Override
