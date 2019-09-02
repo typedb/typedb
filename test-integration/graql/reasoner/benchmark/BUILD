@@ -2,7 +2,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "rule-scaling-it",
-    size = "small",
+    size = "large",
     srcs = ["RuleScalingIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.benchmark.RuleScalingIT",
