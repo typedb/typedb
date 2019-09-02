@@ -221,6 +221,26 @@ public class SemanticDifferenceIT {
     }
 
     @Test
+    public void whenChildGeneralisesRole_semanticDifferenceIsTrivial(){
+        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+            Role baseRole = tx.getRole("baseRole1");
+            Role metaRole = tx.getMetaRole();
+
+            Pattern parentPattern = and(
+                    var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary"),
+                    var("role").type(baseRole.label().getValue()));
+            Pattern childPattern = and(
+                    var().rel(var("role"), var("x")).rel("baseRole2", var("y")).isa("binary"),
+                    var("role").type(metaRole.label().getValue()));
+            ReasonerAtomicQuery parent = ReasonerQueries.atomic(conjunction(parentPattern), tx);
+            ReasonerAtomicQuery child = ReasonerQueries.atomic(conjunction(childPattern), tx);
+
+            Unifier unifier = parent.getMultiUnifier(child, UnifierType.SUBSUMPTIVE).getUnifier();
+            assertTrue(parent.getAtom().semanticDifference(child.getAtom(), unifier).isTrivial());
+        }
+    }
+
+    @Test
     public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly(){
         try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
             Role baseRole1 = tx.getRole("baseRole1");
