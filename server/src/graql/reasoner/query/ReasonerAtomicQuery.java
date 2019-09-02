@@ -166,6 +166,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      * Calculates:
      * - unifier between this (parent, source) and child (target) query
      * - semantic difference between this (parent, source) and child (target) query
+     * - child is more specific than parent ( child <= parent)
      * @param child query
      * @return pair of: a parent->child unifier and a parent->child semantic difference between
      */

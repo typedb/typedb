@@ -73,6 +73,8 @@ public class SemanticDifference {
         return definition.hashCode();
     }
 
+    public boolean isTrivial(){ return definition.isEmpty();}
+
     private Set<Relation> rolesToRels(Variable var, Set<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
