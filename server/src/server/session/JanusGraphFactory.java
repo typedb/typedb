@@ -101,7 +101,7 @@ final public class JanusGraphFactory {
         org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build()
                 .set(STORAGE_BACKEND, THRIFT_BACKEND)
                 .set(STORAGE_KEYSPACE, keyspace)
-                .set(STORAGE_FRAME_SIZE, 256);
+                .set(STORAGE_FRAME_SIZE, 60);
 
         //Load Passed in properties
         config.properties().forEach((key, value) -> {
