@@ -87,6 +87,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -233,17 +234,23 @@ public class TransactionOLTP implements Transaction {
 
     private void shardIfNeeded() {
         // TODO: make efficient
-        Set<Label> labels = transactionCache.getLabelCache().keySet();
-        labels.removeAll(Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role")));
-
-        for (Label label: labels) {
-            Concept type = getType(label);
+        List<Label> builtInLabels = Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role"));
+        Map<Label, ConceptId> labels = new HashMap<>();
+        for (Label label: transactionCache.getLabelCache().keySet()) {
+            if (!builtInLabels.contains(label)) {
+                Concept type = getType(label);
+                if (type != null) {
+                    labels.put(label, type.id());
+                }
+            }
+        }
+        labels.forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             if (instancesCount % 10000 == 0) { // TODO: make it a constant (but no need to expose it in grakn.properties)
                 LOG.info(label + " has a count of " + instancesCount + ". Need to shard");
-                shard(type.id());
+                shard(labelId);
             }
-        }
+        });
     }
 
     private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
