@@ -84,11 +84,13 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -230,11 +232,16 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void shardIfNeeded() {
-        for (Thing thing: transactionCache.getModifiedThings()) {
-            long instancesCount = session.keyspaceStatistics().count(this, thing.type().label());
-            if (instancesCount % 1 == 0) {
-                LOG.info(thing.type().label() + " has a count of " + instancesCount + ". Need to shard");
-                shard(thing.type().id());
+        // TODO: make efficient
+        Set<Label> labels = transactionCache.getLabelCache().keySet();
+        labels.removeAll(Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role")));
+
+        for (Label label: labels) {
+            Concept type = getType(label);
+            long instancesCount = session.keyspaceStatistics().count(this, label);
+            if (instancesCount % 10000 == 0) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+                LOG.info(label + " has a count of " + instancesCount + ". Need to shard");
+                shard(type.id());
             }
         }
     }

@@ -127,7 +127,8 @@ public class TransactionCache {
     /**
      * @return All the types labels currently cached in the transaction.
      */
-    Map<Label, LabelId> getLabelCache() {
+    // TODO: revert
+    public Map<Label, LabelId> getLabelCache() {
         return labelCache;
     }
 
