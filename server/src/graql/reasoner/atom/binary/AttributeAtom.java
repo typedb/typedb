@@ -46,7 +46,6 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -56,10 +55,12 @@ import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.kb.concept.ValueConverter;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
+import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -104,8 +105,34 @@ public abstract class AttributeAtom extends Binary{
         return create(a.getPattern(), a.getAttributeVariable(), a.getRelationVariable(), a.getPredicateVariable(), a.getTypeId(), a.getMultiPredicate(), parent);
     }
 
+    private AttributeAtom convertValues(){
+        SchemaConcept type = getSchemaConcept();
+        AttributeType<Object> attributeType = type.isAttributeType()? type.asAttributeType() : null;
+        if (attributeType == null || Schema.MetaSchema.isMetaLabel(attributeType.label())) return this;
+
+        AttributeType.DataType<Object> dataType = attributeType.dataType();
+        Set<ValuePredicate> newMultiPredicate = this.getMultiPredicate().stream().map(vp -> {
+            Object value = vp.getPredicate().value();
+            if (value == null) return vp;
+            Object convertedValue;
+            try {
+                convertedValue = ValueConverter.of(dataType).convert(value);
+            } catch (ClassCastException e){
+                throw GraqlSemanticException.incompatibleAttributeValue(dataType, value);
+            }
+            ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(vp.getPredicate().comparator(), convertedValue);
+            return ValuePredicate.create(vp.getVarName(), operation, getParentQuery());
+        }).collect(Collectors.toSet());
+        return create(getPattern(), getAttributeVariable(), getRelationVariable(), getPredicateVariable(), getTypeId(), newMultiPredicate, getParentQuery());
+    }
+
     @Override
     public Atomic copy(ReasonerQuery parent){ return create(this, parent);}
+
+    @Override
+    public Atomic simplify() {
+        return this.convertValues();
+    }
 
     @Override
     public Class<? extends VarProperty> getVarPropertyClass() { return HasAttributeProperty.class;}
@@ -430,9 +457,11 @@ public abstract class AttributeAtom extends Binary{
         //if the attribute already exists, only attach a new link to the owner, otherwise create a new attribute
         Attribute attribute = null;
         if(this.isValueEquality()){
-            Object value = Iterables.getOnlyElement(getMultiPredicate()).getPredicate().value();
-            Attribute existingAttribute = attributeType.attribute(value);
-            attribute = existingAttribute == null? attributeType.putAttributeInferred(value) : existingAttribute;
+            ValuePredicate vp = Iterables.getOnlyElement(getMultiPredicate());
+            Object value = vp.getPredicate().value();
+            Object persistedValue = ValueConverter.of(attributeType.dataType()).convert(value);
+            Attribute existingAttribute = attributeType.attribute(persistedValue);
+            attribute = existingAttribute == null? attributeType.putAttributeInferred(persistedValue) : existingAttribute;
         } else {
             Attribute existingAttribute = substitution.containsVar(resourceVariable)? substitution.get(resourceVariable).asAttribute() : null;
             //even if the attribute exists but is of different type (supertype for instance) we create a new one

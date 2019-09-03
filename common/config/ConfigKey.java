@@ -62,6 +62,7 @@ public class ConfigKey<T> {
     public static final ConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
     public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
     public static final ConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
+    public static final ConfigKey<Integer> STORAGE_FRAME_SIZE = key("storage.cassandra.frame-size-mb", INT);
 
     public static final ConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
     public static final ConfigKey<String> DATA_DIR = key("data-dir");

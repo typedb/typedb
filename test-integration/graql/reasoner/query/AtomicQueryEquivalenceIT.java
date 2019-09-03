@@ -81,22 +81,68 @@ public class AtomicQueryEquivalenceIT {
 
     @Test
     public void testEquivalence_DifferentIsaVariants(){
-        testEquivalence_DifferentTypeVariants(tx, "isa", "baseRoleEntity", "subRoleEntity");
+        String query = "{ $x isa baseRoleEntity; };";
+        String query2 = "{ $y isa $type;$type type baseRoleEntity; };";
+        String query3 = "{ $z isa $t;$t type baseRoleEntity; };";
+        String query4 = "{ $x isa $y; };";
+        String query5 = "{ $x isa subRoleEntity; };";
+
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5);
+
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
     @Test
     public void testEquivalence_DifferentSubVariants(){
-        testEquivalence_DifferentTypeVariants(tx, "sub", "baseRoleEntity", "baseRole1");
+        testEquivalence_DifferentOntologicalVariants(tx, "sub", "baseRoleEntity", "baseRole1");
     }
 
     @Test
     public void testEquivalence_DifferentPlaysVariants(){
-        testEquivalence_DifferentTypeVariants(tx, "plays", "baseRole1", "baseRole2");
+        testEquivalence_DifferentOntologicalVariants(tx, "plays", "baseRole1", "baseRole2");
     }
 
     @Test
     public void testEquivalence_DifferentRelatesVariants(){
-        testEquivalence_DifferentTypeVariants(tx, "relates", "baseRole1", "baseRole2");
+        testEquivalence_DifferentOntologicalVariants(tx, "relates", "baseRole1", "baseRole2");
+    }
+
+    private void testEquivalence_DifferentOntologicalVariants(TransactionOLTP tx, String keyword, String label, String label2){
+        String query = "{ $x " + keyword + " " + label + "; };";
+        String query2 = "{ $y " + keyword + " $type;$type type " + label +"; };";
+        String query3 = "{ $z " + keyword + " $t;$t type " + label +"; };";
+        String query4 = "{ $x " + keyword + " $y; };";
+        String query5 = "{ $x " + keyword + " " + label2 + "; };";
+
+        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5);
+
+        equivalence(query, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query, queries, Lists.newArrayList(query2, query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query2, queries, Lists.newArrayList(query, query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query2, queries, Lists.newArrayList(query, query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query3, queries, Lists.newArrayList(query, query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query3, queries, Lists.newArrayList(query, query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
+
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
+        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
     @Test
@@ -143,31 +189,6 @@ public class AtomicQueryEquivalenceIT {
 
         equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
         equivalence(hasQuery, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
-    }
-
-    private void testEquivalence_DifferentTypeVariants(TransactionOLTP tx, String keyword, String label, String label2){
-        String query = "{ $x " + keyword + " " + label + "; };";
-        String query2 = "{ $y " + keyword + " $type;$type type " + label +"; };";
-        String query3 = "{ $z " + keyword + " $t;$t type " + label +"; };";
-        String query4 = "{ $x " + keyword + " $y; };";
-        String query5 = "{ $x " + keyword + " " + label2 + "; };";
-
-        ArrayList<String> queries = Lists.newArrayList(query, query2, query3, query4, query5);
-
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
-
-        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query2, queries, Lists.newArrayList(query3), ReasonerQueryEquivalence.StructuralEquivalence, tx);
-
-        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query3, queries, Lists.newArrayList(query2), ReasonerQueryEquivalence.StructuralEquivalence, tx);
-
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query4, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
-
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.AlphaEquivalence, tx);
-        equivalence(query5, queries, new ArrayList<>(), ReasonerQueryEquivalence.StructuralEquivalence, tx);
     }
 
     @Test

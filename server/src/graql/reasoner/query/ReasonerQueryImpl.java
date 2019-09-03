@@ -32,6 +32,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
@@ -572,7 +573,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         return isRuleResolvable()?
                 new ResolutionIterator(this, subGoals).hasStream() :
-                tx.stream(getQuery());
+                tx.executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx));
     }
 
     @Override
@@ -619,7 +620,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             boolean fruitless = tx.ruleCache().absentTypes(queryTypes);
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
-                dbIterator = tx.stream(getQuery(), false)
+                dbIterator = tx.executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx))
                         .map(ans -> ans.explain(new JoinExplanation(this.getPattern(), this.splitToPartialAnswers(ans))))
                         .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                         .iterator();

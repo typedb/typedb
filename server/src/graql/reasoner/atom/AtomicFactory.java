@@ -57,7 +57,7 @@ public class AtomicFactory {
                         .filter(Objects::nonNull))
                 .collect(Collectors.toSet());
 
-        //Extract variable predicates from attributes and add them to theatom set
+        //Extract variable predicates from attributes and add them to the atom set
         //We need to treat them separately to ensure correctness - different conditions can arise with different
         //orderings of resolvable atoms - hence we need to compare at the end.
         //NB: this creates different vps because the statement context is bound to HasAttributeProperty.
@@ -79,7 +79,8 @@ public class AtomicFactory {
                         .map(Atom.class::cast)
                         .flatMap(Atom::getInnerPredicates)
                         .noneMatch(at::equals)
-                );
+                )
+                .map(Atomic::simplify);
     }
 
     /**
@@ -135,12 +136,9 @@ public class AtomicFactory {
                 .anyMatch(v -> v.equals(predicateVar));
         ValueProperty.Operation indirectOperation = !predicateVarBound?
                 ReasonerUtils.findValuePropertyOp(predicateVar, otherStatements) : null;
-        ValueProperty.Operation operation;
 
-        if (indirectOperation == null) operation = directOperation;
-        else{
-            operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), indirectOperation.value());
-        }
+        Object value = indirectOperation == null ? directOperation.value() : indirectOperation.value();
+        ValueProperty.Operation operation = ValueProperty.Operation.Comparison.of(directOperation.comparator(), value);
         return ValuePredicate.create(var.asReturnedVar(), operation, parent);
     }
 }

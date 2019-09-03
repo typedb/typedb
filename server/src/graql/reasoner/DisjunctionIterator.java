@@ -20,6 +20,8 @@ package grakn.core.graql.reasoner;
 
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.executor.QueryExecutor;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.server.session.TransactionOLTP;
@@ -69,7 +71,7 @@ public class DisjunctionIterator extends ReasonerQueryIterator {
         LOG.trace("Resolving conjunctive query ({}): {}", doNotResolve, query);
 
         return doNotResolve ?
-                tx.stream(Graql.match(conj), false).iterator() :
+                tx.executor().traversal(query.getPattern(), TraversalPlanner.createTraversal(query.getPattern(), tx)).iterator() :
                 new ResolutionIterator(query, new HashSet<>());
     }
 

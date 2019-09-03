@@ -26,8 +26,10 @@ import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
+import grakn.core.server.rpc.KeyspaceRequestsHandler;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
+import grakn.core.server.rpc.ServerKeyspaceRequestsHandler;
 import grakn.core.server.rpc.ServerOpenRequest;
 import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
@@ -212,9 +214,12 @@ public class GraknTestServer extends ExternalResource {
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
+        KeyspaceRequestsHandler requestsHandler = new ServerKeyspaceRequestsHandler(
+                keyspaceManager, sessionFactory, janusGraphFactory);
+
         io.grpc.Server serverRPC = ServerBuilder.forPort(grpcPort)
                 .addService(new SessionService(requestOpener))
-                .addService(new KeyspaceService(keyspaceManager, sessionFactory, janusGraphFactory))
+                .addService(new KeyspaceService(requestsHandler))
                 .build();
 
         return ServerFactory.createServer(serverRPC);

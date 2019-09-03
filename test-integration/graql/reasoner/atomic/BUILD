@@ -39,10 +39,10 @@ java_test(
 java_test(
     name = "atomic-conversion-it",
     size = "medium",
-    srcs = ["ConversionIT.java"],
+    srcs = ["AtomicConversionIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.graql.reasoner.atomic.ConversionIT",
+    test_class = "grakn.core.graql.reasoner.atomic.AtomicConversionIT",
     deps = [
         "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -106,6 +106,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.graql.reasoner.atomic.AtomicEquivalenceIT",
     deps = [
+        "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
