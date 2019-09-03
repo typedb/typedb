@@ -187,6 +187,7 @@ public class TransactionOLTP implements Transaction {
             session.graphLock().writeLock().lock();
             try {
                 session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+                shardIfNeeded();
                 janusTransaction.commit();
                 cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             } finally {
@@ -194,11 +195,11 @@ public class TransactionOLTP implements Transaction {
             }
         } else {
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+            shardIfNeeded();
             janusTransaction.commit();
         }
         LOG.trace("Graph committed.");
     }
-
 
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
@@ -221,9 +222,20 @@ public class TransactionOLTP implements Transaction {
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+            shardIfNeeded();
             janusTransaction.commit();
         } finally {
             session.graphLock().writeLock().unlock();
+        }
+    }
+
+    private void shardIfNeeded() {
+        for (Thing thing: transactionCache.getModifiedThings()) {
+            long instancesCount = session.keyspaceStatistics().count(this, thing.type().label());
+            if (instancesCount % 1 == 0) {
+                LOG.info(thing.type().label() + " has a count of " + instancesCount + ". Need to shard");
+                shard(thing.type().id());
+            }
         }
     }
 
