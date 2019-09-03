@@ -246,7 +246,7 @@ public class TransactionOLTP implements Transaction {
         }
         labels.forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
-            if (instancesCount % 10000 == 0) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+            if (instancesCount % 10000 == 1) { // TODO: make it a constant (but no need to expose it in grakn.properties)
                 LOG.info(label + " has a count of " + instancesCount + ". Need to shard");
                 shard(labelId);
             }
