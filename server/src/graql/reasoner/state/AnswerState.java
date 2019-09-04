@@ -20,7 +20,11 @@ package grakn.core.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.tree.Node;
+import grakn.core.graql.reasoner.tree.NodeSet;
+import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.Unifier;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -74,6 +78,15 @@ public class AnswerState extends ResolutionState {
     public ResolutionState generateChildState() {
         return getParentState().propagateAnswer(this);
     }
+
+
+    @Override
+    public void updateTreeProfile(ResolutionTree tree){
+        Node parent = tree.getNode(getParentState());
+        if (parent != null) parent.addAnswer(getSubstitution());
+    }
+
+
 
     InferenceRule getRule(){ return rule;}
 

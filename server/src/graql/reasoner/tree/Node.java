@@ -23,6 +23,7 @@ import grakn.core.graql.reasoner.state.ResolutionState;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 public abstract class Node {
@@ -33,16 +34,18 @@ public abstract class Node {
     public abstract Stream<ResolutionState> getStates();
 
     public void addChild(Node child){
-        child.getStates().forEach(state -> {
-            if (state.isAnswerState()) answers.add(state.getSubstitution());
-            children.add(child);
-        });
+        child.getStates().forEach(state -> children.add(child));
+    }
+
+    public void addAnswer(ConceptMap answer){
+        answers.add(answer);
     }
 
     public long totalTime(){ return totalTime;}
     public void updateTime(long extraTime){ totalTime += extraTime;}
 
     public List<Node> children(){ return new ArrayList<>(children);}
+    public Set<ConceptMap> answers(){ return answers;}
     public abstract void ackCompletion();
 
 }

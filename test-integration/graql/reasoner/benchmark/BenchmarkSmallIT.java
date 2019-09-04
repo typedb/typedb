@@ -58,8 +58,9 @@ public class BenchmarkSmallIT {
 
         try (Transaction tx = session.transaction().write()) {
             GraqlGet query = Graql.parse("match (actor-role: $actor, task-type: $task) isa can-execute; get;").asGet();
+            long start = System.currentTimeMillis();
             List<ConceptMap> answers = tx.execute(query);
-            System.out.println();
+            System.out.println("time: " + (System.currentTimeMillis() - start));
         }
 
 

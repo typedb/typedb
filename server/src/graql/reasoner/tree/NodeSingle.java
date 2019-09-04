@@ -31,13 +31,13 @@ import java.util.stream.Stream;
  */
 public class NodeSingle extends Node{
     private final ResolutionState state;
-    private final ResolutionPlan plan;
-    private final ResolutionQueryPlan qplan;
+    //private final ResolutionPlan plan;
+    //private final ResolutionQueryPlan qplan;
 
     public NodeSingle(ResolutionState state){
         this.state = state;
-        this.plan = (state instanceof AnswerPropagatorState)? ((AnswerPropagatorState) state).getQuery().resolutionPlan() : null;
-        this.qplan = (state instanceof ConjunctiveState)? ((ConjunctiveState) state).getQuery().resolutionQueryPlan() : null;
+        //this.plan = (state instanceof AnswerPropagatorState)? ((AnswerPropagatorState) state).getQuery().resolutionPlan() : null;
+        //this.qplan = (state instanceof ConjunctiveState)? ((ConjunctiveState) state).getQuery().resolutionQueryPlan() : null;
     }
 
     @Override
@@ -50,8 +50,8 @@ public class NodeSingle extends Node{
 
     @Override
     public String toString(){
-        return state.getClass().getSimpleName() + "@" + Integer.toHexString(state.hashCode())
-                + " Cost:" + totalTime() +
-                " Sub: " + state.getSubstitution();
+        return state.getClass().getSimpleName() + "@" + Integer.toHexString(state.hashCode()) +
+                " Cost: " + totalTime() +
+                " answers: " + answers().size();
     }
 }

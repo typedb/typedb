@@ -30,6 +30,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.tree.Node;
 import grakn.core.graql.reasoner.tree.NodeSet;
+import grakn.core.graql.reasoner.tree.NodeSingle;
 import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
@@ -104,27 +105,31 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         AnswerPropagatorState parent = getParentState();
         AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
 
-        return grandParent != null? super.createNode() : new NodeSet(this);
+        return (grandParent instanceof ConjunctiveState)?
+                new NodeSingle(this) :
+                new NodeSet(this);
     }
 
     @Override
     public void updateTreeProfile(ResolutionTree tree){
         if (getParentState() == null) return;
         AnswerPropagatorState parentCS = this;
+        int CSstates = 0;
         while(parentCS.getParentState() != null && !(parentCS.getParentState() instanceof ConjunctiveState)){
             parentCS = parentCS.getParentState();
+            CSstates++;
         }
         //if first state we attach to parent, else we add to last child of CS
-
-        AnswerPropagatorState parent = getParentState();
-        AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
-
-        if (grandParent != null){
+        if (getParentState() == parentCS){
             tree.addChildToNode(parentCS,this);
         } else {
             Node CSnode = tree.getNode(parentCS);
             List<Node> children = CSnode.children();
-            ((NodeSet) children.get(children.size())).addState(this);
+            if (children.size() == CSstates) {
+                ((NodeSet) children.get(children.size()-1)).addState(this);
+            } else {
+                tree.addChildToNode(parentCS, this);
+            }
         }
     }
 

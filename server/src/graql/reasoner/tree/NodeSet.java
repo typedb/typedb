@@ -36,14 +36,13 @@ public class NodeSet extends Node{
     public void addState(ResolutionState state){ states.add(state);}
 
     @Override
-    public void ackCompletion() {
-
-    }
+    public void ackCompletion() { }
 
     @Override
     public String toString(){
-        return getClass().getSimpleName() + "@" + Integer.toHexString(states.hashCode())
-                + " Cost:" + totalTime();
+        return states.iterator().next().getClass().getSimpleName() + "::" +
+                "@" + Integer.toHexString(states.hashCode()) +
+                " Cost:" + totalTime();
     }
 }
 
