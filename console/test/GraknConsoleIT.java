@@ -362,7 +362,7 @@ public class GraknConsoleIT {
 
     @Test
     public void when_cancellingCleanCommand_expect_keyspaceIsNotDeleted() throws Exception {
-        assertConsoleSessionMatchesNoTrailingPrompt(
+        assertConsoleSessionMatches(
                 "define my-type sub entity;",
                 is("{}"),
                 "match $x sub entity; get;",
