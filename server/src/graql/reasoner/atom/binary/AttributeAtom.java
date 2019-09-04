@@ -72,6 +72,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.isEquivalentCollection;
+import static java.util.stream.Collectors.toSet;
 
 /**
  *
@@ -389,18 +390,19 @@ public abstract class AttributeAtom extends Binary{
     }
 
     @Override
-    public SemanticDifference semanticDifference(Atom p, Unifier unifier) {
-        SemanticDifference baseDiff = super.semanticDifference(p, unifier);
-        if (!p.isResource()) return baseDiff;
-        AttributeAtom parentAtom = (AttributeAtom) p;
+    public SemanticDifference semanticDifference(Atom child, Unifier unifier) {
+        SemanticDifference baseDiff = super.semanticDifference(child, unifier);
+        if (!child.isResource()) return baseDiff;
+        AttributeAtom childAtom = (AttributeAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
+
+        Variable parentVar = this.getAttributeVariable();
         Unifier unifierInverse = unifier.inverse();
-        Variable childVar = getAttributeVariable();
-        Set<ValuePredicate> predicates = new HashSet<>(getMultiPredicate());
-        parentAtom.getMultiPredicate().stream()
-                .flatMap(vp -> vp.unify(unifierInverse).stream())
-                .forEach(predicates::remove);
-        diff.add(new VariableDefinition(childVar, null, null, new HashSet<>(), predicates));
+        Set<ValuePredicate> predicatesToSatisfy = childAtom.getMultiPredicate().stream()
+                .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
+        this.getMultiPredicate().forEach(predicatesToSatisfy::remove);
+
+        diff.add(new VariableDefinition(parentVar, null, null, new HashSet<>(), predicatesToSatisfy));
         return baseDiff.merge(new SemanticDifference(diff));
     }
 

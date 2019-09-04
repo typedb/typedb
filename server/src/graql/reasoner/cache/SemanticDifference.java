@@ -73,6 +73,8 @@ public class SemanticDifference {
         return definition.hashCode();
     }
 
+    public boolean isTrivial(){ return definition.isEmpty();}
+
     private Set<Relation> rolesToRels(Variable var, Set<Role> roles, ConceptMap answer) {
         if (!answer.containsVar(var)) return new HashSet<>();
         Set<Role> roleAndTheirSubs = roles.stream().flatMap(Role::subs).collect(Collectors.toSet());
@@ -107,11 +109,13 @@ public class SemanticDifference {
             Variable var = vd.var();
             Concept concept = answer.get(var);
             if (concept == null) return false;
-            Type type = vd.type();
-            Role role = vd.role();
+            Type requiredType = vd.type();
+            Role requiredRole = vd.role();
+            Type conceptType = requiredType != null? concept.asThing().type() : null;
+            Role conceptRole = requiredRole != null? concept.asRole() : null;
             Set<ValuePredicate> vps = vd.valuePredicates();
-            return (type == null || type.subs().anyMatch(t -> t.equals(concept.asThing().type()))) &&
-                    (role == null || role.subs().anyMatch(r -> r.equals(concept.asRole()))) &&
+            return (requiredType == null || requiredType.subs().anyMatch(t -> t.equals(conceptType))) &&
+                    (requiredRole == null || requiredRole.subs().anyMatch(r -> r.equals(conceptRole))) &&
                     (vps.isEmpty() || vps.stream().allMatch(
                             vp -> ValueOperation.of(vp.getPredicate()).test(concept.asAttribute().value())
                     ));
@@ -129,19 +133,19 @@ public class SemanticDifference {
     }
 
     /**
-     * @param answer to project
-     * @param partialSub partial child substitution that needs to be incorporated
-     * @param vars       child vars
-     * @param unifier    parent-child unifier
-     * @return projected answer (empty if semantic difference not satisfied)
+     * @param answer to parent query - answer we want to propagate
+     * @param childSub partial child substitution that needs to be incorporated
+     * @param childVars       child vars
+     * @param unifier    parent->child unifier
+     * @return propagated answer to child query or empty answer if semantic difference not satisfied
      */
     @CheckReturnValue
-    public ConceptMap applyToAnswer(ConceptMap answer, ConceptMap partialSub, Set<Variable> vars, Unifier unifier) {
+    public ConceptMap propagateAnswer(ConceptMap answer, ConceptMap childSub, Set<Variable> childVars, Unifier unifier) {
+        if (!this.satisfiedBy(answer)) return new ConceptMap();
         ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
-        Set<Variable> varsToRetain = Sets.difference(unified.vars(), partialSub.vars());
-        return !this.satisfiedBy(unified) ? new ConceptMap() :
-                ConceptUtils.mergeAnswers(unified.project(varsToRetain), partialSub).project(vars);
+        Set<Variable> varsToRetain = Sets.difference(unified.vars(), childSub.vars());
+        return ConceptUtils.mergeAnswers(unified.project(varsToRetain), childSub).project(childVars);
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

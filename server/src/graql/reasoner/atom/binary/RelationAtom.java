@@ -1007,24 +1007,23 @@ public abstract class RelationAtom extends IsaAtomBase {
         getRoleVarMap().asMap().forEach((key, value) -> value.forEach(var -> map.put(var, key)));
         return map;
     }
+
     @Override
-    public SemanticDifference semanticDifference(Atom p, Unifier unifier) {
-        SemanticDifference baseDiff = super.semanticDifference(p, unifier);
-        if (!p.isRelation()) return baseDiff;
-        RelationAtom parentAtom = (RelationAtom) p;
+    public SemanticDifference semanticDifference(Atom child, Unifier unifier) {
+        SemanticDifference baseDiff = super.semanticDifference(child, unifier);
+        if (!child.isRelation()) return baseDiff;
+        RelationAtom childAtom = (RelationAtom) child;
         Set<VariableDefinition> diff = new HashSet<>();
 
-        Set<Variable> parentRoleVars= parentAtom.getRoleExpansionVariables();
-        HashMultimap<Variable, Role> childVarRoleMap = this.getVarRoleMap();
-        HashMultimap<Variable, Role> parentVarRoleMap = parentAtom.getVarRoleMap();
+        Set<Variable> parentRoleVars = this.getRoleExpansionVariables();
+        HashMultimap<Variable, Role> childVarRoleMap = childAtom.getVarRoleMap();
+        HashMultimap<Variable, Role> parentVarRoleMap = this.getVarRoleMap();
         unifier.mappings().forEach( m -> {
-            Variable childVar = m.getKey();
-            Variable parentVar = m.getValue();
-            Set<Role> childRoles = childVarRoleMap.get(childVar);
-            Set<Role> parentRoles = parentVarRoleMap.get(parentVar);
-            Role role = null;
+            Variable childVar = m.getValue();
+            Variable parentVar = m.getKey();
+            Role requiredRole = null;
             if(parentRoleVars.contains(parentVar)){
-                Set<Label> roleLabels = this.getRelationPlayers().stream()
+                Set<Label> roleLabels = childAtom.getRelationPlayers().stream()
                         .map(RelationProperty.RolePlayer::getRole)
                         .flatMap(Streams::optionalToStream)
                         .filter(roleStatement -> roleStatement.var().equals(childVar))
@@ -1033,10 +1032,16 @@ public abstract class RelationAtom extends IsaAtomBase {
                         .map(Label::of)
                         .collect(toSet());
                 if (!roleLabels.isEmpty()){
-                    role = tx().getRole(Iterables.getOnlyElement(roleLabels).getValue());
+                    requiredRole = tx().getRole(Iterables.getOnlyElement(roleLabels).getValue());
                 }
             }
-            diff.add(new VariableDefinition(childVar,null, role, bottom(Sets.difference(childRoles, parentRoles)), new HashSet<>()));
+            Set<Role> childRoles = childVarRoleMap.get(childVar);
+            Set<Role> parentRoles = parentVarRoleMap.get(parentVar);
+            Set<Role> playedRoles = bottom(Sets.difference(childRoles, parentRoles)).stream()
+                    .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
+                    .filter(playedRole -> Sets.intersection(parentRoles, playedRole.subs().collect(toSet())).isEmpty())
+                    .collect(toSet());
+            diff.add(new VariableDefinition(parentVar,null, requiredRole, playedRoles, new HashSet<>()));
         });
         return baseDiff.merge(new SemanticDifference(diff));
     }
