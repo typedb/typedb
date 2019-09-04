@@ -148,10 +148,11 @@ public class ConsoleSession implements AutoCloseable {
                 rollback();
 
             } else if (input.equals(CLEAN)) {
-                clean();
-                consoleReader.flush();
-                return;
-
+                boolean cleaned = clean();
+                if (cleaned) {
+                    consoleReader.flush();
+                    return;
+                }
             } else if (input.equals(CLEAR)) {
                 consoleReader.clearScreen();
 
@@ -242,7 +243,12 @@ public class ConsoleSession implements AutoCloseable {
         }
     }
 
-    private void clean() throws IOException {
+    /**
+     *
+     * @return true if a clean took place, false otherwise
+     * @throws IOException
+     */
+    private boolean clean() throws IOException {
         // Get user confirmation to clean graph
         consoleReader.println("Are you sure? CLEAN command will delete the current keyspace and its content.");
         consoleReader.println("Type 'confirm' to continue: ");
@@ -255,8 +261,10 @@ public class ConsoleSession implements AutoCloseable {
             consoleReader.flush();
             client.keyspaces().delete(keyspace);
             consoleReader.println("Keyspace deleted: " + keyspace);
+            return true;
         } else {
             consoleReader.println("Clean command cancelled");
+            return false;
         }
     }
 

@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -340,10 +341,9 @@ public class GraknConsoleIT {
         assertFalse(response.out(), response.err().isEmpty());
     }
 
-    @Ignore("to be fixed")
     @Test
     public void when_runningCleanCommand_expect_keyspaceIsDeleted() throws Exception {
-        assertConsoleSessionMatches(
+        assertConsoleSessionMatchesNoTrailingPrompt(
                 "define my-type sub entity;",
                 is("{}"),
                 "commit",
@@ -355,15 +355,14 @@ public class GraknConsoleIT {
                 containsString("Type 'confirm' to continue"),
                 "confirm",
                 containsString("Cleaning keyspace"),
-                anything(),
-                containsString("Keyspace deleted")
+                containsString("..."),
+                containsString("deleted")
         );
     }
 
-    @Ignore("to be fixed")
     @Test
     public void when_cancellingCleanCommand_expect_keyspaceIsNotDeleted() throws Exception {
-        assertConsoleSessionMatches(
+        assertConsoleSessionMatchesNoTrailingPrompt(
                 "define my-type sub entity;",
                 is("{}"),
                 "match $x sub entity; get;",
@@ -420,6 +419,12 @@ public class GraknConsoleIT {
     }
 
     private void assertConsoleSessionMatches(Object... matchers) throws Exception {
+        Object[] extendedMatchers = Arrays.copyOf(matchers, matchers.length+1);
+        extendedMatchers[extendedMatchers.length-1] = anything(); // match the trailing prompt automatically
+        assertConsoleSessionMatches(ImmutableList.of(), extendedMatchers);
+    }
+
+    private void assertConsoleSessionMatchesNoTrailingPrompt(Object... matchers) throws Exception {
         assertConsoleSessionMatches(ImmutableList.of(), matchers);
     }
 
@@ -440,8 +445,8 @@ public class GraknConsoleIT {
 
         ImmutableSet<String> noPromptArgs = ImmutableSet.of("-e", "-f", "-b", "-v", "-h");
         if (Sets.intersection(Sets.newHashSet(arguments), noPromptArgs).isEmpty()) {
-            // Remove first four lines containing license and last line containing prompt
-            outputLines = outputLines.subList(4, outputLines.size() - 1);
+            // Remove first four lines containing license
+            outputLines = outputLines.subList(4, outputLines.size());
         }
 
         assertThat(outputLines, contains(matcherList));

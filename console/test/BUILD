@@ -56,7 +56,7 @@ java_test(
 
         # External dependencies
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
-        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/commons-cli:commons-cli"
     ],
     size = "small",
 )
