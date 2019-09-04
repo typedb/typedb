@@ -105,7 +105,7 @@ public class SessionFactory {
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceCache();
                 keyspaceStatistics = new KeyspaceStatistics();
-                lastShardingPoint = new ConcurrentHashMap<>();
+                lastShardingPoint = new ConcurrentHashMap<>(); // TODO: the count for each type needs to be initialised by reading the values from keyspaceStatistics
                 attributesCache = buildAttributeCache();
                 graphLock = new ReentrantReadWriteLock();
                 cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, lastShardingPoint, attributesCache, graphLock, hadoopGraph);
