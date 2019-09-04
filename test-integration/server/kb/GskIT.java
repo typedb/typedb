@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: remove
 public class GskIT {
     public static final Logger LOG = LoggerFactory.getLogger(GskIT.class);
 
@@ -21,6 +22,27 @@ public class GskIT {
                     System.out.println("elapsed = " + elapsed + "ms");
                 }
             }
+        }
+    }
+
+    static class TransactionOLTPIT {
+//        @Test
+        public void verifyThatShardIsPerformedOnAGivenTypeOnCommitIfThresholdIsReached() {
+            // verify that 'person' is sharded
+            // verify that 'company' is not sharded
+        }
+
+//        @Test
+        public void verifyThatShardIsNotPerformedOnAGiveTypeIfThresholdIsNotReached() {
+            // verify that 'person' is not sharded
+            // verify that 'company' is not sharded
+        }
+    }
+
+    static class TypeSharderTest {
+//        @Test
+        public void verifyThatShardAlgorithmWorks() {
+            // shard returns void. how should I test it? how should I change the interface in order to make it testable?
         }
     }
 }

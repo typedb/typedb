@@ -47,6 +47,7 @@ java_test(
     ],
 )
 
+# TODO: remove
 java_test(
     name = "gsk-it",
     size = "medium",
@@ -96,5 +97,6 @@ checkstyle_test(
         ":validate-global-rules-it",
         ":grakn-transaction-it",
         ":rule-validation-it",
+        ":gsk-it" # TODO: remove
     ],
 )
