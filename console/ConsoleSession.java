@@ -91,7 +91,7 @@ public class ConsoleSession implements AutoCloseable {
             this.client = new GraknClient(serverAddress);
             this.session = client.session(keyspace);
         } catch (StatusRuntimeException grpcException) {
-            throw GraknConsoleException.unreachableServer(serverAddress);
+            throw GraknConsoleException.unreachableServer(serverAddress, grpcException);
         }
         this.consoleReader = new ConsoleReader(System.in, printOut);
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");

@@ -38,8 +38,8 @@ public class GraknConsoleException extends GraknClientException {
         return new GraknConsoleException(error, e);
     }
 
-    public static GraknConsoleException unreachableServer(String serverAddress) {
-        return GraknConsoleException.create("Unable to create connection to Grakn instance at: " + serverAddress);
+    public static GraknConsoleException unreachableServer(String serverAddress, RuntimeException e) {
+        return GraknConsoleException.create("Unable to create connection to Grakn instance at " + serverAddress, e);
     }
 
     @Override
