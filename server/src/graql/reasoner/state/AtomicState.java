@@ -105,9 +105,10 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         AnswerPropagatorState parent = getParentState();
         AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
 
+        NodeSingle node = new NodeSingle(this);
         return (grandParent instanceof ConjunctiveState)?
-                new NodeSingle(this) :
-                new NodeSet(this);
+                node :
+                new NodeSet(node);
     }
 
     @Override
@@ -126,7 +127,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             Node CSnode = tree.getNode(parentCS);
             List<Node> children = CSnode.children();
             if (children.size() == CSstates) {
-                ((NodeSet) children.get(children.size()-1)).addState(this);
+                ((NodeSet) children.get(children.size()-1)).addNode(new NodeSingle(this));
             } else {
                 tree.addChildToNode(parentCS, this);
             }

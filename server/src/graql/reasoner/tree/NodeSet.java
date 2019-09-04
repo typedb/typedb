@@ -24,25 +24,26 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 public class NodeSet extends Node{
-    private final Set<ResolutionState> states = new HashSet<>();
+    private final Set<Node> nodes = new HashSet<>();
 
-    public NodeSet(ResolutionState state){
-        states.add(state);
+    public NodeSet(Node node){
+        nodes.add(node);
     }
 
     @Override
-    public Stream<ResolutionState> getStates(){ return states.stream();}
+    public Stream<ResolutionState> getStates(){ return nodes.stream().flatMap(Node::getStates);}
 
-    public void addState(ResolutionState state){ states.add(state);}
+    public void addNode(Node node){ nodes.add(node);}
 
     @Override
     public void ackCompletion() { }
 
     @Override
     public String toString(){
-        return states.iterator().next().getClass().getSimpleName() + "::" +
-                "@" + Integer.toHexString(states.hashCode()) +
-                " Cost:" + totalTime();
+        return nodes.iterator().next().getStates().iterator().next().getClass().getSimpleName() + "::" +
+                "@" + Integer.toHexString(nodes.hashCode()) +
+                " Cost:" + nodes.stream().mapToLong(Node::totalTime).sum() +
+                " answers: " + nodes.stream().mapToLong(n -> n.answers().size()).sum();
     }
 }
 
