@@ -24,6 +24,9 @@ import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.tree.Node;
+import grakn.core.graql.reasoner.tree.NodeSingle;
+import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.server.kb.concept.ConceptUtils;
 import java.util.ArrayList;
@@ -85,6 +88,21 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
     @Override
     ConceptMap consumeAnswer(AnswerState state) {
         return state.getSubstitution();
+    }
+
+    @Override
+    public Node createNode(){
+        if(getParentState() instanceof ConjunctiveState) return new NodeSingle(this);
+        return null;
+    }
+
+    @Override
+    public void updateTreeProfile(ResolutionTree tree){
+        AnswerPropagatorState parentCS = this;
+        while(parentCS.getParentState() != null && !(parentCS.getParentState() instanceof ConjunctiveState)){
+            parentCS = parentCS.getParentState();
+        }
+        if (parentCS == this) tree.addChildToNode(getParentState(),this);
     }
 
     private static Explanation mergeExplanations(ConceptMap base, ConceptMap toMerge) {

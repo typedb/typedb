@@ -22,6 +22,8 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.graql.reasoner.tree.Node;
+import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +50,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Set<ReasonerAtomicQuery> subGoals;
     private final Stack<ResolutionState> states = new Stack<>();
     private final ResolutionTree tree;
+    private final ResolutionTree logTree;
 
     private ConceptMap nextAnswer = null;
 
@@ -59,6 +62,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         ResolutionState rootState = query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals);
         states.push(rootState);
         this.tree = new ResolutionTree(rootState);
+        this.logTree = new ResolutionTree(rootState);
     }
 
     private ConceptMap findNextAnswer(){
@@ -73,11 +77,15 @@ public class ResolutionIterator extends ReasonerQueryIterator {
 
             ResolutionState newState = state.generateChildState();
             if (newState != null) {
-                tree.addChildToNode(newState.getParentState(), newState);
+
+                //newState.updateTreeProfile(logTree);
+               // tree.addChildToNode(newState.getParentState(), newState);
+
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
             } else {
-                tree.getNode(state).ackCompletion();
+                Node node = logTree.getNode(state);
+                if (node != null) node.ackCompletion();
                 LOG.trace("new state: NULL");
             }
         }

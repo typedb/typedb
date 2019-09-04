@@ -28,12 +28,16 @@ import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.tree.Node;
+import grakn.core.graql.reasoner.tree.NodeSet;
+import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.server.kb.concept.ConceptUtils;
 import graql.lang.statement.Variable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -93,6 +97,35 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                     ruleAnswer(baseAnswer, rule, unifier);
         }
         return recordAnswer(query, answer);
+    }
+
+    @Override
+    public Node createNode(){
+        AnswerPropagatorState parent = getParentState();
+        AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
+
+        return grandParent != null? super.createNode() : new NodeSet(this);
+    }
+
+    @Override
+    public void updateTreeProfile(ResolutionTree tree){
+        if (getParentState() == null) return;
+        AnswerPropagatorState parentCS = this;
+        while(parentCS.getParentState() != null && !(parentCS.getParentState() instanceof ConjunctiveState)){
+            parentCS = parentCS.getParentState();
+        }
+        //if first state we attach to parent, else we add to last child of CS
+
+        AnswerPropagatorState parent = getParentState();
+        AnswerPropagatorState grandParent = parent != null ? parent.getParentState() : null;
+
+        if (grandParent != null){
+            tree.addChildToNode(parentCS,this);
+        } else {
+            Node CSnode = tree.getNode(parentCS);
+            List<Node> children = CSnode.children();
+            ((NodeSet) children.get(children.size())).addState(this);
+        }
     }
 
     /**

@@ -51,6 +51,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
+        "//api",
         "//concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",

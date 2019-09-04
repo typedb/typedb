@@ -18,6 +18,7 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
+import grakn.core.api.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Entity;
@@ -30,6 +31,7 @@ import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -48,6 +50,22 @@ public class BenchmarkSmallIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
+
+    @Test
+    public void test(){
+        SessionImpl session = server.sessionFactory().session(KeyspaceImpl.of("rvoas"));
+
+
+        try (Transaction tx = session.transaction().write()) {
+            GraqlGet query = Graql.parse("match (actor-role: $actor, task-type: $task) isa can-execute; get;").asGet();
+            List<ConceptMap> answers = tx.execute(query);
+            System.out.println();
+        }
+
+
+        session.close();
+    }
+
 
 
     /**
