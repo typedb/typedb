@@ -12,17 +12,17 @@ public class GskIT {
 
     @Test
     public void limitQuery() {
-        LOG.info("hi");
-        try (GraknClient graknClient = new GraknClient("localhost:48555")) {
-            try (GraknClient.Session session = graknClient.session("ten_milion")) {
-                try (GraknClient.Transaction tx = session.transaction().read()) {
-                    long start = System.currentTimeMillis();
-                    tx.execute(Graql.parse("match $s isa sentence; get; limit 1;").asGet());
-                    long elapsed = System.currentTimeMillis() - start;
-                    System.out.println("elapsed = " + elapsed + "ms");
-                }
-            }
-        }
+//        LOG.info("hi");
+//        try (GraknClient graknClient = new GraknClient("localhost:48555")) {
+//            try (GraknClient.Session session = graknClient.session("ten_milion")) {
+//                try (GraknClient.Transaction tx = session.transaction().read()) {
+//                    long start = System.currentTimeMillis();
+//                    tx.execute(Graql.parse("match $s isa sentence; get; limit 1;").asGet());
+//                    long elapsed = System.currentTimeMillis() - start;
+//                    System.out.println("elapsed = " + elapsed + "ms");
+//                }
+//            }
+//        }
     }
 
     static class TransactionOLTPIT {
