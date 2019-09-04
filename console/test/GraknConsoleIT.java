@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.console.GraknConsole;
+import grakn.core.console.exception.GraknConsoleException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import io.grpc.Status;
@@ -119,7 +120,7 @@ public class GraknConsoleIT {
     public void when_writingToDefaultKeyspace_expect_successReadFromDefaultKeyspace() throws Exception {
         runConsoleSessionWithoutExpectingErrors("define im-in-the-default-keyspace sub entity;\ncommit\n");
 
-        assertConsoleSessionMatches(
+        assertConsoleSessionMatchesWithArgs(
                 ImmutableList.of("-k", "grakn"),
                 "match im-in-the-default-keyspace sub entity; get; count;",
                 containsString("1")
@@ -258,7 +259,7 @@ public class GraknConsoleIT {
 
     @Test
     public void when_startingConsoleWithOptionNoInfer_expect_queriesDoNotInfer() throws Exception {
-        assertConsoleSessionMatches(
+        assertConsoleSessionMatchesWithArgs(
                 ImmutableList.of("--no_infer"),
                 "define man sub entity, has name; name sub attribute, datatype string;",
                 anything(),
@@ -332,7 +333,7 @@ public class GraknConsoleIT {
     @Test
     public void when_serverIsNotRunning_expect_connectionError() {
         Response response = runConsoleSession("", "-r", "localhost:7654");
-        assertThat(response.err(), containsString(Status.Code.UNAVAILABLE.name()));
+        assertThat(response.err(), containsString("Unable to create connection to Grakn instance at"));
     }
 
     @Test
@@ -419,17 +420,24 @@ public class GraknConsoleIT {
     }
 
     private void assertConsoleSessionMatches(Object... matchers) throws Exception {
-        Object[] extendedMatchers = Arrays.copyOf(matchers, matchers.length+1);
-        extendedMatchers[extendedMatchers.length-1] = anything(); // match the trailing prompt automatically
-        assertConsoleSessionMatches(ImmutableList.of(), extendedMatchers);
+        assertConsoleSessionMatchesWithArgs(ImmutableList.of(), matchers);
     }
 
+    private void assertConsoleSessionMatchesWithArgs(List<String> arguments, Object... matchers) throws Exception {
+        Object[] extendedMatchers = Arrays.copyOf(matchers, matchers.length+1);
+        extendedMatchers[extendedMatchers.length-1] = anything(); // match the trailing prompt automatically
+        assertConsoleSessionSequence(arguments, extendedMatchers);
+    }
+
+    /**
+     * Assert console sequence occurs without a trailing empty prompt
+     */
     private void assertConsoleSessionMatchesNoTrailingPrompt(Object... matchers) throws Exception {
-        assertConsoleSessionMatches(ImmutableList.of(), matchers);
+        assertConsoleSessionSequence(ImmutableList.of(), matchers);
     }
 
     // Arguments should be strings or matchers. Strings are interpreted as input, matchers as expected output
-    private void assertConsoleSessionMatches(List<String> arguments, Object... matchers) throws Exception {
+    private void assertConsoleSessionSequence(List<String> arguments, Object... matchers) throws Exception {
         String input = Stream.of(matchers)
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
