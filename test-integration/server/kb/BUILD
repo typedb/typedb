@@ -29,24 +29,6 @@ java_test(
     ],
 )
 
-java_test(
-    name = "grakn-transaction-it",
-    size = "medium",
-    srcs = ["TransactionIT.java"],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.server.kb.TransactionIT",
-    deps = [
-        "//common",
-        "//concept",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//server",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
-        "@graknlabs_graql//java:graql",
-    ],
-)
-
 # TODO: remove
 java_test(
     name = "gsk-it",
@@ -95,7 +77,6 @@ checkstyle_test(
     targets = [
         ":validator-it",
         ":validate-global-rules-it",
-        ":grakn-transaction-it",
         ":rule-validation-it",
         ":gsk-it" # TODO: remove
     ],

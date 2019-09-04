@@ -19,10 +19,14 @@
 package grakn.core.server.kb;
 
 import grakn.client.GraknClient;
+import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static graql.lang.Graql.insert;
+import static graql.lang.Graql.var;
 
 // TODO: remove
 public class GskIT {
@@ -42,6 +46,34 @@ public class GskIT {
 //            }
 //        }
     }
+
+//    @Test
+//    public void a() {
+//        try (TransactionOLTP tx1 = session.transaction().write()) {
+//            tx1.execute(Graql.define(Graql.type("person").sub("entity")));
+//            tx1.commit();
+//        }
+//        try (TransactionOLTP tx1 = session.transaction().write()) {
+//            tx1.execute(insert(var("p").isa("person")));
+//            tx1.commit();
+//        }
+////        try (TransactionOLTP tx1 = session.transaction().write()) {
+////            tx1.shard(tx1.getEntityType("person").id());
+////            tx1.commit();
+////        }
+//        try (TransactionOLTP tx1 = session.transaction().write()) {
+//            tx1.execute(insert(var("p").isa("person")));
+//            tx1.commit();
+//        }
+////        try (TransactionOLTP tx1 = session.transaction().write()) {
+////            tx1.shard(tx1.getEntityType("person").id());
+////            tx1.commit();
+////        }
+//        try (TransactionOLTP tx1 = session.transaction().write()) {
+//            tx1.execute(insert(var("p").isa("person")));
+//            tx1.commit();
+//        }
+//    }
 
     static class TransactionOLTPIT {
 //        @Test
