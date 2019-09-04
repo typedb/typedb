@@ -94,6 +94,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -108,7 +109,6 @@ public class TransactionOLTP implements Transaction {
     // Shared Variables
     private final SessionImpl session;
     private final ElementFactory elementFactory;
-    private AtomicLong currentCount = new AtomicLong(0);
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -248,10 +248,12 @@ public class TransactionOLTP implements Transaction {
         }
         labels.forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
-            if (instancesCount - currentCount.get() > 10000) { // TODO: make it a constant (but no need to expose it in grakn.properties)
-                LOG.info(label + " has a count of " + instancesCount + ". Need to shard");
+            session.lastShardingPoint.putIfAbsent(label, 0L);
+            long lastShardingPointForThisInstance = session.lastShardingPoint.get(label);
+            if (instancesCount - lastShardingPointForThisInstance > 10000000) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+                LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardingPointForThisInstance + ". Need to shard");
                 shard(labelId);
-                currentCount.set(instancesCount);
+                session.lastShardingPoint.put(label, instancesCount);
             }
         });
     }

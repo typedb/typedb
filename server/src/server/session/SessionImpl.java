@@ -25,6 +25,7 @@ import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
@@ -37,6 +38,7 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
@@ -66,6 +68,7 @@ public class SessionImpl implements Session {
     private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
+    public ConcurrentHashMap<Label, Long> lastShardingPoint;
 
     private boolean isClosed = false;
 
@@ -76,8 +79,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<Label, Long> lastShardingPoint, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, lastShardingPoint, attributesCache, graphLock);
     }
 
     /**
@@ -89,7 +92,8 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
      public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
-                       HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<Label, Long> lastShardingPoint,
+                        Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -98,6 +102,7 @@ public class SessionImpl implements Session {
 
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
+        this.lastShardingPoint = lastShardingPoint;
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
