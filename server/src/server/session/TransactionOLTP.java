@@ -250,7 +250,7 @@ public class TransactionOLTP implements Transaction {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             session.lastShardingPoint.putIfAbsent(label, 0L);
             long lastShardingPointForThisInstance = session.lastShardingPoint.get(label);
-            if (instancesCount - lastShardingPointForThisInstance > 10000000) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+            if (instancesCount - lastShardingPointForThisInstance > 250001) { // TODO: make it a constant (but no need to expose it in grakn.properties)
                 LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardingPointForThisInstance + ". Need to shard");
                 shard(labelId);
                 session.lastShardingPoint.put(label, instancesCount);

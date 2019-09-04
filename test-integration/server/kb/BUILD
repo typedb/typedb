@@ -48,6 +48,31 @@ java_test(
 )
 
 java_test(
+    name = "gsk-it",
+    size = "medium",
+    srcs = ["GskIT.java"],
+    test_class = "grakn.core.server.kb.GskIT",
+    deps = [
+            # Internal dependencies
+            "//common:common",
+            "//concept:concept",
+            "//server:server",
+
+            # External dependencies from @graknlabs
+            "@graknlabs_client_java//:client-java",
+            "@graknlabs_graql//java:graql",
+
+            # External dependencies from Maven
+            "//dependencies/maven/artifacts/commons-io:commons-io",
+            "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+            "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+            "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
+        ],
+    data = ["//:assemble-mac-zip"],
+    classpath_resources = ["//test-integration/resources:logback-test"]
+)
+
+java_test(
     name = "rule-validation-it",
     size = "large",
     srcs = ["RuleValidationIT.java"],
