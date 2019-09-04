@@ -46,9 +46,25 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
+java_test(
+    name = "standalone-console-it",
+    srcs = ["StandaloneConsoleIT.java"],
+    test_class = "grakn.core.console.test.StandaloneConsoleIT",
+    deps = [
+        # Package dependencies
+        "//console",
+
+        # External dependencies
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+    ],
+    size = "small",
+)
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-console-it"
+        ":grakn-console-it",
+        ":standalone-console-it"
     ],
 )
