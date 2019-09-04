@@ -238,8 +238,9 @@ public enum UnifierType implements UnifierComparison, EquivalenceCoupling {
     /**
      * Unifier type used to determine whether two queries are in a subsumption relation.
      * Subsumption can be regarded as a stricter version of the semantic overlap requirement seen in RULE UnifierType.
-     * Defining queries C and P and their respective answer sets A(C) and A(P) we say that a subsumptive unifier between child
-     * and parent exists if:
+     * Defining queries C and P and their respective answer sets A(C) and A(P) we say that:
+     *
+     * A subsumptive unifier between child and parent exists if:
      *
      * C <= P,
      *

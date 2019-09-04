@@ -461,36 +461,34 @@ public abstract class Atom extends AtomicBase {
     }
 
     /**
-     * Calculates the semantic difference between the parent and this (child) atom,
+     * Calculates the semantic difference between the this (parent) and child atom,
      * that needs to be applied on A(P) to find the subset belonging to A(C).
      *
-     * @param parentAtom parent atom
-     * @param unifier    child->parent unifier
-     * @return semantic difference between child and parent
+     * @param childAtom child atom
+     * @param unifier    parent->child unifier
+     * @return semantic difference between this and child defined in terms of this variables
      */
-    public SemanticDifference semanticDifference(Atom parentAtom, Unifier unifier) {
+    public SemanticDifference semanticDifference(Atom childAtom, Unifier unifier) {
         Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
 
         unifier.mappings().forEach(m -> {
-            Variable childVar = m.getKey();
-            Variable parentVar = m.getValue();
+            Variable parentVar = m.getKey();
+            Variable childVar = m.getValue();
 
-            Type childType = this.getParentQuery().getUnambiguousType(childVar, false);
-            Type parentType = parentAtom.getParentQuery().getUnambiguousType(parentVar, false);
-            Type type = childType != null ?
+            Type parentType = this.getParentQuery().getUnambiguousType(parentVar, false);
+            Type childType = childAtom.getParentQuery().getUnambiguousType(childVar, false);
+            Type requiredType = childType != null ?
                     parentType != null ?
                             (!parentType.equals(childType) ? childType : null) :
                             childType
                     : null;
 
+            Set<ValuePredicate> predicatesToSatisfy = childAtom.getPredicates(childVar, ValuePredicate.class)
+                    .flatMap(vp -> vp.unify(unifierInverse).stream()).collect(toSet());
+            this.getPredicates(parentVar, ValuePredicate.class).forEach(predicatesToSatisfy::remove);
 
-            Set<ValuePredicate> predicates = this.getPredicates(childVar, ValuePredicate.class).collect(toSet());
-            parentAtom.getPredicates(parentVar, ValuePredicate.class)
-                    .flatMap(vp -> vp.unify(unifierInverse).stream())
-                    .forEach(predicates::remove);
-
-            diff.add(new VariableDefinition(childVar, type, null, new HashSet<>(), predicates));
+            diff.add(new VariableDefinition(parentVar, requiredType, null, new HashSet<>(), predicatesToSatisfy));
         });
         return new SemanticDifference(diff);
     }

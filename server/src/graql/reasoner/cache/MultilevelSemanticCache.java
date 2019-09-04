@@ -28,14 +28,11 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import graql.lang.statement.Variable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -91,25 +88,20 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         IndexedAnswerSet parentAnswers = parentEntry.cachedElement();
         IndexedAnswerSet childAnswers = childEntry.cachedElement();
 
-        Set<Pair<Unifier, SemanticDifference>> parentToChildUnifierDelta =
-                child.getMultiUnifierWithSemanticDiff(parent).stream()
-                .map(unifierDelta -> new Pair<>(unifierDelta.getKey().inverse(), unifierDelta.getValue()))
-                .collect(toSet());
-
         /*
          * propagate answers to child:
          * * calculate constraint difference
          * * apply constraints from the difference
          */
+        Set<Pair<Unifier, SemanticDifference>> parentToChildUnifierDelta = parent.getMultiUnifierWithSemanticDiff(child);
         Set<Variable> childVars = child.getVarNames();
-        ConceptMap partialSub = child.getRoleSubstitution();
+        ConceptMap childPartialSub = child.getRoleSubstitution();
         Set<ConceptMap> newAnswers = new HashSet<>();
-
+        
         parentAnswers.getAll().stream()
-                .filter(ans -> propagateInferred || ans.explanation().isLookupExplanation())
-                .flatMap(ans -> parentToChildUnifierDelta.stream()
-                                .map(unifierDelta -> unifierDelta.getValue()
-                                        .applyToAnswer(ans, partialSub, childVars, unifierDelta.getKey()))
+                .filter(parentAns -> propagateInferred || parentAns.explanation().isLookupExplanation())
+                .flatMap(parentAns -> parentToChildUnifierDelta.stream()
+                        .map(unifierDelta -> unifierDelta.getValue().propagateAnswer(parentAns, childPartialSub, childVars, unifierDelta.getKey()))
                 )
                 .filter(ans -> !ans.isEmpty())
                 .peek(ans -> validateAnswer(ans, child, childVars))
