@@ -37,7 +37,7 @@ public class StandaloneConsoleIT {
     @Test
     public void consoleThrowsWhenNoServerRunning() throws ParseException, IOException, InterruptedException {
         expectedException.expect(GraknConsoleException.class);
-        expectedException.expectMessage("Unable to create connection to Grakn instance at:");
+        expectedException.expectMessage("Unable to create connection to Grakn instance at");
         GraknConsole console = new GraknConsole(new String[0], null, null);
         console.run();
     }
