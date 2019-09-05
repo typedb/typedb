@@ -19,13 +19,21 @@
 package grakn.core.server.kb;
 
 import grakn.client.GraknClient;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static graql.lang.Graql.define;
 import static graql.lang.Graql.insert;
+import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 
 // TODO: remove
@@ -76,21 +84,62 @@ public class GskIT {
 //    }
 
     static class TransactionOLTPIT {
-//        @Test
-        public void verifyThatShardIsPerformedOnAGivenTypeOnCommitIfThresholdIsReached() {
-            // verify that 'person' is sharded
-            // verify that 'company' is not sharded
+        @ClassRule
+        public static GraknTestServer graknTestServer = new GraknTestServer();
+        public SessionImpl session;
+
+        @Before
+        public void before() {
+            session = graknTestServer.sessionWithNewKeyspace();
         }
 
-//        @Test
-        public void verifyThatShardIsNotPerformedOnAGiveTypeIfThresholdIsNotReached() {
-            // verify that 'person' is not sharded
-            // verify that 'company' is not sharded
+        @After
+        public void after() {
+            session.close();
+        }
+
+        @Test
+        public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
+            TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(define(type("person").sub("entity")).asDefine());
+                tx.commit();
+            }
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.commit();
+            }
+            // TODO: verify that no new type shard
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.commit();
+            }
+            // TODO: verify that a new type shard is created for the type 'person'
+        }
+
+        @Test
+        public void verifyThatTypeShardingIsPerformedOnTheRightEntity() {
+            TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(define(type("person").sub("entity")).asDefine());
+                tx.execute(define(type("company").sub("entity")).asDefine());
+                tx.commit();
+            }
+
+            // insert two people and a company
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.execute(insert(var("c").isa("company")).asInsert());
+                tx.commit();
+            }
+            // TODO: verify that 'person' is sharded
+            // TODO: verify that 'company' is not sharded
         }
     }
 
-    static class TypeSharderTest {
-//        @Test
+    static class TypeShardTest {
+        @Test
         public void verifyThatShardAlgorithmWorks() {
             // shard returns void. how should I test it? how should I change the interface in order to make it testable?
         }

@@ -104,6 +104,8 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    public static int TYPE_SHARD_THRESHOLD = 250001;
+
     // Shared Variables
     private final SessionImpl session;
     private final ElementFactory elementFactory;
@@ -248,7 +250,7 @@ public class TransactionOLTP implements Transaction {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             session.lastShardingPoint.putIfAbsent(label, 0L);
             long lastShardingPointForThisInstance = session.lastShardingPoint.get(label);
-            if (instancesCount - lastShardingPointForThisInstance > 250001) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+            if (instancesCount - lastShardingPointForThisInstance > TYPE_SHARD_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
                 LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardingPointForThisInstance + ". Need to shard");
                 shard(labelId);
                 session.lastShardingPoint.put(label, instancesCount);
