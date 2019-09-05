@@ -55,8 +55,4 @@ public class NodeSingle extends Node{
                 " answers: " + answers().size();
     }
 
-    @Override
-    public MultiNode asMultiNode() {
-        return new MultiNode(this);
-    }
 }

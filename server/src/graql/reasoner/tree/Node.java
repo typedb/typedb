@@ -49,6 +49,6 @@ public abstract class Node {
     public abstract void ackCompletion();
     public boolean isMultiNode(){ return false;}
 
-    public abstract MultiNode asMultiNode();
+    public MultiNode asMultiNode(){ throw new UnsupportedOperationException();}
 
 }

@@ -49,7 +49,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     private final Set<ConceptMap> answers = new HashSet<>();
     private final Set<ReasonerAtomicQuery> subGoals;
     private final Stack<ResolutionState> states = new Stack<>();
-    private final ResolutionTree tree;
+    private final ResolutionTree fullTree;
     private final ResolutionTree logTree;
 
     private ConceptMap nextAnswer = null;
@@ -61,7 +61,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         this.subGoals = subGoals;
         ResolutionState rootState = query.resolutionState(new ConceptMap(), new UnifierImpl(), null, subGoals);
         states.push(rootState);
-        this.tree = new ResolutionTree(rootState);
+        this.fullTree = new ResolutionTree(rootState);
         this.logTree = new ResolutionTree(rootState);
     }
 
@@ -79,7 +79,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             if (newState != null) {
 
                 newState.updateTreeProfile(logTree);
-                //tree.addChildToNode(newState.getParentState(), newState);
+                //fullTree.addChildToNode(newState.getParentState(), newState);
 
                 if (!state.isAnswerState()) states.push(state);
                 states.push(newState);
@@ -100,7 +100,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
         return nextAnswer;
     }
 
-    ResolutionTree getTree(){ return tree;}
+    ResolutionTree getTree(){ return fullTree;}
 
     private Boolean reiterate = null;
 
@@ -128,6 +128,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
                 LOG.info("iter: {} answers: {} dAns = {} time = {}", iter, answers.size(), dAns, System.currentTimeMillis() - startTime);
                 iter++;
                 states.push(query.resolutionState(new ConceptMap(), new UnifierImpl(), null, new HashSet<>()));
+
                 oldAns = answers.size();
                 startTime = System.currentTimeMillis();
                 return hasNext();

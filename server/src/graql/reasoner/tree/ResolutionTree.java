@@ -60,7 +60,8 @@ public class ResolutionTree {
         return childNode;
     }
 
-
-
+    public void clear(){
+        mapping.clear();
+    }
 }
 

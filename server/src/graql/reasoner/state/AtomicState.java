@@ -116,10 +116,18 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         if (getParentState() == null) return;
         AnswerPropagatorState parentCS = this;
         int CSstates = 0;
-        while(parentCS.getParentState() != null && !(parentCS.getParentState() instanceof ConjunctiveState)){
+        while(parentCS.getParentState() != null
+                && parentCS.getParentState() instanceof CumulativeState){
             parentCS = parentCS.getParentState();
             CSstates++;
         }
+
+        if (parentCS == this){
+            tree.addChildToNode(parentCS, this);
+            return;
+        }
+
+        //attachment if within cumulative state
         //if first state we attach to parent, else we add to last child of CS
         if (getParentState() == parentCS){
             tree.addChildToNode(parentCS,this);
@@ -127,7 +135,11 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             Node CSnode = tree.getNode(parentCS);
             List<Node> children = CSnode.children();
             if (children.size() == CSstates) {
-                ((MultiNode) children.get(children.size()-1)).addNode(new NodeSingle(this));
+                Node lastChild = children.get(children.size() - 1);
+                if (!lastChild.isMultiNode()){
+                    System.out.println();
+                }
+                lastChild.asMultiNode().addNode(new NodeSingle(this));
             } else {
                 tree.addChildToNode(parentCS, this);
             }
