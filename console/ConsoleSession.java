@@ -20,9 +20,11 @@ package grakn.core.console;
 
 import grakn.client.GraknClient;
 import grakn.client.exception.GraknClientException;
+import grakn.core.console.exception.GraknConsoleException;
 import grakn.core.console.printer.Printer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlQuery;
+import io.grpc.StatusRuntimeException;
 import jline.console.ConsoleReader;
 import jline.console.history.FileHistory;
 
@@ -82,11 +84,15 @@ public class ConsoleSession implements AutoCloseable {
     private final AtomicBoolean terminated = new AtomicBoolean(false);
 
 
-    ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException {
+    ConsoleSession(String serverAddress, String keyspace, boolean infer, PrintStream printOut, PrintStream printErr) throws IOException, GraknConsoleException {
         this.keyspace = keyspace;
         this.infer = infer;
-        this.client = new GraknClient(serverAddress);
-        this.session = client.session(keyspace);
+        try {
+            this.client = new GraknClient(serverAddress);
+            this.session = client.session(keyspace);
+        } catch (StatusRuntimeException grpcException) {
+            throw GraknConsoleException.unreachableServer(serverAddress, grpcException);
+        }
         this.consoleReader = new ConsoleReader(System.in, printOut);
         this.consoleReader.setPrompt(ANSI_PURPLE + session.keyspace().name() + ANSI_RESET + "> ");
         this.printErr = printErr;
@@ -142,10 +148,11 @@ public class ConsoleSession implements AutoCloseable {
                 rollback();
 
             } else if (input.equals(CLEAN)) {
-                clean();
-                consoleReader.flush();
-                return;
-
+                boolean cleaned = clean();
+                if (cleaned) {
+                    consoleReader.flush();
+                    return;
+                }
             } else if (input.equals(CLEAR)) {
                 consoleReader.clearScreen();
 
@@ -236,7 +243,12 @@ public class ConsoleSession implements AutoCloseable {
         }
     }
 
-    private void clean() throws IOException {
+    /**
+     *
+     * @return true if a clean took place, false otherwise
+     * @throws IOException
+     */
+    private boolean clean() throws IOException {
         // Get user confirmation to clean graph
         consoleReader.println("Are you sure? CLEAN command will delete the current keyspace and its content.");
         consoleReader.println("Type 'confirm' to continue: ");
@@ -249,8 +261,10 @@ public class ConsoleSession implements AutoCloseable {
             consoleReader.flush();
             client.keyspaces().delete(keyspace);
             consoleReader.println("Keyspace deleted: " + keyspace);
+            return true;
         } else {
             consoleReader.println("Clean command cancelled");
+            return false;
         }
     }
 

@@ -49,6 +49,6 @@ java_test(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":grakn-console-it"
+        ":grakn-console-it",
     ],
 )

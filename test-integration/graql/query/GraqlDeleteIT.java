@@ -22,6 +22,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
+import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -520,5 +521,30 @@ public class GraqlDeleteIT {
         exception.expect(GraqlException.class);
         exception.expectMessage(VARIABLE_OUT_OF_SCOPE.getMessage(new Variable("z")));
         tx.execute(Graql.match(var("x").isa("movie").has("title", var("y"))).get().sort("z"));
+    }
+
+
+    @Test
+    public void whenLimitingDelete_CorrectNumberAreDeleted() {
+        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        // load some schema and data
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(Graql.parse("define person sub entity;").asDefine());
+            tx.execute(Graql.parse("insert $x isa person; $y isa person; $z isa person; $a isa person; $b isa person;").asInsert());
+            tx.commit();
+        }
+
+        // try and delete two of the five
+        try (TransactionOLTP tx = session.transaction().write()) {
+            List<ConceptSet> deleted = tx.execute(Graql.parse("match $x isa person; delete $x; limit 2;").asDelete());
+            long conceptsDeleted = deleted.stream().flatMap(conceptSet -> conceptSet.set().stream()).count();
+            assertEquals(2, conceptsDeleted);
+
+            List<Numeric> count = tx.execute(Graql.parse("match $x isa person; get $x; count;").asGetAggregate());
+            assertEquals(3, count.get(0).number().intValue());
+        }
+
+        session.close()
+        ;
     }
 }
