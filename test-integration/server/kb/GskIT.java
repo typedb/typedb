@@ -20,9 +20,11 @@ package grakn.core.server.kb;
 
 import grakn.client.GraknClient;
 import grakn.core.rule.GraknTestServer;
+import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import org.janusgraph.core.JanusGraph;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -86,16 +88,20 @@ public class GskIT {
     static class TransactionOLTPIT {
         @ClassRule
         public static GraknTestServer graknTestServer = new GraknTestServer();
-        public SessionImpl session;
+        private JanusGraphFactory janusGraphFactory = new JanusGraphFactory(graknTestServer.serverConfig());
+        private SessionImpl session;
+        private JanusGraph janusGraph;
 
         @Before
         public void before() {
             session = graknTestServer.sessionWithNewKeyspace();
+            janusGraph = janusGraphFactory.openGraph(session.keyspace().name());
         }
 
         @After
         public void after() {
             session.close();
+            janusGraph.close();
         }
 
         @Test
@@ -133,6 +139,7 @@ public class GskIT {
                 tx.execute(insert(var("c").isa("company")).asInsert());
                 tx.commit();
             }
+
             // TODO: verify that 'person' is sharded
             // TODO: verify that 'company' is not sharded
         }
