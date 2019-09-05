@@ -21,6 +21,7 @@ package grakn.core.server.kb;
 import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
@@ -54,7 +55,6 @@ public class GskIT {
     private JanusGraphFactory janusGraphFactory = new JanusGraphFactory(graknTestServer.serverConfig());
     private SessionImpl session;
     private JanusGraph janusGraph;
-    private static final Logger LOG = LoggerFactory.getLogger(GskIT.class);
 
     @Before
     public void before() {
@@ -129,3 +129,23 @@ public class GskIT {
         }
     }
 }
+
+//public class GskIT {
+//    private static final Logger LOG = LoggerFactory.getLogger(GskIT.class);
+//
+//    @Test
+//    public void test() {
+//        LOG.info("hi");
+//        try (GraknClient graknClient = new GraknClient("localhost:48555")) {
+//            try (GraknClient.Session session = graknClient.session("ten_milion")) {
+//                try (GraknClient.Transaction tx = session.transaction().read()) {
+//                    long start = System.currentTimeMillis();
+//                    List<ConceptMap> results = tx.execute(Graql.parse("match $s isa sentence; get; limit 1;").asGet());
+//                    System.out.println("results = " + results.get(0).get("s"));
+//                    long elapsed = System.currentTimeMillis() - start;
+//                    System.out.println("elapsed = " + elapsed + "ms");
+//                }
+//            }
+//        }
+//    }
+//}
