@@ -22,12 +22,24 @@ import grakn.client.exception.GraknClientException;
 
 public class GraknConsoleException extends GraknClientException {
 
-    public GraknConsoleException(String error) {
+    protected GraknConsoleException(String error) {
         super(error);
     }
 
-    public GraknConsoleException(String error, RuntimeException e) {
+    protected GraknConsoleException(String error, RuntimeException e) {
         super(error, e);
+    }
+
+    public static GraknConsoleException create(String error) {
+        return new GraknConsoleException(error);
+    }
+
+    public static GraknConsoleException create(String error, RuntimeException e) {
+        return new GraknConsoleException(error, e);
+    }
+
+    public static GraknConsoleException unreachableServer(String serverAddress, RuntimeException e) {
+        return GraknConsoleException.create("Unable to create connection to Grakn instance at " + serverAddress, e);
     }
 
     @Override
