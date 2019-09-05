@@ -19,7 +19,6 @@
 package grakn.core.server.session.cache;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Sets;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
@@ -29,10 +28,9 @@ import grakn.core.server.session.TransactionOLTP;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Caches rules applicable to schema concepts and their conversion to InferenceRule object (parsing is expensive when large number of rules present).
@@ -69,7 +67,7 @@ public class RuleCache {
     public void updateRules(Type type, Rule rule) {
         Set<Rule> match = ruleMap.get(type);
         if (match.isEmpty()) {
-            getTypes(type, false).stream()
+            getTypes(type, false)
                     .flatMap(SchemaConcept::thenRules)
                     .forEach(r -> ruleMap.put(type, r));
         }
@@ -82,11 +80,14 @@ public class RuleCache {
      * @param direct true if type hierarchy shouldn't be included
      * @return relevant part (direct only or subs) of the type hierarchy of a type
      */
-    private Set<Type> getTypes(Type type, boolean direct) {
-        Set<Type> types = direct ? Sets.newHashSet(type) : type.subs().collect(toSet());
-        return type.isImplicit() ?
-                types.stream().flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label())))).collect(toSet()) :
-                types;
+    private Stream<? extends Type> getTypes(Type type, boolean direct) {
+        Stream<? extends Type> baseStream = direct ? Stream.of(type) : type.subs();
+        if (type.isImplicit()) {
+            return baseStream
+                    .flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label()))))
+                    .filter(Objects::nonNull);
+        }
+        return baseStream;
     }
 
     /**
@@ -125,7 +126,7 @@ public class RuleCache {
         Set<Rule> match = ruleMap.get(type);
         if (!match.isEmpty()) return match.stream();
 
-        return getTypes(type, direct).stream()
+        return getTypes(type, direct)
                 .flatMap(SchemaConcept::thenRules)
                 .filter(this::isRuleMatchable)
                 .peek(rule -> ruleMap.put(type, rule));
