@@ -95,7 +95,7 @@ public class Storage {
             ByteArrayOutputStream outputstream = new ByteArrayOutputStream();
 
             // Read the original Cassandra config from services/cassandra/cassandra.yaml into a String
-            byte[] oldConfigBytes = Files.readAllBytes(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME));
+            byte[] oldConfigBytes = Files.readAllBytes(graknHome.resolve(STORAGE_CONFIG_PATH).resolve(STORAGE_CONFIG_NAME));
             String oldConfig = new String(oldConfigBytes, StandardCharsets.UTF_8);
 
             // Convert the String of config values into a Map
@@ -127,7 +127,7 @@ public class Storage {
             // Write the new Cassandra config into the original file: services/cassandra/cassandra.yaml
             mapper.writeValue(outputstream, newConfigMap);
             String newConfigStr = outputstream.toString(StandardCharsets.UTF_8.name());
-            Files.write(Paths.get(STORAGE_CONFIG_PATH, STORAGE_CONFIG_NAME), newConfigStr.getBytes(StandardCharsets.UTF_8));
+            Files.write(graknHome.resolve(STORAGE_CONFIG_PATH).resolve(STORAGE_CONFIG_NAME), newConfigStr.getBytes(StandardCharsets.UTF_8));
 
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -158,6 +158,7 @@ public class Storage {
 
     public void clean() {
         Path dataDir = Paths.get(graknProperties.getProperty(ConfigKey.DATA_DIR));
+        dataDir = dataDir.isAbsolute() ? dataDir : graknHome.resolve(dataDir);
         System.out.print("Cleaning " + DISPLAY_NAME + "...");
         System.out.flush();
         try (Stream<Path> files = Files.walk(dataDir)) {

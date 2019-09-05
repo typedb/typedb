@@ -43,7 +43,6 @@ exit_if_java_not_found() {
 # main routine
 # =============================================
 
-cd "$GRAKN_HOME"
 exit_if_java_not_found
 
 if [ -z "$1" ]; then
