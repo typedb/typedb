@@ -94,8 +94,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -192,7 +190,7 @@ public class TransactionOLTP implements Transaction {
             session.graphLock().writeLock().lock();
             try {
                 session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-                shardIfNeeded();
+                createNewTypeShardWhenThresholdReached();
                 janusTransaction.commit();
                 cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             } finally {
@@ -200,7 +198,7 @@ public class TransactionOLTP implements Transaction {
             }
         } else {
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            shardIfNeeded();
+            createNewTypeShardWhenThresholdReached();
             janusTransaction.commit();
         }
         LOG.trace("Graph committed.");
@@ -227,14 +225,14 @@ public class TransactionOLTP implements Transaction {
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            shardIfNeeded();
+            createNewTypeShardWhenThresholdReached();
             janusTransaction.commit();
         } finally {
             session.graphLock().writeLock().unlock();
         }
     }
 
-    private void shardIfNeeded() {
+    private void createNewTypeShardWhenThresholdReached() {
         // TODO: make efficient
         List<Label> builtInLabels = Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role"));
         Map<Label, ConceptId> labels = new HashMap<>();
