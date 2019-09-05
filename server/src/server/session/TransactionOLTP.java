@@ -235,24 +235,13 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void createNewTypeShardWhenThresholdReached() {
-        // TODO: make efficient
-        List<Label> builtInLabels = Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role"));
-        Map<Label, ConceptId> labels = new HashMap<>();
-        for (Label label: transactionCache.getLabelCache().keySet()) {
-            if (!builtInLabels.contains(label)) {
-                Concept type = getType(label);
-                if (type != null) {
-                    labels.put(label, type.id());
-                }
-            }
-        }
-        labels.forEach((label, labelId) -> {
+        session.lastShardingPoint.forEach((label, count) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             session.lastShardingPoint.putIfAbsent(label, 0L);
             long lastShardingPointForThisInstance = session.lastShardingPoint.get(label);
             if (instancesCount - lastShardingPointForThisInstance > TYPE_SHARD_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
                 LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardingPointForThisInstance + ". Need to shard");
-                shard(labelId);
+                shard(getType(label).id());
                 session.lastShardingPoint.put(label, instancesCount);
             }
         });

@@ -70,6 +70,7 @@ public class GskIT {
 
     @Test
     public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
+        // TODO: verify if the counts are initialised
         TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(define(type("person").sub("entity")).asDefine());

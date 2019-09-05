@@ -27,6 +27,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -38,9 +39,13 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class represents a Grakn Session.
@@ -115,6 +120,13 @@ public class SessionImpl implements Session {
         if (keyspaceCache.isEmpty()) {
             copySchemaConceptLabelsToKeyspaceCache(tx);
         }
+
+        List<Label> builtInLabels =
+                Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role"));
+        Stream.concat(tx.getMetaConcept().subs(), Stream.concat(tx.getMetaConcept().subs(), tx.getMetaConcept().subs()))
+                .filter(e -> !builtInLabels.contains(e.label()))
+                .forEach(e -> lastShardingPoint.put(e.label(), keyspaceStatistics.count(tx, e.label())));
+
         tx.commit();
 
     }
@@ -178,7 +190,6 @@ public class SessionImpl implements Session {
         copyToCache(tx.getMetaRole());
         copyToCache(tx.getMetaRule());
     }
-
 
     /**
      * @return The graph cache which contains all the data cached and accessible by all transactions.
