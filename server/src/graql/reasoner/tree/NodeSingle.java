@@ -54,4 +54,9 @@ public class NodeSingle extends Node{
                 " Cost: " + totalTime() +
                 " answers: " + answers().size();
     }
+
+    @Override
+    public MultiNode asMultiNode() {
+        return new MultiNode(this);
+    }
 }

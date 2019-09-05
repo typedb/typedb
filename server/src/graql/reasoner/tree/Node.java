@@ -47,5 +47,8 @@ public abstract class Node {
     public List<Node> children(){ return new ArrayList<>(children);}
     public Set<ConceptMap> answers(){ return answers;}
     public abstract void ackCompletion();
+    public boolean isMultiNode(){ return false;}
+
+    public abstract MultiNode asMultiNode();
 
 }

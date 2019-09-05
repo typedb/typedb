@@ -21,13 +21,9 @@ package grakn.core.graql.reasoner.state;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.tree.Node;
-import grakn.core.graql.reasoner.tree.NodeSet;
 import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import graql.lang.statement.Variable;
-import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  *
@@ -88,9 +84,11 @@ public class AnswerState extends ResolutionState {
         //TODO this mapping is ambiguous for MultiNode states
         Node parent = tree.getNode(parentState);
         if (parent != null){
+            ConceptMap sub = getSubstitution();
             //Set<Variable> vars = parentState.getQuery().getVarNames();
             //parent.addAnswer(getSubstitution().project(vars));
-            parent.addAnswer(getSubstitution());
+            parent.addAnswer(sub);
+            if (parent.isMultiNode()) parent.asMultiNode().getNodes().forEach(node -> node.addAnswer(sub));
         }
     }
 

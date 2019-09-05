@@ -23,15 +23,17 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class NodeSet extends Node{
+public class MultiNode extends Node{
     private final Set<Node> nodes = new HashSet<>();
 
-    public NodeSet(Node node){
+    public MultiNode(Node node){
         nodes.add(node);
     }
 
     @Override
     public Stream<ResolutionState> getStates(){ return nodes.stream().flatMap(Node::getStates);}
+
+    public Stream<Node> getNodes(){ return nodes.stream();}
 
     public void addNode(Node node){ nodes.add(node);}
 
@@ -45,5 +47,11 @@ public class NodeSet extends Node{
                 " Cost:" + nodes.stream().mapToLong(Node::totalTime).sum() +
                 " answers: " + nodes.stream().mapToLong(n -> n.answers().size()).sum();
     }
+
+    @Override
+    public boolean isMultiNode(){ return true;}
+
+    @Override
+    public MultiNode asMultiNode() { return this; }
 }
 

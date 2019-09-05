@@ -102,7 +102,7 @@ final public class JanusGraphFactory {
                 .set(STORAGE_BACKEND, THRIFT_BACKEND)
                 .set(STORAGE_KEYSPACE, keyspace)
                 .set(STORAGE_FRAME_SIZE, 60)
-                .set("graph.replace-instance-if-exists", true);;
+                .set("graph.replace-instance-if-exists", true);
 
         //Load Passed in properties
         config.properties().forEach((key, value) -> {

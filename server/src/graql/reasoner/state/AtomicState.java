@@ -29,7 +29,7 @@ import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.tree.Node;
-import grakn.core.graql.reasoner.tree.NodeSet;
+import grakn.core.graql.reasoner.tree.MultiNode;
 import grakn.core.graql.reasoner.tree.NodeSingle;
 import grakn.core.graql.reasoner.tree.ResolutionTree;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
@@ -108,7 +108,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         NodeSingle node = new NodeSingle(this);
         return (grandParent instanceof ConjunctiveState)?
                 node :
-                new NodeSet(node);
+                new MultiNode(node);
     }
 
     @Override
@@ -127,7 +127,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
             Node CSnode = tree.getNode(parentCS);
             List<Node> children = CSnode.children();
             if (children.size() == CSstates) {
-                ((NodeSet) children.get(children.size()-1)).addNode(new NodeSingle(this));
+                ((MultiNode) children.get(children.size()-1)).addNode(new NodeSingle(this));
             } else {
                 tree.addChildToNode(parentCS, this);
             }
