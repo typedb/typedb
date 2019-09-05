@@ -69,6 +69,11 @@ public class GskIT {
     }
 
     @Test
+    public void verifyThatTypeShardIsInitialised() {
+        // TODO
+    }
+
+    @Test
     public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
         // TODO: verify if the counts are initialised
         TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
