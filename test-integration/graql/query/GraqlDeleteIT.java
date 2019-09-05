@@ -543,5 +543,8 @@ public class GraqlDeleteIT {
             List<Numeric> count = tx.execute(Graql.parse("match $x isa person; get $x; count;").asGetAggregate());
             assertEquals(3, count.get(0).number().intValue());
         }
+
+        session.close()
+        ;
     }
 }
