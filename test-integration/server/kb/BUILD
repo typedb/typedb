@@ -40,6 +40,9 @@ java_test(
             "//common:common",
             "//concept:concept",
             "//server:server",
+            "//test-integration/rule:grakn-test-server",
+            "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+            "//dependencies/maven/artifacts/com/google/guava:guava",
 
             # External dependencies from @graknlabs
             "@graknlabs_client_java//:client-java",
@@ -47,9 +50,10 @@ java_test(
 
             # External dependencies from Maven
             "//dependencies/maven/artifacts/commons-io:commons-io",
+            "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
             "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
             "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
-            "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
+            "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         ],
     data = ["//:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]

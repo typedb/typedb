@@ -18,12 +18,16 @@
 
 package grakn.core.server.kb;
 
+import com.google.common.collect.Sets;
 import grakn.client.GraknClient;
+import grakn.core.concept.ConceptId;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -33,116 +37,86 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Set;
+
 import static graql.lang.Graql.define;
 import static graql.lang.Graql.insert;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 // TODO: remove
 public class GskIT {
-    public static final Logger LOG = LoggerFactory.getLogger(GskIT.class);
+    @ClassRule
+    public static GraknTestServer graknTestServer = new GraknTestServer();
+    private JanusGraphFactory janusGraphFactory = new JanusGraphFactory(graknTestServer.serverConfig());
+    private SessionImpl session;
+    private JanusGraph janusGraph;
+    private static final Logger LOG = LoggerFactory.getLogger(GskIT.class);
 
-    @Test
-    public void limitQuery() {
-//        LOG.info("hi");
-//        try (GraknClient graknClient = new GraknClient("localhost:48555")) {
-//            try (GraknClient.Session session = graknClient.session("ten_milion")) {
-//                try (GraknClient.Transaction tx = session.transaction().read()) {
-//                    long start = System.currentTimeMillis();
-//                    tx.execute(Graql.parse("match $s isa sentence; get; limit 1;").asGet());
-//                    long elapsed = System.currentTimeMillis() - start;
-//                    System.out.println("elapsed = " + elapsed + "ms");
-//                }
-//            }
-//        }
+    @Before
+    public void before() {
+        session = graknTestServer.sessionWithNewKeyspace();
+        janusGraph = janusGraphFactory.openGraph(session.keyspace().name());
     }
 
-//    @Test
-//    public void a() {
-//        try (TransactionOLTP tx1 = session.transaction().write()) {
-//            tx1.execute(Graql.define(Graql.type("person").sub("entity")));
-//            tx1.commit();
-//        }
-//        try (TransactionOLTP tx1 = session.transaction().write()) {
-//            tx1.execute(insert(var("p").isa("person")));
-//            tx1.commit();
-//        }
-////        try (TransactionOLTP tx1 = session.transaction().write()) {
-////            tx1.shard(tx1.getEntityType("person").id());
-////            tx1.commit();
-////        }
-//        try (TransactionOLTP tx1 = session.transaction().write()) {
-//            tx1.execute(insert(var("p").isa("person")));
-//            tx1.commit();
-//        }
-////        try (TransactionOLTP tx1 = session.transaction().write()) {
-////            tx1.shard(tx1.getEntityType("person").id());
-////            tx1.commit();
-////        }
-//        try (TransactionOLTP tx1 = session.transaction().write()) {
-//            tx1.execute(insert(var("p").isa("person")));
-//            tx1.commit();
-//        }
-//    }
+    @After
+    public void after() {
+        session.close();
+        janusGraph.close();
+    }
 
-    static class TransactionOLTPIT {
-        @ClassRule
-        public static GraknTestServer graknTestServer = new GraknTestServer();
-        private JanusGraphFactory janusGraphFactory = new JanusGraphFactory(graknTestServer.serverConfig());
-        private SessionImpl session;
-        private JanusGraph janusGraph;
+    @Test
+    public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
+        TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(define(type("person").sub("entity")).asDefine());
+            tx.commit();
+        }
+        ConceptId p1;
+        try (TransactionOLTP tx = session.transaction().write()) {
+            p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
+            tx.commit();
+        }
+        Set<Vertex> typeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet();
+        assertEquals(1, typeShards.size());
+        Vertex typeShardForP1 = janusGraph.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
+        assertEquals(typeShards.iterator().next(), typeShardForP1);
+        ConceptId p2;
+        try (TransactionOLTP tx = session.transaction().write()) {
+            p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
+            tx.commit();
+        }
+        // TODO: verify that a new type shard is created
+        typeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet();
+        assertEquals(2, typeShards.size());
+        Vertex typeShardForP2 = janusGraph.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
+        assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
+    }
 
-        @Before
-        public void before() {
-            session = graknTestServer.sessionWithNewKeyspace();
-            janusGraph = janusGraphFactory.openGraph(session.keyspace().name());
+    @Test
+    public void verifyThatTypeShardingIsPerformedOnTheRightEntity() {
+        TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(define(type("person").sub("entity")).asDefine());
+            tx.execute(define(type("company").sub("entity")).asDefine());
+            tx.commit();
         }
 
-        @After
-        public void after() {
-            session.close();
-            janusGraph.close();
+        // insert two people and a company
+        try (TransactionOLTP tx = session.transaction().write()) {
+            tx.execute(insert(var("p").isa("person")).asInsert());
+            tx.execute(insert(var("p").isa("person")).asInsert());
+            tx.execute(insert(var("c").isa("company")).asInsert());
+            tx.commit();
         }
 
-        @Test
-        public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
-            TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
-            try (TransactionOLTP tx = session.transaction().write()) {
-                tx.execute(define(type("person").sub("entity")).asDefine());
-                tx.commit();
-            }
-            try (TransactionOLTP tx = session.transaction().write()) {
-                tx.execute(insert(var("p").isa("person")).asInsert());
-                tx.commit();
-            }
-            // TODO: verify that no new type shard
-            try (TransactionOLTP tx = session.transaction().write()) {
-                tx.execute(insert(var("p").isa("person")).asInsert());
-                tx.commit();
-            }
-            // TODO: verify that a new type shard is created for the type 'person'
-        }
-
-        @Test
-        public void verifyThatTypeShardingIsPerformedOnTheRightEntity() {
-            TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
-            try (TransactionOLTP tx = session.transaction().write()) {
-                tx.execute(define(type("person").sub("entity")).asDefine());
-                tx.execute(define(type("company").sub("entity")).asDefine());
-                tx.commit();
-            }
-
-            // insert two people and a company
-            try (TransactionOLTP tx = session.transaction().write()) {
-                tx.execute(insert(var("p").isa("person")).asInsert());
-                tx.execute(insert(var("p").isa("person")).asInsert());
-                tx.execute(insert(var("c").isa("company")).asInsert());
-                tx.commit();
-            }
-
-            // TODO: verify that 'person' is sharded
-            // TODO: verify that 'company' is not sharded
-        }
+        // TODO: verify that 'person' is sharded
+        //  - verify that a new type shard is created
+        //  - and is created for the type 'person'
+        // TODO: verify that 'company' is not sharded
     }
 
     static class TypeShardTest {
