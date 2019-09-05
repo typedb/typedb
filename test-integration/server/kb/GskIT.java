@@ -47,7 +47,7 @@ import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
-// TODO: remove
+
 public class GskIT {
     @ClassRule
     public static GraknTestServer graknTestServer = new GraknTestServer();
@@ -80,7 +80,7 @@ public class GskIT {
             p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
             tx.commit();
         }
-        Set<Vertex> typeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet();
+        Set<Vertex> typeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet(); // TODO: get the type shard of person entity-type
         assertEquals(1, typeShards.size());
         Vertex typeShardForP1 = janusGraph.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
         assertEquals(typeShards.iterator().next(), typeShardForP1);
@@ -97,26 +97,23 @@ public class GskIT {
     }
 
     @Test
-    public void verifyThatTypeShardingIsPerformedOnTheRightEntity() {
+    public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
         TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(define(type("person").sub("entity")).asDefine());
             tx.execute(define(type("company").sub("entity")).asDefine());
             tx.commit();
         }
-
-        // insert two people and a company
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(insert(var("p").isa("person")).asInsert());
             tx.execute(insert(var("p").isa("person")).asInsert());
             tx.execute(insert(var("c").isa("company")).asInsert());
             tx.commit();
         }
-
-        // TODO: verify that 'person' is sharded
-        //  - verify that a new type shard is created
-        //  - and is created for the type 'person'
-        // TODO: verify that 'company' is not sharded
+        Set<Vertex> personTypeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet(); // TODO: get the type shard of person entity-type
+        assertEquals(2, personTypeShards.size());
+        Set<Vertex> companyTypeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet(); // TODO: get the type shard of person entity-type
+        assertEquals(1, companyTypeShards.size());
     }
 
     static class TypeShardTest {
