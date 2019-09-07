@@ -18,6 +18,7 @@
 
 package grakn.core.graql.executor;
 
+import autovalue.shaded.com.google$.common.base.$Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
@@ -69,6 +70,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -284,10 +286,10 @@ public class QueryExecutor {
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
             answerStream = answers
-                    .map(answer -> WriteExecutor.create(transaction, executors.build()).write(answer))
-                    .collect(toList()).stream();
+                    .map(answer -> WriteExecutor.create(transaction, executors.build()).write(answer));
         } else {
-            answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
+            Supplier<ConceptMap> answerSupplier = () -> WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
+            answerStream = Stream.of(answerSupplier).map(Supplier::get);
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);
