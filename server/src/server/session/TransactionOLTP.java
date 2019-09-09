@@ -237,7 +237,7 @@ public class TransactionOLTP implements Transaction {
     private void createNewTypeShardsWhenThresholdReached() {
         session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
-            long lastShardCheckpointForThisInstance = getShardCheckpoint(label).orElse(0L);
+            long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
@@ -998,15 +998,15 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    private Optional<Long> getShardCheckpoint(Label label) {
+    private Long getShardCheckpoint(Label label) {
         Concept schemaConcept = getSchemaConcept(label);
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name());
-            return Optional.of((Long) property.orElse(0L));
+            return (Long) property.orElse(0L);
         }
         else {
-            return Optional.empty();
+            return 0L;
         }
     }
     /**
