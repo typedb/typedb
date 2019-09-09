@@ -22,7 +22,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.concept.ConceptId;
-import grakn.core.server.TypeShardCheckpoint;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
@@ -77,7 +76,6 @@ public class SessionFactory {
         StandardJanusGraph graph;
         KeyspaceCache cache;
         KeyspaceStatistics keyspaceStatistics;
-        TypeShardCheckpoint typeShardCheckpoint;
         Cache<String, ConceptId> attributesCache;
         ReadWriteLock graphLock;
         HadoopGraph hadoopGraph;
@@ -92,7 +90,6 @@ public class SessionFactory {
                 graph = cacheContainer.graph();
                 cache = cacheContainer.cache();
                 keyspaceStatistics = cacheContainer.keyspaceStatistics();
-                typeShardCheckpoint = cacheContainer.getTypeShardCheckpoint();
                 attributesCache = cacheContainer.attributesCache();
                 graphLock = cacheContainer.graphLock();
                 hadoopGraph = cacheContainer.hadoopGraph();
@@ -102,14 +99,13 @@ public class SessionFactory {
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceCache();
                 keyspaceStatistics = new KeyspaceStatistics();
-                typeShardCheckpoint = new TypeShardCheckpoint();
                 attributesCache = buildAttributeCache();
                 graphLock = new ReentrantReadWriteLock();
-                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, typeShardCheckpoint, attributesCache, graphLock, hadoopGraph);
+                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock, hadoopGraph);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
 
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, typeShardCheckpoint, attributesCache, graphLock);
+            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
@@ -193,8 +189,6 @@ public class SessionFactory {
         // Shared keyspace statistics
         private final KeyspaceStatistics keyspaceStatistics;
 
-        private TypeShardCheckpoint typeShardCheckpoint;
-
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that concurrent transactions can merge the same attribute indexes using a unique id
         private final Cache<String, ConceptId> attributesCache;
@@ -202,13 +196,12 @@ public class SessionFactory {
         private final ReadWriteLock graphLock;
 
         // Keep visibility to public as this is used by KGMS
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, TypeShardCheckpoint typeShardCheckpoint, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
+        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceCache = keyspaceCache;
             this.graph = graph;
             this.hadoopGraph = hadoopGraph;
             this.sessions = new ArrayList<>();
             this.keyspaceStatistics = keyspaceStatistics;
-            this.typeShardCheckpoint = typeShardCheckpoint;
             this.attributesCache = attributesCache;
             this.graphLock = graphLock;
         }
@@ -250,10 +243,6 @@ public class SessionFactory {
         // Keep visibility to public as this is used by KGMS
         public KeyspaceStatistics keyspaceStatistics() {
             return keyspaceStatistics;
-        }
-
-        public TypeShardCheckpoint getTypeShardCheckpoint() {
-            return typeShardCheckpoint;
         }
 
         // Keep visibility to public as this is used by KGMS

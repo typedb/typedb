@@ -50,6 +50,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.ConceptVertex;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
@@ -77,6 +78,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
@@ -90,6 +92,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -234,11 +237,11 @@ public class TransactionOLTP implements Transaction {
     private void createNewTypeShardsWhenThresholdReached() {
         session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
-            long lastShardCheckpointForThisInstance = session.typeShardCheckpoint.get(this, label).orElse(0L);
+            long lastShardCheckpointForThisInstance = getShardCheckpoint(label).orElse(0L);
             if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
-                session.typeShardCheckpoint.set(this, label, instancesCount);
+                setShardCheckpoint(label, instancesCount);
             }
         });
     }
@@ -984,6 +987,28 @@ public class TransactionOLTP implements Transaction {
         type.createShard();
     }
 
+    private void setShardCheckpoint(Label label, long checkpoint) {
+        Concept schemaConcept = getSchemaConcept(label);
+        if (schemaConcept != null) {
+            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+            janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name(), checkpoint);
+        }
+        else {
+            throw new RuntimeException("Label '" + label.getValue() + "' does not exist");
+        }
+    }
+
+    private Optional<Long> getShardCheckpoint(Label label) {
+        Concept schemaConcept = getSchemaConcept(label);
+        if (schemaConcept != null) {
+            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name());
+            return Optional.of((Long) property.orElse(0L));
+        }
+        else {
+            return Optional.empty();
+        }
+    }
     /**
      * Returns the current number of shards the provided grakn.core.concept.type.Type has. This is used in creating more
      * efficient query plans.

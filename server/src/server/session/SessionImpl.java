@@ -26,7 +26,6 @@ import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.TypeShardCheckpoint;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -67,7 +66,6 @@ public class SessionImpl implements Session {
     private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
-    public TypeShardCheckpoint typeShardCheckpoint;
 
     private boolean isClosed = false;
 
@@ -78,8 +76,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, TypeShardCheckpoint typeShardCheckpoint, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, typeShardCheckpoint, attributesCache, graphLock);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
     /**
@@ -91,7 +89,7 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
      public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TypeShardCheckpoint typeShardCheckpoint,
+                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
                         Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
@@ -101,7 +99,6 @@ public class SessionImpl implements Session {
 
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
-        this.typeShardCheckpoint = typeShardCheckpoint;
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
