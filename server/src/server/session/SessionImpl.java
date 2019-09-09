@@ -61,7 +61,7 @@ public class SessionImpl implements Session {
 
     private final KeyspaceImpl keyspace;
     private final Config config;
-    public final StandardJanusGraph graph; // TODO: revert
+    private final StandardJanusGraph graph;
     private final KeyspaceCache keyspaceCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final Cache<String, ConceptId> attributesCache;

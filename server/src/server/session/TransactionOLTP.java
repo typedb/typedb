@@ -101,7 +101,7 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    public static int TYPE_SHARD_CHECKPOINT_THRESHOLD = 250001;
+    public static int TYPE_SHARD_CHECKPOINT_THRESHOLD = 250000;
 
     // Shared Variables
     private final SessionImpl session;
@@ -235,7 +235,7 @@ public class TransactionOLTP implements Transaction {
         session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             long lastShardCheckpointForThisInstance = session.typeShardCheckpoint.get(this, label).orElse(0L);
-            if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+            if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
                 session.typeShardCheckpoint.set(this, label, instancesCount);

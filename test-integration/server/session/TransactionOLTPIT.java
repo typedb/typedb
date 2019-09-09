@@ -403,9 +403,9 @@ public class TransactionOLTPIT {
         }
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(server.serverConfig());
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            Set<Vertex> personTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet(); // TODO: get the type shard of person entity-type
+            Set<Vertex> personTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, personTypeShards.size());
-            Set<Vertex> companyTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet(); // TODO: get the type shard of person entity-type
+            Set<Vertex> companyTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet();
             assertEquals(1, companyTypeShards.size());
         }
     }
