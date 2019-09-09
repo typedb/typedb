@@ -45,7 +45,7 @@ public class GskIT {
     private JanusGraphFactory janusGraphFactory = new JanusGraphFactory(graknTestServer.serverConfig());
 
     @Test
-    public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReachedz() {
+    public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
         KeyspaceImpl keyspace;
         TransactionOLTP.TYPE_SHARD_CHECKPOINT_THRESHOLD = 1;
         try (SessionImpl session = graknTestServer.sessionWithNewKeyspace()) {

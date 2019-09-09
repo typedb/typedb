@@ -236,7 +236,7 @@ public class TransactionOLTP implements Transaction {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             long lastShardCheckpointForThisInstance = session.typeShardCheckpoint.get(this, label).orElse(0L);
             if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
-                LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Need to shard");
+                LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
                 session.typeShardCheckpoint.set(this, label, instancesCount);
             }
