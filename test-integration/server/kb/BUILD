@@ -37,6 +37,7 @@ java_test(
     test_class = "grakn.core.server.kb.GskIT",
     deps = [
             # Internal dependencies
+            "//api:api",
             "//common:common",
             "//concept:concept",
             "//server:server",
