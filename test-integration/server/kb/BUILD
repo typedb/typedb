@@ -52,6 +52,5 @@ checkstyle_test(
         ":validator-it",
         ":validate-global-rules-it",
         ":rule-validation-it",
-        ":gsk-it" # TODO: remove
     ],
 )
