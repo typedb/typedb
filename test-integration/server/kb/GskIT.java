@@ -27,8 +27,6 @@ import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraph;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -39,7 +37,6 @@ import static graql.lang.Graql.insert;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 
 public class GskIT {
@@ -48,65 +45,83 @@ public class GskIT {
     private JanusGraphFactory janusGraphFactory = new JanusGraphFactory(graknTestServer.serverConfig());
 
     @Test
-    public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
-        KeyspaceImpl keyspace1;
+    public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReachedz() {
+        KeyspaceImpl keyspace;
         TransactionOLTP.TYPE_SHARD_CHECKPOINT_THRESHOLD = 1;
-        try (SessionImpl session1 = graknTestServer.sessionWithNewKeyspace()) {
-            keyspace1 = session1.keyspace();
-            try (TransactionOLTP tx = session1.transaction().write()) {
+        try (SessionImpl session = graknTestServer.sessionWithNewKeyspace()) {
+            keyspace = session.keyspace();
+            try (TransactionOLTP tx = session.transaction().write()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
         }
-        try (JanusGraph janusGraph1 = janusGraphFactory.openGraph(keyspace1.name())) {
-            assertEquals(1, janusGraph1.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            assertEquals(1, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
         }
         ConceptId p1;
-        try (SessionImpl session1 = graknTestServer.session(keyspace1)) {
-            try (TransactionOLTP tx = session1.transaction().write()) {
+        try (SessionImpl session = graknTestServer.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
             }
         }
         Vertex typeShardForP1;
-        try (JanusGraph janusGraph1 = janusGraphFactory.openGraph(keyspace1.name())) {
-            assertEquals(1, janusGraph1.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
-            typeShardForP1 = janusGraph1.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
-            assertEquals(janusGraph1.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().iterator().next(), typeShardForP1);
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            assertEquals(1, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
+            typeShardForP1 = janusGraph.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
+            assertEquals(janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().iterator().next(), typeShardForP1);
         }
         ConceptId p2;
-        try (SessionImpl session1 = graknTestServer.session(keyspace1)) {
-            try (TransactionOLTP tx = session1.transaction().write()) {
+        try (SessionImpl session = graknTestServer.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
             }
         }
-        try (JanusGraph janusGraph1 = janusGraphFactory.openGraph(keyspace1.name())) {
-            assertEquals(2, janusGraph1.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
-            Vertex typeShardForP2 = janusGraph1.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
-            assertEquals(Sets.difference(janusGraph1.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet(), Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            assertEquals(2, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
+            Vertex typeShardForP2 = janusGraph.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
+            assertEquals(Sets.difference(janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet(), Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
         }
     }
 
-//    @Test
-//    public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
-//        TransactionOLTP.TYPE_SHARD_CHECKPOINT_THRESHOLD = 1;
-//        try (TransactionOLTP tx = session.transaction().write()) {
-//            tx.execute(define(type("person").sub("entity")).asDefine());
-//            tx.execute(define(type("company").sub("entity")).asDefine());
-//            tx.commit();
-//        }
-//        try (TransactionOLTP tx = session.transaction().write()) {
-//            tx.execute(insert(var("p").isa("person")).asInsert());
-//            tx.execute(insert(var("p").isa("person")).asInsert());
-//            tx.execute(insert(var("c").isa("company")).asInsert());
-//            tx.commit();
-//        }
-//        Set<Vertex> personTypeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet(); // TODO: get the type shard of person entity-type
-//        assertEquals(2, personTypeShards.size());
-//        Set<Vertex> companyTypeShards = janusGraph.traversal().V().hasLabel(Schema.VertexProperty.SCHEMA_LABEL.name(), "SHARD").toSet(); // TODO: get the type shard of person entity-type
-//        assertEquals(1, companyTypeShards.size());
-//    }
+    @Test
+    public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
+        KeyspaceImpl keyspace;
+        TransactionOLTP.TYPE_SHARD_CHECKPOINT_THRESHOLD = 1;
+        try (SessionImpl session = graknTestServer.sessionWithNewKeyspace()) {
+            keyspace = session.keyspace();
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(define(type("person").sub("entity")).asDefine());
+                tx.execute(define(type("company").sub("entity")).asDefine());
+                tx.commit();
+            }
+        }
+        try (SessionImpl session = graknTestServer.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.commit();
+            }
+        }
+        try (SessionImpl session = graknTestServer.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.commit();
+            }
+        }
+        try (SessionImpl session = graknTestServer.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("c").isa("company")).asInsert());
+                tx.commit();
+            }
+        }
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            Set<Vertex> personTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet(); // TODO: get the type shard of person entity-type
+            assertEquals(3, personTypeShards.size());
+            Set<Vertex> companyTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet(); // TODO: get the type shard of person entity-type
+            assertEquals(1, companyTypeShards.size());
+        }
+    }
 
 }
 
