@@ -232,7 +232,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
-        session.getKeyspaceCache().getCachedLabels().forEach((label, count) -> {
+        session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             long lastShardCheckpointForThisInstance = session.typeShardCheckpoint.get(this, label).orElse(0L);
             if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)

@@ -26,7 +26,7 @@ public class TypeShardCheckpoint {
         Concept schemaConcept = tx.getSchemaConcept(label);
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name());
+            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_LAST_CHECKPOINT.name());
             return Optional.of((Long) property.orElse(0L));
         }
         else {
