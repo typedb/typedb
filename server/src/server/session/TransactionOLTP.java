@@ -101,7 +101,7 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    public static int TYPE_SHARD_THRESHOLD = 250001;
+    public static int TYPE_SHARD_CHECKPOINT_THRESHOLD = 250001;
 
     // Shared Variables
     private final SessionImpl session;
@@ -232,14 +232,13 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
-        session.lastShardingPoint.forEach((label, count) -> {
+        session.getKeyspaceCache().getCachedLabels().forEach((label, count) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
-            session.lastShardingPoint.putIfAbsent(label, 0L);
-            long lastShardingPointForThisInstance = session.lastShardingPoint.get(label);
-            if (instancesCount - lastShardingPointForThisInstance >= TYPE_SHARD_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
-                LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardingPointForThisInstance + ". Need to shard");
+            long lastShardCheckpointForThisInstance = session.typeShardCheckpoint.get(this, label).orElse(0L);
+            if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+                LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Need to shard");
                 shard(getType(label).id());
-                session.lastShardingPoint.put(label, instancesCount);
+                session.typeShardCheckpoint.set(this, label, instancesCount);
             }
         });
     }

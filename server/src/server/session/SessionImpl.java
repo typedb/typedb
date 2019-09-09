@@ -25,9 +25,8 @@ import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
 import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.core.server.TypeShardCheckpoint;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -39,13 +38,8 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * This class represents a Grakn Session.
@@ -73,7 +67,7 @@ public class SessionImpl implements Session {
     private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
     private Consumer<SessionImpl> onClose;
-    public ConcurrentHashMap<Label, Long> lastShardingPoint;
+    public TypeShardCheckpoint typeShardCheckpoint;
 
     private boolean isClosed = false;
 
@@ -84,8 +78,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<Label, Long> lastShardingPoint, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, lastShardingPoint, attributesCache, graphLock);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, TypeShardCheckpoint typeShardCheckpoint, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, typeShardCheckpoint, attributesCache, graphLock);
     }
 
     /**
@@ -97,7 +91,7 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
      public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, ConcurrentHashMap<Label, Long> lastShardingPoint,
+                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TypeShardCheckpoint typeShardCheckpoint,
                         Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
@@ -107,7 +101,7 @@ public class SessionImpl implements Session {
 
         this.keyspaceCache = keyspaceCache;
         this.keyspaceStatistics = keyspaceStatistics;
-        this.lastShardingPoint = lastShardingPoint;
+        this.typeShardCheckpoint = typeShardCheckpoint;
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
@@ -120,12 +114,6 @@ public class SessionImpl implements Session {
         if (keyspaceCache.isEmpty()) {
             copySchemaConceptLabelsToKeyspaceCache(tx);
         }
-
-        List<Label> builtInLabels =
-                Arrays.asList(Label.of("thing"), Label.of("entity"), Label.of("relation"), Label.of("rule"), Label.of("attribute"), Label.of("role"));
-        Stream.concat(tx.getMetaConcept().subs(), Stream.concat(tx.getMetaConcept().subs(), tx.getMetaConcept().subs()))
-                .filter(e -> !builtInLabels.contains(e.label()))
-                .forEach(e -> lastShardingPoint.put(e.label(), keyspaceStatistics.count(tx, e.label())));
 
         tx.commit();
 

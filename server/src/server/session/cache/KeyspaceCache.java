@@ -92,7 +92,7 @@ public class KeyspaceCache {
      *
      * @return an immutable copy of the cached labels.
      */
-    private Map<Label, LabelId> getCachedLabels() {
+    public Map<Label, LabelId> getCachedLabels() {
         return ImmutableMap.copyOf(cachedLabels);
     }
 
