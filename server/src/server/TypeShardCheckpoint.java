@@ -33,7 +33,7 @@ public class TypeShardCheckpoint {
         Concept schemaConcept = tx.getSchemaConcept(label);
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-            janusVertex.property(Schema.VertexProperty.TYPE_SHARD_LAST_CHECKPOINT.name(), checkpoint);
+            janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name(), checkpoint);
         }
         else {
             throw new RuntimeException("Label '" + label.getValue() + "' does not exist");
@@ -44,7 +44,7 @@ public class TypeShardCheckpoint {
         Concept schemaConcept = tx.getSchemaConcept(label);
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_LAST_CHECKPOINT.name());
+            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name());
             return Optional.of((Long) property.orElse(0L));
         }
         else {
