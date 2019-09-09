@@ -84,14 +84,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -191,16 +188,16 @@ public class TransactionOLTP implements Transaction {
             // contains attributes that we are removing in this transaction.
             session.graphLock().writeLock().lock();
             try {
+                createNewTypeShardsWhenThresholdReached();
                 session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-                createNewTypeShardWhenThresholdReached();
                 janusTransaction.commit();
                 cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             } finally {
                 session.graphLock().writeLock().unlock();
             }
         } else {
+            createNewTypeShardsWhenThresholdReached();
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            createNewTypeShardWhenThresholdReached();
             janusTransaction.commit();
         }
         LOG.trace("Graph committed.");
@@ -211,6 +208,7 @@ public class TransactionOLTP implements Transaction {
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
         try {
+            createNewTypeShardsWhenThresholdReached();
             cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
                 // If the same index is contained in attributesCache, it means
@@ -227,19 +225,18 @@ public class TransactionOLTP implements Transaction {
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            createNewTypeShardWhenThresholdReached();
             janusTransaction.commit();
         } finally {
             session.graphLock().writeLock().unlock();
         }
     }
 
-    private void createNewTypeShardWhenThresholdReached() {
+    private void createNewTypeShardsWhenThresholdReached() {
         session.lastShardingPoint.forEach((label, count) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             session.lastShardingPoint.putIfAbsent(label, 0L);
             long lastShardingPointForThisInstance = session.lastShardingPoint.get(label);
-            if (instancesCount - lastShardingPointForThisInstance > TYPE_SHARD_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
+            if (instancesCount - lastShardingPointForThisInstance >= TYPE_SHARD_THRESHOLD) { // TODO: make it a constant (but no need to expose it in grakn.properties)
                 LOG.info(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardingPointForThisInstance + ". Need to shard");
                 shard(getType(label).id());
                 session.lastShardingPoint.put(label, instancesCount);
