@@ -22,7 +22,7 @@
 
     <!--Configure a properties file (located on the classpath) from which values can be referenced-->
     <property resource="grakn.properties"/>
-    <property name="configuredLogDir" value="${log.dirs}" />
+    <property name="configuredLogDir" value="${grakn.dir}/${log.dirs}" />
 
 
     <!--Configure the standard out appender used to print the Grakn logo-->
