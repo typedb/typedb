@@ -333,7 +333,7 @@ public class TransactionOLTPIT {
     public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(server.serverConfig());
         KeyspaceImpl keyspace;
-        TransactionOLTP.TYPE_SHARD_CHECKPOINT_THRESHOLD = 1;
+        TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             keyspace = session.keyspace();
             try (TransactionOLTP tx = session.transaction().write()) {
@@ -374,7 +374,7 @@ public class TransactionOLTPIT {
     @Test
     public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
         KeyspaceImpl keyspace;
-        TransactionOLTP.TYPE_SHARD_CHECKPOINT_THRESHOLD = 1;
+        TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             keyspace = session.keyspace();
             try (TransactionOLTP tx = session.transaction().write()) {

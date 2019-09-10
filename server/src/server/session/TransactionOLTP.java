@@ -92,7 +92,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -104,7 +103,7 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    public static int TYPE_SHARD_CHECKPOINT_THRESHOLD = 250000;
+    public final long TYPE_SHARD_THRESHOLD;
 
     // Shared Variables
     private final SessionImpl session;
@@ -164,6 +163,8 @@ public class TransactionOLTP implements Transaction {
         this.transactionCache = new TransactionCache(keyspaceCache);
 
         this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
+
+        TYPE_SHARD_THRESHOLD = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
 
     }
 
@@ -238,7 +239,7 @@ public class TransactionOLTP implements Transaction {
         session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
-            if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_CHECKPOINT_THRESHOLD) {
+            if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_THRESHOLD) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
                 setShardCheckpoint(label, instancesCount);
@@ -444,7 +445,7 @@ public class TransactionOLTP implements Transaction {
      * @return the number of instances a grakn.core.concept.type.Type must have before it is shareded
      */
     public long shardingThreshold() {
-        return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
+        return session().config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
     }
 
     public TransactionCache cache() {
