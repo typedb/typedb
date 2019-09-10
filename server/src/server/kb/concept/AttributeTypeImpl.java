@@ -18,16 +18,19 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BiFunction;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import javax.annotation.Nullable;
 
 /**
  * An ontological element which models and categorises the various Attribute in the graph.
@@ -123,19 +126,19 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             return vertex().tx().factory().buildAttribute(vertex, type, value);
         };
 
-        return putInstance(Schema.BaseType.ATTRIBUTE, value, instanceBuilder, isInferred);
+        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attributeWithLock(value), instanceBuilder, isInferred);
     }
 
     /**
      * Utility method used to create or find an instance of this type
      *
      * @param instanceBaseType The base type of the instances of this type
-     * @param value           Tthe value of the sought attribute
+     * @param finder           The method to find the instrance if it already exists
      * @param producer         The factory method to produce the instance if it doesn't exist
      * @return A new or already existing instance
      */
-    private Attribute<D> putInstance(Schema.BaseType instanceBaseType, D value, BiFunction<VertexElement, AttributeType<D>, Attribute<D>> producer, boolean isInferred) {
-        Attribute<D> instance = attribute(value);
+    private Attribute<D> putInstance(Schema.BaseType instanceBaseType, Supplier<Attribute<D>> finder, BiFunction<VertexElement, AttributeType<D>, Attribute<D>> producer, boolean isInferred) {
+        Attribute<D> instance = finder.get();
         if (instance == null) {
             instance = addInstance(instanceBaseType, producer, isInferred);
         } else {
@@ -167,6 +170,20 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
         return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+    }
+
+    /**
+     * This is only used when checking if attribute exists before trying to create a new one.
+     * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
+     */
+    private Attribute<D> attributeWithLock(D value) {
+        String index = Schema.generateAttributeIndex(label(), value.toString());
+        vertex().tx().session().graphLock().readLock().lock();
+        try {
+            return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+        } finally {
+            vertex().tx().session().graphLock().readLock().unlock();
+        }
     }
 
     /**
