@@ -103,7 +103,7 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    private long TYPE_SHARD_THRESHOLD;
+    private final long typeShardThreshold;
 
     // Shared Variables
     private final SessionImpl session;
@@ -164,7 +164,7 @@ public class TransactionOLTP implements Transaction {
 
         this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
 
-        TYPE_SHARD_THRESHOLD = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
 
     }
 
@@ -239,7 +239,7 @@ public class TransactionOLTP implements Transaction {
         session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label);
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
-            if (instancesCount - lastShardCheckpointForThisInstance >= TYPE_SHARD_THRESHOLD) {
+            if (instancesCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
                 setShardCheckpoint(label, instancesCount);
