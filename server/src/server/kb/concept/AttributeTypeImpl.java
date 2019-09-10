@@ -25,6 +25,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
+import grakn.core.server.session.cache.TransactionCache;
 import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -169,6 +170,11 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
+
+        TransactionCache txCache = vertex().tx().cache();
+        Attribute concept = txCache.getAttributeCache().get(index);
+        if (concept != null) return concept;
+
         return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
     }
 
@@ -178,6 +184,11 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     private Attribute<D> attributeWithLock(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
+
+        TransactionCache txCache = vertex().tx().cache();
+        Attribute concept = txCache.getAttributeCache().get(index);
+        if (concept != null) return concept;
+
         vertex().tx().session().graphLock().readLock().lock();
         try {
             return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);

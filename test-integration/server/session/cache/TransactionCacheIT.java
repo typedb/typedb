@@ -60,6 +60,8 @@ import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 
@@ -369,6 +371,22 @@ public class TransactionCacheIT {
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
         attribute.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
+    }
+
+    @Test
+    public void whenInsertingAndDeletingAttribute_attributeCachedIsUpdated(){
+        AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
+        String value = "banana";
+        Attribute attribute = AttributeTypeImpl.from(attributeType).create(value);
+        String index = Schema.generateAttributeIndex(attributeType.label(), value);
+
+        Attribute cachedAttribute = tx.cache().getAttributeCache().get(index);
+        assertNotNull(cachedAttribute);
+        assertEquals(attribute, cachedAttribute);
+        assertEquals(attribute, attributeType.attribute(value));
+
+        attribute.delete();
+        assertNull(tx.cache().getAttributeCache().get(index));
     }
 
     @Test
