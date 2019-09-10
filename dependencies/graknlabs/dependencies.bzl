@@ -54,9 +54,10 @@ def graknlabs_client_java():
      )
 
 def graknlabs_console():
-    native.local_repository(
+    git_repository(
         name = "graknlabs_console",
-        path = "/Users/haikalpribadi/Workspace/repos/graknlabs/console",
+        remote = "https://github.com/graknlabs/console",
+        commit = "6315c1321945f4844c8a2862f2a172d82e4c9618"
     )
 
 def graknlabs_benchmark():
