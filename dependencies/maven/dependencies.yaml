@@ -146,11 +146,6 @@ dependencies:
       version: "3.1.0"
       lang: java
 
-  jline:
-    jline:
-      version: "2.12"
-      lang: java
-
   junit:
     junit:
       version: "4.12"

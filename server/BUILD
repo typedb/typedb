@@ -126,7 +126,7 @@ java_deps(
 assemble_targz(
     name = "assemble-linux-targz",
     output_filename = "grakn-core-server-linux",
-    targets = [":server-deps", "//bin:assemble-bash-targz"],
+    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -149,7 +149,7 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     output_filename = "grakn-core-server-mac",
-    targets = [":server-deps", "//bin:assemble-bash-targz"],
+    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
@@ -172,7 +172,7 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     output_filename = "grakn-core-server-windows",
-    targets = [":server-deps", "//bin:assemble-bat-targz"],
+    targets = [":server-deps", "@graknlabs_common//bin:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
