@@ -56,6 +56,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -333,8 +336,11 @@ public class TransactionOLTPIT {
     }
 
     @Test
-    public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() {
-        Config config = server.serverConfig();
+    public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() throws IOException {
+        Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
+        tmpConfig.toFile().deleteOnExit();
+        server.serverConfig().write(tmpConfig.toFile());
+        Config config = Config.read(tmpConfig);
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
         SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
@@ -377,8 +383,11 @@ public class TransactionOLTPIT {
     }
 
     @Test
-    public void whenThresholdIsReachedForAGivenType_ensureThatTypeShardIsCreatedForThatTypeOnly() {
-        Config config = server.serverConfig();
+    public void whenThresholdIsReachedForAGivenType_ensureThatTypeShardIsCreatedForThatTypeOnly() throws IOException {
+        Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
+        tmpConfig.toFile().deleteOnExit();
+        server.serverConfig().write(tmpConfig.toFile());
+        Config config = Config.read(tmpConfig);
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
         SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
