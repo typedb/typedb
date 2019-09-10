@@ -20,7 +20,7 @@ java_test(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
-    data = ["//:assemble-mac-zip"],
+    data = ["//server:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 

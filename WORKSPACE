@@ -26,15 +26,19 @@ workspace(name = "graknlabs_grakn_core")
 load(
     "//dependencies/graknlabs:dependencies.bzl",
     "graknlabs_build_tools",
+    "graknlabs_common",
     "graknlabs_graql",
     "graknlabs_protocol",
     "graknlabs_client_java",
+    "graknlabs_console",
     "graknlabs_benchmark"
 )
 graknlabs_build_tools()
+graknlabs_common()
 graknlabs_graql()
 graknlabs_protocol()
 graknlabs_client_java()
+graknlabs_console()
 graknlabs_benchmark()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")
@@ -101,9 +105,9 @@ graknlabs_graql_maven_dependencies = "maven_dependencies")
 graknlabs_graql_maven_dependencies()
 
 
-###########################
+###############################
 # Load Benchmark dependencies #
-###########################
+###############################
 load("@graknlabs_benchmark//dependencies/maven:dependencies.bzl",
 graknlabs_benchmark_maven_dependencies = "maven_dependencies")
 graknlabs_benchmark_maven_dependencies()

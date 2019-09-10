@@ -12,7 +12,7 @@ java_test(
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
         "@graknlabs_client_java//:client-java",
     ],
-    data = ["//:assemble-mac-zip"],
+    data = ["//server:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
@@ -27,7 +27,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec"
     ],
-    data = ["//:assemble-mac-zip"],
+    data = ["//server:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 java_test(
@@ -45,7 +45,7 @@ java_test(
         "@graknlabs_graql//java:graql",
     ],
     size = "large",
-    data = ["//:assemble-mac-zip"],
+    data = ["//server:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
@@ -69,7 +69,7 @@ java_test(
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api"
     ],
-    data = ["//:assemble-mac-zip"],
+    data = ["//server:assemble-mac-zip"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
 

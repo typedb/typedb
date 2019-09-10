@@ -16,4 +16,4 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["grakn-core-bin.spec", "grakn-core-console.spec", "grakn-core-server.spec", "grakn-core-all.spec"])
+exports_files(["grakn-core-server.spec", "grakn-core-all.spec"])
