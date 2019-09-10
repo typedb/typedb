@@ -988,6 +988,10 @@ public class TransactionOLTP implements Transaction {
         type.createShard();
     }
 
+    /**
+     * Set a new type shard checkpoint for a given label
+     * @param label
+     */
     private void setShardCheckpoint(Label label, long checkpoint) {
         Concept schemaConcept = getSchemaConcept(label);
         if (schemaConcept != null) {
@@ -999,6 +1003,11 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
+    /**
+     * Get the checkpoint in which type shard was last created
+     * @param label
+     * @return the checkpoint for the given label. if the label does not exist, return 0
+     */
     private Long getShardCheckpoint(Label label) {
         Concept schemaConcept = getSchemaConcept(label);
         if (schemaConcept != null) {
