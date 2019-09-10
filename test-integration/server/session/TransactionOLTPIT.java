@@ -19,6 +19,8 @@
 package grakn.core.server.session;
 
 import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
@@ -38,6 +40,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.util.LockManager;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
@@ -331,12 +334,14 @@ public class TransactionOLTPIT {
 
     @Test
     public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(server.serverConfig());
-        KeyspaceImpl keyspace;
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        Config config = server.serverConfig();
+        config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
+        KeyspaceImpl keyspace = server.randomKeyspaceName();
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
             try (TransactionOLTP tx = session.transaction().write()) {
-                tx.TYPE_SHARD_THRESHOLD = 1;
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
@@ -345,7 +350,7 @@ public class TransactionOLTPIT {
             assertEquals(1, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
         }
         ConceptId p1;
-        try (SessionImpl session = server.session(keyspace)) {
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             try (TransactionOLTP tx = session.transaction().write()) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
@@ -358,7 +363,7 @@ public class TransactionOLTPIT {
             assertEquals(janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().iterator().next(), typeShardForP1);
         }
         ConceptId p2;
-        try (SessionImpl session = server.session(keyspace)) {
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             try (TransactionOLTP tx = session.transaction().write()) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
@@ -373,35 +378,37 @@ public class TransactionOLTPIT {
 
     @Test
     public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
-        KeyspaceImpl keyspace;
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        Config config = server.serverConfig();
+        config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
+        KeyspaceImpl keyspace = server.randomKeyspaceName();
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
             try (TransactionOLTP tx = session.transaction().write()) {
-                tx.TYPE_SHARD_THRESHOLD = 1;
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.execute(define(type("company").sub("entity")).asDefine());
                 tx.commit();
             }
         }
-        try (SessionImpl session = server.session(keyspace)) {
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             try (TransactionOLTP tx = session.transaction().write()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
-        try (SessionImpl session = server.session(keyspace)) {
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             try (TransactionOLTP tx = session.transaction().write()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
-        try (SessionImpl session = server.session(keyspace)) {
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
             try (TransactionOLTP tx = session.transaction().write()) {
                 tx.execute(insert(var("c").isa("company")).asInsert());
                 tx.commit();
             }
         }
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(server.serverConfig());
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
             Set<Vertex> personTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, personTypeShards.size());
