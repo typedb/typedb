@@ -134,8 +134,12 @@ public class GraknTestServer extends ExternalResource {
     }
 
     public SessionImpl sessionWithNewKeyspace() {
-        KeyspaceImpl randomKeyspace = KeyspaceImpl.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
+        KeyspaceImpl randomKeyspace = randomKeyspaceName();
         return session(randomKeyspace);
+    }
+
+    public KeyspaceImpl randomKeyspaceName() {
+        return KeyspaceImpl.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
     }
 
     public SessionImpl session(KeyspaceImpl keyspace) {
