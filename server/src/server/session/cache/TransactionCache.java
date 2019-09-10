@@ -55,6 +55,7 @@ public class TransactionCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
+    private final Map<String, Attribute> attributeCache = new HashMap<>();
     private final Map<Label, SchemaConcept> schemaConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
@@ -179,6 +180,11 @@ public class TransactionCache {
             SchemaConcept schemaConcept = concept.asSchemaConcept();
             schemaConceptCache.put(schemaConcept.label(), schemaConcept);
             labelCache.put(schemaConcept.label(), schemaConcept.labelId());
+        }
+        if (concept.isAttribute()){
+            Attribute<Object> attribute = concept.asAttribute();
+            String index = Schema.generateAttributeIndex(attribute.type().label(), attribute.value().toString());
+            attributeCache.put(index, attribute);
         }
     }
 
@@ -340,6 +346,10 @@ public class TransactionCache {
     @VisibleForTesting
     Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;
+    }
+
+    public Map<String, Attribute> getAttributeCache() {
+        return attributeCache;
     }
 
     @VisibleForTesting
