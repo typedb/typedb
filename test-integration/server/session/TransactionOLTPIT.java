@@ -171,7 +171,7 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
-        assertEquals(10000L, tx.shardingThreshold());
+        assertEquals(250000L, tx.shardingThreshold());
     }
 
     @Test
@@ -333,7 +333,7 @@ public class TransactionOLTPIT {
     }
 
     @Test
-    public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
+    public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() {
         Config config = server.serverConfig();
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
@@ -377,7 +377,7 @@ public class TransactionOLTPIT {
     }
 
     @Test
-    public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
+    public void whenThresholdIsReachedForAGivenType_ensureThatTypeShardIsCreatedForThatTypeOnly() {
         Config config = server.serverConfig();
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
