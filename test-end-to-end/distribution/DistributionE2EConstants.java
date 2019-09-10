@@ -20,7 +20,6 @@ package grakn.core.distribution;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.common.config.SystemProperty;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -28,7 +27,6 @@ import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Objects;
 import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.MatcherAssert.assertThat;

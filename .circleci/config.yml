@@ -71,16 +71,6 @@ jobs:
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
-  test-console:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel test //console/... --test_output=errors
-
   test-server:
     machine: true
     working_directory: ~/grakn
@@ -500,10 +490,6 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-console:
-          filters:
-            branches:
-              ignore: grakn-release-branch
       - test-server:
           filters:
             branches:
@@ -531,7 +517,6 @@ workflows:
           requires:
             - build
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -544,7 +529,6 @@ workflows:
           requires:
             - build
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -557,7 +541,6 @@ workflows:
           requires:
             - build
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -570,7 +553,6 @@ workflows:
           requires:
             - build
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -583,7 +565,6 @@ workflows:
           requires:
             - build
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
