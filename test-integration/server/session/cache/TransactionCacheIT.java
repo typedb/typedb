@@ -61,6 +61,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 
@@ -373,7 +374,7 @@ public class TransactionCacheIT {
     }
 
     @Test
-    public void whenInsertingAttribute_attributeIsCached(){
+    public void whenInsertingAndDeletingAttribute_attributeCachedIsUpdated(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
         String value = "banana";
         Attribute attribute = AttributeTypeImpl.from(attributeType).create(value);
@@ -383,6 +384,9 @@ public class TransactionCacheIT {
         assertNotNull(cachedAttribute);
         assertEquals(attribute, cachedAttribute);
         assertEquals(attribute, attributeType.attribute(value));
+
+        attribute.delete();
+        assertNull(tx.cache().getAttributeCache().get(index));
     }
 
     @Test

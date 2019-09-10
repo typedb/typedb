@@ -146,7 +146,7 @@ public class TransactionCache {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
             String attrIndex = attr.getIndex();
             newAttributes.remove(new Pair<>(attr.type().label(), attrIndex));
-            attributeCache.remove(attrIndex, attr);
+            attributeCache.remove(attrIndex);
             removedAttributes.add(Schema.generateAttributeIndex(attr.type().label(), attr.value().toString()));
         }
 
