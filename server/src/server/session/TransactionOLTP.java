@@ -103,7 +103,7 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
-    public final long TYPE_SHARD_THRESHOLD;
+    public long TYPE_SHARD_THRESHOLD;
 
     // Shared Variables
     private final SessionImpl session;

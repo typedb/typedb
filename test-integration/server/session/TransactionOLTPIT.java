@@ -333,10 +333,10 @@ public class TransactionOLTPIT {
     public void verifyThatTypeShardingIsPerformedOnAGivenTypeIfThresholdIsReached() {
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(server.serverConfig());
         KeyspaceImpl keyspace;
-        TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             keyspace = session.keyspace();
             try (TransactionOLTP tx = session.transaction().write()) {
+                tx.TYPE_SHARD_THRESHOLD = 1;
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
@@ -374,10 +374,10 @@ public class TransactionOLTPIT {
     @Test
     public void verifyThatTypeShardIsCreatedForTheRightEntityType() {
         KeyspaceImpl keyspace;
-        TransactionOLTP.TYPE_SHARD_THRESHOLD = 1;
         try (SessionImpl session = server.sessionWithNewKeyspace()) {
             keyspace = session.keyspace();
             try (TransactionOLTP tx = session.transaction().write()) {
+                tx.TYPE_SHARD_THRESHOLD = 1;
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.execute(define(type("company").sub("entity")).asDefine());
                 tx.commit();
