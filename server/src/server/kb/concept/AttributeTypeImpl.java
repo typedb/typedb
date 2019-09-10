@@ -173,7 +173,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         TransactionCache txCache = vertex().tx().cache();
         Attribute concept = txCache.getAttributeCache().get(index);
-        if (concept != null) return (Attribute<D>)concept;
+        if (concept != null) return concept;
 
         return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
     }
@@ -187,8 +187,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         TransactionCache txCache = vertex().tx().cache();
         Attribute concept = txCache.getAttributeCache().get(index);
-        if (concept != null) return (Attribute<D>)concept;
-        
+        if (concept != null) return concept;
+
         vertex().tx().session().graphLock().readLock().lock();
         try {
             return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
