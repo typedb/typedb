@@ -236,7 +236,6 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
-        LOG.trace("Initiating type sharding check. The following types have new instances: " + uncomittedStatisticsDelta.instanceDeltas().keySet() + ". Check if we may need to shard some of them...");
         uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
             long instancesCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
@@ -246,7 +245,6 @@ public class TransactionOLTP implements Transaction {
                 setShardCheckpoint(label, instancesCount);
             }
         });
-        LOG.trace("Type sharding complete.");
     }
 
     private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
