@@ -261,7 +261,7 @@ public class TransactionCache {
         inferredConceptsToPersist.add(t);
     }
 
-    Stream<Thing> getInferredInstances() {
+    public Stream<Thing> getInferredInstances() {
         return inferredConcepts.stream();
     }
 

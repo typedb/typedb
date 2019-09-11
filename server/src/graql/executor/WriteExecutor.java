@@ -262,6 +262,8 @@ public class WriteExecutor {
 
         ServerTracing.closeScopedChildSpan(buildConceptsSpanId);
 
+        int answerAndPersistId = ServerTracing.startScopedChildSpan("WriteExecutor.write create answers and persist dependent inferred concepts");
+
         ImmutableMap.Builder<Variable, Concept> allConcepts = ImmutableMap.<Variable, Concept>builder().putAll(concepts);
 
         // Make sure to include all equivalent vars in the result
@@ -271,8 +273,14 @@ public class WriteExecutor {
 
         Map<Variable, Concept> namedConcepts = Maps.filterKeys(allConcepts.build(), Variable::isReturned);
 
-        //mark all inferred concepts that are required for the insert for persistence explicitly
-        markConceptsForPersistence(namedConcepts.values());
+        // mark all inferred concepts that are required for the insert for persistence explicitly
+        // can avoid this potentially expensive check if there aren't any inferred concepts to start with
+        if (tx().cache().getInferredInstances().findAny().isPresent()) {
+            markConceptsForPersistence(namedConcepts.values());
+        }
+
+        ServerTracing.closeScopedChildSpan(answerAndPersistId);
+
 
         return new ConceptMap(namedConcepts);
     }
