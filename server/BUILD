@@ -214,7 +214,7 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-bin (=%{graknlabs_common})"
+      "grakn-bin (=%{@graknlabs_common})"
     ],
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps"],

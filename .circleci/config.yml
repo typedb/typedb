@@ -246,7 +246,7 @@ jobs:
       - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -254,11 +254,6 @@ jobs:
           bazel run //console:deploy-apt -- snapshot
           bazel run //server:deploy-apt -- snapshot
           bazel run //:deploy-apt -- snapshot
-      - run: cp VERSION VERSION.apt
-      - persist_to_workspace:
-          root: ~/grakn
-          paths:
-            - VERSION.apt
 
   deploy-rpm-snapshot:
     machine: true
@@ -272,15 +267,8 @@ jobs:
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-rpm -- snapshot
           bazel run //server:deploy-rpm -- snapshot
-          bazel run //console:deploy-rpm -- snapshot
           bazel run //:deploy-rpm -- snapshot
-      - run: cp VERSION VERSION.rpm
-      - persist_to_workspace:
-          root: ~/grakn
-          paths:
-            - VERSION.rpm
 
   test-deployment-linux-apt:
     machine: true
@@ -289,13 +277,10 @@ jobs:
       - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - attach_workspace:
-          at: ~/circleci-workspace
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt-snapshot/ trusty main'
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: mv ~/circleci-workspace/VERSION.apt VERSION
-      - run: cat VERSION
+      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           sudo apt install grakn-core-all=$(cat VERSION) grakn-bin=$(cat VERSION) \
                            grakn-core-server=$(cat VERSION) grakn-console=$(cat VERSION)
@@ -316,9 +301,7 @@ jobs:
     steps:
       - apt-wait
       - checkout
-      - attach_workspace:
-          at: ~/circleci-workspace
-      - run: mv ~/circleci-workspace/VERSION.rpm VERSION
+      - run: echo $(cat VERSION)_$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: test/deployment/rpm.py
       - store_artifacts:
           path: ./grakn.log
