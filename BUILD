@@ -110,6 +110,7 @@ assemble_rpm(
     package_name = "grakn-core-all",
     version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-core-all.spec",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
 
 
@@ -121,9 +122,10 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
         "openjdk-8-jre",
-        "grakn-core-server (={version})",
-        "grakn-core-console (={version})",
+        "grakn-core-server (=%{version})",
+        "grakn-console (=%{@graknlabs_console})",
     ],
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
 
 assemble_versioned(

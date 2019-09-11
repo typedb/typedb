@@ -214,8 +214,9 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
-      "grakn-core-bin (={version})"
+      "grakn-bin (=%{graknlabs_common})"
     ],
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps"],
     installation_dir = "/opt/grakn/core/",
     files = {
@@ -251,6 +252,7 @@ assemble_rpm(
     installation_dir = "/opt/grakn/core/",
     version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-core-server.spec",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps"],
     empty_dirs = [
         "opt/grakn/core/server/services/lib/",
