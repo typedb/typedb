@@ -50,7 +50,7 @@ public class UncomittedStatisticsDelta {
         instanceDeltas.put(label, currentCount - 1);
     }
 
-    HashMap<Label, Long> instanceDeltas() {
+    public HashMap<Label, Long> instanceDeltas() {
         return instanceDeltas;
     }
 

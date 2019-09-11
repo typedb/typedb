@@ -236,8 +236,8 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
-        session.getKeyspaceCache().getCachedLabels().forEach((label, labelId) -> {
-            long instancesCount = session.keyspaceStatistics().count(this, label);
+        uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
+            long instancesCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instancesCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
