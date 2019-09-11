@@ -194,14 +194,11 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
-          command: bazel build //bin:assemble-linux-apt
+          command: bazel build @graknlabs_common//bin:assemble-linux-apt
       - run-bazel-rbe:
           command: bazel build //server:assemble-linux-apt
-      - run-bazel-rbe:
-          command: bazel build //console:assemble-linux-apt
-      - run: sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
+      - run: sudo dpkg -i bazel-bin/external/graknlabs_common/bin/grakn-core-bin__all.deb
       - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-      - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
