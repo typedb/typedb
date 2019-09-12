@@ -134,20 +134,35 @@ public class GraqlComputeIT {
     private BiFunction<Label, TransactionOLTP, Integer> instanceCount = (typeLabel, tx) ->
             tx.execute(Graql.match(Graql.var("x").isaX(typeLabel.getValue())).get()).size();
 
+    private long totalCount(TransactionOLTP tx){
+        SchemaConcept thing = tx.getSchemaConcept(Schema.MetaSchema.THING.getLabel());
+        return thing.subs()
+                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.label()))
+                .map(Concept::asType)
+                .mapToLong(t -> instanceCount.apply(t.label(), tx))
+                .sum();
+    }
+
+
+    @Test
+    public void whenComputingTotalCount_countOfThingIsReturned() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            assertEquals(
+                    totalCount(tx),
+                    tx.execute(Graql.parse("compute count;").asComputeStatistics()).get(0).number()
+            );
+        }
+    }
+
     @Test
     public void whenComputingCountsOfThing_countIsCorrect() {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().read()) {
-            Numeric count = Iterables.getOnlyElement(tx.execute(Graql.compute().count().in("thing")));
-
-            SchemaConcept thing = tx.getSchemaConcept(Schema.MetaSchema.THING.getLabel());
-            long thingCount = thing.subs()
-                    .filter(t -> !Schema.MetaSchema.isMetaLabel(t.label()))
-                    .map(Concept::asType)
-                    .mapToLong(t -> instanceCount.apply(t.label(), tx))
-                    .sum();
-
-            assertEquals(thingCount, count.number());
+            assertEquals(
+                    totalCount(tx),
+                    Iterables.getOnlyElement(tx.execute(Graql.compute().count().in("thing"))).number()
+            );
         }
     }
 
@@ -207,11 +222,6 @@ public class GraqlComputeIT {
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().write()) {
-            assertEquals(
-                    instanceCount.apply(Label.of("thing"), tx),
-                    tx.execute(Graql.parse("compute count;").asComputeStatistics()).get(0).number()
-            );
-
             assertEquals(
                     instanceCount.apply(Label.of("thingy"), tx),
                     tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics()).get(0).number()
