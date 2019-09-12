@@ -302,10 +302,10 @@ class ComputeExecutor {
             return Stream.of(new Numeric(0));
         }
 
-        Set<String> labels = query.in();
+        Set<Label> labels = scopeTypeLabels(query);
         //TODO: simplify this when we update statistics to also contain ENTITY, RELATION and ATTRIBUTE
-        if (labels.contains(Schema.MetaSchema.THING.getLabel().getValue())
-                || labels.stream().map(Label::of).noneMatch(Schema.MetaSchema::isMetaLabel)){
+        if (labels.contains(Schema.MetaSchema.THING.getLabel())
+                || labels.stream().noneMatch(Schema.MetaSchema::isMetaLabel)){
             return retrieveCachedCount(query);
         }
 
@@ -339,14 +339,14 @@ class ComputeExecutor {
 
     private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query){
         KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
-        Set<String> labels = query.in();
+        Set<Label> labels = scopeTypeLabels(query);
         Label metaThing = Schema.MetaSchema.THING.getLabel();
         long totalCount;
-        if (labels.contains(metaThing.getValue())){
+        if (labels.contains(metaThing)){
             //thing entry already contains an aggregate
             totalCount = keyspaceStats.count(tx, metaThing);
         } else {
-            totalCount = scopeTypeLabels(query).stream().mapToLong(l -> keyspaceStats.count(tx, l)).sum();
+            totalCount = labels.stream().mapToLong(l -> keyspaceStats.count(tx, l)).sum();
         }
         return Stream.of(new Numeric(totalCount));
     }
