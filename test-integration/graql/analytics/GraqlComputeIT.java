@@ -27,6 +27,7 @@ import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -42,6 +43,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
+import graql.lang.query.GraqlGet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,6 +76,7 @@ public class GraqlComputeIT {
     private static final String anotherThing = "anotherThing";
     private static final String subThingy = "subThingy";
     private static final String related = "related";
+    private static final String someAttribute = "someAttribute";
     private static final int noOfSubEntities = 5;
 
     private String entityId1;
@@ -151,13 +154,22 @@ public class GraqlComputeIT {
                 .sum();
     }
 
-
     @Test
     public void whenComputingTotalCount_countOfThingIsReturned() {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().read()) {
+            //this should return all things BUT NOT attributes or implicit relations
+            Label metaAttributeLabel = tx.getMetaAttributeType().label();
+            Label topImplicitType = Schema.ImplicitType.HAS.getLabel(metaAttributeLabel);
+            GraqlGet thingQuery = Graql.match(
+                    Graql.and(
+                            Graql.var("x").isa(tx.getMetaConcept().label().getValue()),
+                            Graql.not(Graql.var("x").isa(metaAttributeLabel.getValue())),
+                            Graql.not(Graql.var("x").isa(topImplicitType.getValue()))
+                    )
+            ).get();
             assertEquals(
-                    totalCount(tx),
+                    tx.stream(thingQuery).count(),
                     tx.execute(Graql.parse("compute count;").asComputeStatistics()).get(0).number()
             );
         }
@@ -180,7 +192,21 @@ public class GraqlComputeIT {
         try (TransactionOLTP tx = session.transaction().read()) {
             assertEquals(
                     typeCount(Label.of(thingy), tx),
-                    Iterables.getOnlyElement(tx.execute(Graql.compute().count().in(thingy))));
+                    Iterables.getOnlyElement(tx.execute(Graql.compute().count().in(thingy))).number()
+            );
+        }
+    }
+
+    @Test
+    public void whenComputingCountOfMultipleTypes_resultantCountIsASum() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            Label implicitLabel = Schema.ImplicitType.HAS.getLabel(someAttribute);
+            GraqlCompute.Statistics.Count query = Graql.compute().count().in(thingy, implicitLabel.getValue());
+            assertEquals(
+                    typeCount(Label.of(thingy), tx) + typeCount(implicitLabel, tx),
+                    Iterables.getOnlyElement(tx.execute(query)).number()
+            );
         }
     }
 
@@ -243,7 +269,7 @@ public class GraqlComputeIT {
             Map<String, Long> correctDegrees = new HashMap<>();
             correctDegrees.put(entityId1, 1L);
             correctDegrees.put(entityId2, 2L);
-            correctDegrees.put(entityId3, 0L);
+            correctDegrees.put(entityId3, 1L);
             correctDegrees.put(entityId4, 1L);
             correctDegrees.put(relationId12, 2L);
             correctDegrees.put(relationId24, 2L);
@@ -413,13 +439,18 @@ public class GraqlComputeIT {
 
     private void addSchemaAndEntities() throws InvalidKBException {
         try (TransactionOLTP tx = session.transaction().write()) {
-            EntityType entityType1 = tx.putEntityType(thingy);
+            AttributeType<Long> attributeType = tx.putAttributeType(someAttribute, AttributeType.DataType.LONG);
+            EntityType entityType1 = tx.putEntityType(thingy).has(attributeType);
             EntityType entityType2 = tx.putEntityType(anotherThing);
             EntityType subEntityType = tx.putEntityType(subThingy).sup(entityType1);
 
-            Entity entity1 = entityType1.create();
-            Entity entity2 = entityType1.create();
-            Entity entity3 = entityType1.create();
+            Attribute<Long> attr1 = attributeType.create(1L);
+            Attribute<Long> attr2 = attributeType.create(2L);
+            Attribute<Long> attr3 = attributeType.create(3L);
+
+            Entity entity1 = entityType1.create().has(attr1);
+            Entity entity2 = entityType1.create().has(attr2);
+            Entity entity3 = entityType1.create().has(attr3);
             Entity entity4 = entityType2.create();
 
             entityId1 = entity1.id().getValue();
