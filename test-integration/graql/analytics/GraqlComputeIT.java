@@ -66,6 +66,7 @@ import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.query.GraqlCompute.Argument.contains;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -83,6 +84,9 @@ public class GraqlComputeIT {
     private String entityId2;
     private String entityId3;
     private String entityId4;
+    private String attrId1;
+    private String attrId2;
+    private String attrId3;
     private String relationId12;
     private String relationId24;
 
@@ -267,18 +271,23 @@ public class GraqlComputeIT {
                     tx.execute(Graql.parse("compute centrality using degree;").asComputeCentrality());
 
             Map<String, Long> correctDegrees = new HashMap<>();
-            correctDegrees.put(entityId1, 1L);
-            correctDegrees.put(entityId2, 2L);
+            correctDegrees.put(entityId1, 2L);
+            correctDegrees.put(entityId2, 3L);
             correctDegrees.put(entityId3, 1L);
             correctDegrees.put(entityId4, 1L);
+            correctDegrees.put(attrId1, 1L);
+            correctDegrees.put(attrId2, 1L);
+            correctDegrees.put(attrId3, 1L);
             correctDegrees.put(relationId12, 2L);
             correctDegrees.put(relationId24, 2L);
 
-            assertTrue(!degrees.isEmpty());
+            assertFalse(degrees.isEmpty());
             degrees.forEach(conceptSetMeasure -> conceptSetMeasure.set().forEach(
                     id -> {
                         assertTrue(correctDegrees.containsKey(id.getValue()));
-                        assertEquals(correctDegrees.get(id.getValue()).intValue(), conceptSetMeasure.measurement().intValue());
+                        int expectedDegree = correctDegrees.get(id.getValue()).intValue();
+                        int computedDegree = conceptSetMeasure.measurement().intValue();
+                        assertEquals(expectedDegree + " != " + computedDegree, expectedDegree, computedDegree);
                     }
             ));
         }
@@ -447,6 +456,10 @@ public class GraqlComputeIT {
             Attribute<Long> attr1 = attributeType.create(1L);
             Attribute<Long> attr2 = attributeType.create(2L);
             Attribute<Long> attr3 = attributeType.create(3L);
+
+            attrId1 = attr1.id().getValue();
+            attrId2 = attr2.id().getValue();
+            attrId3 = attr3.id().getValue();
 
             Entity entity1 = entityType1.create().has(attr1);
             Entity entity2 = entityType1.create().has(attr2);
