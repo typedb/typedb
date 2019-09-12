@@ -197,7 +197,6 @@ jobs:
           command: bazel build @graknlabs_common//bin:assemble-linux-apt
       - run-bazel-rbe:
           command: bazel build //server:assemble-linux-apt
-      - run: sudo dpkg -i bazel-bin/external/graknlabs_common/bin/grakn-bin__all.deb
       - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
@@ -250,8 +249,6 @@ jobs:
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-apt -- snapshot
-          bazel run //console:deploy-apt -- snapshot
           bazel run //server:deploy-apt -- snapshot
           bazel run //:deploy-apt -- snapshot
 
@@ -262,7 +259,7 @@ jobs:
       - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: sudo apt install rpm
+      - run: sudo apt-get update && sudo apt-get install rpm
       - run: echo $(cat VERSION)_$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
@@ -374,7 +371,7 @@ jobs:
       - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: sudo apt install rpm
+      - run: sudo apt-get update && sudo apt-get install rpm
       - run: cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
@@ -433,8 +430,27 @@ jobs:
           --source grakn@$(cat VERSION) \
           --targets \
           grakn-kgms:master benchmark:master workbase:master biograkn:master \
-          client-java:master client-python:master client-nodejs:master \
+          client-java:master client-python:master client-nodejs:master console:master \
           docs:master examples:master kglib:master
+
+  release-notification:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - apt-wait
+      - run: |
+          curl http://www.jetmore.org/john/code/swaks/files/swaks-20130209.0/swaks -o swaks
+          chmod +x swaks
+          sudo apt-get -y install perl
+      - run: |
+          ./swaks --auth \
+          --server smtp.mailgun.org \
+          --au $SMTP_MAILGUN_EMAIL \
+          --ap $SMTP_MAILGUN_PASSWORD \
+          --from $SMTP_MAILGUN_EMAIL \
+          --to paul.andlinger@solid-it.at,tomas@grakn.ai \
+          --h-Subject: "Please update Grakn version" \
+          --body "This is an automated email to inform you that Grakn $(cat VERSION) has been released. Please update the Grakn version accordingly."
 
   release-cleanup:
     machine: true
@@ -442,22 +458,6 @@ jobs:
       - apt-wait
       - checkout
       - run: git push --delete origin grakn-release-branch
-
-  email-db-engines:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/requirements.txt
-      - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/send_email.py
-      - run: pyenv install 3.6.3
-      - run: pyenv global 3.6.3
-      - run: pip3 install -r requirements.txt
-      - run: |
-          python send_email.py \
-          --recipients "paul.andlinger@solid-it.at, tomas@grakn.ai" \
-          --subject "Please update Grakn version" \
-          --body "This is an automated email to inform you that Grakn $(cat VERSION) has been released. Please update the Grakn version accordingly."
 
 workflows:
   grakn-core:
@@ -660,7 +660,7 @@ workflows:
             - deploy-brew
             - deploy-docker
             - deploy-maven
-      - email-db-engines:
+      - release-notification:
           filters:
             branches:
               only: grakn-release-branch
@@ -671,4 +671,4 @@ workflows:
             branches:
               only: grakn-release-branch
           requires:
-            - sync-dependencies-release
+            - release-notification
