@@ -60,9 +60,11 @@ import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
 import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
+import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
@@ -772,13 +774,17 @@ class ComputeExecutor {
      * @return
      */
     private boolean scopeContainsInstance(GraqlCompute query) {
-        if (scopeTypeLabels(query).isEmpty()) return false;
-        List<Pattern> checkSubtypes = scopeTypeLabels(query).stream()
-                .map(type -> Graql.var("x").isa(Graql.type(type.getValue()))).collect(Collectors.toList());
+        Set<Label> labels = scopeTypeLabels(query);
+        if (labels.isEmpty()) return false;
 
-        return tx.stream(Graql.match(Graql.or(checkSubtypes)), false).iterator().hasNext();
+        return labels.stream()
+                .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
+                .map(Pattern.class::cast)
+                .map(pattern -> Graql.and(Collections.singleton(pattern)))
+                .flatMap(pattern -> tx.executor().traversal(pattern, TraversalPlanner.createTraversal(pattern, tx)))
+                .findFirst().isPresent();
     }
-
+    
     /**
      * Helper method to check if concept instances exist in the query scope
      *
