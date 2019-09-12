@@ -304,7 +304,7 @@ class ComputeExecutor {
 
         Set<String> labels = query.in();
         if (labels.contains(Schema.MetaSchema.THING.name())
-                && labels.stream().map(Label::of).noneMatch(Schema.MetaSchema::isMetaLabel)){
+                || labels.stream().map(Label::of).noneMatch(Schema.MetaSchema::isMetaLabel)){
             return retrieveCachedCount(query);
         }
 

@@ -143,6 +143,14 @@ public class GraqlComputeIT {
                 .sum();
     }
 
+    private long typeCount(Label label, TransactionOLTP tx){
+        SchemaConcept type = tx.getSchemaConcept(label);
+        return type.subs()
+                .map(Concept::asType)
+                .mapToLong(t -> instanceCount.apply(t.label(), tx))
+                .sum();
+    }
+
 
     @Test
     public void whenComputingTotalCount_countOfThingIsReturned() {
@@ -170,13 +178,9 @@ public class GraqlComputeIT {
     public void whenComputingCountsOfTypesWithSubTypes_subTypeCountsAreIncluded() {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().read()) {
-            Numeric count = Iterables.getOnlyElement(tx.execute(Graql.compute().count().in(thingy)));
-            SchemaConcept thingyType = tx.getSchemaConcept(Label.of(thingy));
-            long thingyCount = thingyType.subs()
-                    .map(Concept::asType)
-                    .mapToLong(t -> instanceCount.apply(t.label(), tx))
-                    .sum();
-            assertEquals(thingyCount, count.number());
+            assertEquals(
+                    typeCount(Label.of(thingy), tx),
+                    Iterables.getOnlyElement(tx.execute(Graql.compute().count().in(thingy))));
         }
     }
 
@@ -223,7 +227,7 @@ public class GraqlComputeIT {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().write()) {
             assertEquals(
-                    instanceCount.apply(Label.of("thingy"), tx),
+                    typeCount(Label.of("thingy"), tx),
                     tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics()).get(0).number()
             );
         }
