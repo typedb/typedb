@@ -303,6 +303,7 @@ class ComputeExecutor {
         }
 
         Set<String> labels = query.in();
+        //TODO: simplify this when we update statistics to also contain ENTITY, RELATION and ATTRIBUTE
         if (labels.contains(Schema.MetaSchema.THING.name())
                 || labels.stream().map(Label::of).noneMatch(Schema.MetaSchema::isMetaLabel)){
             return retrieveCachedCount(query);
