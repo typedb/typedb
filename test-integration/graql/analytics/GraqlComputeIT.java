@@ -18,7 +18,9 @@
 
 package grakn.core.graql.analytics;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptList;
@@ -30,6 +32,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -39,13 +42,6 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,7 +50,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
@@ -69,7 +72,9 @@ public class GraqlComputeIT {
 
     private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
+    private static final String subThingy = "subThingy";
     private static final String related = "related";
+    private static final int noOfSubEntities = 5;
 
     private String entityId1;
     private String entityId2;
@@ -123,6 +128,40 @@ public class GraqlComputeIT {
         } catch (RuntimeException e) {
             e.printStackTrace();
             fail();
+        }
+    }
+
+    private BiFunction<Label, TransactionOLTP, Integer> instanceCount = (typeLabel, tx) ->
+            tx.execute(Graql.match(Graql.var("x").isaX(typeLabel.getValue())).get()).size();
+
+    @Test
+    public void whenComputingCountsOfThing_countIsCorrect() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            Numeric count = Iterables.getOnlyElement(tx.execute(Graql.compute().count().in("thing")));
+
+            SchemaConcept thing = tx.getSchemaConcept(Schema.MetaSchema.THING.getLabel());
+            long thingCount = thing.subs()
+                    .filter(t -> !Schema.MetaSchema.isMetaLabel(t.label()))
+                    .map(Concept::asType)
+                    .mapToLong(t -> instanceCount.apply(t.label(), tx))
+                    .sum();
+
+            assertEquals(thingCount, count.number());
+        }
+    }
+
+    @Test
+    public void whenComputingCountsOfTypesWithSubTypes_subTypeCountsAreIncluded() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            Numeric count = Iterables.getOnlyElement(tx.execute(Graql.compute().count().in(thingy)));
+            SchemaConcept thingyType = tx.getSchemaConcept(Label.of(thingy));
+            long thingyCount = thingyType.subs()
+                    .map(Concept::asType)
+                    .mapToLong(t -> instanceCount.apply(t.label(), tx))
+                    .sum();
+            assertEquals(thingyCount, count.number());
         }
     }
 
@@ -358,6 +397,7 @@ public class GraqlComputeIT {
         try (TransactionOLTP tx = session.transaction().write()) {
             EntityType entityType1 = tx.putEntityType(thingy);
             EntityType entityType2 = tx.putEntityType(anotherThing);
+            EntityType subEntityType = tx.putEntityType(subThingy).sup(entityType1);
 
             Entity entity1 = entityType1.create();
             Entity entity2 = entityType1.create();
@@ -381,6 +421,10 @@ public class GraqlComputeIT {
             relationId24 = relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id().getValue();
+
+            for(int i = 0 ; i < noOfSubEntities ; i++){
+                subEntityType.create();
+            }
 
             tx.commit();
         }

@@ -62,6 +62,7 @@ import grakn.core.graql.analytics.Utility;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -301,6 +302,12 @@ class ComputeExecutor {
             return Stream.of(new Numeric(0));
         }
 
+        Set<String> labels = query.in();
+        if (labels.contains(Schema.MetaSchema.THING.name())
+                && labels.stream().map(Label::of).noneMatch(Schema.MetaSchema::isMetaLabel)){
+            return retrieveCachedCount(query);
+        }
+
         Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels(query));
         Set<LabelId> scopeTypeAndImpliedPlayersLabelIDs = convertLabelsToIds(scopeTypeLabelsImplicitPlayers(query));
         scopeTypeAndImpliedPlayersLabelIDs.addAll(scopeTypeLabelIDs);
@@ -322,6 +329,17 @@ class ComputeExecutor {
 
         LOG.debug("Count = {}", finalCount);
         return Stream.of(new Numeric(finalCount));
+    }
+
+    /**
+     * @param query compute count entry query
+     * @return aggregate instance counts fetched from keyspace statistics
+     */
+
+    private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query){
+        KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
+        long totalCount = scopeTypeLabels(query).stream().mapToLong(l -> keyspaceStats.count(tx, l)).sum();
+        return Stream.of(new Numeric(totalCount));
     }
 
     /**
