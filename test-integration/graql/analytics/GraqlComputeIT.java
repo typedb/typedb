@@ -207,11 +207,15 @@ public class GraqlComputeIT {
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().write()) {
-            assertEquals(6, tx.execute(Graql.parse("compute count;").asComputeStatistics())
-                    .get(0).number().intValue());
+            assertEquals(
+                    instanceCount.apply(Label.of("thing"), tx),
+                    tx.execute(Graql.parse("compute count;").asComputeStatistics()).get(0).number()
+            );
 
-            assertEquals(3, tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics())
-                    .get(0).number().intValue());
+            assertEquals(
+                    instanceCount.apply(Label.of("thingy"), tx),
+                    tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics()).get(0).number()
+            );
         }
     }
 
