@@ -296,11 +296,6 @@ class ComputeExecutor {
      * @return a Answer object containing the count value
      */
     private Stream<Numeric> runComputeCount(GraqlCompute.Statistics.Count query) {
-        if (!scopeContainsInstance(query)) {
-            LOG.debug("Count = 0");
-            return Stream.of(new Numeric(0));
-        }
-
         Set<Label> labels = scopeTypeLabels(query);
         //TODO: simplify this when we update statistics to also contain ENTITY, RELATION and ATTRIBUTE
         if (labels.contains(Schema.MetaSchema.THING.getLabel())
