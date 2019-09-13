@@ -56,8 +56,8 @@ command = [
     'install',
     'grakn-core-all={}'.format(core_version),
     'grakn-core-server={}'.format(core_version),
-    'grakn-core-console={}'.format(console_version),
-    'grakn-core-bin={}'.format(bin_version),
+    'grakn-console={}'.format(console_version),
+    'grakn-bin={}'.format(bin_version),
 ]
 
 print('Executing command: {}'.format(' '.join(command)))
