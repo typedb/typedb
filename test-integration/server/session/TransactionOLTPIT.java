@@ -52,6 +52,7 @@ import org.janusgraph.core.JanusGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -335,6 +336,7 @@ public class TransactionOLTPIT {
         assertThat(s3.links().collect(toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 
+    @Ignore("flaky")
     @Test
     public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() throws IOException {
         Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
