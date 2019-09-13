@@ -271,9 +271,7 @@ jobs:
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
       - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
-      - run: |
-          sudo apt install grakn-core-all=$(cat VERSION) grakn-bin=$(cat VERSION) \
-                           grakn-core-server=$(cat VERSION) grakn-console=$(cat VERSION)
+      - run: bazel run //test-deployment:apt-install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
