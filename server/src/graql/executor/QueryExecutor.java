@@ -110,7 +110,7 @@ public class QueryExecutor {
                 answerStream = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
                         .map(p -> ReasonerQueries.create(p, transaction))
                         .map(ReasonerQueryImpl::getPattern)
-                        .flatMap(p -> traversal(p, TraversalPlanner.createTraversal(p, transaction)));
+                        .flatMap(p -> traverse(p));
 
             } else {
                 answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
@@ -187,10 +187,14 @@ public class QueryExecutor {
         }
     }
 
+    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern) {
+        return traverse(pattern, TraversalPlanner.createTraversal(pattern, transaction));
+    }
+
     /**
      * @return resulting answer stream
      */
-    public Stream<ConceptMap> traversal(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
+    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
 

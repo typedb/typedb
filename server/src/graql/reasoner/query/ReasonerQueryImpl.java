@@ -564,7 +564,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         return isRuleResolvable()?
                 new ResolutionIterator(this, subGoals).hasStream() :
-                tx.executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx));
+                tx.executor().traverse(getPattern());
     }
 
     @Override
@@ -611,7 +611,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             boolean fruitless = tx.ruleCache().absentTypes(queryTypes);
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
-                dbIterator = tx.executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx))
+                dbIterator = tx.executor().traverse(getPattern())
                         .map(ans -> ans.explain(new JoinExplanation(this.getPattern(), this.splitToPartialAnswers(ans))))
                         .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                         .iterator();

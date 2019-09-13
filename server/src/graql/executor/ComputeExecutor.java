@@ -60,22 +60,12 @@ import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
 import grakn.core.graql.exception.GraqlSemanticException;
-import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
-import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -86,8 +76,15 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.function.BiFunction;
 import java.util.stream.Stream;
+import javax.annotation.Nullable;
+import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
@@ -689,24 +686,19 @@ class ComputeExecutor {
      * @return true if they exist, false if they don't
      */
     private boolean targetContainsInstance(GraqlCompute.Statistics.Value query) {
-        for (Label attributeType : targetTypeLabels(query)) {
-            for (Label type : scopeTypeLabels(query)) {
-                Boolean patternExist = tx.stream(Graql.match(
-                        Graql.var("x").has(attributeType.getValue(), Graql.var()),
-                        Graql.var("x").isa(Graql.type(type.getValue()))
-                ), false).iterator().hasNext();
-                if (patternExist) return true;
-            }
-        }
-        return false;
-        //TODO: should use the following ask query when ask query is even lazier
-//        List<Pattern> checkResourceTypes = statisticsResourceTypes.stream()
-//                .map(type -> var("x").has(type, var())).collect(Collectors.toList());
-//        List<Pattern> checkSubtypes = inTypes.stream()
-//                .map(type -> var("x").isa(Graql.label(type))).collect(Collectors.toList());
-//
-//        return tx.get().graql().infer(false)
-//                .match(or(checkResourceTypes), or(checkSubtypes)).get().aggregate(ask()).execute();
+        Set<Label> targetLabels = targetTypeLabels(query);
+        ImmutableSet<Label> scopeLabels = scopeTypeLabels(query);
+        BiFunction<Label, Label, Pattern> patternFunction = (attributeType, type) -> Graql.and(
+                Graql.var("x").has(attributeType.getValue(), Graql.var()),
+                Graql.var("x").isa(Graql.type(type.getValue()))
+        );
+        return targetLabels.stream()
+                .flatMap(attributeType ->
+                        scopeLabels.stream()
+                                .map(type -> patternFunction.apply(attributeType, type))
+                                .map(pattern -> Graql.and(Collections.singleton(pattern)))
+                                .flatMap(pattern -> tx.executor().traverse(pattern))
+                ).findFirst().isPresent();
     }
 
     /**
@@ -781,7 +773,7 @@ class ComputeExecutor {
                 .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
                 .map(Pattern.class::cast)
                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                .flatMap(pattern -> tx.executor().traversal(pattern, TraversalPlanner.createTraversal(pattern, tx)))
+                .flatMap(pattern -> tx.executor().traverse(pattern))
                 .findFirst().isPresent();
     }
     
