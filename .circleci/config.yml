@@ -179,29 +179,6 @@ jobs:
           path: bazel-genfiles/grakn-core-all-linux/logs/cassandra.log
           destination: logs/cassandra.log
 
-  test-assembly-linux-apt:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel build @graknlabs_common//bin:assemble-linux-apt
-      - run-bazel-rbe:
-          command: bazel build //server:assemble-linux-apt
-      - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-      - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-      - run: nohup grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-      - run: grakn server stop
-      - store_artifacts:
-          path: /opt/grakn/core/logs/grakn.log
-          destination: logs/grakn.log
-      - store_artifacts:
-          path: /opt/grakn/core/logs/cassandra.log
-          destination: logs/cassandra.log
-
   test-assembly-docker:
     machine: true
     working_directory: ~/grakn
@@ -517,18 +494,6 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
-      - test-assembly-linux-apt:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
       - test-assembly-docker:
           filters:
             branches:
@@ -549,7 +514,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - deploy-apt-snapshot:
           filters:
@@ -559,7 +523,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - deploy-rpm-snapshot:
           filters:
@@ -569,7 +532,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - test-deployment-linux-apt:
           filters:
