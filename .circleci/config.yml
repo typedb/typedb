@@ -53,12 +53,20 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run-bazel-rbe:
+          command: bazel build //...
+
+  build-analysis:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - apt-wait
+      - install-bazel-linux-rbe
+      - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
             --project-key graknlabs_grakn_core --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
-      - run-bazel-rbe:
-          command: bazel build //...
   
   test-common:
     machine: true
@@ -156,12 +164,6 @@ jobs:
       - run:
           command: test/assembly/windows/windows-zip.py
           no_output_timeout: 20m
-      - store_artifacts:
-          path: ./grakn.log
-          destination: logs/grakn.log
-      - store_artifacts:
-          path: ./cassandra.log
-          destination: logs/cassandra.log
 
   test-assembly-linux-targz:
     machine: true
@@ -183,29 +185,6 @@ jobs:
           destination: logs/grakn.log
       - store_artifacts:
           path: bazel-genfiles/grakn-core-all-linux/logs/cassandra.log
-          destination: logs/cassandra.log
-
-  test-assembly-linux-apt:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel build @graknlabs_common//bin:assemble-linux-apt
-      - run-bazel-rbe:
-          command: bazel build //server:assemble-linux-apt
-      - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-      - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-      - run: nohup grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-      - run: grakn server stop
-      - store_artifacts:
-          path: /opt/grakn/core/logs/grakn.log
-          destination: logs/grakn.log
-      - store_artifacts:
-          path: /opt/grakn/core/logs/cassandra.log
           destination: logs/cassandra.log
 
   test-assembly-docker:
@@ -277,9 +256,7 @@ jobs:
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
       - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
-      - run: |
-          sudo apt install grakn-core-all=$(cat VERSION) grakn-bin=$(cat VERSION) \
-                           grakn-core-server=$(cat VERSION) grakn-console=$(cat VERSION)
+      - run: bazel run //test-deployment:apt-install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -465,6 +442,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - build-analysis:
+          filters:
+            branches:
+              only: master
       - test-common:
           filters:
             branches:
@@ -525,18 +506,6 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
-      - test-assembly-linux-apt:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
       - test-assembly-docker:
           filters:
             branches:
@@ -557,7 +526,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - deploy-apt-snapshot:
           filters:
@@ -567,7 +535,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - deploy-rpm-snapshot:
           filters:
@@ -577,7 +544,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - test-deployment-linux-apt:
           filters:
