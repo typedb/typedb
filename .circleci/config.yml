@@ -156,12 +156,6 @@ jobs:
       - run:
           command: test/assembly/windows/windows-zip.py
           no_output_timeout: 20m
-      - store_artifacts:
-          path: ./grakn.log
-          destination: logs/grakn.log
-      - store_artifacts:
-          path: ./cassandra.log
-          destination: logs/cassandra.log
 
   test-assembly-linux-targz:
     machine: true

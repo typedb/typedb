@@ -39,18 +39,6 @@ def ssh(command, ssh_host, ssh_user, ssh_pass, attempts=5):
     ])
 
 
-def scp(remote, local, ssh_host, ssh_user, ssh_pass):
-    system = platform.system()
-    sp.check_call([
-        'sshpass',
-        '-p',
-        ssh_pass,
-        'scp',
-        '{}@{}:"{}"'.format(ssh_user, ssh_host, remote),
-        local,
-    ])
-
-
 def wait_for_ssh(ssh_host, ssh_user, ssh_pass, timeout_mins=10):
     def time_elapsed_in_seconds():
         return time.time() - start_time
@@ -189,13 +177,6 @@ try:
     lprint('[Remote]: test finished successfully!')
 
 finally:
-    lprint('Copying logs from remote instance')
-    scp('/Users/circleci/repo/bazel-genfiles/a directory with whitespace/grakn-core-all-windows/logs/grakn.log',
-        'grakn.log',
-        instance_ip, 'circleci', instance_password)
-    scp('/Users/circleci/repo/bazel-genfiles/a directory with whitespace/grakn-core-all-windows/logs/cassandra.log',
-        'cassandra.log',
-        instance_ip, 'circleci', instance_password)
     lprint('Remove instance')
     sp.check_call([
         'gcloud', '--quiet', 'compute', 'instances',
