@@ -54,6 +54,7 @@ command = [
     'sudo',
     'apt',
     'install',
+    'grakn-core-all={}'.format(core_version),
     'grakn-core-server={}'.format(core_version),
     'grakn-core-console={}'.format(console_version),
     'grakn-core-bin={}'.format(bin_version),
