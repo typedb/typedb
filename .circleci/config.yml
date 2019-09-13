@@ -476,6 +476,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
             - test-server
             - test-integration
@@ -488,6 +489,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
             - test-server
             - test-integration
@@ -500,6 +502,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
             - test-server
             - test-integration
@@ -512,6 +515,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
             - test-server
             - test-integration
