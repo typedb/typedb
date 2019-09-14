@@ -223,7 +223,7 @@ jobs:
       - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
@@ -238,7 +238,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
-      - run: echo $(cat VERSION)_$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: echo 0.0.0_$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
