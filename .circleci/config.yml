@@ -18,11 +18,6 @@
 
 version: 2.1
 commands:
-  apt-wait:
-    steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/apt-wait.sh
-      - run: bash ./apt-wait.sh && rm ./apt-wait.sh
-
   install-bazel-linux-rbe:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
@@ -49,7 +44,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
@@ -60,7 +54,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -72,7 +65,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -82,7 +74,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -92,7 +83,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -106,7 +96,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -116,7 +105,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -126,7 +114,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -137,7 +124,6 @@ jobs:
       xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-mac
       - checkout
       - run-bazel-rbe:
@@ -159,7 +145,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - checkout
       - run:
           command: test/assembly/windows/windows-zip.py
@@ -169,7 +154,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -191,7 +175,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: test/assembly/docker.py
@@ -206,7 +189,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -220,7 +202,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
@@ -234,7 +215,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
@@ -249,13 +229,12 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt-snapshot/ trusty main'
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: echo $(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: bazel run //test-deployment:apt-install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
@@ -272,9 +251,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - checkout
-      - run: echo $(cat VERSION)_$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: echo 0.0.0_$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: test/deployment/rpm.py
       - store_artifacts:
           path: ./grakn.log
@@ -286,7 +264,6 @@ jobs:
   sync-dependencies-snapshot:
     machine: true
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -301,7 +278,6 @@ jobs:
   release-approval:
     machine: true
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -313,7 +289,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -328,15 +303,12 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-apt -- release
-          bazel run //console:deploy-apt -- release
           bazel run //server:deploy-apt -- release
           bazel run //:deploy-apt -- release
 
@@ -344,7 +316,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
@@ -352,16 +323,13 @@ jobs:
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-rpm -- release
           bazel run //server:deploy-rpm -- release
-          bazel run //console:deploy-rpm -- release
           bazel run //:deploy-rpm -- release
 
   deploy-brew:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -372,7 +340,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -383,7 +350,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: cat VERSION
@@ -397,7 +363,6 @@ jobs:
   sync-dependencies-release:
     machine: true
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -413,7 +378,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - run: |
           curl http://www.jetmore.org/john/code/swaks/files/swaks-20130209.0/swaks -o swaks
           chmod +x swaks
@@ -431,7 +395,6 @@ jobs:
   release-cleanup:
     machine: true
     steps:
-      - apt-wait
       - checkout
       - run: git push --delete origin grakn-release-branch
 
