@@ -52,7 +52,7 @@ bin_version = get_dep_version("graknlabs_common")
 
 command = [
     'sudo',
-    'apt',
+    'aptitude',
     'install',
     'grakn-core-all={}'.format(core_version),
     'grakn-core-server={}'.format(core_version),

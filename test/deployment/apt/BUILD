@@ -19,6 +19,6 @@
 load("//test-deployment/rules:rules.bzl", "apt_install_command")
 
 apt_install_command(
-    name = "apt-install",
+    name = "install",
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
