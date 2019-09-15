@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-load("//test-deployment/rules:rules.bzl", "apt_install_command")
+load("//test/deployment/apt:rules.bzl", "apt_install_command")
 
 apt_install_command(
     name = "install",

@@ -45,7 +45,7 @@ apt_install_command = rule(
         ),
         "_apt_install_command_py": attr.label(
             allow_single_file = True,
-            default = "//test-deployment/rules/templates:apt_install_command.py"
+            default = "//test/deployment/apt/templates:apt_install_command.py"
         )
     },
     implementation = _apt_install_command_impl,
