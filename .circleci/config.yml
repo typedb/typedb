@@ -272,8 +272,9 @@ jobs:
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           grakn-kgms:master workbase:master docs:master examples:master \
-          benchmark:master client-java:master kglib:master
+          benchmark:master client-java:master console:master kglib:master
         # TODO: Remove benchmark and client-java once #5272 is solved
+        # TODO: Remove console once #5270 is solved
 
   release-approval:
     machine: true
