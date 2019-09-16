@@ -336,7 +336,6 @@ public class TransactionOLTPIT {
         assertThat(s3.links().collect(toSet()), containsInAnyOrder(s3_e1, s3_e2));
     }
 
-    @Ignore("flaky")
     @Test
     public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() throws IOException {
         Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
@@ -354,8 +353,10 @@ public class TransactionOLTPIT {
                 tx.commit();
             }
         }
+        Set<Vertex> typeShards;
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            assertEquals(1, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
+            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(1, typeShards.size());
         }
         ConceptId p1;
         try (SessionImpl session = sessionFactory.session(keyspace)) {
@@ -366,9 +367,10 @@ public class TransactionOLTPIT {
         }
         Vertex typeShardForP1;
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            assertEquals(2, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
             typeShardForP1 = janusGraph.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
-            assertEquals(janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().iterator().next(), typeShardForP1);
+            assertEquals(typeShards.iterator().next(), typeShardForP1);
+            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(2, typeShards.size());
         }
         ConceptId p2;
         try (SessionImpl session = sessionFactory.session(keyspace)) {
@@ -378,9 +380,10 @@ public class TransactionOLTPIT {
             }
         }
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            assertEquals(3, janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet().size());
             Vertex typeShardForP2 = janusGraph.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
-            assertEquals(Sets.difference(janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet(), Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
+            assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
+            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(3, typeShards.size());
         }
     }
 
