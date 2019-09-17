@@ -22,9 +22,11 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
+import grakn.core.graql.executor.ConceptBuilder;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
@@ -39,8 +41,8 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RelationTypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    private RelationTypeImpl(VertexElement vertexElement, ConceptFactory conceptBuilder, TransactionCache transactionCache) {
+        super(vertexElement, conceptBuilder, transactionCache);
     }
 
     private RelationTypeImpl(VertexElement vertexElement, RelationType type) {
@@ -72,8 +74,8 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     private Relation addRelation(boolean isInferred) {
         Relation relation = addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
-        vertex().tx().cache().addNewRelation(relation);
+                (vertex, type) -> conceptFactory.buildRelation(vertex, type), isInferred);
+        transactionCache.addNewRelation(relation);
         return relation;
     }
 
@@ -109,14 +111,14 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
         //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
 
 
         //Add the Role Type itself
-        vertex().tx().cache().trackForValidation(roleTypeImpl);
+        transactionCache.trackForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        vertex().tx().cache().trackForValidation(this);
+        transactionCache.trackForValidation(this);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -131,7 +133,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            vertex().tx().cache().trackForValidation(role);
+            transactionCache.trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -144,7 +146,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
             RelationImpl relation = RelationImpl.from(concept);
             RelationReified reifedRelation = relation.reified();
             if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
+                reifedRelation.castingsRelation().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
             }
         });
     }
@@ -172,7 +174,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
                             has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue()).
                             toStream().
-                            map(edge -> vertex().tx().factory().buildConcept(edge));
+                            map(edge -> conceptFactory.buildConcept(edge));
                 });
     }
 }

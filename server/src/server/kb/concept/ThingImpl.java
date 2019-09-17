@@ -75,7 +75,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(EdgeElement::target).
                 flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
                 map(EdgeElement::target).
-                map(concept -> vertex().tx().factory().<V>buildConcept(concept)).
+                map(concept -> conceptFactory.<V>buildConcept(concept)).
                 findAny();
 
         return type.orElseThrow(() -> TransactionException.noType(this));
@@ -96,7 +96,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     private void track() {
         if (type().keys().findAny().isPresent()) {
-            vertex().tx().cache().trackForValidation(this);
+            transactionCache.trackForValidation(this);
         }
     }
 
@@ -124,7 +124,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         if (!isDeleted()) vertex().tx().statisticsDelta().decrement(type().label());
         this.edgeRelations().forEach(Concept::delete);
 
-        vertex().tx().cache().removedInstance(type().id());
+        transactionCache.removedInstance(type().id());
         vertex().tx().queryCache().ackDeletion(type());
         deleteNode();
 

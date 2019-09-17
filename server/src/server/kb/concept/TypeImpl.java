@@ -61,7 +61,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().tx().factory().buildConcept(edge.target());
+            Role role = conceptFactory.buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(role, required);
         });
@@ -102,7 +102,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         vertex().tx().statisticsDelta().increment(label());
 
         if (!Schema.MetaSchema.isMetaLabel(label())) {
-            vertex().tx().cache().addedInstance(id());
+            transactionCache.addedInstance(id());
             if (isInferred){
                 instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
             } else {
@@ -114,7 +114,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         V instance = producer.apply(instanceVertex, getThis());
         Preconditions.checkNotNull(instance, "producer should never return null");
-        if(isInferred) vertex().tx().cache().inferredInstance(instance);
+        if(isInferred) transactionCache.inferredInstance(instance);
 
         return instance;
     }
@@ -219,7 +219,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     void trackRolePlayers() {
         instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer)));
+                rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
     }
 
     public T play(Role role, boolean required) {
@@ -365,9 +365,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         cachedIsAbstract.set(isAbstract);
 
         if (isAbstract) {
-            vertex().tx().cache().removeFromValidation(this);
+            transactionCache.removeFromValidation(this);
         } else {
-            vertex().tx().cache().trackForValidation(this);
+            transactionCache.trackForValidation(this);
         }
 
         return getThis();
