@@ -27,6 +27,8 @@ import grakn.core.concept.type.Role;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.rpc.ResponseBuilder;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -41,8 +43,8 @@ import java.util.stream.Stream;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    private AttributeImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    private AttributeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value) {

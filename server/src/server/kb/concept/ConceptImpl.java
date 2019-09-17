@@ -26,6 +26,8 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.rpc.ResponseBuilder;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -38,6 +40,9 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
+    final ConceptFactory conceptFactory;
+    final TransactionCache transactionCache;
+
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
     private final Cache<Shard> currentShard = new Cache<>(() -> {
@@ -48,8 +53,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final Cache<Long> shardCount = new Cache<>(() -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(VertexElement vertexElement) {
+    ConceptImpl(VertexElement vertexElement, ConceptFactory conceptFactory,TransactionCache transactionCache) {
         this.vertexElement = vertexElement;
+        this.conceptFactory = conceptFactory;
+        this.transactionCache = transactionCache;
     }
 
     @Override
@@ -81,7 +88,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
      * Deletes the node and adds it neighbours for validation
      */
     public void deleteNode() {
-        vertex().tx().cache().remove(this);
+        transactionCache.remove(this);
         vertex().delete();
     }
 
@@ -95,13 +102,13 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
-                                vertex().tx().factory().buildConcept(edge.source()),
-                                vertex().tx().factory().buildConcept(edge.target()))
+                                conceptFactory.buildConcept(edge.source()),
+                                conceptFactory.buildConcept(edge.target()))
                         );
             case IN:
-                return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.source()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> conceptFactory.buildConcept(edge.source()));
             case OUT:
-                return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.target()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> conceptFactory.buildConcept(edge.target()));
             default:
                 throw TransactionException.invalidDirection(direction);
         }
@@ -160,7 +167,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
     @Override
     public final String toString() {
-        if (vertex().tx().isValidElement(vertex().element())) {
+        if (ElementUtils.isValidElement(vertex().element())) {
             return innerToString();
         } else {
             // Vertex has been deleted so all we can do is print the id

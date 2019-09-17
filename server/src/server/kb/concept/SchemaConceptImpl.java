@@ -27,6 +27,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;
@@ -51,8 +52,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    SchemaConceptImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     SchemaConceptImpl(VertexElement vertexElement, T superType) {

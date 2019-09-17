@@ -25,6 +25,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
+import grakn.core.server.rpc.ResponseBuilder;
 import grakn.core.server.session.cache.TransactionCache;
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -45,8 +46,8 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    private AttributeTypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    private AttributeTypeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
@@ -124,7 +125,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
             if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
-            return vertex().tx().factory().buildAttribute(vertex, type, value);
+            return conceptFactory.buildAttribute(vertex, type, value);
         };
 
         return putInstance(Schema.BaseType.ATTRIBUTE, () -> attributeWithLock(value), instanceBuilder, isInferred);
@@ -171,8 +172,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
 
-        TransactionCache txCache = vertex().tx().cache();
-        Attribute concept = txCache.getAttributeCache().get(index);
+        Attribute concept = transactionCache.getAttributeCache().get(index);
         if (concept != null) return concept;
 
         return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
@@ -185,8 +185,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     private Attribute<D> attributeWithLock(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
 
-        TransactionCache txCache = vertex().tx().cache();
-        Attribute concept = txCache.getAttributeCache().get(index);
+        Attribute concept = transactionCache.getAttributeCache().get(index);
         if (concept != null) return concept;
 
         vertex().tx().session().graphLock().readLock().lock();

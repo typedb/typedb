@@ -22,6 +22,8 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
+
 import java.util.stream.Stream;
 
 /**
@@ -31,8 +33,8 @@ import java.util.stream.Stream;
  * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    private EntityImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    private EntityImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     private EntityImpl(VertexElement vertexElement, EntityType type) {

@@ -29,11 +29,15 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ConceptFactory;
+import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
@@ -136,7 +140,22 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-        TransactionOLTP tx = new TransactionOLTP(this, graph.newThreadBoundTransaction(), keyspaceCache);
+
+
+        /*
+
+        Work begins
+
+
+         */
+
+        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
+        TransactionCache transactionCache = new TransactionCache(keyspaceCache);
+        ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
+        ConceptFactory conceptFactory = new ConceptFactory(elementFactory, transactionCache);
+
+
+        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptFactory, transactionCache, keyspaceCache);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 

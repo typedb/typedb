@@ -33,6 +33,7 @@ import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;
@@ -68,8 +69,8 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    TypeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     TypeImpl(VertexElement vertexElement, T superType) {

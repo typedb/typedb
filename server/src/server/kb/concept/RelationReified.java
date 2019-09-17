@@ -28,6 +28,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -55,8 +56,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    private RelationReified(VertexElement vertexElement) {
-        super(vertexElement);
+    private RelationReified(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     private RelationReified(VertexElement vertexElement, RelationType type) {
@@ -68,8 +69,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //TODO remove this once we fix the whole relation hierarchy
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
-        vertex().tx().cache().getNewRelations().remove(owner);
-        if(isInferred()) vertex().tx().cache().removeInferredInstance(owner);
+        transactionCache.getNewRelations().remove(owner);
+        if(isInferred()) transactionCache.removeInferredInstance(owner);
         super.delete();
     }
 
@@ -113,7 +114,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    vertex().tx().cache().remove(casting);
+                    transactionCache.remove(casting);
                 });
     }
 
@@ -180,7 +181,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue())
                 .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
                 .toStream()
-                .filter(edge -> vertex().tx().isValidElement(edge)) // filter out invalid or deleted edges that are cached
+                .filter(edge -> ElementUtils.isValidElement(edge)) // filter out invalid or deleted edges that are cached
                 .map(edge -> vertex().tx().factory().buildEdgeElement(edge))
                 .map(edge -> Casting.withRelation(edge, owner));
     }

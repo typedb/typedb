@@ -49,6 +49,7 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
+import grakn.core.server.kb.concept.ConceptFactory;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ConceptVertex;
 import grakn.core.server.kb.concept.ElementFactory;
@@ -107,7 +108,7 @@ public class TransactionOLTP implements Transaction {
 
     // Shared Variables
     private final SessionImpl session;
-    private final ElementFactory elementFactory;
+    private final ConceptFactory elementFactory;
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -147,20 +148,21 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptFactory conceptFactory, TransactionCache transactionCache, KeyspaceCache keyspaceCache) {
         createdInCurrentThread.set(true);
 
         this.session = session;
 
         this.janusTransaction = janusTransaction;
 
-        this.elementFactory = new ElementFactory(this);
+//        this.elementFactory = new ElementFactory(this);
+        this.elementFactory = conceptFactory;
 
         this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
 
         this.keyspaceCache = keyspaceCache;
-        this.transactionCache = new TransactionCache(keyspaceCache);
+        this.transactionCache = transactionCache;
 
         this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
 
@@ -322,10 +324,6 @@ public class TransactionOLTP implements Transaction {
         Vertex vertex = janusTransaction.addVertex(baseType.name());
         vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
         return factory().buildVertexElement(vertex);
-    }
-
-    public boolean isValidElement(Element element) {
-        return element != null && !((JanusGraphElement) element).isRemoved();
     }
 
     @Override
@@ -497,7 +495,7 @@ public class TransactionOLTP implements Transaction {
         return graphTraversalSource;
     }
 
-    public ElementFactory factory() {
+    public ConceptFactory factory() {
         return elementFactory;
     }
 

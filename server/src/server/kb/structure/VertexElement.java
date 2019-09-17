@@ -19,6 +19,8 @@
 package grakn.core.server.kb.structure;
 
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ElementFactory;
+import grakn.core.server.kb.concept.ElementUtils;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -40,8 +42,8 @@ import java.util.stream.StreamSupport;
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
-    public VertexElement(TransactionOLTP graknTx, Vertex element) {
-        super(graknTx, element);
+    public VertexElement(ElementFactory elementFactory, Vertex element) {
+        super(elementFactory, element);
     }
 
     /**
@@ -52,8 +54,8 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
     public Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label) {
         Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false)
-                .filter(edge -> tx().isValidElement(edge)) // filter out deleted but cached available edges
-                .map(edge -> tx().factory().buildEdgeElement(edge));
+                .filter(edge -> ElementUtils.isValidElement(edge)) // filter out deleted but cached available edges
+                .map(edge -> elementFactory.buildEdgeElement(edge));
     }
 
     /**
@@ -62,7 +64,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @return The edge created
      */
     public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return tx().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
+        return elementFactory.buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
     }
 
     /**
@@ -70,16 +72,18 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @param type the type of the edge to create
      */
     public EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type) {
-        GraphTraversal<Vertex, Edge> traversal = tx().getTinkerTraversal().V().
-                hasId(id()).
-                outE(type.getLabel()).as("edge").otherV().
-                hasId(to.id())
+
+        // TODO try not to access the tinker traversal directly
+        GraphTraversal<Vertex, Edge> traversal = element().graph().traversal().V()
+                .hasId(id())
+                .outE(type.getLabel()).as("edge").otherV()
+                .hasId(to.id())
                 .select("edge");
 
         if (!traversal.hasNext()) {
             return addEdge(to, type);
         } else {
-            return tx().factory().buildEdgeElement(traversal.next());
+            return elementFactory.buildEdgeElement(traversal.next());
         }
     }
 

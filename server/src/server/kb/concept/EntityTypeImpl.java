@@ -22,6 +22,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
 
 /**
  * SchemaConcept used to represent categories.
@@ -29,8 +30,8 @@ import grakn.core.server.kb.structure.VertexElement;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    private EntityTypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    private EntityTypeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     private EntityTypeImpl(VertexElement vertexElement, EntityType type) {
@@ -51,10 +52,10 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     public Entity create() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), false);
+        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptFactory.buildEntity(vertex, type), false);
     }
 
     public Entity addEntityInferred() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), true);
+        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptFactory.buildEntity(vertex, type), true);
     }
 }

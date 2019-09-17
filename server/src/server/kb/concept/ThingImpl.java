@@ -37,6 +37,7 @@ import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -80,8 +81,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> TransactionException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement) {
-        super(vertexElement);
+    ThingImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, conceptFactory, transactionCache);
     }
 
     ThingImpl(VertexElement vertexElement, V type) {
@@ -293,7 +294,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             });
         }
 
-        return stream.map(edge -> vertex().tx().factory().buildRelation(edge));
+        return stream.map(edge -> conceptFactory.buildRelation(edge));
     }
 
     @Override
@@ -342,8 +343,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         vertex().tx().statisticsDelta().increment(hasAttribute.label());
 
-        RelationImpl attributeRelation = vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
-        if (isInferred) vertex().tx().cache().inferredInstance(attributeRelation);
+        RelationImpl attributeRelation = conceptFactory.buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
+        if (isInferred) transactionCache.inferredInstance(attributeRelation);
         return attributeRelation;
     }
 

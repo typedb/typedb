@@ -19,6 +19,8 @@ package grakn.core.server.kb.structure;
 
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.concept.ElementFactory;
+import grakn.core.server.kb.concept.ElementUtils;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -42,10 +44,10 @@ import static org.apache.tinkerpop.gremlin.structure.T.id;
  */
 public abstract class AbstractElement<E extends Element, P extends Enum> {
     private E element;
-    private final TransactionOLTP tx;
+    final ElementFactory elementFactory;
 
-    AbstractElement(TransactionOLTP tx, E element) {
-        this.tx = tx;
+    AbstractElement(ElementFactory elementFactory, E element) {
+        this.elementFactory = elementFactory;
         this.element = element;
     }
 
@@ -67,11 +69,13 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
         doing the re-read here brings a new copy back in before deleting in, which then pins it to the cache for
         the remainder of the transaction
          */
-        if (this instanceof VertexElement) {
-            element = (E)tx.getTinkerTraversal().V(id()).next();
-        } else {
-            element = (E)tx.getTinkerTraversal().E(id()).next();
-        }
+
+        // TODO check this is fixed for sure
+//        if (this instanceof VertexElement) {
+//            element = (E)tx.getTinkerTraversal().V(id()).next();
+//        } else {
+//            element = (E)tx.getTinkerTraversal().E(id()).next();
+//        }
         element().remove();
     }
 
@@ -109,12 +113,6 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
         return value;
     }
 
-    /**
-     * @return The grakn graph this concept is bound to.
-     */
-    public TransactionOLTP tx() {
-        return tx;
-    }
 
     /**
      * @return The hash code of the underlying vertex
@@ -140,7 +138,8 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
      * @param value The new value of the unique property
      */
     public void propertyUnique(P key, String value) {
-        GraphTraversal<Vertex, Vertex> traversal = tx().getTinkerTraversal().V().has(key.name(), value);
+        // TODO remove dependency on `graph().traversal()`
+        GraphTraversal<Vertex, Vertex> traversal = element.graph().traversal().V().has(key.name(), value);
 
         if (traversal.hasNext()) {
             Vertex vertex = traversal.next();
@@ -184,6 +183,6 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
     }
 
     public final boolean isDeleted() {
-        return !tx().isValidElement(element());
+        return !ElementUtils.isValidElement(element());
     }
 }
