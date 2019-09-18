@@ -19,6 +19,7 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.LabelId;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
@@ -213,13 +214,24 @@ public final class ElementFactory {
         return getTinkerTraversal().V(startId).in(edgeLabel.getLabel()).toStream().map(vertex -> buildVertexElement(vertex));
     }
 
-    public Stream<VertexElement> inFromSourceIdWithProperty(String startId, Schema.EdgeLabel edgeLabel, Schema.EdgeProperty edgeProperty,
-                                          Set<Integer> roleTypesIds) {
+    public Stream<VertexElement> inFromSourceIdWithProperty(String startId, Schema.EdgeLabel edgeLabel,
+                                                            Schema.EdgeProperty edgeProperty, Set<Integer> roleTypesIds) {
         return getTinkerTraversal().V(startId)
                 .inE(edgeLabel.getLabel())
                 .has(edgeProperty.name(), org.apache.tinkerpop.gremlin.process.traversal.P.within(roleTypesIds))
                 .outV()
                 .toStream()
                 .map(vertex -> buildVertexElement(vertex));
+    }
+
+    public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(String typeVertexId, LabelId edgeInstanceLabelId) {
+        return getTinkerTraversal().V()
+                .hasId(typeVertexId)
+                .in(Schema.EdgeLabel.SHARD.getLabel())
+                .in(Schema.EdgeLabel.ISA.getLabel())
+                .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), edgeInstanceLabelId)
+                .toStream()
+                .map(edge -> buildEdgeElement(edge));
     }
 }

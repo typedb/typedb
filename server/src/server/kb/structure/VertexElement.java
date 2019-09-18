@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.structure;
 
+import grakn.core.concept.LabelId;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
@@ -174,4 +175,7 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
     }
 
 
+    public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId) {
+        return elementFactory.edgeRelationsConnectedToInstancesOfType(id().toString(), edgeInstanceLabelId);
+    }
 }

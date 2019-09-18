@@ -24,6 +24,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -169,14 +170,15 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                 .flatMap(Role::players)
                 .flatMap(type -> {
                     //Traversal is used here to take advantage of vertex centric index
-                    return vertex().tx().getTinkerTraversal().V()
-                            .hasId(ConceptVertex.from(type).elementId())
-                            .in(Schema.EdgeLabel.SHARD.getLabel())
-                            .in(Schema.EdgeLabel.ISA.getLabel())
-                            .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                            .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue())
-                            .toStream()
-                            .map(edge -> conceptManager.buildConcept(edge));
+                    // we use this more complex traversal to get to the instances of the Types that can
+                    // play a role of this relation type
+                    // from there we can access the edges that represent non-reified Concepts
+                    // currently only Attribute can be non-reified
+
+                    Stream<EdgeElement> edgeRelationsConnectedToTypeInstances = ConceptVertex.from(type).vertex()
+                            .edgeRelationsConnectedToInstancesOfType(labelId());
+
+                    return edgeRelationsConnectedToTypeInstances.map(edgeElement ->  conceptManager.buildConcept(edgeElement));
                 });
     }
 }
