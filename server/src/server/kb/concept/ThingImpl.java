@@ -251,7 +251,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return vertex().tx().getTinkerTraversal().V().
                 hasId(elementId()).
                 union(shortcutTraversal, attributeEdgeTraversal).toStream().
-                map(vertex -> vertex().tx().buildConcept(vertex));
+                map(vertex -> conceptManager.buildConcept(vertex));
     }
 
     /**
@@ -275,7 +275,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                     has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
         }
 
-        return traversal.toStream().map(vertex -> vertex().tx().buildConcept(vertex));
+        return traversal.toStream().map(vertex -> conceptManager.buildConcept(vertex));
     }
 
     private Stream<Relation> edgeRelations(Role... roles) {

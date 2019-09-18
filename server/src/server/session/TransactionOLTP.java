@@ -105,7 +105,7 @@ public class TransactionOLTP implements Transaction {
 
     // Shared Variables
     private final SessionImpl session;
-    private final ConceptManager elementFactory;
+    private final ConceptManager conceptManager;
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -152,8 +152,8 @@ public class TransactionOLTP implements Transaction {
 
         this.janusTransaction = janusTransaction;
 
-//        this.elementFactory = new ElementFactory(this);
-        this.elementFactory = conceptManager;
+//        this.conceptManager = new ElementFactory(this);
+        this.conceptManager = conceptManager;
 
         this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
@@ -493,7 +493,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     public ConceptManager factory() {
-        return elementFactory;
+        return conceptManager;
     }
 
     /**
@@ -740,35 +740,9 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         checkGraphIsOpen();
-
-        // fetch concept from cache if it's cached
-        if (transactionCache.isConceptCached(id)) {
-            return transactionCache.getCachedConcept(id);
-        }
-
-        // If edgeId, we are trying to fetch either:
-        // - a concept edge
-        // - a reified relation
-        if (Schema.isEdgeId(id)) {
-            T concept = getConceptEdge(id);
-            if (concept != null) return concept;
-            // If concept is still null,  it is possible we are referring to a ReifiedRelation which
-            // uses its previous EdgeRelation as an id so property must be fetched
-            return this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue());
-        }
-
-        return getConcept(getTinkerTraversal().V(Schema.elementId(id)));
+        return conceptManager.getConcept(id);
     }
 
-    @Nullable
-    private <T extends Concept> T getConceptEdge(ConceptId id) {
-        String edgeId = Schema.elementId(id);
-        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
-        if (traversal.hasNext()) {
-            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
-        }
-        return null;
-    }
 
     private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
         checkGraphIsOpen();

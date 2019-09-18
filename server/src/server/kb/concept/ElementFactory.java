@@ -19,13 +19,19 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphTransaction;
 
+import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.Objects;
 
 /**
@@ -39,9 +45,37 @@ import java.util.Objects;
 public final class ElementFactory {
     private final JanusGraphTransaction janusTx;
 
+    @Nullable
+    private GraphTraversalSource graphTraversalSource = null;
+
     public ElementFactory(JanusGraphTransaction janusTransaction) {
         this.janusTx = janusTransaction;
     }
+
+    public Vertex getVertexWithProperty(Schema.VertexProperty key, Object value) {
+        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
+        if (vertices.hasNext()) {
+            return vertices.next();
+        }
+        return null;
+    }
+
+    public Vertex getVertexWithId(String id) {
+        Iterator<Vertex> vertices = getTinkerTraversal().V(id);
+        if (vertices.hasNext()) {
+            return vertices.next();
+        }
+        return null;
+    }
+
+    public EdgeElement getEdgeElementWithId(String id) {
+        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(id);
+        if (traversal.hasNext()) {
+            return buildEdgeElement(traversal.next());
+        }
+        return null;
+    }
+
 
     // ---------------------------------------- Non Concept Construction -----------------------------------------------
     public EdgeElement buildEdgeElement(Edge edge) {
@@ -77,4 +111,11 @@ public final class ElementFactory {
         return new VertexElement(this, vertex);
     }
 
+
+    private GraphTraversalSource getTinkerTraversal() {
+        if (graphTraversalSource == null) {
+            graphTraversalSource = janusTx.traversal().withStrategies(ReadOnlyStrategy.instance());
+        }
+        return graphTraversalSource;
+    }
 }

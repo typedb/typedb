@@ -35,6 +35,42 @@ public class ConceptManager {
         this.transactionCache = transactionCache;
     }
 
+
+    /*
+    ---- capabilities migrated from Transaction for now
+     */
+
+    public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
+        Vertex vertex = elementFactory.getVertexWithProperty(key, value);
+        if (vertex != null) {
+            return buildConcept(vertex);
+        }
+        return null;
+    }
+
+    public <T extends Concept> T getConcept(ConceptId conceptId) {
+        if (transactionCache.isConceptCached(conceptId)) {
+            return transactionCache.getCachedConcept(conceptId);
+        }
+
+        // If edgeId, we are trying to fetch either:
+        // - a concept edge
+        // - a reified relation
+        if (Schema.isEdgeId(conceptId)) {
+            EdgeElement edgeElement = elementFactory.getEdgeElementWithId(Schema.elementId(conceptId));
+            if (edgeElement != null) {
+               return buildConcept(edgeElement);
+            }
+            // If element is still null,  it is possible we are referring to a ReifiedRelation which
+            // uses its previous EdgeRelation as an id so property must be fetched
+            return getConcept(Schema.VertexProperty.EDGE_RELATION_ID, conceptId.getValue());
+        }
+
+        return buildConcept(elementFactory.getVertexWithId(Schema.elementId(conceptId)));
+    }
+
+
+
     private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder) {
         if (!transactionCache.isConceptCached(conceptId)) {
             X newConcept = conceptBuilder.apply(element);

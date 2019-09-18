@@ -175,7 +175,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         Attribute concept = transactionCache.getAttributeCache().get(index);
         if (concept != null) return concept;
 
-        return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+        return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**

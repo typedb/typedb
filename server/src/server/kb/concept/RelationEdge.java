@@ -29,6 +29,7 @@ import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.cache.TransactionCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +50,7 @@ public class RelationEdge implements RelationStructure {
 
     private final EdgeElement edgeElement;
     private final ConceptManager conceptManager;
+    private TransactionCache transactionCache;
 
     private final Cache<RelationType> relationType = new Cache<>(() ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
@@ -62,14 +64,15 @@ public class RelationEdge implements RelationStructure {
     private final Cache<Thing> owner = new Cache<>(() -> conceptFactory().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(() -> conceptFactory().buildConcept(edge().target()));
 
-    private RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager) {
+    private RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, TransactionCache transactionCache) {
         this.edgeElement = edgeElement;
         this.conceptManager = conceptManager;
+        this.transactionCache = transactionCache;
     }
 
     private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                         ConceptManager conceptManager) {
-        this(edgeElement, conceptManager);
+                         ConceptManager conceptManager, TransactionCache transactionCache) {
+        this(edgeElement, conceptManager, transactionCache);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
@@ -170,9 +173,8 @@ public class RelationEdge implements RelationStructure {
     public void delete() {
         if (!isDeleted()) edge().tx().statisticsDelta().decrement(type().label());
         if (isInferred()){
-            TransactionOLTP tx = edge().tx();
-            Concept relation = tx.getConcept(id());
-            if (relation != null) tx.cache().removeInferredInstance(relation.asThing());
+            Concept relation = conceptManager.getConcept(id());
+            if (relation != null) transactionCache.removeInferredInstance(relation.asThing());
         }
         edge().delete();
     }
