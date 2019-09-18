@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
@@ -103,6 +104,21 @@ public final class ElementFactory {
      */
     public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = janusTx.addVertex(baseType.name());
+        return buildVertexElement(vertex);
+    }
+
+
+    /**
+     * This is only used when reifying a Relation, creates a new Vertex in the graph representing the reified relation.
+     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
+     *
+     * @param baseType  Concept BaseType which will become the VertexLabel
+     * @param conceptId ConceptId to be set on the vertex
+     * @return just created Vertex
+     */
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
+        Vertex vertex = janusTx.addVertex(baseType.name());
+        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
         return buildVertexElement(vertex);
     }
 

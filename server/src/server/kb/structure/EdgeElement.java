@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.structure;
 
+import grakn.core.concept.ConceptId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.session.TransactionOLTP;
@@ -62,5 +63,9 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
     public VertexElement target() {
         return elementFactory.buildVertexElement(element().inVertex());
+    }
+
+    public VertexElement asReifiedVertexElement(ConceptId conceptId) {
+        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, conceptId);
     }
 }

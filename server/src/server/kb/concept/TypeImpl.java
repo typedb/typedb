@@ -384,9 +384,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                                                   Role ownerRole, Role valueRole, RelationType relationType) {
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
-        Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-        Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-        RelationType relationTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
+        Role ownerRoleSuper = conceptManager.putRoleTypeImplicit(hasOwner.getLabel(superLabel));
+        Role valueRoleSuper = conceptManager.putRoleTypeImplicit(hasValue.getLabel(superLabel));
+        RelationType relationTypeSuper = conceptManager.putRelationTypeImplicit(has.getLabel(superLabel)).
                 relates(ownerRoleSuper).relates(valueRoleSuper);
 
         //Create the super type edges from sub role/relations to super roles/relation
@@ -414,9 +414,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
         Label attributeLabel = attributeType.label();
-        Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
-        Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationType relationType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel))
+        Role ownerRole = conceptManager.putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
+        Role valueRole = conceptManager.putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
+        RelationType relationType = conceptManager.putRelationTypeImplicit(has.getLabel(attributeLabel))
                 .relates(ownerRole)
                 .relates(valueRole);
 

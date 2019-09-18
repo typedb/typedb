@@ -10,6 +10,8 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.type.Type;
+import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -44,6 +46,108 @@ public class ConceptManager {
     /*
     ---- capabilities migrated from Transaction for now
      */
+
+    // ------ PUT
+
+    public Role putRoleTypeImplicit(Label implicitRoleLabel) {
+        return putSchemaConcept(implicitRoleLabel, Schema.BaseType.ROLE, true,
+                v -> buildRole(v, getMetaRole()));
+    }
+
+    public RelationType putRelationTypeImplicit(Label implicitRelationLabel) {
+        return putSchemaConcept(implicitRelationLabel, Schema.BaseType.RELATION_TYPE, true,
+                v -> buildRelationType(v, getMetaRelationType()));
+    }
+
+    /**
+     * This is a helper method which will either find or create a SchemaConcept.
+     * When a new SchemaConcept is created it is added for validation through it's own creation method for
+     * example RoleImpl#create(VertexElement, Role).
+     * <p>
+     * When an existing SchemaConcept is found it is build via it's get method such as
+     * RoleImpl#get(VertexElement) and skips validation.
+     * <p>
+     * Once the SchemaConcept is found or created a few checks for uniqueness and correct
+     * Schema.BaseType are performed.
+     *
+     * @param label             The Label of the SchemaConcept to find or create
+     * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.type.Type or not
+     * @param newConceptFactory the factory to be using when creating a new SchemaConcept
+     * @param <T>               The type of SchemaConcept to return
+     * @return a new or existing SchemaConcept
+     */
+    public <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
+        //Get the type if it already exists otherwise build a new one
+        SchemaConceptImpl schemaConcept = getSchemaConcept(label);
+        if (schemaConcept == null) {
+            if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
+                throw TransactionException.invalidLabelStart(label);
+            }
+
+            VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+
+            //Mark it as implicit here so we don't have to pass it down the constructors
+            if (isImplicit) {
+                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
+            }
+
+            // if the schema concept is not in janus, create it here
+            schemaConcept = SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
+        } else if (!baseType.equals(schemaConcept.baseType())) {
+            throw labelTaken(schemaConcept);
+        }
+
+        //noinspection unchecked
+        return (T) schemaConcept;
+    }
+
+    /**
+     * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
+     * incremented.
+     *
+     * @param label    The label of the new type vertex
+     * @param baseType The base type of the new type
+     * @return The new type vertex
+     */
+    VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
+        VertexElement vertexElement = elementFactory.addVertexElement(baseType);
+        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
+        vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
+        return vertexElement;
+    }
+
+
+    /**
+     * Gets and increments the current available type id.
+     *
+     * @return the current available Grakn id which can be used for types
+     */
+    private LabelId getNextId() {
+        TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
+        Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_LABEL_ID);
+        if (currentValue == null) {
+            currentValue = Schema.MetaSchema.values().length + 1;
+        } else {
+            currentValue = currentValue + 1;
+        }
+        //Vertex is used directly here to bypass meta type mutation check
+        metaConcept.property(Schema.VertexProperty.CURRENT_LABEL_ID, currentValue);
+        return LabelId.of(currentValue);
+    }
+
+    /**
+     * Throws an exception when adding a SchemaConcept using a Label which is already taken
+     */
+    private TransactionException labelTaken(SchemaConcept schemaConcept) {
+        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
+            return TransactionException.reservedLabel(schemaConcept.label());
+        }
+        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+    }
+
+    // ---------- GET
+
 
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
         Vertex vertex = elementFactory.getVertexWithProperty(key, value);
@@ -99,6 +203,18 @@ public class ConceptManager {
 
     AttributeType getMetaAttributeType() {
         return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
+    }
+
+    private RelationType getMetaRelationType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.toString()));
+    }
+
+    private Type getMetaConcept() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
+    }
+
+    private Role getMetaRole() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.toString()));
     }
 
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {

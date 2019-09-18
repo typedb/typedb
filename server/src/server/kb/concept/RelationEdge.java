@@ -108,7 +108,7 @@ public class RelationEdge implements RelationStructure {
     public RelationReified reify() {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
-        VertexElement relationVertex = edge().tx().addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, id());
+        VertexElement relationVertex = edge().asReifiedVertexElement(id());
         RelationReified relationReified = conceptManager().buildRelationReified(relationVertex, type());
 
         //Delete the old edge

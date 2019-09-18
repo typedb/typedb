@@ -297,20 +297,6 @@ public class TransactionOLTP implements Transaction {
         return propertiesAsObj.toArray();
     }
 
-    /**
-     * This is only used when reifying a Relation, creates a new Vertex in the graph representing the reified relation.
-     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
-     *
-     * @param baseType  Concept BaseType which will become the VertexLabel
-     * @param conceptId ConceptId to be set on the vertex
-     * @return just created Vertex
-     */
-    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
-        Vertex vertex = janusTransaction.addVertex(baseType.name());
-        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
-        return factory().buildVertexElement(vertex);
-    }
-
     @Override
     public SessionImpl session() {
         return session;
@@ -389,25 +375,6 @@ public class TransactionOLTP implements Transaction {
         return queryCache;
     }
 
-
-
-    /**
-     * Gets and increments the current available type id.
-     *
-     * @return the current available Grakn id which can be used for types
-     */
-    private LabelId getNextId() {
-        TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
-        Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_LABEL_ID);
-        if (currentValue == null) {
-            currentValue = Schema.MetaSchema.values().length + 1;
-        } else {
-            currentValue = currentValue + 1;
-        }
-        //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.property(Schema.VertexProperty.CURRENT_LABEL_ID, currentValue);
-        return LabelId.of(currentValue);
-    }
 
     /**
      * Gets the config option which determines the number of instances a grakn.core.concept.type.Type must have before the grakn.core.concept.type.Type
@@ -513,20 +480,7 @@ public class TransactionOLTP implements Transaction {
         if (Type.READ.equals(type())) throw TransactionException.transactionReadOnly(this);
     }
 
-    /**
-     * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
-     * incremented.
-     *
-     * @param label    The label of the new type vertex
-     * @param baseType The base type of the new type
-     * @return The new type vertex
-     */
-    VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
-        VertexElement vertexElement = addVertexElement(baseType);
-        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
-        vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
-        return vertexElement;
-    }
+
 
     /**
      * Make sure graph is open and usable.
@@ -550,63 +504,9 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
+        return conceptManager.putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
                 v -> factory().buildEntityType(v, getMetaEntityType()));
     }
-
-    /**
-     * This is a helper method which will either find or create a SchemaConcept.
-     * When a new SchemaConcept is created it is added for validation through it's own creation method for
-     * example RoleImpl#create(VertexElement, Role).
-     * <p>
-     * When an existing SchemaConcept is found it is build via it's get method such as
-     * RoleImpl#get(VertexElement) and skips validation.
-     * <p>
-     * Once the SchemaConcept is found or created a few checks for uniqueness and correct
-     * Schema.BaseType are performed.
-     *
-     * @param label             The Label of the SchemaConcept to find or create
-     * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.type.Type or not
-     * @param newConceptFactory the factory to be using when creating a new SchemaConcept
-     * @param <T>               The type of SchemaConcept to return
-     * @return a new or existing SchemaConcept
-     */
-    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
-        //Get the type if it already exists otherwise build a new one
-        SchemaConceptImpl schemaConcept = getSchemaConcept(label);
-        if (schemaConcept == null) {
-            if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-                throw TransactionException.invalidLabelStart(label);
-            }
-
-            VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
-
-            //Mark it as implicit here so we don't have to pass it down the constructors
-            if (isImplicit) {
-                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
-            }
-
-            // if the schema concept is not in janus, create it here
-            schemaConcept = SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
-        } else if (!baseType.equals(schemaConcept.baseType())) {
-            throw labelTaken(schemaConcept);
-        }
-
-        //noinspection unchecked
-        return (T) schemaConcept;
-    }
-
-    /**
-     * Throws an exception when adding a SchemaConcept using a Label which is already taken
-     */
-    private TransactionException labelTaken(SchemaConcept schemaConcept) {
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
-            return TransactionException.reservedLabel(schemaConcept.label());
-        }
-        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
-    }
-
 
 
     /**
@@ -617,12 +517,12 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public RelationType putRelationType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
+        return conceptManager.putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
                 v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
     public RelationType putRelationTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, true,
+        return conceptManager.putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, true,
                 v -> factory().buildRelationType(v, getMetaRelationType()));
     }
 
@@ -634,14 +534,10 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE, false,
+        return conceptManager.putSchemaConcept(label, Schema.BaseType.ROLE, false,
                 v -> factory().buildRole(v, getMetaRole()));
     }
 
-    public Role putRoleTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE, true,
-                v -> factory().buildRole(v, getMetaRole()));
-    }
 
     /**
      * @param label    A unique label for the AttributeType
@@ -658,7 +554,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
+        AttributeType<V> attributeType = conceptManager.putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
                 v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
@@ -681,7 +577,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
+        Rule rule = conceptManager.putSchemaConcept(label, Schema.BaseType.RULE, false,
                 v -> factory().buildRule(v, getMetaRule(), when, then));
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
