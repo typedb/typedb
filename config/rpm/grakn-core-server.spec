@@ -21,6 +21,7 @@ Grakn Core (server) - description
 %install
 mkdir -p %{buildroot}
 tar -xvf {_grakn-core-server-rpm-tar.tar.gz} -C %{buildroot}
+rm -fv {_grakn-core-server-rpm-tar.tar.gz}
 
 %files
 
