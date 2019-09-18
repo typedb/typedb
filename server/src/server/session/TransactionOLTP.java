@@ -298,17 +298,6 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
-     *
-     * @param baseType baseType of newly created Vertex
-     * @return VertexElement
-     */
-    public VertexElement addVertexElement(Schema.BaseType baseType) {
-        Vertex vertex = janusTransaction.addVertex(baseType.name());
-        return factory().buildVertexElement(vertex);
-    }
-
-    /**
      * This is only used when reifying a Relation, creates a new Vertex in the graph representing the reified relation.
      * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
      *
@@ -915,7 +904,6 @@ public class TransactionOLTP implements Transaction {
      *
      * @param conceptId the id of the concept to shard
      */
-    @VisibleForTesting
     public void shard(ConceptId conceptId) {
         ConceptImpl type = getConcept(conceptId);
         if (type == null) {

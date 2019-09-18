@@ -192,14 +192,14 @@ public class ConceptManager {
      * Used to build a RelationEdge by ThingImpl when it needs to connect itself with an attribute (implicit relation)
      */
     RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge, this)));
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge, this, transactionCache)));
     }
 
     /**
      * Used by RelationEdge to build a RelationImpl object out of a provided Edge
      */
     RelationImpl buildRelation(EdgeElement edge) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge, this)));
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge, this, transactionCache)));
     }
 
     /**
@@ -321,7 +321,7 @@ public class ConceptManager {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = RelationImpl.create(RelationEdge.get(edgeElement, this));
+                    concept = RelationImpl.create(RelationEdge.get(edgeElement, this, transactionCache));
                     break;
                 default:
                     throw TransactionException.unknownConcept(label.name());

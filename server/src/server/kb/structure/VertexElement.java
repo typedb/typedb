@@ -19,9 +19,9 @@
 package grakn.core.server.kb.structure;
 
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.ElementUtils;
-import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -120,6 +120,13 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         }
     }
 
+
+    public Shard currentShard() {
+        Object currentShardId = this.property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
+        return elementFactory.getShard(shardVertex);
+    }
+
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
@@ -129,4 +136,15 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         return stringBuilder.toString();
     }
 
+    public Shard shard(ConceptImpl owningConcept) {
+        VertexElement shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
+        Shard shard = elementFactory.createShard(owningConcept, shardVertex);
+        return shard;
+    }
+
+    public Stream<Shard> shards() {
+        return getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
+                .map(EdgeElement::source)
+                .map(vertexElement -> elementFactory.getShard(vertexElement));
+    }
 }

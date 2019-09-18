@@ -83,16 +83,27 @@ public final class ElementFactory {
     }
 
 
-    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement) {
+    public Shard createShard(ConceptImpl shardOwner, VertexElement vertexElement) {
         return new Shard(shardOwner, vertexElement);
     }
 
-    Shard buildShard(VertexElement vertexElement) {
+    public Shard getShard(Vertex vertex) {
+        return new Shard(buildVertexElement(vertex));
+    }
+
+    public Shard getShard(VertexElement vertexElement) {
         return new Shard(vertexElement);
     }
 
-    Shard buildShard(Vertex vertex) {
-        return new Shard(buildVertexElement(vertex));
+    /**
+     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
+     *
+     * @param baseType baseType of newly created Vertex
+     * @return VertexElement
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType) {
+        Vertex vertex = janusTx.addVertex(baseType.name());
+        return buildVertexElement(vertex);
     }
 
     /**

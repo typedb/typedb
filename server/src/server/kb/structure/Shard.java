@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.concept.thing.Thing;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptImpl;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -32,7 +31,7 @@ import java.util.stream.Stream;
  * spread across several shards.
  */
 public class Shard {
-    private final VertexElement vertexElement;
+    private VertexElement vertexElement;
 
     public Shard(ConceptImpl owner, VertexElement vertexElement) {
         this(vertexElement);
@@ -73,10 +72,9 @@ public class Shard {
     /**
      * @return All the concept linked to this shard
      */
-    public <V extends Thing> Stream<V> links() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).
-                map(EdgeElement::source).
-                map(vertexElement -> vertex().tx().factory().buildConcept(vertexElement));
+    public Stream<VertexElement> links() {
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA)
+                .map(EdgeElement::source);
     }
 
     /**

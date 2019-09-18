@@ -165,18 +165,18 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     private Stream<Relation> relationEdges() {
         //Unfortunately this is a slow process
-        return roles().
-                flatMap(Role::players).
-                flatMap(type -> {
+        return roles()
+                .flatMap(Role::players)
+                .flatMap(type -> {
                     //Traversal is used here to take advantage of vertex centric index
-                    return vertex().tx().getTinkerTraversal().V().
-                            hasId(ConceptVertex.from(type).elementId()).
-                            in(Schema.EdgeLabel.SHARD.getLabel()).
-                            in(Schema.EdgeLabel.ISA.getLabel()).
-                            outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
-                            has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue()).
-                            toStream().
-                            map(edge -> conceptManager.buildConcept(edge));
+                    return vertex().tx().getTinkerTraversal().V()
+                            .hasId(ConceptVertex.from(type).elementId())
+                            .in(Schema.EdgeLabel.SHARD.getLabel())
+                            .in(Schema.EdgeLabel.ISA.getLabel())
+                            .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
+                            .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue())
+                            .toStream()
+                            .map(edge -> conceptManager.buildConcept(edge));
                 });
     }
 }

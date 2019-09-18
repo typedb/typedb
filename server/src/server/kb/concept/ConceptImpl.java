@@ -44,11 +44,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final Cache<Shard> currentShard = new Cache<>(() -> {
-        Object currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().hasId(currentShardId).next();
-        return vertex().tx().factory().buildShard(shardVertex);
-    });
+    private final Cache<Shard> currentShard = new Cache<>(() -> vertex().currentShard());
     private final Cache<Long> shardCount = new Cache<>(() -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(() -> Schema.conceptId(vertex().element()));
 
@@ -185,8 +181,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
     //----------------------------------- Sharding Functionality
     public void createShard() {
-        VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);
-        Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
+        Shard shard = vertex().shard(this);
+
         //store current shard id as a property of the type
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
@@ -198,9 +194,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     }
 
     public Stream<Shard> shards() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(EdgeElement::source).
-                map(edge -> vertex().tx().factory().buildShard(edge));
+        return vertex().shards();
     }
 
     public Long shardCount() {

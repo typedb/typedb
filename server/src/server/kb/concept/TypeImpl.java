@@ -168,7 +168,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
                     String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return vertex().tx().getAttributeType(attributeTypeLabel);
+                    return conceptManager.getAttributeType(attributeTypeLabel);
                 });
     }
 
@@ -206,10 +206,11 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     Stream<V> instancesDirect() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(EdgeElement::source).
-                map(source -> vertex().tx().factory().buildShard(source)).
-                flatMap(Shard::links);
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
+                .map(EdgeElement::source)
+                .map(sourceVertex -> sourceVertex.currentShard())
+                .flatMap(Shard::links)
+                .map(shardVertexElement -> conceptManager.buildConcept(shardVertexElement));
     }
 
     @Override
@@ -318,13 +319,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if (attributeTypes.anyMatch(a -> a.equals(attributeToRemove))) {
             Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
-            RelationTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
+            RelationTypeImpl relation = conceptManager.getSchemaConcept(relationLabel);
             if (attributeToRemove.instances().flatMap(Attribute::owners).anyMatch(thing -> thing.type().equals(this))) {
                 throw TransactionException.illegalUnhasWithInstance(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
             }
 
             Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
-            Role ownerRole = vertex().tx().getSchemaConcept(ownerLabel);
+            Role ownerRole = conceptManager.getSchemaConcept(ownerLabel);
 
             if (ownerRole == null) {
                 throw TransactionException.illegalUnhasNotExist(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
@@ -337,7 +338,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             // If there are no other Types that own this Attribute, remove the entire implicit relation
             if (!ownerRole.players().iterator().hasNext()) {
                 Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
-                Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
+                Role valueRole = conceptManager.getSchemaConcept(valueLabel);
                 attributeToRemove.unplay(valueRole);
 
                 relation.unrelate(ownerRole);
@@ -415,9 +416,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Label attributeLabel = attributeType.label();
         Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
         Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationType relationType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
-                relates(ownerRole).
-                relates(valueRole);
+        RelationType relationType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel))
+                .relates(ownerRole)
+                .relates(valueRole);
 
         //this plays ownerRole;
         this.play(ownerRole, required);
