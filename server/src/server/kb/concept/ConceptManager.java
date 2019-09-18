@@ -17,6 +17,7 @@ import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.cache.TransactionCache;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -96,6 +97,10 @@ public class ConceptManager {
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
 
+    AttributeType getMetaAttributeType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
+    }
+
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }
@@ -129,7 +134,7 @@ public class ConceptManager {
      * @param label The label to be converted to the id
      * @return The matching type id
      */
-    private LabelId convertToId(Label label) {
+    public LabelId convertToId(Label label) {
         if (transactionCache.isLabelCached(label)) {
             return transactionCache.convertLabelToId(label);
         }

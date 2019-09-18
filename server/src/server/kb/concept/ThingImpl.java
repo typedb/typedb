@@ -32,8 +32,8 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
@@ -199,7 +199,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes) {
         return labels.stream()
                 .flatMap(label -> implicitTypes.stream().map(it -> it.getLabel(label)))
-                .map(label -> vertex().tx().convertToId(label))
+                .map(label -> conceptManager.convertToId(label))
                 .filter(id -> !id.equals(LabelId.invalid()))
                 .map(LabelId::getValue)
                 .collect(toSet());
@@ -207,7 +207,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     <X extends Thing> Stream<X> getShortcutNeighbours(boolean ownerToValueOrdering, AttributeType... attributeTypes) {
         Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
-        if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
+        if (completeAttributeTypes.isEmpty()) {
+            completeAttributeTypes.add(conceptManager.getMetaAttributeType());
+        }
 
         Set<Label> attributeHierarchyLabels = completeAttributeTypes.stream()
                 .flatMap(t -> (Stream<AttributeType>) t.subs())
