@@ -50,17 +50,19 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
-        super(vertexElement, type);
+    private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
+                              ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
         vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
-    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement) {
-        return new AttributeTypeImpl<>(vertexElement);
+    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new AttributeTypeImpl<>(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
-        return new AttributeTypeImpl<>(vertexElement, type, dataType);
+    public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
+                                                  ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new AttributeTypeImpl<>(vertexElement, type, dataType, conceptFactory, transactionCache);
     }
 
     public static AttributeTypeImpl from(AttributeType attributeType) {

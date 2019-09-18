@@ -37,16 +37,17 @@ public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity 
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private EntityImpl(VertexElement vertexElement, EntityType type) {
-        super(vertexElement, type);
+    private EntityImpl(VertexElement vertexElement, EntityType type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
     }
 
-    public static EntityImpl get(VertexElement vertexElement) {
-        return new EntityImpl(vertexElement);
+    public static EntityImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new EntityImpl(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static EntityImpl create(VertexElement vertexElement, EntityType type) {
-        return new EntityImpl(vertexElement, type);
+    public static EntityImpl create(VertexElement vertexElement, EntityType type,
+                                    ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new EntityImpl(vertexElement, type, conceptFactory, transactionCache);
     }
 
     public static EntityImpl from(Entity entity) {

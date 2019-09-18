@@ -39,19 +39,21 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
-        super(vertexElement, type);
+    private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
+                     ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
-    public static RuleImpl get(VertexElement vertexElement) {
-        return new RuleImpl(vertexElement);
+    public static RuleImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new RuleImpl(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
-        RuleImpl rule = new RuleImpl(vertexElement, type, when, then);
-        vertexElement.tx().cache().trackForValidation(rule);
+    public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
+                                  ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptFactory, transactionCache);
+        transactionCache.trackForValidation(rule);
         return rule;
     }
 

@@ -29,6 +29,7 @@ import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.cache.TransactionCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,9 @@ import java.util.stream.Stream;
  */
 public class RelationEdge implements RelationStructure {
     private final Logger LOG = LoggerFactory.getLogger(RelationEdge.class);
+
     private final EdgeElement edgeElement;
+    private final ConceptFactory conceptFactory;
 
     private final Cache<RelationType> relationType = new Cache<>(() ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
@@ -57,15 +60,17 @@ public class RelationEdge implements RelationStructure {
     private final Cache<Role> valueRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(() -> edge().tx().factory().buildConcept(edge().source()));
-    private final Cache<Thing> value = new Cache<>(() -> edge().tx().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(() -> conceptFactory().buildConcept(edge().source()));
+    private final Cache<Thing> value = new Cache<>(() -> conceptFactory().buildConcept(edge().target()));
 
-    private RelationEdge(EdgeElement edgeElement) {
+    private RelationEdge(EdgeElement edgeElement, ConceptFactory conceptFactory) {
         this.edgeElement = edgeElement;
+        this.conceptFactory = conceptFactory;
     }
 
-    private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
-        this(edgeElement);
+    private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
+                         ConceptFactory conceptFactory) {
+        this(edgeElement, conceptFactory);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
@@ -76,16 +81,21 @@ public class RelationEdge implements RelationStructure {
         this.valueRole.set(valueRole);
     }
 
-    public static RelationEdge get(EdgeElement edgeElement) {
-        return new RelationEdge(edgeElement);
+    public static RelationEdge get(EdgeElement edgeElement, ConceptFactory conceptFactory) {
+        return new RelationEdge(edgeElement, conceptFactory);
     }
 
-    public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
-        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement);
+    public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
+                                      ConceptFactory conceptFactory) {
+        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement, conceptFactory);
     }
 
     private EdgeElement edge() {
         return edgeElement;
+    }
+
+    private ConceptFactory conceptFactory() {
+        return conceptFactory;
     }
 
     @Override
@@ -98,7 +108,7 @@ public class RelationEdge implements RelationStructure {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
         VertexElement relationVertex = edge().tx().addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, id());
-        RelationReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
+        RelationReified relationReified = conceptFactory().buildRelationReified(relationVertex, type());
 
         //Delete the old edge
         delete();

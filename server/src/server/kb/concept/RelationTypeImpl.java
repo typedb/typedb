@@ -45,17 +45,20 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         super(vertexElement, conceptBuilder, transactionCache);
     }
 
-    private RelationTypeImpl(VertexElement vertexElement, RelationType type) {
-        super(vertexElement, type);
+    private RelationTypeImpl(VertexElement vertexElement, RelationType type,
+                             ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
     }
 
-    public static RelationTypeImpl get(VertexElement vertexElement) {
-        return new RelationTypeImpl(vertexElement);
+    public static RelationTypeImpl get(VertexElement vertexElement,
+                                       ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new RelationTypeImpl(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static RelationTypeImpl create(VertexElement vertexElement, RelationType type) {
-        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type);
-        vertexElement.tx().cache().trackForValidation(relationType);
+    public static RelationTypeImpl create(VertexElement vertexElement, RelationType type,
+                                          ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptFactory, transactionCache);
+        transactionCache.trackForValidation(relationType);
         return relationType;
     }
 

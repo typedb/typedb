@@ -55,17 +55,17 @@ public class ConceptFactory {
 
     // ---------------------------------------- Building Attribute Types  -----------------------------------------------
     public <V> AttributeTypeImpl<V> buildAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType) {
-        return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType));
+        return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType, this, transactionCache));
     }
 
     // ------------------------------------------ Building Attribute
     <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
-        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue));
+        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue, this, transactionCache));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
     public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type) {
-        return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type));
+        return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type, this, transactionCache));
     }
 
     // -------------------------------------------- Building Relations
@@ -75,14 +75,14 @@ public class ConceptFactory {
      * Used to build a RelationEdge by ThingImpl when it needs to connect itself with an attribute (implicit relation)
      */
     RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge)));
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge, this)));
     }
 
     /**
      * Used by RelationEdge to build a RelationImpl object out of a provided Edge
      */
     RelationImpl buildRelation(EdgeElement edge) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge)));
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge, this)));
     }
 
     /**
@@ -92,7 +92,7 @@ public class ConceptFactory {
      * @return ReifiedRelation
      */
     RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
-        return RelationReified.create(vertex, type);
+        return RelationReified.create(vertex, type, this, transactionCache);
     }
 
     /**
@@ -107,22 +107,22 @@ public class ConceptFactory {
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
     public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type) {
-        return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type));
+        return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type, this, transactionCache));
     }
 
     // ------------------------------------------- Building Entities
     EntityImpl buildEntity(VertexElement vertex, EntityType type) {
-        return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type));
+        return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type, this, transactionCache));
     }
 
     // ----------------------------------------- Building Rules --------------------------------------------------
     public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then) {
-        return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then));
+        return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then, this, transactionCache));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
     public RoleImpl buildRole(VertexElement vertex, Role type) {
-        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type));
+        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type, this, transactionCache));
     }
 
     /**
@@ -204,7 +204,7 @@ public class ConceptFactory {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = RelationImpl.create(RelationEdge.get(edgeElement));
+                    concept = RelationImpl.create(RelationEdge.get(edgeElement, this));
                     break;
                 default:
                     throw TransactionException.unknownConcept(label.name());

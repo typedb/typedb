@@ -85,8 +85,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    ThingImpl(VertexElement vertexElement, V type) {
-        this(vertexElement);
+    ThingImpl(VertexElement vertexElement, V type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        this(vertexElement, conceptFactory, transactionCache);
         type((TypeImpl) type);
         track();
     }

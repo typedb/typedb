@@ -34,16 +34,18 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private EntityTypeImpl(VertexElement vertexElement, EntityType type) {
-        super(vertexElement, type);
+    private EntityTypeImpl(VertexElement vertexElement, EntityType type,
+                           ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
     }
 
-    public static EntityTypeImpl get(VertexElement vertexElement) {
-        return new EntityTypeImpl(vertexElement);
+    public static EntityTypeImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new EntityTypeImpl(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type) {
-        return new EntityTypeImpl(vertexElement, type);
+    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type,
+                                        ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new EntityTypeImpl(vertexElement, type, conceptFactory, transactionCache);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {

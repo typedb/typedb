@@ -47,30 +47,32 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value) {
-        super(vertexElement, type);
+    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value,
+                          ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
         setValue(value);
     }
 
-    public static <D> AttributeImpl<D> get(VertexElement vertexElement) {
-        return new AttributeImpl<>(vertexElement);
+    public static <D> AttributeImpl<D> get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new AttributeImpl<>(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
+    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value,
+                                              ConceptFactory conceptFactory, TransactionCache transactionCache) {
         D converted;
         try {
             converted = ValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
             throw TransactionException.invalidAttributeValue(value, type.dataType());
         }
-        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, converted);
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, converted, conceptFactory, transactionCache);
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.label(), converted.toString());
         vertexElement.property(Schema.VertexProperty.INDEX, index);
 
         //Track the attribute by index
-        vertexElement.tx().cache().addNewAttribute(attribute.type().label(), index, attribute.id());
+        transactionCache.addNewAttribute(attribute.type().label(), index, attribute.id());
         return attribute;
     }
 

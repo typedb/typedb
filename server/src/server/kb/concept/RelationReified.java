@@ -60,8 +60,19 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private RelationReified(VertexElement vertexElement, RelationType type) {
-        super(vertexElement, type);
+    private RelationReified(VertexElement vertexElement, RelationType type,
+                            ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
+    }
+
+
+    public static RelationReified get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new RelationReified(vertexElement, conceptFactory, transactionCache);
+    }
+
+    public static RelationReified create(VertexElement vertexElement, RelationType type,
+                                         ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new RelationReified(vertexElement, type, conceptFactory, transactionCache);
     }
 
     @Override
@@ -72,14 +83,6 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         transactionCache.getNewRelations().remove(owner);
         if(isInferred()) transactionCache.removeInferredInstance(owner);
         super.delete();
-    }
-
-    public static RelationReified get(VertexElement vertexElement) {
-        return new RelationReified(vertexElement);
-    }
-
-    public static RelationReified create(VertexElement vertexElement, RelationType type) {
-        return new RelationReified(vertexElement, type);
     }
 
     @Override

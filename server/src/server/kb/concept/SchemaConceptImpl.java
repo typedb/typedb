@@ -56,8 +56,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    SchemaConceptImpl(VertexElement vertexElement, T superType) {
-        this(vertexElement);
+    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        this(vertexElement, conceptFactory, transactionCache);
         if (sup() == null) sup(superType);
     }
 

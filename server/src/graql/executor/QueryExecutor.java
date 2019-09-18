@@ -18,8 +18,6 @@
 
 package grakn.core.graql.executor;
 
-import io.vavr.API;
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
@@ -38,7 +36,6 @@ import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.DisjunctionIterator;
-import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.exception.GraknServerException;
@@ -60,6 +57,13 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -74,12 +78,6 @@ import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.groupingBy;
@@ -387,7 +385,7 @@ public class QueryExecutor {
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
         answers = filter(query, answers);
-        
+
         return answers;
     }
 

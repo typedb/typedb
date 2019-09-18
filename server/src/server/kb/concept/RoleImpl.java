@@ -48,17 +48,17 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
         super(vertexElement, conceptFactory, transactionCache);
     }
 
-    private RoleImpl(VertexElement vertexElement, Role type) {
-        super(vertexElement, type);
+    private RoleImpl(VertexElement vertexElement, Role type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptFactory, transactionCache);
     }
 
-    public static RoleImpl get(VertexElement vertexElement) {
-        return new RoleImpl(vertexElement);
+    public static RoleImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        return new RoleImpl(vertexElement, conceptFactory, transactionCache);
     }
 
-    public static RoleImpl create(VertexElement vertexElement, Role type) {
-        RoleImpl role = new RoleImpl(vertexElement, type);
-        vertexElement.tx().cache().trackForValidation(role);
+    public static RoleImpl create(VertexElement vertexElement, Role type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
+        RoleImpl role = new RoleImpl(vertexElement, type, conceptFactory, transactionCache);
+        transactionCache.trackForValidation(role);
         return role;
     }
 
