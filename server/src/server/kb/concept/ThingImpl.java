@@ -244,22 +244,13 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relation> reifiedRelations(Role... roles) {
-        GraphTraversal<Vertex, Vertex> traversal = vertex().tx().getTinkerTraversal().V().
-                hasId(elementId());
-
-        if (roles.length == 0) {
-            traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());
-        } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
-            traversal.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
-        }
-
-        return traversal.toStream().map(vertex -> conceptManager.buildConcept(vertex));
+        Stream<VertexElement> reifiedRelationVertices = vertex().reifiedRelations(roles);
+        return reifiedRelationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
     }
 
     private Stream<Relation> edgeRelations(Role... roles) {
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
+        // TODO move this into the AbstractElement and ElementFactory as well
         Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
 
         if (!roleSet.isEmpty()) {

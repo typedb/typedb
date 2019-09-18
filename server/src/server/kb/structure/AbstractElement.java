@@ -17,20 +17,27 @@
  */
 package grakn.core.server.kb.structure;
 
+import grakn.core.concept.type.Role;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.ElementUtils;
 import grakn.core.server.session.TransactionOLTP;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
+import static java.util.stream.Collectors.toSet;
 import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
@@ -184,5 +191,16 @@ public abstract class AbstractElement<E extends Element, P extends Enum> {
 
     public final boolean isDeleted() {
         return !ElementUtils.isValidElement(element());
+    }
+
+
+    public Stream<VertexElement> reifiedRelations(Role[] roles) {
+        if (roles.length == 0) {
+            return elementFactory.inFromSourceId(id().toString(), Schema.EdgeLabel.ROLE_PLAYER);
+        } else {
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
+            return elementFactory.inFromSourceIdWithProperty(id().toString(), Schema.EdgeLabel.ROLE_PLAYER,
+                    Schema.EdgeProperty.ROLE_LABEL_ID, roleTypesIds);
+        }
     }
 }

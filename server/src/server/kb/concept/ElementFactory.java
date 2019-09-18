@@ -209,4 +209,17 @@ public final class ElementFactory {
                 .map(vertex -> buildVertexElement(vertex));
     }
 
+    public Stream<VertexElement> inFromSourceId(String startId, Schema.EdgeLabel edgeLabel) {
+        return getTinkerTraversal().V(startId).in(edgeLabel.getLabel()).toStream().map(vertex -> buildVertexElement(vertex));
+    }
+
+    public Stream<VertexElement> inFromSourceIdWithProperty(String startId, Schema.EdgeLabel edgeLabel, Schema.EdgeProperty edgeProperty,
+                                          Set<Integer> roleTypesIds) {
+        return getTinkerTraversal().V(startId)
+                .inE(edgeLabel.getLabel())
+                .has(edgeProperty.name(), org.apache.tinkerpop.gremlin.process.traversal.P.within(roleTypesIds))
+                .outV()
+                .toStream()
+                .map(vertex -> buildVertexElement(vertex));
+    }
 }

@@ -42,6 +42,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Represent a Vertex in a TransactionOLTP
@@ -171,4 +172,6 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
                                                       boolean ownerToValueOrdering) {
         return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
     }
+
+
 }
