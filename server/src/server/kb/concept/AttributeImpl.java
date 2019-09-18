@@ -126,8 +126,8 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public Stream<Thing> getDependentConcepts() {
         Label typeLabel = type().label();
-        Role hasRole = vertex().tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
-        Role keyRole = vertex().tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
+        Role hasRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
+        Role keyRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
         Stream<Thing> conceptStream = Stream.of(this);
         if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
         if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));

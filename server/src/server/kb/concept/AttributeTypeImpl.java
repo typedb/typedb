@@ -190,7 +190,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         vertex().tx().session().graphLock().readLock().lock();
         try {
-            return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+            return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
         } finally {
             vertex().tx().session().graphLock().readLock().unlock();
         }

@@ -159,7 +159,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
-        Casting casting = Casting.create(edge, owner, role, toThing);
+        Casting casting = Casting.create(edge, owner, role, toThing, conceptManager);
         transactionCache.trackForValidation(casting);
     }
 
@@ -173,7 +173,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         if (roleSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
-                    .map(edge -> Casting.withRelation(edge, owner));
+                    .map(edge -> Casting.withRelation(edge, owner, conceptManager));
         }
 
         //Traversal is used so we can potentially optimise on the index
@@ -186,7 +186,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 .toStream()
                 .filter(edge -> ElementUtils.isValidElement(edge)) // filter out invalid or deleted edges that are cached
                 .map(edge -> vertex().tx().factory().buildEdgeElement(edge))
-                .map(edge -> Casting.withRelation(edge, owner));
+                .map(edge -> Casting.withRelation(edge, owner, conceptManager));
     }
 
     @Override

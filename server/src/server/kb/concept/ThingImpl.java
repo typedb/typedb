@@ -193,7 +193,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     Stream<Casting> castingsInstance() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER)
-                .map(edge -> Casting.withThing(edge, this));
+                .map(edge -> Casting.withThing(edge, this, conceptManager));
     }
 
     private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes) {
