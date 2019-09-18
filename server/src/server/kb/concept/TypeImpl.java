@@ -61,7 +61,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = conceptFactory.buildConcept(edge.target());
+            Role role = conceptManager.buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(role, required);
         });
@@ -69,12 +69,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
-    TypeImpl(VertexElement vertexElement, T superType, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, superType, conceptFactory, transactionCache);
+    TypeImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, superType, conceptManager, transactionCache);
         //This constructor is ONLY used when CREATING new types. Which is why we shard here
         createShard();
     }

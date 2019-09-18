@@ -35,24 +35,24 @@ import java.util.stream.Stream;
  * An ontological element used to define different types of Rule.
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
-    private RuleImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    private RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
     private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
-                     ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+                     ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
-    public static RuleImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new RuleImpl(vertexElement, conceptFactory, transactionCache);
+    public static RuleImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new RuleImpl(vertexElement, conceptManager, transactionCache);
     }
 
     public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
-                                  ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptFactory, transactionCache);
+                                  ConceptManager conceptManager, TransactionCache transactionCache) {
+        RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptManager, transactionCache);
         transactionCache.trackForValidation(rule);
         return rule;
     }

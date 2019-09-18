@@ -29,7 +29,6 @@ import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.session.cache.TransactionCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,7 +48,7 @@ public class RelationEdge implements RelationStructure {
     private final Logger LOG = LoggerFactory.getLogger(RelationEdge.class);
 
     private final EdgeElement edgeElement;
-    private final ConceptFactory conceptFactory;
+    private final ConceptManager conceptManager;
 
     private final Cache<RelationType> relationType = new Cache<>(() ->
             edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
@@ -63,14 +62,14 @@ public class RelationEdge implements RelationStructure {
     private final Cache<Thing> owner = new Cache<>(() -> conceptFactory().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(() -> conceptFactory().buildConcept(edge().target()));
 
-    private RelationEdge(EdgeElement edgeElement, ConceptFactory conceptFactory) {
+    private RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager) {
         this.edgeElement = edgeElement;
-        this.conceptFactory = conceptFactory;
+        this.conceptManager = conceptManager;
     }
 
     private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                         ConceptFactory conceptFactory) {
-        this(edgeElement, conceptFactory);
+                         ConceptManager conceptManager) {
+        this(edgeElement, conceptManager);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
@@ -81,21 +80,21 @@ public class RelationEdge implements RelationStructure {
         this.valueRole.set(valueRole);
     }
 
-    public static RelationEdge get(EdgeElement edgeElement, ConceptFactory conceptFactory) {
-        return new RelationEdge(edgeElement, conceptFactory);
+    public static RelationEdge get(EdgeElement edgeElement, ConceptManager conceptManager) {
+        return new RelationEdge(edgeElement, conceptManager);
     }
 
     public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                                      ConceptFactory conceptFactory) {
-        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement, conceptFactory);
+                                      ConceptManager conceptManager) {
+        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement, conceptManager);
     }
 
     private EdgeElement edge() {
         return edgeElement;
     }
 
-    private ConceptFactory conceptFactory() {
-        return conceptFactory;
+    private ConceptManager conceptFactory() {
+        return conceptManager;
     }
 
     @Override

@@ -25,12 +25,12 @@ import java.util.function.Function;
 
 import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 
-public class ConceptFactory {
+public class ConceptManager {
 
     private ElementFactory elementFactory;
     private TransactionCache transactionCache;
 
-    public ConceptFactory(ElementFactory elementFactory, TransactionCache transactionCache) {
+    public ConceptManager(ElementFactory elementFactory, TransactionCache transactionCache) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
     }

@@ -44,20 +44,20 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RoleImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    private RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
-    private RoleImpl(VertexElement vertexElement, Role type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+    private RoleImpl(VertexElement vertexElement, Role type, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
     }
 
-    public static RoleImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new RoleImpl(vertexElement, conceptFactory, transactionCache);
+    public static RoleImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new RoleImpl(vertexElement, conceptManager, transactionCache);
     }
 
-    public static RoleImpl create(VertexElement vertexElement, Role type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        RoleImpl role = new RoleImpl(vertexElement, type, conceptFactory, transactionCache);
+    public static RoleImpl create(VertexElement vertexElement, Role type, ConceptManager conceptManager, TransactionCache transactionCache) {
+        RoleImpl role = new RoleImpl(vertexElement, type, conceptManager, transactionCache);
         transactionCache.trackForValidation(role);
         return role;
     }

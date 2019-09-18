@@ -52,12 +52,12 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
-    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        this(vertexElement, conceptFactory, transactionCache);
+    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionCache transactionCache) {
+        this(vertexElement, conceptManager, transactionCache);
         if (sup() == null) sup(superType);
     }
 

@@ -30,22 +30,22 @@ import grakn.core.server.session.cache.TransactionCache;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    private EntityTypeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    private EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
     private EntityTypeImpl(VertexElement vertexElement, EntityType type,
-                           ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+                           ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
     }
 
-    public static EntityTypeImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new EntityTypeImpl(vertexElement, conceptFactory, transactionCache);
+    public static EntityTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new EntityTypeImpl(vertexElement, conceptManager, transactionCache);
     }
 
     public static EntityTypeImpl create(VertexElement vertexElement, EntityType type,
-                                        ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new EntityTypeImpl(vertexElement, type, conceptFactory, transactionCache);
+                                        ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new EntityTypeImpl(vertexElement, type, conceptManager, transactionCache);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {
@@ -54,10 +54,10 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     public Entity create() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptFactory.buildEntity(vertex, type), false);
+        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptManager.buildEntity(vertex, type), false);
     }
 
     public Entity addEntityInferred() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptFactory.buildEntity(vertex, type), true);
+        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptManager.buildEntity(vertex, type), true);
     }
 }

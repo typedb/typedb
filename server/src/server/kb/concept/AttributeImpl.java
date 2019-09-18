@@ -20,14 +20,12 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.rpc.ResponseBuilder;
 import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -43,29 +41,29 @@ import java.util.stream.Stream;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    private AttributeImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    private AttributeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
     private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value,
-                          ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+                          ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
         setValue(value);
     }
 
-    public static <D> AttributeImpl<D> get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new AttributeImpl<>(vertexElement, conceptFactory, transactionCache);
+    public static <D> AttributeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new AttributeImpl<>(vertexElement, conceptManager, transactionCache);
     }
 
     public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value,
-                                              ConceptFactory conceptFactory, TransactionCache transactionCache) {
+                                              ConceptManager conceptManager, TransactionCache transactionCache) {
         D converted;
         try {
             converted = ValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
             throw TransactionException.invalidAttributeValue(value, type.dataType());
         }
-        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, converted, conceptFactory, transactionCache);
+        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, converted, conceptManager, transactionCache);
 
         //Generate the index again. Faster than reading
         String index = Schema.generateAttributeIndex(type.label(), converted.toString());

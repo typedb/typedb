@@ -22,7 +22,6 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.graql.executor.ConceptBuilder;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
@@ -41,23 +40,23 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RelationTypeImpl(VertexElement vertexElement, ConceptFactory conceptBuilder, TransactionCache transactionCache) {
+    private RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, TransactionCache transactionCache) {
         super(vertexElement, conceptBuilder, transactionCache);
     }
 
     private RelationTypeImpl(VertexElement vertexElement, RelationType type,
-                             ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+                             ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
     }
 
     public static RelationTypeImpl get(VertexElement vertexElement,
-                                       ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new RelationTypeImpl(vertexElement, conceptFactory, transactionCache);
+                                       ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new RelationTypeImpl(vertexElement, conceptManager, transactionCache);
     }
 
     public static RelationTypeImpl create(VertexElement vertexElement, RelationType type,
-                                          ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptFactory, transactionCache);
+                                          ConceptManager conceptManager, TransactionCache transactionCache) {
+        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptManager, transactionCache);
         transactionCache.trackForValidation(relationType);
         return relationType;
     }
@@ -77,7 +76,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     private Relation addRelation(boolean isInferred) {
         Relation relation = addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> conceptFactory.buildRelation(vertex, type), isInferred);
+                (vertex, type) -> conceptManager.buildRelation(vertex, type), isInferred);
         transactionCache.addNewRelation(relation);
         return relation;
     }
@@ -177,7 +176,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                             outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
                             has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue()).
                             toStream().
-                            map(edge -> conceptFactory.buildConcept(edge));
+                            map(edge -> conceptManager.buildConcept(edge));
                 });
     }
 }

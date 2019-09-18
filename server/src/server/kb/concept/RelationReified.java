@@ -56,23 +56,23 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    private RelationReified(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    private RelationReified(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
     private RelationReified(VertexElement vertexElement, RelationType type,
-                            ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+                            ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
     }
 
 
-    public static RelationReified get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new RelationReified(vertexElement, conceptFactory, transactionCache);
+    public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new RelationReified(vertexElement, conceptManager, transactionCache);
     }
 
     public static RelationReified create(VertexElement vertexElement, RelationType type,
-                                         ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new RelationReified(vertexElement, type, conceptFactory, transactionCache);
+                                         ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new RelationReified(vertexElement, type, conceptManager, transactionCache);
     }
 
     @Override

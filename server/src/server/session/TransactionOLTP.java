@@ -49,10 +49,9 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
-import grakn.core.server.kb.concept.ConceptFactory;
+import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ConceptVertex;
-import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
@@ -76,11 +75,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -108,7 +105,7 @@ public class TransactionOLTP implements Transaction {
 
     // Shared Variables
     private final SessionImpl session;
-    private final ConceptFactory elementFactory;
+    private final ConceptManager elementFactory;
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -148,7 +145,7 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptFactory conceptFactory, TransactionCache transactionCache, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager, TransactionCache transactionCache, KeyspaceCache keyspaceCache) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -156,7 +153,7 @@ public class TransactionOLTP implements Transaction {
         this.janusTransaction = janusTransaction;
 
 //        this.elementFactory = new ElementFactory(this);
-        this.elementFactory = conceptFactory;
+        this.elementFactory = conceptManager;
 
         this.queryCache = new MultilevelSemanticCache();
         this.ruleCache = new RuleCache(this);
@@ -495,7 +492,7 @@ public class TransactionOLTP implements Transaction {
         return graphTraversalSource;
     }
 
-    public ConceptFactory factory() {
+    public ConceptManager factory() {
         return elementFactory;
     }
 

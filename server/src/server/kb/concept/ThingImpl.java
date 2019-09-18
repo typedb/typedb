@@ -49,7 +49,6 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
@@ -75,18 +74,18 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                 map(EdgeElement::target).
                 flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
                 map(EdgeElement::target).
-                map(concept -> conceptFactory.<V>buildConcept(concept)).
+                map(concept -> conceptManager.<V>buildConcept(concept)).
                 findAny();
 
         return type.orElseThrow(() -> TransactionException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
-    ThingImpl(VertexElement vertexElement, V type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        this(vertexElement, conceptFactory, transactionCache);
+    ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, TransactionCache transactionCache) {
+        this(vertexElement, conceptManager, transactionCache);
         type((TypeImpl) type);
         track();
     }
@@ -294,7 +293,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             });
         }
 
-        return stream.map(edge -> conceptFactory.buildRelation(edge));
+        return stream.map(edge -> conceptManager.buildRelation(edge));
     }
 
     @Override
@@ -343,7 +342,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         vertex().tx().statisticsDelta().increment(hasAttribute.label());
 
-        RelationImpl attributeRelation = conceptFactory.buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
+        RelationImpl attributeRelation = conceptManager.buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
         if (isInferred) transactionCache.inferredInstance(attributeRelation);
         return attributeRelation;
     }

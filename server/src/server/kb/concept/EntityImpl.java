@@ -33,21 +33,21 @@ import java.util.stream.Stream;
  * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    private EntityImpl(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, conceptFactory, transactionCache);
+    private EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, conceptManager, transactionCache);
     }
 
-    private EntityImpl(VertexElement vertexElement, EntityType type, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptFactory, transactionCache);
+    private EntityImpl(VertexElement vertexElement, EntityType type, ConceptManager conceptManager, TransactionCache transactionCache) {
+        super(vertexElement, type, conceptManager, transactionCache);
     }
 
-    public static EntityImpl get(VertexElement vertexElement, ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new EntityImpl(vertexElement, conceptFactory, transactionCache);
+    public static EntityImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new EntityImpl(vertexElement, conceptManager, transactionCache);
     }
 
     public static EntityImpl create(VertexElement vertexElement, EntityType type,
-                                    ConceptFactory conceptFactory, TransactionCache transactionCache) {
-        return new EntityImpl(vertexElement, type, conceptFactory, transactionCache);
+                                    ConceptManager conceptManager, TransactionCache transactionCache) {
+        return new EntityImpl(vertexElement, type, conceptManager, transactionCache);
     }
 
     public static EntityImpl from(Entity entity) {

@@ -26,7 +26,6 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.rpc.ResponseBuilder;
 import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -40,7 +39,7 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
-    final ConceptFactory conceptFactory;
+    final ConceptManager conceptManager;
     final TransactionCache transactionCache;
 
 
@@ -53,9 +52,9 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final Cache<Long> shardCount = new Cache<>(() -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(VertexElement vertexElement, ConceptFactory conceptFactory,TransactionCache transactionCache) {
+    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
         this.vertexElement = vertexElement;
-        this.conceptFactory = conceptFactory;
+        this.conceptManager = conceptManager;
         this.transactionCache = transactionCache;
     }
 
@@ -102,13 +101,13 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
-                                conceptFactory.buildConcept(edge.source()),
-                                conceptFactory.buildConcept(edge.target()))
+                                conceptManager.buildConcept(edge.source()),
+                                conceptManager.buildConcept(edge.target()))
                         );
             case IN:
-                return vertex().getEdgesOfType(direction, label).map(edge -> conceptFactory.buildConcept(edge.source()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> conceptManager.buildConcept(edge.source()));
             case OUT:
-                return vertex().getEdgesOfType(direction, label).map(edge -> conceptFactory.buildConcept(edge.target()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> conceptManager.buildConcept(edge.target()));
             default:
                 throw TransactionException.invalidDirection(direction);
         }

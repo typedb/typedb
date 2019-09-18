@@ -29,7 +29,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.ConceptFactory;
+import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -152,10 +152,10 @@ public class SessionImpl implements Session {
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         TransactionCache transactionCache = new TransactionCache(keyspaceCache);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
-        ConceptFactory conceptFactory = new ConceptFactory(elementFactory, transactionCache);
+        ConceptManager conceptManager = new ConceptManager(elementFactory, transactionCache);
 
 
-        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptFactory, transactionCache, keyspaceCache);
+        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, transactionCache, keyspaceCache);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 
