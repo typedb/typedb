@@ -285,9 +285,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         if (!roleSet.isEmpty()) {
             stream = stream.filter(edge -> {
                 Set<Role> edgeRoles = new HashSet<>();
-                edgeRoles.add(vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+                edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
                 if (this.isAttribute()){
-                    edgeRoles.add(vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+                    edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
                 }
                 return !Sets.intersection(roleSet, edgeRoles).isEmpty();
             });
@@ -329,9 +329,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
 
         Label label = attribute.type().label();
-        RelationType hasAttribute = vertex().tx().getSchemaConcept(has.getLabel(label));
-        Role hasAttributeOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
-        Role hasAttributeValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
+        RelationType hasAttribute = conceptManager.getSchemaConcept(has.getLabel(label));
+        Role hasAttributeOwner = conceptManager.getSchemaConcept(hasOwner.getLabel(label));
+        Role hasAttributeValue = conceptManager.getSchemaConcept(hasValue.getLabel(label));
 
         if (hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().playing().noneMatch(play -> play.equals(hasAttributeOwner))) {
             throw TransactionException.hasNotAllowed(this, attribute);
@@ -349,11 +349,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     @Override
     public T unhas(Attribute attribute) {
-        Role roleHasOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
-        Role roleKeyOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
+        Role roleHasOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
+        Role roleKeyOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
 
-        Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
-        Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
+        Role roleHasValue = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
+        Role roleKeyValue = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
 
         Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
         relations.filter(relation -> {

@@ -2,11 +2,14 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -22,6 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 
@@ -59,7 +63,7 @@ public class ConceptManager {
         if (Schema.isEdgeId(conceptId)) {
             EdgeElement edgeElement = elementFactory.getEdgeElementWithId(Schema.elementId(conceptId));
             if (edgeElement != null) {
-               return buildConcept(edgeElement);
+                return buildConcept(edgeElement);
             }
             // If element is still null,  it is possible we are referring to a ReifiedRelation which
             // uses its previous EdgeRelation as an id so property must be fetched
@@ -69,6 +73,83 @@ public class ConceptManager {
         return buildConcept(elementFactory.getVertexWithId(Schema.elementId(conceptId)));
     }
 
+
+    // TODO why are there three separate access methods here!
+    public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+        Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
+        if (meta != null) return getSchemaConcept(meta.getId());
+        return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
+    }
+
+    public <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
+        SchemaConcept schemaConcept;
+        if (transactionCache.isTypeCached(label)) {
+            schemaConcept = transactionCache.getCachedSchemaConcept(label);
+        } else {
+            schemaConcept = getSchemaConcept(convertToId(label));
+        }
+        return validateSchemaConcept(schemaConcept, baseType, () -> null);
+    }
+
+    public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
+        if (!id.isValid()) return null;
+        return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
+    }
+
+    public <T extends grakn.core.concept.type.Type> T getType(Label label) {
+        return getSchemaConcept(label, Schema.BaseType.TYPE);
+    }
+
+    public EntityType getEntityType(String label) {
+        return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
+    }
+
+    public RelationType getRelationType(String label) {
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
+    }
+
+    public <V> AttributeType<V> getAttributeType(String label) {
+        return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
+    }
+
+    public Role getRole(String label) {
+        return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
+    }
+
+    public Rule getRule(String label) {
+        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
+    }
+
+
+
+    /**
+     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
+     * so be sure to use the correct graph when performing the mapping.
+     *
+     * @param label The label to be converted to the id
+     * @return The matching type id
+     */
+    private LabelId convertToId(Label label) {
+        if (transactionCache.isLabelCached(label)) {
+            return transactionCache.convertLabelToId(label);
+        }
+        return LabelId.invalid();
+    }
+
+
+    private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
+        if (concept != null && baseType.getClassType().isInstance(concept)) {
+            //noinspection unchecked
+            return (T) concept;
+        } else {
+            return invalidHandler.get();
+        }
+    }
+
+    /*
+
+     -------- end
+     */
 
 
     private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder) {

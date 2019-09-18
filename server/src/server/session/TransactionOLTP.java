@@ -49,8 +49,8 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
-import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptVertex;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
@@ -152,7 +152,6 @@ public class TransactionOLTP implements Transaction {
 
         this.janusTransaction = janusTransaction;
 
-//        this.conceptManager = new ElementFactory(this);
         this.conceptManager = conceptManager;
 
         this.queryCache = new MultilevelSemanticCache();
@@ -401,19 +400,7 @@ public class TransactionOLTP implements Transaction {
         return queryCache;
     }
 
-    /**
-     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
-     * so be sure to use the correct graph when performing the mapping.
-     *
-     * @param label The label to be converted to the id
-     * @return The matching type id
-     */
-    public LabelId convertToId(Label label) {
-        if (transactionCache.isLabelCached(label)) {
-            return transactionCache.convertLabelToId(label);
-        }
-        return LabelId.invalid();
-    }
+
 
     /**
      * Gets and increments the current available type id.
@@ -598,7 +585,7 @@ public class TransactionOLTP implements Transaction {
      */
     private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
         //Get the type if it already exists otherwise build a new one
-        SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
+        SchemaConceptImpl schemaConcept = getSchemaConcept(label);
         if (schemaConcept == null) {
             if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
                 throw TransactionException.invalidLabelStart(label);
@@ -631,14 +618,7 @@ public class TransactionOLTP implements Transaction {
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
 
-    private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
-        if (concept != null && baseType.getClassType().isInstance(concept)) {
-            //noinspection unchecked
-            return (T) concept;
-        } else {
-            return invalidHandler.get();
-        }
-    }
+
 
     /**
      * @param label A unique label for the RelationType
@@ -744,23 +724,6 @@ public class TransactionOLTP implements Transaction {
     }
 
 
-    private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
-        checkGraphIsOpen();
-        SchemaConcept schemaConcept;
-        if (transactionCache.isTypeCached(label)) {
-            schemaConcept = transactionCache.getCachedSchemaConcept(label);
-        } else {
-            schemaConcept = getSchemaConcept(convertToId(label));
-        }
-        return validateSchemaConcept(schemaConcept, baseType, () -> null);
-    }
-
-    @Nullable
-    public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
-        if (!id.isValid()) return null;
-        return this.getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
-    }
-
     /**
      * @param value A value which an Attribute in the graph may be holding.
      * @param <V>
@@ -799,8 +762,11 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
-        if (meta != null) return getSchemaConcept(meta.getId());
-        return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
+        if (meta != null) {
+            return conceptManager.getSchemaConcept(meta.getId());
+        } else {
+            return conceptManager.getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
+        }
     }
 
     /**
@@ -812,7 +778,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
-        return getSchemaConcept(label, Schema.BaseType.TYPE);
+        return conceptManager.getType(label);
     }
 
     /**
@@ -822,7 +788,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public EntityType getEntityType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
+        return conceptManager.getEntityType(label);
     }
 
     /**
@@ -832,7 +798,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public RelationType getRelationType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
+        return conceptManager.getRelationType(label);
     }
 
     /**
@@ -843,7 +809,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
+        return conceptManager.getAttributeType(label);
     }
 
     /**
@@ -853,7 +819,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Role getRole(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
+        return conceptManager.getRole(label);
     }
 
     /**
@@ -863,8 +829,9 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
+        return conceptManager.getRule(label);
     }
+
 
     @Override
     public void close() {
@@ -959,6 +926,7 @@ public class TransactionOLTP implements Transaction {
 
     /**
      * Set a new type shard checkpoint for a given label
+     *
      * @param label
      */
     private void setShardCheckpoint(Label label, long checkpoint) {
@@ -966,14 +934,14 @@ public class TransactionOLTP implements Transaction {
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name(), checkpoint);
-        }
-        else {
+        } else {
             throw new RuntimeException("Label '" + label.getValue() + "' does not exist");
         }
     }
 
     /**
      * Get the checkpoint in which type shard was last created
+     *
      * @param label
      * @return the checkpoint for the given label. if the label does not exist, return 0
      */
@@ -983,11 +951,11 @@ public class TransactionOLTP implements Transaction {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name());
             return (Long) property.orElse(0L);
-        }
-        else {
+        } else {
             return 0L;
         }
     }
+
     /**
      * Returns the current number of shards the provided grakn.core.concept.type.Type has. This is used in creating more
      * efficient query plans.
