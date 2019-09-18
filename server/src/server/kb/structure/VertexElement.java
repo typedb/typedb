@@ -18,11 +18,18 @@
 
 package grakn.core.server.kb.structure;
 
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.ElementUtils;
+import grakn.core.server.kb.concept.RelationImpl;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -33,6 +40,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
  * Represent a Vertex in a TransactionOLTP
@@ -146,5 +155,20 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         return getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
                 .map(EdgeElement::source)
                 .map(vertexElement -> elementFactory.getShard(vertexElement));
+    }
+
+    public Stream<Casting> roleCastings(RelationImpl owner, ConceptManager conceptManager, Type type, Set<Integer> allowedRoleTypeIds) {
+        Stream<EdgeElement> edgeElementStream = elementFactory.rolePlayerEdges(id().toString(), type, allowedRoleTypeIds);
+        return edgeElementStream.map(edge -> Casting.withRelation(edge, owner, conceptManager));
+    }
+
+    public boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId) {
+        return elementFactory.rolePlayerEdgeExists(startVertexId, type, role, endVertexId);
+    }
+
+
+    public Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
+                                                      boolean ownerToValueOrdering) {
+        return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
     }
 }

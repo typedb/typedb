@@ -229,31 +229,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                         Schema.ImplicitType.KEY_VALUE
                 ));
 
-        //NB: need extra check cause it seems valid types can still produce invalid ids
-        GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty()) ?
-                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        as("edge").
-                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? ownerRoleIds : valueRoleIds)).
-                        outV().
-                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? valueRoleIds : ownerRoleIds)).
-                        where(P.neq("edge")).
-                        inV()
-                :
-                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        as("edge").
-                        outV().
-                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        where(P.neq("edge")).
-                        inV();
+        Stream<VertexElement> shortcutNeighbors = vertex().getShortcutNeighbors(ownerRoleIds, valueRoleIds, ownerToValueOrdering);
+        return shortcutNeighbors.map(vertexElement -> conceptManager.buildConcept(vertexElement));
 
-        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
-
-        //noinspection unchecked
-        return vertex().tx().getTinkerTraversal().V().
-                hasId(elementId()).
-                union(shortcutTraversal, attributeEdgeTraversal).toStream().
-                map(vertex -> conceptManager.buildConcept(vertex));
     }
 
     /**

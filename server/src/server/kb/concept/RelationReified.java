@@ -29,7 +29,6 @@ import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.cache.TransactionCache;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -141,17 +140,15 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      */
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
-        GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                hasId(this.elementId()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
-                as("edge").
-                inV().
-                hasId(ConceptVertex.from(toThing).elementId()).
-                select("edge");
+        boolean rolePlayerEdgeExists = vertex()
+                .rolePlayerEdgeExists(
+                        elementId().toString(),
+                        type(),
+                        role,
+                        ConceptVertex.from(toThing).elementId().toString()
+                );
 
-        if (traversal.hasNext()) {
+        if (rolePlayerEdgeExists) {
             return;
         }
 
@@ -178,15 +175,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
-        return vertex().tx().getTinkerTraversal().V()
-                .hasId(elementId())
-                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
-                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue())
-                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
-                .toStream()
-                .filter(edge -> ElementUtils.isValidElement(edge)) // filter out invalid or deleted edges that are cached
-                .map(edge -> vertex().tx().factory().buildEdgeElement(edge))
-                .map(edge -> Casting.withRelation(edge, owner, conceptManager));
+
+        return vertex().roleCastings(owner, conceptManager, type(), roleTypesIds);
     }
 
     @Override

@@ -19,13 +19,17 @@
 package grakn.core.server.kb.concept;
 
 import grakn.core.concept.ConceptId;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -34,6 +38,10 @@ import org.janusgraph.core.JanusGraphTransaction;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Stream;
+
+import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
  * Constructs Concepts And Edges
@@ -145,4 +153,60 @@ public final class ElementFactory {
         }
         return graphTraversalSource;
     }
+
+    public Stream<EdgeElement> rolePlayerEdges(String vertexId, Type type, Set<Integer> roleTypesIds) {
+        return getTinkerTraversal()
+                .V(vertexId)
+                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type.labelId().getValue())
+                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
+                .toStream()
+                .filter(edge -> ElementUtils.isValidElement(edge))// filter out invalid or deleted edges that are cached
+                .map(edge -> buildEdgeElement(edge));
+    }
+
+    public boolean rolePlayerEdgeExists(String startVertexId, Type relationType, Role role, String endVertexId) {
+        //Checking if the edge exists
+        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
+                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), relationType.labelId().getValue())
+                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue())
+                .as("edge")
+                .inV()
+                .hasId(endVertexId)
+                .select("edge");
+
+        return traversal.hasNext();
+    }
+
+    public Stream<VertexElement> shortcutNeighbors(String startConceptId, Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
+                                                 boolean ownerToValueOrdering) {
+        //NB: need extra check cause it seems valid types can still produce invalid ids
+        GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty()) ?
+                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        as("edge").
+                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? ownerRoleIds : valueRoleIds)).
+                        outV().
+                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? valueRoleIds : ownerRoleIds)).
+                        where(P.neq("edge")).
+                        inV()
+                :
+                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        as("edge").
+                        outV().
+                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        where(P.neq("edge")).
+                        inV();
+
+        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
+
+        //noinspection unchecked
+        return getTinkerTraversal()
+                .V(startConceptId)
+                .union(shortcutTraversal, attributeEdgeTraversal)
+                .toStream()
+                .map(vertex -> buildVertexElement(vertex));
+    }
+
 }
