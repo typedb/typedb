@@ -27,7 +27,6 @@ import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

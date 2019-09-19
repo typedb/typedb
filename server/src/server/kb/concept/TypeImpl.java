@@ -230,7 +230,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     Stream<V> instancesDirect() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
                 .map(EdgeElement::source)
-                .map(sourceVertex -> sourceVertex.currentShard())
+                .map(VertexElement::asShard)
                 .flatMap(Shard::links)
                 .map(shardVertexElement -> conceptManager.buildConcept(shardVertexElement));
     }

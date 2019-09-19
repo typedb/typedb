@@ -28,9 +28,7 @@ import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.ElementUtils;
 import grakn.core.server.kb.concept.RelationImpl;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -41,9 +39,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
-import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Represent a Vertex in a TransactionOLTP
@@ -131,9 +126,12 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         }
     }
 
+    public Shard asShard() {
+        return elementFactory.getShard(this);
+    }
 
     public Shard currentShard() {
-        Object currentShardId = this.property(Schema.VertexProperty.CURRENT_SHARD);
+        Object currentShardId = property(Schema.VertexProperty.CURRENT_SHARD);
         Vertex shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
         return elementFactory.getShard(shardVertex);
     }
