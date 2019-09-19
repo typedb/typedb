@@ -215,7 +215,12 @@ public class ConceptManager {
             return getConcept(Schema.VertexProperty.EDGE_RELATION_ID, conceptId.getValue());
         }
 
-        return buildConcept(elementFactory.getVertexWithId(Schema.elementId(conceptId)));
+        Vertex vertex = elementFactory.getVertexWithId(Schema.elementId(conceptId));
+        if (vertex == null) {
+            return null;
+        } else {
+            return buildConcept(vertex);
+        }
     }
 
 

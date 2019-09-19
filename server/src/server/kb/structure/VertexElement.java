@@ -171,12 +171,10 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         return elementFactory.rolePlayerEdgeExists(startVertexId, type, role, endVertexId);
     }
 
-
     public Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
                                                       boolean ownerToValueOrdering) {
         return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
     }
-
 
     public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId) {
         return elementFactory.edgeRelationsConnectedToInstancesOfType(id().toString(), edgeInstanceLabelId);
