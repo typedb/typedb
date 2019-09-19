@@ -884,4 +884,8 @@ public class TransactionOLTP implements Transaction {
     public VertexElement addTypeVertex(LabelId labelId, Label label, Schema.BaseType baseType) {
         return conceptManager.addTypeVertex(labelId, label, baseType);
     }
+
+    public LabelId convertToId(Label label) {
+        return conceptManager.convertToId(label);
+    }
 }

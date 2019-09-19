@@ -162,7 +162,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
 
-        Attribute concept = transactionCache.getAttributeCache().get(index);
+        Attribute concept = transactionDataContainer.transactionCache().getAttributeCache().get(index);
         if (concept != null) return concept;
 
         return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
