@@ -234,4 +234,18 @@ public final class ElementFactory {
                 .toStream()
                 .map(edge -> buildEdgeElement(edge));
     }
+
+    public EdgeElement edgeBetweenVertices(String startVertexId, String endVertexId, Schema.EdgeLabel edgeLabel) {
+        // TODO try not to access the tinker traversal directly
+        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
+                .outE(edgeLabel.getLabel()).as("edge").otherV()
+                .hasId(edgeLabel)
+                .select("edge");
+
+        if (traversal.hasNext()) {
+            return buildEdgeElement(traversal.next());
+        } else {
+            return null;
+        }
+    }
 }

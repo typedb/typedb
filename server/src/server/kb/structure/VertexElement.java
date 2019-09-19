@@ -70,7 +70,8 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @return The edge created
      */
     public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return elementFactory.buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
+        Edge newEdge = element().addEdge(type.getLabel(), to.element());
+        return elementFactory.buildEdgeElement(newEdge);
     }
 
     /**
@@ -78,18 +79,12 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @param type the type of the edge to create
      */
     public EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type) {
+        EdgeElement existingEdge = elementFactory.edgeBetweenVertices(id().toString(), to.id().toString(), type);
 
-        // TODO try not to access the tinker traversal directly
-        GraphTraversal<Vertex, Edge> traversal = element().graph().traversal().V()
-                .hasId(id())
-                .outE(type.getLabel()).as("edge").otherV()
-                .hasId(to.id())
-                .select("edge");
-
-        if (!traversal.hasNext()) {
+        if (existingEdge == null) {
             return addEdge(to, type);
         } else {
-            return elementFactory.buildEdgeElement(traversal.next());
+            return existingEdge;
         }
     }
 
