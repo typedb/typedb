@@ -117,7 +117,7 @@ public class GraknDaemon {
                 if (spaces > 0) {
                     System.out.printf("%" + spaces + "s" + VERSION_LABEL + "%s\n", " ", Version.VERSION);
                 } else {
-                    System.out.print(VERSION_LABEL + " " + Version.VERSION);
+                    System.out.print(VERSION_LABEL + " " + Version.VERSION + "\n");
                 }
             } catch (IOException e) {
                 // DO NOTHING
