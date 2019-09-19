@@ -65,7 +65,7 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
         return elementFactory.buildVertexElement(element().inVertex());
     }
 
-    public VertexElement asReifiedVertexElement(ConceptId conceptId) {
-        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, conceptId);
+    public VertexElement asReifiedVertexElement() {
+        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, Schema.conceptId(element()));
     }
 }

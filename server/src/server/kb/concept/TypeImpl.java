@@ -232,7 +232,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 .map(EdgeElement::source)
                 .map(VertexElement::asShard)
                 .flatMap(Shard::links)
-                .map(shardVertexElement -> conceptManager.buildConcept(shardVertexElement));
+                .map(shardTargetVertex -> conceptManager.buildConcept(shardTargetVertex));
     }
 
     @Override

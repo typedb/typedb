@@ -504,7 +504,7 @@ public class EntityTypeIT {
         Entity e1 = entityType.create();
 
         assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
-        assertEquals(e1, shard.links().findAny().get());
+        assertEquals(e1, tx.getConcept(Schema.conceptId(shard.links().findAny().get().element())));
     }
 
     @Test
