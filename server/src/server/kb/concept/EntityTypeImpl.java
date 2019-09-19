@@ -54,10 +54,16 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     public Entity create() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptManager.buildEntity(vertex, type), false);
+        VertexElement newInstanceVertexElement = addEntityVertex(false);
+        Entity instance = conceptManager.buildEntity(newInstanceVertexElement, this);
+        syncCachesOnNewInstance(instance, false);
+        return instance;
     }
 
     public Entity addEntityInferred() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> conceptManager.buildEntity(vertex, type), true);
+        VertexElement newInstanceVertexElement = addEntityVertex(true);
+        Entity instance = conceptManager.buildEntity(newInstanceVertexElement, this);
+        syncCachesOnNewInstance(instance, true);
+        return instance;
     }
 }

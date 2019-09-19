@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
@@ -36,6 +37,7 @@ import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import javax.naming.directory.SchemaViolationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -84,39 +86,59 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return (TypeImpl<X, Y>) type;
     }
 
-    /**
-     * Utility method used to create an instance of this type
-     *
-     * @param instanceBaseType The base type of the instances of this type
-     * @param producer         The factory method to produce the instance
-     * @return A new instance
-     */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred) {
+    VertexElement addEntityVertex(boolean isInferred) {
         preCheckForInstanceCreation();
+        VertexElement vertexElement = vertex().createVertexElement(Schema.BaseType.ENTITY);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
+    }
 
-        if (isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
+    VertexElement addRelationVertex(boolean isInferred) {
+        preCheckForInstanceCreation();
+        VertexElement vertexElement = vertex().createVertexElement(Schema.BaseType.RELATION);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
+    }
 
-        VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
+    VertexElement addAttributeVertex(boolean isInferred) {
+        preCheckForInstanceCreation();
+        VertexElement vertexElement = vertex().createVertexElement(Schema.BaseType.ATTRIBUTE);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
+    }
 
+    /**
+     * Sync the transaction caches to reflect the new concept that has been created
+     *
+     * @param instance new instance that was created
+     * @param isInferred - flag that telling if that instance is inferred, saves a slow
+     *                   read from the vertex properties
+     */
+    void syncCachesOnNewInstance(Thing instance, boolean isInferred) {
         vertex().tx().ruleCache().ackTypeInstance(this);
         vertex().tx().statisticsDelta().increment(label());
 
         if (!Schema.MetaSchema.isMetaLabel(label())) {
             transactionCache.addedInstance(id());
-            if (isInferred){
-                instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
-            } else {
-                //creation of inferred concepts is an integral part of reasoning
-                //hence we only acknowledge non-inferred insertions
-                vertex().tx().queryCache().ackInsertion();
-            }
         }
 
-        V instance = producer.apply(instanceVertex, getThis());
-        Preconditions.checkNotNull(instance, "producer should never return null");
-        if(isInferred) transactionCache.inferredInstance(instance);
+        if (instance instanceof Relation) {
+            transactionCache.addNewRelation((Relation)instance);
+        }
 
-        return instance;
+        if (isInferred)  {
+            transactionCache.inferredInstance(instance);
+        } else {
+            //creation of inferred concepts is an integral part of reasoning
+            //hence we only acknowledge non-inferred insertions
+            vertex().tx().queryCache().ackInsertion();
+        }
     }
 
     /**
@@ -126,6 +148,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     private void preCheckForInstanceCreation() {
         if (Schema.MetaSchema.isMetaLabel(label())) {
             throw TransactionException.metaTypeImmutable(label());
+        }
+        if (isAbstract()) {
+            throw TransactionException.addingInstancesToAbstractType(this);
         }
     }
 

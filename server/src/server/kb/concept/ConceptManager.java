@@ -4,6 +4,7 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
@@ -27,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -36,10 +38,12 @@ public class ConceptManager {
 
     private ElementFactory elementFactory;
     private TransactionCache transactionCache;
+    private ReadWriteLock graphLock;
 
-    public ConceptManager(ElementFactory elementFactory, TransactionCache transactionCache) {
+    public ConceptManager(ElementFactory elementFactory, TransactionCache transactionCache, ReadWriteLock graphLock) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
+        this.graphLock = graphLock;
     }
 
 
@@ -144,6 +148,22 @@ public class ConceptManager {
             return TransactionException.reservedLabel(schemaConcept.label());
         }
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+    }
+
+    /**
+     * This is only used when checking if attribute exists before trying to create a new one.
+     * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
+     */
+    public Attribute getAttributeWithLock(String index) {
+        Attribute concept = transactionCache.getAttributeCache().get(index);
+        if (concept != null) return concept;
+
+        graphLock.readLock().lock();
+        try {
+            return getConcept(Schema.VertexProperty.INDEX, index);
+        } finally {
+            graphLock.readLock().unlock();
+        }
     }
 
     // ---------- GET

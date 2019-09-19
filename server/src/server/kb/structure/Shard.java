@@ -73,8 +73,7 @@ public class Shard {
      * @return All the concept linked to this shard
      */
     public Stream<VertexElement> links() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA)
-                .map(EdgeElement::source);
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).map(EdgeElement::source);
     }
 
     /**
