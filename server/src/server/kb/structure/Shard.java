@@ -38,9 +38,9 @@ import java.util.stream.Stream;
 public class Shard {
     private VertexElement vertexElement;
 
-    public Shard(ConceptImpl owner, VertexElement vertexElement) {
+    public Shard(VertexElement ownerVertex, VertexElement vertexElement) {
         this(vertexElement);
-        owner(owner.vertex());
+        owner(ownerVertex);
     }
 
     public Shard(VertexElement vertexElement) {

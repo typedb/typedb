@@ -94,7 +94,7 @@ public final class ElementFactory {
 
 
     public Shard createShard(ConceptImpl shardOwner, VertexElement vertexElement) {
-        return new Shard(shardOwner, vertexElement);
+        return new Shard(shardOwner.vertex(), vertexElement);
     }
 
     public Shard getShard(Vertex vertex) {
