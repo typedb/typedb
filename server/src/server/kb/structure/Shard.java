@@ -30,13 +30,17 @@ import java.util.stream.Stream;
  * Wraps a VertexElement which is a shard of a Concept.
  * This is used to break supernodes apart. For example the instances of a Type are
  * spread across several shards.
+ *
+ * If we imagine the split between Concept and Element, Shards are designed to live on the same level
+ * of access as Elements rather than Concepts. In other words, more related to the structure/implementation
+ * of under the hood Grakn than higher level exposed interfaces
  */
 public class Shard {
     private VertexElement vertexElement;
 
     public Shard(ConceptImpl owner, VertexElement vertexElement) {
         this(vertexElement);
-        owner(owner);
+        owner(owner.vertex());
     }
 
     public Shard(VertexElement vertexElement) {
@@ -55,19 +59,19 @@ public class Shard {
     }
 
     /**
-     * @param owner Sets the owner of this shard
+     * @param ownerVertex Sets the owner of this shard
      */
-    private void owner(ConceptImpl owner) {
-        vertex().putEdge(owner.vertex(), Schema.EdgeLabel.SHARD);
+    private void owner(VertexElement ownerVertex) {
+        vertex().putEdge(ownerVertex, Schema.EdgeLabel.SHARD);
     }
 
     /**
-     * Links a new concept to this shard.
+     * Links a new concept's vertex to this shard.
      *
-     * @param concept The concept to link to this shard
+     * @param conceptVertex The concept to link to this shard
      */
-    public void link(ConceptImpl concept) {
-        concept.vertex().addEdge(vertex(), Schema.EdgeLabel.ISA);
+    public void link(VertexElement conceptVertex) {
+        conceptVertex.addEdge(vertex(), Schema.EdgeLabel.ISA);
     }
 
     /**

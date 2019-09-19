@@ -352,7 +352,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         if (type != null) {
             //noinspection unchecked
             cachedType.set((V) type); //We cache the type early because it turns out we use it EVERY time. So this prevents many db reads
-            type.currentShard().link(this);
+            type.currentShard().link(vertex());
             setInternalType(type);
         }
     }
