@@ -157,9 +157,9 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
                 .map(vertexElement -> elementFactory.getShard(vertexElement));
     }
 
-    public Stream<Casting> roleCastings(RelationImpl owner, ConceptManager conceptManager, Type type, Set<Integer> allowedRoleTypeIds) {
-        Stream<EdgeElement> edgeElementStream = elementFactory.rolePlayerEdges(id().toString(), type, allowedRoleTypeIds);
-        return edgeElementStream.map(edge -> Casting.withRelation(edge, owner, conceptManager));
+    public Stream<EdgeElement> roleCastingsEdges(Type type, Set<Integer> allowedRoleTypeIds) {
+        return elementFactory.rolePlayerEdges(id().toString(), type, allowedRoleTypeIds);
+
     }
 
     public boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId) {

@@ -414,7 +414,7 @@ public class TransactionOLTP implements Transaction {
      * @return A concept built using the provided vertex
      */
     public <T extends Concept> T buildConcept(Vertex vertex) {
-        return factory().buildConcept(vertex);
+        return conceptManager.buildConcept(vertex);
     }
 
     /**
@@ -423,7 +423,7 @@ public class TransactionOLTP implements Transaction {
      * @return A Concept built using the provided Edge
      */
     public <T extends Concept> T buildConcept(Edge edge) {
-        return factory().buildConcept(edge);
+        return conceptManager.buildConcept(edge);
     }
 
     /**
@@ -439,6 +439,7 @@ public class TransactionOLTP implements Transaction {
         return graphTraversalSource;
     }
 
+    @VisibleForTesting
     public ConceptManager factory() {
         return conceptManager;
     }
@@ -458,7 +459,7 @@ public class TransactionOLTP implements Transaction {
         T concept = null;
         if (vertices.hasNext()) {
             Vertex vertex = vertices.next();
-            concept = factory().buildConcept(vertex);
+            concept = conceptManager.buildConcept(vertex);
         }
         return concept;
     }
@@ -478,7 +479,7 @@ public class TransactionOLTP implements Transaction {
     private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
         checkGraphIsOpen();
         Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
+        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(conceptManager.buildConcept(v)));
         return concepts;
     }
 
@@ -512,7 +513,7 @@ public class TransactionOLTP implements Transaction {
     public EntityType putEntityType(Label label) {
         checkGraphIsOpen();
         return conceptManager.putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
-                v -> factory().buildEntityType(v, getMetaEntityType()));
+                v -> conceptManager.buildEntityType(v, getMetaEntityType()));
     }
 
 
@@ -526,7 +527,7 @@ public class TransactionOLTP implements Transaction {
     public RelationType putRelationType(Label label) {
         checkGraphIsOpen();
         return conceptManager.putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
+                v -> conceptManager.buildRelationType(v, getMetaRelationType()));
     }
 
     /**
@@ -539,7 +540,7 @@ public class TransactionOLTP implements Transaction {
     public Role putRole(Label label) {
         checkGraphIsOpen();
         return conceptManager.putSchemaConcept(label, Schema.BaseType.ROLE, false,
-                v -> factory().buildRole(v, getMetaRole()));
+                v -> conceptManager.buildRole(v, getMetaRole()));
     }
 
 
@@ -560,7 +561,7 @@ public class TransactionOLTP implements Transaction {
         checkGraphIsOpen();
         @SuppressWarnings("unchecked")
         AttributeType<V> attributeType = conceptManager.putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
+                v -> conceptManager.buildAttributeType(v, getMetaAttributeType(), dataType));
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -584,7 +585,7 @@ public class TransactionOLTP implements Transaction {
     public Rule putRule(Label label, Pattern when, Pattern then) {
         checkGraphIsOpen();
         Rule rule = conceptManager.putSchemaConcept(label, Schema.BaseType.RULE, false,
-                v -> factory().buildRule(v, getMetaRule(), when, then));
+                v -> conceptManager.buildRule(v, getMetaRule(), when, then));
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
         if (rule.then() != null) {

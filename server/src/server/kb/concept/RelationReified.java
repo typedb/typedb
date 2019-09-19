@@ -174,7 +174,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
 
-        return vertex().roleCastings(owner, conceptManager, type(), roleTypesIds);
+        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type(), roleTypesIds);
+        return castingsEdges.map(edge -> Casting.withRelation(edge, owner, conceptManager));
     }
 
     @Override
