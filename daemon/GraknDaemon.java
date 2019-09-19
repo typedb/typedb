@@ -111,7 +111,8 @@ public class GraknDaemon {
             try {
                 String logoString = new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8);
                 int lineLength = logoString.split("\n")[0].length();
-                int spaces = lineLength - VERSION_LABEL.length() - Version.VERSION.length();
+                int spaces = lineLength - (VERSION_LABEL.length() + Version.VERSION.length());
+                if (spaces < 0) spaces = 0;
 
                 System.out.println(logoString);
                 System.out.printf("%" + spaces + "s"+ VERSION_LABEL +"%s\n", " ", Version.VERSION);

@@ -88,22 +88,8 @@ public class ConfigKey<T> {
         return name;
     }
 
-    /**
-     * Parse the value of a property.
-     * <p>
-     * This function should return an empty optional if the key was not present and there is no default value.
-     *
-     * @param value          the value of the property. Empty if the property isn't in the property file.
-     * @param configFilePath path to the config file
-     * @return the parsed value
-     * @throws RuntimeException if the value is not present and there is no default value
-     */
-    public final T parse(String value, Path configFilePath) {
-        if (value == null) {
-            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name, configFilePath));
-        }
-
-        return parser.read(value);
+    public KeyParser<T> parser() {
+        return parser;
     }
 
     /**

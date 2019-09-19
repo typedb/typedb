@@ -18,6 +18,7 @@
 
 package grakn.core.common.config;
 
+import grakn.core.common.exception.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,7 +130,13 @@ public class Config {
     }
 
     public <T> T getProperty(ConfigKey<T> key) {
-        return key.parse(prop.getProperty(key.name()), CONFIG_FILE_PATH);
+        String value = prop.getProperty(key.name());
+
+        if (value == null) {
+            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(key.name(), CONFIG_FILE_PATH));
+        }
+
+        return key.parser().read(value);
     }
 
 }
