@@ -18,6 +18,7 @@
 
 package grakn.core.server.session;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
@@ -143,7 +144,7 @@ public class TransactionOLTP implements Transaction {
 
     TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                     TransactionCache transactionCache, KeyspaceCache keyspaceCache,
-                    grakn.core.server.session.TransactionDataContainer container) {
+                    TransactionDataContainer container) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -879,7 +880,6 @@ public class TransactionOLTP implements Transaction {
     }
 
 
-
     // ----------- Exposed low level methods that should not be exposed here TODO refactor
     public VertexElement addTypeVertex(LabelId labelId, Label label, Schema.BaseType baseType) {
         return conceptManager.addTypeVertex(labelId, label, baseType);
@@ -888,4 +888,5 @@ public class TransactionOLTP implements Transaction {
     public LabelId convertToId(Label label) {
         return conceptManager.convertToId(label);
     }
+
 }

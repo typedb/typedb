@@ -230,7 +230,7 @@ public final class ElementFactory {
                 .in(Schema.EdgeLabel.SHARD.getLabel())
                 .in(Schema.EdgeLabel.ISA.getLabel())
                 .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
-                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), edgeInstanceLabelId)
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), edgeInstanceLabelId.getValue())
                 .toStream()
                 .map(edge -> buildEdgeElement(edge));
     }
