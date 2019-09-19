@@ -19,6 +19,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -37,12 +38,12 @@ import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 public class ConceptManager {
 
     private ElementFactory elementFactory;
-    private TransactionCache transactionCache;
+    private TransactionDataContainer transactionDataContainer;
     private ReadWriteLock graphLock;
 
-    public ConceptManager(ElementFactory elementFactory, TransactionCache transactionCache, ReadWriteLock graphLock) {
+    public ConceptManager(ElementFactory elementFactory, TransactionDataContainer transactionDataContainer, ReadWriteLock graphLock) {
         this.elementFactory = elementFactory;
-        this.transactionCache = transactionCache;
+        this.transactionDataContainer = transactionDataContainer;
         this.graphLock = graphLock;
     }
 
@@ -155,7 +156,7 @@ public class ConceptManager {
      * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
     public Attribute getAttributeWithLock(String index) {
-        Attribute concept = transactionCache.getAttributeCache().get(index);
+        Attribute concept = transactionDataContainer.transactionCache().getAttributeCache().get(index);
         if (concept != null) return concept;
 
         graphLock.readLock().lock();
@@ -178,8 +179,8 @@ public class ConceptManager {
     }
 
     public <T extends Concept> T getConcept(ConceptId conceptId) {
-        if (transactionCache.isConceptCached(conceptId)) {
-            return transactionCache.getCachedConcept(conceptId);
+        if (transactionDataContainer.transactionCache().isConceptCached(conceptId)) {
+            return transactionDataContainer.transactionCache().getCachedConcept(conceptId);
         }
 
         // If edgeId, we are trying to fetch either:
@@ -208,8 +209,8 @@ public class ConceptManager {
 
     public <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
         SchemaConcept schemaConcept;
-        if (transactionCache.isTypeCached(label)) {
-            schemaConcept = transactionCache.getCachedSchemaConcept(label);
+        if (transactionDataContainer.transactionCache().isTypeCached(label)) {
+            schemaConcept = transactionDataContainer.transactionCache().getCachedSchemaConcept(label);
         } else {
             schemaConcept = getSchemaConcept(convertToId(label));
         }
@@ -271,8 +272,8 @@ public class ConceptManager {
      * @return The matching type id
      */
     public LabelId convertToId(Label label) {
-        if (transactionCache.isLabelCached(label)) {
-            return transactionCache.convertLabelToId(label);
+        if (transactionDataContainer.transactionCache().isLabelCached(label)) {
+            return transactionDataContainer.transactionCache().convertLabelToId(label);
         }
         return LabelId.invalid();
     }
@@ -294,11 +295,11 @@ public class ConceptManager {
 
 
     private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder) {
-        if (!transactionCache.isConceptCached(conceptId)) {
+        if (!transactionDataContainer.transactionCache().isConceptCached(conceptId)) {
             X newConcept = conceptBuilder.apply(element);
-            transactionCache.cacheConcept(newConcept);
+            transactionDataContainer.transactionCache().cacheConcept(newConcept);
         }
-        return transactionCache.getCachedConcept(conceptId);
+        return transactionDataContainer.transactionCache().getCachedConcept(conceptId);
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
@@ -313,17 +314,17 @@ public class ConceptManager {
 
     // ---------------------------------------- Building Attribute Types  -----------------------------------------------
     public <V> AttributeTypeImpl<V> buildAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType) {
-        return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType, this, transactionDataContainer));
     }
 
     // ------------------------------------------ Building Attribute
     <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
-        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue, this, transactionDataContainer));
     }
 
     // ---------------------------------------- Building Relation Types  -----------------------------------------------
     public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type) {
-        return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type, this, transactionDataContainer));
     }
 
     // -------------------------------------------- Building Relations
@@ -333,14 +334,14 @@ public class ConceptManager {
      * Used to build a RelationEdge by ThingImpl when it needs to connect itself with an attribute (implicit relation)
      */
     RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge, this, transactionCache)));
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge, this, transactionDataContainer)));
     }
 
     /**
      * Used by RelationEdge to build a RelationImpl object out of a provided Edge
      */
     RelationImpl buildRelation(EdgeElement edge) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge, this, transactionCache)));
+        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge, this, transactionDataContainer)));
     }
 
     /**
@@ -350,7 +351,7 @@ public class ConceptManager {
      * @return ReifiedRelation
      */
     RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
-        return RelationReified.create(vertex, type, this, transactionCache);
+        return RelationReified.create(vertex, type, this, transactionDataContainer);
     }
 
     /**
@@ -365,22 +366,22 @@ public class ConceptManager {
 
     // ----------------------------------------- Building Entity Types  ------------------------------------------------
     public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type) {
-        return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type, this, transactionDataContainer));
     }
 
     // ------------------------------------------- Building Entities
     EntityImpl buildEntity(VertexElement vertex, EntityType type) {
-        return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type, this, transactionDataContainer));
     }
 
     // ----------------------------------------- Building Rules --------------------------------------------------
     public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then) {
-        return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then, this, transactionDataContainer));
     }
 
     // ------------------------------------------ Building Roles  Types ------------------------------------------------
     public RoleImpl buildRole(VertexElement vertex, Role type) {
-        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type, this, transactionCache));
+        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type, this, transactionDataContainer));
     }
 
     /**
@@ -396,7 +397,7 @@ public class ConceptManager {
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
         ConceptId conceptId = Schema.conceptId(vertexElement.element());
-        Concept cachedConcept = transactionCache.getCachedConcept(conceptId);
+        Concept cachedConcept = transactionDataContainer.transactionCache().getCachedConcept(conceptId);
 
         if (cachedConcept == null) {
             Schema.BaseType type;
@@ -408,36 +409,36 @@ public class ConceptManager {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = RelationImpl.create(RelationReified.get(vertexElement, this, transactionCache));
+                    concept = RelationImpl.create(RelationReified.get(vertexElement, this, transactionDataContainer));
                     break;
                 case TYPE:
-                    concept = new TypeImpl(vertexElement, this, transactionCache);
+                    concept = new TypeImpl(vertexElement, this, transactionDataContainer);
                     break;
                 case ROLE:
-                    concept = RoleImpl.get(vertexElement, this, transactionCache);
+                    concept = RoleImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 case RELATION_TYPE:
-                    concept = RelationTypeImpl.get(vertexElement, this, transactionCache);
+                    concept = RelationTypeImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 case ENTITY:
-                    concept = EntityImpl.get(vertexElement, this, transactionCache);
+                    concept = EntityImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 case ENTITY_TYPE:
-                    concept = EntityTypeImpl.get(vertexElement, this, transactionCache);
+                    concept = EntityTypeImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 case ATTRIBUTE_TYPE:
-                    concept = AttributeTypeImpl.get(vertexElement, this, transactionCache);
+                    concept = AttributeTypeImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 case ATTRIBUTE:
-                    concept = AttributeImpl.get(vertexElement, this, transactionCache);
+                    concept = AttributeImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 case RULE:
-                    concept = RuleImpl.get(vertexElement, this, transactionCache);
+                    concept = RuleImpl.get(vertexElement, this, transactionDataContainer);
                     break;
                 default:
                     throw TransactionException.unknownConcept(type.name());
             }
-            transactionCache.cacheConcept(concept);
+            transactionDataContainer.transactionCache().cacheConcept(concept);
             return (X) concept;
         }
         return (X) cachedConcept;
@@ -458,18 +459,18 @@ public class ConceptManager {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
         ConceptId conceptId = Schema.conceptId(edgeElement.element());
-        if (!transactionCache.isConceptCached(conceptId)) {
+        if (!transactionDataContainer.transactionCache().isConceptCached(conceptId)) {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = RelationImpl.create(RelationEdge.get(edgeElement, this, transactionCache));
+                    concept = RelationImpl.create(RelationEdge.get(edgeElement, this, transactionDataContainer));
                     break;
                 default:
                     throw TransactionException.unknownConcept(label.name());
             }
-            transactionCache.cacheConcept(concept);
+            transactionDataContainer.transactionCache().cacheConcept(concept);
         }
-        return transactionCache.getCachedConcept(conceptId);
+        return transactionDataContainer.transactionCache().getCachedConcept(conceptId);
     }
 
     /**

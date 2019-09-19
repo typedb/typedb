@@ -28,6 +28,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,7 @@ public class RelationEdge implements RelationStructure {
 
     private final EdgeElement edgeElement;
     private final ConceptManager conceptManager;
-    private TransactionCache transactionCache;
+    private TransactionDataContainer transactionDataContainer;
 
     private final Cache<RelationType> relationType = new Cache<>(() ->
             conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
@@ -63,15 +64,15 @@ public class RelationEdge implements RelationStructure {
     private final Cache<Thing> owner = new Cache<>(() -> conceptManager().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(() -> conceptManager().buildConcept(edge().target()));
 
-    private RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+    private RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
         this.edgeElement = edgeElement;
         this.conceptManager = conceptManager;
-        this.transactionCache = transactionCache;
+        this.transactionDataContainer = transactionDataContainer;
     }
 
     private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                         ConceptManager conceptManager, TransactionCache transactionCache) {
-        this(edgeElement, conceptManager, transactionCache);
+                         ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        this(edgeElement, conceptManager, transactionDataContainer);
 
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
         edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
@@ -82,13 +83,13 @@ public class RelationEdge implements RelationStructure {
         this.valueRole.set(valueRole);
     }
 
-    public static RelationEdge get(EdgeElement edgeElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new RelationEdge(edgeElement, conceptManager, transactionCache);
+    public static RelationEdge get(EdgeElement edgeElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new RelationEdge(edgeElement, conceptManager, transactionDataContainer);
     }
 
     public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                                      ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement, conceptManager, transactionCache);
+                                      ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement, conceptManager, transactionDataContainer);
     }
 
     private EdgeElement edge() {

@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import com.google.common.base.Preconditions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
@@ -29,20 +28,18 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.TransactionDataContainer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import javax.naming.directory.SchemaViolationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,12 +68,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
-    TypeImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, superType, conceptManager, transactionCache);
+    TypeImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, superType, conceptManager, transactionDataContainer);
         //This constructor is ONLY used when CREATING new types. Which is why we shard here
         createShard();
     }
@@ -121,23 +118,23 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      *                   read from the vertex properties
      */
     void syncCachesOnNewInstance(Thing instance, boolean isInferred) {
-        vertex().tx().ruleCache().ackTypeInstance(this);
-        vertex().tx().statisticsDelta().increment(label());
+        transactionDataContainer.ruleCache().ackTypeInstance(this);
+        transactionDataContainer.statistics().increment(label());
 
         if (!Schema.MetaSchema.isMetaLabel(label())) {
-            transactionCache.addedInstance(id());
+            transactionDataContainer.transactionCache().addedInstance(id());
         }
 
         if (instance instanceof Relation) {
-            transactionCache.addNewRelation((Relation)instance);
+            transactionDataContainer.transactionCache().addNewRelation((Relation)instance);
         }
 
         if (isInferred)  {
-            transactionCache.inferredInstance(instance);
+            transactionDataContainer.transactionCache().inferredInstance(instance);
         } else {
             //creation of inferred concepts is an integral part of reasoning
             //hence we only acknowledge non-inferred insertions
-            vertex().tx().queryCache().ackInsertion();
+            transactionDataContainer.queryCache().ackInsertion();
         }
     }
 
@@ -245,7 +242,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     void trackRolePlayers() {
         instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
+                rolePlayer -> transactionDataContainer.transactionCache().trackForValidation(rolePlayer)));
     }
 
     public T play(Role role, boolean required) {
@@ -391,9 +388,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         cachedIsAbstract.set(isAbstract);
 
         if (isAbstract) {
-            transactionCache.removeFromValidation(this);
+            transactionDataContainer.transactionCache().removeFromValidation(this);
         } else {
-            transactionCache.trackForValidation(this);
+            transactionDataContainer.transactionCache().trackForValidation(this);
         }
 
         return getThis();

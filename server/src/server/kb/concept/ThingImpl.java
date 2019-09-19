@@ -37,12 +37,9 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -51,7 +48,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -80,12 +76,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> TransactionException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
-    ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, TransactionCache transactionCache) {
-        this(vertexElement, conceptManager, transactionCache);
+    ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        this(vertexElement, conceptManager, transactionDataContainer);
         type((TypeImpl) type);
         track();
     }
@@ -95,7 +91,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     private void track() {
         if (type().keys().findAny().isPresent()) {
-            transactionCache.trackForValidation(this);
+            transactionDataContainer.transactionCache().trackForValidation(this);
         }
     }
 
@@ -120,11 +116,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
-        if (!isDeleted()) vertex().tx().statisticsDelta().decrement(type().label());
+        if (!isDeleted()) transactionDataContainer.statistics().decrement(type().label());
         this.edgeRelations().forEach(Concept::delete);
 
-        transactionCache.removedInstance(type().id());
-        vertex().tx().queryCache().ackDeletion(type());
+        transactionDataContainer.transactionCache().removedInstance(type().id());
+        transactionDataContainer.queryCache().ackDeletion(type());
         deleteNode();
 
         relations.forEach(relation -> {
@@ -311,10 +307,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
-        vertex().tx().statisticsDelta().increment(hasAttribute.label());
+        transactionDataContainer.statistics().increment(hasAttribute.label());
 
         RelationImpl attributeRelation = conceptManager.buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
-        if (isInferred) transactionCache.inferredInstance(attributeRelation);
+        if (isInferred) transactionDataContainer.transactionCache().inferredInstance(attributeRelation);
         return attributeRelation;
     }
 

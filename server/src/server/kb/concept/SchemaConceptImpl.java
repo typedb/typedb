@@ -27,6 +27,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -52,12 +53,12 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
-    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionCache transactionCache) {
-        this(vertexElement, conceptManager, transactionCache);
+    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        this(vertexElement, conceptManager, transactionDataContainer);
         if (sup() == null) sup(superType);
     }
 
@@ -68,13 +69,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
     public T label(Label label) {
         try {
-            transactionCache.remove(this);
+            transactionDataContainer.transactionCache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
-            transactionCache.cacheConcept(this);
+            transactionDataContainer.transactionCache().cacheConcept(this);
             return getThis();
         } catch (PropertyNotUniqueException exception) {
-            transactionCache.cacheConcept(this);
+            transactionDataContainer.transactionCache().cacheConcept(this);
             throw TransactionException.labelTaken(label);
         }
     }
@@ -141,7 +142,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
             //clear rule cache
-            vertex().tx().ruleCache().clear();
+            transactionDataContainer.ruleCache().clear();
         } else {
             throw TransactionException.cannotBeDeleted(this);
         }

@@ -28,11 +28,9 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -55,23 +53,23 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    private RelationReified(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    private RelationReified(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
     private RelationReified(VertexElement vertexElement, RelationType type,
-                            ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptManager, transactionCache);
+                            ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, type, conceptManager, transactionDataContainer);
     }
 
 
-    public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new RelationReified(vertexElement, conceptManager, transactionCache);
+    public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new RelationReified(vertexElement, conceptManager, transactionDataContainer);
     }
 
     public static RelationReified create(VertexElement vertexElement, RelationType type,
-                                         ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new RelationReified(vertexElement, type, conceptManager, transactionCache);
+                                         ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new RelationReified(vertexElement, type, conceptManager, transactionDataContainer);
     }
 
     @Override
@@ -79,8 +77,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //TODO remove this once we fix the whole relation hierarchy
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
-        transactionCache.getNewRelations().remove(owner);
-        if(isInferred()) transactionCache.removeInferredInstance(owner);
+        transactionDataContainer.transactionCache().getNewRelations().remove(owner);
+        if(isInferred()) transactionDataContainer.transactionCache().removeInferredInstance(owner);
         super.delete();
     }
 
@@ -116,7 +114,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    transactionCache.remove(casting);
+                    transactionDataContainer.transactionCache().remove(casting);
                 });
     }
 
@@ -157,7 +155,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing, conceptManager);
-        transactionCache.trackForValidation(casting);
+        transactionDataContainer.transactionCache().trackForValidation(casting);
     }
 
     /**

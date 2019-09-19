@@ -149,13 +149,16 @@ public class SessionImpl implements Session {
 
          */
 
+        // short term hack to get back to testable state
+        grakn.core.server.session.TransactionDataContainer transactionDataContainer = new grakn.core.server.session.TransactionDataContainer();
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         TransactionCache transactionCache = new TransactionCache(keyspaceCache);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
-        ConceptManager conceptManager = new ConceptManager(elementFactory, transactionCache);
+        ConceptManager conceptManager = new ConceptManager(elementFactory, transactionDataContainer, graphLock);
 
 
-        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, transactionCache, keyspaceCache);
+
+        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, transactionCache, keyspaceCache, transactionDataContainer);
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 

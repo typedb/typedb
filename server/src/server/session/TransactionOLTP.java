@@ -18,7 +18,6 @@
 
 package grakn.core.server.session;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.api.Transaction;
@@ -27,7 +26,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
@@ -52,10 +50,8 @@ import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptVertex;
-import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
-import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
@@ -91,8 +87,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -145,7 +139,9 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager, TransactionCache transactionCache, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
+                    TransactionCache transactionCache, KeyspaceCache keyspaceCache,
+                    grakn.core.server.session.TransactionDataContainer container) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -161,6 +157,11 @@ public class TransactionOLTP implements Transaction {
         this.transactionCache = transactionCache;
 
         this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
+
+        container.setTransactionCache(transactionCache);
+        container.setQueryCache(queryCache);
+        container.setRuleCache(ruleCache);
+        container.setStatisticsDelta(uncomittedStatisticsDelta);
 
         typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
 

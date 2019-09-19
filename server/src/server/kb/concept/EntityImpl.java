@@ -22,6 +22,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
 
 import java.util.stream.Stream;
@@ -33,21 +34,21 @@ import java.util.stream.Stream;
  * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    private EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    private EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
-    private EntityImpl(VertexElement vertexElement, EntityType type, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptManager, transactionCache);
+    private EntityImpl(VertexElement vertexElement, EntityType type, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, type, conceptManager, transactionDataContainer);
     }
 
-    public static EntityImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new EntityImpl(vertexElement, conceptManager, transactionCache);
+    public static EntityImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new EntityImpl(vertexElement, conceptManager, transactionDataContainer);
     }
 
     public static EntityImpl create(VertexElement vertexElement, EntityType type,
-                                    ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new EntityImpl(vertexElement, type, conceptManager, transactionCache);
+                                    ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new EntityImpl(vertexElement, type, conceptManager, transactionDataContainer);
     }
 
     public static EntityImpl from(Entity entity) {

@@ -26,9 +26,9 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.stream.Stream;
 
@@ -40,7 +40,7 @@ import java.util.stream.Stream;
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
     final ConceptManager conceptManager;
-    final TransactionCache transactionCache;
+    final TransactionDataContainer transactionDataContainer;
 
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
@@ -48,10 +48,10 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final Cache<Long> shardCount = new Cache<>(() -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
+    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
         this.vertexElement = vertexElement;
         this.conceptManager = conceptManager;
-        this.transactionCache = transactionCache;
+        this.transactionDataContainer = transactionDataContainer;
     }
 
     @Override
@@ -83,7 +83,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
      * Deletes the node and adds it neighbours for validation
      */
     public void deleteNode() {
-        transactionCache.remove(this);
+        transactionDataContainer.transactionCache().remove(this);
         vertex().delete();
     }
 

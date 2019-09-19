@@ -20,8 +20,8 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
 
 /**
@@ -30,22 +30,22 @@ import grakn.core.server.session.cache.TransactionCache;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    private EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    private EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
     private EntityTypeImpl(VertexElement vertexElement, EntityType type,
-                           ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptManager, transactionCache);
+                           ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, type, conceptManager, transactionDataContainer);
     }
 
-    public static EntityTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new EntityTypeImpl(vertexElement, conceptManager, transactionCache);
+    public static EntityTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new EntityTypeImpl(vertexElement, conceptManager, transactionDataContainer);
     }
 
     public static EntityTypeImpl create(VertexElement vertexElement, EntityType type,
-                                        ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new EntityTypeImpl(vertexElement, type, conceptManager, transactionCache);
+                                        ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new EntityTypeImpl(vertexElement, type, conceptManager, transactionDataContainer);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {

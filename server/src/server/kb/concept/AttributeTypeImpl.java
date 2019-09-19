@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import autovalue.shaded.com.google$.common.base.$Supplier;
 import com.google.common.base.Preconditions;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
@@ -26,11 +25,11 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
+import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
+
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -46,23 +45,23 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    private AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, conceptManager, transactionCache);
+    private AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, conceptManager, transactionDataContainer);
     }
 
     private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
-                              ConceptManager conceptManager, TransactionCache transactionCache) {
-        super(vertexElement, type, conceptManager, transactionCache);
+                              ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        super(vertexElement, type, conceptManager, transactionDataContainer);
         vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
-    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new AttributeTypeImpl<>(vertexElement, conceptManager, transactionCache);
+    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new AttributeTypeImpl<>(vertexElement, conceptManager, transactionDataContainer);
     }
 
     public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
-                                                  ConceptManager conceptManager, TransactionCache transactionCache) {
-        return new AttributeTypeImpl<>(vertexElement, type, dataType, conceptManager, transactionCache);
+                                                  ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
+        return new AttributeTypeImpl<>(vertexElement, type, dataType, conceptManager, transactionDataContainer);
     }
 
     public static AttributeTypeImpl from(AttributeType attributeType) {
