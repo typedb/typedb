@@ -523,5 +523,4 @@ public class ConceptManager {
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
 
     }
-
 }
