@@ -26,6 +26,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
+import grakn.core.concept.LabelId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
@@ -52,6 +53,7 @@ import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptVertex;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
+import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.session.cache.RuleCache;
@@ -874,5 +876,12 @@ public class TransactionOLTP implements Transaction {
 
     public List<ConceptMap> execute(MatchClause matchClause, boolean infer) {
         return stream(matchClause, infer).collect(Collectors.toList());
+    }
+
+
+
+    // ----------- Exposed low level methods that should not be exposed here TODO refactor
+    public VertexElement addTypeVertex(LabelId labelId, Label label, Schema.BaseType baseType) {
+        return conceptManager.addTypeVertex(labelId, label, baseType);
     }
 }

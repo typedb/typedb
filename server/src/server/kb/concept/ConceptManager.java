@@ -114,8 +114,10 @@ public class ConceptManager {
      * @param label    The label of the new type vertex
      * @param baseType The base type of the new type
      * @return The new type vertex
+     *
+     * TODO this should not be public
      */
-    VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
+    public VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
         VertexElement vertexElement = elementFactory.addVertexElement(baseType);
         vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
         vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());

@@ -147,6 +147,11 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         return stringBuilder.toString();
     }
 
+    /**
+     * Create a new vertex that is a shard and connect it to the owning Type vertex
+     * @param owningConcept
+     * @return
+     */
     public Shard shard(ConceptImpl owningConcept) {
         VertexElement shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
         Shard shard = elementFactory.createShard(owningConcept, shardVertex);

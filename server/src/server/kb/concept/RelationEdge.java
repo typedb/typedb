@@ -171,10 +171,10 @@ public class RelationEdge implements RelationStructure {
 
     @Override
     public void delete() {
-        if (!isDeleted()) edge().tx().statisticsDelta().decrement(type().label());
+        if (!isDeleted()) transactionDataContainer.statistics().decrement(type().label());
         if (isInferred()){
             Concept relation = conceptManager.getConcept(id());
-            if (relation != null) transactionCache.removeInferredInstance(relation.asThing());
+            if (relation != null) transactionDataContainer.transactionCache().removeInferredInstance(relation.asThing());
         }
         edge().delete();
     }
