@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.structure;
 
+import com.google.common.annotations.VisibleForTesting;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptImpl;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -72,6 +73,7 @@ public class Shard {
     /**
      * @return All the concept linked to this shard
      */
+    @VisibleForTesting
     public Stream<VertexElement> links() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).map(EdgeElement::source);
     }

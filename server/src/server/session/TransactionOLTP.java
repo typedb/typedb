@@ -623,6 +623,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
+        checkGraphIsOpen();
         if (value == null) return Collections.emptySet();
 
         // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
@@ -652,6 +653,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+        checkGraphIsOpen();
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
         if (meta != null) {
             return conceptManager.getSchemaConcept(meta.getId());
@@ -669,6 +671,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
+        checkGraphIsOpen();
         return conceptManager.getType(label);
     }
 
@@ -679,6 +682,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public EntityType getEntityType(String label) {
+        checkGraphIsOpen();
         return conceptManager.getEntityType(label);
     }
 
@@ -689,6 +693,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public RelationType getRelationType(String label) {
+        checkGraphIsOpen();
         return conceptManager.getRelationType(label);
     }
 
@@ -700,6 +705,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
+        checkGraphIsOpen();
         return conceptManager.getAttributeType(label);
     }
 
@@ -710,6 +716,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Role getRole(String label) {
+        checkGraphIsOpen();
         return conceptManager.getRole(label);
     }
 
@@ -720,6 +727,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Rule getRule(String label) {
+        checkGraphIsOpen();
         return conceptManager.getRule(label);
     }
 
