@@ -238,7 +238,7 @@ class ValidateGlobalRules {
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
-    static Optional<String> validateInstancePlaysAllRequiredRoles(Thing thing) {
+    static Optional<String> validateInstancePlaysAllRequiredRoles(TransactionOLTP tx, Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
         while (type != null) {
@@ -256,7 +256,7 @@ class ValidateGlobalRules {
 
                     Relation keyRelation = thing.relations(role).findFirst().get();
                     final TypeImpl<?, ?> ownerType = type;
-                    final Role keyValueRole = type.vertex().tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeType).getValue());
+                    final Role keyValueRole = tx.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeType).getValue());
                     final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
                     if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
                         Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
