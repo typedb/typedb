@@ -62,10 +62,10 @@ public final class ElementFactory {
         this.janusTx = janusTransaction;
     }
 
-    public Vertex getVertexWithProperty(Schema.VertexProperty key, Object value) {
+    public VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
         Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
         if (vertices.hasNext()) {
-            return vertices.next();
+            return buildVertexElement(vertices.next());
         }
         return null;
     }

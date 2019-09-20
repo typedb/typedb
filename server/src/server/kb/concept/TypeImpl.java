@@ -92,8 +92,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return vertexElement;
     }
 
-
-
     /**
      * Checks if an Thing is allowed to be created and linked to this Type.
      * It can also fail when attempting to attach an Attribute to a meta type

@@ -139,12 +139,12 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-        // short term hack to get back to testable state
         ConceptObserver conceptObserver = new ConceptObserver();
 
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         TransactionCache transactionCache = new TransactionCache(keyspaceCache);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
+
         ConceptManager conceptManager = new ConceptManager(elementFactory, transactionCache, conceptObserver, graphLock);
 
         TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, transactionCache, keyspaceCache, conceptObserver);

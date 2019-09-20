@@ -204,7 +204,7 @@ public class ConceptManager {
 
 
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
-        Vertex vertex = elementFactory.getVertexWithProperty(key, value);
+        VertexElement vertex = elementFactory.getVertexWithProperty(key, value);
         if (vertex != null) {
             return buildConcept(vertex);
         }

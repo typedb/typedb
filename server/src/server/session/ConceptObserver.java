@@ -138,10 +138,6 @@ public class ConceptObserver {
         createThing(hasAttributeRelation, isInferred);
     }
 
-    public void createSchemaConcept(SchemaConcept schemaConcept) {
-
-    }
-
     public void createRule(Rule rule) {
         transactionCache.trackForValidation(rule);
     }
