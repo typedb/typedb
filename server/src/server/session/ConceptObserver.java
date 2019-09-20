@@ -68,26 +68,15 @@ public class ConceptObserver {
         return transactionCache;
     }
 
-    @Deprecated
-    public MultilevelSemanticCache queryCache() {
-        return queryCache;
+    private void deleteConcept(Concept concept) {
+        transactionCache.remove(concept);
     }
-
-    @Deprecated
-    public RuleCache ruleCache() {
-        return ruleCache;
-    }
-
-    @Deprecated
-    public UncomittedStatisticsDelta statistics() {
-        return statistics;
-    }
-
 
     public void deleteThing(Thing thing) {
         Type type = thing.type();
         statistics.decrement(type.label());
         queryCache.ackDeletion(type);
+        deleteConcept(thing);
     }
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
@@ -102,8 +91,9 @@ public class ConceptObserver {
         }
     }
 
-    public void deleteSchemaConcept() {
+    public void deleteSchemaConcept(SchemaConcept schemaConcept) {
         ruleCache.clear();
+        deleteConcept(schemaConcept);
     }
 
     /**

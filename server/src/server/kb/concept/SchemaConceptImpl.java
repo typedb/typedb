@@ -136,13 +136,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //Force load of linked concepts whose caches need to be updated
             T superConcept = cachedSuperType.get();
 
+            // delete schema concept from caches before deleting the vertex
+            conceptObserver.deleteSchemaConcept(this);
+
             deleteNode();
 
             //Update neighbouring caches
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
-
-            //clear rule cache
-            conceptObserver.deleteSchemaConcept();
         } else {
             throw TransactionException.cannotBeDeleted(this);
         }

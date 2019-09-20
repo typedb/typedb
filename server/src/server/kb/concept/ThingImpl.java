@@ -106,6 +106,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }).collect(toSet());
 
         if (!isDeleted())  {
+            // must happen before deleteNode() so we can access properties on the vertex
             conceptObserver.deleteThing(this);
         }
 
@@ -115,7 +116,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         relations.forEach(relation -> {
             //NB: this only deletes reified implicit relations
-            if (relation.type().isImplicit()) {//For now implicit relations die
+            if (relation.type().isImplicit()) {
                 relation.delete();
             } else {
                 RelationImpl rel = (RelationImpl) relation;

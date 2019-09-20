@@ -82,7 +82,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
      * Deletes the node and adds it neighbours for validation
      */
     public void deleteNode() {
-        conceptObserver.transactionCache().remove(this);
+        // TODO write cache tests to ensure that this is safe to remove
+//        conceptObserver.transactionCache().remove(this);
         vertex().delete();
     }
 
