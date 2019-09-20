@@ -67,6 +67,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     public T label(Label label) {
+        // TODO combine with labelAdded if possible
         conceptObserver.labelRemoved(this);
         try {
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
@@ -141,7 +142,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
             //clear rule cache
-            conceptObserver.ruleCache().clear();
+            conceptObserver.deleteSchemaConcept();
         } else {
             throw TransactionException.cannotBeDeleted(this);
         }

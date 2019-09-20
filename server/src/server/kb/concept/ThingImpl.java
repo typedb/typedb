@@ -106,9 +106,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }).collect(toSet());
 
         if (!isDeleted())  {
-            conceptObserver.statistics().decrement(type().label());
-            conceptObserver.queryCache().ackDeletion(type());
+            conceptObserver.deleteThing(this);
         }
+
         this.edgeRelations().forEach(Concept::delete);
 
         deleteNode();

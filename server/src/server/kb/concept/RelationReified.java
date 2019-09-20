@@ -76,8 +76,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //TODO remove this once we fix the whole relation hierarchy
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
-        conceptObserver.transactionCache().getNewRelations().remove(owner);
-        if(isInferred()) conceptObserver.transactionCache().removeInferredInstance(owner);
+        conceptObserver.deleteReifiedOwner(owner);
+
         super.delete();
     }
 

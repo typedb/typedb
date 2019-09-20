@@ -170,12 +170,15 @@ public class RelationEdge implements RelationStructure {
 
     @Override
     public void delete() {
-        if (!isDeleted()) conceptObserver.statistics().decrement(type().label());
-        if (isInferred()){
-            Concept relation = conceptManager.getConcept(id());
-            if (relation != null) conceptObserver.transactionCache().removeInferredInstance(relation.asThing());
+        if (!isDeleted()) {
+            conceptObserver.statistics().decrement(type().label());
+            if (isInferred()){
+                // this isn't very nice - have to retrieve the concept wrapping this edge from scratch
+                Concept relation = conceptManager.getConcept(id());
+                if (relation != null) conceptObserver.transactionCache().removeInferredInstance(relation.asThing());
+            }
+            edge().delete();
         }
-        edge().delete();
     }
 
     @Override

@@ -30,6 +30,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.RelationImpl;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
@@ -80,11 +81,13 @@ public class ConceptObserver {
 
 
     public void deleteThing(Thing thing) {
-
+        Type type = thing.type();
+        statistics.decrement(type.label());
+        queryCache.ackDeletion(type);
     }
 
-    public void deleteSchemaConcept(SchemaConcept schemaConcept) {
-
+    public void deleteSchemaConcept() {
+        ruleCache.clear();
     }
 
     /**
@@ -176,5 +179,12 @@ public class ConceptObserver {
 
     public void deleteCasting(Casting casting) {
        transactionCache.remove(casting);
+    }
+
+    public void deleteReifiedOwner(Relation owner) {
+        transactionCache.getNewRelations().remove(owner);
+        if (owner.isInferred()) {
+            transactionCache.removeInferredInstance(owner);
+        }
     }
 }

@@ -136,7 +136,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            conceptObserver.transactionCache().trackForValidation(role);
+            conceptObserver.trackRoleForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
