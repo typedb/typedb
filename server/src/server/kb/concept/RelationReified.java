@@ -28,7 +28,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -52,23 +52,23 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    private RelationReified(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    private RelationReified(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     private RelationReified(VertexElement vertexElement, RelationType type,
-                            ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, type, conceptManager, transactionDataContainer);
+                            ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, type, conceptManager, conceptObserver);
     }
 
 
-    public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new RelationReified(vertexElement, conceptManager, transactionDataContainer);
+    public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new RelationReified(vertexElement, conceptManager, conceptObserver);
     }
 
     public static RelationReified create(VertexElement vertexElement, RelationType type,
-                                         ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new RelationReified(vertexElement, type, conceptManager, transactionDataContainer);
+                                         ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new RelationReified(vertexElement, type, conceptManager, conceptObserver);
     }
 
     @Override
@@ -76,8 +76,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //TODO remove this once we fix the whole relation hierarchy
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
-        transactionDataContainer.transactionCache().getNewRelations().remove(owner);
-        if(isInferred()) transactionDataContainer.transactionCache().removeInferredInstance(owner);
+        conceptObserver.transactionCache().getNewRelations().remove(owner);
+        if(isInferred()) conceptObserver.transactionCache().removeInferredInstance(owner);
         super.delete();
     }
 
@@ -113,7 +113,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    transactionDataContainer.transactionCache().remove(casting);
+                    conceptObserver.transactionCache().remove(casting);
                 });
     }
 
@@ -154,7 +154,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing, conceptManager);
-        transactionDataContainer.transactionCache().trackForValidation(casting);
+        conceptObserver.transactionCache().trackForValidation(casting);
     }
 
     /**

@@ -37,8 +37,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
@@ -76,12 +75,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> TransactionException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
-    ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        this(vertexElement, conceptManager, transactionDataContainer);
+    ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        this(vertexElement, conceptManager, conceptObserver);
         type((TypeImpl) type);
         track();
     }
@@ -91,7 +90,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      */
     private void track() {
         if (type().keys().findAny().isPresent()) {
-            transactionDataContainer.transactionCache().trackForValidation(this);
+            conceptObserver.transactionCache().trackForValidation(this);
         }
     }
 
@@ -117,8 +116,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }).collect(toSet());
 
         if (!isDeleted())  {
-            transactionDataContainer.statistics().decrement(type().label());
-            transactionDataContainer.queryCache().ackDeletion(type());
+            conceptObserver.statistics().decrement(type().label());
+            conceptObserver.queryCache().ackDeletion(type());
         }
         this.edgeRelations().forEach(Concept::delete);
 
@@ -308,10 +307,10 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
-        transactionDataContainer.statistics().increment(hasAttribute.label());
+        conceptObserver.statistics().increment(hasAttribute.label());
 
         RelationImpl attributeRelation = conceptManager.buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
-        if (isInferred) transactionDataContainer.transactionCache().inferredInstance(attributeRelation);
+        if (isInferred) conceptObserver.transactionCache().inferredInstance(attributeRelation);
         return attributeRelation;
     }
 

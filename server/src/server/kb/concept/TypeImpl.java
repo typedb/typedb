@@ -33,7 +33,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;
@@ -68,12 +68,12 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
-    TypeImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, superType, conceptManager, transactionDataContainer);
+    TypeImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, superType, conceptManager, conceptObserver);
         //This constructor is ONLY used when CREATING new types. Which is why we shard here
         createShard();
     }
@@ -92,29 +92,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return vertexElement;
     }
 
-    /**
-     * Sync the transaction caches to reflect the new concept that has been created
-     *
-     * @param instance new instance that was created
-     * @param isInferred - flag that telling if that instance is inferred, saves a slow
-     *                   read from the vertex properties
-     */
-    void syncCachesOnNewInstance(Thing instance, boolean isInferred) {
-        transactionDataContainer.ruleCache().ackTypeInstance(this);
-        transactionDataContainer.statistics().increment(label());
 
-        if (instance instanceof Relation) {
-            transactionDataContainer.transactionCache().addNewRelation((Relation)instance);
-        }
-
-        if (isInferred)  {
-            transactionDataContainer.transactionCache().inferredInstance(instance);
-        } else {
-            //creation of inferred concepts is an integral part of reasoning
-            //hence we only acknowledge non-inferred insertions
-            transactionDataContainer.queryCache().ackInsertion();
-        }
-    }
 
     /**
      * Checks if an Thing is allowed to be created and linked to this Type.
@@ -220,7 +198,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     void trackRolePlayers() {
         instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                rolePlayer -> transactionDataContainer.transactionCache().trackForValidation(rolePlayer)));
+                rolePlayer -> conceptObserver.trackRolePlayerForValidation(rolePlayer)));
     }
 
     public T play(Role role, boolean required) {
@@ -365,11 +343,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
 
-        if (isAbstract) {
-            transactionDataContainer.transactionCache().removeFromValidation(this);
-        } else {
-            transactionDataContainer.transactionCache().trackForValidation(this);
-        }
+        conceptObserver.conceptSetAbstract(this, isAbstract);
 
         return getThis();
     }

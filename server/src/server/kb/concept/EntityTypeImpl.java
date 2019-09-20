@@ -22,8 +22,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 
 /**
  * SchemaConcept used to represent categories.
@@ -31,22 +30,22 @@ import grakn.core.server.session.cache.TransactionCache;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    private EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    private EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     private EntityTypeImpl(VertexElement vertexElement, EntityType type,
-                           ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, type, conceptManager, transactionDataContainer);
+                           ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, type, conceptManager, conceptObserver);
     }
 
-    public static EntityTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new EntityTypeImpl(vertexElement, conceptManager, transactionDataContainer);
+    public static EntityTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new EntityTypeImpl(vertexElement, conceptManager, conceptObserver);
     }
 
     public static EntityTypeImpl create(VertexElement vertexElement, EntityType type,
-                                        ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new EntityTypeImpl(vertexElement, type, conceptManager, transactionDataContainer);
+                                        ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new EntityTypeImpl(vertexElement, type, conceptManager, conceptObserver);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {
@@ -65,7 +64,7 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
     private Entity createInstance(boolean isInferred) {
         VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ENTITY, isInferred);
         Entity instance = conceptManager.buildEntity(newInstanceVertexElement, this);
-        syncCachesOnNewInstance(instance, isInferred);
+        conceptObserver.createEntity(instance, isInferred);
         return instance;
     }
 }

@@ -30,8 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
@@ -45,21 +44,21 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    private RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
-    private RoleImpl(VertexElement vertexElement, Role type, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, type, conceptManager, transactionDataContainer);
+    private RoleImpl(VertexElement vertexElement, Role type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, type, conceptManager, conceptObserver);
     }
 
-    public static RoleImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new RoleImpl(vertexElement, conceptManager, transactionDataContainer);
+    public static RoleImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new RoleImpl(vertexElement, conceptManager, conceptObserver);
     }
 
-    public static RoleImpl create(VertexElement vertexElement, Role type, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        RoleImpl role = new RoleImpl(vertexElement, type, conceptManager, transactionDataContainer);
-        transactionDataContainer.transactionCache().trackForValidation(role);
+    public static RoleImpl create(VertexElement vertexElement, Role type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        RoleImpl role = new RoleImpl(vertexElement, type, conceptManager, conceptObserver);
+        conceptObserver.transactionCache().trackForValidation(role);
         return role;
     }
 

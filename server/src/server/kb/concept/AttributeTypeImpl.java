@@ -25,8 +25,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -45,23 +44,23 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    private AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    private AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
-                              ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, type, conceptManager, transactionDataContainer);
+                              ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, type, conceptManager, conceptObserver);
         vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
-    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new AttributeTypeImpl<>(vertexElement, conceptManager, transactionDataContainer);
+    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new AttributeTypeImpl<>(vertexElement, conceptManager, conceptObserver);
     }
 
     public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
-                                                  ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new AttributeTypeImpl<>(vertexElement, type, dataType, conceptManager, transactionDataContainer);
+                                                  ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new AttributeTypeImpl<>(vertexElement, type, dataType, conceptManager, conceptObserver);
     }
 
     public static AttributeTypeImpl from(AttributeType attributeType) {
@@ -134,7 +133,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ATTRIBUTE, isInferred);
             instance = conceptManager.buildAttribute(newInstanceVertexElement, this, value);
             Preconditions.checkNotNull(instance, "producer should never return null");
-            syncCachesOnNewInstance(instance, isInferred);
+            conceptObserver.createAttribute(instance, value, isInferred);
         } else {
             if (isInferred && !instance.isInferred()) {
                 throw TransactionException.nonInferredThingExists(instance);

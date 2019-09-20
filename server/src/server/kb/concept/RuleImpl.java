@@ -23,8 +23,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -36,25 +35,25 @@ import java.util.stream.Stream;
  * An ontological element used to define different types of Rule.
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
-    private RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    private RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
-                     ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, type, conceptManager, transactionDataContainer);
+                     ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, type, conceptManager, conceptObserver);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
         vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
-    public static RuleImpl get(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new RuleImpl(vertexElement, conceptManager, transactionDataContainer);
+    public static RuleImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new RuleImpl(vertexElement, conceptManager, conceptObserver);
     }
 
     public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
-                                  ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptManager, transactionDataContainer);
-        transactionDataContainer.transactionCache().trackForValidation(rule);
+                                  ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptManager, conceptObserver);
+        conceptObserver.transactionCache().trackForValidation(rule);
         return rule;
     }
 

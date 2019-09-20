@@ -26,8 +26,7 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Set;
@@ -42,24 +41,24 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptBuilder, transactionDataContainer);
+    private RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptBuilder, conceptObserver);
     }
 
     private RelationTypeImpl(VertexElement vertexElement, RelationType type,
-                             ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, type, conceptManager, transactionDataContainer);
+                             ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, type, conceptManager, conceptObserver);
     }
 
     public static RelationTypeImpl get(VertexElement vertexElement,
-                                       ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        return new RelationTypeImpl(vertexElement, conceptManager, transactionDataContainer);
+                                       ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new RelationTypeImpl(vertexElement, conceptManager, conceptObserver);
     }
 
     public static RelationTypeImpl create(VertexElement vertexElement, RelationType type,
-                                          ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptManager, transactionDataContainer);
-        transactionDataContainer.transactionCache().trackForValidation(relationType);
+                                          ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptManager, conceptObserver);
+        conceptObserver.transactionCache().trackForValidation(relationType);
         return relationType;
     }
 
@@ -79,7 +78,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     private Relation addRelation(boolean isInferred) {
         VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.RELATION, isInferred);
         Relation newRelation = conceptManager.buildRelation(newInstanceVertexElement, this);
-        syncCachesOnNewInstance(newRelation, isInferred);
+        conceptObserver.createRelation(newRelation, isInferred);
         return newRelation;
     }
 
@@ -115,14 +114,14 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
         //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> transactionDataContainer.transactionCache().trackForValidation(rolePlayer));
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> conceptObserver.transactionCache().trackForValidation(rolePlayer));
 
 
         //Add the Role Type itself
-        transactionDataContainer.transactionCache().trackForValidation(roleTypeImpl);
+        conceptObserver.transactionCache().trackForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        transactionDataContainer.transactionCache().trackForValidation(this);
+        conceptObserver.transactionCache().trackForValidation(this);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -137,7 +136,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            transactionDataContainer.transactionCache().trackForValidation(role);
+            conceptObserver.transactionCache().trackForValidation(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -150,7 +149,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
             RelationImpl relation = RelationImpl.from(concept);
             RelationReified reifedRelation = relation.reified();
             if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> transactionDataContainer.transactionCache().trackForValidation(rolePlayer));
+                reifedRelation.castingsRelation().forEach(rolePlayer -> conceptObserver.transactionCache().trackForValidation(rolePlayer));
             }
         });
     }

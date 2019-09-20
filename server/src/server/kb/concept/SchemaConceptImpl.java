@@ -27,8 +27,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionDataContainer;
-import grakn.core.server.session.cache.TransactionCache;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;
@@ -53,12 +52,12 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        super(vertexElement, conceptManager, transactionDataContainer);
+    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
-    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, TransactionDataContainer transactionDataContainer) {
-        this(vertexElement, conceptManager, transactionDataContainer);
+    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        this(vertexElement, conceptManager, conceptObserver);
         if (sup() == null) sup(superType);
     }
 
@@ -68,7 +67,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     public T label(Label label) {
-        transactionDataContainer.transactionCache().remove(this);
+        conceptObserver.transactionCache().remove(this);
         try {
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
@@ -76,7 +75,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         } catch (PropertyNotUniqueException exception) {
             throw TransactionException.labelTaken(label);
         } finally {
-            transactionDataContainer.transactionCache().cacheConcept(this);
+            conceptObserver.transactionCache().cacheConcept(this);
         }
     }
 
@@ -142,7 +141,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
 
             //clear rule cache
-            transactionDataContainer.ruleCache().clear();
+            conceptObserver.ruleCache().clear();
         } else {
             throw TransactionException.cannotBeDeleted(this);
         }

@@ -144,7 +144,7 @@ public class TransactionOLTP implements Transaction {
 
     TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                     TransactionCache transactionCache, KeyspaceCache keyspaceCache,
-                    TransactionDataContainer container) {
+                    ConceptObserver container) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -167,7 +167,6 @@ public class TransactionOLTP implements Transaction {
         container.setStatisticsDelta(uncomittedStatisticsDelta);
 
         typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
-
     }
 
     void open(Type type) {
