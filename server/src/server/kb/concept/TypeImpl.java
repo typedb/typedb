@@ -83,27 +83,9 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return (TypeImpl<X, Y>) type;
     }
 
-    VertexElement addEntityVertex(boolean isInferred) {
+    VertexElement createInstanceVertex(Schema.BaseType baseType, boolean isInferred) {
         preCheckForInstanceCreation();
-        VertexElement vertexElement = vertex().createVertexElement(Schema.BaseType.ENTITY);
-        if (isInferred) {
-            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
-        }
-        return vertexElement;
-    }
-
-    VertexElement addRelationVertex(boolean isInferred) {
-        preCheckForInstanceCreation();
-        VertexElement vertexElement = vertex().createVertexElement(Schema.BaseType.RELATION);
-        if (isInferred) {
-            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
-        }
-        return vertexElement;
-    }
-
-    VertexElement addAttributeVertex(boolean isInferred) {
-        preCheckForInstanceCreation();
-        VertexElement vertexElement = vertex().createVertexElement(Schema.BaseType.ATTRIBUTE);
+        VertexElement vertexElement = vertex().createVertexElement(baseType);
         if (isInferred) {
             vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
         }
@@ -120,10 +102,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     void syncCachesOnNewInstance(Thing instance, boolean isInferred) {
         transactionDataContainer.ruleCache().ackTypeInstance(this);
         transactionDataContainer.statistics().increment(label());
-
-        if (!Schema.MetaSchema.isMetaLabel(label())) {
-            transactionDataContainer.transactionCache().addedInstance(id());
-        }
 
         if (instance instanceof Relation) {
             transactionDataContainer.transactionCache().addNewRelation((Relation)instance);

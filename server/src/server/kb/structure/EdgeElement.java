@@ -18,12 +18,9 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.concept.ConceptId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ElementFactory;
-import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.janusgraph.core.JanusGraphTransaction;
 
 /**
  * Represent an Edge in a TransactionOLTP

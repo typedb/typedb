@@ -44,6 +44,7 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -171,11 +172,21 @@ public class ConceptManager {
     }
 
     /**
+     * Check the transaction cache to see if we have the attribute already by index
+     * return NULL if attribtue does not exist in cache
+     */
+    @Nullable
+    public Attribute getCachedAttribute(String index) {
+        Attribute concept = transactionDataContainer.transactionCache().getAttributeCache().get(index);
+        return concept;
+    }
+
+    /**
      * This is only used when checking if attribute exists before trying to create a new one.
      * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
-    public Attribute getAttributeWithLock(String index) {
-        Attribute concept = transactionDataContainer.transactionCache().getAttributeCache().get(index);
+    Attribute getAttributeWithLock(String index) {
+        Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
         graphLock.readLock().lock();

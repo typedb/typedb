@@ -140,8 +140,6 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-
-
         // short term hack to get back to testable state
         TransactionDataContainer transactionDataContainer = new TransactionDataContainer();
 

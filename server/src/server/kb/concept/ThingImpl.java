@@ -118,7 +118,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if (!isDeleted())  {
             transactionDataContainer.statistics().decrement(type().label());
-            transactionDataContainer.transactionCache().removedInstance(type().id());
             transactionDataContainer.queryCache().ackDeletion(type());
         }
         this.edgeRelations().forEach(Concept::delete);

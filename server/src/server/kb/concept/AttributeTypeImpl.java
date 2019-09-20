@@ -121,6 +121,9 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return putAttribute(value, true);
     }
 
+    /**
+     * Method through which all new instance creations of attributes pass through
+     */
     private Attribute<D> putAttribute(D value, boolean isInferred) {
         Objects.requireNonNull(value);
 
@@ -128,7 +131,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         Attribute<D> instance = getAttributeWithLock(value);
         if (instance == null) {
-            VertexElement newInstanceVertexElement = addAttributeVertex(isInferred);
+            VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ATTRIBUTE, isInferred);
             instance = conceptManager.buildAttribute(newInstanceVertexElement, this, value);
             Preconditions.checkNotNull(instance, "producer should never return null");
             syncCachesOnNewInstance(instance, isInferred);
@@ -161,10 +164,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-
-        Attribute concept = transactionDataContainer.transactionCache().getAttributeCache().get(index);
+        Attribute<D> concept = conceptManager.getCachedAttribute(index);
         if (concept != null) return concept;
-
         return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
     }
 

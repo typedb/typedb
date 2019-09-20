@@ -20,6 +20,7 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.TransactionDataContainer;
 import grakn.core.server.session.cache.TransactionCache;
@@ -54,16 +55,17 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     public Entity create() {
-        VertexElement newInstanceVertexElement = addEntityVertex(false);
-        Entity instance = conceptManager.buildEntity(newInstanceVertexElement, this);
-        syncCachesOnNewInstance(instance, false);
-        return instance;
+        return createInstance(false);
     }
 
     public Entity addEntityInferred() {
-        VertexElement newInstanceVertexElement = addEntityVertex(true);
+        return createInstance(true);
+    }
+
+    private Entity createInstance(boolean isInferred) {
+        VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ENTITY, isInferred);
         Entity instance = conceptManager.buildEntity(newInstanceVertexElement, this);
-        syncCachesOnNewInstance(instance, true);
+        syncCachesOnNewInstance(instance, isInferred);
         return instance;
     }
 }

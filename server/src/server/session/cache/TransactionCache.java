@@ -72,9 +72,6 @@ public class TransactionCache {
     private final Set<Thing> inferredConcepts = new HashSet<>();
     private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
 
-    //We Track the number of concept connections which have been made which may result in a new shard
-    private final Map<ConceptId, Long> shardingCount = new HashMap<>();
-
     //New attributes are tracked so that we can merge any duplicate attributes at commit time.
     // The label, index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
@@ -288,21 +285,6 @@ public class TransactionCache {
     public LabelId convertLabelToId(Label label) {
         return labelCache.get(label);
     }
-
-    public void addedInstance(ConceptId conceptId) {
-        shardingCount.compute(conceptId, (key, value) -> value == null ? 1 : value + 1);
-        cleanupShardingCount(conceptId);
-    }
-
-    public void removedInstance(ConceptId conceptId) {
-        shardingCount.compute(conceptId, (key, value) -> value == null ? -1 : value - 1);
-        cleanupShardingCount(conceptId);
-    }
-
-    private void cleanupShardingCount(ConceptId conceptId) {
-        if (shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
-    }
-
 
     public void addNewAttribute(Label label, String index, ConceptId conceptId) {
         newAttributes.put(new Pair<>(label, index), conceptId);
