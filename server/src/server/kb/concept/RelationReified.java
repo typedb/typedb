@@ -113,7 +113,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    conceptObserver.transactionCache().remove(casting);
+                    conceptObserver.deleteCasting(casting);
                 });
     }
 
@@ -154,7 +154,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
         Casting casting = Casting.create(edge, owner, role, toThing, conceptManager);
-        conceptObserver.transactionCache().trackForValidation(casting);
+        conceptObserver.trackRolePlayerForValidation(casting);
     }
 
     /**

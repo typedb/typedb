@@ -58,7 +58,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public static RelationTypeImpl create(VertexElement vertexElement, RelationType type,
                                           ConceptManager conceptManager, ConceptObserver conceptObserver) {
         RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptManager, conceptObserver);
-        conceptObserver.transactionCache().trackForValidation(relationType);
+        conceptObserver.trackRelationForValidation(relationType);
         return relationType;
     }
 
@@ -114,14 +114,14 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
         //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> conceptObserver.transactionCache().trackForValidation(rolePlayer));
+        roleTypeImpl.rolePlayers().forEach(rolePlayer -> conceptObserver.trackRolePlayerForValidation(rolePlayer));
 
 
         //Add the Role Type itself
-        conceptObserver.transactionCache().trackForValidation(roleTypeImpl);
+        conceptObserver.trackRoleForValidation(roleTypeImpl);
 
         //Add the Relation Type
-        conceptObserver.transactionCache().trackForValidation(this);
+        conceptObserver.trackRelationForValidation(this);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -149,7 +149,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
             RelationImpl relation = RelationImpl.from(concept);
             RelationReified reifedRelation = relation.reified();
             if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> conceptObserver.transactionCache().trackForValidation(rolePlayer));
+                reifedRelation.castingsRelation().forEach(rolePlayer -> conceptObserver.trackRolePlayerForValidation(rolePlayer));
             }
         });
     }

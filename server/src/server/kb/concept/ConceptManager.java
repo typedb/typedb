@@ -38,6 +38,7 @@ import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.ConceptObserver;
+import grakn.core.server.session.cache.TransactionCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -56,11 +57,13 @@ import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 public class ConceptManager {
 
     private ElementFactory elementFactory;
-    private ConceptObserver conceptObserver;
+    private TransactionCache transactionCache;
+    private ConceptObserver conceptObserver; // only held to pass through to concepts
     private ReadWriteLock graphLock;
 
-    public ConceptManager(ElementFactory elementFactory, ConceptObserver conceptObserver, ReadWriteLock graphLock) {
+    public ConceptManager(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, ReadWriteLock graphLock) {
         this.elementFactory = elementFactory;
+        this.transactionCache = transactionCache;
         this.conceptObserver = conceptObserver;
         this.graphLock = graphLock;
     }
@@ -177,7 +180,7 @@ public class ConceptManager {
      */
     @Nullable
     public Attribute getCachedAttribute(String index) {
-        Attribute concept = conceptObserver.transactionCache().getAttributeCache().get(index);
+        Attribute concept = transactionCache.getAttributeCache().get(index);
         return concept;
     }
 
@@ -209,8 +212,8 @@ public class ConceptManager {
     }
 
     public <T extends Concept> T getConcept(ConceptId conceptId) {
-        if (conceptObserver.transactionCache().isConceptCached(conceptId)) {
-            return conceptObserver.transactionCache().getCachedConcept(conceptId);
+        if (transactionCache.isConceptCached(conceptId)) {
+            return transactionCache.getCachedConcept(conceptId);
         }
 
         // If edgeId, we are trying to fetch either:
@@ -244,8 +247,8 @@ public class ConceptManager {
 
     public <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
         SchemaConcept schemaConcept;
-        if (conceptObserver.transactionCache().isTypeCached(label)) {
-            schemaConcept = conceptObserver.transactionCache().getCachedSchemaConcept(label);
+        if (transactionCache.isTypeCached(label)) {
+            schemaConcept = transactionCache.getCachedSchemaConcept(label);
         } else {
             schemaConcept = getSchemaConcept(convertToId(label));
         }
@@ -307,8 +310,8 @@ public class ConceptManager {
      * @return The matching type id
      */
     public LabelId convertToId(Label label) {
-        if (conceptObserver.transactionCache().isLabelCached(label)) {
-            return conceptObserver.transactionCache().convertLabelToId(label);
+        if (transactionCache.isLabelCached(label)) {
+            return transactionCache.convertLabelToId(label);
         }
         return LabelId.invalid();
     }
@@ -330,11 +333,11 @@ public class ConceptManager {
 
 
     private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder) {
-        if (!conceptObserver.transactionCache().isConceptCached(conceptId)) {
+        if (!transactionCache.isConceptCached(conceptId)) {
             X newConcept = conceptBuilder.apply(element);
-            conceptObserver.transactionCache().cacheConcept(newConcept);
+            transactionCache.cacheConcept(newConcept);
         }
-        return conceptObserver.transactionCache().getCachedConcept(conceptId);
+        return transactionCache.getCachedConcept(conceptId);
     }
 
     private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
@@ -432,7 +435,7 @@ public class ConceptManager {
 
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
         ConceptId conceptId = Schema.conceptId(vertexElement.element());
-        Concept cachedConcept = conceptObserver.transactionCache().getCachedConcept(conceptId);
+        Concept cachedConcept = transactionCache.getCachedConcept(conceptId);
 
         if (cachedConcept == null) {
             Schema.BaseType type;
@@ -473,7 +476,7 @@ public class ConceptManager {
                 default:
                     throw TransactionException.unknownConcept(type.name());
             }
-            conceptObserver.transactionCache().cacheConcept(concept);
+            transactionCache.cacheConcept(concept);
             return (X) concept;
         }
         return (X) cachedConcept;
@@ -494,7 +497,7 @@ public class ConceptManager {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
         ConceptId conceptId = Schema.conceptId(edgeElement.element());
-        if (!conceptObserver.transactionCache().isConceptCached(conceptId)) {
+        if (!transactionCache.isConceptCached(conceptId)) {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
@@ -503,9 +506,9 @@ public class ConceptManager {
                 default:
                     throw TransactionException.unknownConcept(label.name());
             }
-            conceptObserver.transactionCache().cacheConcept(concept);
+            transactionCache.cacheConcept(concept);
         }
-        return conceptObserver.transactionCache().getCachedConcept(conceptId);
+        return transactionCache.getCachedConcept(conceptId);
     }
 
     /**

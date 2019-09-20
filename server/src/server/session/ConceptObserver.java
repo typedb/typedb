@@ -23,6 +23,9 @@ import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
@@ -103,6 +106,11 @@ public class ConceptObserver {
             //hence we only acknowledge non-inferred insertions
             queryCache.ackInsertion();
         }
+
+        //This Thing gets tracked for validation only if it has keys which need to be checked.
+        if (thingType.keys().findAny().isPresent()) {
+            transactionCache.trackForValidation(thing);
+        }
     }
 
     public <D> void createAttribute(Attribute<D> attribute, D value, boolean isInferred) {
@@ -130,6 +138,24 @@ public class ConceptObserver {
 
     }
 
+    public void createRule(Rule rule) {
+        transactionCache.trackForValidation(rule);
+    }
+
+    public void createRole(Role role) {
+        transactionCache.trackForValidation(role);
+    }
+
+    /*
+    TODO this pair of methods might be combinable somehow
+     */
+    public void labelRemoved(SchemaConcept schemaConcept) {
+        transactionCache.remove(schemaConcept);
+    }
+    public void labelAdded(SchemaConcept schemaConcept) {
+        transactionCache.cacheConcept(schemaConcept);
+    }
+
     public void conceptSetAbstract(Type type, boolean isAbstract) {
         if (isAbstract) {
             transactionCache.removeFromValidation(type);
@@ -138,8 +164,17 @@ public class ConceptObserver {
         }
     }
 
-
     public void trackRolePlayerForValidation(Casting rolePlayer) {
         transactionCache.trackForValidation(rolePlayer);
+    }
+    public void trackRoleForValidation(Role role) {
+        transactionCache.trackForValidation(role);
+    }
+    public void trackRelationForValidation(RelationType relation) {
+        transactionCache.trackForValidation(relation);
+    }
+
+    public void deleteCasting(Casting casting) {
+       transactionCache.remove(casting);
     }
 }

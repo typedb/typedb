@@ -82,16 +82,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         this(vertexElement, conceptManager, conceptObserver);
         type((TypeImpl) type);
-        track();
-    }
-
-    /**
-     * This Thing gets tracked for validation only if it has keys which need to be checked.
-     */
-    private void track() {
-        if (type().keys().findAny().isPresent()) {
-            conceptObserver.transactionCache().trackForValidation(this);
-        }
     }
 
     public boolean isInferred() {

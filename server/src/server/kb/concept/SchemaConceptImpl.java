@@ -67,7 +67,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     public T label(Label label) {
-        conceptObserver.transactionCache().remove(this);
+        conceptObserver.labelRemoved(this);
         try {
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
@@ -75,7 +75,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         } catch (PropertyNotUniqueException exception) {
             throw TransactionException.labelTaken(label);
         } finally {
-            conceptObserver.transactionCache().cacheConcept(this);
+            conceptObserver.labelAdded(this);
         }
     }
 

@@ -145,7 +145,7 @@ public class SessionImpl implements Session {
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         TransactionCache transactionCache = new TransactionCache(keyspaceCache);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
-        ConceptManager conceptManager = new ConceptManager(elementFactory, conceptObserver, graphLock);
+        ConceptManager conceptManager = new ConceptManager(elementFactory, transactionCache, conceptObserver, graphLock);
 
         TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, transactionCache, keyspaceCache, conceptObserver);
         tx.open(type);
