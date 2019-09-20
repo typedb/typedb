@@ -63,11 +63,6 @@ public class ConceptObserver {
         this.statistics = statistics;
     }
 
-    @Deprecated
-    public TransactionCache transactionCache() {
-        return transactionCache;
-    }
-
     private void deleteConcept(Concept concept) {
         transactionCache.remove(concept);
     }
