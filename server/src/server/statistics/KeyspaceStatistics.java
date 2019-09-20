@@ -18,13 +18,18 @@
 
 package grakn.core.server.statistics;
 
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ConceptVertex;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.TransactionOLTP;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -45,77 +50,41 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
  * other counts on user-defined schema concepts are for for that concrete type only
  */
 public class KeyspaceStatistics {
+    private Cluster cluster;
+    private KeyspaceImpl keyspace;
 
-    private ConcurrentHashMap<Label, Long> instanceCountsCache;
-
-    public KeyspaceStatistics() {
-        instanceCountsCache = new ConcurrentHashMap<>();
-    }
-
-    public long count(TransactionOLTP tx, Label label) {
-        // return count if cached, else cache miss and retrieve from Janus
-        instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
-        return instanceCountsCache.get(label);
-    }
-
-    public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
-        HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
-
-        statisticsDelta.updateThingCount();
-
-        // merge each delta into the cache, then flush the cache to Janus
-        Set<Label> labelsToPersist = new HashSet<>();
-        deltaMap.entrySet().stream()
-                .filter(e -> e.getValue() != 0)
-                .forEach(entry -> {
-                    Label label = entry.getKey();
-                    Long delta = entry.getValue();
-                    labelsToPersist.add(label);
-                    // atomic update
-                    instanceCountsCache.compute(label, (k, prior) ->
-                        prior == null?
-                                retrieveCountFromVertex(tx, label) + delta:
-                                prior + delta
-            );
-        });
-
-        persist(tx, labelsToPersist);
-    }
-
-    private void persist(TransactionOLTP tx, Set<Label> labelsToPersist) {
-        // TODO - there's an possible removal from instanceCountsCache here
-        // when the schemaConcept is null - ie it's been removed. However making this
-        // thread safe with competing action of creating a schema concept of the same name again
-        // So for now just wait until sessions are closed and rebuild the instance counts cache from scratch
-
-        for (Label label : labelsToPersist) {
-            // don't change the value, just use `.compute()` for atomic and locking vertex write
-            instanceCountsCache.compute(label, (lab, count) -> {
-                Concept schemaConcept = tx.getSchemaConcept(lab);
-                if (schemaConcept != null) {
-                    Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-                    janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
-                }
-                return count;
-            });
+    public KeyspaceStatistics(Cluster cluster, KeyspaceImpl keyspace) {
+        this.cluster = cluster;
+        this.keyspace = keyspace;
+        try (Session connection = this.cluster.connect()) {
+            connection.execute("create table if not exists " + keyspace.name() + ".statistics(label text, count counter, primary key(label));");
         }
     }
 
-    /**
-     * Effectively a cache miss - retrieves the value from the janus vertex
-     * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
-     */
-    private long retrieveCountFromVertex(TransactionOLTP tx, Label label) {
-        Concept schemaConcept = tx.getSchemaConcept(label);
-        if (schemaConcept != null) {
-            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name());
-            // VertexProperty is similar to a Java Optional
-            return (Long) property.orElse(0L);
-        } else {
-            // if the schema concept is NULL, it doesn't exist! While it shouldn't pass validation, if we can use it to
-            // short circuit then it's a good starting point
-            return -1L;
+    public long count(TransactionOLTP tx, Label label) {
+        try (Session connection = cluster.connect()) {
+            List<Row> select = connection.execute("select * from " + keyspace.name() + ".statistics where label = '" + label.getValue() + "';").all();
+            if (select.size() == 0) {
+                if ((tx.getSchemaConcept(label) != null)) {
+                    return 0L;
+                }
+                else {
+                    return -1L;
+                }
+            } else if (select.size() == 1) {
+                return select.get(0).getLong("count");
+            } else {
+                throw new RuntimeException("Keyspace statistics corrupted. There should only be one instance of  " + label.getValue() + " instances of " + select.size() + ". where there should only be one");
+            }
+        }
+    }
+
+    public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
+        statisticsDelta.updateThingCount();
+        try (Session connection = cluster.connect()) {
+            statisticsDelta.instanceDeltas().forEach((label, count) -> {
+                connection.execute("update " + keyspace.name() + ".statistics set count = count + " + count + " where label = '" + label.getValue() + "';");
+            });
         }
     }
 }

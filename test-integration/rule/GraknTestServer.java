@@ -209,12 +209,11 @@ public class GraknTestServer extends ExternalResource {
         LockManager lockManager = new LockManager();
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
-        Cluster cluster = Cluster.builder()
+        Cluster.Builder clusterBuilder = Cluster.builder()
                 .addContactPoint(serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
-                .build();
-        keyspaceManager = new KeyspaceManager(cluster);
-        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
+                .withPort(serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT));
+        keyspaceManager = new KeyspaceManager(clusterBuilder.build());
+        sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig, clusterBuilder);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 

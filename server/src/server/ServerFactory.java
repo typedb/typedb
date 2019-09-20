@@ -55,16 +55,15 @@ public class ServerFactory {
         LockManager lockManager = new LockManager();
 
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
-        Cluster cluster = Cluster.builder()
+        Cluster.Builder clusterBuilder = Cluster.builder()
                 .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
-                .build();
+                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT));
 
-        KeyspaceManager keyspaceManager = new KeyspaceManager(cluster);
+        KeyspaceManager keyspaceManager = new KeyspaceManager(clusterBuilder.build());
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
-        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config);
+        SessionFactory sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, config, clusterBuilder);
 
         // Enable server tracing
         if (benchmark) {

@@ -18,6 +18,7 @@
 
 package grakn.core.server.session;
 
+import com.datastax.driver.core.Cluster;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
@@ -51,16 +52,18 @@ public class SessionFactory {
     // Keep visibility to protected as this is used by KGMS
     protected final HadoopGraphFactory hadoopGraphFactory;
     protected Config config;
+    private Cluster.Builder clusterBuilder;
     // Keep visibility to protected as this is used by KGMS
     protected final LockManager lockManager;
 
     private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
 
-    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, Config config) {
+    public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, Config config, Cluster.Builder clusterBuilder) {
         this.janusGraphFactory = janusGraphFactory;
         this.hadoopGraphFactory = hadoopGraphFactory;
         this.lockManager = lockManager;
         this.config = config;
+        this.clusterBuilder = clusterBuilder;
         this.sharedKeyspaceDataMap = new HashMap<>();
     }
 
@@ -98,7 +101,7 @@ public class SessionFactory {
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceCache();
-                keyspaceStatistics = new KeyspaceStatistics();
+                keyspaceStatistics = new KeyspaceStatistics(clusterBuilder.build(), keyspace);
                 attributesCache = buildAttributeCache();
                 graphLock = new ReentrantReadWriteLock();
                 cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock, hadoopGraph);

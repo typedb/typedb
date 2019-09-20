@@ -18,6 +18,7 @@
 
 package grakn.core.server.session;
 
+import com.datastax.driver.core.Cluster;
 import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
@@ -344,7 +345,10 @@ public class TransactionOLTPIT {
         Config config = Config.read(tmpConfig);
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
+        Cluster.Builder clusterBuilder = Cluster.builder()
+                .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
+                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT));
+        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config, clusterBuilder);
         KeyspaceImpl keyspace = server.randomKeyspaceName();
         try (SessionImpl session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
@@ -395,7 +399,10 @@ public class TransactionOLTPIT {
         Config config = Config.read(tmpConfig);
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
-        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
+        Cluster.Builder clusterBuilder = Cluster.builder()
+                .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
+                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT));
+        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config, clusterBuilder);
         KeyspaceImpl keyspace = server.randomKeyspaceName();
         try (SessionImpl session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();

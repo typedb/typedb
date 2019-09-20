@@ -40,6 +40,7 @@ java_test(
         "//api",
         "//common",
         "//concept",
+        "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
