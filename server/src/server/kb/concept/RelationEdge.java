@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import autovalue.shaded.com.google$.common.base.$Supplier;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.LabelId;
@@ -37,6 +38,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -171,12 +173,8 @@ public class RelationEdge implements RelationStructure {
     @Override
     public void delete() {
         if (!isDeleted()) {
-            conceptObserver.statistics().decrement(type().label());
-            if (isInferred()){
-                // this isn't very nice - have to retrieve the concept wrapping this edge from scratch
-                Concept relation = conceptManager.getConcept(id());
-                if (relation != null) conceptObserver.transactionCache().removeInferredInstance(relation.asThing());
-            }
+            Supplier<Concept> conceptRetriever = () -> conceptManager.getConcept(id());
+            conceptObserver.deleteRelationEdge(this, conceptRetriever);
             edge().delete();
         }
     }

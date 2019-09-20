@@ -18,6 +18,7 @@
 
 package grakn.core.server.session;
 
+import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -30,11 +31,14 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.RelationEdge;
 import grakn.core.server.kb.concept.RelationImpl;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
+
+import java.util.function.Supplier;
 
 public class ConceptObserver {
 
@@ -84,6 +88,18 @@ public class ConceptObserver {
         Type type = thing.type();
         statistics.decrement(type.label());
         queryCache.ackDeletion(type);
+    }
+
+    // Using a supplier instead of the concept avoids fetching the wrapping concept
+    // when the edge is not inferred, which is probably most of the time
+    public void deleteRelationEdge(RelationEdge edge, Supplier<Concept> wrappingConceptGetter) {
+        statistics.decrement(edge.type().label());
+        if (edge.isInferred()) {
+            Concept wrappingConcept = wrappingConceptGetter.get();
+            if (wrappingConcept != null) {
+                transactionCache.removeInferredInstance(wrappingConcept.asThing());
+            }
+        }
     }
 
     public void deleteSchemaConcept() {
