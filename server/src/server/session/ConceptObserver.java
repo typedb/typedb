@@ -122,6 +122,10 @@ public class ConceptObserver {
         createThing(entity, isInferred);
     }
 
+    public void createHasAttributeRelation(Relation hasAttributeRelation, boolean isInferred) {
+        createThing(hasAttributeRelation, isInferred);
+    }
+
     public void createSchemaConcept(SchemaConcept schemaConcept) {
 
     }
@@ -134,9 +138,6 @@ public class ConceptObserver {
         }
     }
 
-    public void createHasAttribute(boolean isAbstract) {
-
-    }
 
     public void trackRolePlayerForValidation(Casting rolePlayer) {
         transactionCache.trackForValidation(rolePlayer);

@@ -307,10 +307,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
-        conceptObserver.statistics().increment(hasAttribute.label());
-
         RelationImpl attributeRelation = conceptManager.buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
-        if (isInferred) conceptObserver.transactionCache().inferredInstance(attributeRelation);
+        conceptObserver.createHasAttributeRelation(attributeRelation, isInferred);
+
         return attributeRelation;
     }
 
