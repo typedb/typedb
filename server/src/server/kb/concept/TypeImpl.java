@@ -50,7 +50,7 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept. For example an EntityType or RelationType
  * @param <V> The instance of this type. For example Entity or Relation
  */
-public abstract class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
+public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
     private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
@@ -434,4 +434,12 @@ public abstract class TypeImpl<T extends Type, V extends Thing> extends SchemaCo
             throw TransactionException.duplicateHas(this, attributeType);
         }
     }
+
+    @Override
+    void trackRolePlayers() {
+        // this method needs to be implemented here for the single case when trying to instantiate the top level
+        // meta Thing concept. In theory this class should be abstract, and only use the overriding
+        // implementations of this method (EntityType, AttributeType, RelationType)
+    }
+
 }

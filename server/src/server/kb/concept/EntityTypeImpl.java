@@ -68,6 +68,7 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
         return instance;
     }
 
+    @Override
     void trackRolePlayers() {
         conceptObserver.trackEntityInstancesRolesPlayed(this);
     }
