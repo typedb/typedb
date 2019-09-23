@@ -284,7 +284,15 @@ jobs:
       - run: |
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run @graknlabs_build_tools//ci:release-approval
+          set -e
+          bazel run @graknlabs_build_tools//ci:release-validate-deps \
+            graknlabs_common graknlabs_graql \
+            graknlabs_protocol graknlabs_console
+          is_releasable=$?
+          set +e
+          if [ is_releasable -e 0 ]; then
+            bazel run @graknlabs_build_tools//ci:release-approval
+          fi
 
   deploy-github:
     machine: true
