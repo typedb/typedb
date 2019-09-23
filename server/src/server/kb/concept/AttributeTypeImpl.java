@@ -203,4 +203,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return vertex().property(Schema.VertexProperty.REGEX);
     }
 
+    void trackRolePlayers() {
+        conceptObserver.trackAttributeInstancesRolesPlayed(this);
+    }
 }

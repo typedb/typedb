@@ -24,11 +24,13 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -58,7 +60,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public static RelationTypeImpl create(VertexElement vertexElement, RelationType type,
                                           ConceptManager conceptManager, ConceptObserver conceptObserver) {
         RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type, conceptManager, conceptObserver);
-        conceptObserver.trackRelationForValidation(relationType);
+        conceptObserver.relationTypeCreated(relationType);
         return relationType;
     }
 
@@ -113,15 +115,10 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
-        //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> conceptObserver.trackRolePlayerForValidation(rolePlayer));
 
-
-        //Add the Role Type itself
-        conceptObserver.trackRoleForValidation(roleTypeImpl);
-
-        //Add the Relation Type
-        conceptObserver.trackRelationForValidation(this);
+        // pass relation type, role, and castings to observer for validation
+        List<Casting> conceptsPlayingRole = roleTypeImpl.rolePlayers().collect(Collectors.toList());
+        conceptObserver.relationRoleUnrelated(this, role, conceptsPlayingRole);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -136,7 +133,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            conceptObserver.trackRoleForValidation(role);
+            conceptObserver.roleDeleted(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -145,13 +142,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     @Override
     void trackRolePlayers() {
-        instances().forEach(concept -> {
-            RelationImpl relation = RelationImpl.from(concept);
-            RelationReified reifedRelation = relation.reified();
-            if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> conceptObserver.trackRolePlayerForValidation(rolePlayer));
-            }
-        });
+        conceptObserver.trackRelationInstancesRolePlayers(this);
     }
 
     @Override

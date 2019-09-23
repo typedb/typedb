@@ -178,7 +178,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      *
      * @return All the Casting which this instance is cast into the role
      */
-    Stream<Casting> castingsInstance() {
+    public Stream<Casting> castingsInstance() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER)
                 .map(edge -> Casting.withThing(edge, this, conceptManager));
     }

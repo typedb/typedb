@@ -21,7 +21,6 @@ package grakn.core.server.kb.concept;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
@@ -51,7 +50,7 @@ import java.util.stream.Stream;
  * @param <T> The leaf interface of the object concept. For example an EntityType or RelationType
  * @param <V> The instance of this type. For example Entity or Relation
  */
-public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
+public abstract class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
     private final Cache<Boolean> cachedIsAbstract = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
@@ -192,11 +191,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
-    }
-
-    void trackRolePlayers() {
-        instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                rolePlayer -> conceptObserver.trackRolePlayerForValidation(rolePlayer)));
     }
 
     public T play(Role role, boolean required) {

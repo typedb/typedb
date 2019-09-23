@@ -67,4 +67,8 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
         conceptObserver.createEntity(instance, isInferred);
         return instance;
     }
+
+    void trackRolePlayers() {
+        conceptObserver.trackEntityInstancesRolesPlayed(this);
+    }
 }

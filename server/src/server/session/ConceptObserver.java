@@ -24,6 +24,8 @@ import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
+import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
@@ -33,11 +35,15 @@ import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.RelationEdge;
 import grakn.core.server.kb.concept.RelationImpl;
+import grakn.core.server.kb.concept.RelationReified;
+import grakn.core.server.kb.concept.RelationTypeImpl;
+import grakn.core.server.kb.concept.ThingImpl;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
 
+import java.util.List;
 import java.util.function.Supplier;
 
 public class ConceptObserver {
@@ -47,7 +53,7 @@ public class ConceptObserver {
     private RuleCache ruleCache;
     private UncomittedStatisticsDelta statistics;
 
-    public void setTransactionCache(TransactionCache transactionCache) {
+    void setTransactionCache(TransactionCache transactionCache) {
         this.transactionCache = transactionCache;
     }
 
@@ -55,11 +61,11 @@ public class ConceptObserver {
         this.queryCache = queryCache;
     }
 
-    public void setRuleCache(RuleCache ruleCache) {
+    void setRuleCache(RuleCache ruleCache) {
         this.ruleCache = ruleCache;
     }
 
-    public void setStatisticsDelta(UncomittedStatisticsDelta statistics) {
+    void setStatisticsDelta(UncomittedStatisticsDelta statistics) {
         this.statistics = statistics;
     }
 
@@ -164,14 +170,28 @@ public class ConceptObserver {
         }
     }
 
-    public void trackRolePlayerForValidation(Casting rolePlayer) {
-        transactionCache.trackForValidation(rolePlayer);
+    public void relationTypeCreated(RelationType relationType) {
+        transactionCache.trackForValidation(relationType);
     }
-    public void trackRoleForValidation(Role role) {
-        transactionCache.trackForValidation(role);
+
+    public void trackRelationInstancesRolePlayers(RelationType relationType) {
+        relationType.instances().forEach(concept -> {
+            RelationImpl relation = RelationImpl.from(concept);
+            RelationReified reifedRelation = relation.reified();
+            if (reifedRelation != null) {
+                reifedRelation.castingsRelation().forEach(rolePlayer -> transactionCache.trackForValidation(rolePlayer));
+            }
+        });
     }
-    public void trackRelationForValidation(RelationType relation) {
-        transactionCache.trackForValidation(relation);
+
+    public void trackEntityInstancesRolesPlayed(EntityType entity) {
+        entity.instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
+                rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
+    }
+
+    public  void trackAttributeInstancesRolesPlayed(AttributeType attributeType) {
+        attributeType.instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
+                rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
     }
 
     public void deleteCasting(Casting casting) {
@@ -183,5 +203,19 @@ public class ConceptObserver {
         if (owner.isInferred()) {
             transactionCache.removeInferredInstance(owner);
         }
+    }
+
+    public void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole) {
+        transactionCache.trackForValidation(relationType);
+        transactionCache.trackForValidation(role);
+        conceptsPlayingRole.forEach(casting -> transactionCache.trackForValidation(casting));
+    }
+
+    public void roleDeleted(Role role) {
+        transactionCache.trackForValidation(role);
+    }
+
+    public void rolePlayerCreated(Casting casting) {
+        transactionCache.trackForValidation(casting);
     }
 }
