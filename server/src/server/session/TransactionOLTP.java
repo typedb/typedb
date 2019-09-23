@@ -463,8 +463,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public EntityType putEntityType(Label label) {
         checkGraphIsOpen();
-        return conceptManager.putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
-                v -> conceptManager.buildEntityType(v, getMetaEntityType()));
+        return conceptManager.putEntityType(label, getMetaEntityType());
     }
 
 
@@ -477,8 +476,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public RelationType putRelationType(Label label) {
         checkGraphIsOpen();
-        return conceptManager.putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
-                v -> conceptManager.buildRelationType(v, getMetaRelationType()));
+        return conceptManager.putRelationType(label, getMetaRelationType());
     }
 
     /**
@@ -490,8 +488,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public Role putRole(Label label) {
         checkGraphIsOpen();
-        return conceptManager.putSchemaConcept(label, Schema.BaseType.ROLE, false,
-                v -> conceptManager.buildRole(v, getMetaRole()));
+        return conceptManager.putRole(label, getMetaRole());
     }
 
 
@@ -510,9 +507,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         checkGraphIsOpen();
-        @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = conceptManager.putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> conceptManager.buildAttributeType(v, getMetaAttributeType(), dataType));
+        AttributeType<V> attributeType = conceptManager.putAttributeType(label, getMetaAttributeType(), dataType);
 
         //These checks is needed here because caching will return a type by label without checking the datatype
         if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -535,8 +530,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         checkGraphIsOpen();
-        Rule rule = conceptManager.putSchemaConcept(label, Schema.BaseType.RULE, false,
-                v -> conceptManager.buildRule(v, getMetaRule(), when, then));
+        Rule rule = conceptManager.putRule(label, when, then, getMetaRule());
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
         if (rule.then() != null) {

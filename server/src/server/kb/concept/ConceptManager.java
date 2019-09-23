@@ -127,6 +127,25 @@ public class ConceptManager {
         return (T) schemaConcept;
     }
 
+    public EntityType putEntityType(Label label, EntityType metaEntityType) {
+        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false, v -> buildEntityType(v, metaEntityType));
+    }
+
+    public RelationType putRelationType(Label label, RelationType metaRelationType) {
+        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false, v -> buildRelationType(v, metaRelationType));
+    }
+
+    public <V> AttributeType putAttributeType(Label label, AttributeType metaAttributeType, AttributeType.DataType<V> dataType) {
+        return putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false, v -> buildAttributeType(v, metaAttributeType, dataType));
+    }
+
+    public Role putRole(Label label, Role metaRole) {
+        return putSchemaConcept(label, Schema.BaseType.ROLE, false, v -> buildRole(v, metaRole));
+    }
+
+    public Rule putRule(Label label, Pattern when, Pattern then, Rule metaRule) {
+        return putSchemaConcept(label, Schema.BaseType.RULE, false, v -> buildRule(v, metaRule, when, then));
+    }
     /**
      * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
      * incremented.
@@ -273,6 +292,7 @@ public class ConceptManager {
     private RelationType getMetaRelationType() {
         return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.toString()));
     }
+
 
     private Type getMetaConcept() {
         return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
