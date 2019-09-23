@@ -289,7 +289,7 @@ jobs:
           is_releasable=$?
           set -e
 
-          if [ is_releasable -e 0 ]; then
+          if [[ is_releasable -eq 0 ]]; then
             export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
             export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
             bazel run @graknlabs_build_tools//ci:release-approval
