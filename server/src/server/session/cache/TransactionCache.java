@@ -55,6 +55,7 @@ public class TransactionCache {
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
+    private final Map<String, Attribute> attributeCache = new HashMap<>();
     private final Map<Label, SchemaConcept> schemaConceptCache = new HashMap<>();
     private final Map<Label, LabelId> labelCache = new HashMap<>();
 
@@ -143,7 +144,9 @@ public class TransactionCache {
 
         if (concept.isAttribute()) {
             AttributeImpl attr = AttributeImpl.from(concept.asAttribute());
-            newAttributes.remove(new Pair<>(attr.type().label(), attr.getIndex()));
+            String attrIndex = attr.getIndex();
+            newAttributes.remove(new Pair<>(attr.type().label(), attrIndex));
+            attributeCache.remove(attrIndex);
             removedAttributes.add(Schema.generateAttributeIndex(attr.type().label(), attr.value().toString()));
         }
 
@@ -179,6 +182,11 @@ public class TransactionCache {
             SchemaConcept schemaConcept = concept.asSchemaConcept();
             schemaConceptCache.put(schemaConcept.label(), schemaConcept);
             labelCache.put(schemaConcept.label(), schemaConcept.labelId());
+        }
+        if (concept.isAttribute()){
+            Attribute<Object> attribute = concept.asAttribute();
+            String index = Schema.generateAttributeIndex(attribute.type().label(), attribute.value().toString());
+            attributeCache.put(index, attribute);
         }
     }
 
@@ -253,7 +261,7 @@ public class TransactionCache {
         inferredConceptsToPersist.add(t);
     }
 
-    Stream<Thing> getInferredInstances() {
+    public Stream<Thing> getInferredInstances() {
         return inferredConcepts.stream();
     }
 
@@ -340,6 +348,10 @@ public class TransactionCache {
     @VisibleForTesting
     Map<ConceptId, Concept> getConceptCache() {
         return conceptCache;
+    }
+
+    public Map<String, Attribute> getAttributeCache() {
+        return attributeCache;
     }
 
     @VisibleForTesting

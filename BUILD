@@ -29,11 +29,11 @@ load("@io_bazel_rules_docker//contrib:push-all.bzl", "docker_push")
 assemble_targz(
     name = "assemble-linux-targz",
     targets = ["//server:server-deps",
-               "//console:console-deps",
-               "//bin:assemble-bash-targz"],
+               "@graknlabs_console//:console-deps",
+               "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//console:conf/logback.xml": "console/conf/logback.xml",
+        "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
@@ -55,11 +55,11 @@ assemble_targz(
 assemble_zip(
     name = "assemble-mac-zip",
     targets = ["//server:server-deps",
-               "//console:console-deps",
-               "//bin:assemble-bash-targz"],
+               "@graknlabs_console//:console-deps",
+               "@graknlabs_common//bin:assemble-bash-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//console:conf/logback.xml": "console/conf/logback.xml",
+        "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
@@ -81,11 +81,11 @@ assemble_zip(
 assemble_zip(
     name = "assemble-windows-zip",
     targets = ["//server:server-deps",
-               "//console:console-deps",
-               "//bin:assemble-bat-targz"],
+               "@graknlabs_console//:console-deps",
+               "@graknlabs_common//bin:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//console:conf/logback.xml": "console/conf/logback.xml",
+        "@graknlabs_console//config/logback:logback.xml": "console/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
@@ -110,6 +110,7 @@ assemble_rpm(
     package_name = "grakn-core-all",
     version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-core-all.spec",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
 
 
@@ -121,9 +122,10 @@ assemble_apt(
     version_file = "//:VERSION",
     depends = [
         "openjdk-8-jre",
-        "grakn-core-server (={version})",
-        "grakn-core-console (={version})",
+        "grakn-core-server (=%{version})",
+        "grakn-console (=%{@graknlabs_console})",
     ],
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
 
 assemble_versioned(
@@ -132,9 +134,6 @@ assemble_versioned(
         ":assemble-linux-targz",
         ":assemble-mac-zip",
         ":assemble-windows-zip",
-        "//console:assemble-linux-targz",
-        "//console:assemble-mac-zip",
-        "//console:assemble-windows-zip",
         "//server:assemble-linux-targz",
         "//server:assemble-mac-zip",
         "//server:assemble-windows-zip",
@@ -187,7 +186,7 @@ container_image(
     name = "assemble-docker",
     base = "@openjdk_image//image",
     tars = [":assemble-linux-targz"],
-    files = ["//bin:grakn-docker.sh"],
+    files = ["@graknlabs_common//bin:grakn-docker.sh"],
     ports = ["48555"],
     cmd = ["./grakn-docker.sh"],
     volumes = ["/server/db"]

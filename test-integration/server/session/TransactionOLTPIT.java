@@ -16,10 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.server.kb;
+package grakn.core.server.session;
 
+import com.google.common.collect.Sets;
+import grakn.core.common.config.Config;
+import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
+import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -32,30 +36,42 @@ import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.structure.Shard;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.util.LockManager;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.core.IsInstanceOf;
+import org.janusgraph.core.JanusGraph;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
-import org.hamcrest.core.IsInstanceOf;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
+import static graql.lang.Graql.define;
+import static graql.lang.Graql.insert;
+import static graql.lang.Graql.type;
+import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -67,7 +83,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("CheckReturnValue")
-public class TransactionIT {
+public class TransactionOLTPIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -88,7 +104,6 @@ public class TransactionIT {
         tx.close();
         session.close();
     }
-
 
     @Test
     public void whenGettingConceptById_ReturnTheConcept() {
@@ -160,10 +175,8 @@ public class TransactionIT {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
-        assertEquals(10000L, tx.shardingThreshold());
+        assertEquals(250000L, tx.shardingThreshold());
     }
-
-
 
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept() {
@@ -321,6 +334,101 @@ public class TransactionIT {
         assertThat(s1.links().collect(toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
         assertThat(s2.links().collect(toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
         assertThat(s3.links().collect(toSet()), containsInAnyOrder(s3_e1, s3_e2));
+    }
+
+    @Test
+    public void whenThresholdIsReachedForAGivenType_EnsureThatNewTypeShardIsCreated() throws IOException {
+        Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
+        tmpConfig.toFile().deleteOnExit();
+        server.serverConfig().write(tmpConfig.toFile());
+        Config config = Config.read(tmpConfig);
+        config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
+        KeyspaceImpl keyspace = server.randomKeyspaceName();
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            keyspace = session.keyspace();
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(define(type("person").sub("entity")).asDefine());
+                tx.commit();
+            }
+        }
+        Set<Vertex> typeShards;
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(1, typeShards.size());
+        }
+        ConceptId p1;
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
+                tx.commit();
+            }
+        }
+        Vertex typeShardForP1;
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            typeShardForP1 = janusGraph.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
+            assertEquals(typeShards.iterator().next(), typeShardForP1);
+            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(2, typeShards.size());
+        }
+        ConceptId p2;
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
+                tx.commit();
+            }
+        }
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            Vertex typeShardForP2 = janusGraph.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
+            assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
+            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(3, typeShards.size());
+        }
+    }
+
+    @Test
+    public void whenThresholdIsReachedForAGivenType_ensureThatTypeShardIsCreatedForThatTypeOnly() throws IOException {
+        Path tmpConfig = Files.createTempFile("grakn.properties", "temporary");
+        tmpConfig.toFile().deleteOnExit();
+        server.serverConfig().write(tmpConfig.toFile());
+        Config config = Config.read(tmpConfig);
+        config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
+        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
+        SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
+        KeyspaceImpl keyspace = server.randomKeyspaceName();
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            keyspace = session.keyspace();
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(define(type("person").sub("entity")).asDefine());
+                tx.execute(define(type("company").sub("entity")).asDefine());
+                tx.commit();
+            }
+        }
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.commit();
+            }
+        }
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("p").isa("person")).asInsert());
+                tx.commit();
+            }
+        }
+        try (SessionImpl session = sessionFactory.session(keyspace)) {
+            try (TransactionOLTP tx = session.transaction().write()) {
+                tx.execute(insert(var("c").isa("company")).asInsert());
+                tx.commit();
+            }
+        }
+        try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
+            Set<Vertex> personTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            assertEquals(3, personTypeShards.size());
+            Set<Vertex> companyTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet();
+            assertEquals(2, companyTypeShards.size());
+        }
     }
 
     @Test

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -48,12 +49,15 @@ import static org.hamcrest.Matchers.containsString;
  *
  */
 public class GraknGraqlCommands_WithARunningGraknE2E {
+    private static ProcessExecutor getCommandExecutor(Path directory) {
+        return new ProcessExecutor()
+                .directory(directory.toFile())
+                .redirectOutput(System.out)
+                .redirectError(System.err)
+                .readOutput(true);
+    }
 
-    private static ProcessExecutor commandExecutor = new ProcessExecutor()
-            .directory(GRAKN_UNZIPPED_DIRECTORY.toFile())
-            .redirectOutput(System.out)
-            .redirectError(System.err)
-            .readOutput(true);
+    private static ProcessExecutor commandExecutor = getCommandExecutor(GRAKN_UNZIPPED_DIRECTORY);
 
     @BeforeClass
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
@@ -81,6 +85,22 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
 
         String output = commandExecutor
                 .command("./grakn", "console", "-k", randomKeyspace)
+                .redirectInput(new ByteArrayInputStream(graql.getBytes(StandardCharsets.UTF_8)))
+                .execute().outputUTF8();
+
+        assertThat(output, allOf(containsString("$x"), containsString("id"), containsString("isa"), containsString("person")));
+    }
+
+    @Test
+    public void graql_shouldBeAbleToLoadFile_whenPathIsRelative() throws IOException, InterruptedException, TimeoutException {
+        String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
+        String graql = "define person sub entity; insert $x isa person; match $x isa person; get;\n";
+        String fileName = "test.gql";
+
+        Files.write(Paths.get(fileName), "define person sub entity; insert $x isa person; match $x isa person; get;\n".getBytes());
+
+        String output = getCommandExecutor(Paths.get(".").toAbsolutePath())
+                .command(GRAKN_UNZIPPED_DIRECTORY.resolve("grakn").toAbsolutePath().toString(), "console", "-k", randomKeyspace, "-f", fileName)
                 .redirectInput(new ByteArrayInputStream(graql.getBytes(StandardCharsets.UTF_8)))
                 .execute().outputUTF8();
 

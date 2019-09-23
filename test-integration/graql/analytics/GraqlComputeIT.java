@@ -18,18 +18,22 @@
 
 package grakn.core.graql.analytics;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
+import grakn.core.concept.type.SchemaConcept;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
@@ -39,13 +43,7 @@ import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.query.GraqlCompute;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
+import graql.lang.query.GraqlGet;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -54,13 +52,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
 import static graql.lang.query.GraqlCompute.Argument.contains;
 import static junit.framework.TestCase.assertNull;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -69,12 +75,18 @@ public class GraqlComputeIT {
 
     private static final String thingy = "thingy";
     private static final String anotherThing = "anotherThing";
+    private static final String subThingy = "subThingy";
     private static final String related = "related";
+    private static final String someAttribute = "someAttribute";
+    private static final int noOfSubEntities = 5;
 
     private String entityId1;
     private String entityId2;
     private String entityId3;
     private String entityId4;
+    private String attrId1;
+    private String attrId2;
+    private String attrId3;
     private String relationId12;
     private String relationId24;
 
@@ -126,6 +138,82 @@ public class GraqlComputeIT {
         }
     }
 
+    private BiFunction<Label, TransactionOLTP, Integer> instanceCount = (typeLabel, tx) ->
+            tx.execute(Graql.match(Graql.var("x").isaX(typeLabel.getValue())).get()).size();
+
+    private long totalCount(TransactionOLTP tx){
+        SchemaConcept thing = tx.getSchemaConcept(Schema.MetaSchema.THING.getLabel());
+        return thing.subs()
+                .filter(t -> !Schema.MetaSchema.isMetaLabel(t.label()))
+                .map(Concept::asType)
+                .mapToLong(t -> instanceCount.apply(t.label(), tx))
+                .sum();
+    }
+
+    private long typeCount(Label label, TransactionOLTP tx){
+        SchemaConcept type = tx.getSchemaConcept(label);
+        return type.subs()
+                .map(Concept::asType)
+                .mapToLong(t -> instanceCount.apply(t.label(), tx))
+                .sum();
+    }
+
+    @Test
+    public void whenComputingTotalCount_countOfThingIsReturned() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            //this should return all things BUT NOT attributes or implicit relations
+            Label metaAttributeLabel = tx.getMetaAttributeType().label();
+            Label topImplicitType = Schema.ImplicitType.HAS.getLabel(metaAttributeLabel);
+            GraqlGet thingQuery = Graql.match(
+                    Graql.and(
+                            Graql.var("x").isa(tx.getMetaConcept().label().getValue()),
+                            Graql.not(Graql.var("x").isa(metaAttributeLabel.getValue())),
+                            Graql.not(Graql.var("x").isa(topImplicitType.getValue()))
+                    )
+            ).get();
+            assertEquals(
+                    tx.stream(thingQuery).count(),
+                    tx.execute(Graql.parse("compute count;").asComputeStatistics()).get(0).number()
+            );
+        }
+    }
+
+    @Test
+    public void whenComputingCountsOfThing_countIsCorrect() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            assertEquals(
+                    totalCount(tx),
+                    Iterables.getOnlyElement(tx.execute(Graql.compute().count().in("thing"))).number()
+            );
+        }
+    }
+
+    @Test
+    public void whenComputingCountsOfTypesWithSubTypes_subTypeCountsAreIncluded() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            assertEquals(
+                    typeCount(Label.of(thingy), tx),
+                    Iterables.getOnlyElement(tx.execute(Graql.compute().count().in(thingy))).number()
+            );
+        }
+    }
+
+    @Test
+    public void whenComputingCountOfMultipleTypes_resultantCountIsASum() {
+        addSchemaAndEntities();
+        try (TransactionOLTP tx = session.transaction().read()) {
+            Label implicitLabel = Schema.ImplicitType.HAS.getLabel(someAttribute);
+            GraqlCompute.Statistics.Count query = Graql.compute().count().in(thingy, implicitLabel.getValue());
+            assertEquals(
+                    typeCount(Label.of(thingy), tx) + typeCount(implicitLabel, tx),
+                    Iterables.getOnlyElement(tx.execute(query)).number()
+            );
+        }
+    }
+
     @Test
     public void testSubgraphContainingRuleDoesNotBreakAnalytics() {
         expectedEx.expect(GraqlSemanticException.class);
@@ -168,11 +256,10 @@ public class GraqlComputeIT {
     public void testGraqlCount() throws InvalidKBException {
         addSchemaAndEntities();
         try (TransactionOLTP tx = session.transaction().write()) {
-            assertEquals(6, tx.execute(Graql.parse("compute count;").asComputeStatistics())
-                    .get(0).number().intValue());
-
-            assertEquals(3, tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics())
-                    .get(0).number().intValue());
+            assertEquals(
+                    typeCount(Label.of("thingy"), tx),
+                    tx.execute(Graql.parse("compute count in [thingy, thingy];").asComputeStatistics()).get(0).number()
+            );
         }
     }
 
@@ -184,18 +271,23 @@ public class GraqlComputeIT {
                     tx.execute(Graql.parse("compute centrality using degree;").asComputeCentrality());
 
             Map<String, Long> correctDegrees = new HashMap<>();
-            correctDegrees.put(entityId1, 1L);
-            correctDegrees.put(entityId2, 2L);
-            correctDegrees.put(entityId3, 0L);
+            correctDegrees.put(entityId1, 2L);
+            correctDegrees.put(entityId2, 3L);
+            correctDegrees.put(entityId3, 1L);
             correctDegrees.put(entityId4, 1L);
+            correctDegrees.put(attrId1, 1L);
+            correctDegrees.put(attrId2, 1L);
+            correctDegrees.put(attrId3, 1L);
             correctDegrees.put(relationId12, 2L);
             correctDegrees.put(relationId24, 2L);
 
-            assertTrue(!degrees.isEmpty());
+            assertFalse(degrees.isEmpty());
             degrees.forEach(conceptSetMeasure -> conceptSetMeasure.set().forEach(
                     id -> {
                         assertTrue(correctDegrees.containsKey(id.getValue()));
-                        assertEquals(correctDegrees.get(id.getValue()).intValue(), conceptSetMeasure.measurement().intValue());
+                        int expectedDegree = correctDegrees.get(id.getValue()).intValue();
+                        int computedDegree = conceptSetMeasure.measurement().intValue();
+                        assertEquals(expectedDegree + " != " + computedDegree, expectedDegree, computedDegree);
                     }
             ));
         }
@@ -356,12 +448,22 @@ public class GraqlComputeIT {
 
     private void addSchemaAndEntities() throws InvalidKBException {
         try (TransactionOLTP tx = session.transaction().write()) {
-            EntityType entityType1 = tx.putEntityType(thingy);
+            AttributeType<Long> attributeType = tx.putAttributeType(someAttribute, AttributeType.DataType.LONG);
+            EntityType entityType1 = tx.putEntityType(thingy).has(attributeType);
             EntityType entityType2 = tx.putEntityType(anotherThing);
+            EntityType subEntityType = tx.putEntityType(subThingy).sup(entityType1);
 
-            Entity entity1 = entityType1.create();
-            Entity entity2 = entityType1.create();
-            Entity entity3 = entityType1.create();
+            Attribute<Long> attr1 = attributeType.create(1L);
+            Attribute<Long> attr2 = attributeType.create(2L);
+            Attribute<Long> attr3 = attributeType.create(3L);
+
+            attrId1 = attr1.id().getValue();
+            attrId2 = attr2.id().getValue();
+            attrId3 = attr3.id().getValue();
+
+            Entity entity1 = entityType1.create().has(attr1);
+            Entity entity2 = entityType1.create().has(attr2);
+            Entity entity3 = entityType1.create().has(attr3);
             Entity entity4 = entityType2.create();
 
             entityId1 = entity1.id().getValue();
@@ -381,6 +483,10 @@ public class GraqlComputeIT {
             relationId24 = relationType.create()
                     .assign(role1, entity2)
                     .assign(role2, entity4).id().getValue();
+
+            for(int i = 0 ; i < noOfSubEntities ; i++){
+                subEntityType.create();
+            }
 
             tx.commit();
         }

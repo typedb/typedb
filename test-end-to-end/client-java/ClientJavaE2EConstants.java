@@ -46,7 +46,7 @@ public class ClientJavaE2EConstants {
     public static void assertGraknStopped() {
         Config config = Config.read(GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties"));
         boolean serverReady = isServerReady(config.getProperty(ConfigKey.SERVER_HOST_NAME), config.getProperty(ConfigKey.GRPC_PORT));
-        assertThat("assertGraknRunning() failed because ", serverReady, equalTo(false));
+        assertThat("assertGraknStopped() failed because ", serverReady, equalTo(false));
     }
 
     public static void assertZipExists() {

@@ -18,11 +18,6 @@
 
 version: 2.1
 commands:
-  apt-wait:
-    steps:
-      - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/apt-wait.sh
-      - run: bash ./apt-wait.sh && rm ./apt-wait.sh
-
   install-bazel-linux-rbe:
     steps:
       - run: curl -OL https://raw.githubusercontent.com/graknlabs/build-tools/master/ci/install-bazel-linux.sh
@@ -49,43 +44,36 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run-bazel-rbe:
+          command: bazel build //...
+
+  build-analysis:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
-            --organisation $SONARCLOUD_ORGANISATION --project-key $SONARCLOUD_PROJECT \
-            --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
-      - run-bazel-rbe:
-          command: bazel build //...
+            --project-key graknlabs_grakn_core --commit-id=$CIRCLE_SHA1 --branch=$CIRCLE_BRANCH
   
   test-common:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
           command: bazel test //common/... --test_output=errors
 
-  test-console:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel test //console/... --test_output=errors
-
   test-server:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -95,7 +83,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -109,7 +96,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -119,7 +105,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -129,7 +114,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -140,7 +124,6 @@ jobs:
       xcode: "10.2.1"
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-mac
       - checkout
       - run-bazel-rbe:
@@ -162,23 +145,15 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - checkout
       - run:
           command: test/assembly/windows/windows-zip.py
           no_output_timeout: 20m
-      - store_artifacts:
-          path: ./grakn.log
-          destination: logs/grakn.log
-      - store_artifacts:
-          path: ./cassandra.log
-          destination: logs/cassandra.log
 
   test-assembly-linux-targz:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run-bazel-rbe:
@@ -196,38 +171,10 @@ jobs:
           path: bazel-genfiles/grakn-core-all-linux/logs/cassandra.log
           destination: logs/cassandra.log
 
-  test-assembly-linux-apt:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - install-bazel-linux-rbe
-      - checkout
-      - run-bazel-rbe:
-          command: bazel build //bin:assemble-linux-apt
-      - run-bazel-rbe:
-          command: bazel build //server:assemble-linux-apt
-      - run-bazel-rbe:
-          command: bazel build //console:assemble-linux-apt
-      - run: sudo dpkg -i bazel-bin/bin/grakn-core-bin__all.deb
-      - run: sudo dpkg -i bazel-bin/server/grakn-core-server__all.deb
-      - run: sudo dpkg -i bazel-bin/console/grakn-core-console__all.deb
-      - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
-      - run: nohup grakn server start
-      - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
-      - run: grakn server stop
-      - store_artifacts:
-          path: /opt/grakn/core/logs/grakn.log
-          destination: logs/grakn.log
-      - store_artifacts:
-          path: /opt/grakn/core/logs/cassandra.log
-          destination: logs/cassandra.log
-
   test-assembly-docker:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: test/assembly/docker.py
@@ -242,7 +189,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -256,62 +202,40 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: echo $(date +%s)-$(cat VERSION)-$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-apt -- snapshot
-          bazel run //console:deploy-apt -- snapshot
           bazel run //server:deploy-apt -- snapshot
           bazel run //:deploy-apt -- snapshot
-      - run: cp VERSION VERSION.apt
-      - persist_to_workspace:
-          root: ~/grakn
-          paths:
-            - VERSION.apt
 
   deploy-rpm-snapshot:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: sudo apt install rpm
-      - run: echo $(cat VERSION)_$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: sudo apt-get update && sudo apt-get install rpm
+      - run: echo 0.0.0_$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-rpm -- snapshot
           bazel run //server:deploy-rpm -- snapshot
-          bazel run //console:deploy-rpm -- snapshot
           bazel run //:deploy-rpm -- snapshot
-      - run: cp VERSION VERSION.rpm
-      - persist_to_workspace:
-          root: ~/grakn
-          paths:
-            - VERSION.rpm
 
   test-deployment-linux-apt:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - attach_workspace:
-          at: ~/circleci-workspace
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt-snapshot/ trusty main'
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
-      - run: mv ~/circleci-workspace/VERSION.apt VERSION
-      - run: cat VERSION
-      - run: |
-          sudo apt install grakn-core-all=$(cat VERSION) grakn-core-bin=$(cat VERSION) \
-                           grakn-core-server=$(cat VERSION) grakn-core-console=$(cat VERSION)
+      - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: bazel run //test/deployment/apt:install
       - run: sudo chown -R circleci:circleci /opt/grakn/ # TODO: how do we avoid having to chown?
       - run: nohup grakn server start
       - run: bazel test //test/common:grakn-application-test --test_output=streamed --spawn_strategy=standalone --cache_test_results=no
@@ -327,12 +251,9 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - checkout
-      - attach_workspace:
-          at: ~/circleci-workspace
-      - run: mv ~/circleci-workspace/VERSION.rpm VERSION
-      - run: test/deployment/rpm.py
+      - run: echo 0.0.0_$CIRCLE_SHA1 > VERSION && cat VERSION
+      - run: test/deployment/rpm/test.py
       - store_artifacts:
           path: ./grakn.log
           destination: logs/grakn.log
@@ -343,7 +264,6 @@ jobs:
   sync-dependencies-snapshot:
     machine: true
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -352,13 +272,13 @@ jobs:
           --source grakn@$CIRCLE_SHA1 \
           --targets \
           grakn-kgms:master workbase:master docs:master examples:master \
-          benchmark:master client-java:master kglib:master
+          benchmark:master client-java:master console:master kglib:master
         # TODO: Remove benchmark and client-java once #5272 is solved
+        # TODO: Remove console once #5270 is solved
 
   release-approval:
     machine: true
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -370,7 +290,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -385,15 +304,12 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-apt -- release
-          bazel run //console:deploy-apt -- release
           bazel run //server:deploy-apt -- release
           bazel run //:deploy-apt -- release
 
@@ -401,24 +317,20 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
-      - run: sudo apt install rpm
+      - run: sudo apt-get update && sudo apt-get install rpm
       - run: cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //bin:deploy-rpm -- release
           bazel run //server:deploy-rpm -- release
-          bazel run //console:deploy-rpm -- release
           bazel run //:deploy-rpm -- release
 
   deploy-brew:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -429,7 +341,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -440,7 +351,6 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: cat VERSION
@@ -454,7 +364,6 @@ jobs:
   sync-dependencies-release:
     machine: true
     steps:
-      - apt-wait
       - install-bazel-linux-rbe
       - checkout
       - run: |
@@ -463,31 +372,32 @@ jobs:
           --source grakn@$(cat VERSION) \
           --targets \
           grakn-kgms:master benchmark:master workbase:master biograkn:master \
-          client-java:master client-python:master client-nodejs:master \
+          client-java:master client-python:master client-nodejs:master console:master \
           docs:master examples:master kglib:master
+
+  release-notification:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - run: |
+          curl http://www.jetmore.org/john/code/swaks/files/swaks-20130209.0/swaks -o swaks
+          chmod +x swaks
+          sudo apt-get -y install perl
+      - run: |
+          ./swaks --auth \
+          --server smtp.mailgun.org \
+          --au $SMTP_MAILGUN_EMAIL \
+          --ap $SMTP_MAILGUN_PASSWORD \
+          --from $SMTP_MAILGUN_EMAIL \
+          --to paul.andlinger@solid-it.at,tomas@grakn.ai \
+          --h-Subject: "Please update Grakn version" \
+          --body "This is an automated email to inform you that Grakn $(cat VERSION) has been released. Please update the Grakn version accordingly."
 
   release-cleanup:
     machine: true
     steps:
-      - apt-wait
       - checkout
       - run: git push --delete origin grakn-release-branch
-
-  email-db-engines:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - apt-wait
-      - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/requirements.txt
-      - run: wget https://raw.githubusercontent.com/graknlabs/grabl/master/send_email.py
-      - run: pyenv install 3.6.3
-      - run: pyenv global 3.6.3
-      - run: pip3 install -r requirements.txt
-      - run: |
-          python send_email.py \
-          --recipients "paul.andlinger@solid-it.at, tomas@grakn.ai" \
-          --subject "Please update Grakn version" \
-          --body "This is an automated email to inform you that Grakn $(cat VERSION) has been released. Please update the Grakn version accordingly."
 
 workflows:
   grakn-core:
@@ -496,11 +406,11 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
-      - test-common:
+      - build-analysis:
           filters:
             branches:
-              ignore: grakn-release-branch
-      - test-console:
+              only: master
+      - test-common:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -530,8 +440,8 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -543,8 +453,8 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -556,21 +466,8 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
-            - test-console
-            - test-server
-            - test-integration
-            - test-integration-reasoner
-            - test-integration-analytics
-            - test-end-to-end
-      - test-assembly-linux-apt:
-          filters:
-            branches:
-              only: master
-          requires:
-            - build
-            - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -582,8 +479,8 @@ workflows:
               only: master
           requires:
             - build
+            - build-analysis
             - test-common
-            - test-console
             - test-server
             - test-integration
             - test-integration-reasoner
@@ -597,7 +494,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - deploy-apt-snapshot:
           filters:
@@ -607,7 +503,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - deploy-rpm-snapshot:
           filters:
@@ -617,7 +512,6 @@ workflows:
             - test-assembly-mac-zip
             - test-assembly-windows-zip
             - test-assembly-linux-targz
-            - test-assembly-linux-apt
             - test-assembly-docker
       - test-deployment-linux-apt:
           filters:
@@ -699,7 +593,7 @@ workflows:
             - deploy-brew
             - deploy-docker
             - deploy-maven
-      - email-db-engines:
+      - release-notification:
           filters:
             branches:
               only: grakn-release-branch
@@ -710,4 +604,4 @@ workflows:
             branches:
               only: grakn-release-branch
           requires:
-            - sync-dependencies-release
+            - release-notification

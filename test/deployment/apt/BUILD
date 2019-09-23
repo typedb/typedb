@@ -16,4 +16,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
 
-exports_files(["grakn-core-server.spec", "grakn-core-all.spec"])
+load("//test/deployment/apt:rules.bzl", "apt_install_command")
+
+apt_install_command(
+    name = "install",
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
+)

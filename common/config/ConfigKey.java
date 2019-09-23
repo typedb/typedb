@@ -62,8 +62,9 @@ public class ConfigKey<T> {
     public static final ConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
     public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
     public static final ConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
+    public static final ConfigKey<Integer> STORAGE_FRAME_SIZE = key("storage.cassandra.frame-size-mb", INT);
 
-    public static final ConfigKey<Long> SHARDING_THRESHOLD = key("knowledge-base.sharding-threshold", LONG);
+    public static final ConfigKey<Long> TYPE_SHARD_THRESHOLD = key("knowledge-base.type-shard-threshold", LONG);
     public static final ConfigKey<String> DATA_DIR = key("data-dir");
     public static final ConfigKey<String> LOG_DIR = key("log.dirs");
 
@@ -87,22 +88,8 @@ public class ConfigKey<T> {
         return name;
     }
 
-    /**
-     * Parse the value of a property.
-     * <p>
-     * This function should return an empty optional if the key was not present and there is no default value.
-     *
-     * @param value          the value of the property. Empty if the property isn't in the property file.
-     * @param configFilePath path to the config file
-     * @return the parsed value
-     * @throws RuntimeException if the value is not present and there is no default value
-     */
-    public final T parse(String value, Path configFilePath) {
-        if (value == null) {
-            throw new RuntimeException(ErrorMessage.UNAVAILABLE_PROPERTY.getMessage(name, configFilePath));
-        }
-
-        return parser.read(value);
+    public KeyParser<T> parser() {
+        return parser;
     }
 
     /**
