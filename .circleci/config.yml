@@ -282,20 +282,18 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          set +e
-          bazel run @graknlabs_build_tools//ci:release-validate-deps \
-            graknlabs_common \
-            graknlabs_console \
-            graknlabs_graql \
-            graknlabs_protocol
-          is_releasable=$?
-          set -e
+          export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
+          export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
+          bazel run @graknlabs_build_tools//ci:release-approval
 
-          if [[ is_releasable -eq 0 ]]; then
-            export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
-            export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
-            bazel run @graknlabs_build_tools//ci:release-approval
-          fi
+  release-validate:
+    machine: true
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          bazel run @graknlabs_build_tools//ci:release-validate-deps graknlabs_common \
+            graknlabs_console graknlabs_graql graknlabs_protocol
 
   deploy-github:
     machine: true
@@ -553,10 +551,16 @@ workflows:
 
   grakn-core-release:
     jobs:
+      - release-validate:
+          filters:
+            branches:
+              only: grakn-release-branch
       - deploy-github:
           filters:
             branches:
               only: grakn-release-branch
+          requires:
+            - release-validate
       - deploy-approval:
           type: approval
           requires:
