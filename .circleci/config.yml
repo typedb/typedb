@@ -282,12 +282,12 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          set -e
+          set +e
           bazel run @graknlabs_build_tools//ci:release-validate-deps \
             graknlabs_common graknlabs_graql \
             graknlabs_protocol graknlabs_console
           is_releasable=$?
-          set +e
+          set -e
 
           if [ is_releasable -e 0 ]; then
             export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
