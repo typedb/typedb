@@ -39,6 +39,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -63,11 +64,14 @@ public final class ElementFactory {
     }
 
     public VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
-        Iterator<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value);
-        if (vertices.hasNext()) {
-            return buildVertexElement(vertices.next());
-        }
-        return null;
+        Stream<VertexElement> verticesWithProperty = getVerticesWithProperty(key, value);
+        Optional<VertexElement> vertexElement = verticesWithProperty.findFirst();
+        return vertexElement.orElse(null);
+    }
+
+    public Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
+        Stream<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value).toStream();
+        return vertices.map(vertex -> buildVertexElement(vertex));
     }
 
     public Vertex getVertexWithId(String id) {

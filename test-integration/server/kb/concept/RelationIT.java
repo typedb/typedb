@@ -176,7 +176,7 @@ public class RelationIT {
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> tx.buildConcept(vertex).asThing()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> tx.factory().buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test

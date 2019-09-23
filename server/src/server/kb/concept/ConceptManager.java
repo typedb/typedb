@@ -46,11 +46,14 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 
@@ -68,10 +71,6 @@ public class ConceptManager {
         this.graphLock = graphLock;
     }
 
-
-    /*
-    ---- capabilities migrated from Transaction for now
-     */
 
     // ------ PUT
 
@@ -174,12 +173,15 @@ public class ConceptManager {
         return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
     }
 
+
+
+    // ---------- GET
     /**
      * Check the transaction cache to see if we have the attribute already by index
      * return NULL if attribtue does not exist in cache
      */
     @Nullable
-    public Attribute getCachedAttribute(String index) {
+    Attribute getCachedAttribute(String index) {
         Attribute concept = transactionCache.getAttributeCache().get(index);
         return concept;
     }
@@ -200,15 +202,19 @@ public class ConceptManager {
         }
     }
 
-    // ---------- GET
-
-
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
         VertexElement vertex = elementFactory.getVertexWithProperty(key, value);
         if (vertex != null) {
             return buildConcept(vertex);
         }
         return null;
+    }
+
+    public Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
+        Set<Concept> concepts = new HashSet<>();
+        Stream<VertexElement> vertices = elementFactory.getVerticesWithProperty(key, value);
+        vertices.forEach(vertexElement -> concepts.add(buildConcept(vertexElement)));
+        return concepts;
     }
 
     public <T extends Concept> T getConcept(ConceptId conceptId) {

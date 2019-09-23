@@ -386,7 +386,7 @@ public class TransactionOLTP implements Transaction {
      * @return the number of instances a grakn.core.concept.type.Type must have before it is shareded
      */
     public long shardingThreshold() {
-        return session().config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        return typeShardThreshold;
     }
 
     public TransactionCache cache() {
@@ -408,27 +408,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * @param <T>    The type of the concept being built
-     * @param vertex A vertex which contains properties necessary to build a concept from.
-     * @return A concept built using the provided vertex
-     */
-    public <T extends Concept> T buildConcept(Vertex vertex) {
-        return conceptManager.buildConcept(vertex);
-    }
-
-    /**
-     * @param <T>  The type of the Concept being built
-     * @param edge An Edge which contains properties necessary to build a Concept from.
-     * @return A Concept built using the provided Edge
-     */
-    public <T extends Concept> T buildConcept(Edge edge) {
-        return conceptManager.buildConcept(edge);
-    }
-
-    /**
      * Utility function to get a read-only Tinkerpop traversal.
      *
      * @return A read-only Tinkerpop traversal for manually traversing the graph
+     *
+     * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
      */
     public GraphTraversalSource getTinkerTraversal() {
         checkGraphIsOpen();
@@ -438,30 +422,7 @@ public class TransactionOLTP implements Transaction {
         return graphTraversalSource;
     }
 
-    @VisibleForTesting
-    public ConceptManager factory() {
-        return conceptManager;
-    }
-
-    /**
-     * @param key   The concept property tp search by.
-     * @param value The value of the concept
-     * @return A concept with the matching key and value
-     */
     //----------------------------------------------General Functionality-----------------------------------------------
-    public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
-        return getConcept(getTinkerTraversal().V().has(key.name(), value));
-    }
-
-    private <T extends Concept> T getConcept(Iterator<Vertex> vertices) {
-        checkGraphIsOpen();
-        T concept = null;
-        if (vertices.hasNext()) {
-            Vertex vertex = vertices.next();
-            concept = conceptManager.buildConcept(vertex);
-        }
-        return concept;
-    }
 
     @Override
     public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
@@ -475,18 +436,9 @@ public class TransactionOLTP implements Transaction {
         return superSet.stream();
     }
 
-    private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
-        checkGraphIsOpen();
-        Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(conceptManager.buildConcept(v)));
-        return concepts;
-    }
-
     public void checkMutationAllowed() {
         if (Type.READ.equals(type())) throw TransactionException.transactionReadOnly(this);
     }
-
-
 
     /**
      * Make sure graph is open and usable.
@@ -634,7 +586,7 @@ public class TransactionOLTP implements Transaction {
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
+        conceptManager.getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());
@@ -866,11 +818,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     public final QueryExecutor executor() {
-        return new QueryExecutor(this, true);
+        return new QueryExecutor(this, conceptManager, true);
     }
 
     public final QueryExecutor executor(boolean infer) {
-        return new QueryExecutor(this, infer);
+        return new QueryExecutor(this, conceptManager, infer);
     }
 
     public Stream<ConceptMap> stream(MatchClause matchClause) {
@@ -897,6 +849,11 @@ public class TransactionOLTP implements Transaction {
 
     public LabelId convertToId(Label label) {
         return conceptManager.convertToId(label);
+    }
+
+    @VisibleForTesting
+    public ConceptManager factory() {
+        return conceptManager;
     }
 
 }

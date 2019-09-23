@@ -438,8 +438,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     @Override
     void trackRolePlayers() {
         // this method needs to be implemented here for the single case when trying to instantiate the top level
-        // meta Thing concept. In theory this class should be abstract, and only use the overriding
-        // implementations of this method (EntityType, AttributeType, RelationType)
+        // meta Thing concept.
+        // In theory this class should be abstract, and only use the overriding
+        // implementations of this method - EntityType, AttributeType, RelationType
+        // each of these subclasses contains an actual implementation of trackRolePlayers()
+
+        // this method is empty because it is only used when instanting top level Concept - which can never have role
+        // players or play roles.
     }
 
 }
