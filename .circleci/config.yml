@@ -411,10 +411,7 @@ workflows:
   # TODO: revert
   test:
     jobs:
-      - release-approval:
-          filters:
-            branches:
-              only: add-release-validate-deps
+      - release-approval
 #  grakn-core:
 #    jobs:
 #      - build:
