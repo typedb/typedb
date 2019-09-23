@@ -414,7 +414,7 @@ workflows:
       - release-approval:
           filters:
             branches:
-              only: add-release-valdate-deps
+              only: add-release-validate-deps
 #  grakn-core:
 #    jobs:
 #      - build:
