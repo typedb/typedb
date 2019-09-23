@@ -125,7 +125,7 @@ public interface ResolvableQuery extends ReasonerQuery {
     default Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         return doNotResolve?
-                tx().executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx())) :
+                tx().executor().traverse(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx())) :
                 new ResolutionIterator(this, subGoals).hasStream();
     }
 

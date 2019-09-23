@@ -32,11 +32,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlQueryException;
-import grakn.core.graql.gremlin.TraversalPlanner;
-<<<<<<< HEAD
-=======
-import grakn.core.graql.reasoner.ResolutionIterator;
->>>>>>> cdc7192aeca422131c3afc78038865757f0e8f98
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
@@ -563,15 +558,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 || selectAtoms().filter(Atom::isDisconnected).filter(Atom::isRuleResolvable).count() > 1;
     }
 
-<<<<<<< HEAD
-=======
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        return isRuleResolvable()?
-                new ResolutionIterator(this, subGoals).hasStream() :
-                tx.executor().traverse(getPattern());
-    }
-
->>>>>>> cdc7192aeca422131c3afc78038865757f0e8f98
     @Override
     public ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals){
         return !containsVariablePredicates() ?
@@ -616,11 +602,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
             boolean fruitless = tx.ruleCache().absentTypes(queryTypes);
             if (fruitless) dbIterator = Collections.emptyIterator();
             else {
-<<<<<<< HEAD
-                dbIterator = tx.executor().traversal(getPattern(), TraversalPlanner.createTraversal(getPattern(), tx))
-=======
                 dbIterator = tx.executor().traverse(getPattern())
->>>>>>> cdc7192aeca422131c3afc78038865757f0e8f98
                         .map(ans -> ans.explain(new JoinExplanation(this.getPattern(), this.splitToPartialAnswers(ans))))
                         .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                         .iterator();
