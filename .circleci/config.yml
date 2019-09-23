@@ -284,6 +284,8 @@ jobs:
       - run: |
           set +e
           bazel run @graknlabs_build_tools//ci:release-validate-deps \
+            graknlabs_common \
+            graknlabs_console \
             graknlabs_graql \
             graknlabs_protocol
           is_releasable=$?
