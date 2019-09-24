@@ -350,10 +350,21 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                                                   Role ownerRole, Role valueRole, RelationType relationType) {
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
-        Role ownerRoleSuper = conceptManager.putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-        Role valueRoleSuper = conceptManager.putRoleTypeImplicit(hasValue.getLabel(superLabel));
-        RelationType relationTypeSuper = conceptManager.putRelationTypeImplicit(has.getLabel(superLabel)).
-                relates(ownerRoleSuper).relates(valueRoleSuper);
+        Role ownerRoleSuper = conceptManager.getRole(hasOwner.getLabel(superLabel).getValue());
+        // create implicit roles and relations if required
+        if (ownerRoleSuper == null) {
+            ownerRoleSuper = conceptManager.createImplicitRole(hasOwner.getLabel(superLabel));
+        }
+        Role valueRoleSuper = conceptManager.getRole(hasValue.getLabel(superLabel).getValue());
+        if (valueRoleSuper == null) {
+            valueRoleSuper = conceptManager.createImplicitRole(hasValue.getLabel(superLabel));
+        }
+
+        RelationType relationTypeSuper = conceptManager.getRelationType(has.getLabel(superLabel).getValue());
+        if (relationTypeSuper == null) {
+            relationTypeSuper = conceptManager.createImplicitRelation(has.getLabel(superLabel));
+        }
+        relationTypeSuper.relates(ownerRoleSuper).relates(valueRoleSuper);
 
         //Create the super type edges from sub role/relations to super roles/relation
         ownerRole.sup(ownerRoleSuper);
@@ -380,11 +391,21 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
         Label attributeLabel = attributeType.label();
-        Role ownerRole = conceptManager.putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
-        Role valueRole = conceptManager.putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationType relationType = conceptManager.putRelationTypeImplicit(has.getLabel(attributeLabel))
-                .relates(ownerRole)
-                .relates(valueRole);
+        Role ownerRole = conceptManager.getRole(hasOwner.getLabel(attributeLabel).getValue());
+        if (ownerRole == null) {
+            ownerRole = conceptManager.createImplicitRole(hasOwner.getLabel(attributeLabel));
+        }
+        Role valueRole = conceptManager.getRole(hasValue.getLabel(attributeLabel).getValue());
+        if (valueRole == null) {
+            valueRole = conceptManager.createImplicitRole(hasValue.getLabel(attributeLabel));
+        }
+
+        RelationType relationType = conceptManager.getRelationType(has.getLabel(attributeLabel).getValue());
+        if (relationType == null) {
+            relationType = conceptManager.createImplicitRelation(has.getLabel(attributeLabel));
+        }
+
+        relationType.relates(ownerRole).relates(valueRole);
 
         //this plays ownerRole;
         this.play(ownerRole, required);

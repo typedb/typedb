@@ -35,6 +35,7 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
+import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -52,6 +53,7 @@ import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
 import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptVertex;
+import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
@@ -91,6 +93,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static grakn.core.server.exception.TransactionException.labelTaken;
 
 /**
  * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
@@ -447,6 +451,14 @@ public class TransactionOLTP implements Transaction {
         return createdInCurrentThread.get();
     }
 
+    private void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
+        // extra validation to ensure schema integrity -- is this needed?
+        // throws if label is already taken for a different type
+        if (!Schema.BaseType.ENTITY_TYPE.equals(schemaConcept.baseType())) {
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+        }
+    }
+
     /**
      * @param label A unique label for the EntityType
      * @return A new or existing EntityType with the provided label
@@ -456,7 +468,14 @@ public class TransactionOLTP implements Transaction {
     @Override
     public EntityType putEntityType(Label label) {
         checkGraphIsOpen();
-        return conceptManager.putEntityType(label, getMetaEntityType());
+        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) {
+            return conceptManager.createEntityType(label, getMetaEntityType());
+        }
+
+        validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+
+        return (EntityType) schemaConcept;
     }
 
 
@@ -469,7 +488,14 @@ public class TransactionOLTP implements Transaction {
     @Override
     public RelationType putRelationType(Label label) {
         checkGraphIsOpen();
-        return conceptManager.putRelationType(label, getMetaRelationType());
+        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) {
+            return conceptManager.createRelationType(label, getMetaRelationType());
+        }
+
+        validateBaseType(schemaConcept, Schema.BaseType.RELATION_TYPE);
+
+        return (RelationType) schemaConcept;
     }
 
     /**
@@ -481,7 +507,14 @@ public class TransactionOLTP implements Transaction {
     @Override
     public Role putRole(Label label) {
         checkGraphIsOpen();
-        return conceptManager.putRole(label, getMetaRole());
+        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) {
+            return conceptManager.createRole(label, getMetaRole());
+        }
+
+        validateBaseType(schemaConcept, Schema.BaseType.ROLE);
+
+        return (Role) schemaConcept;
     }
 
 
@@ -500,13 +533,18 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         checkGraphIsOpen();
-        AttributeType<V> attributeType = conceptManager.putAttributeType(label, getMetaAttributeType(), dataType);
+        AttributeType<V> attributeType = conceptManager.getSchemaConcept(label);
+        if (attributeType == null) {
+            attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), dataType);
+        } else {
+            validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.RELATION_TYPE);
+            //These checks is needed here because caching will return a type by label without checking the datatype
 
-        //These checks is needed here because caching will return a type by label without checking the datatype
-        if (Schema.MetaSchema.isMetaLabel(label)) {
-            throw TransactionException.metaTypeImmutable(label);
-        } else if (!dataType.equals(attributeType.dataType())) {
-            throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            if (Schema.MetaSchema.isMetaLabel(label)) {
+                throw TransactionException.metaTypeImmutable(label);
+            } else if (!dataType.equals(attributeType.dataType())) {
+                throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            }
         }
 
         return attributeType;
@@ -523,7 +561,15 @@ public class TransactionOLTP implements Transaction {
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         checkGraphIsOpen();
-        Rule rule = conceptManager.putRule(label, when, then, getMetaRule());
+        Rule retrievedRule = conceptManager.getSchemaConcept(label);
+        final Rule rule; // needed final for stream lambda
+        if (retrievedRule == null) {
+            rule = conceptManager.createRule(label, when, then, getMetaRule());
+        } else {
+            rule = retrievedRule;
+            validateBaseType(SchemaConceptImpl.from(rule), Schema.BaseType.RULE);
+        }
+
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
         if (rule.then() != null) {

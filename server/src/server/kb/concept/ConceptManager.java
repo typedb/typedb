@@ -74,13 +74,13 @@ public class ConceptManager {
 
     // ------ PUT
 
-    public Role putRoleTypeImplicit(Label implicitRoleLabel) {
-        return putSchemaConcept(implicitRoleLabel, Schema.BaseType.ROLE, true,
+    Role createImplicitRole(Label implicitRoleLabel) {
+        return createSchemaConcept(implicitRoleLabel, Schema.BaseType.ROLE, true,
                 v -> buildRole(v, getMetaRole()));
     }
 
-    public RelationType putRelationTypeImplicit(Label implicitRelationLabel) {
-        return putSchemaConcept(implicitRelationLabel, Schema.BaseType.RELATION_TYPE, true,
+    RelationType createImplicitRelation(Label implicitRelationLabel) {
+        return createSchemaConcept(implicitRelationLabel, Schema.BaseType.RELATION_TYPE, true,
                 v -> buildRelationType(v, getMetaRelationType()));
     }
 
@@ -102,50 +102,42 @@ public class ConceptManager {
      * @param <T>               The type of SchemaConcept to return
      * @return a new or existing SchemaConcept
      */
-    public <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
-        //Get the type if it already exists otherwise build a new one
-        SchemaConceptImpl schemaConcept = getSchemaConcept(label);
-        if (schemaConcept == null) {
-            if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-                throw TransactionException.invalidLabelStart(label);
-            }
-
-            VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
-
-            //Mark it as implicit here so we don't have to pass it down the constructors
-            if (isImplicit) {
-                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
-            }
-
-            // if the schema concept is not in janus, create it here
-            schemaConcept = SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
-        } else if (!baseType.equals(schemaConcept.baseType())) {
-            throw labelTaken(schemaConcept);
+    private <T extends SchemaConcept> T createSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
+        if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
+            throw TransactionException.invalidLabelStart(label);
         }
 
-        //noinspection unchecked
-        return (T) schemaConcept;
+        VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
+
+        //Mark it as implicit here so we don't have to pass it down the constructors
+        if (isImplicit) {
+            vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
+        }
+
+        // noinspection unchecked
+        return (T) SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
     }
 
-    public EntityType putEntityType(Label label, EntityType metaEntityType) {
-        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false, v -> buildEntityType(v, metaEntityType));
+    public EntityType createEntityType(Label label, EntityType metaEntityType) {
+        return createSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false, v -> buildEntityType(v, metaEntityType));
     }
 
-    public RelationType putRelationType(Label label, RelationType metaRelationType) {
-        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false, v -> buildRelationType(v, metaRelationType));
+    public RelationType createRelationType(Label label, RelationType metaRelationType) {
+        return createSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false, v -> buildRelationType(v, metaRelationType));
     }
 
-    public <V> AttributeType putAttributeType(Label label, AttributeType metaAttributeType, AttributeType.DataType<V> dataType) {
-        return putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false, v -> buildAttributeType(v, metaAttributeType, dataType));
+    public <V> AttributeType createAttributeType(Label label, AttributeType metaAttributeType, AttributeType.DataType<V> dataType) {
+        return createSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false, v -> buildAttributeType(v, metaAttributeType, dataType));
     }
 
-    public Role putRole(Label label, Role metaRole) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE, false, v -> buildRole(v, metaRole));
+    public Role createRole(Label label, Role metaRole) {
+        return createSchemaConcept(label, Schema.BaseType.ROLE, false, v -> buildRole(v, metaRole));
     }
 
-    public Rule putRule(Label label, Pattern when, Pattern then, Rule metaRule) {
-        return putSchemaConcept(label, Schema.BaseType.RULE, false, v -> buildRule(v, metaRule, when, then));
+    public Rule createRule(Label label, Pattern when, Pattern then, Rule metaRule) {
+        return createSchemaConcept(label, Schema.BaseType.RULE, false, v -> buildRule(v, metaRule, when, then));
     }
+
     /**
      * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
      * incremented.
@@ -153,7 +145,7 @@ public class ConceptManager {
      * @param label    The label of the new type vertex
      * @param baseType The base type of the new type
      * @return The new type vertex
-     *
+     * <p>
      * TODO this should not be public
      */
     public VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
@@ -182,19 +174,9 @@ public class ConceptManager {
         return LabelId.of(currentValue);
     }
 
-    /**
-     * Throws an exception when adding a SchemaConcept using a Label which is already taken
-     */
-    private TransactionException labelTaken(SchemaConcept schemaConcept) {
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
-            return TransactionException.reservedLabel(schemaConcept.label());
-        }
-        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
-    }
-
-
 
     // ---------- GET
+
     /**
      * Check the transaction cache to see if we have the attribute already by index
      * return NULL if attribtue does not exist in cache
@@ -325,7 +307,6 @@ public class ConceptManager {
     public Rule getRule(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
     }
-
 
 
     /**

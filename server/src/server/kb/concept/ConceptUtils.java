@@ -24,6 +24,8 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.SchemaConcept;
+import grakn.core.server.exception.PropertyNotUniqueException;
+import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import graql.lang.statement.Variable;
 
