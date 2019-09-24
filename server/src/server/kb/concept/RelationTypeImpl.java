@@ -92,7 +92,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     @Override
     public RelationType unrelate(Role role) {
         checkSchemaMutationAllowed();
-        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, role);
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
 

@@ -98,7 +98,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    conceptObserver.deleteCasting(casting);
+                    conceptObserver.castingDeleted(casting);
                 });
     }
 

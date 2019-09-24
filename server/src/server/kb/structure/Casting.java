@@ -50,7 +50,7 @@ public class Casting {
         }
     });
 
-    private Casting(EdgeElement edgeElement, @Nullable Relation relation, @Nullable Role role, @Nullable Thing thing, ConceptManager conceptManager) {
+    Casting(EdgeElement edgeElement, @Nullable Relation relation, @Nullable Role role, @Nullable Thing thing, ConceptManager conceptManager) {
         this.edgeElement = edgeElement;
         this.conceptManager = conceptManager;
         if (relation != null) this.cachedRelation.set(relation);

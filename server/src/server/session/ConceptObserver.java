@@ -193,8 +193,8 @@ public class ConceptObserver {
                 rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
     }
 
-    public void deleteCasting(Casting casting) {
-       transactionCache.remove(casting);
+    public void castingDeleted(Casting casting) {
+       transactionCache.deleteCasting(casting);
     }
 
     public void deleteReifiedOwner(Relation owner) {

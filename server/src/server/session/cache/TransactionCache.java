@@ -164,7 +164,7 @@ public class TransactionCache {
         }
     }
 
-    public void remove(Casting casting) {
+    public void deleteCasting(Casting casting) {
         modifiedCastings.remove(casting);
     }
 

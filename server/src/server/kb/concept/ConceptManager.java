@@ -65,8 +65,8 @@ import static grakn.core.server.kb.Schema.BaseType.RULE;
  * Class handling all creation and retrieval of concepts
  *
  * In general, it will do one of the following primary operations
- * 1. `Create` a brand new Schema Concept, including a new Janus vertex
- * 2. `Create` a brand new Thing Concept, including a new Janus vertex
+ * 1. `Create` a brand new Janus Vertex wrapped in a Schema Concept
+ * 2. `Create` a brand new Janus Vertex or Element, wrapped in a Thing Concept
  * 3. `Build` a Concept from an existing VertexElement or EdgeElement that has been provided from externally
  * 4. `Retrieve` a concept based on some unique identifier (eg. ID, attribute key, janus key/value, etc.)
  *
@@ -89,7 +89,9 @@ public class ConceptManager {
 
 
     /*
+
         ----- CREATE behaviors for Schema concepts -----
+
      */
 
     /**
@@ -121,25 +123,17 @@ public class ConceptManager {
         return entityType;
     }
 
-
     public RelationType createRelationType(Label label, RelationType superType) {
         VertexElement vertex = createSchemaVertex(label, RELATION_TYPE, false);
         return createRelationType(vertex, superType);
     }
 
+    // users cannot create implicit relation types themselves, this is internal behavior
     RelationType createImplicitRelationType(Label implicitRelationLabel) {
         VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE, true);
         return createRelationType(vertex, getMetaRelationType());
     }
 
-    private RelationTypeImpl createRelationType(VertexElement vertex, RelationType superType) {
-        RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptObserver);
-        relationType.createShard();
-        relationType.sup(superType);
-        conceptObserver.relationTypeCreated(relationType);
-        transactionCache.cacheConcept(relationType);
-        return relationType;
-    }
 
     public <V> AttributeType createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
         VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
@@ -156,17 +150,10 @@ public class ConceptManager {
         return createRole(vertexElement, superType);
     }
 
+    // users cannot create implicit roles themselves, this is internal behavior
     Role createImplicitRole(Label implicitRoleLabel) {
         VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE, true);
         return createRole(vertexElement, getMetaRole());
-    }
-
-    private RoleImpl createRole(VertexElement vertex, Role superType) {
-        RoleImpl role = new RoleImpl(vertex, this, conceptObserver);
-        role.sup(superType);
-        transactionCache.cacheConcept(role);
-        conceptObserver.roleCreated(role);
-        return role;
     }
 
     public Rule createRule(Label label, Pattern when, Pattern then, Rule superType) {
@@ -180,6 +167,23 @@ public class ConceptManager {
         return rule;
     }
 
+
+    private RelationTypeImpl createRelationType(VertexElement vertex, RelationType superType) {
+        RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptObserver);
+        relationType.createShard();
+        relationType.sup(superType);
+        conceptObserver.relationTypeCreated(relationType);
+        transactionCache.cacheConcept(relationType);
+        return relationType;
+    }
+
+    private RoleImpl createRole(VertexElement vertex, Role superType) {
+        RoleImpl role = new RoleImpl(vertex, this, conceptObserver);
+        role.sup(superType);
+        transactionCache.cacheConcept(role);
+        conceptObserver.roleCreated(role);
+        return role;
+    }
 
     /**
      * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
@@ -219,33 +223,12 @@ public class ConceptManager {
         return LabelId.of(currentValue);
     }
 
+
     /*
 
-        ------- CREATE behaviors for Concept instances ------
+        ------- CREATE behaviors for Thing instances ------
 
      */
-
-    private VertexElement createInstanceVertex(Schema.BaseType baseType, boolean isInferred) {
-        VertexElement vertexElement = elementFactory.addVertexElement(baseType);
-        if (isInferred) {
-            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
-        }
-        return vertexElement;
-    }
-
-    /**
-     * Checks if an Thing is allowed to be created and linked to this Type.
-     * It can also fail when attempting to attach an Attribute to a meta type
-     */
-    private void preCheckForInstanceCreation(Type type) {
-        if (Schema.MetaSchema.isMetaLabel(type.label())) {
-            throw TransactionException.metaTypeImmutable(type.label());
-        }
-        if (type.isAbstract()) {
-            throw TransactionException.addingInstancesToAbstractType(type);
-        }
-    }
-
 
     /**
      * Create a new attribute instance from a vertex, skip checking caches because this should be a brand new vertex
@@ -345,6 +328,30 @@ public class ConceptManager {
 
         return newEntity;
     }
+
+
+    private VertexElement createInstanceVertex(Schema.BaseType baseType, boolean isInferred) {
+        VertexElement vertexElement = elementFactory.addVertexElement(baseType);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
+    }
+
+    /**
+     * Checks if an Thing is allowed to be created and linked to this Type.
+     * It can also fail when attempting to attach an Attribute to a meta type
+     */
+    private void preCheckForInstanceCreation(Type type) {
+        if (Schema.MetaSchema.isMetaLabel(type.label())) {
+            throw TransactionException.metaTypeImmutable(type.label());
+        }
+        if (type.isAbstract()) {
+            throw TransactionException.addingInstancesToAbstractType(type);
+        }
+    }
+
+
 
 
     /*
@@ -510,7 +517,6 @@ public class ConceptManager {
     }
 
 
-
     /*
 
          --------  BUILD behaviors -------
@@ -647,6 +653,5 @@ public class ConceptManager {
             }
         }
         throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
-
     }
 }
