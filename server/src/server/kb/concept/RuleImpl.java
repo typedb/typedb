@@ -53,7 +53,7 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
     public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
                                   ConceptManager conceptManager, ConceptObserver conceptObserver) {
         RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptManager, conceptObserver);
-        conceptObserver.createRule(rule);
+        conceptObserver.ruleCreated(rule);
         return rule;
     }
 

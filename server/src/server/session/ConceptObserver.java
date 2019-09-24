@@ -59,36 +59,20 @@ public class ConceptObserver {
         this.statistics = statistics;
     }
 
-    void setTransactionCache(TransactionCache transactionCache) {
-        this.transactionCache = transactionCache;
-    }
-
-    public void  setQueryCache(MultilevelSemanticCache queryCache) {
-        this.queryCache = queryCache;
-    }
-
-    void setRuleCache(RuleCache ruleCache) {
-        this.ruleCache = ruleCache;
-    }
-
-    void setStatisticsDelta(UncomittedStatisticsDelta statistics) {
-        this.statistics = statistics;
-    }
-
-    private void deleteConcept(Concept concept) {
+    private void conceptDeleted(Concept concept) {
         transactionCache.remove(concept);
     }
 
-    public void deleteThing(Thing thing) {
+    public void thingDeleted(Thing thing) {
         Type type = thing.type();
         statistics.decrement(type.label());
         queryCache.ackDeletion(type);
-        deleteConcept(thing);
+        conceptDeleted(thing);
     }
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
     // when the edge is not inferred, which is probably most of the time
-    public void deleteRelationEdge(RelationEdge edge, Supplier<Concept> wrappingConceptGetter) {
+    public void relationEdgeDeleted(RelationEdge edge, Supplier<Concept> wrappingConceptGetter) {
         statistics.decrement(edge.type().label());
         if (edge.isInferred()) {
             Concept wrappingConcept = wrappingConceptGetter.get();
@@ -98,9 +82,9 @@ public class ConceptObserver {
         }
     }
 
-    public void deleteSchemaConcept(SchemaConcept schemaConcept) {
+    public void schemaConceptDeleted(SchemaConcept schemaConcept) {
         ruleCache.clear();
-        deleteConcept(schemaConcept);
+        conceptDeleted(schemaConcept);
     }
 
     /**
@@ -110,7 +94,7 @@ public class ConceptObserver {
      * @param isInferred - flag that telling if that instance is inferred, saves a slow
      *                   read from the vertex properties
      */
-    private void createThing(Thing thing, boolean isInferred) {
+    private void thingCreated(Thing thing, boolean isInferred) {
         Type thingType = thing.type();
         ruleCache.ackTypeInstance(thingType);
         statistics.increment(thingType.label());
@@ -123,39 +107,45 @@ public class ConceptObserver {
             queryCache.ackInsertion();
         }
 
+        transactionCache.cacheConcept(thing);
+
         //This Thing gets tracked for validation only if it has keys which need to be checked.
         if (thingType.keys().findAny().isPresent()) {
             transactionCache.trackForValidation(thing);
         }
     }
 
-    public <D> void createAttribute(Attribute<D> attribute, D value, boolean isInferred) {
+    public <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
         Type type = attribute.type();
         //Track the attribute by index
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
         transactionCache.addNewAttribute(type.label(), index, attribute.id());
-        createThing(attribute, isInferred);
+        thingCreated(attribute, isInferred);
     }
 
-    public void createRelation(Relation relation, boolean isInferred) {
+    public void relationCreated(Relation relation, boolean isInferred) {
         transactionCache.addNewRelation(relation);
-        createThing(relation, isInferred);
+        thingCreated(relation, isInferred);
     }
 
-    public void createEntity(Entity entity, boolean isInferred) {
-        createThing(entity, isInferred);
+    public void entityCreated(Entity entity, boolean isInferred) {
+        thingCreated(entity, isInferred);
     }
 
-    public void createHasAttributeRelation(Relation hasAttributeRelation, boolean isInferred) {
-        createThing(hasAttributeRelation, isInferred);
+    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
+        thingCreated(hasAttributeRelation, isInferred);
     }
 
-    public void createRule(Rule rule) {
+    public void ruleCreated(Rule rule) {
         transactionCache.trackForValidation(rule);
     }
 
-    public void createRole(Role role) {
+    public void roleCreated(Role role) {
         transactionCache.trackForValidation(role);
+    }
+
+    public void relationTypeCreated(RelationType relationType) {
+        transactionCache.trackForValidation(relationType);
     }
 
     /*
@@ -174,10 +164,6 @@ public class ConceptObserver {
         } else {
             transactionCache.trackForValidation(type);
         }
-    }
-
-    public void relationTypeCreated(RelationType relationType) {
-        transactionCache.trackForValidation(relationType);
     }
 
     public void trackRelationInstancesRolePlayers(RelationType relationType) {

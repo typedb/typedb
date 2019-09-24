@@ -137,7 +137,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             T superConcept = cachedSuperType.get();
 
             // delete schema concept from caches before deleting the vertex
-            conceptObserver.deleteSchemaConcept(this);
+            conceptObserver.schemaConceptDeleted(this);
 
             deleteNode();
 

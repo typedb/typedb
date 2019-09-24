@@ -366,7 +366,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         RelationType relationTypeSuper = conceptManager.getRelationType(has.getLabel(superLabel).getValue());
         if (relationTypeSuper == null) {
-            relationTypeSuper = conceptManager.createImplicitRelation(has.getLabel(superLabel));
+            relationTypeSuper = conceptManager.createImplicitRelationType(has.getLabel(superLabel));
         }
         relationTypeSuper.relates(ownerRoleSuper).relates(valueRoleSuper);
 
@@ -406,7 +406,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         RelationType relationType = conceptManager.getRelationType(has.getLabel(attributeLabel).getValue());
         if (relationType == null) {
-            relationType = conceptManager.createImplicitRelation(has.getLabel(attributeLabel));
+            relationType = conceptManager.createImplicitRelationType(has.getLabel(attributeLabel));
         }
 
         relationType.relates(ownerRole).relates(valueRole);

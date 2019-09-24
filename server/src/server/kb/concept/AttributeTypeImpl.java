@@ -133,8 +133,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
             // create a brand new vertex and concept
             VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ATTRIBUTE, isInferred);
             instance = conceptManager.createAttribute(newInstanceVertexElement, this, value);
-            Preconditions.checkNotNull(instance, "producer should never return null");
-            conceptObserver.createAttribute(instance, value, isInferred);
+            conceptObserver.attributeCreated(instance, value, isInferred);
         } else {
             if (isInferred && !instance.isInferred()) {
                 throw TransactionException.nonInferredThingExists(instance);

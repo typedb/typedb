@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import autovalue.shaded.com.google$.common.base.$Supplier;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.LabelId;
@@ -174,7 +173,7 @@ public class RelationEdge implements RelationStructure {
     public void delete() {
         if (!isDeleted()) {
             Supplier<Concept> conceptRetriever = () -> conceptManager.getConcept(id());
-            conceptObserver.deleteRelationEdge(this, conceptRetriever);
+            conceptObserver.relationEdgeDeleted(this, conceptRetriever);
             edge().delete();
         }
     }

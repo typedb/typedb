@@ -64,7 +64,7 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
     private Entity createInstance(boolean isInferred) {
         VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ENTITY, isInferred);
         Entity instance = conceptManager.createEntity(newInstanceVertexElement, this);
-        conceptObserver.createEntity(instance, isInferred);
+        conceptObserver.entityCreated(instance, isInferred);
         return instance;
     }
 

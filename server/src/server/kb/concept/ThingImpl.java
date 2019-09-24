@@ -107,7 +107,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if (!isDeleted())  {
             // must happen before deleteNode() so we can access properties on the vertex
-            conceptObserver.deleteThing(this);
+            conceptObserver.thingDeleted(this);
         }
 
         this.edgeRelations().forEach(Concept::delete);
@@ -299,7 +299,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
         RelationImpl attributeRelation = conceptManager.createRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
-        conceptObserver.createHasAttributeRelation(attributeRelation, isInferred);
+        conceptObserver.hasAttributeRelationCreated(attributeRelation, isInferred);
 
         return attributeRelation;
     }
