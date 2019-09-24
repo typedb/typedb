@@ -46,6 +46,8 @@ import java.util.stream.Stream;
 import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
+ * TODO update
+ *
  * Constructs Concepts And Edges
  * This class turns Tinkerpop Vertex and Edge
  * into Grakn Concept and EdgeElement.
@@ -63,13 +65,13 @@ public final class ElementFactory {
         this.janusTx = janusTransaction;
     }
 
-    public VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
+    VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
         Stream<VertexElement> verticesWithProperty = getVerticesWithProperty(key, value);
         Optional<VertexElement> vertexElement = verticesWithProperty.findFirst();
         return vertexElement.orElse(null);
     }
 
-    public Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
+    Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
         Stream<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value).toStream();
         return vertices.map(vertex -> buildVertexElement(vertex));
     }
@@ -82,7 +84,7 @@ public final class ElementFactory {
         return null;
     }
 
-    public EdgeElement getEdgeElementWithId(String id) {
+    EdgeElement getEdgeElementWithId(String id) {
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(id);
         if (traversal.hasNext()) {
             return buildEdgeElement(traversal.next());

@@ -20,6 +20,9 @@ package grakn.core.server.session.cache;
 
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 
+/**
+ * Proivder bceause... TODO
+ */
 public class CacheProvider {
 
     private final RuleCache ruleCache;

@@ -53,13 +53,17 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static grakn.core.server.kb.Schema.BaseType.ATTRIBUTE_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.ENTITY_TYPE;
 import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.ROLE;
+import static grakn.core.server.kb.Schema.BaseType.RULE;
 
 public class ConceptManager {
 
     private ElementFactory elementFactory;
     private TransactionCache transactionCache;
-    private ConceptObserver conceptObserver; // only held to pass through to concepts
+    private ConceptObserver conceptObserver;
     private ReadWriteLock graphLock;
 
     public ConceptManager(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, ReadWriteLock graphLock) {
@@ -78,11 +82,8 @@ public class ConceptManager {
      * @param label             The Label of the SchemaConcept to create
      * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
      * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.type.Type or not
-     * @param newConceptFactory the factory to be using when creating a new SchemaConcept
-     * @param <T>               The type of SchemaConcept to return
-     * @return a new SchemaConcept
      */
-    private <T extends SchemaConcept> T createSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
+    private VertexElement createSchemaVertex(Label label, Schema.BaseType baseType, boolean isImplicit) {
         if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
             throw TransactionException.invalidLabelStart(label);
         }
@@ -94,15 +95,11 @@ public class ConceptManager {
             vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
         }
 
-        // noinspection unchecked
-        return (T) SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
+        return vertexElement;
     }
 
-    public EntityType createEntityType(Label label, EntityType metaEntityType) {
-        return createSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false, v -> createEntityType(v, metaEntityType));
-    }
-
-    private EntityTypeImpl createEntityType(VertexElement vertex, EntityType superType) {
+    public EntityType createEntityType(Label label, EntityType superType) {
+        VertexElement vertex = createSchemaVertex(label, ENTITY_TYPE, false);
         EntityTypeImpl entityType = new EntityTypeImpl(vertex, this, conceptObserver);
         entityType.createShard();
         entityType.sup(superType);
@@ -110,13 +107,15 @@ public class ConceptManager {
         return entityType;
     }
 
-    public RelationType createRelationType(Label label, RelationType metaRelationType) {
-        return createSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false, v -> createRelationType(v, metaRelationType));
+
+    public RelationType createRelationType(Label label, RelationType superType) {
+        VertexElement vertex = createSchemaVertex(label, RELATION_TYPE, false);
+        return createRelationType(vertex, superType);
     }
 
     RelationType createImplicitRelationType(Label implicitRelationLabel) {
-        return createSchemaConcept(implicitRelationLabel, Schema.BaseType.RELATION_TYPE, true,
-                v -> createRelationType(v, getMetaRelationType()));
+        VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE, true);
+        return createRelationType(vertex, getMetaRelationType());
     }
 
     private RelationTypeImpl createRelationType(VertexElement vertex, RelationType superType) {
@@ -128,26 +127,24 @@ public class ConceptManager {
         return relationType;
     }
 
-    public <V> AttributeType createAttributeType(Label label, AttributeType metaAttributeType, AttributeType.DataType<V> dataType) {
-        return createSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false, v -> createAttributeType(v, metaAttributeType, dataType));
-    }
-
-    private <V> AttributeTypeImpl<V> createAttributeType(VertexElement vertex, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
-        vertex.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
-        AttributeTypeImpl<V> attributeType = new AttributeTypeImpl(vertex, this, conceptObserver);
+    public <V> AttributeType createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
+        VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
+        vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
+        AttributeTypeImpl<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptObserver);
         attributeType.createShard();
         attributeType.sup(superType);
         transactionCache.cacheConcept(attributeType);
         return attributeType;
     }
 
-    public Role createRole(Label label, Role metaRole) {
-        return createSchemaConcept(label, Schema.BaseType.ROLE, false, v -> createRole(v, metaRole));
+    public Role createRole(Label label, Role superType) {
+        VertexElement vertexElement = createSchemaVertex(label, ROLE, false);
+        return createRole(vertexElement, superType);
     }
 
     Role createImplicitRole(Label implicitRoleLabel) {
-        return createSchemaConcept(implicitRoleLabel, Schema.BaseType.ROLE, true,
-                v -> createRole(v, getMetaRole()));
+        VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE, true);
+        return createRole(vertexElement, getMetaRole());
     }
 
     private RoleImpl createRole(VertexElement vertex, Role superType) {
@@ -158,19 +155,17 @@ public class ConceptManager {
         return role;
     }
 
-    public Rule createRule(Label label, Pattern when, Pattern then, Rule metaRule) {
-        return createSchemaConcept(label, Schema.BaseType.RULE, false, v -> createRule(v, metaRule, when, then));
-    }
-
-    private RuleImpl createRule(VertexElement vertex, Rule superType, Pattern when, Pattern then) {
-        vertex.propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, null, Pattern::toString);
-        vertex.propertyImmutable(Schema.VertexProperty.RULE_THEN, then, null, Pattern::toString);
-        RuleImpl rule = new RuleImpl(vertex, this, conceptObserver);
+    public Rule createRule(Label label, Pattern when, Pattern then, Rule superType) {
+        VertexElement vertexElement = createSchemaVertex(label, RULE, false);
+        vertexElement.propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, null, Pattern::toString);
+        vertexElement.propertyImmutable(Schema.VertexProperty.RULE_THEN, then, null, Pattern::toString);
+        RuleImpl rule = new RuleImpl(vertexElement, this, conceptObserver);
         rule.sup(superType);
         conceptObserver.ruleCreated(rule);
         transactionCache.cacheConcept(rule);
         return rule;
     }
+
 
     /**
      * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
@@ -420,7 +415,7 @@ public class ConceptManager {
     }
 
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
+        return getSchemaConcept(Label.of(label), RULE);
     }
 
 
