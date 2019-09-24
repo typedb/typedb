@@ -54,8 +54,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
-    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new AttributeTypeImpl<>(vertexElement, conceptManager, conceptObserver);
+    public static AttributeTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new AttributeTypeImpl(vertexElement, conceptManager, conceptObserver);
     }
 
     public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
@@ -130,8 +130,9 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         Attribute<D> instance = getAttributeWithLock(value);
         if (instance == null) {
+            // create a brand new vertex and concept
             VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.ATTRIBUTE, isInferred);
-            instance = conceptManager.buildAttribute(newInstanceVertexElement, this, value);
+            instance = conceptManager.createAttribute(newInstanceVertexElement, this, value);
             Preconditions.checkNotNull(instance, "producer should never return null");
             conceptObserver.createAttribute(instance, value, isInferred);
         } else {

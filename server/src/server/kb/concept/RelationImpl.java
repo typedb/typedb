@@ -47,7 +47,7 @@ public class RelationImpl implements Relation, ConceptVertex {
         }
     }
 
-    public static RelationImpl create(RelationStructure relationStructure) {
+    public static RelationImpl get(RelationStructure relationStructure) {
         return new RelationImpl(relationStructure);
     }
 

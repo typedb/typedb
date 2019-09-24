@@ -536,7 +536,7 @@ public class TransactionOLTP implements Transaction {
         if (attributeType == null) {
             attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), dataType);
         } else {
-            validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.RELATION_TYPE);
+            validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.ATTRIBUTE_TYPE);
             //These checks is needed here because caching will return a type by label without checking the datatype
 
             if (Schema.MetaSchema.isMetaLabel(label)) {

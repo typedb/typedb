@@ -77,6 +77,10 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         createShard();
     }
 
+    public static TypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        return new TypeImpl(vertexElement, conceptManager, conceptObserver);
+    }
+
     public static <X extends Type, Y extends Thing> TypeImpl<X, Y> from(Type type) {
         //noinspection unchecked
         return (TypeImpl<X, Y>) type;
