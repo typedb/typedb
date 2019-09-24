@@ -122,8 +122,6 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-
-
     public static class Builder implements Transaction.Builder {
 
         private SessionImpl session;
@@ -160,7 +158,6 @@ public class TransactionOLTP implements Transaction {
         this.ruleCache.setTx(this);
 
         this.uncomittedStatisticsDelta = statisticsDelta;
-
 
         typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
     }

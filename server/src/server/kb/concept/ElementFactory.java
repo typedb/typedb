@@ -137,7 +137,6 @@ public final class ElementFactory {
 
     /**
      * Builds a VertexElement from an already existing Vertex.
-     * *
      *
      * @param vertex A vertex which can possibly be turned into a VertexElement
      * @return A VertexElement of
@@ -243,7 +242,7 @@ public final class ElementFactory {
         // TODO try not to access the tinker traversal directly
         GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
                 .outE(edgeLabel.getLabel()).as("edge").otherV()
-                .hasId(edgeLabel)
+                .hasId(endVertexId)
                 .select("edge");
 
         if (traversal.hasNext()) {

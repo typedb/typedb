@@ -218,24 +218,24 @@ public class ConceptManager {
      * Create a new attribute instance from a vertex, skip checking caches because this should be a brand new vertex
      * @param vertex - the new vertex to wrap in a Concept
      * @param type - the Concept type
-     * @param persistedValue - value saved in the attribute
+     * @param value - value saved in the attribute
      * @param <V> - attribute type
      * @return - new Attribute Concept
      */
-    <V> AttributeImpl<V> createAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
+    <V> AttributeImpl<V> createAttribute(VertexElement vertex, AttributeType<V> type, V value) {
         AttributeType.DataType<V> dataType = type.dataType();
 
         V convertedValue;
         try {
-            convertedValue = ValueConverter.of(type.dataType()).convert(persistedValue);
+            convertedValue = ValueConverter.of(type.dataType()).convert(value);
         } catch (ClassCastException e){
-            throw TransactionException.invalidAttributeValue(persistedValue, dataType);
+            throw TransactionException.invalidAttributeValue(value, dataType);
         }
 
         // set persisted value
         Object valueToPersist = Serialiser.of(dataType).serialise(convertedValue);
         Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
-        vertex.propertyImmutable(property, convertedValue, null);
+        vertex.propertyImmutable(property, valueToPersist, null);
 
         // set unique index - combination of type and value to an indexed Janus property, used for lookups
         String index = Schema.generateAttributeIndex(type.label(), convertedValue.toString());
