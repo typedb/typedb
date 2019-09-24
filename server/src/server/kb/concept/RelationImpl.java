@@ -40,15 +40,11 @@ import javax.annotation.Nullable;
 public class RelationImpl implements Relation, ConceptVertex {
     private RelationStructure relationStructure;
 
-    private RelationImpl(RelationStructure relationStructure) {
+    RelationImpl(RelationStructure relationStructure) {
         this.relationStructure = relationStructure;
         if (relationStructure.isReified()) {
             relationStructure.reify().owner(this);
         }
-    }
-
-    public static RelationImpl get(RelationStructure relationStructure) {
-        return new RelationImpl(relationStructure);
     }
 
     public static RelationImpl from(Relation relation) {

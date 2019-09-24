@@ -71,11 +71,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    TypeImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, superType, conceptManager, conceptObserver);
-        //This constructor is ONLY used when CREATING new types. Which is why we shard here
-        createShard();
-    }
 
     public static TypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new TypeImpl(vertexElement, conceptManager, conceptObserver);

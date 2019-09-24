@@ -35,26 +35,12 @@ import java.util.stream.Stream;
  * An ontological element used to define different types of Rule.
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
-    private RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
-    }
-
-    private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
-                     ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
     }
 
     public static RuleImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new RuleImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
-    public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then,
-                                  ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        RuleImpl rule = new RuleImpl(vertexElement, type, when, then, conceptManager, conceptObserver);
-        conceptObserver.ruleCreated(rule);
-        return rule;
     }
 
     public static <X extends Type, Y extends Thing> RuleImpl from(Rule type) {

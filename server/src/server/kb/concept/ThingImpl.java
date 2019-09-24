@@ -65,12 +65,12 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private Boolean isInferred = null;
 
     private final Cache<V> cachedType = new Cache<>(() -> {
-        Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
-                map(EdgeElement::target).
-                flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
-                map(EdgeElement::target).
-                map(concept -> conceptManager.<V>buildConcept(concept)).
-                findAny();
+        Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA)
+                .map(EdgeElement::target)
+                .flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD))
+                .map(EdgeElement::target)
+                .map(concept -> conceptManager.<V>buildConcept(concept))
+                .findAny();
 
         return type.orElseThrow(() -> TransactionException.noType(this));
     });
@@ -338,7 +338,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     /**
      * @param type The type of this concept
      */
-    private void type(TypeImpl type) {
+    void type(TypeImpl type) {
         if (type != null) {
             //noinspection unchecked
             cachedType.set((V) type); //We cache the type early because it turns out we use it EVERY time. So this prevents many db reads

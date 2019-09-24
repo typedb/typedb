@@ -103,8 +103,10 @@ public class ConceptManager {
         return createSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false, v -> createEntityType(v, metaEntityType));
     }
 
-    private EntityTypeImpl createEntityType(VertexElement vertex, EntityType type) {
-        EntityTypeImpl entityType = EntityTypeImpl.create(vertex, type, this, conceptObserver);
+    private EntityTypeImpl createEntityType(VertexElement vertex, EntityType superType) {
+        EntityTypeImpl entityType = new EntityTypeImpl(vertex, this, conceptObserver);
+        entityType.createShard();
+        entityType.sup(superType);
         transactionCache.cacheConcept(entityType);
         return entityType;
     }
@@ -118,8 +120,11 @@ public class ConceptManager {
                 v -> createRelationType(v, getMetaRelationType()));
     }
 
-    private RelationTypeImpl createRelationType(VertexElement vertex, RelationType type) {
-        RelationTypeImpl relationType = RelationTypeImpl.create(vertex, type, this, conceptObserver);
+    private RelationTypeImpl createRelationType(VertexElement vertex, RelationType superType) {
+        RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptObserver);
+        relationType.createShard();
+        relationType.sup(superType);
+        conceptObserver.relationTypeCreated(relationType);
         transactionCache.cacheConcept(relationType);
         return relationType;
     }
@@ -128,8 +133,11 @@ public class ConceptManager {
         return createSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false, v -> createAttributeType(v, metaAttributeType, dataType));
     }
 
-    private <V> AttributeTypeImpl<V> createAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType) {
-        AttributeTypeImpl<V> attributeType = AttributeTypeImpl.create(vertex, type, dataType, this, conceptObserver);
+    private <V> AttributeTypeImpl<V> createAttributeType(VertexElement vertex, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
+        vertex.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
+        AttributeTypeImpl<V> attributeType = new AttributeTypeImpl(vertex, this, conceptObserver);
+        attributeType.createShard();
+        attributeType.sup(superType);
         transactionCache.cacheConcept(attributeType);
         return attributeType;
     }
@@ -143,9 +151,11 @@ public class ConceptManager {
                 v -> createRole(v, getMetaRole()));
     }
 
-    private RoleImpl createRole(VertexElement vertex, Role type) {
-        RoleImpl role = RoleImpl.create(vertex, type, this, conceptObserver);
+    private RoleImpl createRole(VertexElement vertex, Role superType) {
+        RoleImpl role = new RoleImpl(vertex, this, conceptObserver);
+        role.sup(superType);
         transactionCache.cacheConcept(role);
+        conceptObserver.roleCreated(role);
         return role;
     }
 
@@ -153,8 +163,12 @@ public class ConceptManager {
         return createSchemaConcept(label, Schema.BaseType.RULE, false, v -> createRule(v, metaRule, when, then));
     }
 
-    private RuleImpl createRule(VertexElement vertex, Rule type, Pattern when, Pattern then) {
-        RuleImpl rule = RuleImpl.create(vertex, type, when, then, this, conceptObserver);
+    private RuleImpl createRule(VertexElement vertex, Rule superType, Pattern when, Pattern then) {
+        vertex.propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, null, Pattern::toString);
+        vertex.propertyImmutable(Schema.VertexProperty.RULE_THEN, then, null, Pattern::toString);
+        RuleImpl rule = new RuleImpl(vertex, this, conceptObserver);
+        rule.sup(superType);
+        conceptObserver.ruleCreated(rule);
         transactionCache.cacheConcept(rule);
         return rule;
     }
@@ -210,15 +224,41 @@ public class ConceptManager {
      * @return - new Attribute Concept
      */
     <V> AttributeImpl<V> createAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
-        return AttributeImpl.create(vertex, type, persistedValue, this, conceptObserver);
+        AttributeType.DataType<V> dataType = type.dataType();
+
+        V convertedValue;
+        try {
+            convertedValue = ValueConverter.of(type.dataType()).convert(persistedValue);
+        } catch (ClassCastException e){
+            throw TransactionException.invalidAttributeValue(persistedValue, dataType);
+        }
+
+        // set persisted value
+        Object valueToPersist = Serialiser.of(dataType).serialise(convertedValue);
+        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType);
+        vertex.propertyImmutable(property, convertedValue, null);
+
+        // set unique index - combination of type and value to an indexed Janus property, used for lookups
+        String index = Schema.generateAttributeIndex(type.label(), convertedValue.toString());
+        vertex.property(Schema.VertexProperty.INDEX, index);
+
+        AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptObserver);
+        newAttribute.type(TypeImpl.from(type));
+        return newAttribute;
     }
 
     /**
      * Create a new Relation instance from an edge
      * Skip checking caches because this should be a brand new edge and concept
      */
-    RelationImpl createRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
-        return RelationImpl.get(RelationEdge.create(type, owner, value, edge, this, conceptObserver));
+    RelationImpl createRelation(EdgeElement edge, RelationType relationType, Role owner, Role value) {
+        edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, owner, null, o -> o.labelId().getValue());
+        edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, value, null, v -> v.labelId().getValue());
+        edge.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
+
+        RelationEdge relationEdge = new RelationEdge(edge, this, conceptObserver);
+        // because the Relation hierarchy is still wrong, RelationEdge and RelationImpl doesn't set type(type) like other instances do
+        return new RelationImpl(relationEdge);
     }
 
     /**
@@ -226,7 +266,9 @@ public class ConceptManager {
      * Skip checking caches because this should be a brand new vertex and concept
      */
     RelationImpl createRelation(VertexElement vertex, RelationType type) {
-        return RelationImpl.get(RelationReified.create(vertex, type, this, conceptObserver));
+        RelationReified relationVertex = new RelationReified(vertex, this, conceptObserver);
+        relationVertex.type(TypeImpl.from(type));
+        return new RelationImpl(relationVertex);
     }
 
     /**
@@ -234,10 +276,10 @@ public class ConceptManager {
      * Skip checking caches because this should be a brand new vertex and concept
      */
     EntityImpl createEntity(VertexElement vertex, EntityType type) {
-        return EntityImpl.create(vertex, type, this, conceptObserver);
+        EntityImpl newEntity = new EntityImpl(vertex, this, conceptObserver);
+        newEntity.type(TypeImpl.from(type));
+        return newEntity;
     }
-
-
 
 
 
@@ -430,31 +472,31 @@ public class ConceptManager {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = RelationImpl.get(RelationReified.get(vertexElement, this, conceptObserver));
+                    concept = new RelationImpl(RelationReified.get(vertexElement, this, conceptObserver));
                     break;
                 case TYPE:
-                    concept = TypeImpl.get(vertexElement, this, conceptObserver);
+                    concept = new TypeImpl(vertexElement, this, conceptObserver);
                     break;
                 case ROLE:
-                    concept = RoleImpl.get(vertexElement, this, conceptObserver);
+                    concept = new RoleImpl(vertexElement, this, conceptObserver);
                     break;
                 case RELATION_TYPE:
-                    concept = RelationTypeImpl.get(vertexElement, this, conceptObserver);
+                    concept = new RelationTypeImpl(vertexElement, this, conceptObserver);
                     break;
                 case ENTITY:
-                    concept = EntityImpl.get(vertexElement, this, conceptObserver);
+                    concept = new EntityImpl(vertexElement, this, conceptObserver);
                     break;
                 case ENTITY_TYPE:
-                    concept = EntityTypeImpl.get(vertexElement, this, conceptObserver);
+                    concept = new EntityTypeImpl(vertexElement, this, conceptObserver);
                     break;
                 case ATTRIBUTE_TYPE:
-                    concept = AttributeTypeImpl.get(vertexElement, this, conceptObserver);
+                    concept = new AttributeTypeImpl(vertexElement, this, conceptObserver);
                     break;
                 case ATTRIBUTE:
-                    concept = AttributeImpl.get(vertexElement, this, conceptObserver);
+                    concept = new AttributeImpl(vertexElement, this, conceptObserver);
                     break;
                 case RULE:
-                    concept = RuleImpl.get(vertexElement, this, conceptObserver);
+                    concept = new RuleImpl(vertexElement, this, conceptObserver);
                     break;
                 default:
                     throw TransactionException.unknownConcept(type.name());

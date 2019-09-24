@@ -64,32 +64,14 @@ public class RelationEdge implements RelationStructure {
     private final Cache<Thing> owner = new Cache<>(() -> conceptManager().buildConcept(edge().source()));
     private final Cache<Thing> value = new Cache<>(() -> conceptManager().buildConcept(edge().target()));
 
-    private RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         this.edgeElement = edgeElement;
         this.conceptManager = conceptManager;
         this.conceptObserver = conceptObserver;
     }
 
-    private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                         ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        this(edgeElement, conceptManager, conceptObserver);
-
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
-
-        this.relationType.set(relationType);
-        this.ownerRole.set(ownerRole);
-        this.valueRole.set(valueRole);
-    }
-
     public static RelationEdge get(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new RelationEdge(edgeElement, conceptManager, conceptObserver);
-    }
-
-    public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement,
-                                      ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement, conceptManager, conceptObserver);
     }
 
     private EdgeElement edge() {

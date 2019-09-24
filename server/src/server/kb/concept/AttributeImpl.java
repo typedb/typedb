@@ -41,31 +41,12 @@ import java.util.stream.Stream;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    private AttributeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    AttributeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
-    }
-
-    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value,
-                          ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
-        setValue(value);
-        setUniqueIndexedValue(vertexElement, type, value);
     }
 
     public static <D> AttributeImpl<D> get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new AttributeImpl<>(vertexElement, conceptManager, conceptObserver);
-    }
-
-    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value,
-                                              ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        D converted;
-        try {
-            converted = ValueConverter.of(type.dataType()).convert(value);
-        } catch (ClassCastException e){
-            throw TransactionException.invalidAttributeValue(value, type.dataType());
-        }
-
-        return new AttributeImpl<>(vertexElement, type, converted, conceptManager, conceptObserver);
     }
 
     public static AttributeImpl from(Attribute attribute) {
@@ -91,27 +72,6 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
         Stream<Thing> edgeOwners = neighbours(Direction.IN, Schema.EdgeLabel.ATTRIBUTE);
 
         return Stream.concat(implicitOwners, edgeOwners);
-    }
-
-    /**
-     * @param value The value to store on the resource in its native format
-     */
-    private void setValue(D value) {
-        Object valueToPersist = Serialiser.of(dataType()).serialise(value);
-        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType());
-        vertex().propertyImmutable(property, valueToPersist, vertex().property(property));
-    }
-
-    /**
-     * Set the unique combination of type and value to an indexed Janus property for lookups
-     * @param vertexElement
-     * @param type
-     * @param value
-     */
-    private void setUniqueIndexedValue(VertexElement vertexElement, AttributeType<D> type, D value) {
-        //Generate the index again. Faster than reading
-        String index = Schema.generateAttributeIndex(type.label(), value.toString());
-        vertexElement.property(Schema.VertexProperty.INDEX, index);
     }
 
     /**

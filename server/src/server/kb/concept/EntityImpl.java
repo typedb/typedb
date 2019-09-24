@@ -33,21 +33,8 @@ import java.util.stream.Stream;
  * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    private EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
-    }
-
-    private EntityImpl(VertexElement vertexElement, EntityType type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
-    }
-
-    public static EntityImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new EntityImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
-    public static EntityImpl create(VertexElement vertexElement, EntityType type,
-                                    ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new EntityImpl(vertexElement, type, conceptManager, conceptObserver);
     }
 
     public static EntityImpl from(Entity entity) {

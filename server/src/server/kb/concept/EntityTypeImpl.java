@@ -30,22 +30,8 @@ import grakn.core.server.session.ConceptObserver;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    private EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
-    }
-
-    private EntityTypeImpl(VertexElement vertexElement, EntityType type,
-                           ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
-    }
-
-    public static EntityTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new EntityTypeImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
-    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type,
-                                        ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new EntityTypeImpl(vertexElement, type, conceptManager, conceptObserver);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {

@@ -44,23 +44,12 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    private AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
-    }
-
-    private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
-                              ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
-        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
     }
 
     public static AttributeTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new AttributeTypeImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
-    public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType,
-                                                  ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new AttributeTypeImpl<>(vertexElement, type, dataType, conceptManager, conceptObserver);
     }
 
     public static AttributeTypeImpl from(AttributeType attributeType) {

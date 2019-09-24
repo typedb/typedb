@@ -44,23 +44,14 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
-    }
-
-    private RoleImpl(VertexElement vertexElement, Role type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
     }
 
     public static RoleImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new RoleImpl(vertexElement, conceptManager, conceptObserver);
     }
 
-    public static RoleImpl create(VertexElement vertexElement, Role type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        RoleImpl role = new RoleImpl(vertexElement, type, conceptManager, conceptObserver);
-        conceptObserver.roleCreated(role);
-        return role;
-    }
 
     @Override
     public Stream<RelationType> relations() {

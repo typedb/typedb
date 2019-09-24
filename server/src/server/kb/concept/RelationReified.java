@@ -52,23 +52,12 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    private RelationReified(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RelationReified(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    private RelationReified(VertexElement vertexElement, RelationType type,
-                            ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, type, conceptManager, conceptObserver);
-    }
-
-
     public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         return new RelationReified(vertexElement, conceptManager, conceptObserver);
-    }
-
-    public static RelationReified create(VertexElement vertexElement, RelationType type,
-                                         ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new RelationReified(vertexElement, type, conceptManager, conceptObserver);
     }
 
     @Override
