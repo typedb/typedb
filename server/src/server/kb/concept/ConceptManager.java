@@ -553,7 +553,7 @@ public class ConceptManager {
     RelationImpl buildRelation(EdgeElement edge) {
         ConceptId conceptId = Schema.conceptId(edge.element());
         if (!transactionCache.isConceptCached(conceptId)) {
-            RelationImpl relation = new RelationImpl(RelationEdge.get(edge, this, conceptObserver));
+            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptObserver));
             transactionCache.cacheConcept(relation);
             return relation;
         } else {
