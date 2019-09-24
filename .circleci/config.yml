@@ -392,6 +392,8 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
+      - checkout
       - run: |
           curl http://www.jetmore.org/john/code/swaks/files/swaks-20130209.0/swaks -o swaks
           chmod +x swaks
