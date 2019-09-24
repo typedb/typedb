@@ -30,7 +30,6 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
-import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
@@ -72,7 +71,7 @@ public class ConceptManager {
     }
 
 
-    // ------ PUT
+    // ----- CREATE behaviors -----
 
     Role createImplicitRole(Label implicitRoleLabel) {
         return createSchemaConcept(implicitRoleLabel, Schema.BaseType.ROLE, true,
@@ -85,22 +84,12 @@ public class ConceptManager {
     }
 
     /**
-     * This is a helper method which will either find or create a SchemaConcept.
-     * When a new SchemaConcept is created it is added for validation through it's own creation method for
-     * example RoleImpl#create(VertexElement, Role).
-     * <p>
-     * When an existing SchemaConcept is found it is build via it's get method such as
-     * RoleImpl#get(VertexElement) and skips validation.
-     * <p>
-     * Once the SchemaConcept is found or created a few checks for uniqueness and correct
-     * Schema.BaseType are performed.
-     *
-     * @param label             The Label of the SchemaConcept to find or create
+     * @param label             The Label of the SchemaConcept to create
      * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
      * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.type.Type or not
      * @param newConceptFactory the factory to be using when creating a new SchemaConcept
      * @param <T>               The type of SchemaConcept to return
-     * @return a new or existing SchemaConcept
+     * @return a new SchemaConcept
      */
     private <T extends SchemaConcept> T createSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
         if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
@@ -175,7 +164,7 @@ public class ConceptManager {
     }
 
 
-    // ---------- GET
+    // ---------- RETRIEVE behaviors ------
 
     /**
      * Check the transaction cache to see if we have the attribute already by index
@@ -335,7 +324,7 @@ public class ConceptManager {
 
     /*
 
-     -------- end
+     --------  BUILD behaviors ------
      */
 
 

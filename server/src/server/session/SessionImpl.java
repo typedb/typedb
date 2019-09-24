@@ -166,20 +166,7 @@ public class SessionImpl implements Session {
      * @param tx
      */
     private void initialiseMetaConcepts(TransactionOLTP tx) {
-        VertexElement type = tx.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
-        VertexElement entityType = tx.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-        VertexElement relationType = tx.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-        VertexElement resourceType = tx.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
-        tx.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-        tx.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
-
-        relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-        resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-        entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-
-        relationType.addEdge(type, Schema.EdgeLabel.SUB);
-        resourceType.addEdge(type, Schema.EdgeLabel.SUB);
-        entityType.addEdge(type, Schema.EdgeLabel.SUB);
+        tx.createMetaConcepts();
     }
 
     /**

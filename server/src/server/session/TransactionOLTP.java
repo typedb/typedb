@@ -35,7 +35,6 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
@@ -94,8 +93,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.server.exception.TransactionException.labelTaken;
-
 /**
  * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
  */
@@ -124,6 +121,8 @@ public class TransactionOLTP implements Transaction {
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
+
+
 
     public static class Builder implements Transaction.Builder {
 
@@ -454,7 +453,7 @@ public class TransactionOLTP implements Transaction {
     private void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
         // extra validation to ensure schema integrity -- is this needed?
         // throws if label is already taken for a different type
-        if (!Schema.BaseType.ENTITY_TYPE.equals(schemaConcept.baseType())) {
+        if (!expectedBaseType.equals(schemaConcept.baseType())) {
             throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
         }
     }
@@ -874,8 +873,21 @@ public class TransactionOLTP implements Transaction {
 
 
     // ----------- Exposed low level methods that should not be exposed here TODO refactor
-    public VertexElement addTypeVertex(LabelId labelId, Label label, Schema.BaseType baseType) {
-        return conceptManager.addTypeVertex(labelId, label, baseType);
+    void createMetaConcepts() {
+        VertexElement type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
+        VertexElement entityType = conceptManager.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        VertexElement relationType = conceptManager.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+        VertexElement resourceType = conceptManager.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
+        conceptManager.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
+        conceptManager.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
+
+        relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+
+        relationType.addEdge(type, Schema.EdgeLabel.SUB);
+        resourceType.addEdge(type, Schema.EdgeLabel.SUB);
+        entityType.addEdge(type, Schema.EdgeLabel.SUB);
     }
 
     public LabelId convertToId(Label label) {
