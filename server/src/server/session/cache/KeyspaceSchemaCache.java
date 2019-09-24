@@ -33,11 +33,11 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * This cache is shared across sessions and transactions to the same keyspace, and kept in sync
  * on commit.
  */
-public class KeyspaceCache {
+public class KeyspaceSchemaCache {
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private final Map<Label, LabelId> cachedLabels;
 
-    public KeyspaceCache() {
+    public KeyspaceSchemaCache() {
         cachedLabels = new ConcurrentHashMap<>();
     }
 

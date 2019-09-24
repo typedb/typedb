@@ -51,7 +51,7 @@ import java.util.stream.Stream;
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
-    private final KeyspaceCache keyspaceCache;
+    private final KeyspaceSchemaCache keyspaceSchemaCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
@@ -79,13 +79,13 @@ public class TransactionCache {
     // after commit
     private Set<String> removedAttributes = new HashSet<>();
 
-    public TransactionCache(KeyspaceCache keyspaceCache) {
-        this.keyspaceCache = keyspaceCache;
+    public TransactionCache(KeyspaceSchemaCache keyspaceSchemaCache) {
+        this.keyspaceSchemaCache = keyspaceSchemaCache;
     }
 
-    public void flushToKeyspaceCache() {
+    public void flushSchemaLabelIdsToCache() {
         // This method is used to actually flush to the keyspace cache
-        keyspaceCache.readTxCache(this);
+        keyspaceSchemaCache.readTxCache(this);
     }
 
     /**
@@ -94,7 +94,7 @@ public class TransactionCache {
      * do not accidentally break the central schema cache.
      */
     public void updateSchemaCacheFromKeyspaceCache() {
-        keyspaceCache.populateSchemaTxCache(this);
+        keyspaceSchemaCache.populateSchemaTxCache(this);
     }
 
     /**

@@ -50,7 +50,7 @@ import static org.junit.Assert.assertTrue;
  * as well as synchronizing the KeyspaceCache on commits
  */
 @SuppressWarnings("Duplicates")
-public class KeyspaceCacheIT {
+public class KeyspaceSchemaCacheIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();

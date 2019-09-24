@@ -56,7 +56,7 @@ import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.session.cache.CacheFactory;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
@@ -86,7 +86,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -107,7 +106,6 @@ public class TransactionOLTP implements Transaction {
     // Caches
     private final MultilevelSemanticCache queryCache;
     private final RuleCache ruleCache;
-    private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
@@ -143,8 +141,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
-                    TransactionCache transactionCache, KeyspaceCache keyspaceCache,
-                    ConceptObserver conceptObserver) {
+                    CacheFactory cacheFactory, TransactionCache transactionCache, ConceptObserver conceptObserver) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -153,10 +150,8 @@ public class TransactionOLTP implements Transaction {
 
         this.conceptManager = conceptManager;
 
-        this.queryCache = new MultilevelSemanticCache();
-        this.ruleCache = new RuleCache(this);
-
-        this.keyspaceCache = keyspaceCache;
+        this.queryCache = cacheFactory.getQueryCache();
+        this.ruleCache = cacheFactory.getRuleCache(this);
         this.transactionCache = transactionCache;
 
         this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
@@ -179,7 +174,7 @@ public class TransactionOLTP implements Transaction {
     /**
      * This method handles 3 committing scenarios:
      * - use a lock to serialise all commits that are trying to create new attributes, so that we can merge real-time
-     * - use a lock to serialise commits that are removing attributes, so concurrent txs dont use outdate attribute IDs from attributesCache
+     * - use a lock to serialise commits that are removing attributes, so concurrent txs don't use outdated attribute IDs from attributesCache
      * - don't lock when added or removed attributes are not involved
      */
     private void commitInternal() {
@@ -411,7 +406,7 @@ public class TransactionOLTP implements Transaction {
      * Utility function to get a read-only Tinkerpop traversal.
      *
      * @return A read-only Tinkerpop traversal for manually traversing the graph
-     *
+     * <p>
      * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
      */
     public GraphTraversalSource getTinkerTraversal() {
@@ -722,10 +717,8 @@ public class TransactionOLTP implements Transaction {
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
-            synchronized (keyspaceCache) {
-                commitInternal();
-                transactionCache.flushToKeyspaceCache();
-            }
+            commitInternal();
+            transactionCache.flushSchemaLabelIdsToCache();
 
             ServerTracing.closeScopedChildSpan(commitSpanId);
         } finally {
