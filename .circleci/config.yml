@@ -232,6 +232,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt-snapshot/ trusty main'
+      - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt/ trusty main'
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
       - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
