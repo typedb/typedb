@@ -23,8 +23,6 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.ElementUtils;
-import grakn.core.server.session.TransactionOLTP;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;

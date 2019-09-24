@@ -33,7 +33,6 @@ import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TemporaryWriteException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.session.ConceptObserver;
@@ -244,6 +243,7 @@ public class ConceptManager {
 
         AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptObserver);
         newAttribute.type(TypeImpl.from(type));
+
         return newAttribute;
     }
 
@@ -279,7 +279,6 @@ public class ConceptManager {
         return new RelationImpl(createRelationReified(vertex, type));
     }
 
-
     /**
      * Create a new Entity instance from a vertex
      * Skip checking caches because this should be a brand new vertex and concept
@@ -289,7 +288,6 @@ public class ConceptManager {
         newEntity.type(TypeImpl.from(type));
         return newEntity;
     }
-
 
 
     // ---------- RETRIEVE behaviors ------

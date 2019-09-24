@@ -20,7 +20,6 @@ package grakn.core.server.kb.structure;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.ConceptImpl;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

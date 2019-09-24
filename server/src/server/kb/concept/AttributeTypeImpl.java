@@ -18,13 +18,11 @@
 
 package grakn.core.server.kb.concept;
 
-import com.google.common.base.Preconditions;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
-
 import grakn.core.server.session.ConceptObserver;
 
 import javax.annotation.Nullable;

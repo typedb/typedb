@@ -27,11 +27,12 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.structure.VertexElement;
+
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * Encapsulates relations between Thing

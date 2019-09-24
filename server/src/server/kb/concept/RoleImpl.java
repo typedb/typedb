@@ -21,17 +21,17 @@ package grakn.core.server.kb.concept;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import grakn.core.server.session.ConceptObserver;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * An SchemaConcept which defines a Role which can be played in a RelationType.

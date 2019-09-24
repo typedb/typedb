@@ -20,6 +20,7 @@ package grakn.core.server.kb.concept;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.type.AttributeType;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
