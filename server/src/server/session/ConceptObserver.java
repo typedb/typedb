@@ -19,7 +19,6 @@
 package grakn.core.server.session;
 
 import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
 import grakn.core.concept.thing.Relation;
@@ -36,9 +35,9 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.concept.RelationEdge;
 import grakn.core.server.kb.concept.RelationImpl;
 import grakn.core.server.kb.concept.RelationReified;
-import grakn.core.server.kb.concept.RelationTypeImpl;
 import grakn.core.server.kb.concept.ThingImpl;
 import grakn.core.server.kb.structure.Casting;
+import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
@@ -52,6 +51,13 @@ public class ConceptObserver {
     private MultilevelSemanticCache queryCache;
     private RuleCache ruleCache;
     private UncomittedStatisticsDelta statistics;
+
+    public ConceptObserver(CacheProvider cacheProvider, UncomittedStatisticsDelta statistics) {
+        this.transactionCache = cacheProvider.getTransactionCache();
+        this.queryCache = cacheProvider.getQueryCache();
+        this.ruleCache = cacheProvider.getRuleCache();
+        this.statistics = statistics;
+    }
 
     void setTransactionCache(TransactionCache transactionCache) {
         this.transactionCache = transactionCache;

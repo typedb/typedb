@@ -40,7 +40,7 @@ public class RuleCache {
 
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
-    private final TransactionOLTP tx;
+    private TransactionOLTP tx;
 
     //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
@@ -48,7 +48,10 @@ public class RuleCache {
     private Set<Rule> unmatchableRules = new HashSet<>();
     private Set<Rule> checkedRules = new HashSet<>();
 
-    public RuleCache(TransactionOLTP tx) {
+    public RuleCache() {
+    }
+
+    public void setTx(TransactionOLTP tx) {
         this.tx = tx;
     }
 

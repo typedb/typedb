@@ -32,10 +32,11 @@ import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.cache.CacheFactory;
+import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.KeyspaceSchemaCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
+import grakn.core.server.statistics.UncomittedStatisticsDelta;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -139,17 +140,20 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-        ConceptObserver conceptObserver = new ConceptObserver();
+        // caches
+        CacheProvider cacheProvider = new CacheProvider(keyspaceSchemaCache);
+        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
+        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
 
-        CacheFactory cacheFactory = new CacheFactory();
-        TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
-
+        // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
-        ConceptManager conceptManager = new ConceptManager(elementFactory, transactionCache, conceptObserver, graphLock);
+        // Grakn elements
+        ConceptManager conceptManager = new ConceptManager(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
 
-        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheFactory, transactionCache, conceptObserver);
+        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
+
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 

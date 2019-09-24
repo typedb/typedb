@@ -56,7 +56,7 @@ import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.cache.CacheFactory;
+import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
@@ -141,7 +141,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
-                    CacheFactory cacheFactory, TransactionCache transactionCache, ConceptObserver conceptObserver) {
+                    CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -150,16 +150,14 @@ public class TransactionOLTP implements Transaction {
 
         this.conceptManager = conceptManager;
 
-        this.queryCache = cacheFactory.getQueryCache();
-        this.ruleCache = cacheFactory.getRuleCache(this);
-        this.transactionCache = transactionCache;
+        this.transactionCache = cacheProvider.getTransactionCache();
+        this.queryCache = cacheProvider.getQueryCache();
+        this.ruleCache = cacheProvider.getRuleCache();
+        // TODO remove temporal coupling
+        this.ruleCache.setTx(this);
 
-        this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
+        this.uncomittedStatisticsDelta = statisticsDelta;
 
-        conceptObserver.setTransactionCache(transactionCache);
-        conceptObserver.setQueryCache(queryCache);
-        conceptObserver.setRuleCache(ruleCache);
-        conceptObserver.setStatisticsDelta(uncomittedStatisticsDelta);
 
         typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
     }
