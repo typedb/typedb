@@ -131,10 +131,14 @@ public final class ElementFactory {
      * @param conceptId ConceptId to be set on the vertex
      * @return just created Vertex
      */
-    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId, boolean isInferred) {
         Vertex vertex = janusTx.addVertex(baseType.name());
         vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
-        return buildVertexElement(vertex);
+        VertexElement vertexElement = buildVertexElement(vertex);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
     }
 
     /**

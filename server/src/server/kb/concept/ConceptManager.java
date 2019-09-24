@@ -53,8 +53,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
+import static grakn.core.server.kb.Schema.BaseType.ATTRIBUTE;
 import static grakn.core.server.kb.Schema.BaseType.ATTRIBUTE_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.ENTITY;
 import static grakn.core.server.kb.Schema.BaseType.ENTITY_TYPE;
+import static grakn.core.server.kb.Schema.BaseType.RELATION;
 import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 import static grakn.core.server.kb.Schema.BaseType.ROLE;
 import static grakn.core.server.kb.Schema.BaseType.RULE;
@@ -209,15 +212,41 @@ public class ConceptManager {
         ------- CREATE behaviors for Concept instances ------
      */
 
+    private VertexElement createInstanceVertex(Schema.BaseType baseType, boolean isInferred) {
+        VertexElement vertexElement = elementFactory.addVertexElement(baseType);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
+    }
+
+    /**
+     * Checks if an Thing is allowed to be created and linked to this Type.
+     * It can also fail when attempting to attach an Attribute to a meta type
+     */
+    private void preCheckForInstanceCreation(Type type) {
+        if (Schema.MetaSchema.isMetaLabel(type.label())) {
+            throw TransactionException.metaTypeImmutable(type.label());
+        }
+        if (type.isAbstract()) {
+            throw TransactionException.addingInstancesToAbstractType(type);
+        }
+    }
+
+
     /**
      * Create a new attribute instance from a vertex, skip checking caches because this should be a brand new vertex
-     * @param vertex - the new vertex to wrap in a Concept
      * @param type - the Concept type
      * @param value - value saved in the attribute
+     * @param isInferred - if the new concept is inferred or concrete
      * @param <V> - attribute type
      * @return - new Attribute Concept
      */
-    <V> AttributeImpl<V> createAttribute(VertexElement vertex, AttributeType<V> type, V value) {
+    <V> AttributeImpl<V> createAttribute(AttributeType<V> type, V value, boolean isInferred) {
+        preCheckForInstanceCreation(type);
+
+        VertexElement vertex = createInstanceVertex(ATTRIBUTE, isInferred);
+
         AttributeType.DataType<V> dataType = type.dataType();
 
         V convertedValue;
@@ -239,6 +268,7 @@ public class ConceptManager {
         AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptObserver);
         newAttribute.type(TypeImpl.from(type));
 
+        conceptObserver.attributeCreated(newAttribute, value, isInferred);
         return newAttribute;
     }
 
@@ -246,21 +276,28 @@ public class ConceptManager {
      * Create a new Relation instance from an edge
      * Skip checking caches because this should be a brand new edge and concept
      */
-    RelationImpl createRelation(EdgeElement edge, RelationType relationType, Role owner, Role value) {
+    RelationImpl createHasAttributeRelation(EdgeElement edge, RelationType relationType, Role owner, Role value, boolean isInferred) {
+        preCheckForInstanceCreation(relationType);
+
         edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, owner, null, o -> o.labelId().getValue());
         edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, value, null, v -> v.labelId().getValue());
         edge.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
 
         RelationEdge relationEdge = new RelationEdge(edge, this, conceptObserver);
         // because the Relation hierarchy is still wrong, RelationEdge and RelationImpl doesn't set type(type) like other instances do
-        return new RelationImpl(relationEdge);
+        RelationImpl newRelation = new RelationImpl(relationEdge);
+        conceptObserver.hasAttributeRelationCreated(newRelation, isInferred);
+
+        return newRelation;
     }
 
     /**
-     * Used by RelationEdge when it needs to reify a relation and as a component for new reified relations
+     * Used by RelationEdge when it needs to reify a relation
+     * NOTE The passed in vertex is already prepared outside of the ConceptManager
      * @return ReifiedRelation
      */
     RelationReified createRelationReified(VertexElement vertex, RelationType type) {
+        preCheckForInstanceCreation(type);
         RelationReified relationReified = new RelationReified(vertex, this, conceptObserver);
         relationReified.type(TypeImpl.from(type));
         return relationReified;
@@ -270,17 +307,29 @@ public class ConceptManager {
      * Create a new Relation instance from a vertex
      * Skip checking caches because this should be a brand new vertex and concept
      */
-    RelationImpl createRelation(VertexElement vertex, RelationType type) {
-        return new RelationImpl(createRelationReified(vertex, type));
+    RelationImpl createRelation(RelationType type, boolean isInferred) {
+        preCheckForInstanceCreation(type);
+        VertexElement vertex = createInstanceVertex(RELATION, isInferred);
+        RelationReified relationReified = createRelationReified(vertex, type);
+
+        RelationImpl newRelation = new RelationImpl(relationReified);
+        conceptObserver.relationCreated(newRelation, isInferred);
+
+        return newRelation;
     }
 
     /**
      * Create a new Entity instance from a vertex
      * Skip checking caches because this should be a brand new vertex and concept
      */
-    EntityImpl createEntity(VertexElement vertex, EntityType type) {
+    EntityImpl createEntity(EntityType type, boolean isInferred) {
+        preCheckForInstanceCreation(type);
+        VertexElement vertex = createInstanceVertex(ENTITY, isInferred);
         EntityImpl newEntity = new EntityImpl(vertex, this, conceptObserver);
         newEntity.type(TypeImpl.from(type));
+
+        conceptObserver.entityCreated(newEntity, isInferred);
+
         return newEntity;
     }
 

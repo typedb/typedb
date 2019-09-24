@@ -61,10 +61,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     }
 
     private Relation addRelation(boolean isInferred) {
-        VertexElement newInstanceVertexElement = createInstanceVertex(Schema.BaseType.RELATION, isInferred);
-        Relation newRelation = conceptManager.createRelation(newInstanceVertexElement, this);
-        conceptObserver.relationCreated(newRelation, isInferred);
-        return newRelation;
+        return conceptManager.createRelation(this, isInferred);
     }
 
     @Override

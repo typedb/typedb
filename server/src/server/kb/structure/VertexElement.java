@@ -171,8 +171,4 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
     public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId) {
         return elementFactory.edgeRelationsConnectedToInstancesOfType(id().toString(), edgeInstanceLabelId);
     }
-
-    public VertexElement createVertexElement(Schema.BaseType baseType) {
-        return elementFactory.addVertexElement(baseType);
-    }
 }

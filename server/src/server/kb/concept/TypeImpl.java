@@ -76,27 +76,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return (TypeImpl<X, Y>) type;
     }
 
-    VertexElement createInstanceVertex(Schema.BaseType baseType, boolean isInferred) {
-        preCheckForInstanceCreation();
-        VertexElement vertexElement = vertex().createVertexElement(baseType);
-        if (isInferred) {
-            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
-        }
-        return vertexElement;
-    }
-
-    /**
-     * Checks if an Thing is allowed to be created and linked to this Type.
-     * It can also fail when attempting to attach an Attribute to a meta type
-     */
-    private void preCheckForInstanceCreation() {
-        if (Schema.MetaSchema.isMetaLabel(label())) {
-            throw TransactionException.metaTypeImmutable(label());
-        }
-        if (isAbstract()) {
-            throw TransactionException.addingInstancesToAbstractType(this);
-        }
-    }
 
     /**
      * @return A list of all the roles this Type is allowed to play.
