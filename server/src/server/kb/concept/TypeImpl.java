@@ -76,7 +76,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return (TypeImpl<X, Y>) type;
     }
 
-
     /**
      * @return A list of all the roles this Type is allowed to play.
      */
@@ -349,7 +348,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
             updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationTypeSuper);
         }
-
     }
 
     /**

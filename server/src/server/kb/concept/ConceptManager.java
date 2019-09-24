@@ -49,7 +49,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -62,6 +61,18 @@ import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
 import static grakn.core.server.kb.Schema.BaseType.ROLE;
 import static grakn.core.server.kb.Schema.BaseType.RULE;
 
+/**
+ * Class handling all creation and retrieval of concepts
+ *
+ * In general, it will do one of the following primary operations
+ * 1. `Create` a brand new Schema Concept, including a new Janus vertex
+ * 2. `Create` a brand new Thing Concept, including a new Janus vertex
+ * 3. `Build` a Concept from an existing VertexElement or EdgeElement that has been provided from externally
+ * 4. `Retrieve` a concept based on some unique identifier (eg. ID, attribute key, janus key/value, etc.)
+ *
+ * Where possible, the TransactionCache will be queried to avoid rebuilding a concept that is already built or retrieved
+ *
+ */
 public class ConceptManager {
 
     private ElementFactory elementFactory;
@@ -209,7 +220,9 @@ public class ConceptManager {
     }
 
     /*
+
         ------- CREATE behaviors for Concept instances ------
+
      */
 
     private VertexElement createInstanceVertex(Schema.BaseType baseType, boolean isInferred) {
@@ -334,7 +347,11 @@ public class ConceptManager {
     }
 
 
-    // ---------- RETRIEVE behaviors ------
+    /*
+
+        ---------- RETRIEVE behaviors --------
+
+     */
 
     /**
      * Check the transaction cache to see if we have the attribute already by index
@@ -495,7 +512,9 @@ public class ConceptManager {
 
 
     /*
-     --------  BUILD behaviors ------
+
+         --------  BUILD behaviors -------
+
      */
 
     /**

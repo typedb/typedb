@@ -45,6 +45,13 @@ import grakn.core.server.statistics.UncomittedStatisticsDelta;
 import java.util.List;
 import java.util.function.Supplier;
 
+/**
+ * ConceptObserver is notified of creation, deletion, and modification of Concepts so that
+ * the caches and statistics may be updated. The caches are also shared with ConceptManager
+ * and Transaction.
+ *
+ * The observer is entirely used to WRITE to the caches and statistics, and not read at all
+ */
 public class ConceptObserver {
 
     private TransactionCache transactionCache;

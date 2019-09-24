@@ -21,6 +21,9 @@ package grakn.core.server.kb.concept;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.janusgraph.core.JanusGraphElement;
 
+/**
+ * Helper methods for Janus Element operations
+ */
 public class ElementUtils {
     public static boolean isValidElement(Element element) {
         return element != null && !((JanusGraphElement) element).isRemoved();

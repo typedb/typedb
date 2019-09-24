@@ -21,7 +21,8 @@ package grakn.core.server.session.cache;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 
 /**
- * Proivder bceause... TODO
+ * Implemented CacheProvider as a provider to have a idempotent `get()` methods.
+ * This ensures that if the provider is shared, everyone receives the same instances of the Caches
  */
 public class CacheProvider {
 

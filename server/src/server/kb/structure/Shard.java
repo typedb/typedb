@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  *
  * If we imagine the split between Concept and Element, Shards are designed to live on the same level
  * of access as Elements rather than Concepts. In other words, more related to the structure/implementation
- * of under the hood Grakn than higher level exposed interfaces
+ * of Grakn under the hood than higher level exposed interfaces
  */
 public class Shard {
     private VertexElement vertexElement;
