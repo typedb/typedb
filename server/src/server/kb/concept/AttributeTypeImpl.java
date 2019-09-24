@@ -48,10 +48,6 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    public static AttributeTypeImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new AttributeTypeImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
     public static AttributeTypeImpl from(AttributeType attributeType) {
         return (AttributeTypeImpl) attributeType;
     }

@@ -56,10 +56,6 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    public static RelationReified get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new RelationReified(vertexElement, conceptManager, conceptObserver);
-    }
-
     @Override
     public void delete() {
         //TODO remove this once we fix the whole relation hierarchy

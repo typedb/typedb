@@ -39,10 +39,6 @@ public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    public static RuleImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new RuleImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
     public static <X extends Type, Y extends Thing> RuleImpl from(Rule type) {
         //noinspection unchecked
         return (RuleImpl) type;

@@ -56,11 +56,6 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    SchemaConceptImpl(VertexElement vertexElement, T superType, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        this(vertexElement, conceptManager, conceptObserver);
-        if (sup() == null) sup(superType);
-    }
-
     public static <X extends SchemaConcept> SchemaConceptImpl<X> from(SchemaConcept schemaConcept) {
         //noinspection unchecked
         return (SchemaConceptImpl<X>) schemaConcept;

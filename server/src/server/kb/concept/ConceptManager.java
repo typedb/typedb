@@ -262,14 +262,23 @@ public class ConceptManager {
     }
 
     /**
+     * Used by RelationEdge when it needs to reify a relation and as a component for new reified relations
+     * @return ReifiedRelation
+     */
+    RelationReified createRelationReified(VertexElement vertex, RelationType type) {
+        RelationReified relationReified = new RelationReified(vertex, this, conceptObserver);
+        relationReified.type(TypeImpl.from(type));
+        return relationReified;
+    }
+
+    /**
      * Create a new Relation instance from a vertex
      * Skip checking caches because this should be a brand new vertex and concept
      */
     RelationImpl createRelation(VertexElement vertex, RelationType type) {
-        RelationReified relationVertex = new RelationReified(vertex, this, conceptObserver);
-        relationVertex.type(TypeImpl.from(type));
-        return new RelationImpl(relationVertex);
+        return new RelationImpl(createRelationReified(vertex, type));
     }
+
 
     /**
      * Create a new Entity instance from a vertex
@@ -472,7 +481,7 @@ public class ConceptManager {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(RelationReified.get(vertexElement, this, conceptObserver));
+                    concept = new RelationImpl(new RelationReified(vertexElement, this, conceptObserver));
                     break;
                 case TYPE:
                     concept = new TypeImpl(vertexElement, this, conceptObserver);
@@ -526,7 +535,7 @@ public class ConceptManager {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = RelationImpl.get(RelationEdge.get(edgeElement, this, conceptObserver));
+                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptObserver));
                     break;
                 default:
                     throw TransactionException.unknownConcept(label.name());
@@ -544,20 +553,12 @@ public class ConceptManager {
     RelationImpl buildRelation(EdgeElement edge) {
         ConceptId conceptId = Schema.conceptId(edge.element());
         if (!transactionCache.isConceptCached(conceptId)) {
-            RelationImpl relation = RelationImpl.get(RelationEdge.get(edge, this, conceptObserver));
+            RelationImpl relation = new RelationImpl(RelationEdge.get(edge, this, conceptObserver));
             transactionCache.cacheConcept(relation);
             return relation;
         } else {
             return transactionCache.getCachedConcept(conceptId);
         }
-    }
-
-    /**
-     * Used by RelationEdge when it needs to reify a relation.
-     * @return ReifiedRelation
-     */
-    RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
-        return RelationReified.create(vertex, type, this, conceptObserver);
     }
 
 

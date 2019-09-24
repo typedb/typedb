@@ -48,11 +48,6 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    public static RoleImpl get(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new RoleImpl(vertexElement, conceptManager, conceptObserver);
-    }
-
-
     @Override
     public Stream<RelationType> relations() {
         return cachedRelationTypes.get().stream();

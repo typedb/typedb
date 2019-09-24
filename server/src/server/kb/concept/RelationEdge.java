@@ -70,10 +70,6 @@ public class RelationEdge implements RelationStructure {
         this.conceptObserver = conceptObserver;
     }
 
-    public static RelationEdge get(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        return new RelationEdge(edgeElement, conceptManager, conceptObserver);
-    }
-
     private EdgeElement edge() {
         return edgeElement;
     }
@@ -92,7 +88,7 @@ public class RelationEdge implements RelationStructure {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
         VertexElement relationVertex = edge().asReifiedVertexElement();
-        RelationReified relationReified = conceptManager().buildRelationReified(relationVertex, type());
+        RelationReified relationReified = conceptManager().createRelationReified(relationVertex, type());
 
         //Delete the old edge
         delete();

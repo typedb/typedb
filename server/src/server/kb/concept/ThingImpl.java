@@ -79,11 +79,6 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         super(vertexElement, conceptManager, conceptObserver);
     }
 
-    ThingImpl(VertexElement vertexElement, V type, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        this(vertexElement, conceptManager, conceptObserver);
-        type((TypeImpl) type);
-    }
-
     public boolean isInferred() {
         //NB: might be over the top to cache it
         if (isInferred == null) {
