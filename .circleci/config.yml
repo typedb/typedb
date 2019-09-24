@@ -406,7 +406,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: git push --delete origin grakn-release-branch
+      - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/grakn $CIRCLE_BRANCH
 
 workflows:
   grakn-core:
