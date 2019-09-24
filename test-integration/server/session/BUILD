@@ -81,7 +81,7 @@ checkstyle_test(
     targets = [
         ":session-it",
         ":transaction-oltp-it",
-        ":keyspace-cache-it",
+        ":keyspace-schema-cache-it",
         ":transaction-cache-it"
     ],
 )
