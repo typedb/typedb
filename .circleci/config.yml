@@ -292,8 +292,8 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: |
-          bazel run @graknlabs_build_tools//ci:release-validate-deps graknlabs_common \
-            graknlabs_console graknlabs_graql graknlabs_protocol
+          bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
+            graknlabs_common graknlabs_console graknlabs_graql graknlabs_protocol
 
   deploy-github:
     machine: true
