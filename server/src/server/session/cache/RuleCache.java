@@ -18,6 +18,7 @@
 
 package grakn.core.server.session.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
@@ -97,6 +98,7 @@ public class RuleCache {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
+    @VisibleForTesting
     public Stream<Rule> getRulesWithType(Type type) {
         return getRulesWithType(type, false);
     }
@@ -129,11 +131,10 @@ public class RuleCache {
         Set<Rule> match = ruleMap.get(type);
         if (!match.isEmpty()) return match.stream();
 
-        getTypes(type, direct)
+        return getTypes(type, direct)
                 .flatMap(SchemaConcept::thenRules)
                 .filter(this::isRuleMatchable)
-                .forEach(rule -> ruleMap.put(type, rule));
-        return match.stream();
+                .peek(rule -> ruleMap.put(type, rule));
     }
 
     private boolean typeHasInstances(Type type){
