@@ -23,12 +23,10 @@ import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.cache.KeyspaceCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import java.util.ArrayList;

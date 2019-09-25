@@ -50,6 +50,7 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.ConceptVertex;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
@@ -77,6 +78,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
@@ -101,6 +103,8 @@ import java.util.stream.Stream;
  */
 public class TransactionOLTP implements Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+    private final long typeShardThreshold;
+
     // Shared Variables
     private final SessionImpl session;
     private final ElementFactory elementFactory;
@@ -160,6 +164,8 @@ public class TransactionOLTP implements Transaction {
 
         this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
 
+        typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+
     }
 
     void open(Type type) {
@@ -186,6 +192,7 @@ public class TransactionOLTP implements Transaction {
             // contains attributes that we are removing in this transaction.
             session.graphLock().writeLock().lock();
             try {
+                createNewTypeShardsWhenThresholdReached();
                 session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
                 janusTransaction.commit();
                 cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
@@ -193,18 +200,19 @@ public class TransactionOLTP implements Transaction {
                 session.graphLock().writeLock().unlock();
             }
         } else {
+            createNewTypeShardsWhenThresholdReached();
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
             janusTransaction.commit();
         }
         LOG.trace("Graph committed.");
     }
 
-
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
     private void mergeAttributesAndCommit() {
         session.graphLock().writeLock().lock();
         try {
+            createNewTypeShardsWhenThresholdReached();
             cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
                 // If the same index is contained in attributesCache, it means
@@ -225,6 +233,18 @@ public class TransactionOLTP implements Transaction {
         } finally {
             session.graphLock().writeLock().unlock();
         }
+    }
+
+    private void createNewTypeShardsWhenThresholdReached() {
+        uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
+            long instancesCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
+            long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
+            if (instancesCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
+                LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
+                shard(getType(label).id());
+                setShardCheckpoint(label, instancesCount);
+            }
+        });
     }
 
     private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
@@ -425,7 +445,7 @@ public class TransactionOLTP implements Transaction {
      * @return the number of instances a grakn.core.concept.type.Type must have before it is shareded
      */
     public long shardingThreshold() {
-        return session().config().getProperty(ConfigKey.SHARDING_THRESHOLD);
+        return session().config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
     }
 
     public TransactionCache cache() {
@@ -968,6 +988,37 @@ public class TransactionOLTP implements Transaction {
         type.createShard();
     }
 
+    /**
+     * Set a new type shard checkpoint for a given label
+     * @param label
+     */
+    private void setShardCheckpoint(Label label, long checkpoint) {
+        Concept schemaConcept = getSchemaConcept(label);
+        if (schemaConcept != null) {
+            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+            janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name(), checkpoint);
+        }
+        else {
+            throw new RuntimeException("Label '" + label.getValue() + "' does not exist");
+        }
+    }
+
+    /**
+     * Get the checkpoint in which type shard was last created
+     * @param label
+     * @return the checkpoint for the given label. if the label does not exist, return 0
+     */
+    private Long getShardCheckpoint(Label label) {
+        Concept schemaConcept = getSchemaConcept(label);
+        if (schemaConcept != null) {
+            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
+            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name());
+            return (Long) property.orElse(0L);
+        }
+        else {
+            return 0L;
+        }
+    }
     /**
      * Returns the current number of shards the provided grakn.core.concept.type.Type has. This is used in creating more
      * efficient query plans.

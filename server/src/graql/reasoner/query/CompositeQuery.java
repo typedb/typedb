@@ -28,16 +28,14 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.graql.exception.GraqlSemanticException;
-import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
-import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
+import grakn.core.graql.reasoner.state.CompositeState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.server.kb.concept.ConceptUtils;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -45,7 +43,6 @@ import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -353,11 +350,6 @@ public class CompositeQuery implements ResolvableQuery {
     @Override
     public ResolutionPlan resolutionPlan() {
         return getConjunctiveQuery().resolutionPlan();
-    }
-
-    @Override
-    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
-        return new ResolutionIterator(this, subGoals).hasStream();
     }
 
     @Override

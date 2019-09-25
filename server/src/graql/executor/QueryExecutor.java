@@ -18,6 +18,7 @@
 
 package grakn.core.graql.executor;
 
+
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
@@ -35,8 +36,6 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
-import grakn.core.graql.reasoner.DisjunctionIterator;
-import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.exception.GraknServerException;
@@ -107,13 +106,28 @@ public class QueryExecutor {
             validateClause(matchClause);
 
             if (!infer) {
-                answerStream = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream()
+
+                // TODO: this is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
+                // workaround to deal with non-lazy Java 8 flatMap() functions
+                io.vavr.collection.Stream<Conjunction<Statement>> conjunctions =
+                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream());
+
+                answerStream = conjunctions
                         .map(p -> ReasonerQueries.create(p, transaction))
                         .map(ReasonerQueryImpl::getPattern)
-                        .flatMap(p -> traversal(p, TraversalPlanner.createTraversal(p, transaction)));
+                        .flatMap(p -> io.vavr.collection.Stream.ofAll(traverse(p)))
+                        .toJavaStream();
 
             } else {
-                answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
+
+                io.vavr.collection.Stream<Conjunction<Pattern>> conjunctions =
+                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getNegationDNF().getPatterns().stream());
+
+                answerStream = conjunctions
+                        .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
+                        .flatMap(q -> io.vavr.collection.Stream.ofAll(q.resolve()))
+                        .toJavaStream();
+
             }
         } catch (GraqlCheckedException e) {
             LOG.debug(e.getMessage());
@@ -187,10 +201,14 @@ public class QueryExecutor {
         }
     }
 
+    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern) {
+        return traverse(pattern, TraversalPlanner.createTraversal(pattern, transaction));
+    }
+
     /**
      * @return resulting answer stream
      */
-    public Stream<ConceptMap> traversal(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
+    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
 

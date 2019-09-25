@@ -6,11 +6,11 @@ URL: https://grakn.ai
 License: Apache License, v2.0
 AutoReqProv: no
 
+Requires: grakn-console = %{@graknlabs_console}
 Requires: grakn-core-server = %{version}
-Requires: grakn-core-console = %{version}
 
 %description
-Grakn Core (all) - virtual package which installs both Grakn Core Server and Grakn Core Console
+Grakn Core (all) - virtual package which installs both Grakn Core Server and Grakn Console
 
 %prep
 

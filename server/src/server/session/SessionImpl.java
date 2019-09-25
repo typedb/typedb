@@ -89,7 +89,8 @@ public class SessionImpl implements Session {
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
      public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
-                       HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
+                        Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -110,6 +111,7 @@ public class SessionImpl implements Session {
         if (keyspaceCache.isEmpty()) {
             copySchemaConceptLabelsToKeyspaceCache(tx);
         }
+
         tx.commit();
 
     }
@@ -173,7 +175,6 @@ public class SessionImpl implements Session {
         copyToCache(tx.getMetaRole());
         copyToCache(tx.getMetaRule());
     }
-
 
     /**
      * @return The graph cache which contains all the data cached and accessible by all transactions.

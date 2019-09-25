@@ -45,7 +45,7 @@ public class GraknDaemon {
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
     private static final String BENCHMARK_FLAG = "--benchmark";
-    private static final String VERSION_LABEL = "Version: ";
+    private static final String VERSION_LABEL = "Version:";
 
 
     private final Storage storageExecutor;
@@ -111,10 +111,14 @@ public class GraknDaemon {
             try {
                 String logoString = new String(Files.readAllBytes(ascii), StandardCharsets.UTF_8);
                 int lineLength = logoString.split("\n")[0].length();
-                int spaces = lineLength - VERSION_LABEL.length() - Version.VERSION.length();
+                int spaces = lineLength - (VERSION_LABEL.length() + Version.VERSION.length());
 
                 System.out.println(logoString);
-                System.out.printf("%" + spaces + "s"+ VERSION_LABEL +"%s\n", " ", Version.VERSION);
+                if (spaces > 0) {
+                    System.out.printf("%" + spaces + "s" + VERSION_LABEL + "%s\n", " ", Version.VERSION);
+                } else {
+                    System.out.print(VERSION_LABEL + " " + Version.VERSION + "\n");
+                }
             } catch (IOException e) {
                 // DO NOTHING
             }
