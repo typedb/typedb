@@ -55,8 +55,8 @@ public class ResolutionTree {
         if (childNode == null || parentNode == null) return null;
 
         parentNode.addChild(childNode);
-        if (parentMatch == null && parent != null) mapping.put(parent, parentNode);
-        if (childMatch == null && child != null) mapping.put(child, childNode);
+        if (parentMatch == null) mapping.put(parent, parentNode);
+        if (childMatch == null ) mapping.put(child, childNode);
         return childNode;
     }
 

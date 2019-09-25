@@ -18,7 +18,6 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.api.Transaction;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.thing.Entity;
@@ -31,17 +30,15 @@ import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -50,24 +47,6 @@ public class BenchmarkSmallIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-
-    @Test
-    public void test(){
-        SessionImpl session = server.sessionFactory().session(KeyspaceImpl.of("rvoas"));
-
-
-        try (Transaction tx = session.transaction().write()) {
-            GraqlGet query = Graql.parse("match (actor-role: $actor, task-type: $task) isa can-execute; get;").asGet();
-            long start = System.currentTimeMillis();
-            List<ConceptMap> answers = tx.execute(query);
-            System.out.println("time: " + (System.currentTimeMillis() - start));
-        }
-
-
-        session.close();
-    }
-
-
 
     /**
      * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:
