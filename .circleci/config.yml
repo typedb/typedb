@@ -49,10 +49,8 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel build //...
-      - run-bazel-rbe:
-          command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
-  build-analysis:
+  build-checkstyle:
     machine: true
     working_directory: ~/grakn
     steps:
@@ -61,6 +59,13 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=errors
+
+  build-analysis:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
       - run: |
           SONARCLOUD_CODE_ANALYSIS_CREDENTIAL=$SONARCLOUD_CREDENTIAL \
             bazel run @graknlabs_build_tools//sonarcloud:code-analysis -- \
@@ -426,6 +431,10 @@ workflows:
           filters:
             branches:
               ignore: grakn-release-branch
+      - build-checkstyle:
+          filters:
+            branches:
+              ignore: grakn-release-branch
       - build-analysis:
           filters:
             branches:
@@ -460,6 +469,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
