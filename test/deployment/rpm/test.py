@@ -111,6 +111,7 @@ try:
 
     lprint('Installing RPM packages. Grakn will be available system-wide')
     gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/rpm-snapshot.repo')
+    gcloud_ssh(instance, 'sudo yum-config-manager --add-repo https://repo.grakn.ai/repository/meta/rpm.repo')
     gcloud_ssh(instance, 'sudo yum -y update')
     gcloud_ssh(instance, 'sudo yum -y install grakn-core-all-$(cat VERSION)')
 

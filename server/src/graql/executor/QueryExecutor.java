@@ -35,7 +35,6 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
-import grakn.core.graql.reasoner.DisjunctionIterator;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.server.exception.GraknServerException;
@@ -116,15 +115,22 @@ public class QueryExecutor {
                 io.vavr.collection.Stream<Conjunction<Statement>> conjunctions =
                         io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream());
 
-                io.vavr.collection.Stream<ConceptMap> conceptMaps = conjunctions
+                answerStream = conjunctions
                         .map(p -> ReasonerQueries.create(p, transaction))
                         .map(ReasonerQueryImpl::getPattern)
-                        .flatMap(p -> io.vavr.collection.Stream.ofAll(traverse(p)));
-
-                answerStream = conceptMaps.toJavaStream();
+                        .flatMap(p -> io.vavr.collection.Stream.ofAll(traverse(p)))
+                        .toJavaStream();
 
             } else {
-                answerStream = new DisjunctionIterator(matchClause, transaction).hasStream();
+
+                io.vavr.collection.Stream<Conjunction<Pattern>> conjunctions =
+                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getNegationDNF().getPatterns().stream());
+
+                answerStream = conjunctions
+                        .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
+                        .flatMap(q -> io.vavr.collection.Stream.ofAll(q.resolve()))
+                        .toJavaStream();
+
             }
         } catch (GraqlCheckedException e) {
             LOG.debug(e.getMessage());

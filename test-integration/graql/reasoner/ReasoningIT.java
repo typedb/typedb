@@ -220,11 +220,10 @@ public class ReasoningIT {
     }
 
     @Test //Expected result: The query should return 10 unique matches (no duplicates).
-    public void distinctLimitedAnswersOfInfinitelyGeneratingRule() {
+    public void whenResolutionProducesInfiniteStreamOfAnswers_executingLimitedQueryTerminates() {
         try(SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet7.gql", session);
             try (TransactionOLTP tx = session.transaction().read()) {
-                
                 
                 String queryString = "match $x isa relation1; get; limit 10;";
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());

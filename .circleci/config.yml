@@ -232,6 +232,7 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt-snapshot/ trusty main'
+      - run: sudo add-apt-repository 'deb [ arch=all ] https://repo.grakn.ai/repository/apt/ trusty main'
       - run: sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 8F3DA4B5E9AEF44C
       - run: sudo apt update
       - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
@@ -285,6 +286,18 @@ jobs:
           export RELEASE_APPROVAL_USERNAME=$REPO_GITHUB_USERNAME
           export RELEASE_APPROVAL_TOKEN=$REPO_GITHUB_TOKEN
           bazel run @graknlabs_build_tools//ci:release-approval
+
+  release-validate:
+    machine: true
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: |
+          bazel run @graknlabs_build_tools//ci:release-validate-deps -- \
+            graknlabs_common graknlabs_graql graknlabs_protocol
+            # TODO: add graknlabs_console once we've removed the
+            # cyclic dependency between core and client-java:
+            # https://github.com/graknlabs/grakn/issues/5272
 
   deploy-github:
     machine: true
@@ -397,7 +410,7 @@ jobs:
     machine: true
     steps:
       - checkout
-      - run: git push --delete origin grakn-release-branch
+      - run: git push --delete https://$REPO_GITHUB_TOKEN@github.com/graknlabs/grakn $CIRCLE_BRANCH
 
 workflows:
   grakn-core:
@@ -542,10 +555,16 @@ workflows:
 
   grakn-core-release:
     jobs:
+      - release-validate:
+          filters:
+            branches:
+              only: grakn-release-branch
       - deploy-github:
           filters:
             branches:
               only: grakn-release-branch
+          requires:
+            - release-validate
       - deploy-approval:
           type: approval
           requires:

@@ -2,7 +2,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "reasoning-it",
-    size = "enormous",
+    size = "large",
     srcs = ["ReasoningIT.java"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
