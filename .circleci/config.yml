@@ -398,7 +398,7 @@ jobs:
           sudo apt-get -y install perl
       - run: |
           ./swaks --auth \
-          --server smtp.mailgun.org \
+          --server smtp.mailgun.org:587 \
           --au $SMTP_MAILGUN_EMAIL \
           --ap $SMTP_MAILGUN_PASSWORD \
           --from $SMTP_MAILGUN_EMAIL \
