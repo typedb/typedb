@@ -46,9 +46,18 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel build //...
+
+  build-checkstyle:
+    machine: true
+    working_directory: ~/grakn
+    steps:
+      - install-bazel-linux-rbe
+      - checkout
+      - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
+      - run-bazel-rbe:
+          command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
 
   build-analysis:
     machine: true
@@ -392,13 +401,15 @@ jobs:
     machine: true
     working_directory: ~/grakn
     steps:
+      - install-bazel-linux-rbe
+      - checkout
       - run: |
           curl http://www.jetmore.org/john/code/swaks/files/swaks-20130209.0/swaks -o swaks
           chmod +x swaks
           sudo apt-get -y install perl
       - run: |
           ./swaks --auth \
-          --server smtp.mailgun.org \
+          --server smtp.mailgun.org:587 \
           --au $SMTP_MAILGUN_EMAIL \
           --ap $SMTP_MAILGUN_PASSWORD \
           --from $SMTP_MAILGUN_EMAIL \
@@ -416,6 +427,10 @@ workflows:
   grakn-core:
     jobs:
       - build:
+          filters:
+            branches:
+              ignore: grakn-release-branch
+      - build-checkstyle:
           filters:
             branches:
               ignore: grakn-release-branch
@@ -453,6 +468,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
