@@ -18,9 +18,14 @@
 
 package grakn.core.server.kb.structure;
 
+import grakn.core.concept.LabelId;
+import grakn.core.concept.type.RelationType;
+import grakn.core.concept.type.Role;
+import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.ElementFactory;
+import grakn.core.server.kb.concept.ElementUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -40,8 +45,8 @@ import java.util.stream.StreamSupport;
  */
 public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
 
-    public VertexElement(TransactionOLTP graknTx, Vertex element) {
-        super(graknTx, element);
+    public VertexElement(ElementFactory elementFactory, Vertex element) {
+        super(elementFactory, element);
     }
 
     /**
@@ -52,8 +57,8 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
     public Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label) {
         Iterable<Edge> iterable = () -> element().edges(direction, label.getLabel());
         return StreamSupport.stream(iterable.spliterator(), false)
-                .filter(edge -> tx().isValidElement(edge)) // filter out deleted but cached available edges
-                .map(edge -> tx().factory().buildEdgeElement(edge));
+                .filter(edge -> ElementUtils.isValidElement(edge)) // filter out deleted but cached available edges
+                .map(edge -> elementFactory.buildEdgeElement(edge));
     }
 
     /**
@@ -62,7 +67,8 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @return The edge created
      */
     public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type) {
-        return tx().factory().buildEdgeElement(element().addEdge(type.getLabel(), to.element()));
+        Edge newEdge = element().addEdge(type.getLabel(), to.element());
+        return elementFactory.buildEdgeElement(newEdge);
     }
 
     /**
@@ -70,16 +76,12 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
      * @param type the type of the edge to create
      */
     public EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type) {
-        GraphTraversal<Vertex, Edge> traversal = tx().getTinkerTraversal().V().
-                hasId(id()).
-                outE(type.getLabel()).as("edge").otherV().
-                hasId(to.id())
-                .select("edge");
+        EdgeElement existingEdge = elementFactory.edgeBetweenVertices(id().toString(), to.id().toString(), type);
 
-        if (!traversal.hasNext()) {
+        if (existingEdge == null) {
             return addEdge(to, type);
         } else {
-            return tx().factory().buildEdgeElement(traversal.next());
+            return existingEdge;
         }
     }
 
@@ -116,6 +118,16 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         }
     }
 
+    public Shard asShard() {
+        return elementFactory.getShard(this);
+    }
+
+    public Shard currentShard() {
+        Object currentShardId = property(Schema.VertexProperty.CURRENT_SHARD);
+        Vertex shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
+        return elementFactory.getShard(shardVertex);
+    }
+
     @Override
     public String toString() {
         StringBuilder stringBuilder = new StringBuilder();
@@ -125,4 +137,38 @@ public class VertexElement extends AbstractElement<Vertex, Schema.VertexProperty
         return stringBuilder.toString();
     }
 
+    /**
+     * Create a new vertex that is a shard and connect it to the owning Type vertex
+     * @param owningConcept
+     * @return
+     */
+    public Shard shard(ConceptImpl owningConcept) {
+        VertexElement shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
+        Shard shard = elementFactory.createShard(owningConcept, shardVertex);
+        return shard;
+    }
+
+    public Stream<Shard> shards() {
+        return getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
+                .map(EdgeElement::source)
+                .map(vertexElement -> elementFactory.getShard(vertexElement));
+    }
+
+    public Stream<EdgeElement> roleCastingsEdges(Type type, Set<Integer> allowedRoleTypeIds) {
+        return elementFactory.rolePlayerEdges(id().toString(), type, allowedRoleTypeIds);
+
+    }
+
+    public boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId) {
+        return elementFactory.rolePlayerEdgeExists(startVertexId, type, role, endVertexId);
+    }
+
+    public Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
+                                                      boolean ownerToValueOrdering) {
+        return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
+    }
+
+    public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId) {
+        return elementFactory.edgeRelationsConnectedToInstancesOfType(id().toString(), edgeInstanceLabelId);
+    }
 }

@@ -20,13 +20,12 @@ package grakn.core.server.kb.concept;
 
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -41,35 +40,8 @@ import java.util.stream.Stream;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    private AttributeImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private AttributeImpl(VertexElement vertexElement, AttributeType<D> type, D value) {
-        super(vertexElement, type);
-        setValue(value);
-    }
-
-    public static <D> AttributeImpl<D> get(VertexElement vertexElement) {
-        return new AttributeImpl<>(vertexElement);
-    }
-
-    public static <D> AttributeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, D value) {
-        D converted;
-        try {
-            converted = ValueConverter.of(type.dataType()).convert(value);
-        } catch (ClassCastException e){
-            throw TransactionException.invalidAttributeValue(value, type.dataType());
-        }
-        AttributeImpl<D> attribute = new AttributeImpl<>(vertexElement, type, converted);
-
-        //Generate the index again. Faster than reading
-        String index = Schema.generateAttributeIndex(type.label(), converted.toString());
-        vertexElement.property(Schema.VertexProperty.INDEX, index);
-
-        //Track the attribute by index
-        vertexElement.tx().cache().addNewAttribute(attribute.type().label(), index, attribute.id());
-        return attribute;
+    AttributeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public static AttributeImpl from(Attribute attribute) {
@@ -98,15 +70,6 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     }
 
     /**
-     * @param value The value to store on the resource
-     */
-    private void setValue(D value) {
-        Object valueToPersist = Serialiser.of(dataType()).serialise(value);
-        Schema.VertexProperty property = Schema.VertexProperty.ofDataType(dataType());
-        vertex().propertyImmutable(property, valueToPersist, vertex().property(property));
-    }
-
-    /**
      * @return The value casted to the correct type
      */
     @Override
@@ -124,8 +87,8 @@ public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> 
     @Override
     public Stream<Thing> getDependentConcepts() {
         Label typeLabel = type().label();
-        Role hasRole = vertex().tx().getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
-        Role keyRole = vertex().tx().getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
+        Role hasRole = conceptManager.getRole(Schema.ImplicitType.HAS_VALUE.getLabel(typeLabel).getValue());
+        Role keyRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(typeLabel).getValue());
         Stream<Thing> conceptStream = Stream.of(this);
         if (hasRole != null) conceptStream = Stream.concat(conceptStream, relations(hasRole));
         if (keyRole != null) conceptStream = Stream.concat(conceptStream, relations(keyRole));

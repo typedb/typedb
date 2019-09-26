@@ -18,34 +18,36 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
+import grakn.core.concept.LabelId;
 import grakn.core.concept.type.Role;
-import grakn.core.concept.type.Rule;
-import grakn.core.server.exception.TemporaryWriteException;
+import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.structure.AbstractElement;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionOLTP;
-import graql.lang.pattern.Pattern;
-import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.janusgraph.core.JanusGraphTransaction;
 
-import java.util.Locale;
+import javax.annotation.Nullable;
+import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.stream.Stream;
 
-import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
+import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 
 /**
+ * TODO update
+ *
  * Constructs Concepts And Edges
  * This class turns Tinkerpop Vertex and Edge
  * into Grakn Concept and EdgeElement.
@@ -54,249 +56,205 @@ import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
  * An edge must include a label which is a Schema.EdgeLabel.
  */
 public final class ElementFactory {
-    private final TransactionOLTP tx;
+    private final JanusGraphTransaction janusTx;
 
-    public ElementFactory(TransactionOLTP tx) {
-        this.tx = tx;
+    @Nullable
+    private GraphTraversalSource graphTraversalSource = null;
+
+    public ElementFactory(JanusGraphTransaction janusTransaction) {
+        this.janusTx = janusTransaction;
     }
 
-    private <X extends Concept, E extends AbstractElement> X getOrBuildConcept(E element, ConceptId conceptId, Function<E, X> conceptBuilder) {
-        if (!tx.cache().isConceptCached(conceptId)) {
-            X newConcept = conceptBuilder.apply(element);
-            tx.cache().cacheConcept(newConcept);
+    VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
+        Stream<VertexElement> verticesWithProperty = getVerticesWithProperty(key, value);
+        Optional<VertexElement> vertexElement = verticesWithProperty.findFirst();
+        return vertexElement.orElse(null);
+    }
+
+    Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
+        Stream<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value).toStream();
+        return vertices.map(vertex -> buildVertexElement(vertex));
+    }
+
+    public Vertex getVertexWithId(String id) {
+        Iterator<Vertex> vertices = getTinkerTraversal().V(id);
+        if (vertices.hasNext()) {
+            return vertices.next();
         }
-        return tx.cache().getCachedConcept(conceptId);
+        return null;
     }
 
-    private <X extends Concept> X getOrBuildConcept(VertexElement element, Function<VertexElement, X> conceptBuilder) {
-        ConceptId conceptId = Schema.conceptId(element.element());
-        return getOrBuildConcept(element, conceptId, conceptBuilder);
-    }
-
-    private <X extends Concept> X getOrBuildConcept(EdgeElement element, Function<EdgeElement, X> conceptBuilder) {
-        ConceptId conceptId = Schema.conceptId(element.element());
-        return getOrBuildConcept(element, conceptId, conceptBuilder);
-    }
-
-    // ---------------------------------------- Building Attribute Types  -----------------------------------------------
-    public <V> AttributeTypeImpl<V> buildAttributeType(VertexElement vertex, AttributeType<V> type, AttributeType.DataType<V> dataType) {
-        return getOrBuildConcept(vertex, (v) -> AttributeTypeImpl.create(v, type, dataType));
-    }
-
-    // ------------------------------------------ Building Attribute
-    <V> AttributeImpl<V> buildAttribute(VertexElement vertex, AttributeType<V> type, V persistedValue) {
-        return getOrBuildConcept(vertex, (v) -> AttributeImpl.create(v, type, persistedValue));
-    }
-
-    // ---------------------------------------- Building Relation Types  -----------------------------------------------
-    public RelationTypeImpl buildRelationType(VertexElement vertex, RelationType type) {
-        return getOrBuildConcept(vertex, (v) -> RelationTypeImpl.create(v, type));
-    }
-
-    // -------------------------------------------- Building Relations
-
-
-    /**
-     * Used to build a RelationEdge by ThingImpl when it needs to connect itself with an attribute (implicit relation)
-     */
-    RelationImpl buildRelation(EdgeElement edge, RelationType type, Role owner, Role value) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.create(type, owner, value, edge)));
-    }
-
-    /**
-     * Used by RelationEdge to build a RelationImpl object out of a provided Edge
-     */
-    RelationImpl buildRelation(EdgeElement edge) {
-        return getOrBuildConcept(edge, (e) -> RelationImpl.create(RelationEdge.get(edge)));
-    }
-
-    /**
-     * Used by RelationEdge when it needs to reify a relation.
-     * Used by this factory when need to build an explicit relation
-     *
-     * @return ReifiedRelation
-     */
-    RelationReified buildRelationReified(VertexElement vertex, RelationType type) {
-        return RelationReified.create(vertex, type);
-    }
-
-    /**
-     * Used by RelationTypeImpl to create a new instance of RelationImpl
-     * first build a ReifiedRelation and then inject it to RelationImpl
-     *
-     * @return
-     */
-    RelationImpl buildRelation(VertexElement vertex, RelationType type) {
-        return getOrBuildConcept(vertex, (v) -> RelationImpl.create(buildRelationReified(v, type)));
-    }
-
-    // ----------------------------------------- Building Entity Types  ------------------------------------------------
-    public EntityTypeImpl buildEntityType(VertexElement vertex, EntityType type) {
-        return getOrBuildConcept(vertex, (v) -> EntityTypeImpl.create(v, type));
-    }
-
-    // ------------------------------------------- Building Entities
-    EntityImpl buildEntity(VertexElement vertex, EntityType type) {
-        return getOrBuildConcept(vertex, (v) -> EntityImpl.create(v, type));
-    }
-
-    // ----------------------------------------- Building Rules --------------------------------------------------
-    public RuleImpl buildRule(VertexElement vertex, Rule type, Pattern when, Pattern then) {
-        return getOrBuildConcept(vertex, (v) -> RuleImpl.create(v, type, when, then));
-    }
-
-    // ------------------------------------------ Building Roles  Types ------------------------------------------------
-    public RoleImpl buildRole(VertexElement vertex, Role type) {
-        return getOrBuildConcept(vertex, (v) -> RoleImpl.create(v, type));
-    }
-
-    /**
-     * Constructors are called directly because this is only called when reading a known vertex or concept.
-     * Thus tracking the concept can be skipped.
-     *
-     * @param vertex A vertex of an unknown type
-     * @return A concept built to the correct type
-     */
-    public <X extends Concept> X buildConcept(Vertex vertex) {
-        return buildConcept(buildVertexElement(vertex));
-    }
-
-    public <X extends Concept> X buildConcept(VertexElement vertexElement) {
-        ConceptId conceptId = Schema.conceptId(vertexElement.element());
-        Concept cachedConcept = tx.cache().getCachedConcept(conceptId);
-
-        if (cachedConcept == null) {
-            Schema.BaseType type;
-            try {
-                type = getBaseType(vertexElement);
-            } catch (IllegalStateException e) {
-                throw TemporaryWriteException.indexOverlap(vertexElement.element(), e);
-            }
-            Concept concept;
-            switch (type) {
-                case RELATION:
-                    concept = RelationImpl.create(RelationReified.get(vertexElement));
-                    break;
-                case TYPE:
-                    concept = new TypeImpl(vertexElement);
-                    break;
-                case ROLE:
-                    concept = RoleImpl.get(vertexElement);
-                    break;
-                case RELATION_TYPE:
-                    concept = RelationTypeImpl.get(vertexElement);
-                    break;
-                case ENTITY:
-                    concept = EntityImpl.get(vertexElement);
-                    break;
-                case ENTITY_TYPE:
-                    concept = EntityTypeImpl.get(vertexElement);
-                    break;
-                case ATTRIBUTE_TYPE:
-                    concept = AttributeTypeImpl.get(vertexElement);
-                    break;
-                case ATTRIBUTE:
-                    concept = AttributeImpl.get(vertexElement);
-                    break;
-                case RULE:
-                    concept = RuleImpl.get(vertexElement);
-                    break;
-                default:
-                    throw TransactionException.unknownConcept(type.name());
-            }
-            tx.cache().cacheConcept(concept);
-            return (X) concept;
+    EdgeElement getEdgeElementWithId(String id) {
+        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(id);
+        if (traversal.hasNext()) {
+            return buildEdgeElement(traversal.next());
         }
-        return (X) cachedConcept;
+        return null;
     }
 
-    /**
-     * Constructors are called directly because this is only called when reading a known Edge or Concept.
-     * Thus tracking the concept can be skipped.
-     *
-     * @param edge A Edge of an unknown type
-     * @return A concept built to the correct type
-     */
-    public <X extends Concept> X buildConcept(Edge edge) {
-        return buildConcept(buildEdgeElement(edge));
-    }
-
-    public <X extends Concept> X buildConcept(EdgeElement edgeElement) {
-        Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
-
-        ConceptId conceptId = Schema.conceptId(edgeElement.element());
-        if (!tx.cache().isConceptCached(conceptId)) {
-            Concept concept;
-            switch (label) {
-                case ATTRIBUTE:
-                    concept = RelationImpl.create(RelationEdge.get(edgeElement));
-                    break;
-                default:
-                    throw TransactionException.unknownConcept(label.name());
-            }
-            tx.cache().cacheConcept(concept);
-        }
-        return tx.cache().getCachedConcept(conceptId);
-    }
-
-    /**
-     * This is a helper method to get the base type of a vertex.
-     * It first tried to get the base type via the label.
-     * If this is not possible it then tries to get the base type via the Shard Edge.
-     *
-     * @param vertex The vertex to build a concept from
-     * @return The base type of the vertex, if it is a valid concept.
-     */
-    private Schema.BaseType getBaseType(VertexElement vertex) {
-        try {
-            return Schema.BaseType.valueOf(vertex.label());
-        } catch (IllegalArgumentException e) {
-            //Base type appears to be invalid. Let's try getting the type via the shard edge
-            Optional<VertexElement> type = vertex.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD).
-                    map(EdgeElement::target).findAny();
-
-            if (type.isPresent()) {
-                String label = type.get().label();
-                if (label.equals(Schema.BaseType.ENTITY_TYPE.name())) return Schema.BaseType.ENTITY;
-                if (label.equals(RELATION_TYPE.name())) return Schema.BaseType.RELATION;
-                if (label.equals(Schema.BaseType.ATTRIBUTE_TYPE.name())) return Schema.BaseType.ATTRIBUTE;
-            }
-        }
-        throw new IllegalStateException("Could not determine the base type of vertex [" + vertex + "]");
-    }
 
     // ---------------------------------------- Non Concept Construction -----------------------------------------------
     public EdgeElement buildEdgeElement(Edge edge) {
-        return new EdgeElement(tx, edge);
+        return new EdgeElement(this, edge);
     }
 
 
-    Shard buildShard(ConceptImpl shardOwner, VertexElement vertexElement) {
-        return new Shard(shardOwner, vertexElement);
+    public Shard createShard(ConceptImpl shardOwner, VertexElement vertexElement) {
+        return new Shard(shardOwner.vertex(), vertexElement);
     }
 
-    Shard buildShard(VertexElement vertexElement) {
+    public Shard getShard(Vertex vertex) {
+        return new Shard(buildVertexElement(vertex));
+    }
+
+    public Shard getShard(VertexElement vertexElement) {
         return new Shard(vertexElement);
     }
 
-    Shard buildShard(Vertex vertex) {
-        return new Shard(buildVertexElement(vertex));
+    /**
+     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
+     *
+     * @param baseType baseType of newly created Vertex
+     * @return VertexElement
+     */
+    public VertexElement addVertexElement(Schema.BaseType baseType) {
+        Vertex vertex = janusTx.addVertex(baseType.name());
+        return buildVertexElement(vertex);
+    }
+
+
+    /**
+     * This is only used when reifying a Relation, creates a new Vertex in the graph representing the reified relation.
+     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
+     *
+     * @param baseType  Concept BaseType which will become the VertexLabel
+     * @param conceptId ConceptId to be set on the vertex
+     * @return just created Vertex
+     */
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId, boolean isInferred) {
+        Vertex vertex = janusTx.addVertex(baseType.name());
+        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
+        VertexElement vertexElement = buildVertexElement(vertex);
+        if (isInferred) {
+            vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
+        }
+        return vertexElement;
     }
 
     /**
      * Builds a VertexElement from an already existing Vertex.
-     * *
      *
      * @param vertex A vertex which can possibly be turned into a VertexElement
      * @return A VertexElement of
      * @throws TransactionException if vertex is not valid. A vertex is not valid if it is null or has been deleted
      */
     public VertexElement buildVertexElement(Vertex vertex) {
-        if (!tx.isValidElement(vertex)) {
+        if (!ElementUtils.isValidElement(vertex)) {
             Objects.requireNonNull(vertex);
             throw TransactionException.invalidElement(vertex);
         }
-        return new VertexElement(tx, vertex);
+        return new VertexElement(this, vertex);
     }
 
+
+    private GraphTraversalSource getTinkerTraversal() {
+        if (graphTraversalSource == null) {
+            graphTraversalSource = janusTx.traversal().withStrategies(ReadOnlyStrategy.instance());
+        }
+        return graphTraversalSource;
+    }
+
+    public Stream<EdgeElement> rolePlayerEdges(String vertexId, Type type, Set<Integer> roleTypesIds) {
+        return getTinkerTraversal()
+                .V(vertexId)
+                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type.labelId().getValue())
+                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
+                .toStream()
+                .filter(edge -> ElementUtils.isValidElement(edge))// filter out invalid or deleted edges that are cached
+                .map(edge -> buildEdgeElement(edge));
+    }
+
+    public boolean rolePlayerEdgeExists(String startVertexId, Type relationType, Role role, String endVertexId) {
+        //Checking if the edge exists
+        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
+                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), relationType.labelId().getValue())
+                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue())
+                .as("edge")
+                .inV()
+                .hasId(endVertexId)
+                .select("edge");
+
+        return traversal.hasNext();
+    }
+
+    public Stream<VertexElement> shortcutNeighbors(String startConceptId, Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
+                                                 boolean ownerToValueOrdering) {
+        //NB: need extra check cause it seems valid types can still produce invalid ids
+        GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty()) ?
+                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        as("edge").
+                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? ownerRoleIds : valueRoleIds)).
+                        outV().
+                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? valueRoleIds : ownerRoleIds)).
+                        where(P.neq("edge")).
+                        inV()
+                :
+                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        as("edge").
+                        outV().
+                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
+                        where(P.neq("edge")).
+                        inV();
+
+        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
+
+        //noinspection unchecked
+        return getTinkerTraversal()
+                .V(startConceptId)
+                .union(shortcutTraversal, attributeEdgeTraversal)
+                .toStream()
+                .map(vertex -> buildVertexElement(vertex));
+    }
+
+    public Stream<VertexElement> inFromSourceId(String startId, Schema.EdgeLabel edgeLabel) {
+        return getTinkerTraversal().V(startId).in(edgeLabel.getLabel()).toStream().map(vertex -> buildVertexElement(vertex));
+    }
+
+    public Stream<VertexElement> inFromSourceIdWithProperty(String startId, Schema.EdgeLabel edgeLabel,
+                                                            Schema.EdgeProperty edgeProperty, Set<Integer> roleTypesIds) {
+        return getTinkerTraversal().V(startId)
+                .inE(edgeLabel.getLabel())
+                .has(edgeProperty.name(), org.apache.tinkerpop.gremlin.process.traversal.P.within(roleTypesIds))
+                .outV()
+                .toStream()
+                .map(vertex -> buildVertexElement(vertex));
+    }
+
+    public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(String typeVertexId, LabelId edgeInstanceLabelId) {
+        return getTinkerTraversal().V()
+                .hasId(typeVertexId)
+                .in(Schema.EdgeLabel.SHARD.getLabel())
+                .in(Schema.EdgeLabel.ISA.getLabel())
+                .outE(Schema.EdgeLabel.ATTRIBUTE.getLabel())
+                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), edgeInstanceLabelId.getValue())
+                .toStream()
+                .map(edge -> buildEdgeElement(edge));
+    }
+
+    public EdgeElement edgeBetweenVertices(String startVertexId, String endVertexId, Schema.EdgeLabel edgeLabel) {
+        // TODO try not to access the tinker traversal directly
+        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
+                .outE(edgeLabel.getLabel()).as("edge").otherV()
+                .hasId(endVertexId)
+                .select("edge");
+
+        if (traversal.hasNext()) {
+            return buildEdgeElement(traversal.next());
+        } else {
+            return null;
+        }
+    }
 }

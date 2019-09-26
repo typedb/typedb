@@ -19,7 +19,7 @@
 package grakn.core.server.kb.structure;
 
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.kb.concept.ElementFactory;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 
 /**
@@ -28,8 +28,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
  */
 public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
 
-    public EdgeElement(TransactionOLTP tx, Edge e) {
-        super(tx, e);
+    public EdgeElement(ElementFactory elementFactory, Edge e) {
+        super(elementFactory, e);
     }
 
     /**
@@ -55,10 +55,14 @@ public class EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
     }
 
     public VertexElement source() {
-        return tx().factory().buildVertexElement(element().outVertex());
+        return elementFactory.buildVertexElement(element().outVertex());
     }
 
     public VertexElement target() {
-        return tx().factory().buildVertexElement(element().inVertex());
+        return elementFactory.buildVertexElement(element().inVertex());
+    }
+
+    public VertexElement asReifiedVertexElement(boolean isInferred) {
+        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, Schema.conceptId(element()), isInferred);
     }
 }

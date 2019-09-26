@@ -18,18 +18,15 @@
 
 package grakn.core.server.kb.concept;
 
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 
-import grakn.core.server.session.cache.TransactionCache;
 import javax.annotation.Nullable;
 import java.util.Objects;
-import java.util.function.BiFunction;
-import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,21 +42,8 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    private AttributeTypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private AttributeTypeImpl(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
-        super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, dataType(), DataType::name);
-    }
-
-    public static <D> AttributeTypeImpl<D> get(VertexElement vertexElement) {
-        return new AttributeTypeImpl<>(vertexElement);
-    }
-
-    public static <D> AttributeTypeImpl<D> create(VertexElement vertexElement, AttributeType<D> type, DataType<D> dataType) {
-        return new AttributeTypeImpl<>(vertexElement, type, dataType);
+    AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public static AttributeTypeImpl from(AttributeType attributeType) {
@@ -119,29 +103,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return putAttribute(value, true);
     }
 
+    /**
+     * Method through which all new instance creations of attributes pass through
+     */
     private Attribute<D> putAttribute(D value, boolean isInferred) {
         Objects.requireNonNull(value);
 
-        BiFunction<VertexElement, AttributeType<D>, Attribute<D>> instanceBuilder = (vertex, type) -> {
-            if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
-            return vertex().tx().factory().buildAttribute(vertex, type, value);
-        };
+        if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
 
-        return putInstance(Schema.BaseType.ATTRIBUTE, () -> attributeWithLock(value), instanceBuilder, isInferred);
-    }
-
-    /**
-     * Utility method used to create or find an instance of this type
-     *
-     * @param instanceBaseType The base type of the instances of this type
-     * @param finder           The method to find the instrance if it already exists
-     * @param producer         The factory method to produce the instance if it doesn't exist
-     * @return A new or already existing instance
-     */
-    private Attribute<D> putInstance(Schema.BaseType instanceBaseType, Supplier<Attribute<D>> finder, BiFunction<VertexElement, AttributeType<D>, Attribute<D>> producer, boolean isInferred) {
-        Attribute<D> instance = finder.get();
+        Attribute<D> instance = getAttributeWithLock(value);
         if (instance == null) {
-            instance = addInstance(instanceBaseType, producer, isInferred);
+            // create a brand new vertex and concept
+            instance = conceptManager.createAttribute( this, value, isInferred);
         } else {
             if (isInferred && !instance.isInferred()) {
                 throw TransactionException.nonInferredThingExists(instance);
@@ -149,6 +122,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         }
         return instance;
     }
+
 
     /**
      * Checks if all the regex's of the types of this resource conforms to the value provided.
@@ -170,31 +144,18 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
     @Nullable
     public Attribute<D> attribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-
-        TransactionCache txCache = vertex().tx().cache();
-        Attribute concept = txCache.getAttributeCache().get(index);
+        Attribute<D> concept = conceptManager.getCachedAttribute(index);
         if (concept != null) return concept;
-
-        return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
+        return conceptManager.getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     /**
      * This is only used when checking if attribute exists before trying to create a new one.
      * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
-    private Attribute<D> attributeWithLock(D value) {
+    private Attribute<D> getAttributeWithLock(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-
-        TransactionCache txCache = vertex().tx().cache();
-        Attribute concept = txCache.getAttributeCache().get(index);
-        if (concept != null) return concept;
-
-        vertex().tx().session().graphLock().readLock().lock();
-        try {
-            return vertex().tx().getConcept(Schema.VertexProperty.INDEX, index);
-        } finally {
-            vertex().tx().session().graphLock().readLock().unlock();
-        }
+        return conceptManager.getAttributeWithLock(index);
     }
 
     /**
@@ -223,4 +184,8 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return vertex().property(Schema.VertexProperty.REGEX);
     }
 
+    @Override
+    void trackRolePlayers() {
+        conceptObserver.trackAttributeInstancesRolesPlayed(this);
+    }
 }

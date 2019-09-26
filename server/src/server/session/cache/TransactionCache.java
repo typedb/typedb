@@ -51,7 +51,7 @@ import java.util.stream.Stream;
  */
 public class TransactionCache {
     //Cache which is shared across multiple transactions
-    private final KeyspaceCache keyspaceCache;
+    private final KeyspaceSchemaCache keyspaceSchemaCache;
 
     //Caches any concept which has been touched before
     private final Map<ConceptId, Concept> conceptCache = new HashMap<>();
@@ -72,9 +72,6 @@ public class TransactionCache {
     private final Set<Thing> inferredConcepts = new HashSet<>();
     private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
 
-    //We Track the number of concept connections which have been made which may result in a new shard
-    private final Map<ConceptId, Long> shardingCount = new HashMap<>();
-
     //New attributes are tracked so that we can merge any duplicate attributes at commit time.
     // The label, index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
@@ -82,13 +79,13 @@ public class TransactionCache {
     // after commit
     private Set<String> removedAttributes = new HashSet<>();
 
-    public TransactionCache(KeyspaceCache keyspaceCache) {
-        this.keyspaceCache = keyspaceCache;
+    public TransactionCache(KeyspaceSchemaCache keyspaceSchemaCache) {
+        this.keyspaceSchemaCache = keyspaceSchemaCache;
     }
 
-    public void flushToKeyspaceCache() {
+    public void flushSchemaLabelIdsToCache() {
         // This method is used to actually flush to the keyspace cache
-        keyspaceCache.readTxCache(this);
+        keyspaceSchemaCache.readTxCache(this);
     }
 
     /**
@@ -97,7 +94,7 @@ public class TransactionCache {
      * do not accidentally break the central schema cache.
      */
     public void updateSchemaCacheFromKeyspaceCache() {
-        keyspaceCache.populateSchemaTxCache(this);
+        keyspaceSchemaCache.populateSchemaTxCache(this);
     }
 
     /**
@@ -167,7 +164,7 @@ public class TransactionCache {
         }
     }
 
-    public void remove(Casting casting) {
+    public void deleteCasting(Casting casting) {
         modifiedCastings.remove(casting);
     }
 
@@ -288,21 +285,6 @@ public class TransactionCache {
     public LabelId convertLabelToId(Label label) {
         return labelCache.get(label);
     }
-
-    public void addedInstance(ConceptId conceptId) {
-        shardingCount.compute(conceptId, (key, value) -> value == null ? 1 : value + 1);
-        cleanupShardingCount(conceptId);
-    }
-
-    public void removedInstance(ConceptId conceptId) {
-        shardingCount.compute(conceptId, (key, value) -> value == null ? -1 : value - 1);
-        cleanupShardingCount(conceptId);
-    }
-
-    private void cleanupShardingCount(ConceptId conceptId) {
-        if (shardingCount.get(conceptId) == 0) shardingCount.remove(conceptId);
-    }
-
 
     public void addNewAttribute(Label label, String index, ConceptId conceptId) {
         newAttributes.put(new Pair<>(label, index), conceptId);

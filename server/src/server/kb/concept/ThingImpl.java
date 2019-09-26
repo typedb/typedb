@@ -32,26 +32,21 @@ import grakn.core.concept.type.Role;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -70,33 +65,18 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     private Boolean isInferred = null;
 
     private final Cache<V> cachedType = new Cache<>(() -> {
-        Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA).
-                map(EdgeElement::target).
-                flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD)).
-                map(EdgeElement::target).
-                map(concept -> vertex().tx().factory().<V>buildConcept(concept)).
-                findAny();
+        Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA)
+                .map(EdgeElement::target)
+                .flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD))
+                .map(EdgeElement::target)
+                .map(concept -> conceptManager.<V>buildConcept(concept))
+                .findAny();
 
         return type.orElseThrow(() -> TransactionException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    ThingImpl(VertexElement vertexElement, V type) {
-        this(vertexElement);
-        type((TypeImpl) type);
-        track();
-    }
-
-    /**
-     * This Thing gets tracked for validation only if it has keys which need to be checked.
-     */
-    private void track() {
-        if (type().keys().findAny().isPresent()) {
-            vertex().tx().cache().trackForValidation(this);
-        }
+    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public boolean isInferred() {
@@ -120,16 +100,18 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
             return relation;
         }).collect(toSet());
 
-        if (!isDeleted()) vertex().tx().statisticsDelta().decrement(type().label());
+        if (!isDeleted())  {
+            // must happen before deleteNode() so we can access properties on the vertex
+            conceptObserver.thingDeleted(this);
+        }
+
         this.edgeRelations().forEach(Concept::delete);
 
-        vertex().tx().cache().removedInstance(type().id());
-        vertex().tx().queryCache().ackDeletion(type());
         deleteNode();
 
         relations.forEach(relation -> {
             //NB: this only deletes reified implicit relations
-            if (relation.type().isImplicit()) {//For now implicit relations die
+            if (relation.type().isImplicit()) {
                 relation.delete();
             } else {
                 RelationImpl rel = (RelationImpl) relation;
@@ -191,15 +173,15 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
      *
      * @return All the Casting which this instance is cast into the role
      */
-    Stream<Casting> castingsInstance() {
+    public Stream<Casting> castingsInstance() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ROLE_PLAYER)
-                .map(edge -> Casting.withThing(edge, this));
+                .map(edge -> Casting.withThing(edge, this, conceptManager));
     }
 
     private Set<Integer> implicitLabelsToIds(Set<Label> labels, Set<Schema.ImplicitType> implicitTypes) {
         return labels.stream()
                 .flatMap(label -> implicitTypes.stream().map(it -> it.getLabel(label)))
-                .map(label -> vertex().tx().convertToId(label))
+                .map(label -> conceptManager.convertToId(label))
                 .filter(id -> !id.equals(LabelId.invalid()))
                 .map(LabelId::getValue)
                 .collect(toSet());
@@ -207,7 +189,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     <X extends Thing> Stream<X> getShortcutNeighbours(boolean ownerToValueOrdering, AttributeType... attributeTypes) {
         Set<AttributeType> completeAttributeTypes = new HashSet<>(Arrays.asList(attributeTypes));
-        if (completeAttributeTypes.isEmpty()) completeAttributeTypes.add(vertex().tx().getMetaAttributeType());
+        if (completeAttributeTypes.isEmpty()) {
+            completeAttributeTypes.add(conceptManager.getMetaAttributeType());
+        }
 
         Set<Label> attributeHierarchyLabels = completeAttributeTypes.stream()
                 .flatMap(t -> (Stream<AttributeType>) t.subs())
@@ -227,31 +211,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                         Schema.ImplicitType.KEY_VALUE
                 ));
 
-        //NB: need extra check cause it seems valid types can still produce invalid ids
-        GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty()) ?
-                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        as("edge").
-                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? ownerRoleIds : valueRoleIds)).
-                        outV().
-                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        has(ROLE_LABEL_ID.name(), P.within(ownerToValueOrdering ? valueRoleIds : ownerRoleIds)).
-                        where(P.neq("edge")).
-                        inV()
-                :
-                __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        as("edge").
-                        outV().
-                        outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                        where(P.neq("edge")).
-                        inV();
+        Stream<VertexElement> shortcutNeighbors = vertex().getShortcutNeighbors(ownerRoleIds, valueRoleIds, ownerToValueOrdering);
+        return shortcutNeighbors.map(vertexElement -> conceptManager.buildConcept(vertexElement));
 
-        GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
-
-        //noinspection unchecked
-        return vertex().tx().getTinkerTraversal().V().
-                hasId(elementId()).
-                union(shortcutTraversal, attributeEdgeTraversal).toStream().
-                map(vertex -> vertex().tx().buildConcept(vertex));
     }
 
     /**
@@ -264,36 +226,27 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relation> reifiedRelations(Role... roles) {
-        GraphTraversal<Vertex, Vertex> traversal = vertex().tx().getTinkerTraversal().V().
-                hasId(elementId());
-
-        if (roles.length == 0) {
-            traversal.in(Schema.EdgeLabel.ROLE_PLAYER.getLabel());
-        } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
-            traversal.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                    has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds)).outV();
-        }
-
-        return traversal.toStream().map(vertex -> vertex().tx().buildConcept(vertex));
+        Stream<VertexElement> reifiedRelationVertices = vertex().reifiedRelations(roles);
+        return reifiedRelationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
     }
 
     private Stream<Relation> edgeRelations(Role... roles) {
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
+        // TODO move this into the AbstractElement and ElementFactory as well
         Stream<EdgeElement> stream = vertex().getEdgesOfType(Direction.BOTH, Schema.EdgeLabel.ATTRIBUTE);
 
         if (!roleSet.isEmpty()) {
             stream = stream.filter(edge -> {
                 Set<Role> edgeRoles = new HashSet<>();
-                edgeRoles.add(vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
+                edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
                 if (this.isAttribute()){
-                    edgeRoles.add(vertex().tx().getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
+                    edgeRoles.add(conceptManager.getSchemaConcept(LabelId.of(edge.property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
                 }
                 return !Sets.intersection(roleSet, edgeRoles).isEmpty();
             });
         }
 
-        return stream.map(edge -> vertex().tx().factory().buildRelation(edge));
+        return stream.map(edge -> conceptManager.buildRelation(edge));
     }
 
     @Override
@@ -329,9 +282,9 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         }
 
         Label label = attribute.type().label();
-        RelationType hasAttribute = vertex().tx().getSchemaConcept(has.getLabel(label));
-        Role hasAttributeOwner = vertex().tx().getSchemaConcept(hasOwner.getLabel(label));
-        Role hasAttributeValue = vertex().tx().getSchemaConcept(hasValue.getLabel(label));
+        RelationType hasAttribute = conceptManager.getSchemaConcept(has.getLabel(label));
+        Role hasAttributeOwner = conceptManager.getSchemaConcept(hasOwner.getLabel(label));
+        Role hasAttributeValue = conceptManager.getSchemaConcept(hasValue.getLabel(label));
 
         if (hasAttribute == null || hasAttributeOwner == null || hasAttributeValue == null || type().playing().noneMatch(play -> play.equals(hasAttributeOwner))) {
             throw TransactionException.hasNotAllowed(this, attribute);
@@ -340,20 +293,16 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         EdgeElement attributeEdge = addEdge(AttributeImpl.from(attribute), Schema.EdgeLabel.ATTRIBUTE);
         if (isInferred) attributeEdge.property(Schema.EdgeProperty.IS_INFERRED, true);
 
-        vertex().tx().statisticsDelta().increment(hasAttribute.label());
-
-        RelationImpl attributeRelation = vertex().tx().factory().buildRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue);
-        if (isInferred) vertex().tx().cache().inferredInstance(attributeRelation);
-        return attributeRelation;
+        return conceptManager.createHasAttributeRelation(attributeEdge, hasAttribute, hasAttributeOwner, hasAttributeValue, isInferred);
     }
 
     @Override
     public T unhas(Attribute attribute) {
-        Role roleHasOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
-        Role roleKeyOwner = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
+        Role roleHasOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_OWNER.getLabel(attribute.type().label()));
+        Role roleKeyOwner = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_OWNER.getLabel(attribute.type().label()));
 
-        Role roleHasValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
-        Role roleKeyValue = vertex().tx().getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
+        Role roleHasValue = conceptManager.getSchemaConcept(Schema.ImplicitType.HAS_VALUE.getLabel(attribute.type().label()));
+        Role roleKeyValue = conceptManager.getSchemaConcept(Schema.ImplicitType.KEY_VALUE.getLabel(attribute.type().label()));
 
         Stream<Relation> relations = relations(filterNulls(roleHasOwner, roleKeyOwner));
         relations.filter(relation -> {
@@ -381,11 +330,11 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     /**
      * @param type The type of this concept
      */
-    private void type(TypeImpl type) {
+    void type(TypeImpl type) {
         if (type != null) {
             //noinspection unchecked
             cachedType.set((V) type); //We cache the type early because it turns out we use it EVERY time. So this prevents many db reads
-            type.currentShard().link(this);
+            type.currentShard().link(vertex());
             setInternalType(type);
         }
     }

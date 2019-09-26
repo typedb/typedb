@@ -18,6 +18,7 @@
 
 package grakn.core.server.kb.concept;
 
+import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.thing.Entity;
@@ -46,6 +47,7 @@ import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
 import static grakn.core.common.exception.ErrorMessage.RESERVED_WORD;
+import static grakn.core.common.exception.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -504,15 +506,16 @@ public class EntityTypeIT {
         Entity e1 = entityType.create();
 
         assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
-        assertEquals(e1, shard.links().findAny().get());
+        assertEquals(e1, tx.getConcept(Schema.conceptId(shard.links().findAny().get().element())));
     }
 
     @Test
     public void whenAddingTypeUsingReservedWord_ThrowReadableError(){
+        Concept thing = tx.getMetaConcept();
         String reservedWord = Graql.Token.Type.THING.toString();
 
         expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(RESERVED_WORD.getMessage(reservedWord));
+        expectedException.expectMessage(UNIQUE_PROPERTY_TAKEN.getMessage(Schema.VertexProperty.SCHEMA_LABEL, "thing", thing));
 
         tx.putEntityType(reservedWord);
     }

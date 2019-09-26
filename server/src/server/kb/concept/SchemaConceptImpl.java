@@ -24,9 +24,10 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;
@@ -51,13 +52,8 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final Cache<Set<T>> cachedDirectSubTypes = new Cache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final Cache<Boolean> cachedIsImplicit = new Cache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    SchemaConceptImpl(VertexElement vertexElement, T superType) {
-        this(vertexElement);
-        if (sup() == null) sup(superType);
+    SchemaConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public static <X extends SchemaConcept> SchemaConceptImpl<X> from(SchemaConcept schemaConcept) {
@@ -66,15 +62,16 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     }
 
     public T label(Label label) {
+        // TODO combine with labelAdded if possible
+        conceptObserver.labelRemoved(this);
         try {
-            vertex().tx().cache().remove(this);
             vertex().propertyUnique(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
             cachedLabel.set(label);
-            vertex().tx().cache().cacheConcept(this);
             return getThis();
         } catch (PropertyNotUniqueException exception) {
-            vertex().tx().cache().cacheConcept(this);
             throw TransactionException.labelTaken(label);
+        } finally {
+            conceptObserver.labelAdded(this);
         }
     }
 
@@ -134,13 +131,13 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
             //Force load of linked concepts whose caches need to be updated
             T superConcept = cachedSuperType.get();
 
+            // delete schema concept from caches before deleting the vertex
+            conceptObserver.schemaConceptDeleted(this);
+
             deleteNode();
 
             //Update neighbouring caches
             SchemaConceptImpl.from(superConcept).deleteCachedDirectedSubType(getThis());
-
-            //clear rule cache
-            vertex().tx().ruleCache().clear();
         } else {
             throw TransactionException.cannotBeDeleted(this);
         }

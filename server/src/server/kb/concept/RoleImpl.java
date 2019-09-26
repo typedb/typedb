@@ -21,15 +21,17 @@ package grakn.core.server.kb.concept;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * An SchemaConcept which defines a Role which can be played in a RelationType.
@@ -42,22 +44,8 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final Cache<Set<Type>> cachedDirectPlayedByTypes = new Cache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private final Cache<Set<RelationType>> cachedRelationTypes = new Cache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RoleImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private RoleImpl(VertexElement vertexElement, Role type) {
-        super(vertexElement, type);
-    }
-
-    public static RoleImpl get(VertexElement vertexElement) {
-        return new RoleImpl(vertexElement);
-    }
-
-    public static RoleImpl create(VertexElement vertexElement, Role type) {
-        RoleImpl role = new RoleImpl(vertexElement, type);
-        vertexElement.tx().cache().trackForValidation(role);
-        return role;
+    RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     @Override

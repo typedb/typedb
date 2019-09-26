@@ -23,6 +23,7 @@ import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -34,24 +35,8 @@ import java.util.stream.Stream;
  * An ontological element used to define different types of Rule.
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
-    private RuleImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private RuleImpl(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
-        super(vertexElement, type);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, when(), Pattern::toString);
-        vertex().propertyImmutable(Schema.VertexProperty.RULE_THEN, then, then(), Pattern::toString);
-    }
-
-    public static RuleImpl get(VertexElement vertexElement) {
-        return new RuleImpl(vertexElement);
-    }
-
-    public static RuleImpl create(VertexElement vertexElement, Rule type, Pattern when, Pattern then) {
-        RuleImpl rule = new RuleImpl(vertexElement, type, when, then);
-        vertexElement.tx().cache().trackForValidation(rule);
-        return rule;
+    RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public static <X extends Type, Y extends Thing> RuleImpl from(Rule type) {

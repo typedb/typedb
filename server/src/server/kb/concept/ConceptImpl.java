@@ -26,8 +26,8 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.stream.Stream;
 
@@ -38,18 +38,19 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
+    final ConceptManager conceptManager;
+    final ConceptObserver conceptObserver;
+
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final Cache<Shard> currentShard = new Cache<>(() -> {
-        Object currentShardId = vertex().property(Schema.VertexProperty.CURRENT_SHARD);
-        Vertex shardVertex = vertex().tx().getTinkerTraversal().V().hasId(currentShardId).next();
-        return vertex().tx().factory().buildShard(shardVertex);
-    });
+    private final Cache<Shard> currentShard = new Cache<>(() -> vertex().currentShard());
     private final Cache<Long> shardCount = new Cache<>(() -> shards().count());
     private final Cache<ConceptId> conceptId = new Cache<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(VertexElement vertexElement) {
+    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         this.vertexElement = vertexElement;
+        this.conceptManager = conceptManager;
+        this.conceptObserver = conceptObserver;
     }
 
     @Override
@@ -81,7 +82,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
      * Deletes the node and adds it neighbours for validation
      */
     public void deleteNode() {
-        vertex().tx().cache().remove(this);
+        // TODO write cache tests to ensure that this is safe to remove
+//        conceptObserver.transactionCache().remove(this);
         vertex().delete();
     }
 
@@ -95,13 +97,13 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).
                         flatMap(edge -> Stream.of(
-                                vertex().tx().factory().buildConcept(edge.source()),
-                                vertex().tx().factory().buildConcept(edge.target()))
+                                conceptManager.buildConcept(edge.source()),
+                                conceptManager.buildConcept(edge.target()))
                         );
             case IN:
-                return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.source()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> conceptManager.buildConcept(edge.source()));
             case OUT:
-                return vertex().getEdgesOfType(direction, label).map(edge -> vertex().tx().factory().buildConcept(edge.target()));
+                return vertex().getEdgesOfType(direction, label).map(edge -> conceptManager.buildConcept(edge.target()));
             default:
                 throw TransactionException.invalidDirection(direction);
         }
@@ -160,7 +162,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
     @Override
     public final String toString() {
-        if (vertex().tx().isValidElement(vertex().element())) {
+        if (ElementUtils.isValidElement(vertex().element())) {
             return innerToString();
         } else {
             // Vertex has been deleted so all we can do is print the id
@@ -179,8 +181,8 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
     //----------------------------------- Sharding Functionality
     public void createShard() {
-        VertexElement shardVertex = vertex().tx().addVertexElement(Schema.BaseType.SHARD);
-        Shard shard = vertex().tx().factory().buildShard(this, shardVertex);
+        Shard shard = vertex().shard(this);
+
         //store current shard id as a property of the type
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
@@ -192,9 +194,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     }
 
     public Stream<Shard> shards() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(EdgeElement::source).
-                map(edge -> vertex().tx().factory().buildShard(edge));
+        return vertex().shards();
     }
 
     public Long shardCount() {

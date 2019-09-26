@@ -18,7 +18,6 @@
 
 package grakn.core.server.kb.concept;
 
-import com.google.common.base.Preconditions;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
@@ -28,18 +27,18 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Type;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.Shard;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -60,7 +59,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {
-            Role role = vertex().tx().factory().buildConcept(edge.target());
+            Role role = conceptManager.buildConcept(edge.target());
             Boolean required = edge.propertyBoolean(Schema.EdgeProperty.REQUIRED);
             roleTypes.put(role, required);
         });
@@ -68,64 +67,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    TypeImpl(VertexElement vertexElement, T superType) {
-        super(vertexElement, superType);
-        //This constructor is ONLY used when CREATING new types. Which is why we shard here
-        createShard();
+    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public static <X extends Type, Y extends Thing> TypeImpl<X, Y> from(Type type) {
         //noinspection unchecked
         return (TypeImpl<X, Y>) type;
-    }
-
-    /**
-     * Utility method used to create an instance of this type
-     *
-     * @param instanceBaseType The base type of the instances of this type
-     * @param producer         The factory method to produce the instance
-     * @return A new instance
-     */
-    V addInstance(Schema.BaseType instanceBaseType, BiFunction<VertexElement, T, V> producer, boolean isInferred) {
-        preCheckForInstanceCreation();
-
-        if (isAbstract()) throw TransactionException.addingInstancesToAbstractType(this);
-
-        VertexElement instanceVertex = vertex().tx().addVertexElement(instanceBaseType);
-
-        vertex().tx().ruleCache().ackTypeInstance(this);
-        vertex().tx().statisticsDelta().increment(label());
-
-        if (!Schema.MetaSchema.isMetaLabel(label())) {
-            vertex().tx().cache().addedInstance(id());
-            if (isInferred){
-                instanceVertex.property(Schema.VertexProperty.IS_INFERRED, true);
-            } else {
-                //creation of inferred concepts is an integral part of reasoning
-                //hence we only acknowledge non-inferred insertions
-                vertex().tx().queryCache().ackInsertion();
-            }
-        }
-
-        V instance = producer.apply(instanceVertex, getThis());
-        Preconditions.checkNotNull(instance, "producer should never return null");
-        if(isInferred) vertex().tx().cache().inferredInstance(instance);
-
-        return instance;
-    }
-
-    /**
-     * Checks if an Thing is allowed to be created and linked to this Type.
-     * It can also fail when attempting to attach an Attribute to a meta type
-     */
-    private void preCheckForInstanceCreation() {
-        if (Schema.MetaSchema.isMetaLabel(label())) {
-            throw TransactionException.metaTypeImmutable(label());
-        }
     }
 
     /**
@@ -167,7 +115,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                 filter(roleLabel -> roleLabel.startsWith(prefix) && roleLabel.endsWith(suffix)).
                 map(roleLabel -> {
                     String attributeTypeLabel = roleLabel.replace(prefix, "").replace(suffix, "");
-                    return vertex().tx().getAttributeType(attributeTypeLabel);
+                    return conceptManager.getAttributeType(attributeTypeLabel);
                 });
     }
 
@@ -205,20 +153,16 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     }
 
     Stream<V> instancesDirect() {
-        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD).
-                map(EdgeElement::source).
-                map(source -> vertex().tx().factory().buildShard(source)).
-                flatMap(Shard::links);
+        return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
+                .map(EdgeElement::source)
+                .map(VertexElement::asShard)
+                .flatMap(Shard::links)
+                .map(shardTargetVertex -> conceptManager.buildConcept(shardTargetVertex));
     }
 
     @Override
     public Boolean isAbstract() {
         return cachedIsAbstract.get();
-    }
-
-    void trackRolePlayers() {
-        instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
-                rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer)));
     }
 
     public T play(Role role, boolean required) {
@@ -317,13 +261,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
         if (attributeTypes.anyMatch(a -> a.equals(attributeToRemove))) {
             Label relationLabel = relationSchema.getLabel(attributeToRemove.label());
-            RelationTypeImpl relation = vertex().tx().getSchemaConcept(relationLabel);
+            RelationTypeImpl relation = conceptManager.getSchemaConcept(relationLabel);
             if (attributeToRemove.instances().flatMap(Attribute::owners).anyMatch(thing -> thing.type().equals(this))) {
                 throw TransactionException.illegalUnhasWithInstance(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
             }
 
             Label ownerLabel = ownerSchema.getLabel(attributeToRemove.label());
-            Role ownerRole = vertex().tx().getSchemaConcept(ownerLabel);
+            Role ownerRole = conceptManager.getSchemaConcept(ownerLabel);
 
             if (ownerRole == null) {
                 throw TransactionException.illegalUnhasNotExist(this.label().getValue(), attributeToRemove.label().getValue(), isKey);
@@ -336,7 +280,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             // If there are no other Types that own this Attribute, remove the entire implicit relation
             if (!ownerRole.players().iterator().hasNext()) {
                 Label valueLabel = valueSchema.getLabel(attributeToRemove.label());
-                Role valueRole = vertex().tx().getSchemaConcept(valueLabel);
+                Role valueRole = conceptManager.getSchemaConcept(valueLabel);
                 attributeToRemove.unplay(valueRole);
 
                 relation.unrelate(ownerRole);
@@ -363,11 +307,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         property(Schema.VertexProperty.IS_ABSTRACT, isAbstract);
         cachedIsAbstract.set(isAbstract);
 
-        if (isAbstract) {
-            vertex().tx().cache().removeFromValidation(this);
-        } else {
-            vertex().tx().cache().trackForValidation(this);
-        }
+        conceptObserver.conceptSetAbstract(this, isAbstract);
 
         return getThis();
     }
@@ -382,10 +322,21 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
                                                   Role ownerRole, Role valueRole, RelationType relationType) {
         AttributeType attributeTypeSuper = attributeType.sup();
         Label superLabel = attributeTypeSuper.label();
-        Role ownerRoleSuper = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(superLabel));
-        Role valueRoleSuper = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(superLabel));
-        RelationType relationTypeSuper = vertex().tx().putRelationTypeImplicit(has.getLabel(superLabel)).
-                relates(ownerRoleSuper).relates(valueRoleSuper);
+        Role ownerRoleSuper = conceptManager.getRole(hasOwner.getLabel(superLabel).getValue());
+        // create implicit roles and relations if required
+        if (ownerRoleSuper == null) {
+            ownerRoleSuper = conceptManager.createImplicitRole(hasOwner.getLabel(superLabel));
+        }
+        Role valueRoleSuper = conceptManager.getRole(hasValue.getLabel(superLabel).getValue());
+        if (valueRoleSuper == null) {
+            valueRoleSuper = conceptManager.createImplicitRole(hasValue.getLabel(superLabel));
+        }
+
+        RelationType relationTypeSuper = conceptManager.getRelationType(has.getLabel(superLabel).getValue());
+        if (relationTypeSuper == null) {
+            relationTypeSuper = conceptManager.createImplicitRelationType(has.getLabel(superLabel));
+        }
+        relationTypeSuper.relates(ownerRoleSuper).relates(valueRoleSuper);
 
         //Create the super type edges from sub role/relations to super roles/relation
         ownerRole.sup(ownerRoleSuper);
@@ -397,7 +348,6 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             ((AttributeTypeImpl) attributeTypeSuper).plays(valueRoleSuper);
             updateAttributeRelationHierarchy(attributeTypeSuper, has, hasValue, hasOwner, ownerRoleSuper, valueRoleSuper, relationTypeSuper);
         }
-
     }
 
     /**
@@ -412,11 +362,21 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      */
     private T has(AttributeType attributeType, Schema.ImplicitType has, Schema.ImplicitType hasValue, Schema.ImplicitType hasOwner, boolean required) {
         Label attributeLabel = attributeType.label();
-        Role ownerRole = vertex().tx().putRoleTypeImplicit(hasOwner.getLabel(attributeLabel));
-        Role valueRole = vertex().tx().putRoleTypeImplicit(hasValue.getLabel(attributeLabel));
-        RelationType relationType = vertex().tx().putRelationTypeImplicit(has.getLabel(attributeLabel)).
-                relates(ownerRole).
-                relates(valueRole);
+        Role ownerRole = conceptManager.getRole(hasOwner.getLabel(attributeLabel).getValue());
+        if (ownerRole == null) {
+            ownerRole = conceptManager.createImplicitRole(hasOwner.getLabel(attributeLabel));
+        }
+        Role valueRole = conceptManager.getRole(hasValue.getLabel(attributeLabel).getValue());
+        if (valueRole == null) {
+            valueRole = conceptManager.createImplicitRole(hasValue.getLabel(attributeLabel));
+        }
+
+        RelationType relationType = conceptManager.getRelationType(has.getLabel(attributeLabel).getValue());
+        if (relationType == null) {
+            relationType = conceptManager.createImplicitRelationType(has.getLabel(attributeLabel));
+        }
+
+        relationType.relates(ownerRole).relates(valueRole);
 
         //this plays ownerRole;
         this.play(ownerRole, required);
@@ -466,4 +426,17 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
             throw TransactionException.duplicateHas(this, attributeType);
         }
     }
+
+    @Override
+    void trackRolePlayers() {
+        // this method needs to be implemented here for the single case when trying to instantiate the top level
+        // meta Thing concept.
+        // In theory this class should be abstract, and only use the overriding
+        // implementations of this method - EntityType, AttributeType, RelationType
+        // each of these subclasses contains an actual implementation of trackRolePlayers()
+
+        // this method is empty because it is only used when instanting top level Concept - which can never have role
+        // players or play roles.
+    }
+
 }

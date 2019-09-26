@@ -331,9 +331,12 @@ public class TransactionOLTPIT {
         assertThat(entityType.shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
-        assertThat(s1.links().collect(toSet()), containsInAnyOrder(s1_e1, s1_e2, s1_e3));
-        assertThat(s2.links().collect(toSet()), containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
-        assertThat(s3.links().collect(toSet()), containsInAnyOrder(s3_e1, s3_e2));
+        assertThat(s1.links().map(vertexElement -> tx.getConcept(Schema.conceptId(vertexElement.element()))).collect(toSet()),
+                containsInAnyOrder(s1_e1, s1_e2, s1_e3));
+        assertThat(s2.links().map(vertexElement -> tx.getConcept(Schema.conceptId(vertexElement.element()))).collect(toSet()),
+                containsInAnyOrder(s2_e1, s2_e2, s2_e3, s2_e4, s2_e5));
+        assertThat(s3.links().map(vertexElement -> tx.getConcept(Schema.conceptId(vertexElement.element()))).collect(toSet()),
+                containsInAnyOrder(s3_e1, s3_e2));
     }
 
     @Test

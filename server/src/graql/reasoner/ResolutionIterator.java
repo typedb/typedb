@@ -83,7 +83,9 @@ public class ResolutionIterator extends ReasonerQueryIterator {
     public ConceptMap next(){
         if (nextAnswer == null) throw new NoSuchElementException();
         answers.add(nextAnswer);
-        return nextAnswer;
+        ConceptMap toReturn = nextAnswer;
+        nextAnswer = null;
+        return toReturn;
     }
 
     private Boolean reiterate = null;
@@ -101,6 +103,7 @@ public class ResolutionIterator extends ReasonerQueryIterator {
      */
     @Override
     public boolean hasNext() {
+        if (nextAnswer != null) return true;
         nextAnswer = findNextAnswer();
         if (nextAnswer != null) return true;
 

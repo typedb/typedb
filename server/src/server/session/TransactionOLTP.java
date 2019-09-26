@@ -50,14 +50,14 @@ import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Validator;
 import grakn.core.server.kb.concept.ConceptImpl;
+import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ConceptVertex;
-import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
@@ -75,11 +75,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphElement;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,12 +87,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -107,12 +102,11 @@ public class TransactionOLTP implements Transaction {
 
     // Shared Variables
     private final SessionImpl session;
-    private final ElementFactory elementFactory;
+    private final ConceptManager conceptManager;
 
     // Caches
     private final MultilevelSemanticCache queryCache;
     private final RuleCache ruleCache;
-    private final KeyspaceCache keyspaceCache;
     private final TransactionCache transactionCache;
 
     // TransactionOLTP Specific
@@ -147,25 +141,25 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, KeyspaceCache keyspaceCache) {
+    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
+                    CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
         createdInCurrentThread.set(true);
 
         this.session = session;
 
         this.janusTransaction = janusTransaction;
 
-        this.elementFactory = new ElementFactory(this);
+        this.conceptManager = conceptManager;
 
-        this.queryCache = new MultilevelSemanticCache();
-        this.ruleCache = new RuleCache(this);
+        this.transactionCache = cacheProvider.getTransactionCache();
+        this.queryCache = cacheProvider.getQueryCache();
+        this.ruleCache = cacheProvider.getRuleCache();
+        // TODO remove temporal coupling
+        this.ruleCache.setTx(this);
 
-        this.keyspaceCache = keyspaceCache;
-        this.transactionCache = new TransactionCache(keyspaceCache);
-
-        this.uncomittedStatisticsDelta = new UncomittedStatisticsDelta();
+        this.uncomittedStatisticsDelta = statisticsDelta;
 
         typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
-
     }
 
     void open(Type type) {
@@ -178,7 +172,7 @@ public class TransactionOLTP implements Transaction {
     /**
      * This method handles 3 committing scenarios:
      * - use a lock to serialise all commits that are trying to create new attributes, so that we can merge real-time
-     * - use a lock to serialise commits that are removing attributes, so concurrent txs dont use outdate attribute IDs from attributesCache
+     * - use a lock to serialise commits that are removing attributes, so concurrent txs don't use outdated attribute IDs from attributesCache
      * - don't lock when added or removed attributes are not involved
      */
     private void commitInternal() {
@@ -299,35 +293,6 @@ public class TransactionOLTP implements Transaction {
         return propertiesAsObj.toArray();
     }
 
-    /**
-     * Creates a new Vertex in the graph and builds a VertexElement which wraps the newly created vertex
-     *
-     * @param baseType baseType of newly created Vertex
-     * @return VertexElement
-     */
-    public VertexElement addVertexElement(Schema.BaseType baseType) {
-        Vertex vertex = janusTransaction.addVertex(baseType.name());
-        return factory().buildVertexElement(vertex);
-    }
-
-    /**
-     * This is only used when reifying a Relation, creates a new Vertex in the graph representing the reified relation.
-     * NB: this is only called when we reify an EdgeRelation - we want to preserve the ID property of the concept
-     *
-     * @param baseType  Concept BaseType which will become the VertexLabel
-     * @param conceptId ConceptId to be set on the vertex
-     * @return just created Vertex
-     */
-    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId) {
-        Vertex vertex = janusTransaction.addVertex(baseType.name());
-        vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
-        return factory().buildVertexElement(vertex);
-    }
-
-    public boolean isValidElement(Element element) {
-        return element != null && !((JanusGraphElement) element).isRemoved();
-    }
-
     @Override
     public SessionImpl session() {
         return session;
@@ -406,37 +371,6 @@ public class TransactionOLTP implements Transaction {
         return queryCache;
     }
 
-    /**
-     * Converts a Type Label into a type Id for this specific graph. Mapping labels to ids will differ between graphs
-     * so be sure to use the correct graph when performing the mapping.
-     *
-     * @param label The label to be converted to the id
-     * @return The matching type id
-     */
-    public LabelId convertToId(Label label) {
-        if (transactionCache.isLabelCached(label)) {
-            return transactionCache.convertLabelToId(label);
-        }
-        return LabelId.invalid();
-    }
-
-    /**
-     * Gets and increments the current available type id.
-     *
-     * @return the current available Grakn id which can be used for types
-     */
-    private LabelId getNextId() {
-        TypeImpl<?, ?> metaConcept = (TypeImpl<?, ?>) getMetaConcept();
-        Integer currentValue = metaConcept.vertex().property(Schema.VertexProperty.CURRENT_LABEL_ID);
-        if (currentValue == null) {
-            currentValue = Schema.MetaSchema.values().length + 1;
-        } else {
-            currentValue = currentValue + 1;
-        }
-        //Vertex is used directly here to bypass meta type mutation check
-        metaConcept.property(Schema.VertexProperty.CURRENT_LABEL_ID, currentValue);
-        return LabelId.of(currentValue);
-    }
 
     /**
      * Gets the config option which determines the number of instances a grakn.core.concept.type.Type must have before the grakn.core.concept.type.Type
@@ -445,7 +379,7 @@ public class TransactionOLTP implements Transaction {
      * @return the number of instances a grakn.core.concept.type.Type must have before it is shareded
      */
     public long shardingThreshold() {
-        return session().config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        return typeShardThreshold;
     }
 
     public TransactionCache cache() {
@@ -467,27 +401,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     /**
-     * @param <T>    The type of the concept being built
-     * @param vertex A vertex which contains properties necessary to build a concept from.
-     * @return A concept built using the provided vertex
-     */
-    public <T extends Concept> T buildConcept(Vertex vertex) {
-        return factory().buildConcept(vertex);
-    }
-
-    /**
-     * @param <T>  The type of the Concept being built
-     * @param edge An Edge which contains properties necessary to build a Concept from.
-     * @return A Concept built using the provided Edge
-     */
-    public <T extends Concept> T buildConcept(Edge edge) {
-        return factory().buildConcept(edge);
-    }
-
-    /**
      * Utility function to get a read-only Tinkerpop traversal.
      *
      * @return A read-only Tinkerpop traversal for manually traversing the graph
+     * <p>
+     * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
      */
     public GraphTraversalSource getTinkerTraversal() {
         checkGraphIsOpen();
@@ -497,28 +415,7 @@ public class TransactionOLTP implements Transaction {
         return graphTraversalSource;
     }
 
-    public ElementFactory factory() {
-        return elementFactory;
-    }
-
-    /**
-     * @param key   The concept property tp search by.
-     * @param value The value of the concept
-     * @return A concept with the matching key and value
-     */
     //----------------------------------------------General Functionality-----------------------------------------------
-    public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
-        return getConcept(getTinkerTraversal().V().has(key.name(), value));
-    }
-
-    private <T extends Concept> T getConcept(Iterator<Vertex> vertices) {
-        T concept = null;
-        if (vertices.hasNext()) {
-            Vertex vertex = vertices.next();
-            concept = factory().buildConcept(vertex);
-        }
-        return concept;
-    }
 
     @Override
     public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
@@ -532,29 +429,8 @@ public class TransactionOLTP implements Transaction {
         return superSet.stream();
     }
 
-    private Set<Concept> getConcepts(Schema.VertexProperty key, Object value) {
-        Set<Concept> concepts = new HashSet<>();
-        getTinkerTraversal().V().has(key.name(), value).forEachRemaining(v -> concepts.add(factory().buildConcept(v)));
-        return concepts;
-    }
-
     public void checkMutationAllowed() {
         if (Type.READ.equals(type())) throw TransactionException.transactionReadOnly(this);
-    }
-
-    /**
-     * Adds a new type vertex which occupies a grakn id. This result in the grakn id count on the meta concept to be
-     * incremented.
-     *
-     * @param label    The label of the new type vertex
-     * @param baseType The base type of the new type
-     * @return The new type vertex
-     */
-    VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType) {
-        VertexElement vertexElement = addVertexElement(baseType);
-        vertexElement.property(Schema.VertexProperty.SCHEMA_LABEL, label.getValue());
-        vertexElement.property(Schema.VertexProperty.LABEL_ID, id.getValue());
-        return vertexElement;
     }
 
     /**
@@ -571,6 +447,14 @@ public class TransactionOLTP implements Transaction {
         return createdInCurrentThread.get();
     }
 
+    private void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
+        // extra validation to ensure schema integrity -- is this needed?
+        // throws if label is already taken for a different type
+        if (!expectedBaseType.equals(schemaConcept.baseType())) {
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+        }
+    }
+
     /**
      * @param label A unique label for the EntityType
      * @return A new or existing EntityType with the provided label
@@ -579,71 +463,17 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public EntityType putEntityType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ENTITY_TYPE, false,
-                v -> factory().buildEntityType(v, getMetaEntityType()));
-    }
-
-    /**
-     * This is a helper method which will either find or create a SchemaConcept.
-     * When a new SchemaConcept is created it is added for validation through it's own creation method for
-     * example RoleImpl#create(VertexElement, Role).
-     * <p>
-     * When an existing SchemaConcept is found it is build via it's get method such as
-     * RoleImpl#get(VertexElement) and skips validation.
-     * <p>
-     * Once the SchemaConcept is found or created a few checks for uniqueness and correct
-     * Schema.BaseType are performed.
-     *
-     * @param label             The Label of the SchemaConcept to find or create
-     * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.type.Type or not
-     * @param newConceptFactory the factory to be using when creating a new SchemaConcept
-     * @param <T>               The type of SchemaConcept to return
-     * @return a new or existing SchemaConcept
-     */
-    private <T extends SchemaConcept> T putSchemaConcept(Label label, Schema.BaseType baseType, boolean isImplicit, Function<VertexElement, T> newConceptFactory) {
-        //Get the type if it already exists otherwise build a new one
-        SchemaConceptImpl schemaConcept = getSchemaConcept(convertToId(label));
+        checkGraphIsOpen();
+        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
         if (schemaConcept == null) {
-            if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {
-                throw TransactionException.invalidLabelStart(label);
-            }
-
-            VertexElement vertexElement = addTypeVertex(getNextId(), label, baseType);
-
-            //Mark it as implicit here so we don't have to pass it down the constructors
-            if (isImplicit) {
-                vertexElement.property(Schema.VertexProperty.IS_IMPLICIT, true);
-            }
-
-            // if the schema concept is not in janus, create it here
-            schemaConcept = SchemaConceptImpl.from(newConceptFactory.apply(vertexElement));
-        } else if (!baseType.equals(schemaConcept.baseType())) {
-            throw labelTaken(schemaConcept);
+            return conceptManager.createEntityType(label, getMetaEntityType());
         }
 
-        //noinspection unchecked
-        return (T) schemaConcept;
+        validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+
+        return (EntityType) schemaConcept;
     }
 
-    /**
-     * Throws an exception when adding a SchemaConcept using a Label which is already taken
-     */
-    private TransactionException labelTaken(SchemaConcept schemaConcept) {
-        if (Schema.MetaSchema.isMetaLabel(schemaConcept.label())) {
-            return TransactionException.reservedLabel(schemaConcept.label());
-        }
-        return PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
-    }
-
-    private <T extends Concept> T validateSchemaConcept(Concept concept, Schema.BaseType baseType, Supplier<T> invalidHandler) {
-        if (concept != null && baseType.getClassType().isInstance(concept)) {
-            //noinspection unchecked
-            return (T) concept;
-        } else {
-            return invalidHandler.get();
-        }
-    }
 
     /**
      * @param label A unique label for the RelationType
@@ -653,13 +483,15 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public RelationType putRelationType(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, false,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
-    }
+        checkGraphIsOpen();
+        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) {
+            return conceptManager.createRelationType(label, getMetaRelationType());
+        }
 
-    public RelationType putRelationTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.RELATION_TYPE, true,
-                v -> factory().buildRelationType(v, getMetaRelationType()));
+        validateBaseType(schemaConcept, Schema.BaseType.RELATION_TYPE);
+
+        return (RelationType) schemaConcept;
     }
 
     /**
@@ -670,14 +502,17 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Role putRole(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE, false,
-                v -> factory().buildRole(v, getMetaRole()));
+        checkGraphIsOpen();
+        SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept == null) {
+            return conceptManager.createRole(label, getMetaRole());
+        }
+
+        validateBaseType(schemaConcept, Schema.BaseType.ROLE);
+
+        return (Role) schemaConcept;
     }
 
-    public Role putRoleTypeImplicit(Label label) {
-        return putSchemaConcept(label, Schema.BaseType.ROLE, true,
-                v -> factory().buildRole(v, getMetaRole()));
-    }
 
     /**
      * @param label    A unique label for the AttributeType
@@ -693,15 +528,19 @@ public class TransactionOLTP implements Transaction {
     @SuppressWarnings("unchecked")
     @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
-        @SuppressWarnings("unchecked")
-        AttributeType<V> attributeType = putSchemaConcept(label, Schema.BaseType.ATTRIBUTE_TYPE, false,
-                v -> factory().buildAttributeType(v, getMetaAttributeType(), dataType));
+        checkGraphIsOpen();
+        AttributeType<V> attributeType = conceptManager.getSchemaConcept(label);
+        if (attributeType == null) {
+            attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), dataType);
+        } else {
+            validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.ATTRIBUTE_TYPE);
+            //These checks is needed here because caching will return a type by label without checking the datatype
 
-        //These checks is needed here because caching will return a type by label without checking the datatype
-        if (Schema.MetaSchema.isMetaLabel(label)) {
-            throw TransactionException.metaTypeImmutable(label);
-        } else if (!dataType.equals(attributeType.dataType())) {
-            throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            if (Schema.MetaSchema.isMetaLabel(label)) {
+                throw TransactionException.metaTypeImmutable(label);
+            } else if (!dataType.equals(attributeType.dataType())) {
+                throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+            }
         }
 
         return attributeType;
@@ -717,8 +556,16 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
-        Rule rule = putSchemaConcept(label, Schema.BaseType.RULE, false,
-                v -> factory().buildRule(v, getMetaRule(), when, then));
+        checkGraphIsOpen();
+        Rule retrievedRule = conceptManager.getSchemaConcept(label);
+        final Rule rule; // needed final for stream lambda
+        if (retrievedRule == null) {
+            rule = conceptManager.createRule(label, when, then, getMetaRule());
+        } else {
+            rule = retrievedRule;
+            validateBaseType(SchemaConceptImpl.from(rule), Schema.BaseType.RULE);
+        }
+
         //NB: thenTypes() will be empty as type edges added on commit
         //NB: this will cache also non-committed rules
         if (rule.then() != null) {
@@ -745,52 +592,9 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         checkGraphIsOpen();
-
-        // fetch concept from cache if it's cached
-        if (transactionCache.isConceptCached(id)) {
-            return transactionCache.getCachedConcept(id);
-        }
-
-        // If edgeId, we are trying to fetch either:
-        // - a concept edge
-        // - a reified relation
-        if (Schema.isEdgeId(id)) {
-            T concept = getConceptEdge(id);
-            if (concept != null) return concept;
-            // If concept is still null,  it is possible we are referring to a ReifiedRelation which
-            // uses its previous EdgeRelation as an id so property must be fetched
-            return this.getConcept(Schema.VertexProperty.EDGE_RELATION_ID, id.getValue());
-        }
-
-        return getConcept(getTinkerTraversal().V(Schema.elementId(id)));
+        return conceptManager.getConcept(id);
     }
 
-    @Nullable
-    private <T extends Concept> T getConceptEdge(ConceptId id) {
-        String edgeId = Schema.elementId(id);
-        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(edgeId);
-        if (traversal.hasNext()) {
-            return factory().buildConcept(factory().buildEdgeElement(traversal.next()));
-        }
-        return null;
-    }
-
-    private <T extends SchemaConcept> T getSchemaConcept(Label label, Schema.BaseType baseType) {
-        checkGraphIsOpen();
-        SchemaConcept schemaConcept;
-        if (transactionCache.isTypeCached(label)) {
-            schemaConcept = transactionCache.getCachedSchemaConcept(label);
-        } else {
-            schemaConcept = getSchemaConcept(convertToId(label));
-        }
-        return validateSchemaConcept(schemaConcept, baseType, () -> null);
-    }
-
-    @Nullable
-    public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
-        if (!id.isValid()) return null;
-        return this.getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
-    }
 
     /**
      * @param value A value which an Attribute in the graph may be holding.
@@ -800,6 +604,7 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
+        checkGraphIsOpen();
         if (value == null) return Collections.emptySet();
 
         // TODO: Remove this forced casting once we replace DataType to be Parameterised Generic Enum
@@ -810,7 +615,7 @@ public class TransactionOLTP implements Transaction {
         }
 
         HashSet<Attribute<V>> attributes = new HashSet<>();
-        getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
+        conceptManager.getConcepts(Schema.VertexProperty.ofDataType(dataType), Serialiser.of(dataType).serialise(value))
                 .forEach(concept -> {
                     if (concept != null && concept.isAttribute()) {
                         attributes.add(concept.asAttribute());
@@ -829,9 +634,13 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
+        checkGraphIsOpen();
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
-        if (meta != null) return getSchemaConcept(meta.getId());
-        return getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
+        if (meta != null) {
+            return conceptManager.getSchemaConcept(meta.getId());
+        } else {
+            return conceptManager.getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
+        }
     }
 
     /**
@@ -843,7 +652,8 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
-        return getSchemaConcept(label, Schema.BaseType.TYPE);
+        checkGraphIsOpen();
+        return conceptManager.getType(label);
     }
 
     /**
@@ -853,7 +663,8 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public EntityType getEntityType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
+        checkGraphIsOpen();
+        return conceptManager.getEntityType(label);
     }
 
     /**
@@ -863,7 +674,8 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public RelationType getRelationType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
+        checkGraphIsOpen();
+        return conceptManager.getRelationType(label);
     }
 
     /**
@@ -874,7 +686,8 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public <V> AttributeType<V> getAttributeType(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
+        checkGraphIsOpen();
+        return conceptManager.getAttributeType(label);
     }
 
     /**
@@ -884,7 +697,8 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Role getRole(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
+        checkGraphIsOpen();
+        return conceptManager.getRole(label);
     }
 
     /**
@@ -894,8 +708,10 @@ public class TransactionOLTP implements Transaction {
      */
     @Override
     public Rule getRule(String label) {
-        return getSchemaConcept(Label.of(label), Schema.BaseType.RULE);
+        checkGraphIsOpen();
+        return conceptManager.getRule(label);
     }
+
 
     @Override
     public void close() {
@@ -941,10 +757,8 @@ public class TransactionOLTP implements Transaction {
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
-            synchronized (keyspaceCache) {
-                commitInternal();
-                transactionCache.flushToKeyspaceCache();
-            }
+            commitInternal();
+            transactionCache.flushSchemaLabelIdsToCache();
 
             ServerTracing.closeScopedChildSpan(commitSpanId);
         } finally {
@@ -979,7 +793,6 @@ public class TransactionOLTP implements Transaction {
      *
      * @param conceptId the id of the concept to shard
      */
-    @VisibleForTesting
     public void shard(ConceptId conceptId) {
         ConceptImpl type = getConcept(conceptId);
         if (type == null) {
@@ -990,6 +803,7 @@ public class TransactionOLTP implements Transaction {
 
     /**
      * Set a new type shard checkpoint for a given label
+     *
      * @param label
      */
     private void setShardCheckpoint(Label label, long checkpoint) {
@@ -997,14 +811,14 @@ public class TransactionOLTP implements Transaction {
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name(), checkpoint);
-        }
-        else {
+        } else {
             throw new RuntimeException("Label '" + label.getValue() + "' does not exist");
         }
     }
 
     /**
      * Get the checkpoint in which type shard was last created
+     *
      * @param label
      * @return the checkpoint for the given label. if the label does not exist, return 0
      */
@@ -1014,11 +828,11 @@ public class TransactionOLTP implements Transaction {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
             VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.TYPE_SHARD_CHECKPOINT.name());
             return (Long) property.orElse(0L);
-        }
-        else {
+        } else {
             return 0L;
         }
     }
+
     /**
      * Returns the current number of shards the provided grakn.core.concept.type.Type has. This is used in creating more
      * efficient query plans.
@@ -1031,11 +845,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     public final QueryExecutor executor() {
-        return new QueryExecutor(this, true);
+        return new QueryExecutor(this, conceptManager, true);
     }
 
     public final QueryExecutor executor(boolean infer) {
-        return new QueryExecutor(this, infer);
+        return new QueryExecutor(this, conceptManager, infer);
     }
 
     public Stream<ConceptMap> stream(MatchClause matchClause) {
@@ -1053,4 +867,33 @@ public class TransactionOLTP implements Transaction {
     public List<ConceptMap> execute(MatchClause matchClause, boolean infer) {
         return stream(matchClause, infer).collect(Collectors.toList());
     }
+
+
+    // ----------- Exposed low level methods that should not be exposed here TODO refactor
+    void createMetaConcepts() {
+        VertexElement type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
+        VertexElement entityType = conceptManager.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        VertexElement relationType = conceptManager.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+        VertexElement resourceType = conceptManager.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
+        conceptManager.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
+        conceptManager.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
+
+        relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+        entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
+
+        relationType.addEdge(type, Schema.EdgeLabel.SUB);
+        resourceType.addEdge(type, Schema.EdgeLabel.SUB);
+        entityType.addEdge(type, Schema.EdgeLabel.SUB);
+    }
+
+    public LabelId convertToId(Label label) {
+        return conceptManager.convertToId(label);
+    }
+
+    @VisibleForTesting
+    public ConceptManager factory() {
+        return conceptManager;
+    }
+
 }

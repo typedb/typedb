@@ -55,7 +55,9 @@ public class Validator {
      */
     public boolean validate() {
         //Validate Things
-        transaction.cache().getModifiedThings().forEach(this::validateThing);
+        for (Thing thing : transaction.cache().getModifiedThings()) {
+            validateThing(transaction, thing);
+        }
 
         //Validate Relations
         transaction.cache().getNewRelations().forEach(this::validateRelation);
@@ -132,8 +134,8 @@ public class Validator {
      *
      * @param thing The Thing to validate
      */
-    private void validateThing(Thing thing) {
-        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(thing).ifPresent(errorsFound::add);
+    private void validateThing(TransactionOLTP tx, Thing thing) {
+        ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(tx, thing).ifPresent(errorsFound::add);
     }
 
     /**

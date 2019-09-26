@@ -28,11 +28,9 @@ import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Casting;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import javax.annotation.Nullable;
 import java.util.Arrays;
@@ -43,7 +41,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 /**
  * Encapsulates The Relation as a VertexElement
@@ -55,12 +52,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    private RelationReified(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private RelationReified(VertexElement vertexElement, RelationType type) {
-        super(vertexElement, type);
+    RelationReified(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     @Override
@@ -68,17 +61,9 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         //TODO remove this once we fix the whole relation hierarchy
         // removing the owner as it is the real concept that gets cached.
         // trying to delete a RelationStructure will fail the concept.isRelation check leading to errors when deleting the relation from transactionCache
-        vertex().tx().cache().getNewRelations().remove(owner);
-        if(isInferred()) vertex().tx().cache().removeInferredInstance(owner);
+        conceptObserver.deleteReifiedOwner(owner);
+
         super.delete();
-    }
-
-    public static RelationReified get(VertexElement vertexElement) {
-        return new RelationReified(vertexElement);
-    }
-
-    public static RelationReified create(VertexElement vertexElement, RelationType type) {
-        return new RelationReified(vertexElement, type);
     }
 
     @Override
@@ -113,7 +98,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                 findAny().
                 ifPresent(casting -> {
                     casting.delete();
-                    vertex().tx().cache().remove(casting);
+                    conceptObserver.castingDeleted(casting);
                 });
     }
 
@@ -137,17 +122,15 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
      */
     public void putRolePlayerEdge(Role role, Thing toThing) {
         //Checking if the edge exists
-        GraphTraversal<Vertex, Edge> traversal = vertex().tx().getTinkerTraversal().V().
-                hasId(this.elementId()).
-                outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
-                has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), this.type().labelId().getValue()).
-                has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue()).
-                as("edge").
-                inV().
-                hasId(ConceptVertex.from(toThing).elementId()).
-                select("edge");
+        boolean rolePlayerEdgeExists = vertex()
+                .rolePlayerEdgeExists(
+                        elementId().toString(),
+                        type(),
+                        role,
+                        ConceptVertex.from(toThing).elementId().toString()
+                );
 
-        if (traversal.hasNext()) {
+        if (rolePlayerEdgeExists) {
             return;
         }
 
@@ -155,8 +138,8 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
-        Casting casting = Casting.create(edge, owner, role, toThing);
-        vertex().tx().cache().trackForValidation(casting);
+        Casting casting = Casting.create(edge, owner, role, toThing, conceptManager);
+        conceptObserver.rolePlayerCreated(casting);
     }
 
     /**
@@ -169,20 +152,14 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         if (roleSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
-                    .map(edge -> Casting.withRelation(edge, owner));
+                    .map(edge -> Casting.withRelation(edge, owner, conceptManager));
         }
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
-        return vertex().tx().getTinkerTraversal().V()
-                .hasId(elementId())
-                .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
-                .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type().labelId().getValue())
-                .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), P.within(roleTypesIds))
-                .toStream()
-                .filter(edge -> vertex().tx().isValidElement(edge)) // filter out invalid or deleted edges that are cached
-                .map(edge -> vertex().tx().factory().buildEdgeElement(edge))
-                .map(edge -> Casting.withRelation(edge, owner));
+
+        Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type(), roleTypesIds);
+        return castingsEdges.map(edge -> Casting.withRelation(edge, owner, conceptManager));
     }
 
     @Override

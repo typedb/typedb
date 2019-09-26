@@ -24,11 +24,11 @@ import grakn.core.concept.LabelId;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.ConceptObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -46,46 +47,35 @@ import java.util.stream.Stream;
  */
 public class RelationEdge implements RelationStructure {
     private final Logger LOG = LoggerFactory.getLogger(RelationEdge.class);
+
     private final EdgeElement edgeElement;
+    private final ConceptManager conceptManager;
+    private ConceptObserver conceptObserver;
 
     private final Cache<RelationType> relationType = new Cache<>(() ->
-            edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
+            conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
-    private final Cache<Role> ownerRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> ownerRole = new Cache<>(() -> conceptManager().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
-    private final Cache<Role> valueRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(
+    private final Cache<Role> valueRole = new Cache<>(() -> conceptManager().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
-    private final Cache<Thing> owner = new Cache<>(() -> edge().tx().factory().buildConcept(edge().source()));
-    private final Cache<Thing> value = new Cache<>(() -> edge().tx().factory().buildConcept(edge().target()));
+    private final Cache<Thing> owner = new Cache<>(() -> conceptManager().buildConcept(edge().source()));
+    private final Cache<Thing> value = new Cache<>(() -> conceptManager().buildConcept(edge().target()));
 
-    private RelationEdge(EdgeElement edgeElement) {
+    RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         this.edgeElement = edgeElement;
-    }
-
-    private RelationEdge(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
-        this(edgeElement);
-
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, ownerRole, null, o -> o.labelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, valueRole, null, v -> v.labelId().getValue());
-        edgeElement.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
-
-        this.relationType.set(relationType);
-        this.ownerRole.set(ownerRole);
-        this.valueRole.set(valueRole);
-    }
-
-    public static RelationEdge get(EdgeElement edgeElement) {
-        return new RelationEdge(edgeElement);
-    }
-
-    public static RelationEdge create(RelationType relationType, Role ownerRole, Role valueRole, EdgeElement edgeElement) {
-        return new RelationEdge(relationType, ownerRole, valueRole, edgeElement);
+        this.conceptManager = conceptManager;
+        this.conceptObserver = conceptObserver;
     }
 
     private EdgeElement edge() {
         return edgeElement;
+    }
+
+    private ConceptManager conceptManager() {
+        return conceptManager;
     }
 
     @Override
@@ -97,8 +87,8 @@ public class RelationEdge implements RelationStructure {
     public RelationReified reify() {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
-        VertexElement relationVertex = edge().tx().addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, id());
-        RelationReified relationReified = edge().tx().factory().buildRelationReified(relationVertex, type());
+        VertexElement relationVertex = edge().asReifiedVertexElement(isInferred());
+        RelationReified relationReified = conceptManager().createRelationReified(relationVertex, type());
 
         //Delete the old edge
         delete();
@@ -159,13 +149,11 @@ public class RelationEdge implements RelationStructure {
 
     @Override
     public void delete() {
-        if (!isDeleted()) edge().tx().statisticsDelta().decrement(type().label());
-        if (isInferred()){
-            TransactionOLTP tx = edge().tx();
-            Concept relation = tx.getConcept(id());
-            if (relation != null) tx.cache().removeInferredInstance(relation.asThing());
+        if (!isDeleted()) {
+            Supplier<Concept> conceptRetriever = () -> conceptManager.getConcept(id());
+            conceptObserver.relationEdgeDeleted(this, conceptRetriever);
+            edge().delete();
         }
-        edge().delete();
     }
 
     @Override

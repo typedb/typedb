@@ -18,7 +18,6 @@
 
 package grakn.core.server.session;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import grakn.core.api.Session;
 import grakn.core.api.Transaction;
@@ -29,11 +28,17 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ConceptManager;
+import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.structure.VertexElement;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.session.cache.CacheProvider;
+import grakn.core.server.session.cache.KeyspaceSchemaCache;
+import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
+import grakn.core.server.statistics.UncomittedStatisticsDelta;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
+import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
@@ -61,7 +66,7 @@ public class SessionImpl implements Session {
     private final KeyspaceImpl keyspace;
     private final Config config;
     private final StandardJanusGraph graph;
-    private final KeyspaceCache keyspaceCache;
+    private final KeyspaceSchemaCache keyspaceSchemaCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
@@ -76,8 +81,8 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
+    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
     /**
@@ -88,7 +93,7 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceCache keyspaceCache, StandardJanusGraph graph,
+     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
                         HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
                         Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
@@ -97,7 +102,7 @@ public class SessionImpl implements Session {
         // Open Janus Graph
         this.graph = graph;
 
-        this.keyspaceCache = keyspaceCache;
+        this.keyspaceSchemaCache = keyspaceSchemaCache;
         this.keyspaceStatistics = keyspaceStatistics;
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
@@ -108,15 +113,14 @@ public class SessionImpl implements Session {
             initialiseMetaConcepts(tx);
         }
         // If keyspace cache is empty, copy schema concept labels in it.
-        if (keyspaceCache.isEmpty()) {
+        if (keyspaceSchemaCache.isEmpty()) {
             copySchemaConceptLabelsToKeyspaceCache(tx);
         }
 
         tx.commit();
-
     }
 
-    public ReadWriteLock graphLock() {
+    ReadWriteLock graphLock() {
         return graphLock;
     }
 
@@ -136,7 +140,20 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
 
-        TransactionOLTP tx = new TransactionOLTP(this, graph.newThreadBoundTransaction(), keyspaceCache);
+        // caches
+        CacheProvider cacheProvider = new CacheProvider(keyspaceSchemaCache);
+        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
+        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
+
+        // janus elements
+        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
+        ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
+
+        // Grakn elements
+        ConceptManager conceptManager = new ConceptManager(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
+
+        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
+
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
 
@@ -149,20 +166,7 @@ public class SessionImpl implements Session {
      * @param tx
      */
     private void initialiseMetaConcepts(TransactionOLTP tx) {
-        VertexElement type = tx.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
-        VertexElement entityType = tx.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-        VertexElement relationType = tx.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-        VertexElement resourceType = tx.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
-        tx.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
-        tx.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
-
-        relationType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-        resourceType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-        entityType.property(Schema.VertexProperty.IS_ABSTRACT, true);
-
-        relationType.addEdge(type, Schema.EdgeLabel.SUB);
-        resourceType.addEdge(type, Schema.EdgeLabel.SUB);
-        entityType.addEdge(type, Schema.EdgeLabel.SUB);
+        tx.createMetaConcepts();
     }
 
     /**
@@ -177,18 +181,10 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * @return The graph cache which contains all the data cached and accessible by all transactions.
-     */
-    @VisibleForTesting
-    public KeyspaceCache getKeyspaceCache() {
-        return keyspaceCache;
-    }
-
-    /**
      * Copy schema concept and all its subs labels to keyspace cache
      */
     private void copyToCache(SchemaConcept schemaConcept) {
-        schemaConcept.subs().forEach(concept -> keyspaceCache.cacheLabel(concept.label(), concept.labelId()));
+        schemaConcept.subs().forEach(concept -> keyspaceSchemaCache.cacheLabel(concept.label(), concept.labelId()));
     }
 
     private boolean keyspaceHasBeenInitialised(TransactionOLTP tx) {

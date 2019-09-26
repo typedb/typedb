@@ -53,9 +53,9 @@ java_test(
 
 
 java_test(
-    name = "keyspace-cache-it",
-    test_class = "grakn.core.server.session.cache.KeyspaceCacheIT",
-    srcs = ["cache/KeyspaceCacheIT.java"],
+    name = "keyspace-schema-cache-it",
+    test_class = "grakn.core.server.session.cache.KeyspaceSchemaCacheIT",
+    srcs = ["cache/KeyspaceSchemaCacheIT.java"],
     deps = ["//server", "//test-integration/rule:grakn-test-server", "@graknlabs_client_java//:client-java", "//concept", "@graknlabs_graql//java:graql"],
     classpath_resources = ["//test-integration/resources:logback-test"]
 )
@@ -81,7 +81,7 @@ checkstyle_test(
     targets = [
         ":session-it",
         ":transaction-oltp-it",
-        ":keyspace-cache-it",
+        ":keyspace-schema-cache-it",
         ":transaction-cache-it"
     ],
 )

@@ -22,11 +22,15 @@ import grakn.core.concept.Concept;
 import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.structure.Casting;
+import grakn.core.server.kb.structure.EdgeElement;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,22 +43,8 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final Cache<Set<Role>> cachedRelates = new Cache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    private RelationTypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private RelationTypeImpl(VertexElement vertexElement, RelationType type) {
-        super(vertexElement, type);
-    }
-
-    public static RelationTypeImpl get(VertexElement vertexElement) {
-        return new RelationTypeImpl(vertexElement);
-    }
-
-    public static RelationTypeImpl create(VertexElement vertexElement, RelationType type) {
-        RelationTypeImpl relationType = new RelationTypeImpl(vertexElement, type);
-        vertexElement.tx().cache().trackForValidation(relationType);
-        return relationType;
+    RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptBuilder, conceptObserver);
     }
 
     public static RelationTypeImpl from(RelationType relationType) {
@@ -71,10 +61,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     }
 
     private Relation addRelation(boolean isInferred) {
-        Relation relation = addInstance(Schema.BaseType.RELATION,
-                (vertex, type) -> vertex().tx().factory().buildRelation(vertex, type), isInferred);
-        vertex().tx().cache().addNewRelation(relation);
-        return relation;
+        return conceptManager.createRelation(this, isInferred);
     }
 
     @Override
@@ -105,18 +92,13 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     @Override
     public RelationType unrelate(Role role) {
         checkSchemaMutationAllowed();
-        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, (Concept) role);
+        deleteEdge(Direction.OUT, Schema.EdgeLabel.RELATES, role);
 
         RoleImpl roleTypeImpl = (RoleImpl) role;
-        //Add roleplayers of role to make sure relations are still valid
-        roleTypeImpl.rolePlayers().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
 
-
-        //Add the Role Type itself
-        vertex().tx().cache().trackForValidation(roleTypeImpl);
-
-        //Add the Relation Type
-        vertex().tx().cache().trackForValidation(this);
+        // pass relation type, role, and castings to observer for validation
+        List<Casting> conceptsPlayingRole = roleTypeImpl.rolePlayers().collect(Collectors.toList());
+        conceptObserver.relationRoleUnrelated(this, role, conceptsPlayingRole);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -131,7 +113,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            vertex().tx().cache().trackForValidation(role);
+            conceptObserver.roleDeleted(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -140,13 +122,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     @Override
     void trackRolePlayers() {
-        instances().forEach(concept -> {
-            RelationImpl relation = RelationImpl.from(concept);
-            RelationReified reifedRelation = relation.reified();
-            if (reifedRelation != null) {
-                reifedRelation.castingsRelation().forEach(rolePlayer -> vertex().tx().cache().trackForValidation(rolePlayer));
-            }
-        });
+        conceptObserver.trackRelationInstancesRolePlayers(this);
     }
 
     @Override
@@ -161,18 +137,19 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     private Stream<Relation> relationEdges() {
         //Unfortunately this is a slow process
-        return roles().
-                flatMap(Role::players).
-                flatMap(type -> {
+        return roles()
+                .flatMap(Role::players)
+                .flatMap(type -> {
                     //Traversal is used here to take advantage of vertex centric index
-                    return vertex().tx().getTinkerTraversal().V().
-                            hasId(ConceptVertex.from(type).elementId()).
-                            in(Schema.EdgeLabel.SHARD.getLabel()).
-                            in(Schema.EdgeLabel.ISA.getLabel()).
-                            outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).
-                            has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), labelId().getValue()).
-                            toStream().
-                            map(edge -> vertex().tx().factory().buildConcept(edge));
+                    // we use this more complex traversal to get to the instances of the Types that can
+                    // play a role of this relation type
+                    // from there we can access the edges that represent non-reified Concepts
+                    // currently only Attribute can be non-reified
+
+                    Stream<EdgeElement> edgeRelationsConnectedToTypeInstances = ConceptVertex.from(type).vertex()
+                            .edgeRelationsConnectedToInstancesOfType(labelId());
+
+                    return edgeRelationsConnectedToTypeInstances.map(edgeElement ->  conceptManager.buildConcept(edgeElement));
                 });
     }
 }

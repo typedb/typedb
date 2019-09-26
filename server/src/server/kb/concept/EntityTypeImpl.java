@@ -22,6 +22,7 @@ import grakn.core.concept.thing.Entity;
 import grakn.core.concept.type.EntityType;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.server.session.ConceptObserver;
 
 /**
  * SchemaConcept used to represent categories.
@@ -29,20 +30,8 @@ import grakn.core.server.kb.structure.VertexElement;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    private EntityTypeImpl(VertexElement vertexElement) {
-        super(vertexElement);
-    }
-
-    private EntityTypeImpl(VertexElement vertexElement, EntityType type) {
-        super(vertexElement, type);
-    }
-
-    public static EntityTypeImpl get(VertexElement vertexElement) {
-        return new EntityTypeImpl(vertexElement);
-    }
-
-    public static EntityTypeImpl create(VertexElement vertexElement, EntityType type) {
-        return new EntityTypeImpl(vertexElement, type);
+    EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+        super(vertexElement, conceptManager, conceptObserver);
     }
 
     public static EntityTypeImpl from(EntityType entityType) {
@@ -51,10 +40,19 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
 
     @Override
     public Entity create() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), false);
+        return createInstance(false);
     }
 
     public Entity addEntityInferred() {
-        return addInstance(Schema.BaseType.ENTITY, (vertex, type) -> vertex().tx().factory().buildEntity(vertex, type), true);
+        return createInstance(true);
+    }
+
+    private Entity createInstance(boolean isInferred) {
+        return conceptManager.createEntity(this, isInferred);
+    }
+
+    @Override
+    void trackRolePlayers() {
+        conceptObserver.trackEntityInstancesRolesPlayed(this);
     }
 }

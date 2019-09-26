@@ -23,8 +23,9 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.Cache;
+import grakn.core.server.kb.Schema;
+import grakn.core.server.kb.concept.ConceptManager;
 
 import javax.annotation.Nullable;
 
@@ -36,39 +37,45 @@ import javax.annotation.Nullable;
 public class Casting {
 
     private final EdgeElement edgeElement;
-    private final Cache<Role> cachedRole = new Cache<>(() -> edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
-    private final Cache<Thing> cachedInstance = new Cache<>(() -> edge().tx().factory().buildConcept(edge().target()));
-    private final Cache<Relation> cachedRelation = new Cache<>(() -> edge().tx().factory().buildConcept(edge().source()));
+    private ConceptManager conceptManager;
+    private final Cache<Role> cachedRole = new Cache<>(() -> conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))));
+    private final Cache<Thing> cachedInstance = new Cache<>(() -> conceptManager().buildConcept(edge().target()));
+    private final Cache<Relation> cachedRelation = new Cache<>(() -> conceptManager().buildConcept(edge().source()));
 
     private final Cache<RelationType> cachedRelationType = new Cache<>(() -> {
         if (cachedRelation.isCached()) {
             return cachedRelation.get().type();
         } else {
-            return edge().tx().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));
+            return conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID)));
         }
     });
 
-    private Casting(EdgeElement edgeElement, @Nullable Relation relation, @Nullable Role role, @Nullable Thing thing) {
+    Casting(EdgeElement edgeElement, @Nullable Relation relation, @Nullable Role role, @Nullable Thing thing, ConceptManager conceptManager) {
         this.edgeElement = edgeElement;
+        this.conceptManager = conceptManager;
         if (relation != null) this.cachedRelation.set(relation);
         if (role != null) this.cachedRole.set(role);
         if (thing != null) this.cachedInstance.set(thing);
     }
 
-    public static Casting create(EdgeElement edgeElement, Relation relation, Role role, Thing thing) {
-        return new Casting(edgeElement, relation, role, thing);
+    public static Casting create(EdgeElement edgeElement, Relation relation, Role role, Thing thing, ConceptManager conceptManager) {
+        return new Casting(edgeElement, relation, role, thing, conceptManager);
     }
 
-    public static Casting withThing(EdgeElement edgeElement, Thing thing) {
-        return new Casting(edgeElement, null, null, thing);
+    public static Casting withThing(EdgeElement edgeElement, Thing thing, ConceptManager conceptManager) {
+        return new Casting(edgeElement, null, null, thing, conceptManager);
     }
 
-    public static Casting withRelation(EdgeElement edgeElement, Relation relation) {
-        return new Casting(edgeElement, relation, null, null);
+    public static Casting withRelation(EdgeElement edgeElement, Relation relation, ConceptManager conceptManager) {
+        return new Casting(edgeElement, relation, null, null, conceptManager);
     }
 
     private EdgeElement edge() {
         return edgeElement;
+    }
+
+    private ConceptManager conceptManager() {
+        return conceptManager;
     }
 
     /**

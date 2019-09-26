@@ -18,6 +18,7 @@
 
 package grakn.core.server.session.cache;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.SchemaConcept;
@@ -40,7 +41,7 @@ public class RuleCache {
 
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
-    private final TransactionOLTP tx;
+    private TransactionOLTP tx;
 
     //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
@@ -48,7 +49,10 @@ public class RuleCache {
     private Set<Rule> unmatchableRules = new HashSet<>();
     private Set<Rule> checkedRules = new HashSet<>();
 
-    public RuleCache(TransactionOLTP tx) {
+    public RuleCache() {
+    }
+
+    public void setTx(TransactionOLTP tx) {
         this.tx = tx;
     }
 
@@ -94,6 +98,7 @@ public class RuleCache {
      * @param type for which rules containing it in the head are sought
      * @return rules containing specified type in the head
      */
+    @VisibleForTesting
     public Stream<Rule> getRulesWithType(Type type) {
         return getRulesWithType(type, false);
     }
@@ -130,6 +135,7 @@ public class RuleCache {
                 .flatMap(SchemaConcept::thenRules)
                 .filter(this::isRuleMatchable)
                 .forEach(rule -> ruleMap.put(type, rule));
+
         return match.stream();
     }
 

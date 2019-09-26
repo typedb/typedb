@@ -23,7 +23,7 @@ import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.concept.ConceptId;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.cache.KeyspaceCache;
+import grakn.core.server.session.cache.KeyspaceSchemaCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
@@ -74,7 +74,7 @@ public class SessionFactory {
     public SessionImpl session(KeyspaceImpl keyspace) {
         SharedKeyspaceData cacheContainer;
         StandardJanusGraph graph;
-        KeyspaceCache cache;
+        KeyspaceSchemaCache cache;
         KeyspaceStatistics keyspaceStatistics;
         Cache<String, ConceptId> attributesCache;
         ReadWriteLock graphLock;
@@ -97,7 +97,7 @@ public class SessionFactory {
             } else { // If keyspace reference not cached, put keyspace in keyspace manager, open new graph and instantiate new keyspace cache
                 graph = janusGraphFactory.openGraph(keyspace.name());
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
-                cache = new KeyspaceCache();
+                cache = new KeyspaceSchemaCache();
                 keyspaceStatistics = new KeyspaceStatistics();
                 attributesCache = buildAttributeCache();
                 graphLock = new ReentrantReadWriteLock();
@@ -115,7 +115,7 @@ public class SessionFactory {
     }
 
     // Keep visibility to protected as this is used by KGMS
-    protected Cache<String, ConceptId> buildAttributeCache() {
+    private Cache<String, ConceptId> buildAttributeCache() {
         return CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
@@ -179,7 +179,7 @@ public class SessionFactory {
     // Keep visibility to protected as this is used by KGMS
     protected class SharedKeyspaceData {
 
-        private final KeyspaceCache keyspaceCache;
+        private final KeyspaceSchemaCache keyspaceSchemaCache;
         // Graph is cached here because concurrently created sessions don't see writes to JanusGraph DB cache
         private final StandardJanusGraph graph;
         private final HadoopGraph hadoopGraph;
@@ -196,8 +196,8 @@ public class SessionFactory {
         private final ReadWriteLock graphLock;
 
         // Keep visibility to public as this is used by KGMS
-        public SharedKeyspaceData(KeyspaceCache keyspaceCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
-            this.keyspaceCache = keyspaceCache;
+        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
+            this.keyspaceSchemaCache = keyspaceSchemaCache;
             this.graph = graph;
             this.hadoopGraph = hadoopGraph;
             this.sessions = new ArrayList<>();
@@ -212,8 +212,8 @@ public class SessionFactory {
         }
 
         // Keep visibility to public as this is used by KGMS
-        public KeyspaceCache cache() {
-            return keyspaceCache;
+        public KeyspaceSchemaCache cache() {
+            return keyspaceSchemaCache;
         }
 
         // Keep visibility to public as this is used by KGMS

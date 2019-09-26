@@ -18,7 +18,6 @@
 
 package grakn.core.graql.executor;
 
-
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
@@ -40,6 +39,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.util.LazyMergingStream;
 import grakn.core.server.exception.GraknServerException;
+import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -89,11 +89,13 @@ import static java.util.stream.Collectors.toList;
  */
 public class QueryExecutor {
 
+    private ConceptManager conceptManager;
     private final boolean infer;
     private final TransactionOLTP transaction;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutor.class);
 
-    public QueryExecutor(TransactionOLTP transaction, boolean infer) {
+    public QueryExecutor(TransactionOLTP transaction, ConceptManager conceptManager, boolean infer) {
+        this.conceptManager = conceptManager;
         this.infer = infer;
         this.transaction = transaction;
     }
@@ -235,9 +237,9 @@ public class QueryExecutor {
             } else {
                 Concept result;
                 if (element instanceof Vertex) {
-                    result = transaction.buildConcept((Vertex) element);
+                    result = conceptManager.buildConcept((Vertex) element);
                 } else {
-                    result = transaction.buildConcept((Edge) element);
+                    result = conceptManager.buildConcept((Edge) element);
                 }
                 Concept concept = result;
                 map.put(var, concept);
@@ -393,7 +395,7 @@ public class QueryExecutor {
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
         answers = filter(query, answers);
-        
+
         return answers;
     }
 
