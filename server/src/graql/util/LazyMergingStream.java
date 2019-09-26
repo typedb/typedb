@@ -55,9 +55,11 @@ public class LazyMergingStream<D> {
                 if (currentIterator.hasNext()) {
                     return true;
                 } else {
-                    if (streamIterator.hasNext()) {
+                    while (streamIterator.hasNext()) {
                         currentIterator = streamIterator.next().iterator();
-                        return currentIterator.hasNext();
+                        if (currentIterator.hasNext()) {
+                            return true;
+                        }
                     }
                 }
 
