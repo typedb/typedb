@@ -66,7 +66,7 @@ import static grakn.core.server.kb.Schema.BaseType.RULE;
  *
  * In general, it will do one of the following primary operations
  * 1. `Create` a brand new Janus Vertex wrapped in a Schema Concept
- * 2. `Create` a brand new Janus Vertex or Element, wrapped in a Thing Concept
+ * 2. `Create` a brand new Janus Vertex or Edge, wrapped in a Thing Concept
  * 3. `Build` a Concept from an existing VertexElement or EdgeElement that has been provided from externally
  * 4. `Retrieve` a concept based on some unique identifier (eg. ID, attribute key, janus key/value, etc.)
  *

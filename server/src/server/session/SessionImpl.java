@@ -120,7 +120,7 @@ public class SessionImpl implements Session {
         tx.commit();
     }
 
-    public ReadWriteLock graphLock() {
+    ReadWriteLock graphLock() {
         return graphLock;
     }
 
