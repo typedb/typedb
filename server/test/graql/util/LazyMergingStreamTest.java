@@ -107,5 +107,7 @@ public class LazyMergingStreamTest {
 
         verify(mockSecondIntegerIterator, times(1)).next();
         verify(mockSecondIntegerIterator, times(1)).hasNext();
+
+        assertEquals(Arrays.asList(1, 2, 21), numbers);
     }
 }
