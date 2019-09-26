@@ -21,6 +21,7 @@ package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import com.sun.org.apache.bcel.internal.classfile.ConstantCP;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
@@ -38,6 +39,7 @@ import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.util.LazyMergingStream;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -109,24 +111,42 @@ public class QueryExecutor {
 
                 // TODO: this is automatically fixed in Java 10 or OpenJDK 8u222, remove workaround if these conditions met
                 // workaround to deal with non-lazy Java 8 flatMap() functions
-                io.vavr.collection.Stream<Conjunction<Statement>> conjunctions =
-                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream());
 
-                answerStream = conjunctions
+                Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
+                Stream<Stream<ConceptMap>> answerStreams = conjunctions
                         .map(p -> ReasonerQueries.create(p, transaction))
                         .map(ReasonerQueryImpl::getPattern)
-                        .flatMap(p -> io.vavr.collection.Stream.ofAll(traverse(p)))
-                        .toJavaStream();
+                        .map(p -> traverse(p));
+
+                LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
+                return mergedStreams.flatStream();
+//
+//                io.vavr.collection.Stream<Conjunction<Statement>> conjunctions =
+//                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream());
+//
+//                answerStream = conjunctions
+//                        .map(p -> ReasonerQueries.create(p, transaction))
+//                        .map(ReasonerQueryImpl::getPattern)
+//                        .flatMap(p -> io.vavr.collection.Stream.ofAll(traverse(p)))
+//                        .toJavaStream();
 
             } else {
 
-                io.vavr.collection.Stream<Conjunction<Pattern>> conjunctions =
-                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getNegationDNF().getPatterns().stream());
-
-                answerStream = conjunctions
+                Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
+                Stream<Stream<ConceptMap>> answerStreams = conjunctions
                         .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
-                        .flatMap(q -> io.vavr.collection.Stream.ofAll(q.resolve()))
-                        .toJavaStream();
+                        .map(q -> q.resolve());
+
+                LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
+                return mergedStreams.flatStream();
+
+//                io.vavr.collection.Stream<Conjunction<Pattern>> conjunctions =
+//                        io.vavr.collection.Stream.ofAll(matchClause.getPatterns().getNegationDNF().getPatterns().stream());
+//
+//                answerStream = conjunctions
+//                        .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
+//                        .flatMap(q -> io.vavr.collection.Stream.ofAll(q.resolve()))
+//                        .toJavaStream();
 
             }
         } catch (GraqlCheckedException e) {
