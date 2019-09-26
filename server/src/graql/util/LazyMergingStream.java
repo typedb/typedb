@@ -18,6 +18,7 @@
 
 package grakn.core.graql.util;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -32,7 +33,7 @@ import java.util.stream.StreamSupport;
  * which means the laziness is partially lost
  * - Custom stream merging: we implement the flatmap functionality by going through the internal `.iterator()`
  * functionality available. This also avoids an external dependency and some overhead
- *
+ * <p>
  * This method converts a Stream of Streams to a flat Stream by converting each stream into an iterator internally
  * It can only be consumed once!
  * Using this method means we lose the ability to utilise Parallel Streams on the Stream returned by `flatStream()`
@@ -47,20 +48,20 @@ public class LazyMergingStream<D> {
     public Stream<D> flatStream() {
         Iterator<D> iterator = new Iterator<D>() {
             Iterator<Stream<D>> streamIterator = streams.iterator();
-            Iterator<D> currentIterator =  null;
+            Iterator<D> currentIterator = Collections.emptyIterator();
 
             @Override
             public boolean hasNext() {
-                if (currentIterator != null && currentIterator.hasNext()) {
+                if (currentIterator.hasNext()) {
                     return true;
                 } else {
                     if (streamIterator.hasNext()) {
                         currentIterator = streamIterator.next().iterator();
                         return currentIterator.hasNext();
-                    } else {
-                        return false;
                     }
                 }
+
+                return false;
             }
 
             @Override
