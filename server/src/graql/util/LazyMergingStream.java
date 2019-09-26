@@ -29,8 +29,7 @@ public class LazyMergingStream<D> {
     public Stream<D> flatStream() {
         Iterator<D> iterator = new Iterator<D>() {
             Iterator<Stream<D>> streamIterator = streams.iterator();
-            Stream<D> currentStream = null;
-            Iterator<D> currentIterator = currentStream.iterator();
+            Iterator<D> currentIterator =  null;
 
             @Override
             public boolean hasNext() {
