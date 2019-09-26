@@ -17,6 +17,7 @@ import java.util.stream.StreamSupport;
  *
  * This method converts a Stream of Streams to a flat Stream by converting each stream into an iterator internally
  * It can only be consumed once!
+ * Using this method means we lose the ability to utilise Parallel Streams on the Stream returned by `flatStream()`
  */
 public class LazyMergingStream<D> {
     private Stream<Stream<D>> streams;
