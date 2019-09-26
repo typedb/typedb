@@ -14,6 +14,9 @@ import java.util.stream.StreamSupport;
  * which means the laziness is partially lost
  * - Custom stream merging: we implement the flatmap functionality by going through the internal `.iterator()`
  * functionality available. This also avoids an external dependency and some overhead
+ *
+ * This method converts a Stream of Streams to a flat Stream by converting each stream into an iterator internally
+ * It can only be consumed once!
  */
 public class LazyMergingStream<D> {
     private Stream<Stream<D>> streams;
