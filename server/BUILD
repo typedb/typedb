@@ -84,7 +84,6 @@ java_library(
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library", # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/io/vavr:vavr",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
