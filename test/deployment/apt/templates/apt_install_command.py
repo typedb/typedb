@@ -48,7 +48,6 @@ def get_dep_version(ws):
 
 core_version = '0.0.0-' + get_commit()
 console_version = get_dep_version("graknlabs_console")
-bin_version = get_dep_version("graknlabs_common")
 
 command = [
     'sudo',
@@ -57,7 +56,6 @@ command = [
     'grakn-core-all={}'.format(core_version),
     'grakn-core-server={}'.format(core_version),
     'grakn-console={}'.format(console_version),
-    'grakn-bin={}'.format(bin_version),
 ]
 
 print('Executing command: {}'.format(' '.join(command)))
