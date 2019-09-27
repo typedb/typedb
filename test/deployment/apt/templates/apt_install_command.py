@@ -53,6 +53,7 @@ command = [
     'sudo',
     'aptitude',
     'install',
+    '-y',
     'grakn-core-all={}'.format(core_version),
     'grakn-core-server={}'.format(core_version),
     'grakn-console={}'.format(console_version),
