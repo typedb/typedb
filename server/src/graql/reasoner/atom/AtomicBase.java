@@ -117,7 +117,7 @@ public abstract class AtomicBase implements Atomic {
         if (o == this) {
             return true;
         }
-        if (o instanceof AtomicBase) {
+        if (this.getClass().equals(o.getClass())) {
             AtomicBase that = (AtomicBase) o;
             return (this.getVarName().equals(that.getVarName()));
         }
