@@ -58,6 +58,7 @@ public class EdgeIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
+    private SessionImpl session;
     private TransactionOLTP tx;
     private EntityTypeImpl entityType;
     private EntityImpl entity;
@@ -66,7 +67,6 @@ public class EdgeIT {
     @Before
     public void setUp(){
         KeyspaceImpl keyspace = KeyspaceImpl.of("keyspace");
-        Config config = server.serverConfig();
         final int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
         final int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
@@ -80,9 +80,8 @@ public class EdgeIT {
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
 
-        SessionImpl session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
+        session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
                 new KeyspaceStatistics(), attributeCache, new ReentrantReadWriteLock());
-
 
         // create the transaction
         CacheProvider cacheProvider = new CacheProvider(new KeyspaceSchemaCache());
@@ -110,7 +109,7 @@ public class EdgeIT {
     @After
     public void tearDown(){
         tx.close();
-//        session.close();
+        session.close();
     }
 
     @Test
