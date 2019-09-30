@@ -18,6 +18,7 @@
 
 package grakn.core.server.session;
 
+import com.google.common.annotations.VisibleForTesting;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
@@ -70,7 +71,8 @@ public class HadoopGraphFactory {
         });
     }
 
-    synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+    @VisibleForTesting
+    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 
