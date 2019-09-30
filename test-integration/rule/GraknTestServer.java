@@ -71,6 +71,7 @@ public class GraknTestServer extends ExternalResource {
     protected KeyspaceManager keyspaceManager;
     protected SessionFactory sessionFactory;
     protected Path dataDirTmp;
+    protected JanusGraphFactory janusGraphFactory;
 
     // Cassandra
     protected final Path originalCassandraConfigPath;
@@ -150,6 +151,10 @@ public class GraknTestServer extends ExternalResource {
         return sessionFactory;
     }
 
+    public JanusGraphFactory janusGraphFactory() {
+        return janusGraphFactory;
+    }
+
     public Config serverConfig() {
         return serverConfig;
     }
@@ -207,7 +212,7 @@ public class GraknTestServer extends ExternalResource {
     private Server createServer() {
         // distributed locks
         LockManager lockManager = new LockManager();
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
+        janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
         Cluster cluster = Cluster.builder()
                 .addContactPoint(serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME))
@@ -228,4 +233,5 @@ public class GraknTestServer extends ExternalResource {
 
         return ServerFactory.createServer(serverRPC);
     }
+
 }

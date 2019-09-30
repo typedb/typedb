@@ -141,8 +141,8 @@ public class TransactionOLTP implements Transaction {
         }
     }
 
-    TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
-                    CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
+    public TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
+                           CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -162,7 +162,7 @@ public class TransactionOLTP implements Transaction {
         typeShardThreshold = this.session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
     }
 
-    void open(Type type) {
+    public void open(Type type) {
         this.txType = type;
         this.isTxOpen = true;
         this.transactionCache.updateSchemaCacheFromKeyspaceCache();
