@@ -486,7 +486,7 @@ public abstract class AttributeAtom extends Binary{
             Relation relation = putImplicitRelation(answer, owner, attribute);
 
             if (getRelationVariable().isReturned()){
-                answer = ConceptUtils.mergeAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
+                answer = ConceptUtils.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
             }
             return Stream.of(answer);
         }

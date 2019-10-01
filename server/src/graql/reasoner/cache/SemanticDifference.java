@@ -145,7 +145,7 @@ public class SemanticDifference {
         ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), childSub.vars());
-        return ConceptUtils.mergeAnswers(unified.project(varsToRetain), childSub).project(childVars);
+        return ConceptUtils.joinAnswers(unified.project(varsToRetain), childSub).project(childVars);
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

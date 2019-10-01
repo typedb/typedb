@@ -153,46 +153,42 @@ public class ConceptUtils {
     }
 
     /**
-     * perform an answer merge with optional explanation
-     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
+     * Performs a natural join (⋈) between answers with the resultant answer containing the explanation of the left operand.
+     * If the answers have an empty set of common variables, the join corresponds to a Cartesian product.
+     * NB: Assumes answers are compatible (concepts corresponding to join vars if any are the same or are compatible types)
      *
-     * @return merged answer
+     * @param baseAnswer left operand of answer join
+     * @param toMerge right operand of answer join
+     * @return joined answers
      */
-    public static ConceptMap mergeAnswers(ConceptMap answerA, ConceptMap answerB) {
-        if (answerB.isEmpty()) return answerA;
-        if (answerA.isEmpty()) return answerB;
+    public static ConceptMap joinAnswers(ConceptMap baseAnswer, ConceptMap toMerge) {
+        if (toMerge.isEmpty()) return baseAnswer;
+        if (baseAnswer.isEmpty()) return toMerge;
 
-        Sets.SetView<Variable> varUnion = Sets.union(answerA.vars(), answerB.vars());
-        Set<Variable> varIntersection = Sets.intersection(answerA.vars(), answerB.vars());
-        Map<Variable, Concept> entryMap = Sets.union(
-                answerA.map().entrySet(),
-                answerB.map().entrySet()
-        )
-                .stream()
-                .filter(e -> !varIntersection.contains(e.getKey()))
+        Set<Variable> joinVars = Sets.intersection(baseAnswer.vars(), toMerge.vars());
+        Map<Variable, Concept> entryMap = Stream
+                .concat(baseAnswer.map().entrySet().stream(), toMerge.map().entrySet().stream())
+                .filter(e -> !joinVars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        varIntersection
-                .forEach(var -> {
-                    Concept concept = answerA.get(var);
-                    Concept otherConcept = answerB.get(var);
-                    if (concept.equals(otherConcept)) entryMap.put(var, concept);
-                    else {
-                        if (concept.isSchemaConcept()
-                                && otherConcept.isSchemaConcept()
-                                && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
-                            entryMap.put(
-                                    var,
-                                    Iterables.getOnlyElement(ConceptUtils.topOrMeta(
-                                            Sets.newHashSet(
-                                                    concept.asSchemaConcept(),
-                                                    otherConcept.asSchemaConcept())
-                                                             )
-                                    )
-                            );
-                        }
-                    }
-                });
-        if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
-        return new ConceptMap(entryMap, answerA.explanation());
+        for (Variable var : joinVars) {
+            Concept concept = baseAnswer.get(var);
+            Concept otherConcept = toMerge.get(var);
+            if (concept.equals(otherConcept)) entryMap.put(var, concept);
+            else {
+                boolean typeCompatible = concept.isSchemaConcept() && otherConcept.isSchemaConcept()
+                        && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false);
+                if (typeCompatible) {
+                    SchemaConcept topType = Iterables.getOnlyElement(ConceptUtils.topOrMeta(
+                            Sets.newHashSet(
+                                    concept.asSchemaConcept(),
+                                    otherConcept.asSchemaConcept())
+                            )
+                    );
+                    entryMap.put(var, topType);
+                }
+                return new ConceptMap();
+            }
+        }
+        return new ConceptMap(entryMap, baseAnswer.explanation());
     }
 }

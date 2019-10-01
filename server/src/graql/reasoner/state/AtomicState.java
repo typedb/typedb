@@ -85,7 +85,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         InferenceRule rule = state.getRule();
         Unifier unifier = state.getUnifier();
         if (rule == null) {
-            answer = ConceptUtils.mergeAnswers(baseAnswer, query.getSubstitution())
+            answer = ConceptUtils.joinAnswers(baseAnswer, query.getSubstitution())
                     .project(query.getVarNames());
         } else {
             answer = rule.requiresMaterialisation(query.getAtom()) ?
@@ -120,20 +120,20 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ReasonerAtomicQuery query = getQuery();
-        ConceptMap answer = unifier.apply(ConceptUtils.mergeAnswers(
+        ConceptMap answer = unifier.apply(ConceptUtils.joinAnswers(
                 baseAnswer, rule.getHead().getRoleSubstitution())
         );
         if (answer.isEmpty()) return answer;
 
-        return ConceptUtils.mergeAnswers(answer, query.getSubstitution())
+        return ConceptUtils.joinAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
                 .explain(new RuleExplanation(query.getPattern(), rule.getRule().id()));
     }
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
-        ConceptMap answer = baseAnswer;
         ReasonerAtomicQuery query = getQuery();
-        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), answer);
+        RuleExplanation ruleExplanation = new RuleExplanation(query.getPattern(), rule.getRule().id());
+        ReasonerAtomicQuery ruleHead = ReasonerQueries.atomic(rule.getHead(), baseAnswer);
         ConceptMap sub = ruleHead.getSubstitution();
         if(materialised.get(rule.getRule().id()).contains(sub)
             && getRuleUnifier(rule).isUnique()){
@@ -146,9 +146,9 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
                 ruleHead.getVarNames();
 
         //materialise exhibits put behaviour - duplicates won't be created
-        ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
+        ConceptMap materialisedSub = ruleHead.materialise(baseAnswer).findFirst().orElse(null);
+        ConceptMap answer = baseAnswer;
         if (materialisedSub != null) {
-            RuleExplanation ruleExplanation = new RuleExplanation(query.getPattern(), rule.getRule().id());
             ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
             getQuery().tx().queryCache().record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
@@ -162,8 +162,8 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         if (answer.isEmpty()) return answer;
 
         return ConceptUtils
-                .mergeAnswers(answer, query.getSubstitution())
+                .joinAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
-                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id()));
+                .explain(ruleExplanation);
     }
 }

@@ -218,7 +218,7 @@ public abstract class IsaAtom extends IsaAtomBase {
 
         Concept concept = EntityTypeImpl.from(entityType).addEntityInferred();
         return Stream.of(
-                ConceptUtils.mergeAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
+                ConceptUtils.joinAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
         ));
     }
 
