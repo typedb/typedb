@@ -126,7 +126,7 @@ public class SessionImpl implements AutoCloseable {
     TransactionOLTP transaction(TransactionOLTP.Type type) {
 
         // If graph is closed it means the session was already closed
-        if (!graph.isClosed()) {
+        if (graph.isClosed()) {
             throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
         }
 

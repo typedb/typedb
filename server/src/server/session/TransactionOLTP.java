@@ -972,7 +972,6 @@ public class TransactionOLTP implements AutoCloseable {
         return conceptManager.getRule(label);
     }
 
-
     @Override
     public void close() {
         close(ErrorMessage.TX_CLOSED.getMessage(keyspace()));
