@@ -84,6 +84,7 @@ import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -219,7 +220,7 @@ public class GraknClientIT {
 
         try (TransactionOLTP tx = localSession.transaction().read()) {
             for (ConceptMap answer : answers) {
-                assertThat(answer.map().values(), contains(new Variable("x")));
+                assertThat(answer.map().keySet(), contains(new Variable("x")));
                 assertNotNull(tx.getConcept(grakn.core.concept.ConceptId.of(answer.get("x").id().getValue())));
             }
         }
@@ -257,13 +258,22 @@ public class GraknClientIT {
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
             final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
-            assertEquals(patterns.size() + ruleStatements, answer.explanation().deductions().size());
+
+            assertEquals(patterns.size() + ruleStatements, deductions(answer).size());
             assertEquals(patterns.size(), answer.explanation().getAnswers().size());
             answer.explanation().getAnswers().stream()
-                    .filter(a -> a.containsVar(var("infer").var()))
+                    .filter(a -> a.map().containsKey(var("infer").var()))
                     .forEach(a -> assertEquals(ruleStatements, a.explanation().getAnswers().size()));
             testExplanation(answer);
         }
+    }
+
+    private Set<ConceptMap> deductions(ConceptMap answer) {
+        Set<ConceptMap> deductions = new HashSet<>(answer.explanation().getAnswers());
+        for (ConceptMap explanationAnswer : answer.explanation().getAnswers()) {
+            deductions.addAll(deductions(explanationAnswer));
+        }
+        return deductions;
     }
 
     private void testExplanation(ConceptMap answer) {
@@ -277,13 +287,13 @@ public class GraknClientIT {
             TestCase.assertTrue("Disconnected answer in explanation",
                     answers.stream()
                             .filter(a2 -> !a2.equals(a))
-                            .anyMatch(a2 -> !Sets.intersection(a.vars(), a2.vars()).isEmpty())
+                            .anyMatch(a2 -> !Sets.intersection(a.map().keySet(), a2.map().keySet()).isEmpty())
             );
         });
     }
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
-        Set<ConceptMap> answers = answer.explanation().deductions().stream()
+        Set<ConceptMap> answers = deductions(answer).stream()
                 .filter(a -> a.explanation().getPattern() != null)
                 .collect(Collectors.toSet());
 
@@ -414,17 +424,17 @@ public class GraknClientIT {
                     grakn.core.concept.thing.Relation::rolePlayers,
                     grakn.client.concept.Relation::rolePlayers);
 
-                    ImmutableMultimap.Builder<grakn.core.concept.ConceptId, grakn.core.concept.ConceptId> localRolePlayers = ImmutableMultimap.builder();
+                    ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
             localConcept.rolePlayersMap().forEach((role, players) -> {
                 for (grakn.core.concept.thing.Thing player : players) {
-                    localRolePlayers.put(role.id(), player.id());
+                    localRolePlayers.put(role.id().toString(), player.id().toString());
                 }
             });
 
-            ImmutableMultimap.Builder<ConceptId, ConceptId> remoteRolePlayers = ImmutableMultimap.builder();
+            ImmutableMultimap.Builder<String, String> remoteRolePlayers = ImmutableMultimap.builder();
             remoteConcept.rolePlayersMap().forEach((role, players) -> {
                 for (Thing player : players) {
-                    remoteRolePlayers.put(role.id(), player.id());
+                    remoteRolePlayers.put(role.id().toString(), player.id().toString());
                 }
             });
 
@@ -450,8 +460,8 @@ public class GraknClientIT {
             grakn.core.concept.type.SchemaConcept localConcept = localTx.getConcept(localId).asSchemaConcept();
 
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
-            assertEquals(localConcept.label(), remoteConcept.label());
-            assertEquals(localConcept.sup().id(), remoteConcept.sup().id());
+            assertEquals(localConcept.label().toString(), remoteConcept.label().toString());
+            assertEquals(localConcept.sup().id().toString(), remoteConcept.sup().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.SchemaConcept::sups,
                     grakn.client.concept.SchemaConcept::sups);
@@ -487,7 +497,7 @@ public class GraknClientIT {
             grakn.core.concept.thing.Thing localConcept = localTx.getConcept(localId).asThing();
 
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
-            assertEquals(localConcept.type().id(), remoteConcept.type().id());
+            assertEquals(localConcept.type().id().toString(), remoteConcept.type().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.thing.Thing::attributes,
                     grakn.client.concept.Thing::attributes);
@@ -613,7 +623,7 @@ public class GraknClientIT {
             grakn.core.concept.type.EntityType localConcept = localTx.getConcept(localId).asEntityType();
 
             // There actually aren't any new methods on EntityType, but we should still check we can get them
-            assertEquals(localConcept.id(), remoteConcept.id());
+            assertEquals(localConcept.id().toString(), remoteConcept.id().toString());
         }
     }
 
@@ -657,7 +667,7 @@ public class GraknClientIT {
             grakn.core.concept.ConceptId localId = grakn.core.concept.ConceptId.of(remoteConcept.id().getValue());
             grakn.core.concept.type.AttributeType<String> localConcept = localTx.getConcept(localId).asAttributeType();
 
-            assertEquals(localConcept.dataType(), remoteConcept.dataType());
+            assertEquals(localConcept.dataType().dataClass(), remoteConcept.dataType().dataClass());
             assertEquals(localConcept.regex(), remoteConcept.regex());
             assertEquals(
                     localConcept.attribute("The Muppets").id().toString(),
@@ -705,10 +715,12 @@ public class GraknClientIT {
             grakn.core.concept.ConceptId localId = grakn.core.concept.ConceptId.of(remoteConcept.id().getValue());
             grakn.core.concept.thing.Attribute<?> localConcept = localTx.getConcept(localId).asAttribute();
 
-            assertEquals(localConcept.dataType(), remoteConcept.dataType());
+            assertEquals(localConcept.dataType().dataClass(), remoteConcept.dataType().dataClass());
             assertEquals(localConcept.value(), remoteConcept.value());
             assertEquals(localConcept.owner().id().toString(), remoteConcept.owners().findFirst().get().id().toString());
-            assertEqualConcepts(localConcept, remoteConcept, Attribute::owners);
+            assertEqualConcepts(localConcept, remoteConcept,
+                    grakn.core.concept.thing.Attribute::owners,
+                    grakn.client.concept.Attribute::owners);
         }
     }
 
@@ -758,7 +770,7 @@ public class GraknClientIT {
             List<ConceptSetMeasure> centrality = tx.execute(Graql.compute().centrality().using(DEGREE)
                     .of("animal").in("human", "animal", "pet-ownership"));
             assertEquals(1, centrality.size());
-            assertEquals(idCoco, centrality.get(0).set().iterator().next());
+            assertEquals(idCoco.toString(), centrality.get(0).set().iterator().next().toString());
             assertEquals(1, centrality.get(0).measurement().intValue());
 
             // coreness
@@ -767,15 +779,16 @@ public class GraknClientIT {
             // path
             List<ConceptList> paths = tx.execute(Graql.compute().path().to(idCoco.getValue()).from(idMike.getValue()));
             assertEquals(1, paths.size());
-            assertEquals(idCoco, paths.get(0).list().get(2));
-            assertEquals(idMike, paths.get(0).list().get(0));
+            assertEquals(idCoco.toString(), paths.get(0).list().get(2).toString());
+            assertEquals(idMike.toString(), paths.get(0).list().get(0).toString());
 
             // connected component
             List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
                     .in("human", "animal", "pet-ownership"));
             assertEquals(1, clusterList.size());
             assertEquals(3, clusterList.get(0).set().size());
-            assertEquals(Sets.newHashSet(idCoco, idMike, idCocoAndMike), clusterList.get(0).set());
+            assertThat(Sets.newHashSet(idCoco.toString(), idMike.toString(), idCocoAndMike.toString()),
+                    containsInAnyOrder(clusterList.get(0).set().stream().map(ConceptId::toString).toArray()));
 
             // k-core
             assertTrue(tx.execute(Graql.compute().cluster().using(K_CORE).in("human", "animal", "pet-ownership")).isEmpty());
@@ -1074,11 +1087,11 @@ public class GraknClientIT {
         try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
             //Graql.match(var("x").isa("company")).get(var("x"), var("y"));
 
-            EntityType company = tx.putEntityType("company-23");
+            EntityType company = tx.putEntityType("company-123");
             company.create();
             company.create();
 
-            EntityType person = tx.putEntityType("person-23");
+            EntityType person = tx.putEntityType("person-123");
             person.create();
             person.create();
             person.create();
