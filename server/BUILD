@@ -46,7 +46,6 @@ java_library(
     srcs = glob(["src/**/*.java"], exclude=["**/templates/**", "**/test/**"]) + [":version"],
     deps = [
         # Internal dependencies
-        "//api:api",
         "//common:common",
         "//concept:concept",
 

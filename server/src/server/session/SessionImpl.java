@@ -53,7 +53,7 @@ import java.util.function.Consumer;
  * - Only 1 transaction per thread can exist.
  * - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
-public class SessionImpl implements Session {
+public class SessionImpl implements AutoCloseable {
 
     private final HadoopGraph hadoopGraph;
 
@@ -104,7 +104,7 @@ public class SessionImpl implements Session {
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
-        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = this.transaction(TransactionOLTP.Type.WRITE);
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -121,12 +121,11 @@ public class SessionImpl implements Session {
         return graphLock;
     }
 
-    @Override
     public TransactionOLTP.Builder transaction() {
         return new TransactionOLTP.Builder(this);
     }
 
-    TransactionOLTP transaction(Transaction.Type type) {
+    TransactionOLTP transaction(TransactionOLTP.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -247,7 +246,6 @@ public class SessionImpl implements Session {
         isClosed = true;
     }
 
-    @Override
     public KeyspaceImpl keyspace() {
         return keyspace;
     }
@@ -257,9 +255,9 @@ public class SessionImpl implements Session {
     }
 
     /**
-     * The config options of this {@link Session} which were passed in at the time of construction
+     * The config options of this {@link SessionImpl} which were passed in at the time of construction
      *
-     * @return The config options of this {@link Session}
+     * @return The config options of this {@link SessionImpl}
      */
     public Config config() {
         return config;

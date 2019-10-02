@@ -21,13 +21,13 @@ package grakn.core.server.session;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.api.Transaction;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
 import grakn.core.concept.LabelId;
+import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
@@ -61,12 +61,14 @@ import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
 import grakn.core.server.statistics.UncomittedStatisticsDelta;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -82,6 +84,7 @@ import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -96,7 +99,7 @@ import java.util.stream.Stream;
 /**
  * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
  */
-public class TransactionOLTP implements Transaction {
+public class TransactionOLTP implements AutoCloseable {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     private final long typeShardThreshold;
 
@@ -111,7 +114,7 @@ public class TransactionOLTP implements Transaction {
 
     // TransactionOLTP Specific
     private final JanusGraphTransaction janusTransaction;
-    private Transaction.Type txType;
+    private Type txType;
     private String closedReason = null;
     private boolean isTxOpen;
     private UncomittedStatisticsDelta uncomittedStatisticsDelta;
@@ -122,7 +125,42 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public static class Builder implements Transaction.Builder {
+    /**
+     * An enum that determines the type of Grakn Transaction.
+     * This class is used to describe how a transaction on Transaction should behave.
+     * When producing a graph using a Session one of the following enums must be provided:
+     * READ - A read only transaction. If you attempt to mutate the graph with such a transaction an exception will be thrown.
+     * WRITE - A transaction which allows you to mutate the graph.
+     * BATCH - A transaction which allows mutations to be performed more quickly but disables some consistency checks.
+     */
+    public enum Type {
+        READ(0),  //Read only transaction where mutations to the graph are prohibited
+        WRITE(1); //Write transaction where the graph can be mutated
+
+        private final int type;
+
+        Type(int type) {
+            this.type = type;
+        }
+
+        public int id() {
+            return type;
+        }
+
+        @Override
+        public String toString() {
+            return this.name();
+        }
+
+        public static Type of(int value) {
+            for (Type t : Type.values()) {
+                if (t.type == value) return t;
+            }
+            return null;
+        }
+    }
+
+    public static class Builder {
 
         private SessionImpl session;
 
@@ -130,14 +168,12 @@ public class TransactionOLTP implements Transaction {
             this.session = session;
         }
 
-        @Override
         public TransactionOLTP read() {
-            return session.transaction(Transaction.Type.READ);
+            return session.transaction(Type.READ);
         }
 
-        @Override
         public TransactionOLTP write() {
-            return session.transaction(Transaction.Type.WRITE);
+            return session.transaction(Type.WRITE);
         }
     }
 
@@ -293,74 +329,230 @@ public class TransactionOLTP implements Transaction {
         return propertiesAsObj.toArray();
     }
 
-    @Override
     public SessionImpl session() {
         return session;
     }
 
-    @Override
     public KeyspaceImpl keyspace() {
         return session.keyspace();
     }
 
-    @Override
+
+    // Define Query
+
+    public List<ConceptMap> execute(GraqlDefine query) {
+        return stream(query).collect(Collectors.toList());
+    }
+
     public Stream<ConceptMap> stream(GraqlDefine query) {
         return Stream.of(executor().define(query));
     }
 
-    @Override
+    // Undefine Query
+
+    public List<ConceptMap> execute(GraqlUndefine query) {
+        return stream(query).collect(Collectors.toList());
+    }
+
     public Stream<ConceptMap> stream(GraqlUndefine query) {
         return Stream.of(executor().undefine(query));
     }
 
-    @Override
+    // Insert query
+
+    public List<ConceptMap> execute(GraqlInsert query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    List<ConceptMap> execute(GraqlInsert query) {
+        return execute(query, true);
+    }
+
+    public Stream<ConceptMap> stream(GraqlInsert query) {
+        return stream(query, true);
+    }
+
+
     public Stream<ConceptMap> stream(GraqlInsert query, boolean infer) {
         return executor().insert(query);
     }
 
-    @Override
+    // Delete query
+
+    public List<ConceptSet> execute(GraqlDelete query) {
+        return execute(query, true);
+    }
+
+    public List<ConceptSet> execute(GraqlDelete query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    public Stream<ConceptSet> stream(GraqlDelete query) {
+        return stream(query, true);
+    }
+
     public Stream<ConceptSet> stream(GraqlDelete query, boolean infer) {
         return Stream.of(executor(infer).delete(query));
     }
 
-    @Override
+    // Get Query
+
+    public List<ConceptMap> execute(GraqlGet query) {
+        return execute(query, true);
+    }
+
+    public List<ConceptMap> execute(GraqlGet query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    public Stream<ConceptMap> stream(GraqlGet query) {
+        return stream(query, true);
+    }
+
     public Stream<ConceptMap> stream(GraqlGet query, boolean infer) {
         return executor(infer).get(query);
     }
 
-    @Override
+    // Aggregate Query
+
+    public List<Numeric> execute(GraqlGet.Aggregate query) {
+        return execute(query, true);
+    }
+
+    public List<Numeric> execute(GraqlGet.Aggregate query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    public Stream<Numeric> stream(GraqlGet.Aggregate query) {
+        return stream(query, true);
+    }
+
     public Stream<Numeric> stream(GraqlGet.Aggregate query, boolean infer) {
         return executor(infer).aggregate(query);
     }
 
-    @Override
+    // Group Query
+
+    public List<AnswerGroup<ConceptMap>> execute(GraqlGet.Group query) {
+        return execute(query, true);
+    }
+
+    public List<AnswerGroup<ConceptMap>> execute(GraqlGet.Group query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    public Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query) {
+        return stream(query, true);
+    }
+
     public Stream<AnswerGroup<ConceptMap>> stream(GraqlGet.Group query, boolean infer) {
         return executor(infer).get(query);
     }
 
-    @Override
+    // Group Aggregate Query
+
+    public List<AnswerGroup<Numeric>> execute(GraqlGet.Group.Aggregate query) {
+        return execute(query, true);
+    }
+
+    public List<AnswerGroup<Numeric>> execute(GraqlGet.Group.Aggregate query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    public Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query) {
+        return stream(query, true);
+    }
+
     public Stream<AnswerGroup<Numeric>> stream(GraqlGet.Group.Aggregate query, boolean infer) {
         return executor(infer).get(query);
     }
 
-    @Override
+    // Compute Query
+
+    public List<Numeric> execute(GraqlCompute.Statistics query) {
+        return stream(query).collect(Collectors.toList());
+    }
+
     public Stream<Numeric> stream(GraqlCompute.Statistics query) {
         return executor(false).compute(query);
     }
 
-    @Override
+    public List<ConceptList> execute(GraqlCompute.Path query) {
+        return stream(query).collect(Collectors.toList());
+    }
+
     public Stream<ConceptList> stream(GraqlCompute.Path query) {
         return executor(false).compute(query);
     }
 
-    @Override
+    public List<ConceptSetMeasure> execute(GraqlCompute.Centrality query) {
+        return stream(query).collect(Collectors.toList());
+    }
+
     public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
         return executor(false).compute(query);
     }
 
-    @Override
+    public List<ConceptSet> execute(GraqlCompute.Cluster query) {
+        return stream(query).collect(Collectors.toList());
+    }
+
     public Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
         return executor(false).compute(query);
+    }
+
+    public List<? extends Answer> execute(GraqlQuery query) {
+        return execute(query, true);
+    }
+
+    public List<? extends Answer> execute(GraqlQuery query, boolean infer) {
+        return stream(query, infer).collect(Collectors.toList());
+    }
+
+    public Stream<? extends Answer> stream(GraqlQuery query) {
+        return stream(query, true);
+    }
+
+    public Stream<? extends Answer> stream(GraqlQuery query, boolean infer) {
+        if (query instanceof GraqlDefine) {
+            return stream((GraqlDefine) query);
+
+        } else if (query instanceof GraqlUndefine) {
+            return stream((GraqlUndefine) query);
+
+        } else if (query instanceof GraqlInsert) {
+            return stream((GraqlInsert) query, infer);
+
+        } else if (query instanceof GraqlDelete) {
+            return stream((GraqlDelete) query, infer);
+
+        } else if (query instanceof GraqlGet) {
+            return stream((GraqlGet) query, infer);
+
+        } else if (query instanceof GraqlGet.Aggregate) {
+            return stream((GraqlGet.Aggregate) query, infer);
+
+        } else if (query instanceof GraqlGet.Group.Aggregate) {
+            return stream((GraqlGet.Group.Aggregate) query, infer);
+
+        } else if (query instanceof GraqlGet.Group) {
+            return stream((GraqlGet.Group) query, infer);
+
+        } else if (query instanceof GraqlCompute.Statistics) {
+            return stream((GraqlCompute.Statistics) query);
+
+        } else if (query instanceof GraqlCompute.Path) {
+            return stream((GraqlCompute.Path) query);
+
+        } else if (query instanceof GraqlCompute.Centrality) {
+            return stream((GraqlCompute.Centrality) query);
+
+        } else if (query instanceof GraqlCompute.Cluster) {
+            return stream((GraqlCompute.Cluster) query);
+
+        } else {
+            throw new IllegalArgumentException("Unrecognised Query object");
+        }
     }
 
     public RuleCache ruleCache() {
@@ -390,12 +582,10 @@ public class TransactionOLTP implements Transaction {
         return uncomittedStatisticsDelta;
     }
 
-    @Override
     public boolean isClosed() {
         return !isTxOpen;
     }
 
-    @Override
     public Type type() {
         return this.txType;
     }
@@ -417,7 +607,6 @@ public class TransactionOLTP implements Transaction {
 
     //----------------------------------------------General Functionality-----------------------------------------------
 
-    @Override
     public final Stream<SchemaConcept> sups(SchemaConcept schemaConcept) {
         Set<SchemaConcept> superSet = new HashSet<>();
 
@@ -461,7 +650,6 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-EntityType.
      */
-    @Override
     public EntityType putEntityType(Label label) {
         checkGraphIsOpen();
         SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
@@ -474,6 +662,10 @@ public class TransactionOLTP implements Transaction {
         return (EntityType) schemaConcept;
     }
 
+    public EntityType putEntityType(String label) {
+        return putEntityType(Label.of(label));
+    }
+
 
     /**
      * @param label A unique label for the RelationType
@@ -481,7 +673,6 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-RelationType.
      */
-    @Override
     public RelationType putRelationType(Label label) {
         checkGraphIsOpen();
         SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
@@ -494,13 +685,16 @@ public class TransactionOLTP implements Transaction {
         return (RelationType) schemaConcept;
     }
 
+    public RelationType putRelationType(String label) {
+        return putRelationType(Label.of(label));
+    }
+
     /**
      * @param label A unique label for the Role
      * @return new or existing Role with the provided Id.
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Role.
      */
-    @Override
     public Role putRole(Label label) {
         checkGraphIsOpen();
         SchemaConceptImpl schemaConcept = conceptManager.getSchemaConcept(label);
@@ -511,6 +705,10 @@ public class TransactionOLTP implements Transaction {
         validateBaseType(schemaConcept, Schema.BaseType.ROLE);
 
         return (Role) schemaConcept;
+    }
+
+    public Role putRole(String label) {
+        return putRole(Label.of(label));
     }
 
 
@@ -526,7 +724,6 @@ public class TransactionOLTP implements Transaction {
      *                                    unique or has a different datatype.
      */
     @SuppressWarnings("unchecked")
-    @Override
     public <V> AttributeType<V> putAttributeType(Label label, AttributeType.DataType<V> dataType) {
         checkGraphIsOpen();
         AttributeType<V> attributeType = conceptManager.getSchemaConcept(label);
@@ -546,6 +743,10 @@ public class TransactionOLTP implements Transaction {
         return attributeType;
     }
 
+    public <V> AttributeType<V> putAttributeType(String label, AttributeType.DataType<V> dataType) {
+        return putAttributeType(Label.of(label), dataType);
+    }
+
     /**
      * @param label A unique label for the Rule
      * @param when
@@ -554,7 +755,6 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException       if the graph is closed
      * @throws PropertyNotUniqueException if the {@param label} is already in use by an existing non-Rule.
      */
-    @Override
     public Rule putRule(Label label, Pattern when, Pattern then) {
         checkGraphIsOpen();
         Rule retrievedRule = conceptManager.getSchemaConcept(label);
@@ -580,6 +780,11 @@ public class TransactionOLTP implements Transaction {
         return rule;
     }
 
+    public Rule putRule(String label, Pattern when, Pattern then) {
+        return putRule(Label.of(label), when, then);
+    }
+
+
     //------------------------------------ Lookup
 
     /**
@@ -589,10 +794,71 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException   if the concept is not an instance of T
      */
-    @Override
     public <T extends Concept> T getConcept(ConceptId id) {
         checkGraphIsOpen();
         return conceptManager.getConcept(id);
+    }
+
+
+
+    /**
+     * Get the root of all Types.
+     *
+     * @return The meta type -> type.
+     */
+    @CheckReturnValue
+    public SchemaConcept getMetaConcept() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
+    }
+
+    /**
+     * Get the root of all RelationType.
+     *
+     * @return The meta relation type -> relation-type.
+     */
+    @CheckReturnValue
+    public RelationType getMetaRelationType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.toString()));
+    }
+
+    /**
+     * Get the root of all the Role.
+     *
+     * @return The meta role type -> role-type.
+     */
+    @CheckReturnValue
+    public Role getMetaRole() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.toString()));
+    }
+
+    /**
+     * Get the root of all the AttributeType.
+     *
+     * @return The meta resource type -> resource-type.
+     */
+    @CheckReturnValue
+    public AttributeType getMetaAttributeType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
+    }
+
+    /**
+     * Get the root of all the Entity Types.
+     *
+     * @return The meta entity type -> entity-type.
+     */
+    @CheckReturnValue
+    public EntityType getMetaEntityType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ENTITY.toString()));
+    }
+
+    /**
+     * Get the root of all Rules;
+     *
+     * @return The meta Rule
+     */
+    @CheckReturnValue
+    public Rule getMetaRule() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.RULE.toString()));
     }
 
 
@@ -602,7 +868,6 @@ public class TransactionOLTP implements Transaction {
      * @return The Attributes holding the provided value or an empty collection if no such Attribute exists.
      * @throws TransactionException if the graph is closed
      */
-    @Override
     public <V> Collection<Attribute<V>> getAttributesByValue(V value) {
         checkGraphIsOpen();
         if (value == null) return Collections.emptySet();
@@ -632,7 +897,6 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException   if the type is not an instance of T
      */
-    @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         checkGraphIsOpen();
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
@@ -650,7 +914,6 @@ public class TransactionOLTP implements Transaction {
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException   if the type is not an instance of T
      */
-    @Override
     public <T extends grakn.core.concept.type.Type> T getType(Label label) {
         checkGraphIsOpen();
         return conceptManager.getType(label);
@@ -661,7 +924,6 @@ public class TransactionOLTP implements Transaction {
      * @return The Entity Type  with the provided label or null if no such Entity Type exists.
      * @throws TransactionException if the graph is closed
      */
-    @Override
     public EntityType getEntityType(String label) {
         checkGraphIsOpen();
         return conceptManager.getEntityType(label);
@@ -672,7 +934,6 @@ public class TransactionOLTP implements Transaction {
      * @return The RelationType with the provided label or null if no such RelationType exists.
      * @throws TransactionException if the graph is closed
      */
-    @Override
     public RelationType getRelationType(String label) {
         checkGraphIsOpen();
         return conceptManager.getRelationType(label);
@@ -684,7 +945,6 @@ public class TransactionOLTP implements Transaction {
      * @return The AttributeType with the provided label or null if no such AttributeType exists.
      * @throws TransactionException if the graph is closed
      */
-    @Override
     public <V> AttributeType<V> getAttributeType(String label) {
         checkGraphIsOpen();
         return conceptManager.getAttributeType(label);
@@ -695,7 +955,6 @@ public class TransactionOLTP implements Transaction {
      * @return The Role Type  with the provided label or null if no such Role Type exists.
      * @throws TransactionException if the graph is closed
      */
-    @Override
     public Role getRole(String label) {
         checkGraphIsOpen();
         return conceptManager.getRole(label);
@@ -706,7 +965,6 @@ public class TransactionOLTP implements Transaction {
      * @return The Rule with the provided label or null if no such Rule Type exists.
      * @throws TransactionException if the graph is closed
      */
-    @Override
     public Rule getRule(String label) {
         checkGraphIsOpen();
         return conceptManager.getRule(label);
@@ -738,7 +996,6 @@ public class TransactionOLTP implements Transaction {
      *
      * @throws InvalidKBException if graph does not comply with the grakn validation rules
      */
-    @Override
     public void commit() throws InvalidKBException {
         if (isClosed()) {
             return;

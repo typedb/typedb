@@ -22,7 +22,6 @@ java_test(
   deps = [
       "//concept:concept",
       "//server:server",
-      "//api:api",
       "//common",
       "//test-integration/rule:grakn-test-server",
 

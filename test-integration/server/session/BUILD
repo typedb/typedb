@@ -37,7 +37,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.session.TransactionOLTPIT",
     deps = [
-        "//api",
         "//common",
         "//concept",
         "//dependencies/maven/artifacts/com/google/guava:guava",
