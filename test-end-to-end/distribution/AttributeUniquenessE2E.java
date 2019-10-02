@@ -98,7 +98,7 @@ public class AttributeUniquenessE2E {
 
     private void defineParentChildSchema(GraknClient.Session session) {
         try (GraknClient.Transaction tx = session.transaction().write()) {
-            List<ConceptMap> answer = tx.execute(Graql.define(
+            List<grakn.client.answer.ConceptMap> answer = tx.execute(Graql.define(
                     type("name").sub("attribute").datatype(Graql.Token.DataType.STRING),
                     type("parent").sub("role"),
                     type("child").sub("role"),
@@ -125,7 +125,7 @@ public class AttributeUniquenessE2E {
         for (String name : duplicatedNames) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 try (GraknClient.Transaction tx = session.transaction().write()) {
-                    List<ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
+                    List<grakn.client.answer.ConceptMap> answer = tx.execute(Graql.insert(var().isa("name").val(name)));
                     tx.commit();
                 }
                 return null;

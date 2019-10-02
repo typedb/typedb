@@ -22,15 +22,13 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import grakn.client.GraknClient;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
+import grakn.client.answer.ConceptMap;
+import grakn.client.concept.AttributeType;
+import grakn.client.concept.ConceptId;
+import grakn.client.concept.Label;
+import grakn.client.concept.RelationType;
+import grakn.client.concept.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
@@ -100,7 +98,7 @@ public class BenchmarkBigIT {
         try (GraknClient.Transaction transaction = session.transaction().write()) {
             Statement entity = new Statement(new Variable().asReturnedVar());
             ConceptId[] instances = transaction.stream(Graql.match(entity.isa(entityLabel)).get())
-                    .map(ans -> ans.get(entity.var()).id())
+                    .map(ans -> ans.get(entity.var().name()).id())
                     .toArray(ConceptId[]::new);
 
             assertEquals(instances.length, N);
@@ -152,12 +150,12 @@ public class BenchmarkBigIT {
     }
 
     private void loadRuleChainData(int N) {
-        String entityLabel = "genericEntity";
-        String attributeLabel = "index";
-        String baseRelationLabel = "relation1";
-        String genericRelationLabel = "relation";
-        String fromRoleLabel = "fromRole";
-        String toRoleLabel = "toRole";
+        Label entityLabel = Label.of("genericEntity");
+        Label attributeLabel = Label.of("index");
+        Label baseRelationLabel = Label.of("relation1");
+        Label genericRelationLabel = Label.of("relation");
+        Label fromRoleLabel = Label.of("fromRole");
+        Label toRoleLabel =Label.of("toRole");
 
         //load ontology
         try (GraknClient.Session session = new GraknClient(server.grpcUri()).session(keyspace)) {
@@ -172,7 +170,7 @@ public class BenchmarkBigIT {
 
                 //define N relation types
                 for (int i = 1; i <= N; i++) {
-                    transaction.putRelationType(genericRelationLabel + i)
+                    transaction.putRelationType(Label.of(genericRelationLabel.getValue() + i))
                             .relates(fromRole)
                             .relates(toRole);
                 }
@@ -189,11 +187,11 @@ public class BenchmarkBigIT {
                                             Graql.var()
                                                     .rel(Graql.type(fromRole.label().getValue()), fromVar)
                                                     .rel(Graql.type(toRole.label().getValue()), intermedVar)
-                                                    .isa(baseRelationLabel),
+                                                    .isa(baseRelationLabel.getValue()),
                                             Graql.var()
                                                     .rel(Graql.type(fromRole.label().getValue()), intermedVar)
                                                     .rel(Graql.type(toRole.label().getValue()), toVar)
-                                                    .isa(genericRelationLabel + (i - 1))
+                                                    .isa(genericRelationLabel.getValue() + (i - 1))
                                     )
                             )
                             .then(
@@ -201,7 +199,7 @@ public class BenchmarkBigIT {
                                             Graql.var()
                                                     .rel(Graql.type(fromRole.label().getValue()), fromVar)
                                                     .rel(Graql.type(toRole.label().getValue()), toVar)
-                                                    .isa(genericRelationLabel + i)
+                                                    .isa(genericRelationLabel.getValue() + i)
                                     )
                             );
                     transaction.execute(Graql.define(rulePattern));
@@ -210,21 +208,21 @@ public class BenchmarkBigIT {
             }
 
             //insert N + 1 entities
-            loadEntities(entityLabel, N + 1, session);
+            loadEntities(entityLabel.getValue(), N + 1, session);
 
             try (GraknClient.Transaction transaction = session.transaction().write()) {
                 Statement entityVar = new Statement(new Variable().asReturnedVar());
-                ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel)).get())
-                        .map(ans -> ans.get(entityVar.var()).id())
+                ConceptId[] instances = transaction.stream(Graql.match(entityVar.isa(entityLabel.getValue())).get())
+                        .map(ans -> ans.get(entityVar.var().name()).id())
                         .toArray(ConceptId[]::new);
 
-                RelationType baseRelation = transaction.getRelationType(baseRelationLabel);
-                Role fromRole = transaction.getRole(fromRoleLabel);
-                Role toRole = transaction.getRole(toRoleLabel);
+                RelationType baseRelation = transaction.getRelationType(baseRelationLabel.getValue());
+                Role fromRole = transaction.getRole(fromRoleLabel.getValue());
+                Role toRole = transaction.getRole(toRoleLabel.getValue());
                 transaction.execute(
                         Graql.insert(
                                 new Statement(new Variable().asReturnedVar())
-                                        .has(attributeLabel, "first")
+                                        .has(attributeLabel.getValue(), "first")
                                         .id(instances[0].getValue())
                                         .statements()
                         )
@@ -244,7 +242,7 @@ public class BenchmarkBigIT {
                     transaction.execute(Graql.insert(relationInsert.statements()));
 
                     Pattern resourceInsert = new Statement(new Variable().asReturnedVar())
-                            .has(attributeLabel, String.valueOf(i))
+                            .has(attributeLabel.getValue(), String.valueOf(i))
                             .id(instances[i].getValue());
                     transaction.execute(Graql.insert(resourceInsert.statements()));
                 }
