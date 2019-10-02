@@ -20,8 +20,6 @@ package grakn.core.server.kb.structure;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import grakn.core.api.Transaction;
-import grakn.core.common.config.Config;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.thing.Entity;
 import grakn.core.rule.GraknTestServer;
@@ -96,7 +94,7 @@ public class EdgeIT {
         ConceptManager conceptManager = new ConceptManager(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
 
         tx = new TransactionOLTP(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
-        tx.open(Transaction.Type.WRITE);
+        tx.open(TransactionOLTP.Type.WRITE);
 
         // Create Edge
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");

@@ -364,7 +364,7 @@ public class TransactionOLTP implements AutoCloseable {
         return stream(query, infer).collect(Collectors.toList());
     }
 
-    List<ConceptMap> execute(GraqlInsert query) {
+    public List<ConceptMap> execute(GraqlInsert query) {
         return execute(query, true);
     }
 
@@ -500,6 +500,8 @@ public class TransactionOLTP implements AutoCloseable {
     public Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
         return executor(false).compute(query);
     }
+
+    // Generic queries
 
     public List<? extends Answer> execute(GraqlQuery query) {
         return execute(query, true);
@@ -807,7 +809,7 @@ public class TransactionOLTP implements AutoCloseable {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    public SchemaConcept getMetaConcept() {
+    public grakn.core.concept.type.Type getMetaConcept() {
         return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
     }
 

@@ -23,7 +23,6 @@ import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.api.Transaction.Type;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -33,12 +32,12 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
-import grakn.protocol.session.SessionProto;
-import grakn.protocol.session.SessionProto.Transaction;
-import grakn.protocol.session.SessionServiceGrpc;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.protocol.session.SessionProto;
+import grakn.protocol.session.SessionProto.Transaction;
+import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlQuery;
@@ -297,10 +296,10 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             sessionId = request.getSessionId();
             SessionImpl session = openSessions.get(sessionId);
 
-            Type type = Type.of(request.getType().getNumber());
-            if (type != null && type.equals(Type.WRITE)) {
+            TransactionOLTP.Type type = TransactionOLTP.Type.of(request.getType().getNumber());
+            if (type != null && type.equals(TransactionOLTP.Type.WRITE)) {
                 tx = session.transaction().write();
-            } else if (type != null && type.equals(Type.READ)) {
+            } else if (type != null && type.equals(TransactionOLTP.Type.READ)) {
                 tx = session.transaction().read();
             } else {
                 throw TransactionException.create("Invalid Transaction Type");

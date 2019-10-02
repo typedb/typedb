@@ -19,8 +19,6 @@
 package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
-import grakn.core.api.Session;
-import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
