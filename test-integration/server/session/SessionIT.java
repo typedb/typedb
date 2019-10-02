@@ -158,16 +158,16 @@ public class SessionIT {
     public void whenClosingSession_transactionIsAlsoClosed() {
         SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
         TransactionOLTP tx1 = localSession.transaction().write();
-        assertFalse(tx1.isClosed());
+        assertTrue(tx1.isOpen());
         localSession.close();
-        assertTrue(tx1.isClosed());
+        assertFalse(tx1.isOpen());
     }
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
         SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
         TransactionOLTP tx1 = localSession.transaction().write();
-        assertFalse(tx1.isClosed());
+        assertTrue(tx1.isOpen());
         localSession.close();
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("The session for graph [test] is closed. Create a new session to interact with the graph.");

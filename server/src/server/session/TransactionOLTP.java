@@ -584,8 +584,8 @@ public class TransactionOLTP implements AutoCloseable {
         return uncomittedStatisticsDelta;
     }
 
-    public boolean isClosed() {
-        return !isTxOpen;
+    public boolean isOpen() {
+        return isTxOpen;
     }
 
     public Type type() {
@@ -631,7 +631,7 @@ public class TransactionOLTP implements AutoCloseable {
      *                              or current transaction is not local (i.e. it was open in another thread)
      */
     private void checkGraphIsOpen() {
-        if (!isLocal() || isClosed()) throw TransactionException.transactionClosed(this, this.closedReason);
+        if (!isLocal() || !isOpen()) throw TransactionException.transactionClosed(this, this.closedReason);
     }
 
     private boolean isLocal() {
@@ -983,7 +983,7 @@ public class TransactionOLTP implements AutoCloseable {
      */
 
     void close(String closeMessage) {
-        if (isClosed()) {
+        if (!isOpen()) {
             return;
         }
         try {
@@ -999,7 +999,7 @@ public class TransactionOLTP implements AutoCloseable {
      * @throws InvalidKBException if graph does not comply with the grakn validation rules
      */
     public void commit() throws InvalidKBException {
-        if (isClosed()) {
+        if (!isOpen()) {
             return;
         }
         try {

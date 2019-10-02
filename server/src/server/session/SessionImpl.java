@@ -126,13 +126,13 @@ public class SessionImpl implements AutoCloseable {
     TransactionOLTP transaction(TransactionOLTP.Type type) {
 
         // If graph is closed it means the session was already closed
-        if (graph.isClosed()) {
+        if (!graph.isClosed()) {
             throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
         }
 
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         // If transaction is already open in current thread throw exception
-        if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
+        if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
         // caches
         CacheProvider cacheProvider = new CacheProvider(keyspaceSchemaCache);

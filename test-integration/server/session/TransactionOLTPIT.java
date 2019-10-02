@@ -219,17 +219,17 @@ public class TransactionOLTPIT {
     @Test
     public void whenClosingATxWhichWasJustCommitted_DoNothing() {
         tx.commit();
-        assertTrue("Graph is still open after commit", tx.isClosed());
+        assertTrue("Graph is still open after commit", !tx.isOpen());
         tx.close();
-        assertTrue("Graph is somehow open after close", tx.isClosed());
+        assertTrue("Graph is somehow open after close", !tx.isOpen());
     }
 
     @Test
     public void whenCommittingATxWhichWasJustCommitted_DoNothing() {
         tx.commit();
-        assertTrue("Graph is still open after commit", tx.isClosed());
+        assertTrue("Graph is still open after commit", !tx.isOpen());
         tx.commit();
-        assertTrue("Graph is somehow open after 2nd commit", tx.isClosed());
+        assertTrue("Graph is somehow open after 2nd commit", !tx.isOpen());
     }
 
     @Test
