@@ -20,15 +20,13 @@ package grakn.core.graql.reasoner;
 
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Relation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
@@ -51,7 +49,7 @@ public class GeoInferenceIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl geoGraphSession;
+    private static Session geoGraphSession;
 
     @BeforeClass
     public static void loadContext(){

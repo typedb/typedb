@@ -37,7 +37,7 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -50,9 +50,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -73,7 +70,7 @@ public class AtomicUnificationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl genericSchemaSession;
+    private static Session genericSchemaSession;
 
     private TransactionOLTP tx;
 

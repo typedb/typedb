@@ -56,7 +56,7 @@ import grakn.core.server.kb.concept.SchemaConceptImpl;
 import grakn.core.server.kb.concept.Serialiser;
 import grakn.core.server.kb.concept.TypeImpl;
 import grakn.core.server.kb.structure.VertexElement;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.RuleCache;
 import grakn.core.server.session.cache.TransactionCache;
@@ -104,7 +104,7 @@ public class TransactionOLTP implements AutoCloseable {
     private final long typeShardThreshold;
 
     // Shared Variables
-    private final SessionImpl session;
+    private final Session session;
     private final ConceptManager conceptManager;
 
     // Caches
@@ -162,9 +162,9 @@ public class TransactionOLTP implements AutoCloseable {
 
     public static class Builder {
 
-        private SessionImpl session;
+        private Session session;
 
-        Builder(SessionImpl session) {
+        Builder(Session session) {
             this.session = session;
         }
 
@@ -177,7 +177,7 @@ public class TransactionOLTP implements AutoCloseable {
         }
     }
 
-    public TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
+    public TransactionOLTP(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
         createdInCurrentThread.set(true);
 
@@ -329,11 +329,11 @@ public class TransactionOLTP implements AutoCloseable {
         return propertiesAsObj.toArray();
     }
 
-    public SessionImpl session() {
+    public Session session() {
         return session;
     }
 
-    public KeyspaceImpl keyspace() {
+    public Keyspace keyspace() {
         return session.keyspace();
     }
 

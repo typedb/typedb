@@ -30,7 +30,7 @@ import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -62,7 +62,7 @@ public class BenchmarkSmallIT {
     public void nonRecursiveChainOfRules() {
         final int N = 200;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
         try(TransactionOLTP tx = session.transaction().write()) {
@@ -156,7 +156,7 @@ public class BenchmarkSmallIT {
     public void testTransitiveMatrixLinear()  {
         int N = 10;
         int limit = 100;
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(session);
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
@@ -196,7 +196,7 @@ public class BenchmarkSmallIT {
         int N = 100;
         int limit = 10;
         int answers = (N+1)*N/2;
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
         TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(session);
         transitivityChainGraph.load(N);
@@ -243,7 +243,7 @@ public class BenchmarkSmallIT {
         int N = 10;
         int limit = 100;
 
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph(session);
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -306,7 +306,7 @@ public class BenchmarkSmallIT {
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         DiagonalGraph diagonalGraph = new DiagonalGraph(session);
         diagonalGraph.load(N, N);
         //results @N = 40  1444  3.5s
@@ -363,7 +363,7 @@ public class BenchmarkSmallIT {
         int N = 5;
         int linksPerEntity = 4;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         PathTreeGraph pathTreeGraph = new PathTreeGraph(session);
         pathTreeGraph.load(N, linksPerEntity);
         int answers = 0;

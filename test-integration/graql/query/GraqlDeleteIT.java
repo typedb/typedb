@@ -35,7 +35,7 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
@@ -79,7 +79,7 @@ public class GraqlDeleteIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static SessionImpl session;
+    public static Session session;
     public TransactionOLTP tx;
 
     @Rule
@@ -295,7 +295,7 @@ public class GraqlDeleteIT {
         This test illustrates the failure case but doesn't cause it usually (fails more when there are around 2k instances in DB)
         */
 
-        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        Session session = graknServer.sessionWithNewKeyspace();
         TransactionOLTP tx = session.transaction().write();
 
         tx.execute(Graql.parse("define" +
@@ -351,7 +351,7 @@ public class GraqlDeleteIT {
 
     @Test
     public void deleteRelationWithReifiedImplicitWithAttribute() {
-        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        Session session = graknServer.sessionWithNewKeyspace();
         TransactionOLTP tx = session.transaction().write();
 
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
@@ -386,7 +386,7 @@ public class GraqlDeleteIT {
 
     @Test
     public void deleteRelation_AttributeOwnershipsDeleted() {
-        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        Session session = graknServer.sessionWithNewKeyspace();
         TransactionOLTP tx = session.transaction().write();
 
         Role author = tx.putRole("author");
@@ -420,7 +420,7 @@ public class GraqlDeleteIT {
 
     @Test
     public void deleteLastRolePlayer_RelationAndAttrOwnershipIsRemoved() {
-        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        Session session = graknServer.sessionWithNewKeyspace();
         TransactionOLTP tx = session.transaction().write();
 
         Role author = tx.putRole("author");
@@ -526,7 +526,7 @@ public class GraqlDeleteIT {
 
     @Test
     public void whenLimitingDelete_CorrectNumberAreDeleted() {
-        SessionImpl session = graknServer.sessionWithNewKeyspace();
+        Session session = graknServer.sessionWithNewKeyspace();
         // load some schema and data
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define person sub entity;").asDefine());

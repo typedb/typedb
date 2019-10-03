@@ -28,13 +28,13 @@ import java.util.regex.Pattern;
 /**
  * An identifier for an isolated scope of a data in the database.
  */
-public class KeyspaceImpl implements Serializable, Comparable<KeyspaceImpl> {
+public class Keyspace implements Serializable, Comparable<Keyspace> {
     private static final long serialVersionUID = 2726154016735929123L;
     private static final int MAX_LENGTH = 48;
 
     private final String name;
 
-    public KeyspaceImpl(String name) {
+    public Keyspace(String name) {
         if (name == null) {
             throw new NullPointerException("Null name");
         }
@@ -42,11 +42,11 @@ public class KeyspaceImpl implements Serializable, Comparable<KeyspaceImpl> {
     }
 
     @CheckReturnValue
-    public static KeyspaceImpl of(String name) {
+    public static Keyspace of(String name) {
         if (!isValidName(name)) {
             throw TransactionException.invalidKeyspaceName(name);
         }
-        return new KeyspaceImpl(name);
+        return new Keyspace(name);
     }
 
     @CheckReturnValue
@@ -64,7 +64,7 @@ public class KeyspaceImpl implements Serializable, Comparable<KeyspaceImpl> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        KeyspaceImpl that = (KeyspaceImpl) o;
+        Keyspace that = (Keyspace) o;
         return this.name.equals(that.name());
     }
 
@@ -81,7 +81,7 @@ public class KeyspaceImpl implements Serializable, Comparable<KeyspaceImpl> {
     }
 
     @Override
-    public int compareTo(KeyspaceImpl o) {
+    public int compareTo(Keyspace o) {
         if (equals(o)) return 0;
         return name().compareTo(o.name());
     }

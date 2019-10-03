@@ -27,7 +27,7 @@ import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.KeyspaceSchemaCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
@@ -51,46 +51,46 @@ import java.util.function.Consumer;
  * - Only 1 transaction per thread can exist.
  * - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
-public class SessionImpl implements AutoCloseable {
+public class Session implements AutoCloseable {
 
     private final HadoopGraph hadoopGraph;
 
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
-    private final KeyspaceImpl keyspace;
+    private final Keyspace keyspace;
     private final Config config;
     private final StandardJanusGraph graph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
-    private Consumer<SessionImpl> onClose;
+    private Consumer<Session> onClose;
 
     private boolean isClosed = false;
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates {@link Session} specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+    public Session(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates {@link Session} specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                        Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+     public Session(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+                    HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
+                    Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -204,7 +204,7 @@ public class SessionImpl implements AutoCloseable {
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-    public void setOnClose(Consumer<SessionImpl> onClose) {
+    public void setOnClose(Consumer<Session> onClose) {
         this.onClose = onClose;
     }
 
@@ -244,7 +244,7 @@ public class SessionImpl implements AutoCloseable {
         isClosed = true;
     }
 
-    public KeyspaceImpl keyspace() {
+    public Keyspace keyspace() {
         return keyspace;
     }
 
@@ -253,9 +253,9 @@ public class SessionImpl implements AutoCloseable {
     }
 
     /**
-     * The config options of this {@link SessionImpl} which were passed in at the time of construction
+     * The config options of this {@link Session} which were passed in at the time of construction
      *
-     * @return The config options of this {@link SessionImpl}
+     * @return The config options of this {@link Session}
      */
     public Config config() {
         return config;

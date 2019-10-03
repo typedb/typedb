@@ -30,7 +30,7 @@ import grakn.core.server.kb.concept.RelationImpl;
 import grakn.core.server.kb.concept.RoleImpl;
 import grakn.core.server.kb.concept.ThingImpl;
 import grakn.core.server.kb.structure.Casting;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +48,7 @@ public class ValidateGlobalRulesIT {
     public static final GraknTestServer server = new GraknTestServer();
 
     private TransactionOLTP tx;
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp(){

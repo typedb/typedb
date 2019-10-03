@@ -31,7 +31,7 @@ import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -80,7 +80,7 @@ import static org.junit.Assert.assertTrue;
 public class GraqlTraversalIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static SessionImpl session;
+    public static Session session;
     private static TransactionOLTP tx;
 
     @BeforeClass

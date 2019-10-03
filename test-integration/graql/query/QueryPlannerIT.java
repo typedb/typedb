@@ -31,7 +31,7 @@ import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -73,7 +73,7 @@ public class QueryPlannerIT {
 
     @ClassRule
     public static GraknTestServer graknServer = new GraknTestServer();
-    private static SessionImpl session;
+    private static Session session;
     private TransactionOLTP tx;
 
     @BeforeClass

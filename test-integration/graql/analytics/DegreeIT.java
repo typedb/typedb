@@ -30,7 +30,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.After;
@@ -54,7 +54,7 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class DegreeIT {
 
-    public SessionImpl session;
+    public Session session;
     private TransactionOLTP tx;
 
     @ClassRule

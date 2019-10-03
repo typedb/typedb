@@ -22,7 +22,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.concept.ConceptId;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.cache.KeyspaceSchemaCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
- * Grakn Server's internal {@link SessionImpl} Factory
+ * Grakn Server's internal {@link Session} Factory
  * All components should use this factory so that every time a session to a new keyspace gets created
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
@@ -54,7 +54,7 @@ public class SessionFactory {
     // Keep visibility to protected as this is used by KGMS
     protected final LockManager lockManager;
 
-    private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
+    private final Map<Keyspace, SharedKeyspaceData> sharedKeyspaceDataMap;
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, Config config) {
         this.janusGraphFactory = janusGraphFactory;
@@ -71,7 +71,7 @@ public class SessionFactory {
      * @param keyspace The keyspace of the Session to retrieve
      * @return a new Session connecting to the provided keyspace
      */
-    public SessionImpl session(KeyspaceImpl keyspace) {
+    public Session session(Keyspace keyspace) {
         SharedKeyspaceData cacheContainer;
         StandardJanusGraph graph;
         KeyspaceSchemaCache cache;
@@ -105,7 +105,7 @@ public class SessionFactory {
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
 
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
+            Session session = new Session(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
@@ -129,7 +129,7 @@ public class SessionFactory {
      *
      * @param keyspace keyspace that is being deleted
      */
-    public void deleteKeyspace(KeyspaceImpl keyspace) {
+    public void deleteKeyspace(Keyspace keyspace) {
         Lock lock = lockManager.getLock(keyspace.name());
         lock.lock();
         try {
@@ -152,7 +152,7 @@ public class SessionFactory {
      * @param session SessionImpl that is being closed
      */
     // Keep visibility to protected as this is used by KGMS
-    protected void onSessionClose(SessionImpl session) {
+    protected void onSessionClose(Session session) {
         Lock lock = lockManager.getLock(session.keyspace().name());
         lock.lock();
         try {
@@ -184,7 +184,7 @@ public class SessionFactory {
         private final StandardJanusGraph graph;
         private final HadoopGraph hadoopGraph;
         // Keep track of sessions so that if a user deletes a keyspace we make sure to invalidate all associated sessions
-        private final List<SessionImpl> sessions;
+        private final List<Session> sessions;
 
         // Shared keyspace statistics
         private final KeyspaceStatistics keyspaceStatistics;
@@ -222,17 +222,17 @@ public class SessionFactory {
         }
 
         // Keep visibility to public as this is used by KGMS
-        public void addSessionReference(SessionImpl session) {
+        public void addSessionReference(Session session) {
             sessions.add(session);
         }
 
         // Keep visibility to public as this is used by KGMS
-        public void removeSessionReference(SessionImpl session) {
+        public void removeSessionReference(Session session) {
             sessions.remove(session);
         }
 
         void invalidateSessions() {
-            sessions.forEach(SessionImpl::invalidate);
+            sessions.forEach(Session::invalidate);
         }
 
         // Keep visibility to public as this is used by KGMS

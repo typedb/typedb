@@ -36,7 +36,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
@@ -67,7 +67,7 @@ public class TypeInferenceIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl testContextSession;
+    private static Session testContextSession;
 
     @BeforeClass
     public static void loadContext(){

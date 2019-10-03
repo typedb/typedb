@@ -19,12 +19,12 @@
 package grakn.core.server.rpc;
 
 import grakn.protocol.session.SessionProto;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 
 /**
  * A request transaction opener for RPC Services
  */
 public interface OpenRequest {
 
-    SessionImpl open(SessionProto.Session.Open.Req request);
+    Session open(SessionProto.Session.Open.Req request);
 }

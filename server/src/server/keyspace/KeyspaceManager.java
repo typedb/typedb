@@ -36,9 +36,9 @@ public class KeyspaceManager {
         this.storage = storage;
     }
 
-    public Set<KeyspaceImpl> keyspaces() {
+    public Set<Keyspace> keyspaces() {
         return storage.connect().getCluster().getMetadata().getKeyspaces().stream()
-                .map(keyspaceMetadata -> KeyspaceImpl.of(keyspaceMetadata.getName()))
+                .map(keyspaceMetadata -> Keyspace.of(keyspaceMetadata.getName()))
                 .filter(keyspace -> !internals.contains(keyspace.name()))
                 .collect(Collectors.toSet());
     }

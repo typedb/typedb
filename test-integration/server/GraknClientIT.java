@@ -47,8 +47,8 @@ import grakn.client.concept.api.Thing;
 import grakn.client.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.SessionException;
-import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -105,7 +105,7 @@ public class GraknClientIT {
             Paths.get("test-integration/resources/cassandra-embedded.yaml")
     );
 
-    private static grakn.core.server.session.SessionImpl localSession;
+    private static Session localSession;
     private static GraknClient.Session remoteSession;
 
     @Rule
@@ -990,7 +990,7 @@ public class GraknClientIT {
     @Test
     public void testDeletingAKeyspace_TheKeyspaceIsRecreatedInNewSession() {
         GraknClient client = graknClient;
-        SessionImpl localSession = server.sessionWithNewKeyspace();
+        Session localSession = server.sessionWithNewKeyspace();
         String keyspace = localSession.keyspace().name();
         GraknClient.Session remoteSession = client.session(keyspace);
 
@@ -1007,7 +1007,7 @@ public class GraknClientIT {
         }
 
         // Opening a new session will re-create the keyspace
-        SessionImpl newLocalSession = server.sessionFactory().session(localSession.keyspace());
+        Session newLocalSession = server.sessionFactory().session(localSession.keyspace());
         try (TransactionOLTP tx = newLocalSession.transaction().read()) {
             assertNull(tx.getEntityType("easter"));
             assertNotNull(tx.getEntityType("entity"));
@@ -1019,7 +1019,7 @@ public class GraknClientIT {
     @Test
     public void whenDeletingKeyspace_OpenTransactionFails() {
         // get open session
-        KeyspaceImpl keyspace = localSession.keyspace();
+        Keyspace keyspace = localSession.keyspace();
 
         // Hold on to an open tx
         TransactionOLTP tx = localSession.transaction().read();
@@ -1038,7 +1038,7 @@ public class GraknClientIT {
     @Test
     public void whenDeletingKeyspace_OpenSessionFails() {
         // get open session
-        KeyspaceImpl keyspace = localSession.keyspace();
+        Keyspace keyspace = localSession.keyspace();
 
         // Hold on to an open tx
         TransactionOLTP tx = localSession.transaction().read();

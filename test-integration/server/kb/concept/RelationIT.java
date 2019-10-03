@@ -35,7 +35,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
@@ -79,7 +79,7 @@ public class RelationIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     private TransactionOLTP tx;
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp(){

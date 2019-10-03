@@ -33,7 +33,7 @@ import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -64,7 +64,7 @@ public class SemanticDifferenceIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl genericSchemaSession;
+    private static Session genericSchemaSession;
 
     @BeforeClass
     public static void loadContext(){

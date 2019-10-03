@@ -24,7 +24,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -53,7 +53,7 @@ public class OntologicalQueryIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl session;
+    private static Session session;
     
     @BeforeClass
     public static void loadContext(){
@@ -63,7 +63,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void instancePairsRelatedToSameTypeOfEntity(){
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath, "matchingTypesTest.gql", session);
         for(int i = 0; i < 500 ; i++) {
             try (TransactionOLTP tx = session.transaction().write()) {

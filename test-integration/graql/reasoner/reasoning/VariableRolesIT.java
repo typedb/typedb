@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -47,7 +47,7 @@ public class VariableRolesIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl variableRoleSession;
+    private static Session variableRoleSession;
 
 
     @BeforeClass

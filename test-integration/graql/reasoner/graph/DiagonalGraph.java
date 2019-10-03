@@ -23,7 +23,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -32,11 +32,11 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 @SuppressWarnings("CheckReturnValue")
 public class DiagonalGraph{
 
-    private final SessionImpl session;
+    private final Session session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
     private final static String gqlFile = "diagonalTest.gql";
 
-    public DiagonalGraph(SessionImpl session) {
+    public DiagonalGraph(Session session) {
         this.session = session;
     }
     private Label key(){ return Label.of("name");}

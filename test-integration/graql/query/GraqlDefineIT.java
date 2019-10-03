@@ -31,7 +31,7 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -80,7 +80,7 @@ public class GraqlDefineIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static SessionImpl session;
+    public static Session session;
     private TransactionOLTP tx;
 
     @BeforeClass

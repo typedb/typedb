@@ -30,7 +30,7 @@ import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -78,7 +78,7 @@ public class ResolutionPlanIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl planSession;
+    private static Session planSession;
     private TransactionOLTP tx;
 
     @BeforeClass

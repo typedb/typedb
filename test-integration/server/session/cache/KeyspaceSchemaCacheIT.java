@@ -19,28 +19,16 @@
 package grakn.core.server.session.cache;
 
 import grakn.client.GraknClient;
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
-import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertTrue;
@@ -54,7 +42,7 @@ public class KeyspaceSchemaCacheIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-    private SessionImpl localSession;
+    private Session localSession;
     private GraknClient.Session remoteSession;
     private GraknClient graknClient;
 
@@ -103,7 +91,7 @@ public class KeyspaceSchemaCacheIT {
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
+        Session testSession = server.sessionFactory().session(localSession.keyspace());
         try (TransactionOLTP tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
@@ -119,7 +107,7 @@ public class KeyspaceSchemaCacheIT {
      */
     @Test
     public void addEntityWithLocalSession_possibleToRetrieveItWithNewLocalSessionBeforeSchemaIsDefined(){
-        SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
+        Session testSession = server.sessionFactory().session(localSession.keyspace());
         try (TransactionOLTP tx = localSession.transaction().write()) {
             tx.putEntityType("animal");
             Role role1 = tx.putRole("role1");
@@ -146,7 +134,7 @@ public class KeyspaceSchemaCacheIT {
             tx.commit();
         }
         localSession.close();
-        SessionImpl testSession = server.sessionFactory().session(localSession.keyspace());
+        Session testSession = server.sessionFactory().session(localSession.keyspace());
         try (TransactionOLTP tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));

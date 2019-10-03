@@ -23,7 +23,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
@@ -36,17 +36,17 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeGraph{
 
-    private final SessionImpl session;
+    private final Session session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
     private final String gqlFile;
     private final static Label key = Label.of("index");
 
-    public PathTreeGraph(SessionImpl session){
+    public PathTreeGraph(Session session){
         this.session = session;
         this.gqlFile = "pathTest.gql";
     }
 
-    public PathTreeGraph(SessionImpl session, String schemaFile) {
+    public PathTreeGraph(Session session, String schemaFile) {
         this.session = session;
         this.gqlFile = schemaFile;
     }

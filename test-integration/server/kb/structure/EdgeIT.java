@@ -28,10 +28,10 @@ import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.ConceptObserver;
 import grakn.core.server.session.JanusGraphFactory;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.KeyspaceSchemaCache;
@@ -56,7 +56,7 @@ public class EdgeIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private SessionImpl session;
+    private Session session;
     private TransactionOLTP tx;
     private EntityTypeImpl entityType;
     private EntityImpl entity;
@@ -64,7 +64,7 @@ public class EdgeIT {
 
     @Before
     public void setUp(){
-        KeyspaceImpl keyspace = KeyspaceImpl.of("keyspace");
+        Keyspace keyspace = Keyspace.of("keyspace");
         final int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
         final int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
@@ -78,7 +78,7 @@ public class EdgeIT {
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
 
-        session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
+        session = new Session(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
                 new KeyspaceStatistics(), attributeCache, new ReentrantReadWriteLock());
 
         // create the transaction

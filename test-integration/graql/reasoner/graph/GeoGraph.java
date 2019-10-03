@@ -25,7 +25,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -33,7 +33,7 @@ import graql.lang.pattern.Pattern;
 public class GeoGraph {
 
     private TransactionOLTP tx;
-    private final SessionImpl session;
+    private final Session session;
     private AttributeType<String> key;
 
     private EntityType university, city, region, country, continent, geographicalObject;
@@ -47,7 +47,7 @@ public class GeoGraph {
     private static Thing Poland, England, Germany, France, Italy;
     private static Thing UW, PW, Imperial, UCL;
 
-    public GeoGraph(SessionImpl session) {
+    public GeoGraph(Session session) {
         this.session = session;
     }
 
