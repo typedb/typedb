@@ -32,19 +32,19 @@ import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
 import grakn.client.answer.Numeric;
-import grakn.client.concept.Attribute;
-import grakn.client.concept.AttributeType;
-import grakn.client.concept.Concept;
-import grakn.client.concept.ConceptId;
-import grakn.client.concept.Entity;
-import grakn.client.concept.EntityType;
-import grakn.client.concept.Label;
-import grakn.client.concept.Relation;
-import grakn.client.concept.RelationType;
-import grakn.client.concept.Role;
-import grakn.client.concept.SchemaConcept;
-import grakn.client.concept.Thing;
-import grakn.client.concept.Type;
+import grakn.client.concept.api.Attribute;
+import grakn.client.concept.api.AttributeType;
+import grakn.client.concept.api.Concept;
+import grakn.client.concept.api.ConceptId;
+import grakn.client.concept.api.Entity;
+import grakn.client.concept.api.EntityType;
+import grakn.client.concept.api.Label;
+import grakn.client.concept.api.Relation;
+import grakn.client.concept.api.RelationType;
+import grakn.client.concept.api.Role;
+import grakn.client.concept.api.SchemaConcept;
+import grakn.client.concept.api.Thing;
+import grakn.client.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.keyspace.KeyspaceImpl;
@@ -422,7 +422,7 @@ public class GraknClientIT {
 
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.thing.Relation::rolePlayers,
-                    grakn.client.concept.Relation::rolePlayers);
+                    grakn.client.concept.api.Relation::rolePlayers);
 
                     ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
             localConcept.rolePlayersMap().forEach((role, players) -> {
@@ -464,10 +464,10 @@ public class GraknClientIT {
             assertEquals(localConcept.sup().id().toString(), remoteConcept.sup().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.SchemaConcept::sups,
-                    grakn.client.concept.SchemaConcept::sups);
+                    grakn.client.concept.api.SchemaConcept::sups);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.SchemaConcept::subs,
-                    grakn.client.concept.SchemaConcept::subs);
+                    grakn.client.concept.api.SchemaConcept::subs);
         }
     }
 
@@ -500,16 +500,16 @@ public class GraknClientIT {
             assertEquals(localConcept.type().id().toString(), remoteConcept.type().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.thing.Thing::attributes,
-                    grakn.client.concept.Thing::attributes);
+                    grakn.client.concept.api.Thing::attributes);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.thing.Thing::keys,
-                    grakn.client.concept.Thing::keys);
+                    grakn.client.concept.api.Thing::keys);
 //            assertEqualConcepts(localConcept, remoteConcept,  //TODO: re-enable when #19630 is fixed
 //                  grakn.core.concept.thing.Thing::plays);
 //                  grakn.client.concept.Thing::plays);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.thing.Thing::relations,
-                    grakn.client.concept.Thing::relations);
+                    grakn.client.concept.api.Thing::relations);
         }
     }
 
@@ -540,16 +540,16 @@ public class GraknClientIT {
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.Type::playing,
-                    grakn.client.concept.Type::playing);
+                    grakn.client.concept.api.Type::playing);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.Type::instances,
-                    grakn.client.concept.Type::instances);
+                    grakn.client.concept.api.Type::instances);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.Type::attributes,
-                    grakn.client.concept.Type::attributes);
+                    grakn.client.concept.api.Type::attributes);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.Type::keys,
-                    grakn.client.concept.Type::keys);
+                    grakn.client.concept.api.Type::keys);
         }
     }
 
@@ -573,10 +573,10 @@ public class GraknClientIT {
 
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.Role::players,
-                    grakn.client.concept.Role::players);
+                    grakn.client.concept.api.Role::players);
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.Role::relations,
-                    grakn.client.concept.Role::relations);
+                    grakn.client.concept.api.Role::relations);
         }
     }
 
@@ -599,7 +599,7 @@ public class GraknClientIT {
              TransactionOLTP localTx = localSession.transaction().read()
         ) {
             GraqlGet query = Graql.match(var("x").type("expectation-rule")).get();
-            grakn.client.concept.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
+            grakn.client.concept.api.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
             grakn.core.concept.ConceptId localId = grakn.core.concept.ConceptId.of(remoteConcept.id().getValue());
             grakn.core.concept.type.Rule localConcept = localTx.getConcept(localId).asRule();
 
@@ -647,7 +647,7 @@ public class GraknClientIT {
 
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.type.RelationType::roles,
-                    grakn.client.concept.RelationType::roles);
+                    grakn.client.concept.api.RelationType::roles);
         }
     }
 
@@ -720,7 +720,7 @@ public class GraknClientIT {
             assertEquals(localConcept.owner().id().toString(), remoteConcept.owners().findFirst().get().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
                     grakn.core.concept.thing.Attribute::owners,
-                    grakn.client.concept.Attribute::owners);
+                    grakn.client.concept.api.Attribute::owners);
         }
     }
 

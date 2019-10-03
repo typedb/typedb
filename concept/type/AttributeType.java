@@ -21,13 +21,13 @@ package grakn.core.concept.type;
 import grakn.core.concept.Label;
 import grakn.core.concept.thing.Attribute;
 
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static grakn.core.common.util.Collections.list;
