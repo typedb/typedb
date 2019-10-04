@@ -17,12 +17,11 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import grakn.core.concept.api.Entity;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.EntityType;
-import concept.impl.structure.VertexElement;
 
 import java.util.stream.Stream;
 
@@ -33,7 +32,7 @@ import java.util.stream.Stream;
  * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    EntityImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

@@ -18,16 +18,16 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "kb",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["**/*.java", "*.java"]),
     deps = [
         # Internal dependencies
         "//common:common",
         "//concept:concept",
+        "//concept/structure:structure",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -36,9 +36,11 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop"
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
 )
 
 

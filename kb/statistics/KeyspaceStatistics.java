@@ -22,8 +22,8 @@ package grakn.core.kb.statistics;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.Label;
 import grakn.core.kb.Schema;
-import concept.impl.ConceptVertex;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.concept.impl.ConceptVertex;
+import grakn.core.kb.Transaction;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -53,13 +53,13 @@ public class KeyspaceStatistics {
         instanceCountsCache = new ConcurrentHashMap<>();
     }
 
-    public long count(TransactionOLTP tx, Label label) {
+    public long count(Transaction tx, Label label) {
         // return count if cached, else cache miss and retrieve from Janus
         instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
         return instanceCountsCache.get(label);
     }
 
-    public void commit(TransactionOLTP tx, UncomittedStatisticsDelta statisticsDelta) {
+    public void commit(Transaction tx, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
         statisticsDelta.updateThingCount();
@@ -83,7 +83,7 @@ public class KeyspaceStatistics {
         persist(tx, labelsToPersist);
     }
 
-    private void persist(TransactionOLTP tx, Set<Label> labelsToPersist) {
+    private void persist(Transaction tx, Set<Label> labelsToPersist) {
         // TODO - there's an possible removal from instanceCountsCache here
         // when the schemaConcept is null - ie it's been removed. However making this
         // thread safe with competing action of creating a schema concept of the same name again
@@ -106,7 +106,7 @@ public class KeyspaceStatistics {
      * Effectively a cache miss - retrieves the value from the janus vertex
      * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
      */
-    private long retrieveCountFromVertex(TransactionOLTP tx, Label label) {
+    private long retrieveCountFromVertex(Transaction tx, Label label) {
         Concept schemaConcept = tx.getSchemaConcept(label);
         if (schemaConcept != null) {
             Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();

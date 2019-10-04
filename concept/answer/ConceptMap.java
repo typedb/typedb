@@ -14,12 +14,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concept.answer;
 
+import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.concept.api.Concept;
-import concept.exception.GraknConceptException;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;

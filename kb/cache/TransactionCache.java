@@ -20,7 +20,7 @@
 package grakn.core.kb.cache;
 
 import com.google.common.annotations.VisibleForTesting;
-import concept.impl.structure.Casting;
+import concept.structure.Casting;
 import grakn.core.common.util.Pair;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.Concept;
@@ -34,7 +34,8 @@ import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
-import grakn.core.kb.Schema;
+import grakn.core.core.Casting;
+import grakn.core.core.Schema;
 
 import java.util.HashMap;
 import java.util.HashSet;

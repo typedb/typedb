@@ -17,13 +17,12 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
-import concept.exception.GraknConceptException;
+import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.kb.Schema;
-import concept.impl.structure.VertexElement;
 
 import javax.annotation.Nullable;
 import java.util.Objects;
@@ -42,7 +41,7 @@ import java.util.regex.Pattern;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D>> implements AttributeType<D> {
-    AttributeTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    AttributeTypeImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
@@ -99,6 +98,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
         return putAttribute(value, false);
     }
 
+    @Override
     public Attribute<D> putAttributeInferred(D value) {
         return putAttribute(value, true);
     }

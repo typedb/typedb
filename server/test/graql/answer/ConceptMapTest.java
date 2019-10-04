@@ -21,7 +21,7 @@ package grakn.core.graql.answer;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import concept.exception.GraknConceptException;
+import grakn.core.concept.exception.GraknConceptException;
 import graql.lang.statement.Variable;
 import org.junit.Rule;
 import org.junit.Test;

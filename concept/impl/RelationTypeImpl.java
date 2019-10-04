@@ -17,15 +17,15 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
+import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.kb.Schema;
-import concept.impl.structure.Casting;
-import concept.impl.structure.EdgeElement;
-import concept.impl.structure.VertexElement;
+import concept.structure.Casting;
+import concept.structure.EdgeElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.List;
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final ConceptCacheLine<Set<Role>> cachedRelates = new ConceptCacheLine<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptObserver conceptObserver) {
+    RelationTypeImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptBuilder, ConceptObserver conceptObserver) {
         super(vertexElement, conceptBuilder, conceptObserver);
     }
 
@@ -54,6 +54,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
         return addRelation(false);
     }
 
+    @Override
     public Relation addRelationInferred() {
         return addRelation(true);
     }

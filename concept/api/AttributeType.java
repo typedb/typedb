@@ -122,6 +122,7 @@ public interface AttributeType<D> extends Type {
      */
     Attribute<D> create(D value);
 
+    Attribute<D> putAttributeInferred(D value);
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *

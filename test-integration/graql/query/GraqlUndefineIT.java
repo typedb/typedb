@@ -26,7 +26,7 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import server.src.server.exception.TransactionException;

@@ -106,7 +106,7 @@ public class GraqlTraversalIT {
     private static final Fragment xIsaY = outIsa(null, x.var(), y.var());
     private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var(), true);
 
-    private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
+    private static final GraqlTraversalImpl fastIsaTraversal = traversal(yId, yTypeOfX);
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
     @Before
@@ -126,42 +126,42 @@ public class GraqlTraversalIT {
 
     @Test
     public void testComplexityIndexVsIsa() {
-        GraqlTraversal indexTraversal = traversal(xId);
+        GraqlTraversalImpl indexTraversal = traversal(xId);
         assertFaster(indexTraversal, fastIsaTraversal);
     }
 
     @Test
     public void testComplexityFastIsaVsSlowIsa() {
-        GraqlTraversal slowIsaTraversal = traversal(xIsaY, yId);
+        GraqlTraversalImpl slowIsaTraversal = traversal(xIsaY, yId);
         assertFaster(fastIsaTraversal, slowIsaTraversal);
     }
 
     @Test
     public void testComplexityConnectedVsDisconnected() {
-        GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(null, y.var(), z.var()));
-        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var(), true));
+        GraqlTraversalImpl connectedDoubleIsa = traversal(xIsaY, outIsa(null, y.var(), z.var()));
+        GraqlTraversalImpl disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var(), true));
         assertFaster(connectedDoubleIsa, disconnectedDoubleIsa);
     }
 
     @Test
     public void testGloballyOptimalIsFasterThanLocallyOptimal() {
-        GraqlTraversal locallyOptimalSpecificInstance = traversal(yId, yTypeOfX, xId);
-        GraqlTraversal globallyOptimalSpecificInstance = traversal(xId, xIsaY, yId);
+        GraqlTraversalImpl locallyOptimalSpecificInstance = traversal(yId, yTypeOfX, xId);
+        GraqlTraversalImpl globallyOptimalSpecificInstance = traversal(xId, xIsaY, yId);
         assertFaster(globallyOptimalSpecificInstance, locallyOptimalSpecificInstance);
     }
 
     @Test
     public void testRelatesFasterFromRoleType() {
-        GraqlTraversal relatesFromRelationType = traversal(yId, outRelates(null, y.var(), x.var()), xId);
-        GraqlTraversal relatesFromRoleType = traversal(xId, inRelates(null, x.var(), y.var()), yId);
+        GraqlTraversalImpl relatesFromRelationType = traversal(yId, outRelates(null, y.var(), x.var()), xId);
+        GraqlTraversalImpl relatesFromRoleType = traversal(xId, inRelates(null, x.var(), y.var()), yId);
         assertFaster(relatesFromRoleType, relatesFromRelationType);
     }
 
     @Test
     public void testResourceWithTypeFasterFromType() {
-        GraqlTraversal fromInstance =
+        GraqlTraversalImpl fromInstance =
                 traversal(outIsa(null, x.var(), xx.var()), id(null, xx.var(), ConceptId.of("_")), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
-        GraqlTraversal fromType =
+        GraqlTraversalImpl fromType =
                 traversal(id(null, xx.var(), ConceptId.of("_")), inIsa(null, xx.var(), x.var(), true), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
         assertFaster(fromType, fromInstance);
     }
@@ -170,8 +170,8 @@ public class GraqlTraversalIT {
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
         ValueOperation<?,?> gt_1 = ValueOperation.of(ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.GT, 1));
-        GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), gt_1), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
-        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt_1));
+        GraqlTraversalImpl valueFilterFirst = traversal(value(null, x.var(), gt_1), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
+        GraqlTraversalImpl rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt_1));
 
         assertFaster(valueFilterFirst, rolePlayerFirst);
     }
@@ -183,7 +183,7 @@ public class GraqlTraversalIT {
         SubProperty subProperty = new SubProperty(new Statement(y.var(), ImmutableList.of(movieId)));
 
         Statement pattern = new Statement(x.var(), ImmutableList.of(titanicId, subProperty));
-        Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
+        Set<GraqlTraversalImpl> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
 
@@ -192,7 +192,7 @@ public class GraqlTraversalIT {
         Fragment xSubY = outSub(subProperty, x.var(), y.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
         Fragment ySubX = inSub(subProperty, y.var(), x.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
 
-        Set<GraqlTraversal> expected = ImmutableSet.of(
+        Set<GraqlTraversalImpl> expected = ImmutableSet.of(
                 traversal(xId, xSubY, yId),
                 traversal(xId, ySubX, yId),
                 traversal(xId, yId, xSubY),
@@ -249,7 +249,7 @@ public class GraqlTraversalIT {
     public void whenPlanningSimpleUnaryRelation_ApplyRolePlayerOptimisation() {
         Statement rel = var("x").rel("y");
 
-        GraqlTraversal graqlTraversal = semiOptimal(rel);
+        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
 
         // I know this is horrible, unfortunately I can't think of a better way...
         // The issue is that some things we want to inspect are not public, mainly:
@@ -267,7 +267,7 @@ public class GraqlTraversalIT {
     public void whenPlanningSimpleBinaryRelationQuery_ApplyRolePlayerOptimisation() {
         Statement rel = var("x").rel("y").rel("z");
 
-        GraqlTraversal graqlTraversal = semiOptimal(rel);
+        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
                 matches("\\{§x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*]}"),
@@ -280,7 +280,7 @@ public class GraqlTraversalIT {
     public void whenPlanningBinaryRelationQueryWithType_ApplyRolePlayerOptimisation() {
         Statement rel = var("x").rel("y").rel("z").isa("marriage");
 
-        GraqlTraversal graqlTraversal = semiOptimal(rel);
+        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
                 matches(".*§x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* #.*\\[neq:#.*].*"),
@@ -293,7 +293,7 @@ public class GraqlTraversalIT {
     public void testRolePlayerOptimisationWithRoles() {
         Statement rel = var("x").rel("y").rel("wife", "z");
 
-        GraqlTraversal graqlTraversal = semiOptimal(rel);
+        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
                 matches(".*§x-\\[" + ROLE_PLAYER_EDGE + ":#.* roles:wife]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*].*"),
@@ -301,21 +301,21 @@ public class GraqlTraversalIT {
         ));
     }
 
-    private static GraqlTraversal semiOptimal(Pattern pattern) {
+    private static GraqlTraversalImpl semiOptimal(Pattern pattern) {
         return TraversalPlanner.createTraversal(pattern, tx);
     }
 
-    private static GraqlTraversal traversal(Fragment... fragments) {
+    private static GraqlTraversalImpl traversal(Fragment... fragments) {
         return traversal(ImmutableList.copyOf(fragments));
     }
 
     @SafeVarargs
-    private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
+    private static GraqlTraversalImpl traversal(ImmutableList<Fragment>... fragments) {
         ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversal.create(fragmentsSet);
+        return GraqlTraversalImpl.create(fragmentsSet);
     }
 
-    private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
+    private static Stream<GraqlTraversalImpl> allGraqlTraversals(Pattern pattern) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
@@ -332,7 +332,7 @@ public class GraqlTraversalIT {
     }
 
     // Returns a traversal only if the fragment ordering is valid
-    private static Optional<GraqlTraversal> createTraversal(Set<List<Fragment>> fragments) {
+    private static Optional<GraqlTraversalImpl> createTraversal(Set<List<Fragment>> fragments) {
 
         // Make sure all dependencies are met
         for (List<Fragment> fragmentList : fragments) {
@@ -347,7 +347,7 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(GraqlTraversal.create(fragments));
+        return Optional.of(GraqlTraversalImpl.create(fragments));
     }
 
     private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {
@@ -359,10 +359,10 @@ public class GraqlTraversalIT {
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GraqlTraversal traversal = semiOptimal(pattern);
+        GraqlTraversalImpl traversal = semiOptimal(pattern);
 
         //noinspection OptionalGetWithoutIsPresent
-        GraqlTraversal globalOptimum = allGraqlTraversals(pattern).min(comparing(GraqlTraversal::getComplexity)).get();
+        GraqlTraversalImpl globalOptimum = allGraqlTraversals(pattern).min(comparing(GraqlTraversalImpl::getComplexity)).get();
 
         double globalComplexity = globalOptimum.getComplexity();
         double complexity = traversal.getComplexity();
@@ -375,7 +375,7 @@ public class GraqlTraversalIT {
         );
     }
 
-    private static void assertFaster(GraqlTraversal fast, GraqlTraversal slow) {
+    private static void assertFaster(GraqlTraversalImpl fast, GraqlTraversalImpl slow) {
         double fastComplexity = fast.getComplexity();
         double slowComplexity = slow.getComplexity();
         boolean condition = fastComplexity < slowComplexity;

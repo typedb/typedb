@@ -17,23 +17,23 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.Entity;
 import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.Attribute;
+import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.Schema;
-import concept.impl.structure.Casting;
+import concept.structure.Casting;
 import grakn.core.kb.cache.CacheProvider;
 import grakn.core.kb.cache.RuleCache;
 import grakn.core.kb.cache.TransactionCache;

@@ -17,7 +17,7 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Thing;

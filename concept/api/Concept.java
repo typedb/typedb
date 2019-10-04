@@ -19,7 +19,7 @@
 
 package grakn.core.concept.api;
 
-import concept.exception.GraknConceptException;
+import grakn.core.concept.exception.GraknConceptException;
 
 import javax.annotation.CheckReturnValue;
 

@@ -19,10 +19,10 @@
 
 package grakn.core.concept;
 
-import concept.impl.EntityImpl;
-import concept.impl.EntityTypeImpl;
-import concept.impl.RelationImpl;
-import concept.impl.ThingImpl;
+import grakn.core.concept.impl.EntityImpl;
+import grakn.core.concept.impl.EntityTypeImpl;
+import grakn.core.concept.impl.RelationImpl;
+import grakn.core.concept.impl.ThingImpl;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Attribute;
@@ -37,7 +37,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import server.src.server.exception.TransactionException;
 import grakn.core.kb.Schema;
-import concept.impl.structure.Casting;
+import concept.structure.Casting;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;

@@ -20,10 +20,10 @@
 package grakn.core.concept;
 
 import com.google.common.collect.Iterables;
-import concept.impl.AttributeTypeImpl;
-import concept.impl.RelationEdge;
-import concept.impl.RelationImpl;
-import concept.impl.RelationReified;
+import grakn.core.concept.impl.AttributeTypeImpl;
+import grakn.core.concept.impl.RelationEdge;
+import grakn.core.concept.impl.RelationImpl;
+import grakn.core.concept.impl.RelationReified;
 import concept.impl.RelationStructure;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.Entity;

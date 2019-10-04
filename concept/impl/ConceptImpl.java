@@ -17,15 +17,15 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Concept;
+import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.api.ConceptId;
-import concept.exception.GraknElementException;
+import grakn.core.concept.structure.Shard;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.exception.GraknElementException;
 import grakn.core.kb.Schema;
-import concept.impl.structure.EdgeElement;
-import concept.impl.structure.Shard;
-import concept.impl.structure.VertexElement;
+import concept.structure.EdgeElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;
@@ -36,8 +36,8 @@ import java.util.stream.Stream;
  * This class forms the basis of assuring the graph follows the Grakn object model.
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
-    private final VertexElement vertexElement;
-    final ConceptManager conceptManager;
+    private final grakn.core.concept.structure.VertexElementImpl vertexElement;
+    final ConceptManagerImpl conceptManager;
     final ConceptObserver conceptObserver;
 
 
@@ -46,14 +46,14 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final ConceptCacheLine<Long> shardCount = new ConceptCacheLine<>(() -> shards().count());
     private final ConceptCacheLine<ConceptId> conceptId = new ConceptCacheLine<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    ConceptImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         this.vertexElement = vertexElement;
         this.conceptManager = conceptManager;
         this.conceptObserver = conceptObserver;
     }
 
     @Override
-    public VertexElement vertex() {
+    public grakn.core.concept.structure.VertexElementImpl vertex() {
         return vertexElement;
     }
 
@@ -119,7 +119,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         if (to.length == 0) {
             vertex().deleteEdge(direction, label);
         } else {
-            VertexElement[] targets = new VertexElement[to.length];
+            grakn.core.concept.structure.VertexElementImpl[] targets = new grakn.core.concept.structure.VertexElementImpl[to.length];
             for (int i = 0; i < to.length; i++) {
                 targets[i] = ((ConceptImpl) to[i]).vertex();
             }
@@ -179,7 +179,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
     //----------------------------------- Sharding Functionality
     public void createShard() {
-        Shard shard = vertex().shard(this);
+        Shard shard = vertex().shard();
 
         //store current shard id as a property of the type
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());

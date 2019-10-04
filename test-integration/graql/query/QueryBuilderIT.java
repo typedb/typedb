@@ -18,7 +18,7 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;

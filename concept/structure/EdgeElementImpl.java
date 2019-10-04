@@ -1,0 +1,70 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2019 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+package grakn.core.concept.structure;
+
+import grakn.core.core.Schema;
+import grakn.core.core.VertexElement;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import grakn.core.core.EdgeElement;
+
+/**
+ * Represent an Edge in a TransactionOLTP
+ * Wraps a tinkerpop Edge constraining it to the Grakn Object Model.
+ */
+public class EdgeElementImpl extends AbstractElementImpl<Edge, Schema.EdgeProperty> implements EdgeElement {
+
+    public EdgeElementImpl(ElementFactory elementFactory, Edge e) {
+        super(elementFactory, e);
+    }
+
+    /**
+     * Deletes the edge between two concepts and adds both those concepts for re-validation in case something goes wrong
+     */
+    public void delete() {
+        element().remove();
+    }
+
+    @Override
+    public int hashCode() {
+        return element().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        if (this == object) return true;
+        if (object == null || getClass() != object.getClass()) return false;
+
+        grakn.core.concept.structure.EdgeElementImpl edge = (grakn.core.concept.structure.EdgeElementImpl) object;
+
+        return element().id().equals(edge.id());
+    }
+
+    public VertexElement source() {
+        return elementFactory.buildVertexElement(element().outVertex());
+    }
+
+    public VertexElement target() {
+        return elementFactory.buildVertexElement(element().inVertex());
+    }
+
+    public VertexElement asReifiedVertexElement(boolean isInferred) {
+        return elementFactory.addVertexElementWithEdgeIdProperty(Schema.BaseType.RELATION, Schema.conceptId(element()), isInferred);
+    }
+}

@@ -17,14 +17,14 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
+import grakn.core.concept.ConceptCacheLine;
+import grakn.core.concept.api.Type;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Type;
 import grakn.core.kb.Schema;
-import concept.impl.structure.Casting;
-import concept.impl.structure.VertexElement;
+import concept.structure.Casting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;
@@ -43,7 +43,7 @@ public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
     private final ConceptCacheLine<Set<Type>> cachedDirectPlayedByTypes = new ConceptCacheLine<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
     private final ConceptCacheLine<Set<RelationType>> cachedRelationTypes = new ConceptCacheLine<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RoleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RoleImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

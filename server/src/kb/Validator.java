@@ -24,7 +24,7 @@ import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
-import concept.impl.structure.Casting;
+import concept.structure.Casting;
 import grakn.core.server.session.TransactionOLTP;
 
 import java.util.ArrayList;

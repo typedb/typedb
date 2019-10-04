@@ -17,10 +17,9 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import com.google.common.collect.Iterables;
-import concept.impl.structure.VertexElement;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.ConceptId;
@@ -228,7 +227,7 @@ public class RelationImpl implements Relation, ConceptVertex {
     }
 
     @Override
-    public VertexElement vertex() {
+    public grakn.core.concept.structure.VertexElementImpl vertex() {
         return reify().vertex();
     }
 

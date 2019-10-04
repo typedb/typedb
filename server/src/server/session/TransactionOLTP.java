@@ -21,13 +21,12 @@ package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import concept.impl.ConceptImpl;
-import concept.impl.ConceptManager;
-import concept.impl.ConceptVertex;
-import concept.impl.SchemaConceptImpl;
-import concept.impl.Serialiser;
-import concept.impl.TypeImpl;
-import concept.impl.structure.VertexElement;
+import grakn.core.concept.impl.ConceptImpl;
+import grakn.core.concept.impl.ConceptManagerImpl;
+import grakn.core.concept.impl.ConceptVertex;
+import grakn.core.concept.impl.SchemaConceptImpl;
+import grakn.core.concept.impl.Serialiser;
+import grakn.core.concept.impl.TypeImpl;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
@@ -51,8 +50,9 @@ import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Thing;
 import grakn.core.graql.executor.QueryExecutor;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.InvalidKBException;
+import grakn.core.kb.Transaction;
 import grakn.core.server.keyspace.Keyspace;
 import grakn.core.kb.PropertyNotUniqueException;
 import grakn.core.kb.Schema;
@@ -100,13 +100,13 @@ import java.util.stream.Stream;
 /**
  * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
  */
-public class TransactionOLTP implements AutoCloseable {
+public class TransactionOLTP implements AutoCloseable, Transaction {
     private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
     private final long typeShardThreshold;
 
     // Shared Variables
     private final Session session;
-    private final ConceptManager conceptManager;
+    private final ConceptManagerImpl conceptManager;
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -178,7 +178,7 @@ public class TransactionOLTP implements AutoCloseable {
         }
     }
 
-    public TransactionOLTP(Session session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
+    public TransactionOLTP(Session session, JanusGraphTransaction janusTransaction, ConceptManagerImpl conceptManager,
                            CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
         createdInCurrentThread.set(true);
 
@@ -1130,10 +1130,10 @@ public class TransactionOLTP implements AutoCloseable {
 
     // ----------- Exposed low level methods that should not be exposed here TODO refactor
     void createMetaConcepts() {
-        VertexElement type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
-        VertexElement entityType = conceptManager.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-        VertexElement relationType = conceptManager.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-        VertexElement resourceType = conceptManager.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
+        grakn.core.concept.structure.VertexElementImpl type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
+        grakn.core.concept.structure.VertexElementImpl entityType = conceptManager.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        grakn.core.concept.structure.VertexElementImpl relationType = conceptManager.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+        grakn.core.concept.structure.VertexElementImpl resourceType = conceptManager.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
         conceptManager.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
         conceptManager.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
 
@@ -1151,7 +1151,7 @@ public class TransactionOLTP implements AutoCloseable {
     }
 
     @VisibleForTesting
-    public ConceptManager factory() {
+    public ConceptManagerImpl factory() {
         return conceptManager;
     }
 

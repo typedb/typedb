@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.concept.api.Rule;
 import grakn.client.GraknClient;
 import grakn.client.answer.AnswerGroup;
 import grakn.client.answer.ConceptList;
@@ -601,7 +602,7 @@ public class GraknClientIT {
             GraqlGet query = Graql.match(var("x").type("expectation-rule")).get();
             grakn.client.concept.api.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
             grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Rule localConcept = localTx.getConcept(localId).asRule();
+            Rule localConcept = localTx.getConcept(localId).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
             assertEquals(localConcept.then(), remoteConcept.then());

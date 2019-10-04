@@ -17,26 +17,26 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.api.Concept;
+import grakn.core.concept.ConceptCacheLine;
+import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
-import concept.exception.GraknConceptException;
+import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.Attribute;
 import grakn.core.kb.Schema;
-import concept.impl.structure.Casting;
-import concept.impl.structure.EdgeElement;
-import concept.impl.structure.VertexElement;
+import concept.structure.Casting;
+import concept.structure.EdgeElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
@@ -74,7 +74,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> GraknConceptException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    ThingImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
@@ -210,7 +210,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
                         Schema.ImplicitType.KEY_VALUE
                 ));
 
-        Stream<VertexElement> shortcutNeighbors = vertex().getShortcutNeighbors(ownerRoleIds, valueRoleIds, ownerToValueOrdering);
+        Stream<grakn.core.concept.structure.VertexElementImpl> shortcutNeighbors = vertex().getShortcutNeighbors(ownerRoleIds, valueRoleIds, ownerToValueOrdering);
         return shortcutNeighbors.map(vertexElement -> conceptManager.buildConcept(vertexElement));
 
     }
@@ -225,7 +225,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
     }
 
     private Stream<Relation> reifiedRelations(Role... roles) {
-        Stream<VertexElement> reifiedRelationVertices = vertex().reifiedRelations(roles);
+        Stream<grakn.core.concept.structure.VertexElementImpl> reifiedRelationVertices = vertex().reifiedRelations(roles);
         return reifiedRelationVertices.map(vertexElement -> conceptManager.buildConcept(vertexElement));
     }
 

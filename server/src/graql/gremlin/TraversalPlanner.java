@@ -77,7 +77,7 @@ public class TraversalPlanner {
      * @param pattern a pattern to find a query plan for
      * @return a semi-optimal traversal plan
      */
-    public static GraqlTraversal createTraversal(Pattern pattern, TransactionOLTP tx) {
+    public static GraqlTraversalImpl createTraversal(Pattern pattern, TransactionOLTP tx) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<? extends List<Fragment>> fragments = patterns.stream()
@@ -85,7 +85,7 @@ public class TraversalPlanner {
                 .map((ConjunctionQuery query) -> planForConjunction(query, tx))
                 .collect(ImmutableSet.toImmutableSet());
 
-        return GraqlTraversal.create(fragments);
+        return GraqlTraversalImpl.create(fragments);
     }
 
     /**

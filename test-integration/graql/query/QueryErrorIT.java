@@ -23,7 +23,7 @@ import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;

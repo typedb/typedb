@@ -28,7 +28,7 @@ import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.api.AttributeType;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.PropertyNotUniqueException;

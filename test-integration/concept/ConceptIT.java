@@ -19,16 +19,16 @@
 
 package grakn.core.concept;
 
-import concept.impl.EntityTypeImpl;
+import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.concept.api.Concept;
-import concept.exception.GraknConceptException;
+import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.concept.api.Entity;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.Schema;
-import concept.impl.structure.EdgeElement;
+import concept.structure.EdgeElement;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Direction;

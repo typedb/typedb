@@ -32,15 +32,15 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.graql.exception.GraqlCheckedException;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor;
-import grakn.core.graql.gremlin.GraqlTraversal;
+import grakn.core.graql.gremlin.GraqlTraversalImpl;
 import grakn.core.graql.gremlin.TraversalPlanner;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.reasoner.query.ReasonerQueries;
+import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.util.LazyMergingStream;
 import grakn.core.server.exception.GraknServerException;
-import concept.impl.ConceptManager;
+import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -90,12 +90,12 @@ import static java.util.stream.Collectors.toList;
  */
 public class QueryExecutor {
 
-    private ConceptManager conceptManager;
+    private ConceptManagerImpl conceptManager;
     private final boolean infer;
     private final TransactionOLTP transaction;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutor.class);
 
-    public QueryExecutor(TransactionOLTP transaction, ConceptManager conceptManager, boolean infer) {
+    public QueryExecutor(TransactionOLTP transaction, ConceptManagerImpl conceptManager, boolean infer) {
         this.conceptManager = conceptManager;
         this.infer = infer;
         this.transaction = transaction;
@@ -213,7 +213,7 @@ public class QueryExecutor {
     /**
      * @return resulting answer stream
      */
-    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
+    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversalImpl graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
 

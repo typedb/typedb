@@ -60,7 +60,7 @@ import grakn.core.graql.analytics.StatisticsMapReduce;
 import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.kb.statistics.KeyspaceStatistics;

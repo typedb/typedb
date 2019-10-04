@@ -100,6 +100,9 @@ public interface EntityType extends Type {
      */
     Entity create();
 
+
+    Entity addEntityInferred();
+
     /**
      * Creates a RelationType which allows this type and a resource type to be linked in a strictly one-to-one mapping.
      *

@@ -17,13 +17,12 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.Type;
 import grakn.core.kb.Schema;
-import concept.impl.structure.VertexElement;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -35,7 +34,7 @@ import java.util.stream.Stream;
  * An ontological element used to define different types of Rule.
  */
 public class RuleImpl extends SchemaConceptImpl<Rule> implements Rule {
-    RuleImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RuleImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

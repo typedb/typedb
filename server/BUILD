@@ -48,6 +48,7 @@ java_library(
         # Internal dependencies
         "//common:common",
         "//concept/impl:concept",
+        "//kb:kb",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",

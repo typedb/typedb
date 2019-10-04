@@ -17,11 +17,10 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
 import grakn.core.concept.api.Entity;
 import grakn.core.concept.api.EntityType;
-import concept.impl.structure.VertexElement;
 
 /**
  * SchemaConcept used to represent categories.
@@ -29,7 +28,7 @@ import concept.impl.structure.VertexElement;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    EntityTypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    EntityTypeImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
@@ -42,6 +41,7 @@ public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements Enti
         return createInstance(false);
     }
 
+    @Override
     public Entity addEntityInferred() {
         return createInstance(true);
     }

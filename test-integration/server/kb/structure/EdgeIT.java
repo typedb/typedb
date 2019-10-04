@@ -20,17 +20,17 @@ package grakn.core.server.kb.structure;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import concept.impl.structure.EdgeElement;
+import concept.structure.EdgeElement;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Entity;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.Schema;
-import concept.impl.ConceptManager;
+import grakn.core.concept.impl.ConceptManagerImpl;
 import concept.impl.ElementFactory;
-import concept.impl.EntityImpl;
-import concept.impl.EntityTypeImpl;
+import grakn.core.concept.impl.EntityImpl;
+import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.server.keyspace.Keyspace;
-import concept.impl.ConceptObserver;
+import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
@@ -92,7 +92,7 @@ public class EdgeIT {
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
-        ConceptManager conceptManager = new ConceptManager(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
+        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
 
         tx = new TransactionOLTP(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
         tx.open(TransactionOLTP.Type.WRITE);

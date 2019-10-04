@@ -20,12 +20,12 @@
 package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
-import concept.impl.ConceptObserver;
+import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.SchemaConcept;
-import concept.impl.ConceptManager;
+import grakn.core.concept.impl.ConceptManagerImpl;
 import concept.impl.ElementFactory;
 import grakn.core.server.keyspace.Keyspace;
 import server.src.server.exception.SessionException;
@@ -146,7 +146,7 @@ public class Session implements AutoCloseable {
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
-        ConceptManager conceptManager = new ConceptManager(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
+        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
 
         TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
 

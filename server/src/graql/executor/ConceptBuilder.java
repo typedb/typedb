@@ -29,7 +29,7 @@ import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.kb.Schema;

@@ -23,7 +23,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "concept",
-    srcs = glob(["api/*.java", "exception/*.java", "answer/*.java"]),
+    srcs = glob(["api/*.java", "exception/*.java", "answer/*.java", "*.java"]),
     deps = [
         "//common:common",
 

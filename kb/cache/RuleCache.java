@@ -24,9 +24,10 @@ import com.google.common.collect.HashMultimap;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.kb.reasoner.rule.InferenceRule;
 import grakn.core.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -42,7 +43,7 @@ public class RuleCache {
 
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
@@ -53,7 +54,7 @@ public class RuleCache {
     public RuleCache() {
     }
 
-    public void setTx(TransactionOLTP tx) {
+    public void setTx(Transaction tx) {
         this.tx = tx;
     }
 

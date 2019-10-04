@@ -19,8 +19,8 @@
 
 package grakn.core.concept;
 
-import concept.impl.AttributeTypeImpl;
-import concept.impl.EntityTypeImpl;
+import grakn.core.concept.impl.AttributeTypeImpl;
+import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
@@ -30,7 +30,7 @@ import grakn.core.concept.api.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
 import server.src.server.exception.TransactionException;
 import grakn.core.kb.Schema;
-import concept.impl.structure.EdgeElement;
+import concept.structure.EdgeElement;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import org.apache.tinkerpop.gremlin.structure.Direction;

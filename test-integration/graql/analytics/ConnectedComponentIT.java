@@ -27,7 +27,7 @@ import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.kb.Schema;

@@ -20,17 +20,17 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.executor.property.value.ValueAssignment;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.AtomicFactory;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
-import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.AtomicFactory;
+import grakn.core.kb.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.kb.reasoner.atom.predicate.VariableValuePredicate;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;

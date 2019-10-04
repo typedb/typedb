@@ -26,7 +26,7 @@ import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.core.server.exception.InvalidKBException;
-import concept.impl.Serialiser;
+import grakn.core.concept.impl.Serialiser;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
 

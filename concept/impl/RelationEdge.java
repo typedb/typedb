@@ -17,17 +17,17 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Concept;
+import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Role;
 import grakn.core.kb.Schema;
-import concept.impl.structure.EdgeElement;
-import concept.impl.structure.VertexElement;
+import concept.structure.EdgeElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,7 @@ public class RelationEdge implements RelationStructure {
     private final Logger LOG = LoggerFactory.getLogger(RelationEdge.class);
 
     private final EdgeElement edgeElement;
-    private final ConceptManager conceptManager;
+    private final ConceptManagerImpl conceptManager;
     private ConceptObserver conceptObserver;
 
     private final ConceptCacheLine<RelationType> relationType = new ConceptCacheLine<>(() ->
@@ -63,7 +63,7 @@ public class RelationEdge implements RelationStructure {
     private final ConceptCacheLine<Thing> owner = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().source()));
     private final ConceptCacheLine<Thing> value = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().target()));
 
-    RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    RelationEdge(EdgeElement edgeElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         this.edgeElement = edgeElement;
         this.conceptManager = conceptManager;
         this.conceptObserver = conceptObserver;
@@ -73,7 +73,7 @@ public class RelationEdge implements RelationStructure {
         return edgeElement;
     }
 
-    private ConceptManager conceptManager() {
+    private ConceptManagerImpl conceptManager() {
         return conceptManager;
     }
 
@@ -86,7 +86,7 @@ public class RelationEdge implements RelationStructure {
     public RelationReified reify() {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
-        VertexElement relationVertex = edge().asReifiedVertexElement(isInferred());
+        grakn.core.concept.structure.VertexElementImpl relationVertex = edge().asReifiedVertexElement(isInferred());
         RelationReified relationReified = conceptManager().createRelationReified(relationVertex, type());
 
         //Delete the old edge

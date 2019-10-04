@@ -24,14 +24,14 @@ import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.IsaAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.binary.IsaAtom;
+import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
 import graql.lang.property.VarProperty;
@@ -40,7 +40,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class IsaExecutor implements PropertyExecutor.Insertable {
 

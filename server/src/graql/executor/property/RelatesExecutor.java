@@ -25,10 +25,10 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.RelatesAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.binary.RelatesAtom;
+import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.RelatesProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -40,7 +40,7 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.relates;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.sub;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class RelatesExecutor implements PropertyExecutor.Definable {
 

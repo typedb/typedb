@@ -17,7 +17,7 @@
  *
  */
 
-package concept.exception;
+package grakn.core.concept.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;

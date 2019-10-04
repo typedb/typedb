@@ -46,6 +46,7 @@ public interface RelationType extends Type {
      * @see Relation
      */
     Relation create();
+    Relation addRelationInferred();
 
     /**
      * Sets the supertype of the RelationType to be the RelationType specified.

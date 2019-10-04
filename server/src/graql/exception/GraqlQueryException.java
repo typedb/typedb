@@ -23,8 +23,8 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 

@@ -29,6 +29,7 @@ java_library(
         "//concept:concept",
         "//common:common",
         "//kb:kb",
+        "//concept/structure:structure",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",

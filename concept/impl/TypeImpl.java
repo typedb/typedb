@@ -17,11 +17,12 @@
  *
  */
 
-package concept.impl;
+package grakn.core.concept.impl;
 
-import concept.impl.structure.EdgeElement;
-import concept.impl.structure.Shard;
-import concept.impl.structure.VertexElement;
+import grakn.core.concept.ConceptCacheLine;
+import grakn.core.concept.exception.GraknConceptException;
+import concept.structure.EdgeElement;
+import grakn.core.concept.structure.Shard;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.Concept;
@@ -30,7 +31,6 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
-import concept.exception.GraknConceptException;
 import grakn.core.kb.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -66,7 +66,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    TypeImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
@@ -154,7 +154,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     Stream<V> instancesDirect() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
                 .map(EdgeElement::source)
-                .map(VertexElement::asShard)
+                .map(grakn.core.concept.structure.VertexElementImpl::asShard)
                 .flatMap(Shard::links)
                 .map(shardTargetVertex -> conceptManager.buildConcept(shardTargetVertex));
     }
