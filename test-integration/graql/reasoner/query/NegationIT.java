@@ -34,7 +34,7 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.graph.ReachabilityGraph;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -73,9 +73,9 @@ public class NegationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl negationSession;
-    private static SessionImpl recipeSession;
-    private static SessionImpl reachabilitySession;
+    private static Session negationSession;
+    private static Session recipeSession;
+    private static Session reachabilitySession;
 
     @BeforeClass
     public static void loadContext(){

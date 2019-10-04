@@ -32,7 +32,7 @@ import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.graql.reasoner.utils.Pair;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -60,7 +60,7 @@ public class ValuePredicateIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl attributeAttachmentSession;
+    private static Session attributeAttachmentSession;
     @BeforeClass
     public static void loadContext(){
         attributeAttachmentSession = server.sessionWithNewKeyspace();
@@ -75,7 +75,7 @@ public class ValuePredicateIT {
 
     @Test
     public void whenResolvingInferrableAttributesWithBounds_answersAreCalculatedCorrectly(){
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -131,7 +131,7 @@ public class ValuePredicateIT {
 
     @Test
     public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
@@ -201,7 +201,7 @@ public class ValuePredicateIT {
 
     @Test
     public void whenResolvableAttributesHaveVariableComparisonsWithABound_answersAreCalculatedCorrectly(){
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +

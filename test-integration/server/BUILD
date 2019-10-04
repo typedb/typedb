@@ -44,7 +44,6 @@ java_test(
         "@graknlabs_client_java//:client-java",
 
         # Internal dependencies
-        "//api:api",
         "//concept:concept",
         "//server:server", # TODO: NEEDS TO GO
         "//test-integration/rule:grakn-test-server",

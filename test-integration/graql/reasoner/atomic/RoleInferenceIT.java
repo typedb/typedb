@@ -26,7 +26,7 @@ import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -49,9 +49,9 @@ public class RoleInferenceIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl roleInferenceSetSession;
-    private static SessionImpl genericSchemaSession;
-    private static SessionImpl ruleApplicabilitySetSession;
+    private static Session roleInferenceSetSession;
+    private static Session genericSchemaSession;
+    private static Session ruleApplicabilitySetSession;
 
     @BeforeClass
     public static void loadContext(){

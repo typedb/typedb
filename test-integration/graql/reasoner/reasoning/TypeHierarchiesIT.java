@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.ClassRule;
@@ -44,7 +44,7 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: The query should not return any matches (or possibly return a single match with $x=$y)
     public void roleUnificationWithRoleHierarchiesInvolved() {
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet8.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (role2:$x, role3:$y) isa relation2; get;";
@@ -56,7 +56,7 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: The query should return a unique match
     public void rulesInteractingWithTypeHierarchy() {
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet13.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (role1:$x, role2:$y) isa relation2; get;";
@@ -68,7 +68,7 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseTypeQuery = "match " +
@@ -107,7 +107,7 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Two answers obtained only if the rule query containing sub type is correctly executed.
     public void instanceTypeHierarchyRespected_queryHasSuperTypes_recursiveRule() {
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet19-recursive.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseTypeQuery = "match " +
@@ -148,7 +148,7 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverRelationHierarchy(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet20.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (role1: $x, role2: $y) isa relation1; get;";
@@ -164,7 +164,7 @@ public class TypeHierarchiesIT {
 
     @Test //Expected result: Both queries should return a single equal match as they trigger the same rule.
     public void reasoningOverEntityHierarchy(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet21.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match $x isa baseEntity; get;";

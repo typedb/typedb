@@ -26,7 +26,7 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -56,7 +56,7 @@ public class MovieGraph {
     private static Thing cluster0, cluster1;
 
 
-    public static void load(SessionImpl session) {
+    public static void load(Session session) {
         try (TransactionOLTP transaction = session.transaction().write()) {
             buildSchema(transaction);
             buildInstances(transaction);

@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.benchmark;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -42,7 +42,7 @@ public class RuleScalingIT {
     public void ruleScaling() {
         final int N = 60;
         final int populatedChains = 3;
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
 
         try(TransactionOLTP tx = session.transaction().write()) {
             tx.execute(Graql.<GraqlDefine>parse(

@@ -24,7 +24,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
@@ -57,7 +57,7 @@ import static org.junit.Assert.assertNotEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
 public class AttributeUniquenessIT {
-    private SessionImpl session;
+    private Session session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();

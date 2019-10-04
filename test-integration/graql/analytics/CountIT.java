@@ -28,7 +28,7 @@ import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.After;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 @SuppressWarnings("CheckReturnValue")
 public class CountIT {
 
-    public SessionImpl session;
+    public Session session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -302,7 +302,7 @@ public class CountIT {
         }
     }
 
-    private Long executeCount(SessionImpl session) {
+    private Long executeCount(Session session) {
         try (TransactionOLTP tx = session.transaction().read()) {
             return tx.execute(Graql.compute().count()).get(0).number().longValue();
         }

@@ -21,14 +21,12 @@ package grakn.core.graql.reasoner.cache;
 import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.Label;
-import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Rule;
 import grakn.core.concept.type.Type;
-import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.session.cache.RuleCache;
 import graql.lang.Graql;
@@ -56,7 +54,7 @@ public class RuleCacheIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl ruleApplicabilitySession;
+    private static Session ruleApplicabilitySession;
 
     @BeforeClass
     public static void loadContext() {

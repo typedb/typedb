@@ -22,7 +22,7 @@ import grakn.core.concept.Label;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
@@ -32,12 +32,12 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 @SuppressWarnings("CheckReturnValue")
 public class TailRecursionGraph{
 
-    private final SessionImpl session;
+    private final Session session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/recursion/";
     private final static String gqlFile = "tail-recursion.gql";
     private final static Label key = Label.of("index");
 
-    public TailRecursionGraph(SessionImpl session){
+    public TailRecursionGraph(Session session){
         this.session = session;
     }
 

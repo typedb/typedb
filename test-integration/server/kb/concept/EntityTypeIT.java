@@ -32,7 +32,7 @@ import grakn.core.server.exception.PropertyNotUniqueException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.kb.structure.Shard;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -46,7 +46,6 @@ import org.junit.rules.ExpectedException;
 import java.util.Set;
 
 import static grakn.core.common.exception.ErrorMessage.CANNOT_BE_KEY_AND_ATTRIBUTE;
-import static grakn.core.common.exception.ErrorMessage.RESERVED_WORD;
 import static grakn.core.common.exception.ErrorMessage.UNIQUE_PROPERTY_TAKEN;
 import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.is;
@@ -68,7 +67,7 @@ public class EntityTypeIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     private TransactionOLTP tx;
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp(){

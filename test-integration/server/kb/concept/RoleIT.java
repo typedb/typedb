@@ -26,7 +26,7 @@ import grakn.core.concept.type.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;
 import org.junit.Before;
@@ -52,7 +52,7 @@ public class RoleIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     private TransactionOLTP tx;
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp(){

@@ -22,7 +22,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -46,7 +46,7 @@ public class NumberCastingIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static SessionImpl session;
+    public static Session session;
 
     @Before
     public void newSession() {
@@ -64,7 +64,7 @@ public class NumberCastingIT {
         session.close();
     }
 
-    private void verifyWrite(SessionImpl session, Pattern pattern) {
+    private void verifyWrite(Session session, Pattern pattern) {
         GraqlInsert insert = Graql.insert(pattern.statements());
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(insert);
@@ -72,7 +72,7 @@ public class NumberCastingIT {
         }
     }
 
-    private void verifyRead(SessionImpl session, Pattern pattern) {
+    private void verifyRead(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
         try (TransactionOLTP tx = session.transaction().write()) {
             List<ConceptMap> answers = tx.execute(match);
@@ -80,7 +80,7 @@ public class NumberCastingIT {
         }
     }
 
-    private void cleanup(SessionImpl session, Pattern pattern) {
+    private void cleanup(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
         try (TransactionOLTP tx = session.transaction().write()) {
             tx.execute(match.delete());

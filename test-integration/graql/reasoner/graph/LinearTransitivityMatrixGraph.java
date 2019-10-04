@@ -24,7 +24,7 @@ import grakn.core.concept.thing.Thing;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -33,12 +33,12 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 @SuppressWarnings("CheckReturnValue")
 public class LinearTransitivityMatrixGraph{
 
-    private final SessionImpl session;
+    private final Session session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
     private final static String gqlFile = "linearTransitivity.gql";
     private final static Label key = Label.of("index");
 
-    public LinearTransitivityMatrixGraph(SessionImpl session){
+    public LinearTransitivityMatrixGraph(Session session){
         this.session = session;
     }
 

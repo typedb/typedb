@@ -23,7 +23,7 @@ import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.hamcrest.CoreMatchers;
@@ -53,7 +53,7 @@ public class AttributeTypeIT {
 
 
     private TransactionOLTP tx;
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp() {
@@ -174,7 +174,7 @@ public class AttributeTypeIT {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             try (TransactionOLTP graph = session.transaction().write()) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);

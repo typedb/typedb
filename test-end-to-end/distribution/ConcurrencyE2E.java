@@ -19,9 +19,9 @@
 package grakn.core.distribution;
 
 import grakn.client.GraknClient;
-import grakn.core.concept.Concept;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
+import grakn.client.answer.ConceptMap;
+import grakn.client.concept.api.Attribute;
+import grakn.client.concept.api.Concept;
 import graql.lang.Graql;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
@@ -125,9 +125,9 @@ public class ConcurrencyE2E {
         tx = session.transaction().write();
         List<ConceptMap> conceptMaps = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         conceptMaps.forEach(map -> {
-            Collection<Concept> concepts = map.concepts();
+            Collection<Concept> concepts = map.map().values();
             concepts.forEach(concept -> {
-                Set<Attribute<?>> collect = concept.asThing().attributes().collect(toSet());
+                Set<Attribute<?>> collect = (Set<Attribute<?>>) concept.asThing().attributes().collect(toSet());
                 collect.forEach(attribute -> {
                     String value = attribute.value().toString();
                 });

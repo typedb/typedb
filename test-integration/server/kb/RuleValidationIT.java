@@ -32,7 +32,7 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -67,7 +67,7 @@ public class RuleValidationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp(){

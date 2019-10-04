@@ -22,7 +22,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
@@ -58,7 +58,7 @@ public class AttributeAttachmentIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl attributeAttachmentSession;
+    private static Session attributeAttachmentSession;
     @BeforeClass
     public static void loadContext(){
         attributeAttachmentSession = server.sessionWithNewKeyspace();

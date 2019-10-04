@@ -23,7 +23,6 @@ import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.api.Transaction.Type;
 import grakn.core.concept.Concept;
 import grakn.core.concept.ConceptId;
 import grakn.core.concept.Label;
@@ -33,12 +32,12 @@ import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
 import grakn.core.concept.type.Role;
 import grakn.core.concept.type.Rule;
+import grakn.core.server.exception.TransactionException;
+import grakn.core.server.session.Session;
+import grakn.core.server.session.TransactionOLTP;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlQuery;
@@ -71,7 +70,7 @@ import java.util.stream.Stream;
 public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
     private final OpenRequest requestOpener;
-    private final Map<String, SessionImpl> openSessions;
+    private final Map<String, Session> openSessions;
     // The following set keeps track of all active transactions, so that if the user wants to stop the server
     // we can forcefully close all the connections to clients using active transactions.
     private Set<TransactionListener> transactionListenerSet;
@@ -88,7 +87,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     public void shutdown() {
         transactionListenerSet.forEach(transactionListener -> transactionListener.close(null));
         transactionListenerSet.clear();
-        openSessions.values().forEach(SessionImpl::close);
+        openSessions.values().forEach(Session::close);
     }
 
     @Override
@@ -102,7 +101,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     public void open(SessionProto.Session.Open.Req request, StreamObserver<SessionProto.Session.Open.Res> responseObserver) {
         try {
             String keyspace = request.getKeyspace();
-            SessionImpl session = requestOpener.open(request);
+            Session session = requestOpener.open(request);
             String sessionId = keyspace + UUID.randomUUID().toString();
             openSessions.put(sessionId, session);
             responseObserver.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionId).build());
@@ -116,7 +115,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     @Override
     public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
         try {
-            SessionImpl session = openSessions.remove(request.getSessionId());
+            Session session = openSessions.remove(request.getSessionId());
             session.close();
             responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
             responseObserver.onCompleted();
@@ -136,14 +135,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final StreamObserver<Transaction.Res> responseSender;
         private final AtomicBoolean terminated = new AtomicBoolean(false);
         private final ExecutorService threadExecutor;
-        private final Map<String, SessionImpl> openSessions;
+        private final Map<String, Session> openSessions;
         private final Iterators iterators = new Iterators();
 
         @Nullable
         private TransactionOLTP tx = null;
         private String sessionId;
 
-        TransactionListener(StreamObserver<Transaction.Res> responseSender, Map<String, SessionImpl> openSessions) {
+        TransactionListener(StreamObserver<Transaction.Res> responseSender, Map<String, Session> openSessions) {
             this.responseSender = responseSender;
 
             ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
@@ -181,7 +180,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             transactionListenerSet.remove(this);
             // This method is invoked when a client abruptly terminates a connection to the server
             // so we want to make sure to also close and delete the session to which this transaction is associated to.
-            SessionImpl session = openSessions.remove(sessionId);
+            Session session = openSessions.remove(sessionId);
             session.close();
             close(t);
         }
@@ -295,12 +294,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             sessionId = request.getSessionId();
-            SessionImpl session = openSessions.get(sessionId);
+            Session session = openSessions.get(sessionId);
 
-            Type type = Type.of(request.getType().getNumber());
-            if (type != null && type.equals(Type.WRITE)) {
+            TransactionOLTP.Type type = TransactionOLTP.Type.of(request.getType().getNumber());
+            if (type != null && type.equals(TransactionOLTP.Type.WRITE)) {
                 tx = session.transaction().write();
-            } else if (type != null && type.equals(Type.READ)) {
+            } else if (type != null && type.equals(TransactionOLTP.Type.READ)) {
                 tx = session.transaction().read();
             } else {
                 throw TransactionException.create("Invalid Transaction Type");

@@ -26,13 +26,11 @@ import grakn.core.concept.thing.Relation;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.EntityType;
 import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
 import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.property.RelationProperty;
@@ -59,7 +57,7 @@ public class GenericSchemaGraph {
     private final QueryPattern differentTypeResourceVariants;
     private final QueryPattern differentTypeRelationVariants;
 
-    public GenericSchemaGraph(SessionImpl session){
+    public GenericSchemaGraph(Session session){
         loadFromFileAndCommit(gqlPath, gqlFile, session);
 
         TransactionOLTP tx = session.transaction().read();

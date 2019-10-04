@@ -36,7 +36,7 @@ import grakn.core.server.kb.concept.AttributeTypeImpl;
 import grakn.core.server.kb.concept.EntityImpl;
 import grakn.core.server.kb.concept.EntityTypeImpl;
 import grakn.core.server.kb.concept.RelationTypeImpl;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -84,7 +84,7 @@ public class TransactionCacheIT {
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
     private TransactionOLTP tx;
-    private SessionImpl session;
+    private Session session;
 
     @Before
     public void setUp() {

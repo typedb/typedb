@@ -23,7 +23,7 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -46,7 +46,7 @@ public class SessionIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private SessionImpl session;
+    private Session session;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -135,7 +135,7 @@ public class SessionIT {
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.submit(() -> {
-            SessionImpl localSession = server.sessionFactory().session(session.keyspace());
+            Session localSession = server.sessionFactory().session(session.keyspace());
             TransactionOLTP tx2 = localSession.transaction().write();
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -144,7 +144,7 @@ public class SessionIT {
         }).get();
 
         executor.submit(() -> {
-            SessionImpl localSession = server.sessionFactory().session(session.keyspace());
+            Session localSession = server.sessionFactory().session(session.keyspace());
             TransactionOLTP tx2 = localSession.transaction().write();
             SchemaConcept concept = tx2.getSchemaConcept(Label.of("person"));
             assertEquals("person", concept.label().toString());
@@ -156,18 +156,18 @@ public class SessionIT {
 
     @Test
     public void whenClosingSession_transactionIsAlsoClosed() {
-        SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
+        Session localSession = server.sessionFactory().session(Keyspace.of("test"));
         TransactionOLTP tx1 = localSession.transaction().write();
-        assertFalse(tx1.isClosed());
+        assertTrue(tx1.isOpen());
         localSession.close();
-        assertTrue(tx1.isClosed());
+        assertFalse(tx1.isOpen());
     }
 
     @Test
     public void whenClosingSession_tryingToUseTransactionThrowsException() {
-        SessionImpl localSession = server.sessionFactory().session(KeyspaceImpl.of("test"));
+        Session localSession = server.sessionFactory().session(Keyspace.of("test"));
         TransactionOLTP tx1 = localSession.transaction().write();
-        assertFalse(tx1.isClosed());
+        assertTrue(tx1.isOpen());
         localSession.close();
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage("The session for graph [test] is closed. Create a new session to interact with the graph.");

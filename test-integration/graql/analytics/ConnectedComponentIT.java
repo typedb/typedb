@@ -31,7 +31,7 @@ import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.exception.InvalidKBException;
 import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.After;
@@ -72,7 +72,7 @@ public class ConnectedComponentIT {
     private ConceptId entityId4;
     private ConceptId aDisconnectedAttribute;
 
-    public SessionImpl session;
+    public Session session;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();

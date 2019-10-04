@@ -20,7 +20,7 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.junit.ClassRule;
@@ -43,7 +43,7 @@ public class NeqIdPredicateIT {
 
     @Test //Expected result: 2 relations obtained by correctly finding reified relations
     public void reasoningWithNeqProperty() {
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet27.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String queryString = "match (related-state: $s) isa holds; get;";
@@ -57,7 +57,7 @@ public class NeqIdPredicateIT {
 
     @Test //tests a query containing a neq predicate bound to a recursive relation
     public void recursiveRelationWithNeqPredicate(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseQueryString = "match " +
@@ -96,7 +96,7 @@ public class NeqIdPredicateIT {
      */
     @Test
     public void recursiveRelationsWithSharedNeqPredicate_relationsAreEquivalent(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseQueryString = "match " +
@@ -141,7 +141,7 @@ public class NeqIdPredicateIT {
      */
     @Test
     public void multipleRecursiveRelationsWithSharedNeqPredicate_neqPredicatePreventsLoops(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseQueryString = "match " +
@@ -190,7 +190,7 @@ public class NeqIdPredicateIT {
      */
     @Test
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates_symmetricPattern(){
-        try(SessionImpl session = server.sessionWithNewKeyspace()) {
+        try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseQueryString = "match " +
@@ -235,7 +235,7 @@ public class NeqIdPredicateIT {
      */
     @Test
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates() {
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
             try (TransactionOLTP tx = session.transaction().write()) {
                                 String baseQueryString = "match " +

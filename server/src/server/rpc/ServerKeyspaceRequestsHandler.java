@@ -19,7 +19,7 @@
 package grakn.core.server.rpc;
 
 import grakn.core.server.exception.GraknServerException;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
@@ -41,12 +41,12 @@ public class ServerKeyspaceRequestsHandler implements KeyspaceRequestsHandler {
 
     @Override
     public Iterable<String> retrieve(KeyspaceProto.Keyspace.Retrieve.Req request) {
-        return this.keyspaceManager.keyspaces().stream().map(KeyspaceImpl::name).collect(Collectors.toSet());
+        return this.keyspaceManager.keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
     }
 
     @Override
     public void delete(KeyspaceProto.Keyspace.Delete.Req request) {
-        KeyspaceImpl keyspace = KeyspaceImpl.of(request.getName());
+        Keyspace keyspace = Keyspace.of(request.getName());
 
         if (!keyspaceManager.keyspaces().contains(keyspace)) {
             throw GraknServerException.create("It is not possible to delete keyspace [" + keyspace.name() + "] as it does not exist.");

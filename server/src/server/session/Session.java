@@ -19,8 +19,6 @@
 package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
-import grakn.core.api.Session;
-import grakn.core.api.Transaction;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.ConceptId;
@@ -29,7 +27,7 @@ import grakn.core.server.exception.SessionException;
 import grakn.core.server.exception.TransactionException;
 import grakn.core.server.kb.concept.ConceptManager;
 import grakn.core.server.kb.concept.ElementFactory;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.session.cache.CacheProvider;
 import grakn.core.server.session.cache.KeyspaceSchemaCache;
 import grakn.core.server.statistics.KeyspaceStatistics;
@@ -53,46 +51,46 @@ import java.util.function.Consumer;
  * - Only 1 transaction per thread can exist.
  * - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
-public class SessionImpl implements Session {
+public class Session implements AutoCloseable {
 
     private final HadoopGraph hadoopGraph;
 
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<TransactionOLTP> localOLTPTransactionContainer = new ThreadLocal<>();
 
-    private final KeyspaceImpl keyspace;
+    private final Keyspace keyspace;
     private final Config config;
     private final StandardJanusGraph graph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final Cache<String, ConceptId> attributesCache;
     private final ReadWriteLock graphLock;
-    private Consumer<SessionImpl> onClose;
+    private Consumer<Session> onClose;
 
     private boolean isClosed = false;
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates {@link Session} specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+    public Session(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
     /**
-     * Instantiates {@link SessionImpl} specific for internal use (within Grakn Server),
+     * Instantiates {@link Session} specific for internal use (within Grakn Server),
      * using provided Grakn configuration.
      *
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                        Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+     public Session(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+                    HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
+                    Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -104,7 +102,7 @@ public class SessionImpl implements Session {
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
-        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        TransactionOLTP tx = this.transaction(TransactionOLTP.Type.WRITE);
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -121,12 +119,11 @@ public class SessionImpl implements Session {
         return graphLock;
     }
 
-    @Override
     public TransactionOLTP.Builder transaction() {
         return new TransactionOLTP.Builder(this);
     }
 
-    TransactionOLTP transaction(Transaction.Type type) {
+    TransactionOLTP transaction(TransactionOLTP.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -135,7 +132,7 @@ public class SessionImpl implements Session {
 
         TransactionOLTP localTx = localOLTPTransactionContainer.get();
         // If transaction is already open in current thread throw exception
-        if (localTx != null && !localTx.isClosed()) throw TransactionException.transactionOpen(localTx);
+        if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
         // caches
         CacheProvider cacheProvider = new CacheProvider(keyspaceSchemaCache);
@@ -207,7 +204,7 @@ public class SessionImpl implements Session {
      * @param onClose callback function (this should be used to update the session references in SessionFactory)
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-    public void setOnClose(Consumer<SessionImpl> onClose) {
+    public void setOnClose(Consumer<Session> onClose) {
         this.onClose = onClose;
     }
 
@@ -247,8 +244,7 @@ public class SessionImpl implements Session {
         isClosed = true;
     }
 
-    @Override
-    public KeyspaceImpl keyspace() {
+    public Keyspace keyspace() {
         return keyspace;
     }
 

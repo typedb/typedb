@@ -19,8 +19,8 @@
 package grakn.core.client;
 
 import grakn.client.GraknClient;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
+import grakn.client.answer.ConceptMap;
+import grakn.client.answer.ConceptSet;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;

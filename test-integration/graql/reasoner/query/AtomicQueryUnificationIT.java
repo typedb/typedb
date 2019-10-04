@@ -32,7 +32,7 @@ import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -64,8 +64,8 @@ public class AtomicQueryUnificationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl genericSchemaSession;
-    private static SessionImpl unificationWithTypesSession;
+    private static Session genericSchemaSession;
+    private static Session unificationWithTypesSession;
     private static GenericSchemaGraph genericSchemaGraph;
 
     @BeforeClass

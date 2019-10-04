@@ -18,13 +18,13 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeSymmetricGraph extends PathTreeGraph {
 
-    public PathTreeSymmetricGraph(SessionImpl session){
+    public PathTreeSymmetricGraph(Session session){
         super(session, "pathTest-symmetric.gql");
     }
 

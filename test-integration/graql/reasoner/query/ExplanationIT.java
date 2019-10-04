@@ -25,7 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -57,8 +57,8 @@ public class ExplanationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl geoSession;
-    private static SessionImpl explanationSession;
+    private static Session geoSession;
+    private static Session explanationSession;
 
     @BeforeClass
     public static void loadContext(){
@@ -302,7 +302,7 @@ public class ExplanationIT {
     @Ignore("We cannot solve this with current answer handling/cache implementation. Maybe cardinality constraints would help?")
     @Test
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             for(int i = 0 ; i < 10 ; i++) {
                 try (TransactionOLTP tx = session.transaction().write()) {

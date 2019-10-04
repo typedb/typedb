@@ -20,7 +20,7 @@ package grakn.core.server.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -68,7 +68,7 @@ public class GraknServerException extends GraknException {
         return new GraknServerException(error);
     }
 
-    public static GraknServerException initializationException(KeyspaceImpl keyspace) {
+    public static GraknServerException initializationException(Keyspace keyspace) {
         return create(INITIALIZATION_EXCEPTION.getMessage(keyspace));
     }
 
