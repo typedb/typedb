@@ -37,15 +37,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static grakn.core.server.kb.Schema.BaseType.RELATION_TYPE;
-import static grakn.core.server.kb.Schema.EdgeLabel.ATTRIBUTE;
-import static grakn.core.server.kb.Schema.EdgeLabel.ISA;
-import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
-import static grakn.core.server.kb.Schema.EdgeLabel.RELATES;
-import static grakn.core.server.kb.Schema.EdgeLabel.SHARD;
-import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
-import static grakn.core.server.kb.Schema.VertexProperty.IS_IMPLICIT;
-import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.kb.Schema.BaseType.RELATION_TYPE;
+import static grakn.core.kb.Schema.EdgeLabel.ATTRIBUTE;
+import static grakn.core.kb.Schema.EdgeLabel.ISA;
+import static grakn.core.kb.Schema.EdgeLabel.PLAYS;
+import static grakn.core.kb.Schema.EdgeLabel.RELATES;
+import static grakn.core.kb.Schema.EdgeLabel.SHARD;
+import static grakn.core.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static grakn.core.kb.Schema.VertexProperty.IS_IMPLICIT;
+import static grakn.core.kb.Schema.VertexProperty.LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.

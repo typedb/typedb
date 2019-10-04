@@ -18,14 +18,14 @@
 
 package grakn.core.graql.reasoner.unifier;
 
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Role;
+import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.server.kb.concept.ConceptUtils;
+import concept.impl.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import java.util.HashMap;

@@ -24,7 +24,7 @@ java_test(
     test_class = "grakn.core.graql.gremlin.NodesUtilTest",
     deps = [
         "//server:server",
-        "//concept:concept",
+        "//concept/impl:concept",
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/com/google/guava:guava",
     ],

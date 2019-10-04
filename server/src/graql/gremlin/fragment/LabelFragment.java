@@ -21,8 +21,8 @@ package grakn.core.graql.gremlin.fragment;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.SchemaConcept;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.kb.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 

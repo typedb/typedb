@@ -20,10 +20,10 @@ package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
+import grakn.core.concept.api.Entity;
+import grakn.core.concept.api.Relation;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

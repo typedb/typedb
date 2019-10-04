@@ -22,7 +22,7 @@ import com.google.auto.value.AutoValue;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
-import grakn.core.server.kb.Schema;
+import grakn.core.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -33,7 +33,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
+import static grakn.core.kb.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
 abstract class InPlaysFragment extends EdgeFragment {

@@ -8,7 +8,7 @@ java_test(
     test_class = "grakn.core.server.kb.ValidatorIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
@@ -23,7 +23,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.ValidateGlobalRulesIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//server",
         "//test-integration/rule:grakn-test-server",
     ],
@@ -37,7 +37,7 @@ java_test(
     test_class = "grakn.core.server.kb.RuleValidationIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",

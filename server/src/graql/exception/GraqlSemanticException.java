@@ -20,11 +20,11 @@ package grakn.core.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;

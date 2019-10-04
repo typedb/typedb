@@ -19,9 +19,9 @@ package grakn.core.graql.reasoner.utils.conversion;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
+import grakn.core.concept.api.SchemaConcept;
 
 import java.util.stream.Stream;
 

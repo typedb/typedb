@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.base.Equivalence;
-import grakn.core.concept.ConceptId;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.gremlin.GraqlTraversal;
 import grakn.core.graql.gremlin.TraversalPlanner;

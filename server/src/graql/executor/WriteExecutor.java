@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.executor;
@@ -30,15 +31,15 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Thing;
+import grakn.core.concept.api.Thing;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor.Writer;
 import grakn.core.graql.util.Partition;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.ConceptUtils;
-import grakn.core.server.kb.concept.ConceptVertex;
+import grakn.core.kb.Schema;
+import concept.impl.ConceptUtils;
+import concept.impl.ConceptVertex;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;

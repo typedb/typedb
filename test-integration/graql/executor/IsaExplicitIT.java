@@ -19,10 +19,10 @@
 package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.concept.api.Entity;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
 import grakn.core.graql.gremlin.TraversalPlanner;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;

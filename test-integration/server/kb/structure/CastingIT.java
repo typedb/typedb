@@ -18,13 +18,14 @@
 
 package grakn.core.server.kb.structure;
 
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import concept.impl.structure.Casting;
+import grakn.core.concept.api.Entity;
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.concept.RelationImpl;
+import concept.impl.RelationImpl;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import org.junit.After;

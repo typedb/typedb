@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.concept.ConceptId;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;

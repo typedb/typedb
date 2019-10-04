@@ -21,7 +21,7 @@ package grakn.core.graql.reasoner.atom;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.Rule;
+import grakn.core.concept.api.Rule;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.server.session.TransactionOLTP;

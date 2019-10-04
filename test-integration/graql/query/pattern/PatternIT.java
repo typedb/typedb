@@ -19,7 +19,7 @@
 package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;

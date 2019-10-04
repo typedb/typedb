@@ -18,15 +18,15 @@
 
 package grakn.core.server.statistics;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Attribute;
+import grakn.core.concept.api.Entity;
+import grakn.core.concept.api.Relation;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

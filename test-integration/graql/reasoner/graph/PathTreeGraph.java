@@ -19,10 +19,10 @@
 package grakn.core.graql.reasoner.graph;
 
 import com.google.common.math.IntMath;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 

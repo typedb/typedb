@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
-import grakn.core.concept.ConceptId;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.CacheEntry;
@@ -31,7 +31,7 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.server.kb.concept.ConceptUtils;
+import concept.impl.ConceptUtils;
 import graql.lang.statement.Variable;
 import java.util.Iterator;
 import java.util.Set;

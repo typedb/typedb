@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.executor;
@@ -23,20 +24,20 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.LabelId;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
+import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.analytics.ClusterMemberMapReduce;
 import grakn.core.graql.analytics.ConnectedComponentVertexProgram;
 import grakn.core.graql.analytics.ConnectedComponentsVertexProgram;
@@ -60,9 +61,9 @@ import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
 import grakn.core.graql.exception.GraqlSemanticException;
-import grakn.core.server.kb.Schema;
+import grakn.core.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;

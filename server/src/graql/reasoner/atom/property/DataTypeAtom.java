@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.atom.property;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.api.AttributeType;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.graql.reasoner.query.ReasonerQuery;

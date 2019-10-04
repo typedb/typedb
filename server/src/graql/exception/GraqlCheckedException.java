@@ -19,7 +19,7 @@
 package grakn.core.graql.exception;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.ConceptId;
+import grakn.core.concept.api.ConceptId;
 import graql.lang.exception.GraqlException;
 
 public class GraqlCheckedException extends GraqlException {

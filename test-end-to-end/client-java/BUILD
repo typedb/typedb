@@ -7,7 +7,7 @@ java_test(
     deps = [
         # Internal dependencies
         "//common:common",
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
 
         # External dependencies from @graknlabs

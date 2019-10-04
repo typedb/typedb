@@ -22,7 +22,7 @@ java_test(
     test_class = "grakn.core.graql.gremlin.ConjunctionQueryTest",
     srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
 
         "@graknlabs_graql//java:graql",
@@ -39,7 +39,7 @@ java_test(
     srcs = ["GraqlTraversalIT.java", "GraqlMatchers.java"],
     deps = [
         "//common:common",
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",

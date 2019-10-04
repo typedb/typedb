@@ -19,8 +19,8 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;

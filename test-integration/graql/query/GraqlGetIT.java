@@ -18,15 +18,15 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.Role;
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.Role;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;

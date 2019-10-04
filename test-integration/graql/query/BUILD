@@ -25,7 +25,7 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlGetIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -43,7 +43,7 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/graql/graph:movie-graph",
@@ -61,7 +61,7 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlDeleteIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
@@ -80,7 +80,7 @@ java_test(
     test_class = "grakn.core.graql.query.GraqlInsertIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -98,7 +98,7 @@ java_test(
     srcs = ["GraqlUndefineIT.java"],
     test_class = "grakn.core.graql.query.GraqlUndefineIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -116,7 +116,7 @@ java_test(
     srcs = ["NumberCastingIT.java"],
     test_class = "grakn.core.graql.query.NumberCastingIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/graql/graph:movie-graph",
@@ -163,7 +163,7 @@ java_test(
     test_class = "grakn.core.graql.query.QueryErrorIT",
     deps = [
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/graql/graph:movie-graph",
@@ -179,7 +179,7 @@ java_test(
     srcs = ["QueryPlannerIT.java"],
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/graql/graph:movie-graph",

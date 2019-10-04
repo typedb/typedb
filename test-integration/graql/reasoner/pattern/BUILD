@@ -12,7 +12,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
         "//dependencies/maven/artifacts/com/google/guava",
         "//test-integration/graql/reasoner/pattern:query-pattern",
@@ -25,7 +25,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
         "//test-integration/graql/reasoner/pattern:query-pattern",
     ],
@@ -36,7 +36,7 @@ java_library(
     srcs = ["TypePattern.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
         "//test-integration/graql/reasoner/pattern:query-pattern",
         "//dependencies/maven/artifacts/com/google/guava",

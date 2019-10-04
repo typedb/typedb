@@ -20,8 +20,8 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.common.util.Tuple;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.AttributeType;
 import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;

@@ -7,7 +7,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.benchmark.RuleScalingIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -29,7 +29,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -51,7 +51,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/graql/reasoner/graph:diagonal-graph",

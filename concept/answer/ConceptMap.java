@@ -18,8 +18,8 @@
 
 package grakn.core.concept.answer;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.concept.api.Concept;
+import concept.exception.GraknConceptException;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;

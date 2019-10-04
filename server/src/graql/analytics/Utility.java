@@ -19,10 +19,10 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.LabelId;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.LabelId;
+import grakn.core.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;

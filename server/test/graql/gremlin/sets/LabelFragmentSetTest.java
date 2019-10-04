@@ -20,8 +20,8 @@ package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;

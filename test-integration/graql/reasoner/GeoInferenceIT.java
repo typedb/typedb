@@ -18,7 +18,7 @@
 
 package grakn.core.graql.reasoner;
 
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;

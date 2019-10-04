@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.executor.property.value;
 
-import grakn.core.server.kb.concept.Serialiser;
+import concept.impl.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import java.time.LocalDateTime;

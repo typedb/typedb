@@ -19,9 +19,9 @@
 package grakn.core.graql.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.api.AttributeType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.TransactionException;
+import server.src.server.exception.TransactionException;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;

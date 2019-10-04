@@ -19,11 +19,11 @@
 package grakn.core.server;
 
 import grakn.core.common.util.Collections;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
+import grakn.core.kb.Schema;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;

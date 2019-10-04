@@ -18,7 +18,7 @@
 
 package grakn.core.concept.answer;
 
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 
 import javax.annotation.Nullable;
 import java.util.List;

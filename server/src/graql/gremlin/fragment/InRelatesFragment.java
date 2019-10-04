@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static grakn.core.server.kb.Schema.EdgeLabel.RELATES;
+import static grakn.core.kb.Schema.EdgeLabel.RELATES;
 
 @AutoValue
 abstract class InRelatesFragment extends EdgeFragment {

@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.atom.binary;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.Rule;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Rule;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.query.ReasonerQuery;

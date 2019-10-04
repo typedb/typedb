@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
@@ -36,9 +36,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.server.kb.Schema.ImplicitType.HAS;
-import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.kb.Schema.ImplicitType.HAS;
+import static grakn.core.kb.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.kb.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;

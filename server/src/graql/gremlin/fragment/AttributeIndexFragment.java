@@ -19,13 +19,13 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.SchemaConcept;
+import grakn.core.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.statistics.KeyspaceStatistics;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
+import static grakn.core.kb.Schema.VertexProperty.INDEX;
 
 @AutoValue
 public abstract class AttributeIndexFragment extends Fragment {

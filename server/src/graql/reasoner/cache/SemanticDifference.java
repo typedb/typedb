@@ -20,16 +20,16 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Relation;
+import grakn.core.concept.api.Role;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.server.kb.concept.ConceptUtils;
+import concept.impl.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;

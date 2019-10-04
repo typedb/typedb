@@ -14,12 +14,13 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.server.session;
 
-import grakn.core.concept.LabelId;
-import grakn.core.server.kb.Schema;
+import grakn.core.concept.api.LabelId;
+import grakn.core.kb.Schema;
 import grakn.core.server.session.computer.GraknSparkComputer;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

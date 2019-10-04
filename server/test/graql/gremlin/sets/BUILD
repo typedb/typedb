@@ -23,7 +23,7 @@ java_test(
     srcs = ["LabelFragmentSetTest.java"],
     test_class = "grakn.core.graql.gremlin.sets.LabelFragmentSetTest",
     deps = [
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
 
         "@graknlabs_graql//java:graql",
@@ -48,7 +48,7 @@ java_test(
     test_class = "grakn.core.graql.gremlin.sets.RolePlayerFragmentSetTest",
     srcs = ["RolePlayerFragmentSetTest.java"],
     deps = [
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
 
         "@graknlabs_graql//java:graql",

@@ -7,7 +7,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
     deps = [
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -29,7 +29,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.GeoInferenceIT",
     deps = [
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",

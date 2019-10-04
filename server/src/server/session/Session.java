@@ -14,24 +14,26 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
+import concept.impl.ConceptObserver;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.server.exception.SessionException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.concept.ConceptManager;
-import grakn.core.server.kb.concept.ElementFactory;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.SchemaConcept;
+import concept.impl.ConceptManager;
+import concept.impl.ElementFactory;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.cache.CacheProvider;
-import grakn.core.server.session.cache.KeyspaceSchemaCache;
-import grakn.core.server.statistics.KeyspaceStatistics;
-import grakn.core.server.statistics.UncomittedStatisticsDelta;
+import server.src.server.exception.SessionException;
+import server.src.server.exception.TransactionException;
+import grakn.core.kb.cache.CacheProvider;
+import grakn.core.kb.cache.KeyspaceSchemaCache;
+import grakn.core.kb.statistics.KeyspaceStatistics;
+import grakn.core.kb.statistics.UncomittedStatisticsDelta;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;

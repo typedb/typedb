@@ -18,10 +18,10 @@
 
 package grakn.core.graql.reasoner.atom.predicate;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.SchemaConcept;
 import grakn.core.graql.exception.GraqlCheckedException;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atomic;

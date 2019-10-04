@@ -37,7 +37,7 @@ java_test(
     deps = [
         "//server",
         "//common",
-        "//concept",
+        "//concept/impl:concept",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -56,7 +56,7 @@ java_test(
     deps = [
         # Internal dependencies
         "//common:common",
-        "//concept:concept",
+        "//concept/impl:concept",
         "//server:server",
 
         # External dependencies from @graknlabs

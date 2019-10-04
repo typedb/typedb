@@ -18,8 +18,8 @@
 
 package grakn.core.graql.gremlin;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.server.session.TransactionOLTP;

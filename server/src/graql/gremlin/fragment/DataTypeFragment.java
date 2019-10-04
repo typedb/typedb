@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.concept.type.AttributeType;
+import grakn.core.concept.api.AttributeType;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.server.kb.Schema.VertexProperty.DATA_TYPE;
+import static grakn.core.kb.Schema.VertexProperty.DATA_TYPE;
 
 @AutoValue
 abstract class DataTypeFragment extends Fragment {

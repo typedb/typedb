@@ -18,11 +18,11 @@
 
 package grakn.core.server.session;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.SessionException;
-import grakn.core.server.exception.TransactionException;
+import server.src.server.exception.SessionException;
+import server.src.server.exception.TransactionException;
 import grakn.core.server.keyspace.Keyspace;
 import org.junit.After;
 import org.junit.Before;

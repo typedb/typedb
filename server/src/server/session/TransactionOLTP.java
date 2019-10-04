@@ -14,19 +14,23 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import concept.impl.ConceptImpl;
+import concept.impl.ConceptManager;
+import concept.impl.ConceptVertex;
+import concept.impl.SchemaConceptImpl;
+import concept.impl.Serialiser;
+import concept.impl.TypeImpl;
+import concept.impl.structure.VertexElement;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.LabelId;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -34,33 +38,30 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.Rule;
-import grakn.core.concept.type.SchemaConcept;
+import grakn.core.concept.api.Attribute;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.LabelId;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
+import grakn.core.concept.api.Rule;
+import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Thing;
 import grakn.core.graql.executor.QueryExecutor;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.PropertyNotUniqueException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.Validator;
-import grakn.core.server.kb.concept.ConceptImpl;
-import grakn.core.server.kb.concept.ConceptManager;
-import grakn.core.server.kb.concept.ConceptVertex;
-import grakn.core.server.kb.concept.SchemaConceptImpl;
-import grakn.core.server.kb.concept.Serialiser;
-import grakn.core.server.kb.concept.TypeImpl;
-import grakn.core.server.kb.structure.VertexElement;
+import grakn.core.kb.InvalidKBException;
 import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.cache.CacheProvider;
-import grakn.core.server.session.cache.RuleCache;
-import grakn.core.server.session.cache.TransactionCache;
-import grakn.core.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.kb.PropertyNotUniqueException;
+import grakn.core.kb.Schema;
+import server.src.server.exception.TransactionException;
+import grakn.core.kb.Validator;
+import grakn.core.kb.cache.CacheProvider;
+import grakn.core.kb.cache.RuleCache;
+import grakn.core.kb.cache.TransactionCache;
+import grakn.core.kb.statistics.UncomittedStatisticsDelta;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -567,10 +568,10 @@ public class TransactionOLTP implements AutoCloseable {
 
 
     /**
-     * Gets the config option which determines the number of instances a grakn.core.concept.type.Type must have before the grakn.core.concept.type.Type
+     * Gets the config option which determines the number of instances a grakn.core.concept.api.Type must have before the grakn.core.concept.api.Type
      * if automatically sharded.
      *
-     * @return the number of instances a grakn.core.concept.type.Type must have before it is shareded
+     * @return the number of instances a grakn.core.concept.api.Type must have before it is shareded
      */
     public long shardingThreshold() {
         return typeShardThreshold;
@@ -809,7 +810,7 @@ public class TransactionOLTP implements AutoCloseable {
      * @return The meta type -> type.
      */
     @CheckReturnValue
-    public grakn.core.concept.type.Type getMetaConcept() {
+    public grakn.core.concept.api.Type getMetaConcept() {
         return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
     }
 
@@ -910,13 +911,13 @@ public class TransactionOLTP implements AutoCloseable {
     }
 
     /**
-     * @param label A unique label which identifies the grakn.core.concept.type.Type in the graph.
+     * @param label A unique label which identifies the grakn.core.concept.api.Type in the graph.
      * @param <T>
-     * @return The grakn.core.concept.type.Type with the provided label or null if no such grakn.core.concept.type.Type exists.
+     * @return The grakn.core.concept.api.Type with the provided label or null if no such grakn.core.concept.api.Type exists.
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException   if the type is not an instance of T
      */
-    public <T extends grakn.core.concept.type.Type> T getType(Label label) {
+    public <T extends grakn.core.concept.api.Type> T getType(Label label) {
         checkGraphIsOpen();
         return conceptManager.getType(label);
     }
@@ -1092,13 +1093,13 @@ public class TransactionOLTP implements AutoCloseable {
     }
 
     /**
-     * Returns the current number of shards the provided grakn.core.concept.type.Type has. This is used in creating more
+     * Returns the current number of shards the provided grakn.core.concept.api.Type has. This is used in creating more
      * efficient query plans.
      *
-     * @param concept The grakn.core.concept.type.Type which may contain some shards.
-     * @return the number of Shards the grakn.core.concept.type.Type currently has.
+     * @param concept The grakn.core.concept.api.Type which may contain some shards.
+     * @return the number of Shards the grakn.core.concept.api.Type currently has.
      */
-    public long getShardCount(grakn.core.concept.type.Type concept) {
+    public long getShardCount(grakn.core.concept.api.Type concept) {
         return TypeImpl.from(concept).shardCount();
     }
 

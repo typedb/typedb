@@ -19,7 +19,7 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import graql.lang.statement.Variable;

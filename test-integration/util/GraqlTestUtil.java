@@ -18,10 +18,10 @@
 
 package grakn.core.util;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Attribute;
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.api.EntityType;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;

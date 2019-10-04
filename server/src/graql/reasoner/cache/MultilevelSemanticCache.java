@@ -26,7 +26,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.common.util.Pair;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
 import java.util.Set;

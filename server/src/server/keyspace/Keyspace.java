@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.server.keyspace;
 
-import grakn.core.server.exception.TransactionException;
+import server.src.server.exception.TransactionException;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;

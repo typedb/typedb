@@ -19,9 +19,9 @@
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.SetMultimap;
-import grakn.core.concept.Label;
+import grakn.core.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.server.session.TransactionOLTP;

@@ -25,7 +25,7 @@ import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.Unifier;
-import grakn.core.server.kb.concept.ConceptUtils;
+import concept.impl.ConceptUtils;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;

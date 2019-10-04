@@ -14,16 +14,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.exception.GraqlSemanticException;
 import grakn.core.graql.executor.WriteExecutor;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
@@ -43,9 +44,9 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.server.kb.Schema.ImplicitType.KEY;
-import static grakn.core.server.kb.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.server.kb.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.kb.Schema.ImplicitType.KEY;
+import static grakn.core.kb.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.kb.Schema.ImplicitType.KEY_VALUE;
 import static graql.lang.Graql.var;
 
 public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
