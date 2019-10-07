@@ -39,7 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-public class ValueFragment extends Fragment {
+public class ValueFragment extends FragmentImpl {
 
     private final VarProperty varProperty;
     private final Variable start;

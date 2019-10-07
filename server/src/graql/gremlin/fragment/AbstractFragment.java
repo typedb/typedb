@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -29,7 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 
 @AutoValue
-abstract class AbstractFragment extends Fragment {
+abstract class AbstractFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

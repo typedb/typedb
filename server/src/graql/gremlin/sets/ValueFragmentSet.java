@@ -21,13 +21,14 @@ package grakn.core.graql.gremlin.sets;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
-import javax.annotation.Nullable;
 
 class ValueFragmentSet extends EquivalentFragmentSet {
 

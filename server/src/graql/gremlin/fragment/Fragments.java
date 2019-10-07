@@ -24,6 +24,7 @@ import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.kb.planning.Fragment;
 import grakn.core.kb.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -54,17 +55,17 @@ public class Fragments {
     }
 
     public static Fragment inRolePlayer(VarProperty varProperty,
-                                        Variable rolePlayer, Variable edge, Variable relation, @Nullable Variable role,
-                                        @Nullable ImmutableSet<Label> roleLabels,
-                                        @Nullable ImmutableSet<Label> relationTypeLabels) {
+                                            Variable rolePlayer, Variable edge, Variable relation, @Nullable Variable role,
+                                            @Nullable ImmutableSet<Label> roleLabels,
+                                            @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_InRolePlayerFragment(
                 varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment outRolePlayer(VarProperty varProperty,
-                                         Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
-                                         @Nullable ImmutableSet<Label> roleLabels,
-                                         @Nullable ImmutableSet<Label> relationTypeLabels) {
+                                             Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
+                                             @Nullable ImmutableSet<Label> roleLabels,
+                                             @Nullable ImmutableSet<Label> relationTypeLabels) {
         return new AutoValue_OutRolePlayerFragment(
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }

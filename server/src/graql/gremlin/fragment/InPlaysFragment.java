@@ -19,9 +19,9 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
+import grakn.core.kb.planning.spanningtree.graph.Node;
+import grakn.core.kb.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;

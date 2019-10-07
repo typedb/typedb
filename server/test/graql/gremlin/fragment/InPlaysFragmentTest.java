@@ -19,7 +19,8 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.Schema;
+import grakn.core.kb.planning.Fragment;
+import grakn.core.core.Schema;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -27,9 +28,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.Test;
 
-import static grakn.core.kb.Schema.EdgeLabel.PLAYS;
-import static grakn.core.kb.Schema.EdgeLabel.SUB;
-import static grakn.core.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.core.Schema.EdgeLabel.PLAYS;
+import static grakn.core.core.Schema.EdgeLabel.SUB;
+import static grakn.core.core.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static junit.framework.TestCase.assertEquals;
 
 public class InPlaysFragmentTest {

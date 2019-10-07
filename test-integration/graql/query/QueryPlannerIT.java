@@ -19,30 +19,32 @@
 package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.concept.api.Entity;
 import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.Entity;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.graql.gremlin.TraversalPlanner;
-import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.gremlin.fragment.FragmentImpl;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.OutIsaFragment;
+import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
@@ -142,7 +144,7 @@ public class QueryPlannerIT {
     @Test
     public void inferUniqueRelationType() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -176,7 +178,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWithMoreThan2Roles() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -201,7 +203,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWithARolePlayerWithNoType() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -224,7 +226,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWhereRolePlayedBySuperType() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy),
@@ -248,7 +250,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWhereAVarHasTwoTypes() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy),
@@ -271,7 +273,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWhereAVarHasIncorrectTypes() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(veryRelated),
@@ -302,7 +304,7 @@ public class QueryPlannerIT {
         );
         // repeat planning step to handle nondeterminism, we may pick different starting points each time
         for (int i = 0; i < 20; i++) {
-            ImmutableList<Fragment> plan = getPlan(pattern);
+            ImmutableList<FragmentImpl> plan = getPlan(pattern);
             assertEquals(6, plan.size());
         }
     }
@@ -316,9 +318,9 @@ public class QueryPlannerIT {
                 var().rel(x).rel(y),
                 y.has(resourceType, "someString"));
 
-        List<Fragment> plan = getPlan(pattern);
+        List<FragmentImpl> plan = getPlan(pattern);
         boolean priorFragmentHasFixedCost = true;
-        for (Fragment fragment : plan) {
+        for (FragmentImpl fragment : plan) {
             if (!fragment.hasFixedFragmentCost()) {
                 priorFragmentHasFixedCost = false;
             } else {
@@ -345,11 +347,11 @@ public class QueryPlannerIT {
                 y.isa(thingy4),
                 var().rel(x).rel(y));
 
-        ImmutableList<Fragment> plan = getPlan(pattern);
+        ImmutableList<FragmentImpl> plan = getPlan(pattern);
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        List<Fragment> nonLabelFragments = plan.stream().filter(f -> !(f instanceof LabelFragment)).collect(Collectors.toList());
+        List<FragmentImpl> nonLabelFragments = plan.stream().filter(f -> !(f instanceof LabelFragment)).collect(Collectors.toList());
         //first fragment after label fragments is an isa fragment so we skip it
-        Fragment firstRolePlayerFragment = nonLabelFragments.get(1);
+        FragmentImpl firstRolePlayerFragment = nonLabelFragments.get(1);
         String relationStartVarName = firstRolePlayerFragment.start().name();
 
         // should start from relation
@@ -373,7 +375,7 @@ public class QueryPlannerIT {
     @Test
     public void sameLabelFragmentShouldNotBeAddedTwice() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy2),
@@ -408,7 +410,7 @@ public class QueryPlannerIT {
         tx.shard(tx.getEntityType(thingy3).id());
 
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<FragmentImpl> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -493,7 +495,8 @@ public class QueryPlannerIT {
         assertEquals(y.var(), plan.get(3).end());
     }
 
-    private ImmutableList<Fragment> getPlan(Pattern pattern) {
-        return TraversalPlanner.createTraversal(pattern, tx).fragments().iterator().next();
+    private ImmutableList<FragmentImpl> getPlan(Pattern pattern) {
+        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
+        return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

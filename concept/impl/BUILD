@@ -30,12 +30,17 @@ java_library(
         "//common:common",
         "//kb:kb",
         "//concept/structure:structure",
+        "//core:core",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
 )

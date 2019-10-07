@@ -20,12 +20,12 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.ConceptCacheLine;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.structure.Shard;
 import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.exception.GraknElementException;
-import grakn.core.kb.Schema;
-import concept.structure.EdgeElement;
+import grakn.core.concept.structure.Shard;
+import grakn.core.core.EdgeElement;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

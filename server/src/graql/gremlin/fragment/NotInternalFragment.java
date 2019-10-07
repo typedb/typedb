@@ -30,7 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 
 @AutoValue
-abstract class NotInternalFragment extends Fragment {
+abstract class NotInternalFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(

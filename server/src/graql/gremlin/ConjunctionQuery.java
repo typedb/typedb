@@ -22,11 +22,11 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graql.executor.property.PropertyExecutor;
-import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.planning.Fragment;
+import grakn.core.kb.Transaction;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
@@ -61,7 +61,7 @@ class ConjunctionQuery {
     /**
      * @param patternConjunction a pattern containing no disjunctions to find in the graph
      */
-    ConjunctionQuery(Conjunction<Statement> patternConjunction, TransactionOLTP tx) {
+    ConjunctionQuery(Conjunction<Statement> patternConjunction, Transaction tx) {
         statements = patternConjunction.getPatterns();
 
         if (statements.size() == 0) {

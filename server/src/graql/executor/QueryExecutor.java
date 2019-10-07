@@ -22,8 +22,6 @@ package grakn.core.graql.executor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -31,16 +29,19 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.graql.exception.GraqlCheckedException;
-import grakn.core.kb.GraqlSemanticException;
-import grakn.core.graql.executor.property.PropertyExecutor;
-import grakn.core.graql.gremlin.GraqlTraversalImpl;
-import grakn.core.graql.gremlin.TraversalPlanner;
-import grakn.core.kb.reasoner.query.ReasonerQueries;
-import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.util.LazyMergingStream;
-import grakn.core.server.exception.GraknServerException;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.impl.ConceptManagerImpl;
+import grakn.core.graql.executor.property.PropertyExecutor;
+import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.common.util.LazyMergingStream;
+import grakn.core.kb.GraqlSemanticException;
+import grakn.core.kb.planning.GraqlTraversal;
+import grakn.core.kb.planning.TraversalPlanFactory;
+import grakn.core.graql.reasoner.ReasonerCheckedException;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -93,12 +94,15 @@ public class QueryExecutor {
     private ConceptManagerImpl conceptManager;
     private final boolean infer;
     private final TransactionOLTP transaction;
+    private final TraversalPlanFactory traversalPlanFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutor.class);
 
     public QueryExecutor(TransactionOLTP transaction, ConceptManagerImpl conceptManager, boolean infer) {
         this.conceptManager = conceptManager;
         this.infer = infer;
         this.transaction = transaction;
+
+        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction);
     }
 
     public Stream<ConceptMap> match(MatchClause matchClause) {
@@ -134,7 +138,7 @@ public class QueryExecutor {
                 return mergedStreams.flatStream();
 
             }
-        } catch (GraqlCheckedException e) {
+        } catch (ReasonerCheckedException e) {
             LOG.debug(e.getMessage());
             answerStream = Stream.empty();
         }
@@ -207,13 +211,13 @@ public class QueryExecutor {
     }
 
     public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern) {
-        return traverse(pattern, TraversalPlanner.createTraversal(pattern, transaction));
+        return traverse(pattern, traversalPlanFactory.createTraversal(pattern));
     }
 
     /**
      * @return resulting answer stream
      */
-    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversalImpl graqlTraversal) {
+    public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
 

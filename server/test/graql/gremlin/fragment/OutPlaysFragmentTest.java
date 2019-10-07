@@ -37,7 +37,7 @@ public class OutPlaysFragmentTest {
 
     private final Variable start = new Variable();
     private final Variable end = new Variable();
-    private final Fragment fragment = Fragments.outPlays(null, start, end, false);
+    private final FragmentImpl fragment = Fragments.outPlays(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

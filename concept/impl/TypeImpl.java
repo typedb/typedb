@@ -21,7 +21,6 @@ package grakn.core.concept.impl;
 
 import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.exception.GraknConceptException;
-import concept.structure.EdgeElement;
 import grakn.core.concept.structure.Shard;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
@@ -31,7 +30,8 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
-import grakn.core.kb.Schema;
+import grakn.core.core.EdgeElement;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;

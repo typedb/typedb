@@ -18,6 +18,7 @@
 
 package grakn.core.graql.util;
 
+import grakn.core.common.util.LazyMergingStream;
 import org.junit.Test;
 
 import java.util.Arrays;

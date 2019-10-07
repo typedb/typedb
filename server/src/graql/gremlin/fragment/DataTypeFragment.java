@@ -31,7 +31,7 @@ import java.util.Collection;
 import static grakn.core.kb.Schema.VertexProperty.DATA_TYPE;
 
 @AutoValue
-abstract class DataTypeFragment extends Fragment {
+abstract class DataTypeFragment extends FragmentImpl {
 
     abstract AttributeType.DataType dataType();
 

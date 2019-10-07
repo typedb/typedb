@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.query;
+package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -24,13 +24,13 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.Role;
-import grakn.core.kb.reasoner.atom.binary.AttributeAtom;
-import grakn.core.kb.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.kb.reasoner.cache.SemanticDifference;
-import grakn.core.kb.reasoner.cache.VariableDefinition;
-import grakn.core.kb.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.reasoner.unifier.Unifier;
-import grakn.core.kb.reasoner.unifier.UnifierType;
+import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.cache.VariableDefinition;
+import server.src.graql.reasoner.unifier.MultiUnifier;
+import server.src.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.common.util.Pair;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;

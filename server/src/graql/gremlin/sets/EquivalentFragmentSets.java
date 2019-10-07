@@ -20,12 +20,12 @@ package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Label;
-import grakn.core.concept.api.AttributeType;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -169,7 +169,7 @@ public class EquivalentFragmentSets {
      * This involves substituting various EquivalentFragmentSet with other EquivalentFragmentSet.
      */
     public static void optimiseFragmentSets(
-            Collection<EquivalentFragmentSet> fragmentSets, TransactionOLTP tx) {
+            Collection<EquivalentFragmentSet> fragmentSets, Transaction tx) {
 
         // Repeatedly apply optimisations until they don't alter the query
         boolean changed = true;

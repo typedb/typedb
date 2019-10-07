@@ -21,8 +21,7 @@ package grakn.core.kb.statistics;
 
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.Label;
-import grakn.core.kb.Schema;
-import grakn.core.concept.impl.ConceptVertex;
+import grakn.core.core.Schema;
 import grakn.core.kb.Transaction;
 import java.util.HashMap;
 import java.util.HashSet;

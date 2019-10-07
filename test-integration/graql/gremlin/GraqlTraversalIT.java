@@ -26,11 +26,13 @@ import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
+import grakn.core.core.Schema;
 import grakn.core.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.FragmentImpl;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.planning.GraqlTraversal;
+import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Schema;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -101,12 +103,12 @@ public class GraqlTraversalIT {
     private static final Statement y = Graql.var("y");
     private static final Statement z = Graql.var("z");
     private static final Statement xx = Graql.var("xx");
-    private static final Fragment xId = id(null, x.var(), ConceptId.of("Titanic"));
-    private static final Fragment yId = id(null, y.var(), ConceptId.of("movie"));
-    private static final Fragment xIsaY = outIsa(null, x.var(), y.var());
-    private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var(), true);
+    private static final FragmentImpl xId = id(null, x.var(), ConceptId.of("Titanic"));
+    private static final FragmentImpl yId = id(null, y.var(), ConceptId.of("movie"));
+    private static final FragmentImpl xIsaY = outIsa(null, x.var(), y.var());
+    private static final FragmentImpl yTypeOfX = inIsa(null, y.var(), x.var(), true);
 
-    private static final GraqlTraversalImpl fastIsaTraversal = traversal(yId, yTypeOfX);
+    private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
 
     @Before
@@ -126,42 +128,42 @@ public class GraqlTraversalIT {
 
     @Test
     public void testComplexityIndexVsIsa() {
-        GraqlTraversalImpl indexTraversal = traversal(xId);
+        GraqlTraversal indexTraversal = traversal(xId);
         assertFaster(indexTraversal, fastIsaTraversal);
     }
 
     @Test
     public void testComplexityFastIsaVsSlowIsa() {
-        GraqlTraversalImpl slowIsaTraversal = traversal(xIsaY, yId);
+        GraqlTraversal slowIsaTraversal = traversal(xIsaY, yId);
         assertFaster(fastIsaTraversal, slowIsaTraversal);
     }
 
     @Test
     public void testComplexityConnectedVsDisconnected() {
-        GraqlTraversalImpl connectedDoubleIsa = traversal(xIsaY, outIsa(null, y.var(), z.var()));
-        GraqlTraversalImpl disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var(), true));
+        GraqlTraversal connectedDoubleIsa = traversal(xIsaY, outIsa(null, y.var(), z.var()));
+        GraqlTraversal disconnectedDoubleIsa = traversal(xIsaY, inIsa(null, z.var(), y.var(), true));
         assertFaster(connectedDoubleIsa, disconnectedDoubleIsa);
     }
 
     @Test
     public void testGloballyOptimalIsFasterThanLocallyOptimal() {
-        GraqlTraversalImpl locallyOptimalSpecificInstance = traversal(yId, yTypeOfX, xId);
-        GraqlTraversalImpl globallyOptimalSpecificInstance = traversal(xId, xIsaY, yId);
+        GraqlTraversal locallyOptimalSpecificInstance = traversal(yId, yTypeOfX, xId);
+        GraqlTraversal globallyOptimalSpecificInstance = traversal(xId, xIsaY, yId);
         assertFaster(globallyOptimalSpecificInstance, locallyOptimalSpecificInstance);
     }
 
     @Test
     public void testRelatesFasterFromRoleType() {
-        GraqlTraversalImpl relatesFromRelationType = traversal(yId, outRelates(null, y.var(), x.var()), xId);
-        GraqlTraversalImpl relatesFromRoleType = traversal(xId, inRelates(null, x.var(), y.var()), yId);
+        GraqlTraversal relatesFromRelationType = traversal(yId, outRelates(null, y.var(), x.var()), xId);
+        GraqlTraversal relatesFromRoleType = traversal(xId, inRelates(null, x.var(), y.var()), yId);
         assertFaster(relatesFromRoleType, relatesFromRelationType);
     }
 
     @Test
     public void testResourceWithTypeFasterFromType() {
-        GraqlTraversalImpl fromInstance =
+        GraqlTraversal fromInstance =
                 traversal(outIsa(null, x.var(), xx.var()), id(null, xx.var(), ConceptId.of("_")), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
-        GraqlTraversalImpl fromType =
+        GraqlTraversal fromType =
                 traversal(id(null, xx.var(), ConceptId.of("_")), inIsa(null, xx.var(), x.var(), true), inRolePlayer(x.var(), z.var()), outRolePlayer(z.var(), y.var()));
         assertFaster(fromType, fromInstance);
     }
@@ -170,8 +172,8 @@ public class GraqlTraversalIT {
     @Test
     public void valueFilteringIsBetterThanANonFilteringOperation() {
         ValueOperation<?,?> gt_1 = ValueOperation.of(ValueProperty.Operation.Comparison.of(Graql.Token.Comparator.GT, 1));
-        GraqlTraversalImpl valueFilterFirst = traversal(value(null, x.var(), gt_1), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
-        GraqlTraversalImpl rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt_1));
+        GraqlTraversal valueFilterFirst = traversal(value(null, x.var(), gt_1), inRolePlayer(x.var(), b.var()), outRolePlayer(b.var(), y.var()), outIsa(null, y.var(), z.var()));
+        GraqlTraversal rolePlayerFirst = traversal(outIsa(null, y.var(), z.var()), inRolePlayer(y.var(), b.var()), outRolePlayer(b.var(), x.var()), value(null, x.var(), gt_1));
 
         assertFaster(valueFilterFirst, rolePlayerFirst);
     }
@@ -183,16 +185,16 @@ public class GraqlTraversalIT {
         SubProperty subProperty = new SubProperty(new Statement(y.var(), ImmutableList.of(movieId)));
 
         Statement pattern = new Statement(x.var(), ImmutableList.of(titanicId, subProperty));
-        Set<GraqlTraversalImpl> traversals = allGraqlTraversals(pattern).collect(toSet());
+        Set<GraqlTraversal> traversals = allGraqlTraversals(pattern).collect(toSet());
 
         assertEquals(12, traversals.size());
 
-        Fragment xId = id(titanicId, x.var(), ConceptId.of("Titanic"));
-        Fragment yId = id(movieId, y.var(), ConceptId.of("movie"));
-        Fragment xSubY = outSub(subProperty, x.var(), y.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
-        Fragment ySubX = inSub(subProperty, y.var(), x.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
+        FragmentImpl xId = id(titanicId, x.var(), ConceptId.of("Titanic"));
+        FragmentImpl yId = id(movieId, y.var(), ConceptId.of("movie"));
+        FragmentImpl xSubY = outSub(subProperty, x.var(), y.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
+        FragmentImpl ySubX = inSub(subProperty, y.var(), x.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
 
-        Set<GraqlTraversalImpl> expected = ImmutableSet.of(
+        Set<GraqlTraversal> expected = ImmutableSet.of(
                 traversal(xId, xSubY, yId),
                 traversal(xId, ySubX, yId),
                 traversal(xId, yId, xSubY),
@@ -249,7 +251,7 @@ public class GraqlTraversalIT {
     public void whenPlanningSimpleUnaryRelation_ApplyRolePlayerOptimisation() {
         Statement rel = var("x").rel("y");
 
-        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         // I know this is horrible, unfortunately I can't think of a better way...
         // The issue is that some things we want to inspect are not public, mainly:
@@ -267,7 +269,7 @@ public class GraqlTraversalIT {
     public void whenPlanningSimpleBinaryRelationQuery_ApplyRolePlayerOptimisation() {
         Statement rel = var("x").rel("y").rel("z");
 
-        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
                 matches("\\{§x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*]}"),
@@ -280,7 +282,7 @@ public class GraqlTraversalIT {
     public void whenPlanningBinaryRelationQueryWithType_ApplyRolePlayerOptimisation() {
         Statement rel = var("x").rel("y").rel("z").isa("marriage");
 
-        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
                 matches(".*§x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.* rels:marriage]->§.* #.*\\[neq:#.*].*"),
@@ -293,7 +295,7 @@ public class GraqlTraversalIT {
     public void testRolePlayerOptimisationWithRoles() {
         Statement rel = var("x").rel("y").rel("wife", "z");
 
-        GraqlTraversalImpl graqlTraversal = semiOptimal(rel);
+        GraqlTraversal graqlTraversal = semiOptimal(rel);
 
         assertThat(graqlTraversal, anyOf(
                 matches(".*§x-\\[" + ROLE_PLAYER_EDGE + ":#.* roles:wife]->§.* §x-\\[" + ROLE_PLAYER_EDGE + ":#.*]->§.* #.*\\[neq:#.*].*"),
@@ -301,29 +303,30 @@ public class GraqlTraversalIT {
         ));
     }
 
-    private static GraqlTraversalImpl semiOptimal(Pattern pattern) {
-        return TraversalPlanner.createTraversal(pattern, tx);
+    private static GraqlTraversal semiOptimal(Pattern pattern) {
+        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx);
+        return planFactory.createTraversal(pattern);
     }
 
-    private static GraqlTraversalImpl traversal(Fragment... fragments) {
+    private static GraqlTraversal traversal(FragmentImpl... fragments) {
         return traversal(ImmutableList.copyOf(fragments));
     }
 
     @SafeVarargs
-    private static GraqlTraversalImpl traversal(ImmutableList<Fragment>... fragments) {
-        ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversalImpl.create(fragmentsSet);
+    private static GraqlTraversal traversal(ImmutableList<FragmentImpl>... fragments) {
+        ImmutableSet<ImmutableList<FragmentImpl>> fragmentsSet = ImmutableSet.copyOf(fragments);
+        return GraqlTraversal.create(fragmentsSet);
     }
 
-    private static Stream<GraqlTraversalImpl> allGraqlTraversals(Pattern pattern) {
+    private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
-        List<Set<List<Fragment>>> collect = patterns.stream()
+        List<Set<List<FragmentImpl>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 
-        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
+        Set<List<List<FragmentImpl>>> lists = Sets.cartesianProduct(collect);
 
         return lists.stream()
                 .map(Sets::newHashSet)
@@ -332,13 +335,13 @@ public class GraqlTraversalIT {
     }
 
     // Returns a traversal only if the fragment ordering is valid
-    private static Optional<GraqlTraversalImpl> createTraversal(Set<List<Fragment>> fragments) {
+    private static Optional<GraqlTraversal> createTraversal(Set<List<FragmentImpl>> fragments) {
 
         // Make sure all dependencies are met
-        for (List<Fragment> fragmentList : fragments) {
+        for (List<FragmentImpl> fragmentList : fragments) {
             Set<Variable> visited = new HashSet<>();
 
-            for (Fragment fragment : fragmentList) {
+            for (FragmentImpl fragment : fragmentList) {
                 if (!visited.containsAll(fragment.dependencies())) {
                     return Optional.empty();
                 }
@@ -347,22 +350,22 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(GraqlTraversalImpl.create(fragments));
+        return Optional.of(GraqlTraversal.create(fragments));
     }
 
-    private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {
+    private static FragmentImpl outRolePlayer(Variable relation, Variable rolePlayer) {
         return Fragments.outRolePlayer(null, relation, a.var(), rolePlayer, null, null, null);
     }
 
-    private static Fragment inRolePlayer(Variable rolePlayer, Variable relation) {
+    private static FragmentImpl inRolePlayer(Variable rolePlayer, Variable relation) {
         return Fragments.inRolePlayer(null, rolePlayer, c.var(), relation, null, null, null);
     }
 
     private static void assertNearlyOptimal(Pattern pattern) {
-        GraqlTraversalImpl traversal = semiOptimal(pattern);
+        GraqlTraversal traversal = semiOptimal(pattern);
 
         //noinspection OptionalGetWithoutIsPresent
-        GraqlTraversalImpl globalOptimum = allGraqlTraversals(pattern).min(comparing(GraqlTraversalImpl::getComplexity)).get();
+        GraqlTraversal globalOptimum = allGraqlTraversals(pattern).min(comparing(GraqlTraversal::getComplexity)).get();
 
         double globalComplexity = globalOptimum.getComplexity();
         double complexity = traversal.getComplexity();
@@ -375,7 +378,7 @@ public class GraqlTraversalIT {
         );
     }
 
-    private static void assertFaster(GraqlTraversalImpl fast, GraqlTraversalImpl slow) {
+    private static void assertFaster(GraqlTraversal fast, GraqlTraversal slow) {
         double fastComplexity = fast.getComplexity();
         double slowComplexity = slow.getComplexity();
         boolean condition = fastComplexity < slowComplexity;

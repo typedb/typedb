@@ -20,10 +20,10 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
-import grakn.core.graql.gremlin.fragment.Fragment;
-import grakn.core.graql.gremlin.spanningtree.Arborescence;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.spanningtree.Arborescence;
+import grakn.core.kb.planning.spanningtree.graph.Node;
+import grakn.core.kb.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.Fragment;
 
 import javax.annotation.Nullable;
 import java.util.Comparator;
@@ -43,8 +43,8 @@ public class GreedyTreeTraversal {
     // standard tree traversal from the root node
     // always visit the branch/node with smaller cost
     static List<Fragment> greedyTraversal(Arborescence<Node> arborescence,
-                                                  Map<NodeId, Node> nodes,
-                                                  Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
+                                              Map<NodeId, Node> nodes,
+                                              Map<Node, Map<Node, Fragment>> edgeFragmentChildToParent) {
 
         List<Fragment> plan = new LinkedList<>();
 

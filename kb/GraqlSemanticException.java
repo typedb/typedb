@@ -26,7 +26,7 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.kb.reasoner.query.ResolvableQuery;
+import server.src.graql.reasoner.query.ResolvableQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;

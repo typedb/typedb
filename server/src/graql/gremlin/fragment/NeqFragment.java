@@ -20,6 +20,7 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.kb.planning.Fragment;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -35,7 +36,7 @@ import java.util.Collection;
  *
  */
 @AutoValue
-public abstract class NeqFragment extends Fragment {
+public abstract class NeqFragment extends FragmentImpl {
 
     public abstract Variable other();
 

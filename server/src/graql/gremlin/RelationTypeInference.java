@@ -35,7 +35,8 @@ import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.planning.Fragment;
+import grakn.core.kb.Transaction;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.statement.Statement;
@@ -53,7 +54,7 @@ import static graql.lang.Graql.var;
 public class RelationTypeInference {
     // infer type of relation type if we know the type of the role players
     // add label fragment and isa fragment if we can infer any
-    public static Set<Fragment> inferRelationTypes(TransactionOLTP tx, Set<Fragment> allFragments) {
+    public static Set<Fragment> inferRelationTypes(Transaction tx, Set<Fragment> allFragments) {
 
         Set<Fragment> inferredFragments = new HashSet<>();
 
@@ -122,7 +123,7 @@ public class RelationTypeInference {
     }
 
     // find all vars representing types
-    private static Map<Variable, Type> getLabelVarTypeMap(TransactionOLTP tx, Set<Fragment> allFragments) {
+    private static Map<Variable, Type> getLabelVarTypeMap(Transaction tx, Set<Fragment> allFragments) {
         Map<Variable, Type> labelVarTypeMap = new HashMap<>();
         allFragments.stream()
                 .filter(LabelFragment.class::isInstance)

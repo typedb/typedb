@@ -36,11 +36,11 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Thing;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.executor.property.PropertyExecutor.Writer;
-import grakn.core.graql.util.Partition;
-import grakn.core.kb.Schema;
+import grakn.core.common.util.Partition;
 import grakn.core.kb.ConceptUtils;
 import grakn.core.concept.impl.ConceptVertex;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
+import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -70,7 +70,7 @@ public class WriteExecutor {
 
     protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
 
-    private final TransactionOLTP transaction;
+    private final Transaction transaction;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Variable, Concept> concepts = new HashMap<>();
@@ -90,7 +90,7 @@ public class WriteExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<Writer, Writer> dependencies;
 
-    private WriteExecutor(TransactionOLTP transaction,
+    private WriteExecutor(Transaction transaction,
                           Set<Writer> writers,
                           Partition<Variable> equivalentVars,
                           Multimap<Writer, Writer> executorDependency
@@ -101,11 +101,11 @@ public class WriteExecutor {
         this.dependencies = ImmutableMultimap.copyOf(executorDependency);
     }
 
-    TransactionOLTP tx() {
+    Transaction tx() {
         return transaction;
     }
 
-    static WriteExecutor create(TransactionOLTP transaction, ImmutableSet<Writer> writers) {
+    static WriteExecutor create(Transaction transaction, ImmutableSet<Writer> writers) {
         transaction.checkMutationAllowed();
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent

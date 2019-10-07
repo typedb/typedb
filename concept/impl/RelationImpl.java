@@ -231,6 +231,7 @@ public class RelationImpl implements Relation, ConceptVertex {
         return reify().vertex();
     }
 
+    @Override
     public Relation attributeInferred(Attribute attribute) {
         return reify().attributeInferred(attribute);
     }

@@ -20,8 +20,8 @@
 package grakn.core.kb.statistics;
 
 import grakn.core.concept.api.Label;
+import grakn.core.core.Schema;
 
-import grakn.core.kb.Schema;
 import java.util.HashMap;
 
 /**

@@ -26,6 +26,7 @@ java_library(
     srcs = glob(["**/*.java"]),
     deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
     visibility = ["//visibility:public"],

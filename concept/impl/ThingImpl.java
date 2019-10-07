@@ -21,7 +21,9 @@ package grakn.core.concept.impl;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.ConceptCacheLine;
+import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.LabelId;
@@ -32,11 +34,9 @@ import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
 import grakn.core.concept.exception.GraknConceptException;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Attribute;
-import grakn.core.kb.Schema;
-import concept.structure.Casting;
-import concept.structure.EdgeElement;
+import grakn.core.core.Casting;
+import grakn.core.core.EdgeElement;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Arrays;
@@ -259,6 +259,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return getThis();
     }
 
+    @Override
     public Relation attributeInferred(Attribute attribute) {
         return attributeRelation(attribute, true);
     }

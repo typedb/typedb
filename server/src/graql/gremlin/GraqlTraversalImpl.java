@@ -26,7 +26,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.graql.gremlin.fragment.Fragment;
-import grakn.core.kb.GraqlTraversal;
+import grakn.core.kb.planning.Fragment;
+import grakn.core.kb.planning.GraqlTraversal;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
@@ -65,6 +66,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
     /**
      * Get the {@code GraphTraversal} that this {@code GraqlTraversal} represents.
      */
+    @Override
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
     public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionOLTP tx, Set<Variable> vars) {
@@ -86,18 +88,17 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         }
     }
 
-    //            Set of disjunctions
-    //                |
-    //                |           List of fragments in order of execution
-    //                |             |
-    //                V             V
+
+    // autovalue
+    @Override
     public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
 
     /**
      * @param transform map defining id transform var -> new id
      * @return graql traversal with concept id transformed according to the provided transform
      */
-    public GraqlTraversalImpl transform(Map<Variable, ConceptId> transform) {
+    @Override
+    public GraqlTraversal transform(Map<Variable, ConceptId> transform) {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
@@ -135,7 +136,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
     /**
      * Get the estimated complexity of the traversal.
      */
-    public double getComplexity() {
+    double getComplexity() {
 
         double totalCost = 0;
 

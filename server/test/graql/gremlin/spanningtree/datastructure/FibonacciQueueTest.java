@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
 import com.google.common.collect.Ordering;
+import grakn.core.kb.planning.spanningtree.datastructure.FibonacciQueue;
 import org.junit.Test;
 
 import java.util.List;

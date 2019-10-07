@@ -20,10 +20,10 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
+import grakn.core.concept.api.Thing;
 
 import java.util.Map;
 import java.util.Set;

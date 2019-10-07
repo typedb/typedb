@@ -27,10 +27,11 @@ import grakn.core.concept.api.Type;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
-import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
-import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.spanningtree.graph.EdgeNode;
+import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
+import grakn.core.kb.planning.spanningtree.graph.Node;
+import grakn.core.kb.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.Fragment;
 import grakn.core.server.exception.GraknServerException;
 import grakn.core.server.session.TransactionOLTP;
 

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.query;
+package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -27,10 +27,10 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Attribute;
 import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
-import grakn.core.kb.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.kb.reasoner.unifier.Unifier;
-import grakn.core.kb.reasoner.unifier.UnifierType;
+import server.src.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
+import server.src.graql.reasoner.unifier.Unifier;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

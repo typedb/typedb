@@ -37,7 +37,7 @@ import java.util.stream.Stream;
 import static grakn.core.kb.Schema.VertexProperty.INDEX;
 
 @AutoValue
-public abstract class AttributeIndexFragment extends Fragment {
+public abstract class AttributeIndexFragment extends FragmentImpl {
 
     public abstract Label attributeLabel();
 

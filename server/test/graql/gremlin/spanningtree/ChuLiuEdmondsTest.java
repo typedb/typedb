@@ -22,14 +22,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.spanningtree.graph.DenseWeightedGraph;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
-import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.graph.SparseWeightedGraph;
-import grakn.core.graql.gremlin.spanningtree.graph.WeightedGraph;
-import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.planning.spanningtree.graph.DirectedEdge;
+import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
+import grakn.core.kb.planning.spanningtree.graph.Node;
+import grakn.core.kb.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.spanningtree.graph.SparseWeightedGraph;
+import grakn.core.kb.planning.spanningtree.graph.WeightedGraph;
+import grakn.core.kb.planning.spanningtree.util.Weighted;
 import graql.lang.statement.Variable;
+import grakn.core.kb.planning.spanningtree.Arborescence;
+import grakn.core.kb.planning.spanningtree.ChuLiuEdmonds;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -38,7 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
+import static kb.planning.spanningtree.util.Weighted.weighted;
 import static org.junit.Assert.assertEquals;
 
 

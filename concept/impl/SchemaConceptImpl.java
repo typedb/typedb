@@ -20,11 +20,11 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.ConceptCacheLine;
-import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.LabelId;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
+import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.kb.PropertyNotUniqueException;
 import grakn.core.kb.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -215,12 +215,10 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
 
             //Update the sub types of the old super type
             if (oldSuperType != null) {
-                //noinspection unchecked - Casting is needed to access {deleteCachedDirectedSubTypes} method
                 ((SchemaConceptImpl<T>) oldSuperType).deleteCachedDirectedSubType(getThis());
             }
 
             //Add this as the subtype to the supertype
-            //noinspection unchecked - Casting is needed to access {addCachedDirectSubTypes} method
             ((SchemaConceptImpl<T>) newSuperType).addCachedDirectSubType(getThis());
 
             //Track any existing data if there is some

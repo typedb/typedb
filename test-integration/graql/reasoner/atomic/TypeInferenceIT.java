@@ -28,13 +28,12 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.kb.reasoner.atom.Atom;
-import grakn.core.kb.reasoner.atom.Atomic;
-import grakn.core.kb.reasoner.atom.binary.RelationAtom;
-import grakn.core.kb.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.kb.reasoner.query.ReasonerQueries;
-import grakn.core.kb.reasoner.query.ReasonerQuery;
-import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
+import server.src.graql.reasoner.atom.Atomic;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
@@ -370,7 +369,7 @@ public class TypeInferenceIT {
 
     private void typeInference(List<Type> possibleTypes, String pattern, TransactionOLTP tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
-        Atom atom = query.getAtom();
+        grakn.core.graql.reasoner.atom.Atom atom = query.getAtom();
         List<Type> relationTypes = atom.getPossibleTypes();
 
         if (possibleTypes.size() == 1){
@@ -387,8 +386,8 @@ public class TypeInferenceIT {
     private void typeInference(List<Type> possibleTypes, String pattern, String subbedPattern, TransactionOLTP tx){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(pattern), tx);
         ReasonerAtomicQuery subbedQuery = ReasonerQueries.atomic(conjunction(subbedPattern), tx);
-        Atom atom = query.getAtom();
-        Atom subbedAtom = subbedQuery.getAtom();
+        grakn.core.graql.reasoner.atom.Atom atom = query.getAtom();
+        grakn.core.graql.reasoner.atom.Atom subbedAtom = subbedQuery.getAtom();
 
         List<Type> relationTypes = atom.getPossibleTypes();
         List<Type> subbedRelationTypes = subbedAtom.getPossibleTypes();

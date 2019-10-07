@@ -20,11 +20,11 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.ConceptCacheLine;
-import grakn.core.concept.api.Type;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
+import grakn.core.concept.api.Type;
+import grakn.core.core.Casting;
 import grakn.core.kb.Schema;
-import concept.structure.Casting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;

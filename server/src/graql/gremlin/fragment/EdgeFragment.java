@@ -20,17 +20,17 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Tuple;
-import grakn.core.graql.gremlin.spanningtree.graph.DirectedEdge;
-import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import grakn.core.kb.planning.spanningtree.graph.DirectedEdge;
+import grakn.core.kb.planning.spanningtree.graph.EdgeNode;
+import grakn.core.kb.planning.spanningtree.graph.Node;
+import grakn.core.kb.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.planning.spanningtree.util.Weighted;
 
 import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.common.util.Collections.tuple;
-import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
+import static kb.planning.spanningtree.util.Weighted.weighted;
 
 /**
  * Fragments that represent JanusGraph edges have some different properties when it comes to query planning
@@ -38,7 +38,7 @@ import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
  * has it's own definiton of the middle node's ID. However, they all have the same implementation of
  * methods to do with building the Query Planning Graph
  */
-public abstract class EdgeFragment extends Fragment {
+public abstract class EdgeFragment extends FragmentImpl {
 
     abstract protected NodeId getMiddleNodeId();
     abstract protected Node startNode();

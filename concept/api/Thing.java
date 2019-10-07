@@ -115,6 +115,12 @@ public interface Thing extends Concept {
      */
     boolean isInferred();
 
+
+    /**
+     * Add an inferred attribute ownership to this Thing
+     */
+    Relation attributeInferred(Attribute attribute);
+
     /**
      * Return concepts that are DIRECT dependants of this concept - concepts required to be persisted if we persist this concept.
      */

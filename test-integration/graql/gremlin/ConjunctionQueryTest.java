@@ -20,7 +20,7 @@ package grakn.core.graql.gremlin;
 
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.fragment.FragmentImpl;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -150,7 +150,7 @@ public class ConjunctionQueryTest {
     }
 
     private Matcher<Pattern> usesResourceIndex(Variable varName, Object value) {
-        Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
+        FragmentImpl resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();

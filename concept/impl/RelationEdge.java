@@ -20,14 +20,14 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.ConceptCacheLine;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.LabelId;
 import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Role;
-import grakn.core.kb.Schema;
-import concept.structure.EdgeElement;
+import grakn.core.concept.api.Thing;
+import grakn.core.core.EdgeElement;
+import grakn.core.core.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

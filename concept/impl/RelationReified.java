@@ -19,15 +19,14 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.exception.GraknConceptException;
+import concept.structure.EdgeElement;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.kb.Schema;
-import concept.structure.Casting;
-import concept.structure.EdgeElement;
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.core.Casting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -40,6 +39,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.Schema;
 
 /**
  * Encapsulates The Relation as a VertexElement

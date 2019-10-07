@@ -31,7 +31,7 @@ import java.util.Collection;
 import static grakn.core.kb.Schema.VertexProperty.REGEX;
 
 @AutoValue
-abstract class RegexFragment extends Fragment {
+abstract class RegexFragment extends FragmentImpl {
 
     abstract String regex();
 

@@ -50,7 +50,7 @@ import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Thing;
 import grakn.core.graql.executor.QueryExecutor;
-import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.InvalidKBException;
 import grakn.core.kb.Transaction;
 import grakn.core.server.keyspace.Keyspace;

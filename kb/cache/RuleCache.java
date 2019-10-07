@@ -24,9 +24,9 @@ import com.google.common.collect.HashMultimap;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.kb.reasoner.rule.InferenceRule;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import grakn.core.kb.Transaction;
+import grakn.core.graql.reasoner.rule.InferenceRule;
 
 import java.util.HashMap;
 import java.util.HashSet;
