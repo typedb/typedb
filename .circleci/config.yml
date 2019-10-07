@@ -203,7 +203,6 @@ jobs:
       - run: |
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1
           bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1
           bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1
 
@@ -379,7 +378,6 @@ jobs:
       - run: |
           export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //api:deploy-maven -- release $(cat VERSION)
           bazel run //concept:deploy-maven -- release $(cat VERSION)
           bazel run //common:deploy-maven -- release $(cat VERSION)
 
