@@ -32,6 +32,7 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.impl.ConceptManagerImpl;
+import grakn.core.kb.Transaction;
 import grakn.core.kb.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.common.util.LazyMergingStream;
@@ -41,8 +42,7 @@ import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.kb.reasoner.ReasonerCheckedException;
 import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
-import grakn.core.server.exception.GraknServerException;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.GraknServerException;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -60,6 +60,7 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import grakn.core.kb.executor.QueryExecutor;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -89,15 +90,15 @@ import static java.util.stream.Collectors.toList;
 /**
  * QueryExecutor is the class that executes Graql queries onto the database
  */
-public class QueryExecutor {
+public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManagerImpl conceptManager;
     private final boolean infer;
-    private final TransactionOLTP transaction;
+    private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
-    private static final Logger LOG = LoggerFactory.getLogger(QueryExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    public QueryExecutor(TransactionOLTP transaction, ConceptManagerImpl conceptManager, boolean infer) {
+    public QueryExecutorImpl(Transaction transaction, ConceptManagerImpl conceptManager, boolean infer) {
         this.conceptManager = conceptManager;
         this.infer = infer;
         this.transaction = transaction;
@@ -105,6 +106,7 @@ public class QueryExecutor {
         traversalPlanFactory = new TraversalPlanFactoryImpl(transaction);
     }
 
+    @Override
     public Stream<ConceptMap> match(MatchClause matchClause) {
 
         int createStreamSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.match create stream");
@@ -210,6 +212,7 @@ public class QueryExecutor {
         }
     }
 
+    @Override
     public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern) {
         return traverse(pattern, traversalPlanFactory.createTraversal(pattern));
     }
@@ -217,6 +220,7 @@ public class QueryExecutor {
     /**
      * @return resulting answer stream
      */
+    @Override
     public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
         GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
@@ -253,6 +257,7 @@ public class QueryExecutor {
         return map;
     }
 
+    @Override
     public ConceptMap define(GraqlDefine query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         List<Statement> statements = query.statements().stream()
@@ -268,6 +273,7 @@ public class QueryExecutor {
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
     }
 
+    @Override
     public ConceptMap undefine(GraqlUndefine query) {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         List<Statement> statements = query.statements().stream()
@@ -282,6 +288,7 @@ public class QueryExecutor {
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
     }
 
+    @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
         int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
 
@@ -349,6 +356,7 @@ public class QueryExecutor {
         return answers;
     }
 
+    @Override
     public ConceptSet delete(GraqlDelete query) {
         Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
                 .map(result -> result.project(query.vars()))
@@ -395,6 +403,7 @@ public class QueryExecutor {
         return new ConceptSet(deletedConceptIds);
     }
 
+    @Override
     public Stream<ConceptMap> get(GraqlGet query) {
         //NB: we need distinct as projection can produce duplicates
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
@@ -404,6 +413,7 @@ public class QueryExecutor {
         return answers;
     }
 
+    @Override
     public Stream<Numeric> aggregate(GraqlGet.Aggregate query) {
         Stream<ConceptMap> answers = get(query.query());
         switch (query.method()) {
@@ -426,10 +436,12 @@ public class QueryExecutor {
         }
     }
 
+    @Override
     public Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query) {
         return get(get(query.query()), query.var(), answers -> answers.collect(Collectors.toList())).stream();
     }
 
+    @Override
     public Stream<AnswerGroup<Numeric>> get(GraqlGet.Group.Aggregate query) {
         return get(get(query.group().query()), query.group().var(),
                 answers -> AggregateExecutor.aggregate(answers, query.method(), query.var())
@@ -448,21 +460,25 @@ public class QueryExecutor {
         return answerGroups;
     }
 
+    @Override
     public Stream<Numeric> compute(GraqlCompute.Statistics query) {
         if (query.getException().isPresent()) throw query.getException().get();
         return new ComputeExecutor(transaction).stream(query);
     }
 
+    @Override
     public Stream<ConceptList> compute(GraqlCompute.Path query) {
         if (query.getException().isPresent()) throw query.getException().get();
         return new ComputeExecutor(transaction).stream(query);
     }
 
+    @Override
     public Stream<ConceptSetMeasure> compute(GraqlCompute.Centrality query) {
         if (query.getException().isPresent()) throw query.getException().get();
         return new ComputeExecutor(transaction).stream(query);
     }
 
+    @Override
     public Stream<ConceptSet> compute(GraqlCompute.Cluster query) {
         if (query.getException().isPresent()) throw query.getException().get();
         return new ComputeExecutor(transaction).stream(query);

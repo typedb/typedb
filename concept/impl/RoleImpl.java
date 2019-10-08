@@ -24,7 +24,7 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Type;
 import grakn.core.core.Casting;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;

@@ -21,7 +21,7 @@ package grakn.core.graql.gremlin.sets;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.fragment.Fragment;
+
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.Fragment;
 import graql.lang.property.VarProperty;
@@ -34,7 +34,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-abstract class NotInternalFragmentSet extends EquivalentFragmentSet {
+abstract class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {

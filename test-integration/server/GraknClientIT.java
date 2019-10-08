@@ -47,10 +47,11 @@ import grakn.client.concept.api.SchemaConcept;
 import grakn.client.concept.api.Thing;
 import grakn.client.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
-import server.src.server.exception.SessionException;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.SessionException;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.kb.Session;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -106,7 +107,7 @@ public class GraknClientIT {
             Paths.get("test-integration/resources/cassandra-embedded.yaml")
     );
 
-    private static Session localSession;
+    private static SessionImpl localSession;
     private static GraknClient.Session remoteSession;
 
     @Rule
@@ -147,7 +148,7 @@ public class GraknClientIT {
     @Test
     public void testOpeningATransactionFromASession_ReturnATransactionWithParametersSet() {
         try (GraknClient.Session session = graknClient.session(localSession.keyspace().name())) {
-            try (GraknClient.Transaction tx = session.transaction().read()) {
+            try (GraknClient.Transaction tx = session.readTransaction()) {
                 assertEquals(session, tx.session());
                 assertEquals(localSession.keyspace().name(), tx.keyspace().name());
                 assertEquals(GraknClient.Transaction.Type.READ, tx.type());
@@ -158,12 +159,12 @@ public class GraknClientIT {
     @Test
     public void testPuttingEntityType_EnsureItIsAdded() {
         String label = "Oliver";
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             tx.putEntityType(label);
             tx.commit();
         }
 
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             assertNotNull(tx.getEntityType(label));
         }
     }
@@ -171,35 +172,35 @@ public class GraknClientIT {
     @Test
     public void testGettingEntityType_EnsureItIsReturned() {
         String label = "Oliver";
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             tx.putEntityType(label);
             tx.commit();
         }
 
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             assertNotNull(tx.getEntityType(label));
         }
     }
 
     @Test
     public void testExecutingAndCommittingAQuery_TheQueryIsCommitted() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             tx.execute(Graql.define(type("person").sub("entity")));
             tx.commit();
         }
 
-        try (TransactionOLTP tx = localSession.transaction().read()) {
+        try (Transaction tx = localSession.readTransaction()) {
             assertNotNull(tx.getEntityType("person"));
         }
     }
 
     @Test
     public void testExecutingAQueryAndNotCommitting_TheQueryIsNotCommitted() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             tx.execute(Graql.define(type("flibflab").sub("entity")));
         }
 
-        try (TransactionOLTP tx = localSession.transaction().read()) {
+        try (Transaction tx = localSession.readTransaction()) {
             assertNull(tx.getEntityType("flibflab"));
         }
     }
@@ -208,18 +209,18 @@ public class GraknClientIT {
     public void testExecutingAQuery_ResultsAreReturned() {
         List<ConceptMap> answers;
 
-        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
+        try (GraknClient.Transaction tx = remoteSession.readTransaction()) {
             answers = tx.execute(Graql.match(var("x").sub("thing")).get());
         }
 
         int size;
-        try (TransactionOLTP tx = localSession.transaction().read()) {
+        try (Transaction tx = localSession.readTransaction()) {
             size = tx.execute(Graql.match(var("x").sub("thing")).get()).size();
         }
 
         assertThat(answers, hasSize(size));
 
-        try (TransactionOLTP tx = localSession.transaction().read()) {
+        try (Transaction tx = localSession.readTransaction()) {
             for (ConceptMap answer : answers) {
                 assertThat(answer.map().keySet(), contains(new Variable("x")));
                 assertNotNull(tx.getConcept(grakn.core.concept.api.ConceptId.of(answer.get("x").id().getValue())));
@@ -229,7 +230,7 @@ public class GraknClientIT {
 
     @Test
     public void testExecutingAQuery_ExplanationsAreReturned() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             tx.execute(Graql.define(
                     type("name").sub("attribute").datatype("string"),
                     type("content").sub("entity").has("name").plays("contained").plays("container"),
@@ -250,7 +251,7 @@ public class GraknClientIT {
             ));
             tx.commit();
         }
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
@@ -315,7 +316,7 @@ public class GraknClientIT {
         Set<ConceptMap> answers1;
         Set<ConceptMap> answers2;
 
-        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
+        try (GraknClient.Transaction tx = remoteSession.readTransaction()) {
             answers1 = tx.stream(Graql.match(var("x").sub("thing")).get()).collect(toSet());
             answers2 = tx.stream(Graql.match(var("x").sub("thing")).get()).collect(toSet());
         }
@@ -325,7 +326,7 @@ public class GraknClientIT {
 
     @Test
     public void testExecutingTwoParallelQueries_GetBothResults() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
+        try (GraknClient.Transaction tx = remoteSession.readTransaction()) {
             GraqlGet query = Graql.match(var("x").sub("thing")).get();
 
             Iterator<ConceptMap> iterator1 = tx.stream(query).iterator();
@@ -341,8 +342,8 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAConcept_TheInformationOnTheConceptIsCorrect() {
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").isa("thing")).get();
 
@@ -369,7 +370,7 @@ public class GraknClientIT {
 
     @Test
     public void testExecutingDeleteQueries_ConceptsAreDeleted() {
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.EntityType person = tx.putEntityType("person");
             grakn.core.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
             grakn.core.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.concept.api.AttributeType.DataType.STRING);
@@ -384,7 +385,7 @@ public class GraknClientIT {
             hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
             tx.commit();
         }
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             GraqlDelete deleteQuery = Graql.match(var("g").rel("x").rel("y").isa("has-cast")).delete("x", "y");
             tx.execute(deleteQuery);
             assertTrue(tx.execute(Graql.match(var().rel("x").rel("y").isa("has-cast")).get("x", "y")).isEmpty());
@@ -398,7 +399,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingARelation_TheInformationOnTheRelationIsCorrect() {
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.EntityType person = tx.putEntityType("person");
             grakn.core.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
             grakn.core.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.concept.api.AttributeType.DataType.STRING);
@@ -413,8 +414,8 @@ public class GraknClientIT {
             hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
             tx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").isa("has-cast")).get();
             Relation remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelation();
@@ -446,14 +447,14 @@ public class GraknClientIT {
 
     @Test
     public void testGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.EntityType human = tx.putEntityType("human");
             grakn.core.concept.api.EntityType man = tx.putEntityType("man").sup(human);
             tx.putEntityType("child").sup(man);
             tx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("man")).get();
             SchemaConcept remoteConcept = remoteTx.stream(query).findAny().get().get("x").asSchemaConcept();
@@ -474,7 +475,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAThing_TheInformationOnTheThingIsCorrect() {
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.EntityType person = tx.putEntityType("person");
             grakn.core.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
             grakn.core.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.concept.api.AttributeType.DataType.STRING);
@@ -489,8 +490,8 @@ public class GraknClientIT {
             hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
             tx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").isa("person")).get();
             Thing remoteConcept = remoteTx.stream(query).findAny().get().get("x").asThing();
@@ -516,7 +517,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAType_TheInformationOnTheTypeIsCorrect() {
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.Role productionWithCast = tx.putRole("production-with-cast");
             grakn.core.concept.api.Role actor = tx.putRole("actor");
             grakn.core.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
@@ -530,8 +531,8 @@ public class GraknClientIT {
             person.create();
             tx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("person")).get();
             Type remoteConcept = remoteTx.stream(query).findAny().get().get("x").asType();
@@ -556,7 +557,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingARole_TheInformationOnTheRoleIsCorrect() {
-        try (TransactionOLTP localTx = localSession.transaction().write()) {
+        try (Transaction localTx = localSession.writeTransaction()) {
             grakn.core.concept.api.Role productionWithCast = localTx.putRole("production-with-cast");
             grakn.core.concept.api.Role actor = localTx.putRole("actor");
             grakn.core.concept.api.Role characterBeingPlayed = localTx.putRole("character-being-played");
@@ -564,8 +565,8 @@ public class GraknClientIT {
                     .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             localTx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("actor")).get();
             Role remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRole();
@@ -583,7 +584,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingARule_TheInformationOnTheRuleIsCorrect() {
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
             Pattern when = Graql.parsePattern("$x has name 'expectation-when';");
             Pattern then = Graql.parsePattern("$x has name 'expectation-then';");
@@ -596,8 +597,8 @@ public class GraknClientIT {
             tx.commit();
         }
 
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("expectation-rule")).get();
             grakn.client.concept.api.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
@@ -611,12 +612,12 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAnEntityType_TheInformationOnTheEntityTypeIsCorrect() {
-        try (TransactionOLTP localTx = localSession.transaction().write()) {
+        try (Transaction localTx = localSession.writeTransaction()) {
             localTx.putEntityType("person");
             localTx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("person")).get();
             EntityType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntityType();
@@ -630,7 +631,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingARelationType_TheInformationOnTheRelationTypeIsCorrect() {
-        try (TransactionOLTP localTx = localSession.transaction().write()) {
+        try (Transaction localTx = localSession.writeTransaction()) {
             grakn.core.concept.api.Role productionWithCast = localTx.putRole("production-with-cast");
             grakn.core.concept.api.Role actor = localTx.putRole("actor");
             grakn.core.concept.api.Role characterBeingPlayed = localTx.putRole("character-being-played");
@@ -638,8 +639,8 @@ public class GraknClientIT {
                     .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             localTx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("has-cast")).get();
             RelationType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationType();
@@ -655,13 +656,13 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAnAttributeType_TheInformationOnTheAttributeTypeIsCorrect() {
-        try (TransactionOLTP localTx = localSession.transaction().write()) {
+        try (Transaction localTx = localSession.writeTransaction()) {
             grakn.core.concept.api.AttributeType title = localTx.putAttributeType("title", grakn.core.concept.api.AttributeType.DataType.STRING);
             title.create("The Muppets");
             localTx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").type("title")).get();
             AttributeType<String> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttributeType();
@@ -679,13 +680,13 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAnEntity_TheInformationOnTheEntityIsCorrect() {
-        try (TransactionOLTP localTx = localSession.transaction().write()) {
+        try (Transaction localTx = localSession.writeTransaction()) {
             grakn.core.concept.api.EntityType movie = localTx.putEntityType("movie");
             movie.create();
             localTx.commit();
         }
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").isa("movie")).get();
             Entity remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntity();
@@ -699,7 +700,7 @@ public class GraknClientIT {
 
     @Test
     public void testGettingAnAttribute_TheInformationOnTheAttributeIsCorrect() {
-        try (TransactionOLTP localTx = localSession.transaction().write()) {
+        try (Transaction localTx = localSession.writeTransaction()) {
             grakn.core.concept.api.EntityType person = localTx.putEntityType("person");
             grakn.core.concept.api.AttributeType name = localTx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
             person.has(name);
@@ -708,8 +709,8 @@ public class GraknClientIT {
             localTx.commit();
         }
 
-        try (GraknClient.Transaction remoteTx = remoteSession.transaction().read();
-             TransactionOLTP localTx = localSession.transaction().read()
+        try (GraknClient.Transaction remoteTx = remoteSession.readTransaction();
+             Transaction localTx = localSession.readTransaction()
         ) {
             GraqlGet query = Graql.match(var("x").isa("name")).get();
             Attribute<?> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttribute();
@@ -729,7 +730,7 @@ public class GraknClientIT {
     @Test
     public void testExecutingComputeQueryies_ResultsAreCorrect() {
         grakn.core.concept.api.ConceptId idCoco, idMike, idCocoAndMike;
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.Role pet = tx.putRole("pet");
             grakn.core.concept.api.Role owner = tx.putRole("owner");
             grakn.core.concept.api.EntityType animal = tx.putEntityType("animal").plays(pet);
@@ -750,7 +751,7 @@ public class GraknClientIT {
             tx.commit();
         }
 
-        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
+        try (GraknClient.Transaction tx = remoteSession.readTransaction()) {
             // count
             assertEquals(1, tx.execute(Graql.compute().count().in("animal")).get(0).number().intValue());
 
@@ -798,7 +799,7 @@ public class GraknClientIT {
 
     @Test
     public void testExecutingAggregateQueries_theResultsAreCorrect() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             EntityType person = tx.putEntityType("person");
             AttributeType name = tx.putAttributeType("name", AttributeType.DataType.STRING);
             AttributeType age = tx.putAttributeType("age", AttributeType.DataType.INTEGER);
@@ -874,13 +875,13 @@ public class GraknClientIT {
     public void testDeletingAConcept_TheConceptIsDeleted() {
         Label label = Label.of("hello");
 
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.Label localLabel = grakn.core.concept.api.Label.of(label.getValue());
             tx.putEntityType(localLabel);
             tx.commit();
         }
 
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             SchemaConcept schemaConcept = tx.getSchemaConcept(label);
             assertFalse(schemaConcept.isDeleted());
             schemaConcept.delete();
@@ -888,7 +889,7 @@ public class GraknClientIT {
             tx.commit();
         }
 
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.concept.api.Label localLabel = grakn.core.concept.api.Label.of(label.getValue());
             assertNull(tx.getSchemaConcept(localLabel));
         }
@@ -896,7 +897,7 @@ public class GraknClientIT {
 
     @Test
     public void testDefiningASchema_TheSchemaIsDefined() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             EntityType animal = tx.putEntityType("animal");
             EntityType dog = tx.putEntityType("dog").sup(animal);
             EntityType cat = tx.putEntityType("cat");
@@ -945,7 +946,7 @@ public class GraknClientIT {
             tx.commit();
         }
 
-        try (TransactionOLTP tx = localSession.transaction().read()) {
+        try (Transaction tx = localSession.readTransaction()) {
             grakn.core.concept.api.EntityType animal = tx.getEntityType("animal");
             grakn.core.concept.api.EntityType dog = tx.getEntityType("dog");
             grakn.core.concept.api.EntityType cat = tx.getEntityType("feline");
@@ -991,17 +992,17 @@ public class GraknClientIT {
     @Test
     public void testDeletingAKeyspace_TheKeyspaceIsRecreatedInNewSession() {
         GraknClient client = graknClient;
-        Session localSession = server.sessionWithNewKeyspace();
+        SessionImpl localSession = server.sessionWithNewKeyspace();
         String keyspace = localSession.keyspace().name();
         GraknClient.Session remoteSession = client.session(keyspace);
 
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             tx.putEntityType("easter");
             tx.commit();
         }
         localSession.close();
 
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             assertNotNull(tx.getEntityType("easter"));
 
             client.keyspaces().delete(tx.keyspace().name());
@@ -1009,7 +1010,7 @@ public class GraknClientIT {
 
         // Opening a new session will re-create the keyspace
         Session newLocalSession = server.sessionFactory().session(localSession.keyspace());
-        try (TransactionOLTP tx = newLocalSession.transaction().read()) {
+        try (Transaction tx = newLocalSession.readTransaction()) {
             assertNull(tx.getEntityType("easter"));
             assertNotNull(tx.getEntityType("entity"));
         }
@@ -1020,10 +1021,10 @@ public class GraknClientIT {
     @Test
     public void whenDeletingKeyspace_OpenTransactionFails() {
         // get open session
-        Keyspace keyspace = localSession.keyspace();
+        KeyspaceImpl keyspace = localSession.keyspace();
 
         // Hold on to an open tx
-        TransactionOLTP tx = localSession.transaction().read();
+        Transaction tx = localSession.readTransaction();
 
         // delete keyspace
         graknClient.keyspaces().delete(keyspace.name());
@@ -1039,10 +1040,10 @@ public class GraknClientIT {
     @Test
     public void whenDeletingKeyspace_OpenSessionFails() {
         // get open session
-        Keyspace keyspace = localSession.keyspace();
+        KeyspaceImpl keyspace = localSession.keyspace();
 
         // Hold on to an open tx
-        TransactionOLTP tx = localSession.transaction().read();
+        Transaction tx = localSession.readTransaction();
 
         // delete keyspace
         graknClient.keyspaces().delete(keyspace.name());
@@ -1052,7 +1053,7 @@ public class GraknClientIT {
         exception.expectMessage("is closed");
 
         // try to open a new tx
-        TransactionOLTP tx2 = localSession.transaction().read();
+        Transaction tx2 = localSession.readTransaction();
     }
 
     @Test
@@ -1074,7 +1075,7 @@ public class GraknClientIT {
 
     @Test
     public void testExecutingAnInvalidQuery_Throw() throws Throwable {
-        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
+        try (GraknClient.Transaction tx = remoteSession.readTransaction()) {
             GraqlGet query = Graql.match(var("x").isa("not-a-thing")).get();
 
             exception.expect(RuntimeException.class);
@@ -1085,7 +1086,7 @@ public class GraknClientIT {
 
     @Test
     public void testPerformingAMatchGetQuery_TheResultsAreCorrect() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             //Graql.match(var("x").isa("company")).get(var("x"), var("y"));
 
             EntityType company = tx.putEntityType("company-123");
@@ -1110,8 +1111,8 @@ public class GraknClientIT {
 
     @Test
     public void testCreatingBasicMultipleTransaction_ThreadsDoNotConflict() {
-        GraknClient.Transaction tx1 = remoteSession.transaction().write();
-        GraknClient.Transaction tx2 = remoteSession.transaction().write();
+        GraknClient.Transaction tx1 = remoteSession.writeTransaction();
+        GraknClient.Transaction tx2 = remoteSession.writeTransaction();
 
         EntityType company = tx1.putEntityType("company");
         EntityType person = tx2.putEntityType("person");
@@ -1146,7 +1147,7 @@ public class GraknClientIT {
 
     @Test
     public void setAttributeValueWithDatatypeDate() {
-        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+        try (GraknClient.Transaction tx = remoteSession.writeTransaction()) {
             AttributeType<LocalDateTime> birthDateType = tx.putAttributeType("birth-date", AttributeType.DataType.DATE);
             LocalDateTime date = LocalDateTime.now();
             Attribute<LocalDateTime> dateAttribute = birthDateType.create(date);
@@ -1162,7 +1163,7 @@ public class GraknClientIT {
 
     @Test
     public void whenCreatingNewKeyspace_itIsVisibileInListOfExistingKeyspaces() {
-        graknClient.session("newkeyspace").transaction().write().close();
+        graknClient.session("newkeyspace").writeTransaction().close();
         List<String> keyspaces = graknClient.keyspaces().retrieve();
 
         assertTrue(keyspaces.contains("newkeyspace"));
@@ -1170,7 +1171,7 @@ public class GraknClientIT {
 
     @Test
     public void whenDeletingKeyspace_notListedInExistingKeyspaces() {
-        graknClient.session("newkeyspace").transaction().write().close();
+        graknClient.session("newkeyspace").writeTransaction().close();
         List<String> keyspaces = graknClient.keyspaces().retrieve();
 
         assertTrue(keyspaces.contains("newkeyspace"));

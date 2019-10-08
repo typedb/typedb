@@ -20,7 +20,7 @@ package grakn.core.graql.analytics;
 
 import grakn.core.concept.api.LabelId;
 import grakn.core.concept.api.AttributeType;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 

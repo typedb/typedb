@@ -25,9 +25,9 @@ import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
@@ -57,7 +57,7 @@ public class MovieGraph {
 
 
     public static void load(Session session) {
-        try (TransactionOLTP transaction = session.transaction().write()) {
+        try (Transaction transaction = session.writeTransaction()) {
             buildSchema(transaction);
             buildInstances(transaction);
             buildRelations();
@@ -74,7 +74,7 @@ public class MovieGraph {
     }
 
 
-    private static void buildSchema(TransactionOLTP tx) {
+    private static void buildSchema(Transaction tx) {
 
         tmdbVoteCount = tx.putAttributeType("tmdb-vote-count", AttributeType.DataType.LONG);
         tmdbVoteAverage = tx.putAttributeType("tmdb-vote-average", AttributeType.DataType.DOUBLE);
@@ -154,7 +154,7 @@ public class MovieGraph {
         authoredBy.has(provenance);
     }
 
-    private static void buildInstances(TransactionOLTP tx) {
+    private static void buildInstances(Transaction tx) {
         godfather = movie.create();
         putResource(godfather, title, "Godfather");
         putResource(godfather, tmdbVoteCount, 1000L);
@@ -297,7 +297,7 @@ public class MovieGraph {
         hasCluster(cluster1, theMuppets, hocusPocus);
     }
 
-    private static void buildRules(TransactionOLTP tx) {
+    private static void buildRules(Transaction tx) {
         // These rules are totally made up for testing purposes and don't work!
         Pattern when = Graql.parsePattern("$x has name 'expectation-when';");
         Pattern then = Graql.parsePattern("$x has name 'expectation-then';");

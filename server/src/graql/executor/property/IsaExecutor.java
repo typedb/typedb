@@ -43,7 +43,7 @@ import java.util.Set;
 
 import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class IsaExecutor extends PropertyExecutorImpl implements PropertyExecutor.Insertable {
+public class IsaExecutor  implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final IsaProperty property;

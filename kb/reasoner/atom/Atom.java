@@ -43,6 +43,7 @@ import grakn.core.kb.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.reasoner.unifier.UnifierType;
 import grakn.core.kb.reasoner.unifier.Unifier;
 import grakn.core.kb.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.reasoner.ReasonerException;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;

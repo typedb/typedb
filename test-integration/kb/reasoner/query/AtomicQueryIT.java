@@ -23,8 +23,8 @@ import grakn.core.kb.GraqlSemanticException;
 import grakn.core.kb.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -57,7 +57,7 @@ public class AtomicQueryIT {
 
     @Test(expected = IllegalArgumentException.class)
     public void whenConstructingNonAtomicQuery_ExceptionIsThrown() {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ ($x, $y) isa binary;($y, $z) isa binary; };";
             ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
@@ -65,7 +65,7 @@ public class AtomicQueryIT {
 
     @Test(expected = GraqlSemanticException.class)
     public void whenCreatingQueryWithNonexistentType_ExceptionIsThrown() {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ $x isa someType; };";
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
@@ -73,7 +73,7 @@ public class AtomicQueryIT {
 
     @Test(expected = GraqlSemanticException.class)
     public void whenCreatingAttributeQueryWithInvalidValueType_ExceptionIsThrown() {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ $x has resource-double '100'; };";
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(patternString), tx);
         }
@@ -81,7 +81,7 @@ public class AtomicQueryIT {
 
     @Test
     public void whenCopyingQuery_TheCopyIsAlphaEquivalentToOriginal() {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             String patternString = "{ $x isa subRoleEntity;$y isa subSubRoleEntity;($x, $y) isa binary; };";
             Conjunction<Statement> pattern = conjunction(patternString);
             ReasonerAtomicQuery atomicQuery = ReasonerQueries.atomic(pattern, tx);
@@ -93,7 +93,7 @@ public class AtomicQueryIT {
 
     @Test
     public void whenQueryingForRelationsWithAmbiguousRoleTypes_answersArePermutedCorrectly() {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             String childString = "match (subRole1: $x, subRole2: $y) isa binary; get;";
             String parentString = "match ($x, $y) isa binary; get;";
 

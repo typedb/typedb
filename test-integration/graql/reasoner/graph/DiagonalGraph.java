@@ -23,8 +23,8 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
@@ -42,13 +42,13 @@ public class DiagonalGraph{
     private Label key(){ return Label.of("name");}
 
     public final void load(int n, int m) {
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, int m, TransactionOLTP tx) {
+    protected void buildExtensionalDB(int n, int m, Transaction tx) {
         Role relFrom = tx.getRole("rel-from");
         Role relTo = tx.getRole("rel-to");
 

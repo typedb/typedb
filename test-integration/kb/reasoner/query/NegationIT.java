@@ -34,8 +34,8 @@ import grakn.core.kb.GraqlSemanticException;
 import grakn.core.kb.reasoner.graph.ReachabilityGraph;
 import grakn.core.kb.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
@@ -99,7 +99,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Negation<Pattern> pattern = not(var("x").has("attribute", "value"));
             ReasonerQueries.composite(Iterables.getOnlyElement(pattern.getNegationDNF().getPatterns()), tx);
         }
@@ -107,7 +107,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenExecutingUnboundNegationPattern_exceptionIsThrown () {
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Negation<Pattern> pattern = not(var("x").has("attribute", "value"));
             tx.execute(match(pattern));
         }
@@ -115,7 +115,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(
                     var("r").isa("entity"),
                     not(
@@ -131,7 +131,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenExecutingIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(
                     var("r").isa("entity"),
                     not(
@@ -147,7 +147,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenNegationBlockContainsDisjunction_exceptionIsThrown(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(
                     var("x").isa("someType"),
                     not(
@@ -163,7 +163,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenExecutingNegationBlockContainingDisjunction_exceptionIsThrown () {
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(
                     var("x").isa("someType"),
                     not(
@@ -179,7 +179,7 @@ public class NegationIT {
 
     @Test (expected = GraqlSemanticException.class)
     public void whenExecutingNegationQueryWithReasoningOff_exceptionIsThrown () {
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(
                     var("x").isa("entity"),
                     not(
@@ -192,7 +192,7 @@ public class NegationIT {
 
     @Test
     public void whenATypeInRuleNegationBlockIsAbsent_theRuleIsMatched() {
-        try (TransactionOLTP tx = negationSession.transaction().write()) {
+        try (Transaction tx = negationSession.writeTransaction()) {
             assertFalse(tx.getAttributeType("absent-resource").instances().findFirst().isPresent());
 
             List<ConceptMap> answers = tx.execute(
@@ -207,7 +207,7 @@ public class NegationIT {
 
     @Test
     public void conjunctionOfRelations_filteringSpecificRolePlayerType(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String unwantedLabel = "anotherType";
             EntityType unwantedType = tx.getEntityType(unwantedLabel);
 
@@ -240,7 +240,7 @@ public class NegationIT {
 
     @Test
     public void conjunctionOfRelations_filteringSpecificUnresolvableConnection(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String unwantedLabel = "anotherType";
             String connection = "binary";
 
@@ -279,7 +279,7 @@ public class NegationIT {
 
     @Test
     public void conjunctionOfRelations_filteringSpecificResolvableConnection(){
-        try (TransactionOLTP tx = negationSession.transaction().write()) {
+        try (Transaction tx = negationSession.writeTransaction()) {
             String unwantedLabel = "anotherType";
             String connection = "derived-binary";
 
@@ -319,7 +319,7 @@ public class NegationIT {
 
     @Test
     public void entitiesWithoutSpecificAttributeValue(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String specificStringValue = "value";
 
             List<ConceptMap> answersWithoutSpecificStringValue = tx.execute(
@@ -342,7 +342,7 @@ public class NegationIT {
 
     @Test
     public void entitiesWithAttributeNotEqualToSpecificValue(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String specificStringValue = "unattached";
 
 
@@ -366,7 +366,7 @@ public class NegationIT {
 
     @Test
     public void entitiesHavingAttributesThatAreNotOfSpecificType(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String specificTypeLabel = "anotherType";
             EntityType specificType = tx.getEntityType(specificTypeLabel);
 
@@ -384,7 +384,7 @@ public class NegationIT {
 
     @Test
     public void entitiesNotHavingRolePlayersInRelations(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String connection = "relation";
             List<ConceptMap> fullAnswers = tx.execute(match(var("x").has("attribute", var("r"))).get());
 
@@ -409,7 +409,7 @@ public class NegationIT {
 
     @Test
     public void excludingAConceptWithSpecificId(){
-        try (TransactionOLTP tx = negationSession.transaction().write()) {
+        try (Transaction tx = negationSession.writeTransaction()) {
             Concept specificConcept = tx.stream(
                     match(var("x").isa("someType").has("resource-string", "value")).get()
             ).findFirst().orElse(null).get("x");
@@ -427,7 +427,7 @@ public class NegationIT {
 
     @Test
     public void excludingASpecificRole(){
-        try (TransactionOLTP tx = negationSession.transaction().write()) {
+        try (Transaction tx = negationSession.writeTransaction()) {
             Relation relation = tx.getRelationType("binary").instances().findFirst().orElse(null);
             Role metaRole = tx.getMetaRole();
 
@@ -446,7 +446,7 @@ public class NegationIT {
 
     @Test
     public void negateMultiplePropertyStatement(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String specificValue = "value";
             String specificTypeLabel = "someType";
             String anotherSpecificValue = "attached";
@@ -478,7 +478,7 @@ public class NegationIT {
 
     @Test
     public void negateMultipleStatements(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             String anotherSpecificValue = "value";
             String specificTypeLabel = "anotherType";
             EntityType specificType = tx.getEntityType(specificTypeLabel);
@@ -504,7 +504,7 @@ public class NegationIT {
 
     @Test
     public void whenNegatingGroundTransitiveRelation_queryTerminates(){
-        try(TransactionOLTP tx = negationSession.transaction().write()) {
+        try(Transaction tx = negationSession.writeTransaction()) {
             Concept start = tx.execute(match(
                     var("x").isa("someType").has("resource-string", "value")).get()
             ).iterator().next().get("x");
@@ -524,7 +524,7 @@ public class NegationIT {
 
     @Test
     public void doubleNegation_recipesContainingAllergens(){
-        try(TransactionOLTP tx = recipeSession.transaction().write()) {
+        try(Transaction tx = recipeSession.writeTransaction()) {
             Conjunction<?> basePattern = and(
                     var("r").isa("recipe"),
                     var().rel("r").rel("i").isa("requires"),
@@ -545,7 +545,7 @@ public class NegationIT {
 
     @Test
     public void negatedConjunction_allRecipesThatDoNotContainAllergens(){
-        try(TransactionOLTP tx = recipeSession.transaction().write()) {
+        try(Transaction tx = recipeSession.writeTransaction()) {
             Conjunction<?> basePattern = and(
                     var("r").isa("recipe"),
                     var().rel("r").rel("i").isa("requires"),
@@ -564,7 +564,7 @@ public class NegationIT {
 
     @Test
     public void allRecipesContainingAvailableIngredients(){
-        try(TransactionOLTP tx = recipeSession.transaction().write()) {
+        try(Transaction tx = recipeSession.writeTransaction()) {
             List<ConceptMap> allRecipes = tx.stream(match(var("r").isa("recipe")).get()).collect(Collectors.toList());
             List<ConceptMap> recipesWithUnavailableIngredientsExplicit = tx.execute(
                     match(
@@ -612,7 +612,7 @@ public class NegationIT {
 
     @Test
     public void testSemiPositiveProgram(){
-        try(TransactionOLTP tx = reachabilitySession.transaction().write()) {
+        try(Transaction tx = reachabilitySession.writeTransaction()) {
             ConceptMap firstNeighbour = Iterables.getOnlyElement(tx.execute(Graql.parse("match $x has index 'a1';get;").asGet()));
             ConceptId firstNeighbourId = firstNeighbour.get("x").id();
             List<ConceptMap> indirectLinksWithOrigin = tx.execute(
@@ -646,7 +646,7 @@ public class NegationIT {
 
     @Test
     public void testStratifiedProgram(){
-        try (TransactionOLTP tx = reachabilitySession.transaction().write()) {
+        try (Transaction tx = reachabilitySession.writeTransaction()) {
             List<ConceptMap> indirectLinksWithOrigin = tx.execute(
                     Graql.<GraqlGet>parse("match " +
                             "(from: $x, to: $y) isa unreachable;" +
@@ -671,7 +671,7 @@ public class NegationIT {
         }
     }
 
-    private boolean thingsRelated(Map<Thing, Role> thingMap, Label relation, TransactionOLTP tx){
+    private boolean thingsRelated(Map<Thing, Role> thingMap, Label relation, Transaction tx){
         RelationType relationType = tx.getRelationType(relation.getValue());
         boolean inferrable = relationType.subs().flatMap(SchemaConcept::thenRules).findFirst().isPresent();
 

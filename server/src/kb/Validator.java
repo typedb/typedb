@@ -24,8 +24,8 @@ import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
-import concept.structure.Casting;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Casting;
+import grakn.core.kb.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +37,10 @@ import java.util.Set;
  * type of the concept.
  */
 public class Validator {
-    private final TransactionOLTP transaction;
+    private final Transaction transaction;
     private final List<String> errorsFound = new ArrayList<>();
 
-    public Validator(TransactionOLTP transaction) {
+    public Validator(Transaction transaction) {
         this.transaction = transaction;
     }
 
@@ -90,7 +90,7 @@ public class Validator {
      * @param graph the graph to query against
      * @param rule  the rule which needs to be validated
      */
-    private void validateRule(TransactionOLTP graph, Rule rule) {
+    private void validateRule(Transaction graph, Rule rule) {
         Set<String> labelErrors = ValidateGlobalRules.validateRuleSchemaConceptExist(graph, rule);
         errorsFound.addAll(labelErrors);
         if (labelErrors.isEmpty()) {
@@ -135,7 +135,7 @@ public class Validator {
      *
      * @param thing The Thing to validate
      */
-    private void validateThing(TransactionOLTP tx, Thing thing) {
+    private void validateThing(Transaction tx, Thing thing) {
         ValidateGlobalRules.validateInstancePlaysAllRequiredRoles(tx, thing).ifPresent(errorsFound::add);
     }
 

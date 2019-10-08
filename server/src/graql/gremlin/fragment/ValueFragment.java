@@ -22,8 +22,8 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.kb.executor.property.value.ValueComparison;
 import grakn.core.kb.executor.property.value.ValueOperation;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Transaction;
 import grakn.core.kb.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -77,7 +77,7 @@ public class ValueFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars
     ) {
 
         return predicate().apply(traversal);
@@ -137,7 +137,7 @@ public class ValueFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(Transaction tx) {
         KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
 
         // compute the sum of all @has-attribute implicit relations

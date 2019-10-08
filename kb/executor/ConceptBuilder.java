@@ -31,10 +31,12 @@ import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.kb.GraqlQueryException;
+import grakn.core.kb.InvalidKBException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import grakn.core.core.Schema;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;

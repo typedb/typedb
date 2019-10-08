@@ -40,7 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static kb.planning.spanningtree.util.Weighted.weighted;
+import static grakn.core.kb.planning.spanningtree.util.Weighted.weighted;
 import static org.junit.Assert.assertEquals;
 
 

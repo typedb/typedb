@@ -32,7 +32,7 @@ import grakn.core.kb.reasoner.atom.binary.AttributeAtom;
 import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.kb.reasoner.query.ReasonerQuery;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
@@ -48,7 +48,7 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.kb.reasoner.utils.ReasonerUtils.getValuePredicates;
 
-public class HasAttributeExecutor extends PropertyExecutorImpl implements PropertyExecutor.Insertable {
+public class HasAttributeExecutor  implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final HasAttributeProperty property;
@@ -93,7 +93,8 @@ public class HasAttributeExecutor extends PropertyExecutorImpl implements Proper
         Variable attributeVariable = property.attribute().var().asReturnedVar();
         Variable relationVariable = property.relation().var();
         Variable predicateVariable = new Variable();
-        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent);
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent,
+                new PropertyExecutorFactoryImpl());
 
         IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
         Statement typeVar = isaProp != null ? isaProp.type() : null;

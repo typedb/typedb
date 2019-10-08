@@ -33,7 +33,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-abstract class PlaysFragmentSet extends EquivalentFragmentSet {
+abstract class PlaysFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {

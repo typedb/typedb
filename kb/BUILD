@@ -29,6 +29,9 @@ java_library(
         "//concept:concept",
         "//concept/structure:structure",
 
+        # this is ONLY used for ConceptManager dependency...
+        "//core:core",
+
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
 

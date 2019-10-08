@@ -24,10 +24,9 @@ import com.google.common.collect.Iterables;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.kb.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.Fragment;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -41,7 +40,7 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-abstract class LabelFragmentSet extends EquivalentFragmentSet {
+abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {
@@ -57,7 +56,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSet {
      * Returns null if there is not exactly one label any of the Labels mentioned are not in the knowledge base.
      */
     @Nullable
-    LabelFragmentSet tryExpandSubs(Variable typeVar, TransactionOLTP tx) {
+    LabelFragmentSet tryExpandSubs(Variable typeVar, Transaction tx) {
         if (labels().size() != 1) return null;
 
         Label oldLabel = Iterables.getOnlyElement(labels());

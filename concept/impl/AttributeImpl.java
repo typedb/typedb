@@ -24,7 +24,7 @@ import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.Role;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

@@ -33,7 +33,7 @@ import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.concept.impl.ValueConverter;
+import grakn.core.kb.ValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.reasoner.atom.binary.AutoValue_AttributeAtom;
 import grakn.core.kb.ConceptUtils;
@@ -69,6 +69,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.kb.reasoner.utils.ReasonerUtils.isEquivalentCollection;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -448,7 +449,7 @@ public abstract class AttributeAtom extends Binary{
     @Override
     public Stream<ConceptMap> materialise(){
         ConceptMap substitution = getParentQuery().getSubstitution();
-        AttributeType<?> attributeType = getSchemaConcept().asAttributeType();
+        AttributeType<Object> attributeType = getSchemaConcept().asAttributeType();
 
         Concept owner = substitution.get(getVarName());
         Variable resourceVariable = getAttributeVariable();

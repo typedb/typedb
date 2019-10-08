@@ -33,11 +33,11 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import server.src.server.exception.TransactionException;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.InvalidKBException;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.core.Schema;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
@@ -79,13 +79,13 @@ public class RelationIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         role1 = (RoleImpl) tx.putRole("Role 1");
         role2 = (RoleImpl) tx.putRole("Role 2");
         role3 = (RoleImpl) tx.putRole("Role 3");
@@ -171,7 +171,7 @@ public class RelationIT {
         assertThat(followRolePlayerEdgesToNeighbours(tx, entity6r1r2r3),
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
-    private Set<Concept> followRolePlayerEdgesToNeighbours(TransactionOLTP tx, Thing thing) {
+    private Set<Concept> followRolePlayerEdgesToNeighbours(Transaction tx, Thing thing) {
         List<Vertex> vertices = tx.getTinkerTraversal().V().
                 hasId(ConceptVertex.from(thing).elementId()).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
@@ -296,7 +296,7 @@ public class RelationIT {
         rel2.has(r2);
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel1));
         assertThat(tx.getMetaRelationType().instances().collect(toSet()), Matchers.hasItem(rel2));
@@ -415,7 +415,7 @@ public class RelationIT {
         tx.commit();
 
         // try to delete the inferred relationship
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r;").asDelete();
         List<ConceptSet> deletedConcepts = tx.execute(delete);
 

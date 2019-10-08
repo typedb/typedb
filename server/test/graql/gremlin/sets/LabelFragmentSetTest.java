@@ -23,6 +23,7 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Type;
 import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Before;
@@ -46,7 +47,7 @@ public class LabelFragmentSetTest {
     private static final Label EXISTING_LABEL = Label.of("something");
     private static final Label NON_EXISTENT_LABEL = Label.of("doesn't exist");
 
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @Before
     public void setUp() {

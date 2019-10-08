@@ -20,6 +20,7 @@ package grakn.core.kb.reasoner.rule;
 
 import com.google.common.base.Equivalence;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.concept.api.Concept;

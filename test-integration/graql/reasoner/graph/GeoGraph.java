@@ -25,14 +25,14 @@ import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
 public class GeoGraph {
 
-    private TransactionOLTP tx;
+    private Transaction tx;
     private final Session session;
     private AttributeType<String> key;
 
@@ -52,7 +52,7 @@ public class GeoGraph {
     }
 
     public void load() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         buildSchema();
         buildInstances();
         buildRelations();
@@ -210,7 +210,7 @@ public class GeoGraph {
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 
-    private Thing putEntityWithResource(TransactionOLTP tx, String id, EntityType type, Label key) {
+    private Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;

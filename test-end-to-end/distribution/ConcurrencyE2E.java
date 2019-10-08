@@ -87,7 +87,7 @@ public class ConcurrencyE2E {
 
         GraknClient graknClient = new GraknClient("localhost:48555");
         GraknClient.Session session = graknClient.session("concurrency");
-        GraknClient.Transaction tx = session.transaction().write();
+        GraknClient.Transaction tx = session.writeTransaction();
         tx.execute(Graql.parse("define " +
                 "person sub entity, has name, has surname, has age; " +
                 "name sub attribute, datatype string;" +
@@ -104,7 +104,7 @@ public class ConcurrencyE2E {
         Random random = new Random();
         for (int i = 0; i < numberOfConcurrentTransactions; i++) {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
-                GraknClient.Transaction threadTx = session.transaction().write();
+                GraknClient.Transaction threadTx = session.writeTransaction();
                 for (int j = 0; j < batchSize; j++) {
                     threadTx.execute(Graql.parse("insert $x isa person, has name \"" + names[random.nextInt(10)] + "\"," +
                             "has surname \"" + surnames[random.nextInt(10)] + "\"," +
@@ -122,7 +122,7 @@ public class ConcurrencyE2E {
         // Retrieve all the attribute values to make sure we don't have any person linked to a broken vertex.
         // This step is needed because it's only when retrieving attributes that we would be able to spot a
         // ghost vertex (which is might be introduced while merging 2 attribute nodes)
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> conceptMaps = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         conceptMaps.forEach(map -> {
             Collection<Concept> concepts = map.map().values();
@@ -136,7 +136,7 @@ public class ConcurrencyE2E {
         tx.close();
 
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         int numOfNames = tx.execute(Graql.parse("match $x isa name; get; count;").asGetAggregate()).get(0).number().intValue();
         int numOfSurnames = tx.execute(Graql.parse("match $x isa surname; get; count;").asGetAggregate()).get(0).number().intValue();
         int numOfAges = tx.execute(Graql.parse("match $x isa age; get; count;").asGetAggregate()).get(0).number().intValue();

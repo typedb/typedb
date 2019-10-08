@@ -22,7 +22,6 @@ package grakn.core.kb.reasoner.cache;
 import com.google.common.base.Equivalence;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.ConceptId;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.planning.GraqlTraversal;
 import grakn.core.kb.Transaction;
 import grakn.core.kb.planning.TraversalPlanFactory;

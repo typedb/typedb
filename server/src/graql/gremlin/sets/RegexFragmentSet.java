@@ -33,7 +33,7 @@ import java.util.Set;
  *
  */
 @AutoValue
-abstract class RegexFragmentSet extends EquivalentFragmentSet {
+abstract class RegexFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {

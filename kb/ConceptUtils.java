@@ -26,6 +26,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.SchemaConcept;
 import graql.lang.statement.Variable;
+import grakn.core.core.Schema;
 
 import java.util.Collection;
 import java.util.Collections;

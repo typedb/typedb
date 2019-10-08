@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import graql.lang.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -28,7 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Collection;
 
-import static grakn.core.kb.Schema.VertexProperty.REGEX;
+import static grakn.core.core.Schema.VertexProperty.REGEX;
 
 @AutoValue
 abstract class RegexFragment extends FragmentImpl {
@@ -37,7 +37,7 @@ abstract class RegexFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
 
         return traversal.has(REGEX.name(), regex());
     }

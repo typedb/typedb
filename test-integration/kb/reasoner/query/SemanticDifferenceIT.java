@@ -33,8 +33,8 @@ import grakn.core.kb.reasoner.unifier.Unifier;
 import grakn.core.kb.reasoner.unifier.UnifierType;
 import grakn.core.common.util.Pair;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -80,7 +80,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesType_typesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
             Pattern parentPattern =
@@ -109,7 +109,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesType_typesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType subRoleEntity = tx.getEntityType("subRoleEntity");
 
@@ -140,7 +140,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesType_semanticDifferenceIsTrivial(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             EntityType baseRoleEntity = tx.getEntityType("baseRoleEntity");
             EntityType metaEntityType = tx.getMetaEntityType();
 
@@ -163,7 +163,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesRole_rolesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Role role = tx.getRole("baseRole1");
             Pattern parentPattern =
                     var().rel(var("role"), var("z")).rel("baseRole2", var("w")).isa("binary");
@@ -192,7 +192,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesRole_rolesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Role baseRole = tx.getRole("baseRole1");
             Role subRole = tx.getRole("subRole1");
 
@@ -222,7 +222,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesRole_semanticDifferenceIsTrivial(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Role baseRole = tx.getRole("baseRole1");
             Role metaRole = tx.getMetaRole();
 
@@ -242,7 +242,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesRole_rolePlayersPlayingMultipleRoles_differenceIsCalculatedCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Role baseRole1 = tx.getRole("baseRole1");
             Role subRole1 = tx.getRole("subRole1");
             Role baseRole2 = tx.getRole("baseRole2");
@@ -276,7 +276,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildAndParentHaveVariableRoles_differenceIsCalculatedCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Pattern parentPattern =
                     var().rel(var("role"), var("z")).rel(var("role2"), var("w")).isa("binary");
             Pattern childPattern = and(
@@ -294,7 +294,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesPlayedRole_RPsAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Role subRole1 = tx.getRole("subRole1");
             Role subRole2 = tx.getRole("subSubRole2");
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
@@ -320,7 +320,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesRoles_semanticDifferenceIsTrivial(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             Role metaRole = tx.getMetaRole();
             Pattern parentPattern = var().rel("baseRole1", var("z")).rel("baseRole2", var("w")).isa("binary");
             Pattern childPattern = var().rel(metaRole.label().getValue(), var("x")).rel(metaRole.label().getValue(), var("y")).isa("binary");
@@ -337,7 +337,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesResourceValuePredicate_valuesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             final String value = "m";
             Pattern parentPattern = var("z").has("resource", var("r"));
             Pattern childPattern = var("x").has("resource", val(value));
@@ -368,7 +368,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesResourceValuePredicate_valuesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             final String value = "b";
             Pattern parentPattern = var("z").has("resource", neq("m"));
             Pattern childPattern = var("x").has("resource", val(value));
@@ -398,7 +398,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecifiesValuePredicateOnType_valuesAreFilteredCorrectly(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             final long value = 0;
             Pattern parentPattern = var("z").isa("resource-long");
             Pattern childPattern = var("x").isa("resource-long").val(value);
@@ -426,7 +426,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildSpecialisesValuePredicateOnType_valuesAreFilteredCorrectly2(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             final long value = 1;
             Pattern parentPattern = var("z").isa("resource-long").gt(0);
             Pattern childPattern = var("x").isa("resource-long").eq(value);
@@ -454,7 +454,7 @@ public class SemanticDifferenceIT {
 
     @Test
     public void whenChildGeneralisesValuePredicateOnType_semanticDifferenceIsTrivial(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().write()) {
+        try(Transaction tx = genericSchemaSession.writeTransaction()) {
             final long value = 1;
             Pattern parentPattern = var("z").has("resource-long", value);
             Pattern childPattern = var("x").has("resource-long", var("r"));

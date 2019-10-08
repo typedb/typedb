@@ -23,7 +23,7 @@ import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import concept.structure.Casting;
 import concept.structure.EdgeElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;

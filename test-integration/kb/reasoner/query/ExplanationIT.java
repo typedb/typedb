@@ -25,8 +25,9 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
@@ -77,7 +78,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingNonRuleResolvableQuery_explanationsAreEmpty(){
-        try (TransactionOLTP tx = geoSession.transaction().read()) {
+        try (Transaction tx = geoSession.readTransaction()) {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -88,7 +89,7 @@ public class ExplanationIT {
 
     @Test
     public void whenQueryingWithReasoningOff_explanationsAreEmpty(){
-        try (TransactionOLTP tx = geoSession.transaction().read()) {
+        try (Transaction tx = geoSession.readTransaction()) {
             String queryString = "match $x isa city, has name $n; get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -99,7 +100,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingTransitiveClosure_explanationsAreCorrectlyNested() {
-        try (TransactionOLTP tx = geoSession.transaction().read()) {
+        try (Transaction tx = geoSession.readTransaction()) {
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
@@ -148,7 +149,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingTransitiveClosureWithSpecificResourceAndTypes_explanationsAreCorrect() {
-        try (TransactionOLTP tx = geoSession.transaction().read()) {
+        try (Transaction tx = geoSession.readTransaction()) {
             String queryString = "match $x isa university;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "$y isa country;$y has name 'Poland'; get;";
@@ -187,7 +188,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingAGroundQuery_explanationsAreCorrect(){
-        try (TransactionOLTP tx = geoSession.transaction().read()) {
+        try (Transaction tx = geoSession.readTransaction()) {
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
             Concept europe = getConcept(tx, "name", "Europe");
             String queryString = "match " +
@@ -210,7 +211,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingConjunctiveQueryWithTwoIdPredicates_explanationsAreCorrect(){
-        try (TransactionOLTP tx = geoSession.transaction().read()) {
+        try (Transaction tx = geoSession.readTransaction()) {
             Concept polibuda = getConcept(tx, "name", "Warsaw-Polytechnics");
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -229,7 +230,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingConjunctions_explanationsAreCorrect(){
-        try (TransactionOLTP tx = explanationSession.transaction().read()) {
+        try (Transaction tx = explanationSession.readTransaction()) {
             String queryString = "match " +
                     "(role1: $x, role2: $w) isa inferredRelation;" +
                     "$x has name $xName;" +
@@ -243,7 +244,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingMixedAtomicQueries_explanationsAreCorrect(){
-        try (TransactionOLTP tx = explanationSession.transaction().read()) {
+        try (Transaction tx = explanationSession.readTransaction()) {
             String queryString = "match " +
                     "$x has value 'high';" +
                     "($x, $y) isa carried-relation;" +
@@ -264,7 +265,7 @@ public class ExplanationIT {
 
     @Test
     public void whenExplainingEquivalentPartialQueries_explanationsAreCorrect(){
-        try (TransactionOLTP tx = explanationSession.transaction().write()) {
+        try (Transaction tx = explanationSession.writeTransaction()) {
             String queryString = "match $x isa same-tag-column-link; get;";
 
             GraqlGet query = Graql.parse(queryString);
@@ -302,10 +303,10 @@ public class ExplanationIT {
     @Ignore("We cannot solve this with current answer handling/cache implementation. Maybe cardinality constraints would help?")
     @Test
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
-        try (Session session = server.sessionWithNewKeyspace()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             for(int i = 0 ; i < 10 ; i++) {
-                try (TransactionOLTP tx = session.transaction().write()) {
+                try (Transaction tx = session.writeTransaction()) {
                     String queryString = "match $p isa pair, has name 'ff'; get;";
                     List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
                     answers.forEach(joinedAnswer -> {
@@ -359,7 +360,7 @@ public class ExplanationIT {
         answers.forEach(a -> assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
-    private static Concept getConcept(TransactionOLTP tx, String typeLabel, String val){
+    private static Concept getConcept(Transaction tx, String typeLabel, String val){
         return tx.stream(Graql.match(var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }

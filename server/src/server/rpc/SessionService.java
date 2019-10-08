@@ -32,9 +32,8 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
-import server.src.server.exception.TransactionException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.Session;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
@@ -139,7 +138,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final Iterators iterators = new Iterators();
 
         @Nullable
-        private TransactionOLTP tx = null;
+        private Transaction tx = null;
         private String sessionId;
 
         TransactionListener(StreamObserver<Transaction.Res> responseSender, Map<String, Session> openSessions) {
@@ -296,11 +295,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             sessionId = request.getSessionId();
             Session session = openSessions.get(sessionId);
 
-            TransactionOLTP.Type type = TransactionOLTP.Type.of(request.getType().getNumber());
-            if (type != null && type.equals(TransactionOLTP.Type.WRITE)) {
-                tx = session.transaction().write();
-            } else if (type != null && type.equals(TransactionOLTP.Type.READ)) {
-                tx = session.transaction().read();
+            Transaction.Type type = Transaction.Type.of(request.getType().getNumber());
+            if (type != null && type.equals(Transaction.Type.WRITE)) {
+                tx = session.writeTransaction();
+            } else if (type != null && type.equals(Transaction.Type.READ)) {
+                tx = session.readTransaction();
             } else {
                 throw TransactionException.create("Invalid Transaction Type");
             }
@@ -392,7 +391,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private TransactionOLTP tx() {
+        private Transaction tx() {
             return nonNull(tx);
         }
 

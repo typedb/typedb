@@ -24,7 +24,7 @@ import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.spanningtree.graph.SchemaNode;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -35,9 +35,9 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static grakn.core.kb.Schema.EdgeLabel.ISA;
-import static grakn.core.kb.Schema.EdgeLabel.SHARD;
-import static grakn.core.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static grakn.core.core.Schema.EdgeLabel.ISA;
+import static grakn.core.core.Schema.EdgeLabel.SHARD;
+import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from instance to type.
@@ -52,7 +52,7 @@ public abstract class OutIsaFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
 
         // from the traversal, branch to take either of these paths
         return Fragments.union(traversal, ImmutableSet.of(

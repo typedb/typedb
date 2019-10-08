@@ -23,8 +23,8 @@ import grakn.core.concept.api.Label;
 import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -98,7 +98,7 @@ public abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     static void applyLabelsToTraversal(
             GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
-            @Nullable Set<Label> typeLabels, TransactionOLTP tx) {
+            @Nullable Set<Label> typeLabels, Transaction tx) {
 
         if (typeLabels != null) {
             Set<Integer> typeIds =

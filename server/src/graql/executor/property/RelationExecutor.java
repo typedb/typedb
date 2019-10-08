@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.kb.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
-public class RelationExecutor extends PropertyExecutorImpl implements PropertyExecutor.Insertable {
+public class RelationExecutor  implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final RelationProperty property;

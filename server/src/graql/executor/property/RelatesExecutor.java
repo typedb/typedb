@@ -43,7 +43,7 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.relates;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.sub;
 import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class RelatesExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class RelatesExecutor  implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final RelatesProperty property;

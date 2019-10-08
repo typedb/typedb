@@ -20,7 +20,7 @@
 package grakn.core.kb.executor.property.value;
 
 import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.impl.Serialiser;
+import grakn.core.kb.Serialiser;
 import graql.lang.Graql;
 import grakn.core.core.Schema;
 import graql.lang.property.ValueProperty;

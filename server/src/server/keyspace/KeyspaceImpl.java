@@ -19,7 +19,8 @@
 
 package grakn.core.server.keyspace;
 
-import server.src.server.exception.TransactionException;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;
@@ -29,27 +30,23 @@ import java.util.regex.Pattern;
 /**
  * An identifier for an isolated scope of a data in the database.
  */
-public class Keyspace implements Serializable, Comparable<Keyspace> {
+public class KeyspaceImpl implements Serializable, Comparable<KeyspaceImpl>, Keyspace {
     private static final long serialVersionUID = 2726154016735929123L;
     private static final int MAX_LENGTH = 48;
 
     private final String name;
 
-    public Keyspace(String name) {
+    public KeyspaceImpl(String name) {
         if (name == null) {
             throw new NullPointerException("Null name");
+        }
+        if (!isValidName(name)) {
+            throw TransactionException.invalidKeyspaceName(name);
         }
         this.name = name;
     }
 
-    @CheckReturnValue
-    public static Keyspace of(String name) {
-        if (!isValidName(name)) {
-            throw TransactionException.invalidKeyspaceName(name);
-        }
-        return new Keyspace(name);
-    }
-
+    @Override
     @CheckReturnValue
     public String name() {
         return name;
@@ -65,7 +62,7 @@ public class Keyspace implements Serializable, Comparable<Keyspace> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        Keyspace that = (Keyspace) o;
+        KeyspaceImpl that = (KeyspaceImpl) o;
         return this.name.equals(that.name());
     }
 
@@ -77,13 +74,13 @@ public class Keyspace implements Serializable, Comparable<Keyspace> {
         return h;
     }
 
-    static boolean isValidName(String name) {
-        return Pattern.matches("[a-z_][a-z_0-9]*", name) && name.length() <= MAX_LENGTH;
-    }
-
     @Override
-    public int compareTo(Keyspace o) {
+    public int compareTo(KeyspaceImpl o) {
         if (equals(o)) return 0;
         return name().compareTo(o.name());
+    }
+
+    private static boolean isValidName(String name) {
+        return Pattern.matches("[a-z_][a-z_0-9]*", name) && name.length() <= MAX_LENGTH;
     }
 }

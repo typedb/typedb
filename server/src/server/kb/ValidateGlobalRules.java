@@ -35,14 +35,14 @@ import grakn.core.kb.reasoner.query.CompositeQuery;
 import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.kb.reasoner.query.ReasonerQuery;
 import grakn.core.kb.reasoner.rule.RuleUtils;
-import grakn.core.kb.Schema;
-import server.src.server.exception.TransactionException;
+import grakn.core.core.Schema;
+import grakn.core.kb.exception.TransactionException;
 import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.concept.impl.RuleImpl;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
-import concept.structure.Casting;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Casting;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -239,7 +239,7 @@ class ValidateGlobalRules {
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
-    static Optional<String> validateInstancePlaysAllRequiredRoles(TransactionOLTP tx, Thing thing) {
+    static Optional<String> validateInstancePlaysAllRequiredRoles(Transaction tx, Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
         while (type != null) {
@@ -274,7 +274,7 @@ class ValidateGlobalRules {
      * @param graph graph used to ensure rules are stratifiable
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */
-    static Set<String> validateRuleStratifiability(TransactionOLTP graph){
+    static Set<String> validateRuleStratifiability(Transaction graph){
         Set<String> errors = new HashSet<>();
         List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(graph);
         if (!negativeCycles.isEmpty()){
@@ -288,7 +288,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidClause(TransactionOLTP graph, Rule rule) {
+    static Set<String> validateRuleIsValidClause(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
         if (patterns.size() > 1) {
@@ -308,7 +308,7 @@ class ValidateGlobalRules {
      * @param rule  the rule to be cast into a combined conjunction query
      * @return a combined conjunction created from statements from both the body and the head of the rule
      */
-    private static ReasonerQuery combinedRuleQuery(TransactionOLTP graph, Rule rule) {
+    private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule) {
         ReasonerQuery bodyQuery = ReasonerQueries.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
         ReasonerQuery headQuery = ReasonerQueries.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
         return headQuery.conjunction(bodyQuery);
@@ -321,7 +321,7 @@ class ValidateGlobalRules {
      * @param rule  the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    static Set<String> validateRuleOntologically(TransactionOLTP graph, Rule rule) {
+    static Set<String> validateRuleOntologically(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
@@ -337,7 +337,7 @@ class ValidateGlobalRules {
      * @param rule  the rule to be validated
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> validateRuleHead(TransactionOLTP graph, Rule rule) {
+    private static Set<String> validateRuleHead(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Statement>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
         Set<Conjunction<Statement>> bodyPatterns = rule.when().getDisjunctiveNormalForm().getPatterns();
@@ -370,7 +370,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleSchemaConceptExist(TransactionOLTP graph, Rule rule) {
+    static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
@@ -384,7 +384,7 @@ class ValidateGlobalRules {
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(TransactionOLTP graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.getNegationDNF().getPatterns().stream()

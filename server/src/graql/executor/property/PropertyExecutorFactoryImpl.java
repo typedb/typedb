@@ -38,24 +38,28 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
 import graql.lang.statement.Variable;
+import grakn.core.kb.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.executor.property.PropertyExecutor;
 
-public abstract class PropertyExecutorImpl implements PropertyExecutor {
-    Definable definable(Variable var, VarProperty property) {
-        PropertyExecutor executor = create(var, property);
+public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 
-        if (executor instanceof Definable) {
-            return (Definable) executor;
+    public PropertyExecutor.Definable definable(Variable var, VarProperty property) {
+        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
+        PropertyExecutor executor = propertyExecutorFactory.create(var, property);
+
+        if (executor instanceof PropertyExecutor.Definable) {
+            return (PropertyExecutor.Definable) executor;
         } else {
             throw GraqlSemanticException.defineUnsupportedProperty(property.keyword());
         }
     }
 
-    Insertable insertable(Variable var, VarProperty property) {
-        PropertyExecutor executor = create(var, property);
+    public PropertyExecutor.Insertable insertable(Variable var, VarProperty property) {
+        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
+        PropertyExecutor executor = propertyExecutorFactory.create(var, property);
 
-        if (executor instanceof Insertable) {
-            return (Insertable) executor;
+        if (executor instanceof PropertyExecutor.Insertable) {
+            return (PropertyExecutor.Insertable) executor;
         } else {
             throw GraqlSemanticException.insertUnsupportedProperty(property.keyword());
         }

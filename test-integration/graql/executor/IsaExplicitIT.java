@@ -34,7 +34,7 @@ import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.fragment.OutSubFragment;
 import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -57,12 +57,12 @@ public class IsaExplicitIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private TransactionOLTP tx;
+    private Transaction tx;
     private TraversalPlanFactory traversalPlanFactory;
 
     @Before
     public void loadSimpleData() {
-        tx = server.sessionWithNewKeyspace().transaction().write();
+        tx = server.sessionWithNewKeyspace().writeTransaction();
         traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
         EntityType entityType0 = tx.putEntityType("entityType0");
         EntityType entityType1 = tx.putEntityType("entityType1");

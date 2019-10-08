@@ -22,7 +22,7 @@ package grakn.core.concept.impl;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.exception.GraknConceptException;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

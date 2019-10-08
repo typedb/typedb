@@ -37,6 +37,7 @@ import grakn.core.kb.reasoner.ReasonerCheckedException;
 import grakn.core.kb.ConceptUtils;
 import grakn.core.kb.Transaction;
 import grakn.core.kb.reasoner.ReasonerException;
+import grakn.core.kb.reasoner.atom.Atom;
 import grakn.core.kb.reasoner.atom.Atomic;
 import grakn.core.kb.reasoner.atom.AtomicBase;
 import grakn.core.kb.reasoner.atom.AtomicFactory;
@@ -117,7 +118,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 .build();
     }
 
-    ReasonerQueryImpl(grakn.core.kb.reasoner.atom.Atom atom) {
+    ReasonerQueryImpl(Atom atom) {
         this(Collections.singletonList(atom), atom.getParentQuery().tx());
     }
 

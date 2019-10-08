@@ -26,8 +26,8 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.concept.impl.RelationImpl;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -45,7 +45,7 @@ public class CastingIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     private RelationType relationType;
@@ -57,7 +57,7 @@ public class CastingIT {
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         role1 = tx.putRole("role1");
         role2 = tx.putRole("role2");
         role3 = tx.putRole("role3");

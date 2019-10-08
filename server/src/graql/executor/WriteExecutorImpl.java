@@ -92,7 +92,7 @@ public class WriteExecutorImpl implements WriteExecutor {
     // A map, where `dependencies.containsEntry(x, y)` implies that `y` must be inserted before `x` is inserted.
     private final ImmutableMultimap<Writer, Writer> dependencies;
 
-    private WriteExecutor(Transaction transaction,
+    private WriteExecutorImpl(Transaction transaction,
                               Set<Writer> writers,
                               Partition<Variable> equivalentVars,
                               Multimap<Writer, Writer> executorDependency
@@ -197,7 +197,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         Multimap<Writer, Writer> writerDependencies =
                 writerDependencies(executorToRequiredVars, varToProducingWriter);
 
-        return new WriteExecutor(transaction, writers, equivalentVars, writerDependencies);
+        return new WriteExecutorImpl(transaction, writers, equivalentVars, writerDependencies);
     }
 
     private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<Writer> executors) {

@@ -29,10 +29,10 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import server.src.server.exception.TransactionException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.InvalidKBException;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
@@ -55,13 +55,13 @@ public class SchemaMutationIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         Role husband = tx.putRole("husband");
         Role wife = tx.putRole("wife");
         Role driver = tx.putRole("driver");
@@ -82,7 +82,7 @@ public class SchemaMutationIT {
         Entity bmw = car.create();
         drives.create().assign(driver, alice).assign(driven, bmw);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -150,7 +150,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now make animal have the same resource type
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         EntityType retrievedAnimal = tx.getEntityType("animal");
         AttributeType nameType = tx.getAttributeType("name");
         retrievedAnimal.has(nameType);
@@ -165,7 +165,7 @@ public class SchemaMutationIT {
         tx.commit();
 
         //Now delete the relation
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         RelationType relationInNewTx = tx.getRelationType("my wonderful relation");
         relationInNewTx.delete();
 

@@ -22,7 +22,7 @@ package grakn.core.concept.impl;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.Type;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;

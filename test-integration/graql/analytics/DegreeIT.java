@@ -29,9 +29,9 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.InvalidKBException;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -55,7 +55,7 @@ import static org.junit.Assert.assertTrue;
 public class DegreeIT {
 
     public Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -63,7 +63,7 @@ public class DegreeIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -98,7 +98,7 @@ public class DegreeIT {
                 .assign(role2, tx.getConcept(entity4));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
 
         Map<ConceptId, Long> correctDegrees = new HashMap<>();
         correctDegrees.put(entity1, 1L);
@@ -115,7 +115,7 @@ public class DegreeIT {
         tx.close();
 
         Set<List<ConceptSetMeasure>> result = list.parallelStream().map(i -> {
-            try (TransactionOLTP tx = session.transaction().read()) {
+            try (Transaction tx = session.readTransaction()) {
                 return tx.execute(Graql.compute().centrality().using(DEGREE));
             }
         }).collect(Collectors.toSet());
@@ -129,7 +129,7 @@ public class DegreeIT {
                 }
         ));
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             List<ConceptSetMeasure> degrees1 = tx.execute(Graql.compute().centrality().using(DEGREE).of("thingy"));
 
             assertEquals(2, degrees1.size());
@@ -180,7 +180,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             // set subgraph, use animal instead of dog
             Set<String> ct = Sets.newHashSet("person", "animal", "mans-best-friend");
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE).in(ct));
@@ -228,7 +228,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
 
             // create a subgraph excluding attributes and their relation
             HashSet<String> subGraphTypes = Sets.newHashSet("animal", "person", "mans-best-friend");
@@ -268,7 +268,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
@@ -307,7 +307,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
@@ -342,7 +342,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }
@@ -374,7 +374,7 @@ public class DegreeIT {
 
         tx.commit();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             List<ConceptSetMeasure> degrees = tx.execute(Graql.compute().centrality().using(DEGREE));
             assertTrue(referenceDegrees.containsAll(degrees));
         }

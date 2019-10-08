@@ -34,12 +34,12 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import server.src.server.exception.TransactionException;
-import grakn.core.kb.Schema;
+import grakn.core.kb.exception.InvalidKBException;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.core.Schema;
 import concept.structure.Casting;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -66,13 +66,13 @@ public class EntityIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

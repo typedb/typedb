@@ -20,7 +20,7 @@ package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.api.Label;
-import grakn.core.graql.gremlin.fragment.Fragment;
+
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.planning.spanningtree.graph.InstanceNode;

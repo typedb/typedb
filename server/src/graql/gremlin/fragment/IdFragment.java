@@ -26,7 +26,7 @@ import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.Fragment;
 import grakn.core.core.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.property.IdProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.Set;
 
 @AutoValue
-public abstract class IdFragment extends Fragment {
+public abstract class IdFragment extends FragmentImpl {
 
     abstract ConceptId id();
 
@@ -62,7 +62,7 @@ public abstract class IdFragment extends Fragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
         if (canOperateOnEdges()) {
             return traversal.or(
                     edgeTraversal(),
@@ -119,7 +119,7 @@ public abstract class IdFragment extends Fragment {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(Transaction tx) {
         // only ever 1 matching concept for an ID - a good starting point
         return 1.0;
     }

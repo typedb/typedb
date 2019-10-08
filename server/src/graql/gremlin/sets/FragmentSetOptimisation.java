@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.sets;
 
 import grakn.core.kb.planning.EquivalentFragmentSet;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 
 import java.util.Collection;
 
@@ -42,5 +42,5 @@ public interface FragmentSetOptimisation {
      * @param tx the Transaction that these EquivalentFragmentSets are going to operate against
      * @return whether {@code fragmentSets} was modified
      */
-    boolean apply(Collection<EquivalentFragmentSet> fragmentSets, TransactionOLTP tx);
+    boolean apply(Collection<EquivalentFragmentSet> fragmentSets, Transaction tx);
 }

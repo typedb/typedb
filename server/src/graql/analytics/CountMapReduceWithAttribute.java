@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.io.Serializable;

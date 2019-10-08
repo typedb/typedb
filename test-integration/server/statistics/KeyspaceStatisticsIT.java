@@ -29,10 +29,11 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.kb.statistics.KeyspaceStatistics;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Schema;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.kb.Session;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -52,7 +53,7 @@ import static org.junit.Assert.assertSame;
 public class KeyspaceStatisticsIT {
 
     private GraknClient graknClient;
-    private Session localSession;
+    private SessionImpl localSession;
     private GraknClient.Session remoteSession;
 
     @ClassRule
@@ -76,7 +77,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void newKeyspaceHasZeroCounts() {
         KeyspaceStatistics statistics = localSession.keyspaceStatistics();
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         long entityCount = statistics.count(tx, Label.of("entity"));
         long relationCount = statistics.count(tx, Label.of("relation"));
         long attributeCount = statistics.count(tx, Label.of("attribute"));
@@ -95,14 +96,14 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void keyspaceStatisticsUpdatedOnCommit() {
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         ageType = tx.getAttributeType("age");
         Attribute age = ageType.create(1);
         personType = tx.getEntityType("person");
@@ -113,7 +114,7 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
@@ -127,11 +128,11 @@ public class KeyspaceStatisticsIT {
         assertEquals(3, implicitAgeCount);
         assertEquals(personCount + ageCount + friendshipCount + implicitAgeCount, thingCount);
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         tx.execute(Graql.parse("match $x isa friendship; delete $x;").asDelete());
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
@@ -145,10 +146,10 @@ public class KeyspaceStatisticsIT {
         assertEquals(3, implicitAgeCount);
         assertEquals(personCount + ageCount + friendshipCount + implicitAgeCount, thingCount);
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         tx.execute(Graql.parse("match $x isa thing; delete $x;").asDelete());
         tx.commit();
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
@@ -165,14 +166,14 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void keyspaceStatisticsNotUpdatedIfNotcommitted() {
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         ageType = tx.getAttributeType("age");
         Attribute age = ageType.create(1);
         personType = tx.getEntityType("person");
@@ -183,7 +184,7 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.close();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
@@ -201,7 +202,7 @@ public class KeyspaceStatisticsIT {
      */
     @Test
     public void reopeningSessionRetrievesStatistics() {
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
@@ -217,7 +218,7 @@ public class KeyspaceStatisticsIT {
         friendshipType.create().assign(friend, person1).assign(friend, person2);
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCount = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
@@ -229,9 +230,9 @@ public class KeyspaceStatisticsIT {
         remoteSession.close();
 
         // at this point, the graph and keyspace should be deleted from Grakn server cache
-        localSession = server.session(Keyspace.of(remoteSession.keyspace().name()));
+        localSession = server.session(new KeyspaceImpl(remoteSession.keyspace().name()));
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         long personCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         long ageCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long friendshipCountReopened = localSession.keyspaceStatistics().count(tx, Label.of("friendship"));
@@ -248,7 +249,7 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void nonexistentLabelStatisticsReturnMinusOne() {
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         tx.close();
         assertEquals(-1L, personCount);
@@ -257,7 +258,7 @@ public class KeyspaceStatisticsIT {
 
     @Test
     public void concurrentTransactionsUpdateStatisticsCorrectly() throws InterruptedException, ExecutionException {
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         AttributeType ageType = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(ageType);
@@ -270,7 +271,7 @@ public class KeyspaceStatisticsIT {
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
 
         CompletableFuture<Void> future1 = CompletableFuture.supplyAsync(() -> {
-            GraknClient.Transaction tx1 = remoteSession.transaction().write();
+            GraknClient.Transaction tx1 = remoteSession.writeTransaction();
             grakn.client.concept.api.AttributeType ageT = tx1.getAttributeType("age");
             grakn.client.concept.api.EntityType personT = tx1.getEntityType("person");
             ageT.create(2);
@@ -281,7 +282,7 @@ public class KeyspaceStatisticsIT {
         }, parallelExecutor);
 
         CompletableFuture<Void> future2 = CompletableFuture.supplyAsync(() -> {
-            GraknClient.Transaction tx2 = remoteSession.transaction().write();
+            GraknClient.Transaction tx2 = remoteSession.writeTransaction();
             grakn.client.concept.api.AttributeType ageT = tx2.getAttributeType("age");
             grakn.client.concept.api.EntityType personT = tx2.getEntityType("person");
             ageT.create(3); // tricky case - this will be merge
@@ -296,7 +297,7 @@ public class KeyspaceStatisticsIT {
         parallelExecutor.shutdownNow();
         parallelExecutor.awaitTermination(5, TimeUnit.SECONDS);
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
         long personCount = localSession.keyspaceStatistics().count(tx, Label.of("person"));
         long ageCount = localSession.keyspaceStatistics().count(tx, Label.of("age"));
         long thingCount = localSession.keyspaceStatistics().count(tx, Label.of("thing"));
@@ -310,7 +311,7 @@ public class KeyspaceStatisticsIT {
     @Test
     public void attachingAttributesViaRulesDoesntAlterConceptCountsAfterCommit() {
         // test concept API insertion
-        TransactionOLTP tx = localSession.transaction().write();
+        Transaction tx = localSession.writeTransaction();
         AttributeType<Long> age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         EntityType person = tx.putEntityType("person").has(age);
 
@@ -323,13 +324,13 @@ public class KeyspaceStatisticsIT {
 
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
 
         List<ConceptMap> answers = tx.execute(Graql.parse("match $x has age $r;get;").asGet());
 
         tx.commit();
 
-        tx = localSession.transaction().write();
+        tx = localSession.writeTransaction();
 
         Label ageLabel = Label.of("age");
         assertEquals(0, localSession.keyspaceStatistics().count(tx, ageLabel));

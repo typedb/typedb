@@ -47,8 +47,11 @@ java_library(
     deps = [
         # Internal dependencies
         "//common:common",
+        "//concept:concept",
+        "//concept/structure:structure",
         "//concept/impl:concept",
         "//kb:kb",
+        "//core:core",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",

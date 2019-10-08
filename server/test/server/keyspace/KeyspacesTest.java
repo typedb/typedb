@@ -18,7 +18,7 @@
 
 package grakn.core.server.keyspace;
 
-import server.src.server.exception.TransactionException;
+import grakn.core.kb.exception.TransactionException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -51,7 +51,7 @@ public class KeyspacesTest {
     private void invalidKeyspace(String keyspace) {
         expectedException.expect(TransactionException.class);
         expectedException.expectMessage(TransactionException.invalidKeyspaceName(keyspace).getMessage());
-        Keyspace.of(keyspace);
+        new KeyspaceImpl(keyspace);
     }
 
 }

@@ -32,7 +32,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class NeqExecutor extends PropertyExecutorImpl implements PropertyExecutor {
+public class NeqExecutor  implements PropertyExecutor {
 
     private final Variable var;
     private final NeqProperty property;

@@ -17,14 +17,14 @@
  *
  */
 
-package server.src.server.exception;
+package grakn.core.kb.exception;
 
 import com.google.common.base.Preconditions;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.api.Concept;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Transaction;
 
 import javax.annotation.Nullable;
 
@@ -69,7 +69,7 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to open a transaction which is already open
      */
-    public static TransactionException transactionOpen(TransactionOLTP tx) {
+    public static TransactionException transactionOpen(Transaction tx) {
         return create(ErrorMessage.TRANSACTION_ALREADY_OPEN.getMessage(tx.keyspace()));
     }
 
@@ -83,14 +83,14 @@ public class TransactionException extends GraknException {
     /**
      * Thrown when attempting to mutate a read only transaction
      */
-    public static TransactionException transactionReadOnly(TransactionOLTP tx) {
+    public static TransactionException transactionReadOnly(Transaction tx) {
         return create(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
     }
 
     /**
      * Thrown when attempting to use the graph when the transaction is closed
      */
-    public static TransactionException transactionClosed(@Nullable TransactionOLTP tx, @Nullable String reason) {
+    public static TransactionException transactionClosed(@Nullable Transaction tx, @Nullable String reason) {
         if (reason == null) {
             Preconditions.checkNotNull(tx);
             return create(ErrorMessage.TX_CLOSED.getMessage(tx.keyspace()));

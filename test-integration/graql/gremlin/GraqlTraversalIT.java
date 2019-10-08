@@ -33,8 +33,8 @@ import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.GraqlTraversal;
 import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -83,7 +83,7 @@ public class GraqlTraversalIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static Session session;
-    private static TransactionOLTP tx;
+    private static Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -113,12 +113,12 @@ public class GraqlTraversalIT {
 
     @Before
     public void setUp() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         Role wife = tx.putRole("wife");
         EntityType personType = tx.putEntityType("person").plays(wife);
         RelationType marriageType = tx.putRelationType("marriage").relates(wife);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

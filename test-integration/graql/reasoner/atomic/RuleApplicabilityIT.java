@@ -35,9 +35,9 @@ import grakn.core.kb.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.kb.reasoner.rule.InferenceRule;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -71,7 +71,7 @@ public class RuleApplicabilityIT {
     private static Session resourceApplicabilitySession;
     private static Session reifiedResourceApplicabilitySession;
 
-    private static Thing putEntityWithResource(TransactionOLTP tx, EntityType type, Label resource, Object value) {
+    private static Thing putEntityWithResource(Transaction tx, EntityType type, Label resource, Object value) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(resource), value);
         return inst;
@@ -94,7 +94,7 @@ public class RuleApplicabilityIT {
         loadFromFileAndCommit(resourcePath,"ruleApplicabilityTest.gql", ruleApplicabilitySession);
 
         //add extra data so that all rules can be possibly triggered
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
 
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
             EntityType twoRoleEntity = tx.getEntityType("twoRoleEntity");
@@ -121,7 +121,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void metaImplicitRelation(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             grakn.core.kb.reasoner.atom.Atom metaImplicitRelation = ReasonerQueries.atomic(conjunction("{ $x isa @has-attribute;};", tx), tx).getAtom();
             Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(Collectors.toSet());
 
@@ -133,7 +133,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void OntologicalAtomsDoNotMatchAnyRules(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             grakn.core.kb.reasoner.atom.Atom subAtom = ReasonerQueries.atomic(conjunction("{ $x sub relation; };", tx), tx).getAtom();
             grakn.core.kb.reasoner.atom.Atom hasAtom = ReasonerQueries.atomic(conjunction("{ $x has description; };", tx), tx).getAtom();
             grakn.core.kb.reasoner.atom.Atom relatesAtom = ReasonerQueries.atomic(conjunction("{ reifiable-relation relates $x; };", tx), tx).getAtom();
@@ -149,7 +149,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void AmbiguousRoleMapping(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
             String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa anotherTwoRoleEntity; $z isa twoRoleEntity; };";
             RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -164,7 +164,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void AmbiguousRoleMapping_RolePlayerTypeMismatch(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()){
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
             String relationString = "{ ($x, $y, $z);$x isa singleRoleEntity; $y isa twoRoleEntity; $z isa threeRoleEntity; };";
             RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -179,7 +179,7 @@ public class RuleApplicabilityIT {
 
     @Test //threeRoleEntity subs twoRoleEntity -> (role, role, role)
     public void AmbiguousRoleMapping_TypeHierarchyEnablesExtraRule(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()){
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
             String relationString = "{ ($x, $y, $z);$x isa twoRoleEntity; $y isa threeRoleEntity; $z isa anotherTwoRoleEntity; };";
             RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
             relation.getRoleVarMap().entries().forEach(e -> assertTrue(Schema.MetaSchema.isMetaLabel(e.getKey().label())));
@@ -189,7 +189,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void attributeBoundRelationPlayers(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()){
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()){
 
             //attribute mismatch with the rule
             String relationString = "{ ($x, $y) isa attributed-relation;$x has resource-string 'valueOne'; $y has resource-string 'someValue'; };";
@@ -226,7 +226,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void nonSpecificattributeBoundRelationPlayers(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
 
             //attributes satisfy the ones from rule
             String relationString = "{ ($x, $y) isa attributed-relation; " +
@@ -269,7 +269,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void MissingRelationPlayers(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
 
             //inferred relation (role {role2, role3} : $x, role {role1, role2} : $y)
             String relationString = "{ ($x, $y);$x isa twoRoleEntity; $y isa anotherTwoRoleEntity; };";
@@ -307,7 +307,7 @@ public class RuleApplicabilityIT {
 
     @Test //should assign (role : $x, role1: $y, role: $z) which is compatible with 3 ternary rules
     public void WithWildcard(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
             String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa twoRoleEntity; };";
             RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -322,7 +322,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void TypedResources(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ $x isa reifiable-relation; $x has description $d; };";
             String relationString2 = "{ $x isa typed-relation; $x has description $d; };";
             String relationString3 = "{ $x isa relation; $x has description $d; };";
@@ -337,7 +337,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void DerivedTypes(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String typeString = "{ $x isa reifying-relation; };";
             String typeString2 = "{ $x isa typed-relation; };";
             String typeString3 = "{ $x isa description; };";
@@ -360,7 +360,7 @@ public class RuleApplicabilityIT {
 
     @Test //should assign (role: $x, role: $y) which is compatible with all rules
     public void genericRelation(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ ($x, $y); };";
             grakn.core.kb.reasoner.atom.Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
             assertEquals(
@@ -372,7 +372,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericType(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String typeString = "{ $x isa $type; };";
             String typeString2 = "{ $x isa $type;$x isa entity; };";
             String typeString3 = "{ $x isa $type;$x isa relation; };";
@@ -388,7 +388,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericTypeAsARoleplayer(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String typeString = "{ (symmetricRole: $x); $x isa $type; };";
             String typeString2 = "{ (someRole: $x); $x isa $type; };";
             grakn.core.kb.reasoner.atom.Atom type = ReasonerQueries.create(conjunction(typeString, tx), tx).getAtoms(IsaAtom.class).findFirst().orElse(null);
@@ -403,7 +403,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericTypeWithBounds(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ $x isa $type; };";
             grakn.core.kb.reasoner.atom.Atom relation = ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
             assertEquals(
@@ -415,7 +415,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void WithWildcard_MissingMappings(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             //although singleRoleEntity plays only one role it can also play an implicit role of the resource so mapping ambiguous
             String relationString = "{ ($x, $y, $z);$y isa singleRoleEntity; $z isa singleRoleEntity; };";
             RelationAtom relation = (RelationAtom) ReasonerQueries.atomic(conjunction(relationString, tx), tx).getAtom();
@@ -430,7 +430,7 @@ public class RuleApplicabilityIT {
 
     @Test //NB: role2 sub role1
     public void RepeatingRoleTypesWithHierarchy(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ (someRole: $x1, someRole: $x2, subRole: $x3); };";
             String relationString2 = "{ (someRole: $x1, subRole: $x2, subRole: $x3); };";
             String relationString3 = "{ (subRole: $x1, subRole: $x2, subRole: $x3); };";
@@ -445,7 +445,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void genericRelationWithGenericType(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ ($x, $y);$x isa noRoleEntity; };";
             String relationString2 = "{ ($x, $y);$x isa entity; };";
             String relationString3 = "{ ($x, $y);$x isa relation; };";
@@ -463,7 +463,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ReifiedRelationsWithType(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ (someRole: $x, subRole: $y) isa reifying-relation; };";
             String relationString2 = "{ $x isa entity;(someRole: $x, subRole: $y) isa reifying-relation; };";
             String relationString3 = "{ $x isa anotherTwoRoleEntity;(someRole: $x, subRole: $y) isa reifying-relation; };";
@@ -482,7 +482,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void TypePlayabilityDeterminesApplicability(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String relationString = "{ $y isa singleRoleEntity;(someRole:$x, role:$y, anotherRole: $z) isa ternary; };";
             String relationString2 = "{ $y isa twoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
             String relationString3 = "{ $y isa anotherTwoRoleEntity;(someRole:$x, subRole:$y, anotherRole: $z) isa ternary; };";
@@ -504,7 +504,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void TypeRelation(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String typeString = "{ $x isa reifying-relation; };";
             String typeString2 = "{ $x isa ternary; };";
             String typeString3 = "{ $x isa binary; };";
@@ -519,7 +519,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void OntologicalTypes(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             String typeString = "{ $x sub " + Schema.MetaSchema.RELATION.getLabel() + "; };";
             String typeString2 = "{ $x relates someRole; };";
             String typeString3 = "{ $x plays someRole; };";
@@ -537,7 +537,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void InstancesMakeRuleInapplicable_NoRoleTypes(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             Concept concept = getConcept(tx, "name", "noRoleEntity");
             String relationString = "{" +
                     "($x, $y) isa ternary;" +
@@ -550,7 +550,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void InstancesMakeRuleInapplicable_NoRoleTypes_NoRelationType(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             Concept concept = getConcept(tx, "name", "noRoleEntity");
             String relationString = "{" +
                     "($x, $y);" +
@@ -564,7 +564,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ResourceDouble(){
-        try(TransactionOLTP tx = resourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             String resourceString = "{ $x has res-double > 3.0; };";
             String resourceString2 = "{ $x has res-double > 4.0; };";
             String resourceString3 = "{ $x has res-double < 3.0; };";
@@ -596,7 +596,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ResourceLong(){
-        try(TransactionOLTP tx = resourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             String resourceString = "{ $x has res-long > 100; };";
             String resourceString2 = "{ $x has res-long > 150; };";
             String resourceString3 = "{ $x has res-long < 100; };";
@@ -628,7 +628,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ResourceString(){
-        try(TransactionOLTP tx = resourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             String resourceString = "{ $x has res-string contains 'ing'; };";
             String resourceString2 = "{ $x has res-string 'test' ; };";
             String resourceString3 = "{ $x has res-string like \".*(fast|string).*\"; };";
@@ -648,7 +648,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ResourceBoolean(){
-        try(TransactionOLTP tx = resourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             String resourceString = "{ $x has res-boolean 'true'; };";
             String resourceString2 = "{ $x has res-boolean 'false'; };";
 
@@ -662,7 +662,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void TypeResource(){
-        try(TransactionOLTP tx = resourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             String typeString = "{ $x isa resource; };";
             grakn.core.kb.reasoner.atom.Atom type = ReasonerQueries.atomic(conjunction(typeString, tx), tx).getAtom();
             assertEquals(1, type.getApplicableRules().count());
@@ -671,7 +671,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void Resource_TypeMismatch(){
-        try(TransactionOLTP tx = resourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = resourceApplicabilitySession.writeTransaction()) {
             String resourceString = "{ $x isa someEntity, has resource $r; };";
             String resourceString2 = "{ $x isa anotherEntity, has resource $r; };";
             String resourceString3 = "{ $x isa anotherEntity, has resource 'test'; };";
@@ -688,7 +688,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ReifiedResourceDouble(){
-        try(TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             String queryString = "{ $x > 3.0 isa res-double; ($x, $y); };";
             String queryString2 = "{ $x > 4.0 isa res-double; ($x, $y); };";
             String queryString3 = "{ $x < 3.0 isa res-double; ($x, $y); };";
@@ -720,7 +720,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ReifiedResourceLong(){
-        try(TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             String queryString = "{ $x > 100 isa res-long; ($x, $y); };";
             String queryString2 = "{ $x > 150 isa res-long; ($x, $y); };";
             String queryString3 = "{ $x < 100 isa res-long; ($x, $y); };";
@@ -752,7 +752,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ReifiedResourceString(){
-        try(TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             String queryString = "{ $x contains 'val' isa res-string; ($x, $y); };";
             String queryString2 = "{ $x 'test' isa res-string; ($x, $y); };";
             String queryString3 = "{ $x like \".*(fast|value).*\" isa res-string; ($x, $y); };";
@@ -772,7 +772,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void ReifiedResourceBoolean() {
-        try(TransactionOLTP tx = reifiedResourceApplicabilitySession.transaction().write()) {
+        try(Transaction tx = reifiedResourceApplicabilitySession.writeTransaction()) {
             String queryString = "{ $x 'true' isa res-boolean;($x, $y); };";
             String queryString2 = "{ $x 'false' isa res-boolean;($x, $y); };";
 
@@ -786,7 +786,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRulesForGroundAtomRedefinedViaRule_ruleIsMatched(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().read()) {
+        try(Transaction tx = ruleApplicabilitySession.readTransaction()) {
             Relation instance = tx.getRelationType("reifiable-relation").instances().findFirst().orElse(null);
             String queryString = "{ $r has description 'typed-reified'; $r id " + instance.id().getValue() + "; };";
             grakn.core.kb.reasoner.atom.Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
@@ -797,7 +797,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRulesForGroundTypeWhichIsNotRedefined_noRulesAreMatched(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().read()) {
+        try(Transaction tx = ruleApplicabilitySession.readTransaction()) {
             Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
             String queryString = "{ $x isa binary; $x id " + instance.id().getValue() + "; };";
             grakn.core.kb.reasoner.atom.Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
@@ -808,7 +808,7 @@ public class RuleApplicabilityIT {
 
     @Test
     public void whenMatchingRulesForASpecificRelation_noRulesAreMatched(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().read()) {
+        try(Transaction tx = ruleApplicabilitySession.readTransaction()) {
             Relation instance = tx.getRelationType("binary").instances().findFirst().orElse(null);
             String queryString = "{ $r ($x, $y) isa binary; $r id " + instance.id().getValue() + "; };";
             grakn.core.kb.reasoner.atom.Atom atom = ReasonerQueries.atomic(conjunction(queryString, tx), tx).getAtom();
@@ -817,7 +817,7 @@ public class RuleApplicabilityIT {
         }
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
+    private Conjunction<Statement> conjunction(String patternString, Transaction tx){
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
@@ -830,7 +830,7 @@ public class RuleApplicabilityIT {
         return roleMap;
     }
 
-    private Concept getConcept(TransactionOLTP tx, String typeName, String val){
+    private Concept getConcept(Transaction tx, String typeName, String val){
         return tx.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }

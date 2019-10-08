@@ -40,15 +40,6 @@ import static java.util.stream.Collectors.joining;
  */
 public interface EquivalentFragmentSet extends Iterable<Fragment> {
 
-    @Override
-    @CheckReturnValue
-    default Iterator<Fragment> iterator() {
-        return stream().iterator();
-    }
-
-    default Stream<Fragment> stream() {
-        return fragments().stream();
-    }
 
     /**
      * @return a set of fragments that this EquivalentFragmentSet contains
@@ -58,8 +49,4 @@ public interface EquivalentFragmentSet extends Iterable<Fragment> {
     @Nullable
     VarProperty varProperty();
 
-    @Override
-    default String toString() {
-        return fragments().stream().map(Object::toString).collect(joining(", ", "{", "}"));
-    }
 }

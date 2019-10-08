@@ -289,7 +289,7 @@ public class ClientJavaE2E {
     private void localhostGraknTx(Consumer<GraknClient.Transaction> fn) {
         String keyspace = "grakn";
         try (GraknClient.Session session = graknClient.session(keyspace)) {
-            try (GraknClient.Transaction transaction = session.transaction().write()) {
+            try (GraknClient.Transaction transaction = session.writeTransaction()) {
                 fn.accept(transaction);
             }
         }

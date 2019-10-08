@@ -45,7 +45,7 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-abstract class RolePlayerFragmentSet extends EquivalentFragmentSet {
+abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
     public static RolePlayerFragmentSet of(
             VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,

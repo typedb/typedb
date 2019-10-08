@@ -30,9 +30,9 @@ import grakn.core.concept.api.Role;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.InvalidKBException;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
@@ -49,12 +49,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import static grakn.core.kb.Schema.ImplicitType.HAS;
-import static grakn.core.kb.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.kb.Schema.ImplicitType.HAS_VALUE;
-import static grakn.core.kb.Schema.ImplicitType.KEY;
-import static grakn.core.kb.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.kb.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.core.Schema.ImplicitType.HAS;
+import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.core.Schema.ImplicitType.KEY;
+import static grakn.core.core.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.core.Schema.ImplicitType.KEY_VALUE;
 import static grakn.core.util.GraqlTestUtil.assertExists;
 import static grakn.core.util.GraqlTestUtil.assertNotExists;
 import static graql.lang.Graql.type;
@@ -81,7 +81,7 @@ public class GraqlDefineIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -91,7 +91,7 @@ public class GraqlDefineIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

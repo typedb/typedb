@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.common.util.Collections.tuple;
-import static kb.planning.spanningtree.util.Weighted.weighted;
+import static grakn.core.kb.planning.spanningtree.util.Weighted.weighted;
 
 /**
  * Fragments that represent JanusGraph edges have some different properties when it comes to query planning

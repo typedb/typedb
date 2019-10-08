@@ -36,9 +36,9 @@ import grakn.core.concept.api.Role;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.InvalidKBException;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
@@ -101,7 +101,7 @@ public class GraqlInsertIT {
 
     public static Session session;
 
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -111,7 +111,7 @@ public class GraqlInsertIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

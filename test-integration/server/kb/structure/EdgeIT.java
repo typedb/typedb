@@ -24,15 +24,16 @@ import concept.structure.EdgeElement;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Entity;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import grakn.core.concept.impl.ConceptManagerImpl;
 import concept.impl.ElementFactory;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.server.session.JanusGraphFactory;
-import grakn.core.server.session.Session;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.kb.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.kb.cache.CacheProvider;
 import grakn.core.kb.cache.KeyspaceSchemaCache;
@@ -57,15 +58,15 @@ public class EdgeIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Session session;
-    private TransactionOLTP tx;
+    private SessionImpl session;
+    private Transaction tx;
     private EntityTypeImpl entityType;
     private EntityImpl entity;
     private EdgeElement edge;
 
     @Before
     public void setUp(){
-        Keyspace keyspace = Keyspace.of("keyspace");
+        KeyspaceImpl keyspace = new KeyspaceImpl("keyspace");
         final int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
         final int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
@@ -79,7 +80,7 @@ public class EdgeIT {
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
 
-        session = new Session(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
+        session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
                 new KeyspaceStatistics(), attributeCache, new ReentrantReadWriteLock());
 
         // create the transaction
@@ -95,7 +96,7 @@ public class EdgeIT {
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
 
         tx = new TransactionOLTP(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
-        tx.open(TransactionOLTP.Type.WRITE);
+        tx.open(Transaction.Type.WRITE);
 
         // Create Edge
         entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");

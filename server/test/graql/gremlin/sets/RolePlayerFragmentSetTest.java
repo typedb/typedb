@@ -24,6 +24,7 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Before;
@@ -45,7 +46,7 @@ public class RolePlayerFragmentSetTest {
     private final Variable b = new Variable("b");
     private final Variable c = new Variable("c");
     private final Variable d = new Variable("d");
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @Before
     public void setUp(){

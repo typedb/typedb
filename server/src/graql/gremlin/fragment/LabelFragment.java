@@ -26,7 +26,7 @@ import grakn.core.concept.api.SchemaConcept;
 import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.spanningtree.graph.SchemaNode;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -37,7 +37,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 
-import static grakn.core.kb.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.core.Schema.VertexProperty.LABEL_ID;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
@@ -53,7 +53,7 @@ public abstract class LabelFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
 
         Set<Integer> labelIds =
                 labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
@@ -81,7 +81,7 @@ public abstract class LabelFragment extends FragmentImpl {
         return true;
     }
 
-    public Long getShardCount(TransactionOLTP tx) {
+    public Long getShardCount(Transaction tx) {
         return labels().stream()
                 .map(tx::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
@@ -97,7 +97,7 @@ public abstract class LabelFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(Transaction tx) {
         // there's only 1 label in this set, but sum anyway
         // estimate the total number of things that might be connected by ISA to this label as a heuristic
         long instances = labels().stream()

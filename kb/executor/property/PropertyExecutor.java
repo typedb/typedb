@@ -37,8 +37,6 @@ public interface PropertyExecutor {
 
     Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
 
-    PropertyExecutor create(Variable var, VarProperty property);
-
     interface Referrable extends Definable, Insertable {
 
         @Override

@@ -23,7 +23,7 @@ import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.planning.Fragment;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -48,7 +48,7 @@ public abstract class OutSubFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
         return Fragments.outSubs(Fragments.isVertex(traversal), this.subTraversalDepthLimit());
     }
 

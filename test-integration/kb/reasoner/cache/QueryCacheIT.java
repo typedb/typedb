@@ -32,8 +32,8 @@ import grakn.core.kb.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
@@ -81,7 +81,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenRecordingAndMatchExists_entryIsUpdated(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
@@ -108,7 +108,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenRecordingAndMatchDoesntExist_answersArePropagatedFromParents(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
@@ -146,7 +146,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_answersFetchedFromDB(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ReasonerAtomicQuery childQuery = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
@@ -159,7 +159,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_parentAvailable_answersFetchedFromParents(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
@@ -180,7 +180,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreEquivalent_answersFetchedFromDB(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ConceptId id = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
@@ -240,7 +240,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentCached_childQueriesAreNotEquivalent_answersFetchedFromDB(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ConceptId fConcept = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
@@ -297,7 +297,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchDoesntExist_prospectiveParentNotComplete_childQueriesAreNotEquivalent_answersFetchedFromDB(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ConceptId fConcept = tx.getEntityType("subRoleEntity").instances().iterator().next().id();
@@ -355,7 +355,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryNotGround_queryDBComplete_answersFetchedFromCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
@@ -375,7 +375,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryNotGround_queryNotDBComplete_answersFetchedFromDBAndCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(subRole1: $x, subRole2: $y) isa binary;"), tx);
@@ -403,7 +403,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryGround_answerFound_answersFetchedFromCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
@@ -452,7 +452,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenGettingAndMatchExists_queryGround_queryNotDBComplete_answerNotFound_answersFetchedFromDbAndCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
 
             Concept mConcept = tx.stream(Graql.<GraqlGet>parse("match $x has resource 'm';get;")).iterator().next().get("x");
@@ -515,7 +515,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenExecutingSameQueryTwice_secondTimeWeFetchResultFromCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
             //record parent
@@ -534,7 +534,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenFullyResolvingAQuery_allSubgoalsAreMarkedAsComplete(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = tx.queryCache();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa baseRelation;"), tx);
 
@@ -545,7 +545,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenResolvingASequenceOfQueries_onlyFullyResolvedSubgoalsAreMarkedAsComplete(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = tx.queryCache();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"), tx);
 
@@ -571,7 +571,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenExecutingConjunctionWithPartialQueriesComplete_weExploitCache(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             ReasonerQueryImpl query = ReasonerQueries.create(conjunction(
                     "{" +
                             "$x isa baseEntity;" +
@@ -598,7 +598,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenInstancesAreInserted_weUpdateCompleteness(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = tx.queryCache();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
                     "{" +
@@ -627,7 +627,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenInferredInstancesAreInserted_weDoNotUpdateCompleteness(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = tx.queryCache();
             Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
@@ -652,7 +652,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = tx.queryCache();
             Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
             Entity anotherBaseRoleEntity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
@@ -693,7 +693,7 @@ public class QueryCacheIT {
 
     @Test
     public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
-        try(TransactionOLTP tx = genericSchemaSession.transaction().read()) {
+        try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = tx.queryCache();
             ReasonerQueryImpl baseQuery = ReasonerQueries.create(conjunction("{$x has resource $r via $rel;};"), tx);
             Set<ConceptMap> answers = baseQuery.resolve().collect(toSet());
@@ -749,7 +749,7 @@ public class QueryCacheIT {
 
     }
 
-    private Set<ConceptMap> getCacheContent(TransactionOLTP tx){
+    private Set<ConceptMap> getCacheContent(Transaction tx){
         return tx.queryCache().queries().stream()
                 .map(q -> tx.queryCache().getEntry(q))
                 .flatMap(e -> e.cachedElement().getAll().stream())

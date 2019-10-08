@@ -23,8 +23,8 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -52,17 +52,17 @@ public class PathTreeGraph{
     }
 
     public final void load(int n, int m) {
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, int children, TransactionOLTP tx) {
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
         buildTree("arc-from", "arc-to", n , children, tx);
     }
 
-    void buildTree(String fromRoleValue, String toRoleValue, int n, int children, TransactionOLTP tx) {
+    void buildTree(String fromRoleValue, String toRoleValue, int n, int children, Transaction tx) {
         Role fromRole = tx.getRole(fromRoleValue);
         Role toRole = tx.getRole(toRoleValue);
 

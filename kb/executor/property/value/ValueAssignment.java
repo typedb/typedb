@@ -19,7 +19,7 @@
 
 package grakn.core.kb.executor.property.value;
 
-import grakn.core.concept.impl.Serialiser;
+import grakn.core.kb.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import java.time.LocalDateTime;

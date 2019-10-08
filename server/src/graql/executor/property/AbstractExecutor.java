@@ -38,7 +38,7 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
-public class AbstractExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class AbstractExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final AbstractProperty property;

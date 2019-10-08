@@ -42,7 +42,7 @@ import java.util.Set;
 
 import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class PlaysExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class PlaysExecutor  implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final PlaysProperty property;

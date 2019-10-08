@@ -42,9 +42,10 @@ import grakn.core.kb.reasoner.utils.conversion.TypeConverter;
 import graql.lang.property.IdProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.executor.property.PropertyExecutorFactory;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -147,14 +148,16 @@ public class ReasonerUtils {
      * @param parent reasoner query the mapped predicate should belong to
      * @return set of mapped ValuePredicates
      */
-    public static Set<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext, ReasonerQuery parent){
+    public static Set<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext,
+                                                         ReasonerQuery parent, PropertyExecutorFactory propertyExecutorFactory){
         Set<Statement> context = statement.var().isReturned()?
                 fullContext.stream().filter(v -> v.var().equals(valueVariable)).collect(toSet()) :
                 Collections.singleton(statement);
+
         return context.stream()
                 .flatMap(s -> s.getProperties(ValueProperty.class)
                         .map(property ->
-                                PropertyExecutor
+                                propertyExecutorFactory
                                         .create(statement.var(), property)
                                         .atomic(parent, statement, fullContext)
                         )

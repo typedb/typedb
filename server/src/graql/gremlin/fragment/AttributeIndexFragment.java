@@ -23,8 +23,8 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.SchemaConcept;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Transaction;
 import grakn.core.kb.statistics.KeyspaceStatistics;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -34,7 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static grakn.core.kb.Schema.VertexProperty.INDEX;
+import static grakn.core.core.Schema.VertexProperty.INDEX;
 
 @AutoValue
 public abstract class AttributeIndexFragment extends FragmentImpl {
@@ -45,7 +45,7 @@ public abstract class AttributeIndexFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
 
         return traversal.has(INDEX.name(), attributeIndex());
     }
@@ -71,7 +71,7 @@ public abstract class AttributeIndexFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
+    public double estimatedCostAsStartingPoint(Transaction tx) {
         KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
         // here we estimate the number of owners of an attribute instance of this type
         // as this is the most common usage/expensive component of an attribute

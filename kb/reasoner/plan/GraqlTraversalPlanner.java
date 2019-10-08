@@ -24,7 +24,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.concept.api.ConceptId;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.planning.Fragment;
 import grakn.core.kb.planning.GraqlTraversal;
 import grakn.core.kb.planning.TraversalPlanFactory;
@@ -91,7 +90,7 @@ public class GraqlTraversalPlanner {
                 .collect(Collectors.toList());
     }
 
-    private static List<Atom> getCandidates(List<.Atom> atoms, Set<IdPredicate> subs, Set<Variable> vars){
+    private static List<Atom> getCandidates(List<Atom> atoms, Set<IdPredicate> subs, Set<Variable> vars){
         List<Atom> preCandidates = optimiseCandidates(atoms, subs, vars);
         long MAX_CANDIDATES = preCandidates.size();
         if (MAX_CANDIDATES > 1) {

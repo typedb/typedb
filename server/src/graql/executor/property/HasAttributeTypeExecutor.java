@@ -39,18 +39,19 @@ import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import grakn.core.kb.executor.property.PropertyExecutorFactory;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.kb.Schema.ImplicitType.KEY;
-import static grakn.core.kb.Schema.ImplicitType.KEY_OWNER;
-import static grakn.core.kb.Schema.ImplicitType.KEY_VALUE;
+import static grakn.core.core.Schema.ImplicitType.KEY;
+import static grakn.core.core.Schema.ImplicitType.KEY_OWNER;
+import static grakn.core.core.Schema.ImplicitType.KEY_VALUE;
 import static graql.lang.Graql.var;
 
-public class HasAttributeTypeExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;
@@ -127,9 +128,11 @@ public class HasAttributeTypeExecutor extends PropertyExecutorImpl implements Pr
         // Add fragments for the implicit relation property
         // These implicit statements make sure that statement variable (owner) and the attribute type form a
         // connected (non-disjoint) set of fragments for match execution
+
+        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
         Stream.of(ownerRole, valueRole, relationOwner, relationValue)
                 .forEach(statement -> statement.properties()
-                        .forEach(p -> fragments.addAll(PropertyExecutor.create(statement.var(), p).matchFragments())));
+                        .forEach(p -> fragments.addAll(propertyExecutorFactory.create(statement.var(), p).matchFragments())));
 
         return ImmutableSet.copyOf(fragments);
     }

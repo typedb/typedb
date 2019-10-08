@@ -14,13 +14,14 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.server.exception;
+package grakn.core.kb.exception;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.kb.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;

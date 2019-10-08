@@ -32,13 +32,13 @@ import grakn.core.concept.api.SchemaConcept;
 import grakn.core.common.util.Pair;
 import grakn.core.kb.cache.TransactionCache;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.concept.impl.RelationTypeImpl;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -84,13 +84,13 @@ public class TransactionCacheIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -122,7 +122,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         EntityType retrievedPerson = tx.getEntityType("person");
         Entity retrievedPersonInstance = retrievedPerson.instances().collect(Collectors.toList()).get(0);
 
@@ -141,7 +141,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.getEntityType("person");
 
         TransactionCache transactionCache = tx.cache();
@@ -232,7 +232,7 @@ public class TransactionCacheIT {
         tx.commit();
 
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
         tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
         assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
@@ -266,7 +266,7 @@ public class TransactionCacheIT {
         aRelation.has(aProvenance);
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
@@ -324,7 +324,7 @@ public class TransactionCacheIT {
             fillerJanusVertices.add(Schema.elementId(person.create().id()));
         }
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);

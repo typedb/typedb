@@ -25,10 +25,10 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.concept.api.ConceptId;
-import grakn.core.graql.gremlin.fragment.Fragment;
+
 import grakn.core.kb.planning.Fragment;
 import grakn.core.kb.planning.GraqlTraversal;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -69,7 +69,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
     @Override
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(TransactionOLTP tx, Set<Variable> vars) {
+    public GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Transaction tx, Set<Variable> vars) {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
@@ -109,14 +109,14 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
      * @return a gremlin traversal that represents this inner query
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
-            TransactionOLTP tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
+            Transaction tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
             ImmutableList<Fragment> fragmentList) {
 
         return applyFragments(tx, vars, fragmentList, traversal);
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            TransactionOLTP tx, Set<Variable> vars, ImmutableList<Fragment> fragmentList,
+            Transaction tx, Set<Variable> vars, ImmutableList<Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal) {
         Set<Variable> foundVars = new HashSet<>();
 

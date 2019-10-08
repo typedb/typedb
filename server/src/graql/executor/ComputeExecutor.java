@@ -61,8 +61,8 @@ import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
 import grakn.core.kb.GraqlSemanticException;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Transaction;
 import grakn.core.kb.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -106,9 +106,9 @@ import static java.util.stream.Collectors.toSet;
 class ComputeExecutor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
-    private final TransactionOLTP tx;
+    private final Transaction tx;
 
-    ComputeExecutor(TransactionOLTP tx) {
+    ComputeExecutor(Transaction tx) {
         this.tx = tx;
     }
 

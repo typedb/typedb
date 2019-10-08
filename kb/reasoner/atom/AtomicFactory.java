@@ -52,7 +52,7 @@ public class AtomicFactory {
         //parse all atoms
         Set<Atomic> atoms = pattern.statements().stream()
                 .flatMap(statement -> statement.properties().stream()
-                        .map(property -> PropertyExecutor
+                        .map(property -> parent.tx().propertyExecutorFactory()
                                 .create(statement.var(), property)
                                 .atomic(parent, statement, pattern.statements()))
                         .filter(Objects::nonNull))
@@ -66,7 +66,7 @@ public class AtomicFactory {
                 .flatMap(statement -> statement.getProperties(HasAttributeProperty.class))
                 .flatMap(hp -> hp.statements().flatMap(
                         statement -> statement.getProperties(ValueProperty.class)
-                                .map(property -> PropertyExecutor
+                                .map(property -> parent.tx().propertyExecutorFactory()
                                         .create(statement.var(), property)
                                         .atomic(parent, statement, pattern.statements()))
                                 .filter(Objects::nonNull))

@@ -24,7 +24,7 @@ import grakn.core.common.util.Streams;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.gremlin.fragment.Fragment;
+
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.kb.planning.spanningtree.graph.EdgeNode;
@@ -32,8 +32,8 @@ import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.Fragment;
-import grakn.core.server.exception.GraknServerException;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.GraknServerException;
+import grakn.core.kb.Transaction;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -222,7 +222,7 @@ public class NodesUtil {
      * @param tx transaction context
      * @return estimated number of inferred instances of a given type
      */
-    public static long estimateInferredTypeCount(Label label, TransactionOLTP tx){
+    public static long estimateInferredTypeCount(Label label, Transaction tx){
         //TODO find a lighter estimate/way to cache it efficiently
         SchemaConcept initialType = tx.getSchemaConcept(label);
         if (initialType == null || !initialType.thenRules().findFirst().isPresent()) return 0;

@@ -26,7 +26,7 @@ import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.kb.PropertyNotUniqueException;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;

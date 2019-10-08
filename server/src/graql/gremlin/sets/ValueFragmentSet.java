@@ -30,7 +30,7 @@ import javax.annotation.Nullable;
 import java.util.Objects;
 import java.util.Set;
 
-class ValueFragmentSet extends EquivalentFragmentSet {
+class ValueFragmentSet extends EquivalentFragmentSetImpl {
 
     private final Variable var;
     private final ValueOperation<?, ?> operation;

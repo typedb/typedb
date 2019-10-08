@@ -29,8 +29,8 @@ import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.reasoner.plan.ResolutionPlan;
 import grakn.core.kb.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
@@ -78,7 +78,7 @@ public class ResolutionPlanIT {
     public static final GraknTestServer server = new GraknTestServer();
 
     private static Session planSession;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -94,7 +94,7 @@ public class ResolutionPlanIT {
 
     @Before
     public void setUp(){
-        tx = planSession.transaction().write();
+        tx = planSession.writeTransaction();
     }
 
     @After
@@ -687,7 +687,7 @@ public class ResolutionPlanIT {
         return query.getAtoms(grakn.core.kb.reasoner.atom.Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
-    private grakn.core.kb.reasoner.atom.Atom getAtomOfType(ReasonerQueryImpl query, String typeString, TransactionOLTP tx){
+    private grakn.core.kb.reasoner.atom.Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
         Type type = tx.getType(Label.of(typeString));
         return query.getAtoms(grakn.core.kb.reasoner.atom.Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }

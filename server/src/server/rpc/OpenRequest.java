@@ -18,8 +18,8 @@
 
 package grakn.core.server.rpc;
 
+import grakn.core.kb.Session;
 import grakn.protocol.session.SessionProto;
-import grakn.core.server.session.Session;
 
 /**
  * A request transaction opener for RPC Services

@@ -24,7 +24,7 @@ import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.planning.spanningtree.graph.Node;
 import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.spanningtree.graph.SchemaNode;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -37,15 +37,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
-import static grakn.core.kb.Schema.BaseType.RELATION_TYPE;
-import static grakn.core.kb.Schema.EdgeLabel.ATTRIBUTE;
-import static grakn.core.kb.Schema.EdgeLabel.ISA;
-import static grakn.core.kb.Schema.EdgeLabel.PLAYS;
-import static grakn.core.kb.Schema.EdgeLabel.RELATES;
-import static grakn.core.kb.Schema.EdgeLabel.SHARD;
-import static grakn.core.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
-import static grakn.core.kb.Schema.VertexProperty.IS_IMPLICIT;
-import static grakn.core.kb.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.core.Schema.BaseType.RELATION_TYPE;
+import static grakn.core.core.Schema.EdgeLabel.ATTRIBUTE;
+import static grakn.core.core.Schema.EdgeLabel.ISA;
+import static grakn.core.core.Schema.EdgeLabel.PLAYS;
+import static grakn.core.core.Schema.EdgeLabel.RELATES;
+import static grakn.core.core.Schema.EdgeLabel.SHARD;
+import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
+import static grakn.core.core.Schema.VertexProperty.IS_IMPLICIT;
+import static grakn.core.core.Schema.VertexProperty.LABEL_ID;
 
 /**
  * A fragment representing traversing an isa edge from type to instance.
@@ -62,7 +62,7 @@ public abstract class InIsaFragment extends EdgeFragment {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
 
         GraphTraversal<Vertex, Vertex> vertexTraversal = Fragments.isVertex(traversal);
 

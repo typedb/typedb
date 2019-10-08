@@ -22,6 +22,7 @@ package grakn.core.server.session;
 import grakn.core.concept.api.LabelId;
 import grakn.core.core.Schema;
 import grakn.core.server.session.computer.GraknSparkComputer;
+import grakn.core.kb.TransactionAnalytics;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -50,7 +51,7 @@ import java.util.stream.Collectors;
  * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  */
-public class TransactionOLAP {
+public class TransactionOLAP implements TransactionAnalytics {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputerClass;
     private GraphComputer graphComputer = null;
@@ -61,6 +62,7 @@ public class TransactionOLAP {
         this.graphComputerClass = GraknSparkComputer.class;
     }
 
+    @Override
     @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
@@ -82,12 +84,14 @@ public class TransactionOLAP {
         }
     }
 
+    @Override
     @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types) {
         return compute(program, mapReduce, types, true);
     }
 
+    @Override
     public void killJobs() {
         if (graphComputer != null && graphComputerClass.equals(GraknSparkComputer.class)) {
             ((GraknSparkComputer) graphComputer).cancelJobs();

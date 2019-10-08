@@ -37,7 +37,7 @@ import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.Set;
 
-public class DataTypeExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class DataTypeExecutor implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final DataTypeProperty property;

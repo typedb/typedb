@@ -28,8 +28,8 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +40,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class UncomittedStatisticsDeltaIT {
     private Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -48,13 +48,13 @@ public class UncomittedStatisticsDeltaIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -161,7 +161,7 @@ public class UncomittedStatisticsDeltaIT {
         ConceptId id3 = personType.create().id();
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         // test concept API deletion
         tx.getConcept(id1).delete();
 
@@ -188,7 +188,7 @@ public class UncomittedStatisticsDeltaIT {
 
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         // test concept API deletion
         tx.getConcept(id1).delete();
 
@@ -210,7 +210,7 @@ public class UncomittedStatisticsDeltaIT {
         }
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         // test ConceptAPI deletion
         tx.getConcept(lastAttributeId).delete();
 
@@ -237,7 +237,7 @@ public class UncomittedStatisticsDeltaIT {
 
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // test ConceptAPI deletion
         tx.getConcept(age2Id).delete();

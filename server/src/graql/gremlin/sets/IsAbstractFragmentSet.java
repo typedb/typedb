@@ -34,7 +34,7 @@ import static grakn.core.graql.gremlin.fragment.Fragments.isAbstract;
  *
  */
 @AutoValue
-abstract class IsAbstractFragmentSet extends EquivalentFragmentSet {
+abstract class IsAbstractFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {

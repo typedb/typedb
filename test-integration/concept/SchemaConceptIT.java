@@ -28,11 +28,11 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.rule.GraknTestServer;
-import server.src.server.exception.TransactionException;
-import grakn.core.kb.Schema;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.core.Schema;
 import concept.structure.EdgeElement;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Assert;
@@ -59,13 +59,13 @@ public class SchemaConceptIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

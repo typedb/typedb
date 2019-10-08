@@ -35,7 +35,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class IdExecutor extends PropertyExecutorImpl implements PropertyExecutor.Referrable {
+public class IdExecutor  implements PropertyExecutor.Referrable {
 
     private final Variable var;
     private final IdProperty property;

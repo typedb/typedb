@@ -22,8 +22,8 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
@@ -58,13 +58,13 @@ public class ReachabilityGraph {
     }
 
     public final void load(int n) {
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, TransactionOLTP tx) {
+    protected void buildExtensionalDB(int n, Transaction tx) {
         EntityType vertex = tx.getEntityType("vertex");
         EntityType node = tx.getEntityType("node");
         Role from = tx.getRole("from");

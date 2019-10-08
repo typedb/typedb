@@ -37,7 +37,7 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.labelOf;
  *
  */
 @AutoValue
-abstract class IsaFragmentSet extends EquivalentFragmentSet {
+abstract class IsaFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {

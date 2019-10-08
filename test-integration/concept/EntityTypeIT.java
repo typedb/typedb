@@ -29,12 +29,12 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.PropertyNotUniqueException;
-import server.src.server.exception.TransactionException;
-import grakn.core.kb.Schema;
+import grakn.core.kb.exception.PropertyNotUniqueException;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.core.Schema;
 import grakn.core.concept.structure.Shard;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
@@ -67,13 +67,13 @@ public class EntityTypeIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         EntityType top = tx.putEntityType("top");
         EntityType middle1 = tx.putEntityType("mid1");
         EntityType middle2 = tx.putEntityType("mid2");

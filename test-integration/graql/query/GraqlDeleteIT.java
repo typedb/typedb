@@ -34,9 +34,9 @@ import grakn.core.concept.api.SchemaConcept;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Schema;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
@@ -80,7 +80,7 @@ public class GraqlDeleteIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     public static Session session;
-    public TransactionOLTP tx;
+    public Transaction tx;
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
@@ -98,7 +98,7 @@ public class GraqlDeleteIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         kurtz = Graql.match(x.has("name", "Colonel Walter E. Kurtz"));
         marlonBrando = Graql.match(x.has("name", "Marlon Brando"));
@@ -256,7 +256,7 @@ public class GraqlDeleteIT {
         assertFalse(checkIdExists(tx, id));
     }
 
-    private boolean checkIdExists(TransactionOLTP tx, ConceptId id) {
+    private boolean checkIdExists(Transaction tx, ConceptId id) {
         boolean exists;
         try {
             exists = !tx.execute(Graql.match(var().id(id.getValue()))).isEmpty();
@@ -296,7 +296,7 @@ public class GraqlDeleteIT {
         */
 
         Session session = graknServer.sessionWithNewKeyspace();
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
 
         tx.execute(Graql.parse("define" +
                 "    unique-key sub attribute, datatype long;" +
@@ -317,7 +317,7 @@ public class GraqlDeleteIT {
                 "    @has-region-code key unique-key;").asDefine());
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         List<ConceptMap> answers = tx.execute(Graql.parse("insert" +
                 "      $intersection1 (endpoint: $r1, endpoint: $r2, endpoint: $r3) isa intersection, has unique-key $k1, has region-code $rc via $imp1; $k1 -128;" +
@@ -334,7 +334,7 @@ public class GraqlDeleteIT {
         List<ConceptId> insertedIds = answers.stream().flatMap(conceptMap -> conceptMap.concepts().stream()).map(Concept::id).collect(Collectors.toList());
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         List<Pattern> idPatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
@@ -352,7 +352,7 @@ public class GraqlDeleteIT {
     @Test
     public void deleteRelationWithReifiedImplicitWithAttribute() {
         Session session = graknServer.sessionWithNewKeyspace();
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
 
         AttributeType<String> name = tx.putAttributeType("name", AttributeType.DataType.STRING);
         AttributeType<Long> year = tx.putAttributeType("year", AttributeType.DataType.LONG);
@@ -371,7 +371,7 @@ public class GraqlDeleteIT {
 
         List<ConceptId> insertedIds = answers.flatMap(conceptMap -> conceptMap.concepts().stream().map(Concept::id)).collect(Collectors.toList());
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         List<Pattern> idPatterns = new ArrayList<>();
         for (int i = 0; i < insertedIds.size(); i++) {
@@ -387,7 +387,7 @@ public class GraqlDeleteIT {
     @Test
     public void deleteRelation_AttributeOwnershipsDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
 
         Role author = tx.putRole("author");
         Role work = tx.putRole("work");
@@ -405,7 +405,7 @@ public class GraqlDeleteIT {
         ConceptId relationId = aRelation.id();
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         aProvenance = tx.getAttributesByValue("hello").iterator().next();
         assertTrue(aProvenance.type().label().toString().equals("provenance"));
@@ -421,7 +421,7 @@ public class GraqlDeleteIT {
     @Test
     public void deleteLastRolePlayer_RelationAndAttrOwnershipIsRemoved() {
         Session session = graknServer.sessionWithNewKeyspace();
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
 
         Role author = tx.putRole("author");
         Role work = tx.putRole("work");
@@ -440,7 +440,7 @@ public class GraqlDeleteIT {
         ConceptId relationId = aRelation.id();
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         aProvenance = tx.getAttributesByValue("hello").iterator().next();
         assertTrue(aProvenance.type().label().toString().equals("provenance"));
@@ -528,14 +528,14 @@ public class GraqlDeleteIT {
     public void whenLimitingDelete_CorrectNumberAreDeleted() {
         Session session = graknServer.sessionWithNewKeyspace();
         // load some schema and data
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define person sub entity;").asDefine());
             tx.execute(Graql.parse("insert $x isa person; $y isa person; $z isa person; $a isa person; $b isa person;").asInsert());
             tx.commit();
         }
 
         // try and delete two of the five
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             List<ConceptSet> deleted = tx.execute(Graql.parse("match $x isa person; delete $x; limit 2;").asDelete());
             long conceptsDeleted = deleted.stream().flatMap(conceptSet -> conceptSet.set().stream()).count();
             assertEquals(2, conceptsDeleted);

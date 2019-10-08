@@ -29,7 +29,6 @@ import grakn.core.kb.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.planning.spanningtree.util.Weighted;
 import grakn.core.kb.planning.Fragment;
 import grakn.core.kb.Transaction;
-import grakn.core.server.session.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

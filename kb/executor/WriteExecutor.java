@@ -20,6 +20,7 @@
 package grakn.core.kb.executor;
 
 import grakn.core.kb.GraqlSemanticException;
+import grakn.core.kb.Transaction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import grakn.core.concept.api.Concept;
@@ -59,6 +60,8 @@ public interface WriteExecutor {
      * their PropertyExecutor#requiredVars().
      */
     Concept getConcept(Variable var);
+
+    Transaction tx();
 
     boolean isConceptDefined(Variable var);
 

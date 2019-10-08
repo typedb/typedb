@@ -21,7 +21,6 @@ package grakn.core.kb.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.kb.reasoner.ResolutionIterator;
 import grakn.core.kb.reasoner.query.ResolvableQuery;
 import grakn.core.kb.reasoner.unifier.UnifierImpl;
 import org.slf4j.Logger;

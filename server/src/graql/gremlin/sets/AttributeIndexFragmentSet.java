@@ -26,7 +26,7 @@ import grakn.core.concept.api.Label;
 import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.Fragment;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -51,7 +51,7 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOf
  *
  */
 @AutoValue
-abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
+abstract class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
 
     static AttributeIndexFragmentSet of(Variable var, Label label, Object value) {
         return new AutoValue_AttributeIndexFragmentSet(var, label, value);
@@ -99,7 +99,7 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSet {
     };
 
     private static void optimise(
-            TransactionOLTP tx, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
+            Transaction tx, Collection<EquivalentFragmentSet> fragmentSets, ValueFragmentSet valueSet, IsaFragmentSet isaSet,
             Label label
     ) {
         // Remove fragment sets we are going to replace

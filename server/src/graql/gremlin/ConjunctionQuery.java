@@ -21,6 +21,7 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.kb.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
@@ -32,6 +33,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.executor.property.PropertyExecutorFactory;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -129,10 +131,11 @@ class ConjunctionQuery {
     private static Stream<EquivalentFragmentSet> equivalentFragmentSets(Statement statement) {
         Collection<EquivalentFragmentSet> traversals = new HashSet<>();
 
+        PropertyExecutorFactory propertyExecutorFactory = new PropertyExecutorFactoryImpl();
         Variable start = statement.var();
 
         statement.properties().stream().forEach(property -> {
-            Collection<EquivalentFragmentSet> newTraversals = PropertyExecutor.create(start, property).matchFragments();
+            Collection<EquivalentFragmentSet> newTraversals = propertyExecutorFactory.create(start, property).matchFragments();
             traversals.addAll(newTraversals);
         });
 

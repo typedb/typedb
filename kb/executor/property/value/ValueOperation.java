@@ -22,7 +22,7 @@ package grakn.core.kb.executor.property.value;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.core.Schema;
-import grakn.core.concept.impl.Serialiser;
+import grakn.core.kb.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import java.util.ArrayList;

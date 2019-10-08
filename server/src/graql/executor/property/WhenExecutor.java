@@ -33,7 +33,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class WhenExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class WhenExecutor  implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final WhenProperty property;

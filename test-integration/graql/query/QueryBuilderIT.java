@@ -21,8 +21,8 @@ package grakn.core.graql.query;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;
@@ -52,7 +52,7 @@ public class QueryBuilderIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     private static Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -62,7 +62,7 @@ public class QueryBuilderIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

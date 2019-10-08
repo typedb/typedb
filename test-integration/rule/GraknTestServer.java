@@ -24,7 +24,7 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.server.GraknStorage;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
-import grakn.core.server.keyspace.Keyspace;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceRequestsHandler;
 import grakn.core.server.rpc.KeyspaceService;
@@ -35,7 +35,7 @@ import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
-import grakn.core.server.session.Session;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
@@ -134,16 +134,16 @@ public class GraknTestServer extends ExternalResource {
         return serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME) + ":" + serverConfig.getProperty(ConfigKey.GRPC_PORT);
     }
 
-    public Session sessionWithNewKeyspace() {
-        Keyspace randomKeyspace = randomKeyspaceName();
+    public SessionImpl sessionWithNewKeyspace() {
+        KeyspaceImpl randomKeyspace = randomKeyspaceName();
         return session(randomKeyspace);
     }
 
-    public Keyspace randomKeyspaceName() {
-        return Keyspace.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
+    public KeyspaceImpl randomKeyspaceName() {
+        return new KeyspaceImpl("a" + UUID.randomUUID().toString().replaceAll("-", ""));
     }
 
-    public Session session(Keyspace keyspace) {
+    public SessionImpl session(KeyspaceImpl keyspace) {
         return sessionFactory.session(keyspace);
     }
 

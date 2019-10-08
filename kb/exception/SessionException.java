@@ -17,7 +17,7 @@
  *
  */
 
-package server.src.server.exception;
+package grakn.core.kb.exception;
 
 import grakn.core.common.exception.GraknException;
 

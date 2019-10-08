@@ -33,7 +33,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class ThenExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
+public class ThenExecutor  implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final ThenProperty property;

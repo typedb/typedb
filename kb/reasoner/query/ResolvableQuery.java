@@ -20,8 +20,8 @@
 package grakn.core.kb.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.planning.TraversalPlanFactory;
+import grakn.core.kb.reasoner.ResolutionIterator;
 import grakn.core.kb.reasoner.atom.Atom;
 import grakn.core.kb.reasoner.state.AnswerPropagatorState;
 import grakn.core.kb.reasoner.state.ResolutionState;
@@ -127,9 +127,9 @@ public interface ResolvableQuery extends ReasonerQuery {
         boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
             TraversalPlanFactory planFactory = tx().traversalPlanFactory();
-            tx().executor().traverse(getPattern(), planFactory.createTraversal(getPattern()));
+            return tx().executor().traverse(getPattern(), planFactory.createTraversal(getPattern()));
         } else {
-            new ResolutionIterator(this, subGoals).hasStream();
+            return new ResolutionIterator(this, subGoals).hasStream();
         }
     }
 

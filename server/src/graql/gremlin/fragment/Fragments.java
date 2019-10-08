@@ -25,7 +25,7 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.kb.executor.property.value.ValueOperation;
 import grakn.core.kb.planning.Fragment;
-import grakn.core.kb.Schema;
+import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -38,9 +38,9 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Set;
 
-import static grakn.core.kb.Schema.EdgeLabel.SUB;
-import static grakn.core.kb.Schema.VertexProperty.LABEL_ID;
-import static grakn.core.kb.Schema.VertexProperty.THING_TYPE_LABEL_ID;
+import static grakn.core.core.Schema.EdgeLabel.SUB;
+import static grakn.core.core.Schema.VertexProperty.LABEL_ID;
+import static grakn.core.core.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static java.util.stream.Collectors.joining;
 
 /**

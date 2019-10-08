@@ -38,7 +38,7 @@ import grakn.core.kb.planning.Fragment;
 import grakn.core.kb.planning.GraqlTraversal;
 import grakn.core.kb.Transaction;
 import grakn.core.kb.planning.TraversalPlanFactory;
-import grakn.core.server.exception.GraknServerException;
+import grakn.core.kb.exception.GraknServerException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -63,7 +63,7 @@ import java.util.stream.Collectors;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
-import static grakn.core.graql.gremlin.fragment.Fragment.SHARD_LOAD_FACTOR;
+import static grakn.core.kb.planning.Fragment.SHARD_LOAD_FACTOR;
 
 /**
  * Class for generating greedy traversal plans

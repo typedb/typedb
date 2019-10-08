@@ -18,8 +18,8 @@
 
 package grakn.core.kb.reasoner.graph;
 
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
 
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeSymmetricGraph extends PathTreeGraph {
@@ -29,7 +29,7 @@ public class PathTreeSymmetricGraph extends PathTreeGraph {
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int children, TransactionOLTP tx) {
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
         buildTree("coordinate", "coordinate", n , children, tx);
     }
 }

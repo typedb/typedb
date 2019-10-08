@@ -49,7 +49,7 @@ public class GraknApplicationTest {
     @Test
     public void testDeployment() {
         try (Session session = graknClient.session("grakn")) {
-            try (GraknClient.Transaction tx = session.transaction().write()) {
+            try (GraknClient.Transaction tx = session.writeTransaction()) {
                 List<ConceptMap> result = tx.execute(Graql.match(Graql.var("t").sub("thing")).get());
                 assertTrue(result.size() > 0);
             }
@@ -59,11 +59,11 @@ public class GraknApplicationTest {
     @Test
     public void testComputeQuery() {
         try (Session session = graknClient.session("computetest")) {
-            GraknClient.Transaction tx = session.transaction().write();
+            GraknClient.Transaction tx = session.writeTransaction();
             tx.execute(Graql.parse("define person sub entity;").asDefine());
             tx.execute(Graql.parse("insert $x isa person;").asInsert());
             tx.commit();
-            tx = session.transaction().write();
+            tx = session.writeTransaction();
             List<Numeric> countResult = tx.execute(Graql.parse("compute count;").asComputeStatistics());
             assertEquals(1, countResult.get(0).number().intValue());
         }

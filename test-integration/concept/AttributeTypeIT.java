@@ -23,9 +23,10 @@ import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.EntityType;
 import grakn.core.rule.GraknTestServer;
-import server.src.server.exception.TransactionException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.Session;
+import grakn.core.server.session.SessionImpl;
+import grakn.core.kb.Transaction;
 import graql.lang.Graql;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;
@@ -53,13 +54,13 @@ public class AttributeTypeIT {
     public final ExpectedException expectedException = ExpectedException.none();
 
 
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         attributeType = tx.putAttributeType("Attribute Type", AttributeType.DataType.STRING);
     }
 
@@ -175,8 +176,8 @@ public class AttributeTypeIT {
         // get the local time (without timezone)
         LocalDateTime rightNow = LocalDateTime.now();
         // now add the timezone to the graph
-        try (Session session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP graph = session.transaction().write()) {
+        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+            try (Transaction graph = session.writeTransaction()) {
                 AttributeType<LocalDateTime> aTime = graph.putAttributeType("aTime", AttributeType.DataType.DATE);
                 aTime.create(rightNow);
                 graph.commit();
@@ -184,7 +185,7 @@ public class AttributeTypeIT {
             // offset the time to GMT where the colleague is working
             TimeZone.setDefault(TimeZone.getTimeZone("GMT"));
             // the colleague extracts the LocalTime which should be the same
-            try (TransactionOLTP graph = session.transaction().write()) {
+            try (Transaction graph = session.writeTransaction()) {
                 AttributeType aTime = graph.getAttributeType("aTime");
                 LocalDateTime databaseTime = (LocalDateTime) ((Attribute) aTime.instances().iterator().next()).value();
 
@@ -204,7 +205,7 @@ public class AttributeTypeIT {
         person.create().has(attribute);
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.execute(Graql.parse("match $x isa @has-attribute; get;").asGet());
         tx.execute(Graql.parse("match $x isa @has-value; get;").asGet());
         tx.execute(Graql.parse("match (@has-value-value: $attr, @has-value-owner: $person) isa @has-value; get;").asGet());
@@ -219,7 +220,7 @@ public class AttributeTypeIT {
         person.create().has(attribute);
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.execute(Graql.parse("match $x isa @has-attribute; get;").asGet());
         tx.execute(Graql.parse("match $x isa @has-owner; get;").asGet());
         tx.execute(Graql.parse("match (@has-owner-value: $attr, @has-owner-owner: $person) isa @has-owner; get;").asGet());
