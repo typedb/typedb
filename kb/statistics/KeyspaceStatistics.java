@@ -21,14 +21,13 @@ package grakn.core.kb.statistics;
 
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.Label;
-import grakn.core.core.Schema;
+import grakn.core.concept.api.Type;
 import grakn.core.kb.Transaction;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 
 /**
@@ -92,9 +91,9 @@ public class KeyspaceStatistics {
             // don't change the value, just use `.compute()` for atomic and locking vertex write
             instanceCountsCache.compute(label, (lab, count) -> {
                 Concept schemaConcept = tx.getSchemaConcept(lab);
-                if (schemaConcept != null) {
-                    Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-                    janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
+                if (schemaConcept != null && schemaConcept.isType()) {
+                    Type conceptAsType = schemaConcept.asType();
+                    conceptAsType.writeCount(count);
                 }
                 return count;
             });
@@ -107,11 +106,9 @@ public class KeyspaceStatistics {
      */
     private long retrieveCountFromVertex(Transaction tx, Label label) {
         Concept schemaConcept = tx.getSchemaConcept(label);
-        if (schemaConcept != null) {
-            Vertex janusVertex = ConceptVertex.from(schemaConcept).vertex().element();
-            VertexProperty<Object> property = janusVertex.property(Schema.VertexProperty.INSTANCE_COUNT.name());
-            // VertexProperty is similar to a Java Optional
-            return (Long) property.orElse(0L);
+        if (schemaConcept != null && schemaConcept.isType()) {
+            Type conceptAsType = schemaConcept.asType();
+            return conceptAsType.getCount();
         } else {
             // if the schema concept is NULL, it doesn't exist! While it shouldn't pass validation, if we can use it to
             // short circuit then it's a good starting point

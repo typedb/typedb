@@ -438,4 +438,13 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         // players or play roles.
     }
 
+    @Override
+    public Long getCount() {
+        return vertex().property(Schema.VertexProperty.INSTANCE_COUNT.name()).orElse(0L);
+    }
+
+    public void writeCount(Long count) {
+        vertex().property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
+    }
+
 }

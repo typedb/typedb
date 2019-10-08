@@ -109,6 +109,7 @@ public interface SchemaConcept extends Concept {
     @CheckReturnValue
     Stream<Rule> thenRules();
 
+
     //------------------------------------- Other ---------------------------------
     @Deprecated
     @CheckReturnValue

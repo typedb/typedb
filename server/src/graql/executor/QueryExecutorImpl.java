@@ -22,6 +22,7 @@ package grakn.core.graql.executor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grakn.core.common.util.LazyMergingStream;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -32,17 +33,19 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.impl.ConceptManagerImpl;
-import grakn.core.kb.Transaction;
-import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.kb.executor.property.PropertyExecutorFactory;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.common.util.LazyMergingStream;
 import grakn.core.kb.GraqlSemanticException;
+import grakn.core.kb.Transaction;
+import grakn.core.kb.exception.GraknServerException;
+import grakn.core.kb.executor.QueryExecutor;
+import grakn.core.kb.executor.property.PropertyExecutor;
 import grakn.core.kb.planning.GraqlTraversal;
 import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.kb.reasoner.ReasonerCheckedException;
 import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.exception.GraknServerException;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -60,7 +63,6 @@ import graql.lang.query.MatchClause;
 import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.executor.QueryExecutor;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -96,6 +98,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     private final boolean infer;
     private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
+    private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
     public QueryExecutorImpl(Transaction transaction, ConceptManagerImpl conceptManager, boolean infer) {
@@ -104,6 +107,8 @@ public class QueryExecutorImpl implements QueryExecutor {
         this.transaction = transaction;
 
         traversalPlanFactory = new TraversalPlanFactoryImpl(transaction);
+
+        propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
 
     @Override
@@ -266,7 +271,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         for (Statement statement : statements) {
             for (VarProperty property : statement.properties()) {
-                executors.addAll(PropertyExecutor.definable(statement.var(), property).defineExecutors());
+                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).defineExecutors());
             }
         }
 
@@ -282,7 +287,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
         for (Statement statement : statements) {
             for (VarProperty property : statement.properties()) {
-                executors.addAll(PropertyExecutor.definable(statement.var(), property).undefineExecutors());
+                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
             }
         }
         return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
@@ -299,7 +304,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
         for (Statement statement : statements) {
             for (VarProperty property : statement.properties()) {
-                executors.addAll(PropertyExecutor.insertable(statement.var(), property).insertExecutors());
+                executors.addAll(propertyExecutorFactory.insertable(statement.var(), property).insertExecutors());
             }
         }
 

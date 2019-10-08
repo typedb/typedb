@@ -154,6 +154,20 @@ public interface Type extends SchemaConcept {
      */
     Type unkey(AttributeType attributeType);
 
+
+    /**
+     * Retrieve the number of instances that is saved as a property on this concept
+     * @return
+     */
+    Long getCount();
+
+    /**
+     * Store the number of instances that is saved as a property on this concept
+     * @return
+     */
+    void writeCount(Long count);
+
+
     @Deprecated
     @CheckReturnValue
     @Override
