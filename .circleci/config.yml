@@ -17,6 +17,8 @@
 #
 
 version: 2.1
+orbs:
+  win: circleci/windows@2.0.0
 commands:
   install-bazel-linux-rbe:
     steps:
@@ -151,13 +153,14 @@ jobs:
           destination: logs/cassandra.log
 
   test-assembly-windows-zip:
-    machine: true
+    executor:
+      name: win/default
+      shell: cmd.exe
     working_directory: ~/grakn
     steps:
       - checkout
-      - run:
-          command: test/assembly/windows/windows-zip.py
-          no_output_timeout: 20m
+      - run: .circleci\windows\prepare.bat
+      - run: .circleci\windows\test-assembly.bat
 
   test-assembly-linux-targz:
     machine: true
