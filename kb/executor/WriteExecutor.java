@@ -19,6 +19,7 @@
 
 package grakn.core.kb.executor;
 
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.GraqlSemanticException;
 import grakn.core.kb.Transaction;
 import graql.lang.statement.Statement;
@@ -60,6 +61,8 @@ public interface WriteExecutor {
      * their PropertyExecutor#requiredVars().
      */
     Concept getConcept(Variable var);
+
+    ConceptMap write(ConceptMap preExisting);
 
     Transaction tx();
 

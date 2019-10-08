@@ -26,6 +26,7 @@ import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
 import grakn.core.core.Casting;
 import grakn.core.kb.Transaction;
+import grakn.core.server.kb.ValidateGlobalRules;
 
 import java.util.ArrayList;
 import java.util.List;

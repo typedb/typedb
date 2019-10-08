@@ -43,25 +43,33 @@ import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Thing;
+import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.concept.exception.GraknElementException;
 import grakn.core.concept.impl.ConceptImpl;
 import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
-import grakn.core.kb.executor.QueryExecutor;
-import grakn.core.kb.Serialiser;
 import grakn.core.concept.impl.TypeImpl;
+import grakn.core.concept.structure.PropertyNotUniqueException;
+import grakn.core.core.Schema;
+import grakn.core.core.VertexElement;
 import grakn.core.graql.executor.QueryExecutorImpl;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.InvalidKBException;
+import grakn.core.kb.Serialiser;
+import grakn.core.kb.Session;
 import grakn.core.kb.Transaction;
 import grakn.core.kb.Validator;
 import grakn.core.kb.cache.CacheProvider;
 import grakn.core.kb.cache.RuleCache;
 import grakn.core.kb.cache.TransactionCache;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.executor.QueryExecutor;
+import grakn.core.kb.keyspace.Keyspace;
 import grakn.core.kb.planning.TraversalPlanFactory;
 import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.statistics.UncomittedStatisticsDelta;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -72,7 +80,6 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import grakn.core.kb.Session;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -85,7 +92,6 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import grakn.core.core.Schema;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
@@ -287,7 +293,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public KeyspaceImpl keyspace() {
+    public Keyspace keyspace() {
         return session.keyspace();
     }
 
@@ -568,6 +574,7 @@ public class TransactionOLTP implements Transaction {
      *
      * @return the number of instances a grakn.core.concept.api.Type must have before it is shareded
      */
+    @Override
     public long shardingThreshold() {
         return typeShardThreshold;
     }
@@ -746,9 +753,9 @@ public class TransactionOLTP implements Transaction {
             //These checks is needed here because caching will return a type by label without checking the datatype
 
             if (Schema.MetaSchema.isMetaLabel(label)) {
-                throw TransactionException.metaTypeImmutable(label);
+                throw GraknConceptException.metaTypeImmutable(label);
             } else if (!dataType.equals(attributeType.dataType())) {
-                throw TransactionException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
+                throw GraknElementException.immutableProperty(attributeType.dataType(), dataType, Schema.VertexProperty.DATA_TYPE);
             }
         }
 
@@ -1008,8 +1015,8 @@ public class TransactionOLTP implements Transaction {
     /**
      * Close the transaction without committing
      */
-
-    void close(String closeMessage) {
+    @Override
+    public void close(String closeMessage) {
         if (!isOpen()) {
             return;
         }
@@ -1127,7 +1134,7 @@ public class TransactionOLTP implements Transaction {
      * @param concept The grakn.core.concept.api.Type which may contain some shards.
      * @return the number of Shards the grakn.core.concept.api.Type currently has.
      */
-    public long getShardCount(Type concept) {
+    public long getShardCount(grakn.core.concept.api.Type concept) {
         return TypeImpl.from(concept).shardCount();
     }
 
@@ -1164,10 +1171,10 @@ public class TransactionOLTP implements Transaction {
 
     // ----------- Exposed low level methods that should not be exposed here TODO refactor
     void createMetaConcepts() {
-        grakn.core.concept.structure.VertexElementImpl type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
-        grakn.core.concept.structure.VertexElementImpl entityType = conceptManager.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
-        grakn.core.concept.structure.VertexElementImpl relationType = conceptManager.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
-        grakn.core.concept.structure.VertexElementImpl resourceType = conceptManager.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
+        VertexElement type = conceptManager.addTypeVertex(Schema.MetaSchema.THING.getId(), Schema.MetaSchema.THING.getLabel(), Schema.BaseType.TYPE);
+        VertexElement entityType = conceptManager.addTypeVertex(Schema.MetaSchema.ENTITY.getId(), Schema.MetaSchema.ENTITY.getLabel(), Schema.BaseType.ENTITY_TYPE);
+        VertexElement relationType = conceptManager.addTypeVertex(Schema.MetaSchema.RELATION.getId(), Schema.MetaSchema.RELATION.getLabel(), Schema.BaseType.RELATION_TYPE);
+        VertexElement resourceType = conceptManager.addTypeVertex(Schema.MetaSchema.ATTRIBUTE.getId(), Schema.MetaSchema.ATTRIBUTE.getLabel(), Schema.BaseType.ATTRIBUTE_TYPE);
         conceptManager.addTypeVertex(Schema.MetaSchema.ROLE.getId(), Schema.MetaSchema.ROLE.getLabel(), Schema.BaseType.ROLE);
         conceptManager.addTypeVertex(Schema.MetaSchema.RULE.getId(), Schema.MetaSchema.RULE.getLabel(), Schema.BaseType.RULE);
 
@@ -1191,9 +1198,16 @@ public class TransactionOLTP implements Transaction {
         return conceptManager;
     }
 
+
+
     @Override
     public TraversalPlanFactory traversalPlanFactory() {
         return new TraversalPlanFactoryImpl(this);
+    }
+
+    @Override
+    public grakn.core.kb.executor.property.PropertyExecutorFactory propertyExecutorFactory() {
+        return new PropertyExecutorFactoryImpl();
     }
 
 }

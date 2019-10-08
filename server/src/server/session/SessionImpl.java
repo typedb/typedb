@@ -36,6 +36,7 @@ import grakn.core.kb.statistics.KeyspaceStatistics;
 import grakn.core.kb.statistics.UncomittedStatisticsDelta;
 import grakn.core.kb.Transaction;
 import grakn.core.kb.Session;
+import grakn.core.kb.keyspace.Keyspace;
 import grakn.core.kb.TransactionAnalytics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -226,8 +227,9 @@ public class SessionImpl implements AutoCloseable, Session {
      * Method used by SessionFactory to invalidate current Session when the keyspace (used by current session) is deleted.
      * This closes current session and local transaction, without invoking callback function.
      */
-    void invalidate() {
-        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+    @Override
+    public void invalidate() {
+        Transaction localTx = localOLTPTransactionContainer.get();
         if (localTx != null) {
             localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             localOLTPTransactionContainer.set(null);
@@ -245,7 +247,7 @@ public class SessionImpl implements AutoCloseable, Session {
             return;
         }
 
-        TransactionOLTP localTx = localOLTPTransactionContainer.get();
+        Transaction localTx = localOLTPTransactionContainer.get();
         if (localTx != null) {
             localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
             localOLTPTransactionContainer.set(null);
@@ -258,7 +260,8 @@ public class SessionImpl implements AutoCloseable, Session {
         isClosed = true;
     }
 
-    public KeyspaceImpl keyspace() {
+    @Override
+    public Keyspace keyspace() {
         return keyspace;
     }
 

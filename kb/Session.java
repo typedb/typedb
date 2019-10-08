@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.kb.statistics.KeyspaceStatistics;
 import grakn.core.kb.TransactionAnalytics;
+import grakn.core.kb.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import java.util.function.Consumer;
@@ -53,6 +54,10 @@ public interface Session {
      * This closes current session and local transaction, invoking callback function if one is set.
      **/
     void close();
+
+    void invalidate();
+
+    Keyspace keyspace();
 
     KeyspaceStatistics keyspaceStatistics();
 

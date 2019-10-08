@@ -19,7 +19,6 @@
 
 package grakn.core.concept.impl;
 
-import com.sun.xml.internal.messaging.saaj.soap.impl.ElementFactory;
 import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
@@ -44,6 +43,7 @@ import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+import grakn.core.concept.structure.ElementFactory;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;

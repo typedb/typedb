@@ -19,5 +19,38 @@
 
 package grakn.core.core;
 
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.api.Role;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Relation;
+
 public interface Casting {
+
+    EdgeElement edge();
+
+    /**
+     * @return The Role the Thing is playing
+     */
+    Role getRole();
+
+    /**
+     * @return The RelationType the Thing is taking part in
+     */
+    RelationType getRelationType();
+
+    /**
+     * @return The Relation which is linking the Role and the instance
+     */
+    Relation getRelation();
+
+    /**
+     * @return The Thing playing the Role
+     */
+    Thing getRolePlayer();
+
+    /**
+     * Deletes this Casting effectively removing a Thing from playing a Role in a Relation
+     */
+    void delete();
+
 }

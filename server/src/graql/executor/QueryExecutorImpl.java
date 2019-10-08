@@ -275,7 +275,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
-        return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
+        return WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap());
     }
 
     @Override
@@ -290,7 +290,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
             }
         }
-        return WriteExecutor.create(transaction, executors.build()).write(new ConceptMap());
+        return WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap());
     }
 
     @Override
@@ -323,10 +323,10 @@ public class QueryExecutorImpl implements QueryExecutor {
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
             answerStream = answers
-                    .map(answer -> WriteExecutor.create(transaction, executors.build()).write(answer))
+                    .map(answer -> WriteExecutorImpl.create(transaction, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            answerStream = Stream.of(WriteExecutor.create(transaction, executors.build()).write(new ConceptMap()));
+            answerStream = Stream.of(WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap()));
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);

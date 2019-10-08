@@ -313,7 +313,7 @@ public interface Transaction extends AutoCloseable {
      * @throws TransactionException if the graph is closed
      * @throws ClassCastException   if the type is not an instance of T
      */
-    <T extends Type> T getType(Label label);
+    <T extends grakn.core.concept.api.Type> T getType(Label label);
 
     /**
      * @param label A unique label which identifies the Entity Type in the graph.
@@ -354,6 +354,8 @@ public interface Transaction extends AutoCloseable {
     @Override
     void close();
 
+    void close(String closeMethod);
+
     /**
      * Commits and closes the transaction
      *
@@ -387,6 +389,8 @@ public interface Transaction extends AutoCloseable {
     QueryExecutor executor(boolean infer);
 
     PropertyExecutorFactory propertyExecutorFactory();
+
+    long shardingThreshold();
 
     /**
      * An enum that determines the type of Grakn Transaction.

@@ -40,6 +40,7 @@ import static java.util.stream.Collectors.joining;
  */
 public interface EquivalentFragmentSet extends Iterable<Fragment> {
 
+    Stream<Fragment> stream();
 
     /**
      * @return a set of fragments that this EquivalentFragmentSet contains

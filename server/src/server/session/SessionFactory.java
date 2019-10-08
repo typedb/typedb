@@ -72,7 +72,7 @@ public class SessionFactory {
      * @param keyspace The keyspace of the Session to retrieve
      * @return a new Session connecting to the provided keyspace
      */
-    public SessionImpl session(KeyspaceImpl keyspace) {
+    public Session session(KeyspaceImpl keyspace) {
         SharedKeyspaceData cacheContainer;
         StandardJanusGraph graph;
         KeyspaceSchemaCache cache;
@@ -106,7 +106,7 @@ public class SessionFactory {
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
 
-            SessionImpl session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
+            Session session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
@@ -153,7 +153,7 @@ public class SessionFactory {
      * @param session SessionImpl that is being closed
      */
     // Keep visibility to protected as this is used by KGMS
-    protected void onSessionClose(SessionImpl session) {
+    protected void onSessionClose(Session session) {
         Lock lock = lockManager.getLock(session.keyspace().name());
         lock.lock();
         try {
@@ -233,7 +233,7 @@ public class SessionFactory {
         }
 
         void invalidateSessions() {
-            sessions.forEach(SessionImpl::invalidate);
+            sessions.forEach(Session::invalidate);
         }
 
         // Keep visibility to public as this is used by KGMS

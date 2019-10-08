@@ -65,7 +65,6 @@ public class TransactionException extends GraknException {
         return unsupportedDataType(clazz.getName());
     }
 
-
     /**
      * Thrown when attempting to open a transaction which is already open
      */

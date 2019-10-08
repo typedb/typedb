@@ -36,6 +36,7 @@ public abstract class EquivalentFragmentSetImpl implements EquivalentFragmentSet
         return stream().iterator();
     }
 
+    @Override
     public Stream<Fragment> stream() {
         return fragments().stream();
     }

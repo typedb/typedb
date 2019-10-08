@@ -37,6 +37,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import grakn.core.core.Schema;
+import grakn.core.kb.executor.WriteExecutor;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -146,7 +147,7 @@ public class ConceptBuilder {
         return set(THEN, then);
     }
 
-    static ConceptBuilder of(WriteExecutor executor, Variable var) {
+    public static ConceptBuilder of(WriteExecutor executor, Variable var) {
         return new ConceptBuilder(executor, var);
     }
 
@@ -155,7 +156,7 @@ public class ConceptBuilder {
      *
      * @throws GraqlSemanticException if the properties provided are inconsistent
      */
-    Concept build() {
+    public Concept build() {
 
         // If a label or ID is provided, attempt to `get` the concept
         Concept concept = tryGetConcept();

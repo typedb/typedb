@@ -103,7 +103,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         this.dependencies = ImmutableMultimap.copyOf(executorDependency);
     }
 
-    Transaction tx() {
+    public Transaction tx() {
         return transaction;
     }
 
@@ -234,7 +234,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         return dependency;
     }
 
-    ConceptMap write(ConceptMap preExisting) {
+    public ConceptMap write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
         // time to execute writers for properties

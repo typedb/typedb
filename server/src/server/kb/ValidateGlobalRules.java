@@ -84,7 +84,7 @@ import static grakn.core.common.exception.ErrorMessage.VALIDATION_ROLE_TYPE_MISS
  * Attribute has a valid Relation to that Attribute.
  * 8. Unique Relation Validation which ensures that no duplicate Relation are created.
  */
-class ValidateGlobalRules {
+public class ValidateGlobalRules {
     private ValidateGlobalRules() {
         throw new UnsupportedOperationException();
     }
@@ -97,7 +97,7 @@ class ValidateGlobalRules {
      *
      * @return Specific errors if any are found
      */
-    static Set<String> validatePlaysAndRelatesStructure(Casting casting) {
+    public static Set<String> validatePlaysAndRelatesStructure(Casting casting) {
         Set<String> errors = new HashSet<>();
 
         //Gets here to make sure we traverse/read only once
@@ -172,7 +172,7 @@ class ValidateGlobalRules {
      * @param role The Role to validate
      * @return An error message if the relates does not have a single incoming RELATES edge
      */
-    static Optional<String> validateHasSingleIncomingRelatesEdge(Role role) {
+    public static Optional<String> validateHasSingleIncomingRelatesEdge(Role role) {
         if (!role.relations().findAny().isPresent()) {
             return Optional.of(VALIDATION_ROLE_TYPE_MISSING_RELATION_TYPE.getMessage(role.label()));
         }
@@ -183,7 +183,7 @@ class ValidateGlobalRules {
      * @param relationType The RelationType to validate
      * @return An error message if the relationTypes does not have at least 1 role
      */
-    static Optional<String> validateHasMinimumRoles(RelationType relationType) {
+    public static Optional<String> validateHasMinimumRoles(RelationType relationType) {
         if (relationType.isAbstract() || relationType.roles().iterator().hasNext()) {
             return Optional.empty();
         } else {
@@ -195,7 +195,7 @@ class ValidateGlobalRules {
      * @param relationType the RelationType to be validated
      * @return Error messages if the role type sub structure does not match the RelationType sub structure
      */
-    static Set<String> validateRelationTypesToRolesSchema(RelationType relationType) {
+    public static Set<String> validateRelationTypesToRolesSchema(RelationType relationType) {
         RelationTypeImpl superRelationType = (RelationTypeImpl) relationType.sup();
         if (Schema.MetaSchema.isMetaLabel(superRelationType.label()) || superRelationType.isAbstract()) { //If super type is a meta type no validation needed
             return Collections.emptySet();
@@ -239,7 +239,7 @@ class ValidateGlobalRules {
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
-    static Optional<String> validateInstancePlaysAllRequiredRoles(Transaction tx, Thing thing) {
+    public static Optional<String> validateInstancePlaysAllRequiredRoles(Transaction tx, Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
         while (type != null) {
@@ -274,7 +274,7 @@ class ValidateGlobalRules {
      * @param graph graph used to ensure rules are stratifiable
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */
-    static Set<String> validateRuleStratifiability(Transaction graph){
+    public static Set<String> validateRuleStratifiability(Transaction graph){
         Set<String> errors = new HashSet<>();
         List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(graph);
         if (!negativeCycles.isEmpty()){
@@ -288,7 +288,7 @@ class ValidateGlobalRules {
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    static Set<String> validateRuleIsValidClause(Transaction graph, Rule rule) {
+    public static Set<String> validateRuleIsValidClause(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
         if (patterns.size() > 1) {
@@ -321,7 +321,7 @@ class ValidateGlobalRules {
      * @param rule  the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    static Set<String> validateRuleOntologically(Transaction graph, Rule rule) {
+    public static Set<String> validateRuleOntologically(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
@@ -370,7 +370,7 @@ class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule) {
+    public static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule) {
         Set<String> errors = new HashSet<>();
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
         errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
@@ -422,7 +422,7 @@ class ValidateGlobalRules {
      *
      * @param relation The Relation to check
      */
-    static Optional<String> validateRelationHasRolePlayers(Relation relation) {
+    public static Optional<String> validateRelationHasRolePlayers(Relation relation) {
         if (!relation.rolePlayers().findAny().isPresent()) {
             return Optional.of(ErrorMessage.VALIDATION_RELATION_WITH_NO_ROLE_PLAYERS.getMessage(relation.id(), relation.type().label()));
         }
