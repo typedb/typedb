@@ -36,7 +36,9 @@ import grakn.core.core.ConceptManager;
 import grakn.core.core.EdgeElement;
 import grakn.core.core.Schema;
 import grakn.core.core.VertexElement;
+import grakn.core.kb.Serialiser;
 import grakn.core.kb.TemporaryWriteException;
+import grakn.core.kb.ValueConverter;
 import grakn.core.kb.cache.TransactionCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
@@ -140,7 +142,7 @@ public class ConceptManagerImpl implements ConceptManager {
     public <V> AttributeType createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
         VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
         vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
-        AttributeTypeImpl<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptObserver);
+        AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptObserver);
         attributeType.createShard();
         attributeType.sup(superType);
         transactionCache.cacheConcept(attributeType);
@@ -447,6 +449,7 @@ public class ConceptManagerImpl implements ConceptManager {
         return validateSchemaConcept(schemaConcept, baseType, () -> null);
     }
 
+    @Override
     public <T extends SchemaConcept> T getSchemaConcept(LabelId id) {
         if (!id.isValid()) return null;
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
@@ -536,6 +539,7 @@ public class ConceptManagerImpl implements ConceptManager {
         return buildConcept(elementFactory.buildVertexElement(vertex));
     }
 
+    @Override
     public <X extends Concept> X buildConcept(VertexElement vertexElement) {
         ConceptId conceptId = Schema.conceptId(vertexElement.element());
         Concept cachedConcept = transactionCache.getCachedConcept(conceptId);

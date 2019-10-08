@@ -21,7 +21,7 @@ package grakn.core.concept.impl;
 
 import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.exception.GraknConceptException;
-import grakn.core.concept.structure.Shard;
+import Shard;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.Concept;
@@ -30,8 +30,12 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Type;
+import VertexElementImpl;
+import grakn.core.concept.structure.Shard;
+import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.EdgeElement;
 import grakn.core.core.Schema;
+import grakn.core.core.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;
@@ -66,7 +70,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    TypeImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
@@ -154,7 +158,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
     Stream<V> instancesDirect() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SHARD)
                 .map(EdgeElement::source)
-                .map(grakn.core.concept.structure.VertexElementImpl::asShard)
+                .map(VertexElement::asShard)
                 .flatMap(Shard::links)
                 .map(shardTargetVertex -> conceptManager.buildConcept(shardTargetVertex));
     }
@@ -440,11 +444,15 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
 
     @Override
     public Long getCount() {
-        return vertex().property(Schema.VertexProperty.INSTANCE_COUNT.name()).orElse(0L);
+        Long count = vertex().property(Schema.VertexProperty.INSTANCE_COUNT);
+        if (count != null) {
+            return count;
+        }
+        return 0L;
     }
 
     public void writeCount(Long count) {
-        vertex().property(Schema.VertexProperty.INSTANCE_COUNT.name(), count);
+        vertex().property(Schema.VertexProperty.INSTANCE_COUNT, count);
     }
 
 }

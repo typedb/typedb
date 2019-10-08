@@ -25,6 +25,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.kb.planning.GraqlTraversal;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -45,7 +46,7 @@ public interface QueryExecutor {
     /**
      * @return resulting answer stream
      */
-    Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, grakn.core.kb.planning.GraqlTraversal graqlTraversal);
+    Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal);
 
     ConceptMap define(GraqlDefine query);
 

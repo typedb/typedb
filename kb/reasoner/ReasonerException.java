@@ -22,6 +22,7 @@ package grakn.core.kb.reasoner;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.api.Type;
 import grakn.core.kb.reasoner.atom.Atomic;
 import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
@@ -40,7 +41,7 @@ public class ReasonerException extends GraknException {
         return new ReasonerException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));
     }
 
-    public static ReasonerException ambiguousType(Variable var, Set<grakn.core.concept.api.Type> types) {
+    public static ReasonerException ambiguousType(Variable var, Set<Type> types) {
         return new ReasonerException(ErrorMessage.AMBIGUOUS_TYPE.getMessage(var, types));
     }
 

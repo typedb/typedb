@@ -20,6 +20,7 @@
 package grakn.core.kb.planning;
 
 import grakn.core.common.util.Tuple;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.kb.Transaction;
 import grakn.core.kb.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.planning.spanningtree.graph.Node;
@@ -44,7 +45,7 @@ public interface Fragment {
      * @param transform map defining id transform var -> new id
      * @return transformed fragment with id predicates transformed according to the transform
      */
-    Fragment transform(Map<Variable, grakn.core.concept.api.ConceptId> transform);
+    Fragment transform(Map<Variable, ConceptId> transform);
 
     /**
      * Get the corresponding property

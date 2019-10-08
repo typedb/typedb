@@ -23,9 +23,10 @@ import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
+import grakn.core.concept.structure.VertexElementImpl;
+import grakn.core.core.Casting;
+import grakn.core.core.EdgeElement;
 import grakn.core.core.Schema;
-import concept.structure.Casting;
-import concept.structure.EdgeElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.List;
@@ -41,7 +42,7 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final ConceptCacheLine<Set<Role>> cachedRelates = new ConceptCacheLine<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptBuilder, ConceptObserver conceptObserver) {
+    RelationTypeImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptBuilder, ConceptObserver conceptObserver) {
         super(vertexElement, conceptBuilder, conceptObserver);
     }
 

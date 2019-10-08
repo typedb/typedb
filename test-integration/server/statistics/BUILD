@@ -26,7 +26,7 @@ java_test(
     deps = [
         "//server",
         "//test-integration/rule:grakn-test-server",
-        "//concept/impl:concept",
+        "//concept:concept",
         "@graknlabs_graql//java:graql",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -39,7 +39,7 @@ java_test(
     deps = [
         "//server",
         "//test-integration/rule:grakn-test-server",
-        "//concept/impl:concept",
+        "//concept:concept",
         "@graknlabs_graql//java:graql",
         "@graknlabs_client_java//:client-java",
     ],

@@ -14,9 +14,10 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
-package grakn.core.server.kb;
+package grakn.core.server;
 
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;

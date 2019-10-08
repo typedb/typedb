@@ -23,7 +23,9 @@ import grakn.core.concept.ConceptCacheLine;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.exception.GraknElementException;
+import grakn.core.concept.structure.ElementUtils;
 import grakn.core.concept.structure.Shard;
+import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.EdgeElement;
 import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -36,7 +38,7 @@ import java.util.stream.Stream;
  * This class forms the basis of assuring the graph follows the Grakn object model.
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
-    private final grakn.core.concept.structure.VertexElementImpl vertexElement;
+    private final VertexElementImpl vertexElement;
     final ConceptManagerImpl conceptManager;
     final ConceptObserver conceptObserver;
 
@@ -46,14 +48,14 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final ConceptCacheLine<Long> shardCount = new ConceptCacheLine<>(() -> shards().count());
     private final ConceptCacheLine<ConceptId> conceptId = new ConceptCacheLine<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    ConceptImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         this.vertexElement = vertexElement;
         this.conceptManager = conceptManager;
         this.conceptObserver = conceptObserver;
     }
 
     @Override
-    public grakn.core.concept.structure.VertexElementImpl vertex() {
+    public VertexElementImpl vertex() {
         return vertexElement;
     }
 
@@ -119,7 +121,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         if (to.length == 0) {
             vertex().deleteEdge(direction, label);
         } else {
-            grakn.core.concept.structure.VertexElementImpl[] targets = new grakn.core.concept.structure.VertexElementImpl[to.length];
+            VertexElementImpl[] targets = new VertexElementImpl[to.length];
             for (int i = 0; i < to.length; i++) {
                 targets[i] = ((ConceptImpl) to[i]).vertex();
             }

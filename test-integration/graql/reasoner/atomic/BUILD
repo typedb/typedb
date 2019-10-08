@@ -8,7 +8,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:type-inference"],
     test_class = "grakn.core.kb.reasoner.atomic.TypeInferenceIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -26,7 +26,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.kb.reasoner.atomic.AtomicUnificationIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -44,7 +44,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.kb.reasoner.atomic.AtomicConversionIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -66,7 +66,7 @@ java_test(
     ],
     test_class = "grakn.core.kb.reasoner.atomic.RuleApplicabilityIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -88,7 +88,7 @@ java_test(
     ],
     test_class = "grakn.core.kb.reasoner.atomic.RoleInferenceIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -106,7 +106,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.kb.reasoner.atomic.AtomicEquivalenceIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",

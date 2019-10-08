@@ -5,7 +5,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.GraqlComputeIT",
     srcs = ["GraqlComputeIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -22,7 +22,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
     srcs = ["ConnectedComponentIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -39,7 +39,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.CorenessIT",
     srcs = ["CorenessIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -54,7 +54,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.CountIT",
     srcs = ["CountIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
@@ -68,7 +68,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.DegreeIT",
     srcs = ["DegreeIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -85,7 +85,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.KCoreIT",
     srcs = ["KCoreIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -100,7 +100,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.PathIT",
     srcs = ["PathIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -117,7 +117,7 @@ java_test(
     test_class = "grakn.core.graql.analytics.StatisticsIT",
     srcs = ["StatisticsIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 

@@ -26,9 +26,9 @@ import grakn.core.concept.api.Role;
 import grakn.core.concept.api.RelationType;
 
 public interface ConceptManager {
-    SchemaConcept getSchemaConcept(LabelId labelId);
+    <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
 
-    Concept buildConcept(VertexElement vertex);
+    <T extends Concept> T buildConcept(VertexElement vertex);
 
     public Role getRole(String label);
 

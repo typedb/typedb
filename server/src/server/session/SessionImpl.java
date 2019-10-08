@@ -20,24 +20,23 @@
 package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
-import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.impl.ConceptManagerImpl;
+import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.concept.structure.ElementFactory;
-import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.kb.exception.SessionException;
-import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.Session;
+import grakn.core.kb.Transaction;
+import grakn.core.kb.TransactionAnalytics;
 import grakn.core.kb.cache.CacheProvider;
 import grakn.core.kb.cache.KeyspaceSchemaCache;
+import grakn.core.kb.exception.SessionException;
+import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.keyspace.Keyspace;
 import grakn.core.kb.statistics.KeyspaceStatistics;
 import grakn.core.kb.statistics.UncomittedStatisticsDelta;
-import grakn.core.kb.Transaction;
-import grakn.core.kb.Session;
-import grakn.core.kb.keyspace.Keyspace;
-import grakn.core.kb.TransactionAnalytics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -64,7 +63,7 @@ public class SessionImpl implements AutoCloseable, Session {
     // Session can have at most 1 transaction per thread, so we keep a local reference here
     private final ThreadLocal<Transaction> localOLTPTransactionContainer = new ThreadLocal<>();
 
-    private final KeyspaceImpl keyspace;
+    private final Keyspace keyspace;
     private final Config config;
     private final StandardJanusGraph graph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
@@ -82,7 +81,7 @@ public class SessionImpl implements AutoCloseable, Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
     }
 
@@ -94,7 +93,7 @@ public class SessionImpl implements AutoCloseable, Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(KeyspaceImpl keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+     public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
                         HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
                         Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
@@ -196,7 +195,6 @@ public class SessionImpl implements AutoCloseable, Session {
     private boolean keyspaceHasBeenInitialised(Transaction tx) {
         return tx.getMetaConcept() != null;
     }
-
 
 
     /**

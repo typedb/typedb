@@ -23,7 +23,7 @@ java_test(
     test_class = "grakn.core.server.AttributeUniquenessIT",
     srcs = ["AttributeUniquenessIT.java"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//common",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
@@ -44,7 +44,7 @@ java_test(
         "@graknlabs_client_java//:client-java",
 
         # Internal dependencies
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server", # TODO: NEEDS TO GO
         "//test-integration/rule:grakn-test-server",
 

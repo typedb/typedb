@@ -60,7 +60,8 @@ import grakn.core.kb.InvalidKBException;
 import grakn.core.kb.Serialiser;
 import grakn.core.kb.Session;
 import grakn.core.kb.Transaction;
-import grakn.core.kb.Validator;
+import grakn.core.kb.executor.property.PropertyExecutorFactory;
+import grakn.core.server.Validator;
 import grakn.core.kb.cache.CacheProvider;
 import grakn.core.kb.cache.RuleCache;
 import grakn.core.kb.cache.TransactionCache;
@@ -1206,7 +1207,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public grakn.core.kb.executor.property.PropertyExecutorFactory propertyExecutorFactory() {
+    public PropertyExecutorFactory propertyExecutorFactory() {
         return new PropertyExecutorFactoryImpl();
     }
 

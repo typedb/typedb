@@ -32,6 +32,7 @@ import grakn.core.concept.impl.ThingImpl;
 import concept.structure.Casting;
 import grakn.core.kb.Session;
 import grakn.core.kb.Transaction;
+import grakn.core.server.ValidateGlobalRules;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

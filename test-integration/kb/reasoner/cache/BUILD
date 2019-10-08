@@ -8,7 +8,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
     test_class = "grakn.core.kb.reasoner.cache.QueryCacheIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/rule:grakn-test-server",
@@ -25,7 +25,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
     test_class = "grakn.core.kb.reasoner.cache.RuleCacheIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/rule:grakn-test-server",

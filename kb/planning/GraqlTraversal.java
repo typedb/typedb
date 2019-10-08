@@ -38,7 +38,7 @@ public interface GraqlTraversal {
     //                |           List of fragments in order of execution
     //                |             |
     //                V             V
-    public ImmutableSet<ImmutableList<Fragment>> fragments();
+    ImmutableSet<ImmutableList<Fragment>> fragments();
 
     /**
      * Get the {@code GraphTraversal} that this {@code GraqlTraversal} represents.

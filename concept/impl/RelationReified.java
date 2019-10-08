@@ -19,14 +19,17 @@
 
 package grakn.core.concept.impl;
 
-import concept.structure.EdgeElement;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.concept.structure.CastingImpl;
+import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.Casting;
+import grakn.core.core.EdgeElement;
+import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -40,7 +43,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.Schema;
 
 /**
  * Encapsulates The Relation as a VertexElement
@@ -52,7 +54,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    RelationReified(grakn.core.concept.structure.VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    RelationReified(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 
@@ -127,7 +129,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
                         elementId().toString(),
                         type(),
                         role,
-                        from(toThing).elementId().toString()
+                        ConceptVertex.from(toThing).elementId().toString()
                 );
 
         if (rolePlayerEdgeExists) {
@@ -135,10 +137,10 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         }
 
         //Role player edge does not exist create a new one
-        EdgeElement edge = this.addEdge(from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
+        EdgeElement edge = this.addEdge(ConceptVertex.from(toThing), Schema.EdgeLabel.ROLE_PLAYER);
         edge.property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, this.type().labelId().getValue());
         edge.property(Schema.EdgeProperty.ROLE_LABEL_ID, role.labelId().getValue());
-        Casting casting = Casting.create(edge, owner, role, toThing, conceptManager);
+        Casting casting = CastingImpl.create(edge, owner, role, toThing, conceptManager);
         conceptObserver.rolePlayerCreated(casting);
     }
 
@@ -152,14 +154,14 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
         Set<Role> roleSet = new HashSet<>(Arrays.asList(roles));
         if (roleSet.isEmpty()) {
             return vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ROLE_PLAYER)
-                    .map(edge -> Casting.withRelation(edge, owner, conceptManager));
+                    .map(edge -> CastingImpl.withRelation(edge, owner, conceptManager));
         }
 
         //Traversal is used so we can potentially optimise on the index
         Set<Integer> roleTypesIds = roleSet.stream().map(r -> r.labelId().getValue()).collect(Collectors.toSet());
 
         Stream<EdgeElement> castingsEdges = vertex().roleCastingsEdges(type(), roleTypesIds);
-        return castingsEdges.map(edge -> Casting.withRelation(edge, owner, conceptManager));
+        return castingsEdges.map(edge -> CastingImpl.withRelation(edge, owner, conceptManager));
     }
 
     @Override

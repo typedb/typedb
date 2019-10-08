@@ -27,6 +27,8 @@ import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.AtomicBase;
 import grakn.core.kb.reasoner.atom.binary.AttributeAtom;
 import grakn.core.kb.reasoner.atom.binary.IsaAtom;
 import grakn.core.kb.reasoner.atom.binary.OntologicalAtom;
@@ -93,7 +95,7 @@ public abstract class Atom extends AtomicBase {
     @Override
     public boolean subsumes(Atomic atomic) {
         if (!atomic.isAtom()) return false;
-        grakn.core.kb.reasoner.atom.Atom parent = (grakn.core.kb.reasoner.atom.Atom) atomic;
+        Atom parent = (Atom) atomic;
         MultiUnifier multiUnifier = this.getMultiUnifier(parent, UnifierType.SUBSUMPTIVE);
         if (multiUnifier.isEmpty()) return false;
 
@@ -109,7 +111,7 @@ public abstract class Atom extends AtomicBase {
      * @param atom to unify with
      * @return true if this unifies with atom via rule unifier
      */
-    public boolean isUnifiableWith(grakn.core.kb.reasoner.atom.Atom atom) {
+    public boolean isUnifiableWith(Atom atom) {
         return !this.getMultiUnifier(atom, UnifierType.RULE).equals(MultiUnifierImpl.nonExistent());
     }
 
@@ -149,7 +151,7 @@ public abstract class Atom extends AtomicBase {
      */
     public boolean isDisconnected() {
         return isSelectable()
-                && getParentQuery().getAtoms(grakn.core.kb.reasoner.atom.Atom.class)
+                && getParentQuery().getAtoms(Atom.class)
                 .filter(Atomic::isSelectable)
                 .filter(at -> !at.equals(this))
                 .allMatch(at -> Sets.intersection(at.getVarNames(), this.getVarNames()).isEmpty());
@@ -211,7 +213,7 @@ public abstract class Atom extends AtomicBase {
                 && isRuleApplicableViaAtom(child.getRuleConclusionAtom());
     }
 
-    protected abstract boolean isRuleApplicableViaAtom(grakn.core.kb.reasoner.atom.Atom headAtom);
+    protected abstract boolean isRuleApplicableViaAtom(Atom headAtom);
 
     /**
      * @return set of potentially applicable rules - does shallow (fast) check for applicability
@@ -333,10 +335,10 @@ public abstract class Atom extends AtomicBase {
     }
 
     @Override
-    public grakn.core.kb.reasoner.atom.Atom inferTypes() { return inferTypes(new ConceptMap()); }
+    public Atom inferTypes() { return inferTypes(new ConceptMap()); }
 
     @Override
-    public grakn.core.kb.reasoner.atom.Atom inferTypes(ConceptMap sub) { return this; }
+    public Atom inferTypes(ConceptMap sub) { return this; }
 
     /**
      * @return list of types this atom can take
@@ -350,13 +352,13 @@ public abstract class Atom extends AtomicBase {
      * @param sub partial substitution
      * @return list of possible atoms obtained by applying type inference
      */
-    public List<grakn.core.kb.reasoner.atom.Atom> atomOptions(ConceptMap sub) { return Lists.newArrayList(inferTypes(sub));}
+    public List<Atom> atomOptions(ConceptMap sub) { return Lists.newArrayList(inferTypes(sub));}
 
     /**
      * @param type to be added to this Atom
      * @return new Atom with specified type
      */
-    public grakn.core.kb.reasoner.atom.Atom addType(SchemaConcept type) { return this;}
+    public Atom addType(SchemaConcept type) { return this;}
 
     /**
      * Materialises the atom - does an insert of the corresponding pattern.
@@ -369,7 +371,7 @@ public abstract class Atom extends AtomicBase {
     /**
      * @return set of atoms this atom can be decomposed to
      */
-    public Set<grakn.core.kb.reasoner.atom.Atom> rewriteToAtoms() { return Sets.newHashSet(this);}
+    public Set<Atom> rewriteToAtoms() { return Sets.newHashSet(this);}
 
     /**
      * rewrites the atom to user-defined type variable
@@ -377,7 +379,7 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    public grakn.core.kb.reasoner.atom.Atom rewriteWithTypeVariable(grakn.core.kb.reasoner.atom.Atom parentAtom) {
+    public Atom rewriteWithTypeVariable(Atom parentAtom) {
         if (parentAtom.getPredicateVariable().isReturned()
                 && !this.getPredicateVariable().isReturned()
                 && this.getClass() == parentAtom.getClass()) {
@@ -392,17 +394,17 @@ public abstract class Atom extends AtomicBase {
      * @param parentAtom parent atom that triggers rewrite
      * @return rewritten atom
      */
-    public abstract grakn.core.kb.reasoner.atom.Atom rewriteToUserDefined(grakn.core.kb.reasoner.atom.Atom parentAtom);
+    public abstract Atom rewriteToUserDefined(Atom parentAtom);
 
 
-    public abstract grakn.core.kb.reasoner.atom.Atom rewriteWithTypeVariable();
+    public abstract Atom rewriteWithTypeVariable();
 
     /**
      * rewrites the atom to one with user defined relation variable
      *
      * @return rewritten atom
      */
-    public grakn.core.kb.reasoner.atom.Atom rewriteWithRelationVariable() { return this;}
+    public Atom rewriteWithRelationVariable() { return this;}
 
     /**
      * attempt to find a UNIQUE unifier with the parent atom
@@ -412,7 +414,7 @@ public abstract class Atom extends AtomicBase {
      * @return corresponding unifier
      */
     @Nullable
-    public abstract Unifier getUnifier(grakn.core.kb.reasoner.atom.Atom parentAtom, UnifierType unifierType);
+    public abstract Unifier getUnifier(Atom parentAtom, UnifierType unifierType);
 
     /**
      *
@@ -421,7 +423,7 @@ public abstract class Atom extends AtomicBase {
      * @param unifierType unifier type in question
      * @return true if predicates between this (child) and parent are compatible based on the mappings provided by unifier
      */
-    protected boolean isPredicateCompatible(grakn.core.kb.reasoner.atom.Atom parentAtom, Unifier unifier, UnifierType unifierType){
+    protected boolean isPredicateCompatible(Atom parentAtom, Unifier unifier, UnifierType unifierType){
         //check value predicates compatibility
         return unifier.mappings().stream().allMatch(mapping -> {
             Variable childVar = mapping.getKey();
@@ -456,7 +458,7 @@ public abstract class Atom extends AtomicBase {
      * @param unifierType type of unifier to be computed
      * @return multiunifier
      */
-    public MultiUnifier getMultiUnifier(grakn.core.kb.reasoner.atom.Atom parentAtom, UnifierType unifierType) {
+    public MultiUnifier getMultiUnifier(Atom parentAtom, UnifierType unifierType) {
         //NB only for relations we can have non-unique unifiers
         Unifier unifier = this.getUnifier(parentAtom, unifierType);
         return unifier != null ? new MultiUnifierImpl(unifier) : MultiUnifierImpl.nonExistent();
@@ -470,7 +472,7 @@ public abstract class Atom extends AtomicBase {
      * @param unifier    parent->child unifier
      * @return semantic difference between this and child defined in terms of this variables
      */
-    public SemanticDifference semanticDifference(grakn.core.kb.reasoner.atom.Atom childAtom, Unifier unifier) {
+    public SemanticDifference semanticDifference(Atom childAtom, Unifier unifier) {
         Set<VariableDefinition> diff = new HashSet<>();
         Unifier unifierInverse = unifier.inverse();
 

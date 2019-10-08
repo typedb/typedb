@@ -138,7 +138,7 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
     public boolean equals(Object object) {
         //Compare Concept
         //based on id because vertex comparisons are equivalent
-        return this == object || object instanceof grakn.core.concept.structure.AbstractElementImpl && ((grakn.core.concept.structure.AbstractElementImpl) object).id().equals(id());
+        return this == object || object instanceof AbstractElementImpl && ((AbstractElementImpl) object).id().equals(id());
     }
 
     /**

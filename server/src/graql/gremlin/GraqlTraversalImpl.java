@@ -60,7 +60,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
 
     static GraqlTraversalImpl create(Set<? extends List<Fragment>> fragments) {
         ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
-        return new AutoValue_GraqlTraversal(copy);
+        return new AutoValue_GraqlTraversalImpl(copy);
     }
 
     /**
@@ -102,7 +102,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
-        return new AutoValue_GraqlTraversal(ImmutableSet.of(fragments));
+        return new AutoValue_GraqlTraversalImpl(ImmutableSet.of(fragments));
     }
 
     /**

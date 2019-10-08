@@ -23,17 +23,17 @@ import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Attribute;
 import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.Label;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Rule;
-import grakn.core.kb.exception.TransactionException;
 import grakn.core.kb.Session;
+import grakn.core.kb.exception.TransactionException;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
@@ -138,7 +138,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private final Iterators iterators = new Iterators();
 
         @Nullable
-        private Transaction tx = null;
+        private grakn.core.kb.Transaction tx = null;
         private String sessionId;
 
         TransactionListener(StreamObserver<Transaction.Res> responseSender, Map<String, Session> openSessions) {
@@ -295,7 +295,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             sessionId = request.getSessionId();
             Session session = openSessions.get(sessionId);
 
-            Transaction.Type type = Transaction.Type.of(request.getType().getNumber());
+            grakn.core.kb.Transaction.Type type = grakn.core.kb.Transaction.Type.of(request.getType().getNumber());
             if (type != null && type.equals(Transaction.Type.WRITE)) {
                 tx = session.writeTransaction();
             } else if (type != null && type.equals(Transaction.Type.READ)) {
@@ -391,7 +391,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private Transaction tx() {
+        private grakn.core.kb.Transaction tx() {
             return nonNull(tx);
         }
 

@@ -5,8 +5,10 @@ java_library(
     srcs = ["GraqlTestUtil.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//concept/impl:concept",
+        "//concept:concept",
         "//server:server",
+        "//kb:kb",
+        "//concept:concept",
 
         "@graknlabs_graql//java:graql",
 

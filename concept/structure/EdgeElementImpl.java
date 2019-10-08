@@ -51,7 +51,7 @@ public class EdgeElementImpl extends AbstractElementImpl<Edge, Schema.EdgeProper
         if (this == object) return true;
         if (object == null || getClass() != object.getClass()) return false;
 
-        grakn.core.concept.structure.EdgeElementImpl edge = (grakn.core.concept.structure.EdgeElementImpl) object;
+        grakn.core.concept.structure.EdgeElementImpl edge = (EdgeElementImpl) object;
 
         return element().id().equals(edge.id());
     }
