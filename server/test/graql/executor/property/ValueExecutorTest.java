@@ -18,7 +18,7 @@
 
 package grakn.core.graql.executor.property;
 
-import grakn.core.graql.executor.property.value.ValueComparison;
+import grakn.core.kb.executor.property.value.ValueComparison;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import org.junit.Test;

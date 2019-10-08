@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.kb.reasoner.query;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.AtomicEquivalence;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

@@ -19,8 +19,8 @@
 package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.executor.property.value.ValueOperation;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.Fragment;
 import graql.lang.property.VarProperty;

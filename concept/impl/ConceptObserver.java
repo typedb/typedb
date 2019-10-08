@@ -32,7 +32,7 @@ import grakn.core.concept.api.Type;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.Attribute;
 import grakn.core.core.Casting;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.cache.CacheProvider;
 import grakn.core.kb.cache.RuleCache;
 import grakn.core.kb.cache.TransactionCache;

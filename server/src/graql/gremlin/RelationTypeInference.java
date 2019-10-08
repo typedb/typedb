@@ -41,6 +41,7 @@ import graql.lang.property.IsaProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 
 import java.util.Collection;
 import java.util.Collections;

@@ -21,12 +21,13 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.api.AttributeType;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.property.RegexAtom;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.property.RegexAtom;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.RegexProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -34,7 +35,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class RegexExecutor implements PropertyExecutor.Definable {
+public class RegexExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final RegexProperty property;

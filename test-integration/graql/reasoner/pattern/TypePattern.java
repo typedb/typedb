@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.pattern;
+package grakn.core.kb.reasoner.pattern;
 
 import com.google.common.collect.Lists;
 import grakn.core.concept.api.ConceptId;

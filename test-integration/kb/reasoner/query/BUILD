@@ -6,7 +6,7 @@ java_test(
     srcs = ["AtomicQueryEquivalenceIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.graql.reasoner.query.AtomicQueryEquivalenceIT",
+    test_class = "grakn.core.kb.reasoner.query.AtomicQueryEquivalenceIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -23,7 +23,7 @@ java_test(
     srcs = ["AtomicQueryIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.graql.reasoner.query.AtomicQueryIT",
+    test_class = "grakn.core.kb.reasoner.query.AtomicQueryIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -45,7 +45,7 @@ java_test(
     resources = [
         "//test-integration/graql/reasoner/stubs:reasoning-stubs",
     ],
-    test_class = "grakn.core.graql.reasoner.query.ExplanationIT",
+    test_class = "grakn.core.kb.reasoner.query.ExplanationIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -65,7 +65,7 @@ java_test(
     srcs = ["MaterialisationIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:materialisation"],
-    test_class = "grakn.core.graql.reasoner.query.MaterialisationIT",
+    test_class = "grakn.core.kb.reasoner.query.MaterialisationIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -89,7 +89,7 @@ java_test(
         "//test-integration/graql/reasoner/resources/recursion:recursion-schemas",
         "//test-integration/graql/reasoner/stubs:reasoning-stubs",
     ],
-    test_class = "grakn.core.graql.reasoner.query.NegationIT",
+    test_class = "grakn.core.kb.reasoner.query.NegationIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -114,7 +114,7 @@ java_test(
         "//test-integration/graql/reasoner/resources:generic-schema",
         "//test-integration/graql/reasoner/resources:unification-with-types",
     ],
-    test_class = "grakn.core.graql.reasoner.query.AtomicQueryUnificationIT",
+    test_class = "grakn.core.kb.reasoner.query.AtomicQueryUnificationIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -138,7 +138,7 @@ java_test(
     size = "medium",
     srcs = ["QueryIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.graql.reasoner.query.QueryIT",
+    test_class = "grakn.core.kb.reasoner.query.QueryIT",
     deps = [
         "//concept/impl:concept",
         "//server",
@@ -159,7 +159,7 @@ java_test(
         "//test-integration/graql/reasoner/resources:matching-types",
         "//test-integration/graql/reasoner/resources:rule-applicability",
     ],
-    test_class = "grakn.core.graql.reasoner.query.OntologicalQueryIT",
+    test_class = "grakn.core.kb.reasoner.query.OntologicalQueryIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -177,7 +177,7 @@ java_test(
     srcs = ["ResolutionPlanIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:resolution-plan"],
-    test_class = "grakn.core.graql.reasoner.query.ResolutionPlanIT",
+    test_class = "grakn.core.kb.reasoner.query.ResolutionPlanIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -197,7 +197,7 @@ java_test(
     resources = [
         "//test-integration/graql/reasoner/resources:generic-schema",
     ],
-    test_class = "grakn.core.graql.reasoner.query.SemanticDifferenceIT",
+    test_class = "grakn.core.kb.reasoner.query.SemanticDifferenceIT",
     deps = [
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -216,7 +216,7 @@ java_test(
     resources = [
         "//test-integration/graql/reasoner/resources:generic-schema",
     ],
-    test_class = "grakn.core.graql.reasoner.query.SubsumptionIT",
+    test_class = "grakn.core.kb.reasoner.query.SubsumptionIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",

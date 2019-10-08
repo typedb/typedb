@@ -27,15 +27,16 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Relation;
 import grakn.core.concept.api.Thing;
 import grakn.core.concept.api.Role;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.kb.GraqlQueryException;
 import grakn.core.kb.GraqlSemanticException;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.binary.RelationAtom;
+import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.RelationProperty;
 import graql.lang.property.VarProperty;
@@ -51,9 +52,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
+import static grakn.core.kb.reasoner.utils.ReasonerUtils.getUserDefinedIdPredicate;
 
-public class RelationExecutor implements PropertyExecutor.Insertable {
+public class RelationExecutor extends PropertyExecutorImpl implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final RelationProperty property;

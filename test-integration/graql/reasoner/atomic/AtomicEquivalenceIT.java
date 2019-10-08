@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.atomic;
+package grakn.core.kb.reasoner.atomic;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import grakn.core.concept.api.AttributeType;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.AtomicEquivalence;
+import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.concept.impl.ValueConverter;
 import grakn.core.server.session.Session;

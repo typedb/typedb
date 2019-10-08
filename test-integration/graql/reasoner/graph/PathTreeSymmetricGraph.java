@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.graph;
+package grakn.core.kb.reasoner.graph;
 
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

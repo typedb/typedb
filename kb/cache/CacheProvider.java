@@ -19,7 +19,7 @@
 
 package grakn.core.kb.cache;
 
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
 
 /**
  * Implemented CacheProvider as a provider to have a idempotent `get()` methods.

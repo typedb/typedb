@@ -22,11 +22,12 @@ package grakn.core.graql.executor.property;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.api.AttributeType;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.reasoner.atom.property.DataTypeAtom;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.reasoner.atom.property.DataTypeAtom;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.property.VarProperty;
@@ -36,7 +37,7 @@ import graql.lang.statement.Variable;
 import java.util.Collections;
 import java.util.Set;
 
-public class DataTypeExecutor implements PropertyExecutor.Definable {
+public class DataTypeExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final DataTypeProperty property;

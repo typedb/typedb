@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.kb.reasoner.query;
 
-import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
-import grakn.core.graql.reasoner.pattern.QueryPattern;
-import server.src.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.reasoner.graph.GenericSchemaGraph;
+import grakn.core.kb.reasoner.pattern.QueryPattern;
+import grakn.core.kb.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

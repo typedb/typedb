@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.cache;
+package grakn.core.kb.reasoner.cache;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.api.Concept;

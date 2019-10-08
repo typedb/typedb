@@ -16,21 +16,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.reasoning;
+package grakn.core.kb.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
-import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import server.src.graql.reasoner.query.ResolvableQuery;
+import grakn.core.kb.reasoner.atom.binary.AttributeAtom;
+import grakn.core.kb.reasoner.atom.predicate.VariableValuePredicate;
+import grakn.core.kb.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.reasoner.query.ReasonerQueries;
+import grakn.core.kb.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.kb.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.reasoner.query.ResolvableQuery;
 import grakn.core.common.util.Pair;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

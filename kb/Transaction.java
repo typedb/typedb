@@ -27,8 +27,9 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.Rule;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.cache.RuleCache;
+import grakn.core.kb.planning.TraversalPlanFactory;
 
 public interface Transaction {
 
@@ -53,4 +54,7 @@ public interface Transaction {
     default long getShardCount(Type t) {
         return 1L;
     }
+
+    // TODO determine if this should be here
+    TraversalPlanFactory traversalPlanFactory();
 }

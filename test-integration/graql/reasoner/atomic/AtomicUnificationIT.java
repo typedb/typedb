@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.atomic;
+package grakn.core.kb.reasoner.atomic;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -27,14 +27,14 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Role;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.rule.InferenceRule;
-import server.src.graql.reasoner.unifier.MultiUnifier;
-import server.src.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierImpl;
-import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.reasoner.atom.binary.RelationAtom;
+import grakn.core.kb.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.reasoner.query.ReasonerQueries;
+import grakn.core.kb.reasoner.rule.InferenceRule;
+import grakn.core.kb.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.reasoner.unifier.Unifier;
+import grakn.core.kb.reasoner.unifier.UnifierImpl;
+import grakn.core.kb.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
@@ -271,9 +271,9 @@ public class AtomicUnificationIT {
         ReasonerAtomicQuery parentQuery = ReasonerQueries.atomic(conjunction(parentString, tx), tx);
         ReasonerAtomicQuery parentQuery2 = ReasonerQueries.atomic(conjunction(parentString2, tx), tx);
 
-        grakn.core.graql.reasoner.atom.Atom childAtom = childQuery.getAtom();
-        grakn.core.graql.reasoner.atom.Atom parentAtom = parentQuery.getAtom();
-        grakn.core.graql.reasoner.atom.Atom parentAtom2 = parentQuery2.getAtom();
+        grakn.core.kb.reasoner.atom.Atom childAtom = childQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom parentAtom = parentQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom parentAtom2 = parentQuery2.getAtom();
 
         List<ConceptMap> childAnswers = tx.execute(childQuery.getQuery(), false);
         List<ConceptMap> parentAnswers = tx.execute(parentQuery.getQuery(), false);
@@ -312,11 +312,11 @@ public class AtomicUnificationIT {
 
         String type = "{ $x isa resource;$x id " + tx.execute(resourceQuery.getQuery(), false).iterator().next().get("r").id().getValue()  + "; };";
         ReasonerAtomicQuery typeQuery = ReasonerQueries.atomic(conjunction(type, tx), tx);
-        grakn.core.graql.reasoner.atom.Atom typeAtom = typeQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom typeAtom = typeQuery.getAtom();
 
-        grakn.core.graql.reasoner.atom.Atom resourceAtom = resourceQuery.getAtom();
-        grakn.core.graql.reasoner.atom.Atom resourceAtom2 = resourceQuery2.getAtom();
-        grakn.core.graql.reasoner.atom.Atom resourceAtom3 = resourceQuery3.getAtom();
+        grakn.core.kb.reasoner.atom.Atom resourceAtom = resourceQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom resourceAtom2 = resourceQuery2.getAtom();
+        grakn.core.kb.reasoner.atom.Atom resourceAtom3 = resourceQuery3.getAtom();
 
         Unifier unifier = resourceAtom.getUnifier(typeAtom, UnifierType.RULE);
         Unifier unifier2 = resourceAtom2.getUnifier(typeAtom, UnifierType.RULE);
@@ -335,7 +335,7 @@ public class AtomicUnificationIT {
     @Test
     public void testRewriteAndUnification(){
         String parentString = "{ $r (subRole1: $x) isa binary; };";
-        grakn.core.graql.reasoner.atom.Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
+        grakn.core.kb.reasoner.atom.Atom parentAtom = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
         Variable parentVarName = parentAtom.getVarName();
 
         String childPatternString = "(subRole1: $x, subRole2: $y) isa binary;";
@@ -368,8 +368,8 @@ public class AtomicUnificationIT {
     public void testUnification_MatchAllParentAtom(){
         String parentString = "{ $r($a, $x); };";
         String childString = "{ $rel (baseRole1: $z, baseRole2: $b) isa binary; };";
-        grakn.core.graql.reasoner.atom.Atom parent = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
-        grakn.core.graql.reasoner.atom.Atom child = ReasonerQueries.atomic(conjunction(childString, tx), tx).getAtom();
+        grakn.core.kb.reasoner.atom.Atom parent = ReasonerQueries.atomic(conjunction(parentString, tx), tx).getAtom();
+        grakn.core.kb.reasoner.atom.Atom child = ReasonerQueries.atomic(conjunction(childString, tx), tx).getAtom();
 
         MultiUnifier multiUnifier = child.getMultiUnifier(parent, UnifierType.RULE);
         Unifier correctUnifier = new UnifierImpl(
@@ -450,8 +450,8 @@ public class AtomicUnificationIT {
      * @param childQuery child query
      */
     private void nonExistentUnifier(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery){
-        grakn.core.graql.reasoner.atom.Atom childAtom = childQuery.getAtom();
-        grakn.core.graql.reasoner.atom.Atom parentAtom = parentQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom childAtom = childQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom parentAtom = parentQuery.getAtom();
         assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
@@ -471,8 +471,8 @@ public class AtomicUnificationIT {
      */
     private void unification(ReasonerAtomicQuery parentQuery, ReasonerAtomicQuery childQuery, 
                              UnifierType unifierType, boolean checkInverse, boolean checkEquality){
-        grakn.core.graql.reasoner.atom.Atom childAtom = childQuery.getAtom();
-        grakn.core.graql.reasoner.atom.Atom parentAtom = parentQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom childAtom = childQuery.getAtom();
+        grakn.core.kb.reasoner.atom.Atom parentAtom = parentQuery.getAtom();
 
         Unifier unifier = childAtom.getMultiUnifier(parentAtom, unifierType).getUnifier();
 

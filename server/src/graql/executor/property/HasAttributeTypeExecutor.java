@@ -26,11 +26,12 @@ import grakn.core.concept.api.AttributeType;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.concept.api.Type;
 import grakn.core.kb.GraqlSemanticException;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.HasAtom;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.binary.HasAtom;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;
 import graql.lang.property.NeqProperty;
@@ -49,7 +50,7 @@ import static grakn.core.kb.Schema.ImplicitType.KEY_OWNER;
 import static grakn.core.kb.Schema.ImplicitType.KEY_VALUE;
 import static graql.lang.Graql.var;
 
-public class HasAttributeTypeExecutor implements PropertyExecutor.Definable {
+public class HasAttributeTypeExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final HasAttributeTypeProperty property;

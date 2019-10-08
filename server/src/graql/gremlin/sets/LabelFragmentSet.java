@@ -23,7 +23,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.SchemaConcept;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragment;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.Fragment;

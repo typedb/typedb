@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.benchmark;
+package grakn.core.kb.reasoner.benchmark;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;

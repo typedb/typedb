@@ -20,18 +20,19 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.predicate.NeqIdPredicate;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.NeqProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class NeqExecutor implements PropertyExecutor {
+public class NeqExecutor extends PropertyExecutorImpl implements PropertyExecutor {
 
     private final Variable var;
     private final NeqProperty property;

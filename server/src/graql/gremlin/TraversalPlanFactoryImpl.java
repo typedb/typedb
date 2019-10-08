@@ -43,6 +43,7 @@ import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

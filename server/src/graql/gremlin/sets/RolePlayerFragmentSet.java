@@ -26,7 +26,7 @@ import grakn.core.concept.api.Label;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.SchemaConcept;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.Fragment;
 import grakn.core.core.Schema;

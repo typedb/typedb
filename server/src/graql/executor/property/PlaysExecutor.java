@@ -23,13 +23,14 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.Type;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.PlaysAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.binary.PlaysAtom;
+import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -39,9 +40,9 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class PlaysExecutor implements PropertyExecutor.Definable {
+public class PlaysExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final PlaysProperty property;

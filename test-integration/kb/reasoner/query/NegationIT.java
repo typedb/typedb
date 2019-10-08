@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.kb.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
@@ -31,8 +31,8 @@ import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.concept.api.SchemaConcept;
 import grakn.core.kb.GraqlSemanticException;
-import grakn.core.graql.reasoner.graph.ReachabilityGraph;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.reasoner.graph.ReachabilityGraph;
+import grakn.core.kb.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;

@@ -27,7 +27,7 @@ import grakn.core.concept.api.EntityType;
 import grakn.core.concept.api.RelationType;
 import grakn.core.concept.api.Role;
 import grakn.core.core.Schema;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.kb.executor.property.value.ValueOperation;
 import grakn.core.graql.gremlin.fragment.FragmentImpl;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.planning.GraqlTraversal;

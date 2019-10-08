@@ -21,7 +21,7 @@ package grakn.core.graql.gremlin;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.executor.property.PropertyExecutor;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
@@ -31,6 +31,7 @@ import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import grakn.core.kb.planning.EquivalentFragmentSet;
 
 import java.util.Collection;
 import java.util.HashSet;

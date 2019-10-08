@@ -23,11 +23,12 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.api.Type;
 import grakn.core.kb.GraqlSemanticException;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import server.src.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.property.IsAbstractAtom;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.atom.property.IsAbstractAtom;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -37,7 +38,7 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.isAbstract;
 
-public class AbstractExecutor implements PropertyExecutor.Definable {
+public class AbstractExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final AbstractProperty property;

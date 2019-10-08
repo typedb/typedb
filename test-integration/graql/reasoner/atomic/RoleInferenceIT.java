@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.atomic;
+package grakn.core.kb.reasoner.atomic;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Multimap;
 import grakn.core.concept.api.Role;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.kb.reasoner.atom.binary.RelationAtom;
+import grakn.core.kb.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.Schema;
 import grakn.core.server.session.Session;

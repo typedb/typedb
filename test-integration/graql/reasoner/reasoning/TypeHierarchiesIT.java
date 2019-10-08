@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.reasoning;
+package grakn.core.kb.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;

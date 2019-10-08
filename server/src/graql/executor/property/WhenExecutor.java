@@ -21,10 +21,11 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.GraqlSemanticException;
-import grakn.core.graql.executor.WriteExecutor;
-import grakn.core.graql.gremlin.EquivalentFragmentSet;
-import server.src.graql.reasoner.atom.Atomic;
-import server.src.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.executor.WriteExecutor;
+import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.reasoner.atom.Atomic;
+import grakn.core.kb.reasoner.query.ReasonerQuery;
 import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
 import graql.lang.statement.Statement;
@@ -32,7 +33,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-public class WhenExecutor implements PropertyExecutor.Definable {
+public class WhenExecutor extends PropertyExecutorImpl implements PropertyExecutor.Definable {
 
     private final Variable var;
     private final WhenProperty property;

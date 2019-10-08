@@ -23,7 +23,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.concept.api.ConceptId;
 import grakn.core.concept.api.Label;
 import grakn.core.concept.api.AttributeType;
-import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.kb.executor.property.value.ValueOperation;
 import grakn.core.kb.planning.Fragment;
 import grakn.core.kb.Schema;
 import graql.lang.property.VarProperty;

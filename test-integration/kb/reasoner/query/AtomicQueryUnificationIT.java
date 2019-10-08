@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.reasoner.query;
+package grakn.core.kb.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -25,12 +25,12 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.api.Attribute;
-import grakn.core.graql.reasoner.graph.GenericSchemaGraph;
-import grakn.core.graql.reasoner.pattern.QueryPattern;
-import server.src.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
-import server.src.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.reasoner.graph.GenericSchemaGraph;
+import grakn.core.kb.reasoner.pattern.QueryPattern;
+import grakn.core.kb.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.kb.reasoner.unifier.Unifier;
+import grakn.core.kb.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.Session;
 import grakn.core.server.session.TransactionOLTP;
@@ -49,7 +49,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
+import static grakn.core.kb.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections.CollectionUtils.isEqualCollection;
