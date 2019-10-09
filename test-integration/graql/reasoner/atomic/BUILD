@@ -6,7 +6,7 @@ java_test(
     srcs = ["TypeInferenceIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:type-inference"],
-    test_class = "grakn.core.kb.reasoner.atomic.TypeInferenceIT",
+    test_class = "grakn.core.kb.graql.reasoner.atomic.TypeInferenceIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -24,7 +24,7 @@ java_test(
     srcs = ["AtomicUnificationIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.kb.reasoner.atomic.AtomicUnificationIT",
+    test_class = "grakn.core.kb.graql.reasoner.atomic.AtomicUnificationIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -42,7 +42,7 @@ java_test(
     srcs = ["AtomicConversionIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.kb.reasoner.atomic.AtomicConversionIT",
+    test_class = "grakn.core.kb.graql.reasoner.atomic.AtomicConversionIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -64,7 +64,7 @@ java_test(
         "//test-integration/graql/reasoner/resources:resource-applicability",
         "//test-integration/graql/reasoner/resources:rule-applicability",
     ],
-    test_class = "grakn.core.kb.reasoner.atomic.RuleApplicabilityIT",
+    test_class = "grakn.core.kb.graql.reasoner.atomic.RuleApplicabilityIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -86,7 +86,7 @@ java_test(
         "//test-integration/graql/reasoner/resources:role-inference",
         "//test-integration/graql/reasoner/resources:rule-applicability",
     ],
-    test_class = "grakn.core.kb.reasoner.atomic.RoleInferenceIT",
+    test_class = "grakn.core.kb.graql.reasoner.atomic.RoleInferenceIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -104,7 +104,7 @@ java_test(
     srcs = ["AtomicEquivalenceIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.kb.reasoner.atomic.AtomicEquivalenceIT",
+    test_class = "grakn.core.kb.graql.reasoner.atomic.AtomicEquivalenceIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",

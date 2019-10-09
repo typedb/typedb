@@ -20,7 +20,6 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.structure.CastingImpl;
-import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -30,6 +29,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
@@ -54,7 +54,7 @@ public class RelationReified extends ThingImpl<Relation, RelationType> implement
     @Nullable
     private RelationImpl owner;
 
-    RelationReified(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    RelationReified(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

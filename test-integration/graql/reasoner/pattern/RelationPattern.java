@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.pattern;
+package grakn.core.kb.graql.reasoner.pattern;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;

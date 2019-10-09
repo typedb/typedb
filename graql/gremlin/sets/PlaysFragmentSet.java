@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
@@ -26,7 +26,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
@@ -44,7 +44,7 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
+public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
     public static RolePlayerFragmentSet of(
             VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
@@ -89,7 +89,7 @@ abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * However, we must still retain the LabelFragmentSet because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    static final FragmentSetOptimisation ROLE_OPTIMISATION = (fragmentSets, tx) -> {
+    public static final FragmentSetOptimisation ROLE_OPTIMISATION = (fragmentSets, tx) -> {
         Iterable<RolePlayerFragmentSet> rolePlayers =
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 

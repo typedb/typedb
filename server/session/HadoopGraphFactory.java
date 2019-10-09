@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package server.session;
+package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.server.test.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 

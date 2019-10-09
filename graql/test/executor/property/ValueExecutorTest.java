@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.executor.property;
+package grakn.core.graql.executor.property;
 
 import grakn.core.kb.graql.executor.property.value.ValueComparison;
 import graql.lang.Graql;

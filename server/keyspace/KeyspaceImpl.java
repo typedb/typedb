@@ -17,7 +17,7 @@
  *
  */
 
-package src.server.keyspace;
+package grakn.core.server.keyspace;
 
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;

@@ -42,7 +42,7 @@ import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atom;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.atom.AtomicEquivalence;
-import grakn.core.kb.reasoner.atom.binary.AutoValue_AttributeAtom;
+import grakn.core.kb.graql.reasoner.atom.binary.AutoValue_AttributeAtom;
 import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.kb.graql.reasoner.atom.predicate.ValuePredicate;

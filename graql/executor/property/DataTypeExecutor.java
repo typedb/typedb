@@ -17,14 +17,14 @@
  *
  */
 
-package graql.test.executor.property;
+package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import graql.test.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.reasoner.atom.property.DataTypeAtom;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;

@@ -19,6 +19,7 @@
 
 package grakn.core.kb.graql.planning.spanningtree.datastructure;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Ordering;
 
@@ -44,7 +45,8 @@ public class FibonacciHeap<V, P> implements Iterable<FibonacciHeap<V, P>.Entry> 
     private int size = 0;
     private final Comparator<? super P> comparator;
 
-    class Entry {
+    @VisibleForTesting
+    public class Entry {
         public final V value;
         private P priority;
         private Entry oParent = null;

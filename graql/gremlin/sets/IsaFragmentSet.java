@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.SchemaConcept;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static graql.test.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
-import static graql.test.gremlin.sets.EquivalentFragmentSets.labelOf;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.labelOf;
 
 /**
  * @see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)

@@ -8,7 +8,6 @@ java_library(
         "//kb/concept/api:api",
         "//server:server",
         "//kb:kb",
-        "//kb/concept/api:api",
 
         "@graknlabs_graql//java:graql",
 

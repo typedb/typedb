@@ -22,7 +22,7 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "graql",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["**/*.java"], exclude=["test/**"]),
     deps = [
        # Internal dependencies
        "//common:common",
@@ -31,7 +31,7 @@ java_library(
        "//kb/concept/structure:structure",
        "//concept/structure:structure",
        "//concept/answer:answer",
-       "//concept/impl:impl",
+       "//concept/impl:concept",
        "//kb:kb",
        "//core:core",
 

@@ -22,6 +22,7 @@ package grakn.core.concept.structure;
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -37,15 +38,15 @@ import java.util.stream.Stream;
  * of access as Elements rather than Concepts. In other words, more related to the structure/implementation
  * of Grakn under the hood than higher level exposed interfaces
  */
-public class Shard {
+public class ShardImpl implements Shard {
     private VertexElement vertexElement;
 
-    public Shard(VertexElement ownerVertex, VertexElement newShardVertex) {
+    public ShardImpl(VertexElement ownerVertex, VertexElement newShardVertex) {
         this(newShardVertex);
         owner(ownerVertex);
     }
 
-    public Shard(VertexElement vertexElement) {
+    public ShardImpl(VertexElement vertexElement) {
         this.vertexElement = vertexElement;
     }
 
@@ -56,6 +57,7 @@ public class Shard {
     /**
      * @return The id of this shard. Strings are used because shards are looked up via the string index.
      */
+    @Override
     public Object id() {
         return vertex().id();
     }
@@ -72,6 +74,7 @@ public class Shard {
      *
      * @param conceptVertex The concept to link to this shard
      */
+    @Override
     public void link(VertexElement conceptVertex) {
         conceptVertex.addEdge(vertex(), Schema.EdgeLabel.ISA);
     }
@@ -79,6 +82,7 @@ public class Shard {
     /**
      * @return All the concept linked to this shard
      */
+    @Override
     @VisibleForTesting
     public Stream<VertexElement> links() {
         return vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.ISA).map(EdgeElement::source);

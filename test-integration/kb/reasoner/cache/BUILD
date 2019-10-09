@@ -6,7 +6,7 @@ java_test(
     srcs = ["QueryCacheIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:generic-schema"],
-    test_class = "grakn.core.kb.reasoner.cache.QueryCacheIT",
+    test_class = "grakn.core.kb.graql.reasoner.cache.QueryCacheIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -23,7 +23,7 @@ java_test(
     srcs = ["RuleCacheIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/resources:rule-applicability"],
-    test_class = "grakn.core.kb.reasoner.cache.RuleCacheIT",
+    test_class = "grakn.core.kb.graql.reasoner.cache.RuleCacheIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",

@@ -25,4 +25,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 public interface EdgeElement extends AbstractElement<Edge, Schema.EdgeProperty> {
     VertexElement source();
     VertexElement target();
+
+    VertexElement asReifiedVertexElement(boolean isInferred);
+
 }

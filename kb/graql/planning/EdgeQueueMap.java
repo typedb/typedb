@@ -22,7 +22,6 @@ package grakn.core.kb.graql.planning;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import grakn.core.kb.planning.spanningtree.AutoValue_EdgeQueueMap_QueueAndReplace;
 import grakn.core.kb.graql.planning.spanningtree.datastructure.FibonacciQueue;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;

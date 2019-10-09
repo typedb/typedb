@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package server.rpc;
+package grakn.core.server.rpc;
 
 import grakn.protocol.keyspace.KeyspaceProto;
 import grakn.protocol.keyspace.KeyspaceServiceGrpc;

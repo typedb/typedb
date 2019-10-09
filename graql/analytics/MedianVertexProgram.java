@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.LabelId;
@@ -36,10 +36,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static graql.test.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceOwner;
-import static graql.test.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceRelation;
-import static graql.test.analytics.DegreeVertexProgram.DEGREE;
-import static graql.test.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceOwner;
+import static grakn.core.graql.analytics.DegreeStatisticsVertexProgram.degreeStatisticsStepResourceRelation;
+import static grakn.core.graql.analytics.DegreeVertexProgram.DEGREE;
+import static grakn.core.graql.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for computing the median of given resource using quick select algorithm.

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
@@ -29,12 +29,12 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 
-import graql.test.gremlin.fragment.Fragments;
-import graql.test.gremlin.fragment.InIsaFragment;
-import graql.test.gremlin.fragment.InSubFragment;
-import graql.test.gremlin.fragment.LabelFragment;
-import graql.test.gremlin.fragment.OutRolePlayerFragment;
-import graql.test.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.InSubFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.IsaProperty;

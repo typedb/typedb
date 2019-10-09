@@ -19,12 +19,13 @@
 
 package grakn.core.concept.structure;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -63,13 +64,13 @@ public final class ElementFactory {
         this.janusTx = janusTransaction;
     }
 
-    VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
+    public VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
         Stream<VertexElement> verticesWithProperty = getVerticesWithProperty(key, value);
         Optional<VertexElement> vertexElement = verticesWithProperty.findFirst();
         return vertexElement.orElse(null);
     }
 
-    Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
+    public Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
         Stream<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value).toStream();
         return vertices.map(vertex -> buildVertexElement(vertex));
     }
@@ -82,7 +83,7 @@ public final class ElementFactory {
         return null;
     }
 
-    EdgeElement getEdgeElementWithId(String id) {
+    public EdgeElement getEdgeElementWithId(String id) {
         GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(id);
         if (traversal.hasNext()) {
             return buildEdgeElement(traversal.next());
@@ -97,16 +98,16 @@ public final class ElementFactory {
     }
 
 
-    public Shard createShard(VertexElement shardOwner, VertexElement newShardVertex) {
-        return new Shard(shardOwner, newShardVertex);
+    Shard createShard(VertexElement shardOwner, VertexElement newShardVertex) {
+        return new ShardImpl(shardOwner, newShardVertex);
     }
 
-    public Shard getShard(Vertex vertex) {
-        return new Shard(buildVertexElement(vertex));
+    Shard getShard(Vertex vertex) {
+        return new ShardImpl(buildVertexElement(vertex));
     }
 
-    public Shard getShard(VertexElement vertexElement) {
-        return new Shard(vertexElement);
+    Shard getShard(VertexElement vertexElement) {
+        return new ShardImpl(vertexElement);
     }
 
     /**
@@ -115,7 +116,7 @@ public final class ElementFactory {
      * @param baseType baseType of newly created Vertex
      * @return VertexElement
      */
-    public VertexElementImpl addVertexElement(Schema.BaseType baseType) {
+    public VertexElement addVertexElement(Schema.BaseType baseType) {
         Vertex vertex = janusTx.addVertex(baseType.name());
         return buildVertexElement(vertex);
     }
@@ -129,10 +130,10 @@ public final class ElementFactory {
      * @param conceptId ConceptId to be set on the vertex
      * @return just created Vertex
      */
-    public VertexElementImpl addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId, boolean isInferred) {
+    public VertexElement addVertexElementWithEdgeIdProperty(Schema.BaseType baseType, ConceptId conceptId, boolean isInferred) {
         Vertex vertex = janusTx.addVertex(baseType.name());
         vertex.property(Schema.VertexProperty.EDGE_RELATION_ID.name(), conceptId.getValue());
-        VertexElementImpl vertexElement = buildVertexElement(vertex);
+        VertexElement vertexElement = buildVertexElement(vertex);
         if (isInferred) {
             vertexElement.property(Schema.VertexProperty.IS_INFERRED, true);
         }
@@ -146,7 +147,7 @@ public final class ElementFactory {
      * @return A VertexElement of
      * @throws GraknElementException if vertex is not valid. A vertex is not valid if it is null or has been deleted
      */
-    public VertexElementImpl buildVertexElement(Vertex vertex) {
+    public VertexElement buildVertexElement(Vertex vertex) {
         if (!ElementUtils.isValidElement(vertex)) {
             Objects.requireNonNull(vertex);
             throw GraknElementException.invalidElement(vertex);

@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.spanningtree;
+package grakn.core.graql.gremlin.spanningtree;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import graql.test.gremlin.spanningtree.graph.DenseWeightedGraph;
+import grakn.core.graql.gremlin.spanningtree.graph.DenseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;

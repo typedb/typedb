@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package src.server.keyspace;
+package grakn.core.server.keyspace;
 
 import com.datastax.driver.core.Cluster;
 import grakn.core.kb.server.keyspace.Keyspace;

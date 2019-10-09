@@ -20,6 +20,7 @@
 package grakn.core.concept.impl;
 
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.structure.VertexElement;
 
 /**
  * A Concept represented as a VertexElement
@@ -35,7 +36,7 @@ public interface ConceptVertex {
     /**
      * @return corresponding Janus vertex
      */
-    grakn.core.concept.structure.VertexElementImpl vertex();
+    VertexElement vertex();
 
     /**
      * @return the id of the Janus vertex

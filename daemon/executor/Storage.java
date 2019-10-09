@@ -26,7 +26,7 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.daemon.exception.GraknDaemonException;
-import server.GraknStorage;
+import grakn.core.server.GraknStorage;
 import org.apache.cassandra.tools.NodeTool;
 import org.apache.commons.io.FileUtils;
 

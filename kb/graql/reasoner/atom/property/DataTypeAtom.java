@@ -23,7 +23,7 @@ import com.google.auto.value.AutoValue;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.atom.AtomicBase;
-import grakn.core.kb.reasoner.atom.property.AutoValue_DataTypeAtom;
+import grakn.core.kb.graql.reasoner.atom.property.AutoValue_DataTypeAtom;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.statement.Statement;

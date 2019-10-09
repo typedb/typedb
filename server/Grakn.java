@@ -17,12 +17,11 @@
  *
  */
 
-package server;
+package grakn.core.server;
 
 import com.google.common.base.Stopwatch;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.common.exception.ErrorMessage;
-import server.test.util.PIDManager;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -32,6 +31,8 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import grakn.core.server.util.PIDManager;
 
 import java.io.IOException;
 import java.nio.file.Path;

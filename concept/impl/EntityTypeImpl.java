@@ -21,7 +21,7 @@ package grakn.core.concept.impl;
 
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
-import grakn.core.concept.structure.VertexElementImpl;
+import grakn.core.kb.concept.structure.VertexElement;
 
 /**
  * SchemaConcept used to represent categories.
@@ -29,7 +29,7 @@ import grakn.core.concept.structure.VertexElementImpl;
  * Any instance of a EntityType is called an Entity.
  */
 public class EntityTypeImpl extends TypeImpl<EntityType, Entity> implements EntityType {
-    EntityTypeImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    EntityTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

@@ -17,7 +17,7 @@
  *
  */
 
-package server.session;
+package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
@@ -41,8 +41,11 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.executor.QueryExecutorImpl;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.concept.structure.GraknElementException;
 import grakn.core.concept.impl.ConceptImpl;
@@ -53,14 +56,11 @@ import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.structure.PropertyNotUniqueException;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
-import graql.test.executor.QueryExecutorImpl;
-import graql.test.executor.property.PropertyExecutorFactoryImpl;
-import graql.test.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.concept.util.Serialiser;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import server.Validator;
+import grakn.core.server.Validator;
 import grakn.core.kb.server.cache.RuleCache;
 import grakn.core.kb.server.cache.CacheProvider;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -1089,11 +1089,15 @@ public class TransactionOLTP implements Transaction {
      * @param conceptId the id of the concept to shard
      */
     public void shard(ConceptId conceptId) {
-        ConceptImpl type = getConcept(conceptId);
+        Concept type = getConcept(conceptId);
         if (type == null) {
             throw new RuntimeException("Cannot shard concept [" + conceptId + "] due to it not existing in the graph");
         }
-        type.createShard();
+        if (type.isType()) {
+            type.asType().createShard();
+        } else {
+            throw GraknConceptException.cannotShard(type);
+        }
     }
 
     /**

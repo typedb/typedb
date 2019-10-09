@@ -17,7 +17,7 @@
  *
  */
 
-package server;
+package grakn.core.server;
 
 import org.apache.cassandra.service.CassandraDaemon;
 import org.slf4j.Logger;

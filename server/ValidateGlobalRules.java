@@ -17,7 +17,7 @@
  *
  */
 
-package server;
+package grakn.core.server;
 
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;

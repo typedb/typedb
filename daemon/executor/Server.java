@@ -22,7 +22,7 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.daemon.exception.GraknDaemonException;
-import server.Grakn;
+import grakn.core.server.Grakn;
 
 import java.io.File;
 import java.io.IOException;

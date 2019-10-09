@@ -25,6 +25,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -36,6 +37,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Represent a Vertex in a TransactionOLTP
@@ -142,7 +145,7 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex, Schema.Vertex
      * @return
      */
     public Shard shard() {
-        VertexElementImpl shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
+        VertexElement shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
         Shard shard = elementFactory.createShard(this, shardVertex);
         return shard;
     }
@@ -169,5 +172,16 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex, Schema.Vertex
 
     public Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId) {
         return elementFactory.edgeRelationsConnectedToInstancesOfType(id().toString(), edgeInstanceLabelId);
+    }
+
+    @Override
+    public Stream<VertexElement> reifiedRelations(Role[] roles) {
+        if (roles.length == 0) {
+            return elementFactory.inFromSourceId(id().toString(), Schema.EdgeLabel.ROLE_PLAYER);
+        } else {
+            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
+            return elementFactory.inFromSourceIdWithProperty(id().toString(), Schema.EdgeLabel.ROLE_PLAYER,
+                    Schema.EdgeProperty.ROLE_LABEL_ID, roleTypesIds);
+        }
     }
 }

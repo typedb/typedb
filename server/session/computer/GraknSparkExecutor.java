@@ -17,7 +17,7 @@
  *
  */
 
-package server.session.computer;
+package grakn.core.server.session.computer;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.configuration.Configuration;

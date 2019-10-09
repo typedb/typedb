@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.util;
+package grakn.core.common.test.util;
 
 import grakn.core.common.util.LazyMergingStream;
 import org.junit.Test;

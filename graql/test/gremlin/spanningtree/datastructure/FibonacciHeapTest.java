@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package graql.test.gremlin.spanningtree.datastructure;
+package grakn.core.graql.gremlin.spanningtree.datastructure;
 
 import com.google.common.collect.Maps;
 import grakn.core.kb.graql.planning.spanningtree.datastructure.FibonacciHeap;

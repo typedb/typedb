@@ -20,6 +20,7 @@
 package grakn.core.concept.impl;
 
 import grakn.core.core.ConceptCacheLine;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
@@ -27,7 +28,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +87,7 @@ public class RelationEdge implements RelationStructure {
     public RelationReified reify() {
         LOG.debug("Reifying concept [{}]", id());
         //Build the Relation Vertex
-        grakn.core.concept.structure.VertexElementImpl relationVertex = edge().asReifiedVertexElement(isInferred());
+        VertexElement relationVertex = edge().asReifiedVertexElement(isInferred());
         RelationReified relationReified = conceptManager().createRelationReified(relationVertex, type());
 
         //Delete the old edge

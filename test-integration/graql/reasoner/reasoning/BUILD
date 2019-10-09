@@ -6,7 +6,7 @@ java_test(
     srcs = ["NeqIdPredicateIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.reasoning.NeqIdPredicateIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.NeqIdPredicateIT",
     deps = [
         "//kb/concept/api:api",
         "//server:server",
@@ -22,7 +22,7 @@ java_test(
     srcs = ["ValuePredicateIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.reasoning.ValuePredicateIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.ValuePredicateIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -45,7 +45,7 @@ java_test(
         "//test-integration/graql/reasoner/resources/recursion:nguyen",
         "//test-integration/graql/reasoner/resources/recursion:recursion-schemas",
     ],
-    test_class = "grakn.core.kb.reasoner.reasoning.RecursionIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.RecursionIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -71,7 +71,7 @@ java_test(
     srcs = ["AttributeAttachmentIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.reasoning.AttributeAttachmentIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -89,7 +89,7 @@ java_test(
     srcs = ["TypeGenerationIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.reasoning.TypeGenerationIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.TypeGenerationIT",
     deps = [
         "//kb/concept/api:api",
         "//server:server",
@@ -105,7 +105,7 @@ java_test(
     srcs = ["TypeHierarchiesIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.reasoning.TypeHierarchiesIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
         "//kb:kb",
         "//kb/concept/api:api",
@@ -123,7 +123,7 @@ java_test(
     srcs = ["VariableRolesIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.reasoning.VariableRolesIT",
+    test_class = "grakn.core.kb.graql.reasoner.reasoning.VariableRolesIT",
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/commons-collections",

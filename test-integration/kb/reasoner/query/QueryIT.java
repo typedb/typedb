@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.query;
+package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -34,7 +34,7 @@ import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.reasoner.graph.GeoGraph;
+import grakn.core.kb.graql.reasoner.graph.GeoGraph;
 import grakn.core.kb.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;

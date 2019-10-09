@@ -23,7 +23,7 @@ load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "
 
 java_library(
     name = "common",
-    srcs = glob(["**/*.java"]),
+    srcs = glob(["**/*.java"], exclude=["test/**"]),
     deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",

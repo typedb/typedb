@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.spanningtree.datastructure;
+package grakn.core.graql.gremlin.spanningtree.datastructure;
 
 import com.google.common.collect.ContiguousSet;
 import com.google.common.collect.ImmutableMultiset;

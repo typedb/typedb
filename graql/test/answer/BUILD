@@ -23,8 +23,10 @@ java_test(
     test_class = "grakn.core.graql.answer.ConceptMapTest",
     srcs = ["ConceptMapTest.java"],
     deps = [
-        "//concept/impl:concept",
+        "//kb/concept/api:api",
         "//server:server",
+        "//kb:kb",
+        "//concept/answer:answer",
 
         "@graknlabs_graql//java:graql",
 

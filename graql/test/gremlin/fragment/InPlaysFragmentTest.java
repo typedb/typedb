@@ -16,10 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.fragment;
+package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.core.Schema;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -37,7 +36,7 @@ public class InPlaysFragmentTest {
 
     private final Variable start = new Variable();
     private final Variable end = new Variable();
-    private final Fragment fragment = Fragments.inPlays(null, start, end, false);
+    private final FragmentImpl fragment = new AutoValue_InPlaysFragment(null, start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

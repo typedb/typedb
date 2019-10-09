@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.executor;
+package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -33,9 +33,9 @@ import grakn.core.concept.answer.Numeric;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.impl.ConceptManagerImpl;
-import graql.test.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import graql.test.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraknServerException;

@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.executor.property;
+package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.ConceptId;
@@ -39,8 +39,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static graql.test.gremlin.sets.EquivalentFragmentSets.relates;
-import static graql.test.gremlin.sets.EquivalentFragmentSets.sub;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.relates;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.sub;
 import static grakn.core.kb.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class RelatesExecutor  implements PropertyExecutor.Definable {

@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.executor.property;
+package grakn.core.graql.executor.property;
 
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.AbstractProperty;

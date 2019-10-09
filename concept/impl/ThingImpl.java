@@ -35,8 +35,6 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.concept.structure.VertexElementImpl;
-import grakn.core.kb.concept.structure.AbstractElement;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
@@ -78,7 +76,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> GraknConceptException.noType(this));
     });
 
-    ThingImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    ThingImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

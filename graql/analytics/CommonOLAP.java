@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import grakn.core.kb.concept.api.LabelId;
 import org.apache.commons.configuration.Configuration;

@@ -20,7 +20,6 @@
 package grakn.core.concept.impl;
 
 import grakn.core.concept.structure.PropertyNotUniqueException;
-import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.ConceptCacheLine;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -28,6 +27,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;
@@ -52,7 +52,7 @@ public abstract class SchemaConceptImpl<T extends SchemaConcept> extends Concept
     private final ConceptCacheLine<Set<T>> cachedDirectSubTypes = new ConceptCacheLine<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
     private final ConceptCacheLine<Boolean> cachedIsImplicit = new ConceptCacheLine<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
-    SchemaConceptImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    SchemaConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

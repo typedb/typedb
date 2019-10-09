@@ -41,6 +41,10 @@ public class GraknConceptException extends GraknException {
         super(error, e);
     }
 
+    public static GraknConceptException cannotShard(Concept concept) {
+        return GraknConceptException.create(ErrorMessage.NOT_A_TYPE.getMessage(concept.id(), concept.getClass()));
+    }
+
     @Override
     public String getName() {
         return this.getClass().getName();

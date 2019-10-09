@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.benchmark;
+package grakn.core.kb.graql.reasoner.benchmark;
 
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
@@ -24,11 +24,11 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.reasoner.graph.DiagonalGraph;
-import grakn.core.kb.reasoner.graph.LinearTransitivityMatrixGraph;
-import grakn.core.kb.reasoner.graph.PathTreeGraph;
-import grakn.core.kb.reasoner.graph.TransitivityChainGraph;
-import grakn.core.kb.reasoner.graph.TransitivityMatrixGraph;
+import grakn.core.kb.graql.reasoner.graph.DiagonalGraph;
+import grakn.core.kb.graql.reasoner.graph.LinearTransitivityMatrixGraph;
+import grakn.core.kb.graql.reasoner.graph.PathTreeGraph;
+import grakn.core.kb.graql.reasoner.graph.TransitivityChainGraph;
+import grakn.core.kb.graql.reasoner.graph.TransitivityMatrixGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;

@@ -29,8 +29,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.concept.structure.Shard;
-import grakn.core.concept.structure.VertexElementImpl;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -68,7 +67,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return roleTypes;
     });
 
-    TypeImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    TypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

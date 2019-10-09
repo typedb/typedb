@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.fragment;
+package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import grakn.core.kb.concept.api.Label;

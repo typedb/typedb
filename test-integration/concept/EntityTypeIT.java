@@ -32,7 +32,7 @@ import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.PropertyNotUniqueException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.core.Schema;
-import grakn.core.concept.structure.Shard;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;

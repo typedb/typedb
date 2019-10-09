@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  *
  */
-package server;
+package grakn.core.server;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

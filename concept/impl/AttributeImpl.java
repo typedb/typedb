@@ -24,8 +24,8 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  *            Supported Types include: String, Long, Double, and Boolean
  */
 public class AttributeImpl<D> extends ThingImpl<Attribute<D>, AttributeType<D>> implements Attribute<D> {
-    AttributeImpl(VertexElementImpl vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    AttributeImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);
     }
 

@@ -168,6 +168,9 @@ public interface Type extends SchemaConcept {
     void writeCount(Long count);
 
 
+    void createShard();
+
+
     @Deprecated
     @CheckReturnValue
     @Override

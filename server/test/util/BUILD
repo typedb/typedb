@@ -19,20 +19,16 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-    name = "lazy-merging-stream-test",
-    srcs = ["LazyMergingStreamTest.java"],
+    name = "lock-manager-test",
+    test_class = "grakn.core.server.util.LockManagerTest",
+    srcs = ["LockManagerTest.java"],
     deps = [
-        "//server:server",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core"
+        "//server:server"
     ],
-    test_class = "grakn.core.graql.util.LazyMergingStreamTest",
     size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [
-        ":lazy-merging-stream-test"
-    ],
+    targets = [":lock-manager-test"],
 )
-

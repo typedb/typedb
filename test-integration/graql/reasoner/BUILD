@@ -5,7 +5,7 @@ java_test(
     size = "large",
     srcs = ["ReasoningIT.java"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
-    test_class = "grakn.core.kb.reasoner.ReasoningIT",
+    test_class = "grakn.core.kb.graql.reasoner.ReasoningIT",
     deps = [
         "//kb/concept/api:api",
         "//server:server",
@@ -27,7 +27,7 @@ java_test(
     size = "medium",
     srcs = ["GeoInferenceIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.kb.reasoner.GeoInferenceIT",
+    test_class = "grakn.core.kb.graql.reasoner.GeoInferenceIT",
     deps = [
         "//kb/concept/api:api",
         "//server:server",

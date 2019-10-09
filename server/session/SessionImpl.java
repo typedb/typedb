@@ -17,7 +17,7 @@
  *
  */
 
-package server.session;
+package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
 import grakn.core.common.config.Config;

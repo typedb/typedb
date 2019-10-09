@@ -22,7 +22,7 @@ package grakn.core.kb.graql.reasoner.atom.property;
 import com.google.auto.value.AutoValue;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.atom.AtomicBase;
-import grakn.core.kb.reasoner.atom.property.AutoValue_RegexAtom;
+import grakn.core.kb.graql.reasoner.atom.property.AutoValue_RegexAtom;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.RegexProperty;
 import graql.lang.statement.Statement;

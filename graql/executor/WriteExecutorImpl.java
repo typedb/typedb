@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.executor;
+package grakn.core.graql.executor;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;

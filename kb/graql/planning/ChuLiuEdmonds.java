@@ -220,7 +220,7 @@ public class ChuLiuEdmonds {
         return getMaxArborescence(graph.filterEdges(not(DirectedEdge.hasDestination(root))));
     }
 
-    static Weighted<Arborescence<Node>> getMaxArborescence(WeightedGraph graph,
+    public static Weighted<Arborescence<Node>> getMaxArborescence(WeightedGraph graph,
                                                             Set<DirectedEdge> required,
                                                             Set<DirectedEdge> banned) {
         return getMaxArborescence(graph.filterEdges(and(not(DirectedEdge.competesWith(required)), not(DirectedEdge.isIn(banned)))));

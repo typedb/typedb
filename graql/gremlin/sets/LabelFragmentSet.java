@@ -16,14 +16,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
@@ -39,7 +39,7 @@ import static java.util.stream.Collectors.toSet;
  *
  */
 @AutoValue
-abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
+public abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {
@@ -77,7 +77,7 @@ abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
-    static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
+    public static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
 
         if (fragmentSets.size() <= 1) return false;
 

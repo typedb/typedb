@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -26,7 +26,7 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static graql.test.gremlin.fragment.Fragments.isAbstract;
+import static grakn.core.graql.gremlin.fragment.Fragments.isAbstract;
 
 /**
  * @see EquivalentFragmentSets#isAbstract(VarProperty, Variable)

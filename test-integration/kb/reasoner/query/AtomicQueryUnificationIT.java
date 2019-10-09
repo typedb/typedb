@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.query;
+package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
@@ -28,8 +28,8 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueryEquivalence;
-import grakn.core.kb.reasoner.graph.GenericSchemaGraph;
-import grakn.core.kb.reasoner.pattern.QueryPattern;
+import grakn.core.kb.graql.reasoner.graph.GenericSchemaGraph;
+import grakn.core.kb.graql.reasoner.pattern.QueryPattern;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -52,7 +52,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.kb.reasoner.pattern.QueryPattern.subListExcludingElements;
+import static grakn.core.kb.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.collections.CollectionUtils.isEqualCollection;

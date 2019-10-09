@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.atomic;
+package grakn.core.kb.graql.reasoner.atomic;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;

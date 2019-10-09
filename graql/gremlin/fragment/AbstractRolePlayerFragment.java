@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.fragment;
+package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.Label;
@@ -34,7 +34,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Set;
 
-import static graql.test.gremlin.fragment.Fragments.displayOptionalTypeLabels;
+import static grakn.core.graql.gremlin.fragment.Fragments.displayOptionalTypeLabels;
 import static java.util.stream.Collectors.toSet;
 
 /**

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;

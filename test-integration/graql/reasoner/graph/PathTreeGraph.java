@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.graph;
+package grakn.core.kb.graql.reasoner.graph;
 
 import com.google.common.math.IntMath;
 import grakn.core.kb.concept.api.Label;

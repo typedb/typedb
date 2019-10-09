@@ -17,13 +17,13 @@
  *
  */
 
-package server;
+package grakn.core.server;
 
 import com.datastax.driver.core.Cluster;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import grakn.core.server.test.keyspace.KeyspaceManager;
+import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.rpc.KeyspaceRequestsHandler;
 import grakn.core.server.rpc.KeyspaceService;
 import grakn.core.server.rpc.OpenRequest;
@@ -33,7 +33,7 @@ import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
-import server.test.util.LockManager;
+import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
 
 /**
@@ -61,7 +61,7 @@ public class ServerFactory {
                 .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
                 .build();
 
-        KeyspaceManager keyspaceManager = new KeyspaceManager(cluster);
+        KeyspaceManager keyspaceManager = new grakn.core.server.keyspace.KeyspaceManager(cluster);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory

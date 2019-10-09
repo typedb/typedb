@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.server.exception.GraqlQueryException;
@@ -31,7 +31,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Collections;
 import java.util.Set;
 
-import static graql.test.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
+import static grakn.core.graql.analytics.ConnectedComponentsVertexProgram.CLUSTER_LABEL;
 
 /**
  * The vertex program for computing connected components of a give instance.

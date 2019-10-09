@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package server.session;
+package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.server.test.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import server.test.util.LockManager;
+import grakn.core.server.util.LockManager;
 import grakn.core.kb.server.Session;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;

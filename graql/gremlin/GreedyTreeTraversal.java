@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -34,9 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static graql.test.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
-import static graql.test.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
-import static graql.test.gremlin.NodesUtil.propagateLabels;
+import static grakn.core.graql.gremlin.NodesUtil.nodeFragmentsWithoutDependencies;
+import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
+import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 
 public class GreedyTreeTraversal {
 

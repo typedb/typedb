@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.Fragment;

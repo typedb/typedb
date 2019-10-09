@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.kb.server.exception.GraknServerException;

@@ -20,13 +20,55 @@
 package grakn.core.kb.concept.structure;
 
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import java.util.Set;
 import java.util.stream.Stream;
 
 public interface VertexElement extends AbstractElement<Vertex, Schema.VertexProperty> {
-    public EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type);
-    public EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type);
-    public Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label);
+    EdgeElement addEdge(VertexElement to, Schema.EdgeLabel type);
+    EdgeElement putEdge(VertexElement to, Schema.EdgeLabel type);
+    void deleteEdge(Direction direction, Schema.EdgeLabel edgeLabel, VertexElement... targets);
+
+    Stream<EdgeElement> getEdgesOfType(Direction direction, Schema.EdgeLabel label);
+
+    /**
+     * Retrieve this vertex as a Shard object
+     * @return
+     */
+    Shard asShard();
+
+    /**
+     * Retrieve the current shard connected to this vertex
+     * (currently only applies to Types)
+     * @return
+     */
+    Shard currentShard();
+    /**
+     * Create a new vertex that is a shard and connect it to the owning vertex (this vertex)
+     * @return
+     */
+    Shard shard();
+
+    /**
+     * @return all current shards of this vertex
+     */
+    Stream<Shard> shards();
+
+
+
+    // methods that should probably be removed from the interface
+    Stream<EdgeElement> roleCastingsEdges(Type type, Set<Integer> allowedRoleTypeIds);
+    boolean rolePlayerEdgeExists(String startVertexId, RelationType type, Role role, String endVertexId);
+    Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
+                                                      boolean ownerToValueOrdering);
+    Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(LabelId edgeInstanceLabelId);
+
+    Stream<VertexElement> reifiedRelations(Role... roles);
 }
+

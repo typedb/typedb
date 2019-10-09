@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.LabelId;
@@ -33,7 +33,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static graql.test.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The vertex program for computing the degree.

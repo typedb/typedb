@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
@@ -25,8 +25,8 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 
-import graql.test.gremlin.fragment.LabelFragment;
-import graql.test.gremlin.fragment.ValueFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.ValueFragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;

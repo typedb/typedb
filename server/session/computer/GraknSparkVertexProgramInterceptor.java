@@ -17,7 +17,7 @@
  *
  */
 
-package server.session.computer;
+package grakn.core.server.session.computer;
 
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;

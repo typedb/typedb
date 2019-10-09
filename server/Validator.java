@@ -17,7 +17,7 @@
  *
  */
 
-package server;
+package grakn.core.server;
 
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Thing;

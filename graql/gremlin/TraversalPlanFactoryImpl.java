@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -24,9 +24,9 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Tuple;
 import grakn.core.kb.concept.api.Type;
-import graql.test.gremlin.fragment.InIsaFragment;
-import graql.test.gremlin.fragment.InSubFragment;
-import graql.test.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.InSubFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
@@ -60,9 +60,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static graql.test.gremlin.NodesUtil.buildNodesWithDependencies;
-import static graql.test.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
-import static graql.test.gremlin.RelationTypeInference.inferRelationTypes;
+import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
+import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
+import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
 import static grakn.core.kb.graql.planning.Fragment.SHARD_LOAD_FACTOR;
 
 /**

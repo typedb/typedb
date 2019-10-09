@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
@@ -24,7 +24,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
@@ -35,7 +35,7 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static graql.test.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
 
 /**
  * A query can use a more-efficient attribute index traversal when the following criteria are met:

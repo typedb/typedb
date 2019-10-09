@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.reasoning;
+package grakn.core.kb.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
 import grakn.core.kb.concept.api.Label;

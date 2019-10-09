@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;

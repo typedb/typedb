@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
@@ -30,8 +30,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import static graql.test.analytics.Utility.reduceSet;
-import static graql.test.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.analytics.Utility.reduceSet;
+import static grakn.core.graql.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The MapReduce program for collecting the result of a degree query.

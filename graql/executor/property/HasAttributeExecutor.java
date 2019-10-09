@@ -17,22 +17,22 @@
  *
  */
 
-package graql.test.executor.property;
+package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.core.Schema;
 import graql.lang.property.HasAttributeProperty;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
@@ -43,8 +43,8 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static graql.test.gremlin.sets.EquivalentFragmentSets.neq;
-import static graql.test.gremlin.sets.EquivalentFragmentSets.rolePlayer;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.neq;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.rolePlayer;
 import static grakn.core.kb.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 import static grakn.core.kb.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
 

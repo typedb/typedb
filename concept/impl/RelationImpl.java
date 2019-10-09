@@ -27,6 +27,7 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.structure.VertexElement;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -227,7 +228,7 @@ public class RelationImpl implements Relation, ConceptVertex {
     }
 
     @Override
-    public grakn.core.concept.structure.VertexElementImpl vertex() {
+    public VertexElement vertex() {
         return reify().vertex();
     }
 

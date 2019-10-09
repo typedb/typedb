@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import grakn.core.kb.server.exception.GraqlQueryException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;

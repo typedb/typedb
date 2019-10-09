@@ -16,15 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import graql.test.executor.property.PropertyExecutorFactoryImpl;
-import graql.test.gremlin.fragment.NeqFragment;
-import graql.test.gremlin.fragment.ValueFragment;
-import graql.test.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.ValueFragment;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.exception.GraqlException;

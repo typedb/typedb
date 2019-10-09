@@ -16,12 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Label;
-
-import graql.test.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
@@ -34,7 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import static graql.test.gremlin.NodesUtil.propagateLabels;
+import static grakn.core.graql.gremlin.NodesUtil.propagateLabels;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNotNull;
 

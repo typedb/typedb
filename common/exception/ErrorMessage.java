@@ -172,6 +172,9 @@ public enum ErrorMessage {
 
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
+    NOT_A_TYPE("Concept with id [%s] is not a concept type and has base type [%s]."),
+
+
     //Templating
 
     UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
@@ -201,6 +204,7 @@ public enum ErrorMessage {
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
+
 
     private final String message;
 

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package server.test.util;
+package grakn.core.server.util;
 
 import com.google.common.util.concurrent.Striped;
 

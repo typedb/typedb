@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.executor;
+package grakn.core.graql.executor;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;

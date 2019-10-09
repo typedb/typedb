@@ -18,23 +18,16 @@
  */
 package grakn.core.concept.structure;
 
-import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.structure.AbstractElement;
-import grakn.core.core.Schema;
-import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
-import java.util.Arrays;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toSet;
 import static org.apache.tinkerpop.gremlin.structure.T.id;
 
 /**
@@ -116,6 +109,7 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
         return null;
     }
 
+    @Override
     public Boolean propertyBoolean(P key) {
         Boolean value = property(key);
         if (value == null) return false;
@@ -126,6 +120,7 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
     /**
      * @return The hash code of the underlying vertex
      */
+    @Override
     public int hashCode() {
         return id.hashCode(); //Note: This means that concepts across different transactions will be equivalent.
     }
@@ -170,6 +165,7 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
      * @param foundValue The current value of the property
      * @param converter  Helper method to ensure data is persisted in the correct format
      */
+    @Override
     public <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter) {
         Objects.requireNonNull(property);
 
@@ -181,6 +177,7 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
         }
     }
 
+    @Override
     public <X> void propertyImmutable(P property, X newValue, X foundValue) {
         propertyImmutable(property, newValue, foundValue, Function.identity());
     }
@@ -188,6 +185,7 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
     /**
      * @return the label of the element in the graph.
      */
+    @Override
     public String label() {
         return element().label();
     }
@@ -197,13 +195,5 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
         return !ElementUtils.isValidElement(element());
     }
 
-    public Stream<VertexElement> reifiedRelations(Role[] roles) {
-        if (roles.length == 0) {
-            return elementFactory.inFromSourceId(id().toString(), Schema.EdgeLabel.ROLE_PLAYER);
-        } else {
-            Set<Integer> roleTypesIds = Arrays.stream(roles).map(r -> r.labelId().getValue()).collect(toSet());
-            return elementFactory.inFromSourceIdWithProperty(id().toString(), Schema.EdgeLabel.ROLE_PLAYER,
-                    Schema.EdgeProperty.ROLE_LABEL_ID, roleTypesIds);
-        }
-    }
+
 }

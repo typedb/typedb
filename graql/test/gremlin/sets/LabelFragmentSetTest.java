@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
@@ -25,6 +25,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
+import grakn.core.graql.gremlin.sets.LabelFragmentSet;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -32,9 +33,9 @@ import org.junit.Test;
 import java.util.Collection;
 import java.util.Set;
 
-import static graql.test.gremlin.sets.EquivalentFragmentSets.isa;
-import static graql.test.gremlin.sets.EquivalentFragmentSets.label;
-import static graql.test.gremlin.sets.EquivalentFragmentSets.sub;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.isa;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.label;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.sub;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;

@@ -17,7 +17,7 @@
  *
  */
 
-package graql.test.executor.property;
+package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.Concept;
@@ -36,7 +36,8 @@ import graql.lang.statement.Variable;
 
 import java.util.Set;
 
-import static graql.test.gremlin.sets.EquivalentFragmentSets.isAbstract;
+import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.isAbstract;
+
 
 public class AbstractExecutor implements PropertyExecutor.Definable {
 

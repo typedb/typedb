@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import grakn.core.kb.server.exception.GraqlQueryException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -29,17 +29,17 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
-import static graql.test.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
-import static graql.test.analytics.KCoreVertexProgram.K;
-import static graql.test.analytics.KCoreVertexProgram.K_CORE_EXIST;
-import static graql.test.analytics.KCoreVertexProgram.K_CORE_LABEL;
-import static graql.test.analytics.KCoreVertexProgram.K_CORE_STABLE;
-import static graql.test.analytics.KCoreVertexProgram.MESSAGE_COUNT;
-import static graql.test.analytics.KCoreVertexProgram.atRelations;
-import static graql.test.analytics.KCoreVertexProgram.filterByDegree;
-import static graql.test.analytics.KCoreVertexProgram.relayOrSaveMessages;
-import static graql.test.analytics.KCoreVertexProgram.sendMessage;
-import static graql.test.analytics.KCoreVertexProgram.updateEntityAndAttribute;
+import static grakn.core.graql.analytics.KCoreVertexProgram.IMPLICIT_MESSAGE_COUNT;
+import static grakn.core.graql.analytics.KCoreVertexProgram.K;
+import static grakn.core.graql.analytics.KCoreVertexProgram.K_CORE_EXIST;
+import static grakn.core.graql.analytics.KCoreVertexProgram.K_CORE_LABEL;
+import static grakn.core.graql.analytics.KCoreVertexProgram.K_CORE_STABLE;
+import static grakn.core.graql.analytics.KCoreVertexProgram.MESSAGE_COUNT;
+import static grakn.core.graql.analytics.KCoreVertexProgram.atRelations;
+import static grakn.core.graql.analytics.KCoreVertexProgram.filterByDegree;
+import static grakn.core.graql.analytics.KCoreVertexProgram.relayOrSaveMessages;
+import static grakn.core.graql.analytics.KCoreVertexProgram.sendMessage;
+import static grakn.core.graql.analytics.KCoreVertexProgram.updateEntityAndAttribute;
 
 /**
  * The vertex program for computing coreness using k-core.

@@ -16,10 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.sets;
+package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
+import grakn.core.graql.gremlin.sets.RolePlayerFragmentSet;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;

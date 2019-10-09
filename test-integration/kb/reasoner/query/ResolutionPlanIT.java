@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.reasoner.query;
+package grakn.core.kb.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.analytics;
+package grakn.core.graql.analytics;
 
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.AttributeType;
@@ -26,7 +26,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
-import static graql.test.analytics.Utility.vertexHasSelectedTypeId;
+import static grakn.core.graql.analytics.Utility.vertexHasSelectedTypeId;
 
 /**
  * The abstract MapReduce program for computing statistics.

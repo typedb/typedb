@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin.fragment;
+package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
@@ -30,14 +30,12 @@ import static grakn.core.core.Schema.EdgeLabel.PLAYS;
 import static grakn.core.core.Schema.EdgeLabel.SUB;
 import static grakn.core.core.Schema.VertexProperty.THING_TYPE_LABEL_ID;
 import static junit.framework.TestCase.assertEquals;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
 
 public class OutPlaysFragmentTest {
 
     private final Variable start = new Variable();
     private final Variable end = new Variable();
-    private final FragmentImpl fragment = Fragments.outPlays(null, start, end, false);
+    private final FragmentImpl fragment = new AutoValue_OutPlaysFragment(null , start, end, false);
 
     @Test
     @SuppressWarnings("unchecked")

@@ -33,7 +33,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.reasoner.atom.Atom;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.reasoner.atom.binary.AutoValue_IsaAtom;
+import grakn.core.kb.graql.reasoner.atom.binary.AutoValue_IsaAtom;
 import grakn.core.kb.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;

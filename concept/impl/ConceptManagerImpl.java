@@ -38,12 +38,14 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
 import grakn.core.kb.server.cache.TransactionCache;
+import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import grakn.core.concept.structure.ElementFactory;
+import grakn.core.kb.concept.util.ValueConverter;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;

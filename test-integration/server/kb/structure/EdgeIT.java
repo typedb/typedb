@@ -29,7 +29,7 @@ import grakn.core.concept.impl.ConceptManagerImpl;
 import concept.impl.ElementFactory;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.server.test.keyspace.KeyspaceImpl;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;

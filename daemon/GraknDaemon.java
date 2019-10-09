@@ -23,7 +23,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
-import grakn.core.server.Version;
+import grakn.core.server.templates.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
