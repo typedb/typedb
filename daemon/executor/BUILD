@@ -29,7 +29,7 @@ java_library(
 
         # Grakn Core dependencies
         "//common",
-        "//server",
+        "//server:server",
 
         # External dependencies
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core", # NEEDS TO GO

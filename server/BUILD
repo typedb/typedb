@@ -33,17 +33,17 @@ exports_files(
 genrule(
     name = "version",
     srcs = [
-        "src/server/templates/Version.java",
+        "templates/Version.java",
         "//:VERSION",
     ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location src/server/templates/Version.java) >> $@",
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     outs = ["Version.java"],
     visibility = ["//common:__subpackages__"],
 )
 
 java_library(
     name = "server",
-    srcs = glob(["src/**/*.java"], exclude=["**/templates/**", "**/test/**"]) + [":version"],
+    srcs = glob(["**/*.java"], exclude=["templates/**", "test/**"]) + [":version"],
     deps = [
         # Internal dependencies
         "//common:common",
@@ -55,6 +55,7 @@ java_library(
         "//concept/answer:answer",
         "//kb:kb",
         "//core:core",
+        "//graql:graql",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -116,7 +117,7 @@ java_binary(
     main_class = "grakn.core.daemon.GraknDaemon",
     runtime_deps = [
         "//daemon",
-        "//server"
+        "//server:server"
     ],
     visibility = ["//:__pkg__"],
 )

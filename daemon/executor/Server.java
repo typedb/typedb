@@ -22,7 +22,7 @@ import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.config.SystemProperty;
 import grakn.core.daemon.exception.GraknDaemonException;
-import grakn.core.server.Grakn;
+import server.Grakn;
 
 import java.io.File;
 import java.io.IOException;
@@ -158,7 +158,7 @@ public class Server {
         serverCommand.add("-Dgrakn.conf=" + graknPropertiesPath);
         serverCommand.add("-Dgrakn.pidfile=" + SERVER_PIDFILE);
         // This is because https://wiki.apache.org/hadoop/WindowsProblems
-        serverCommand.add("-Dhadoop.home.dir=" + graknHome.resolve("server").resolve("services").resolve("hadoop"));
+        serverCommand.add("-Dhadoop.home.dir=" + graknHome.resolve("server").resolve("server/services").resolve("hadoop"));
         if (JAVA_OPTS != null && JAVA_OPTS.length() > 0) {//split JAVA OPTS by space and add them to the command
             serverCommand.addAll(Arrays.asList(JAVA_OPTS.split(" ")));
         }
@@ -170,8 +170,8 @@ public class Server {
     }
 
     private String getServerClassPath() {
-        return graknHome.resolve("server").resolve("services").resolve("lib").toString() + File.separator + "*"
-                + File.pathSeparator + graknHome.resolve("server").resolve("conf");
+        return graknHome.resolve("server").resolve("server/services").resolve("lib").toString() + File.separator + "*"
+                + File.pathSeparator + graknHome.resolve("server").resolve("server/conf");
     }
 
     private static boolean isServerReady(String host, int port) {

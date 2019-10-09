@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.graph;
+package graql.test.graph;
 
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Relation;

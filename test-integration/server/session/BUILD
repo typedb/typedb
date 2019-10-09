@@ -43,7 +43,7 @@ java_test(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//server",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -56,7 +56,7 @@ java_test(
     test_class = "grakn.core.server.session.cache.KeyspaceSchemaCacheIT",
     srcs = ["cache/KeyspaceSchemaCacheIT.java"],
     deps = [
-        "//server",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "//kb/concept/api:api",
@@ -70,7 +70,7 @@ java_test(
     test_class = "grakn.core.server.session.cache.TransactionCacheIT",
     srcs = ["cache/TransactionCacheIT.java"],
     deps = [
-        "//server",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

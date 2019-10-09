@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package graql.test.query;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.AttributeType;

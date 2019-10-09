@@ -77,9 +77,9 @@ public class GraknGraqlCommandsE2E {
     public void verifyDistributionFiles() {
         // assert files exist
         final Path grakn = GRAKN_UNZIPPED_DIRECTORY.resolve("grakn");
-        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties");
-        final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("cassandra");
-        final Path libDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("services").resolve("lib");
+        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("server/conf").resolve("grakn.properties");
+        final Path cassandraDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("server/services").resolve("cassandra");
+        final Path libDirectory = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("server/services").resolve("lib");
 
         assertThat(grakn.toString() + " isn't present", grakn.toFile().exists(), equalTo(true));
         assertThat(graknProperties + " isn't present", graknProperties.toFile().exists(), equalTo(true));
@@ -213,7 +213,7 @@ public class GraknGraqlCommandsE2E {
     @Test
     public void grakn_shouldBeAbleToExecuteGraknServerClean_withCustomDbDirectory() throws IOException, TimeoutException, InterruptedException {
         // modify the path to the `db` folder in `grakn.properties`
-        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties");
+        final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("server/conf").resolve("grakn.properties");
         final String keyspace = "custom_db_test";
 
         Properties prop = new Properties();

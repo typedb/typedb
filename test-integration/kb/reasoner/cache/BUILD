@@ -10,7 +10,7 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//server",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -27,7 +27,7 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//server",
+        "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",

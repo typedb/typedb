@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.gremlin;
+package graql.test.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -28,8 +28,8 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.core.Schema;
 import grakn.core.kb.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.gremlin.fragment.FragmentImpl;
-import grakn.core.graql.gremlin.fragment.Fragments;
+import graql.test.gremlin.fragment.FragmentImpl;
+import graql.test.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.GraqlTraversal;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
@@ -59,16 +59,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.gremlin.GraqlMatchers.feature;
-import static grakn.core.graql.gremlin.GraqlMatchers.satisfies;
-import static grakn.core.graql.gremlin.fragment.Fragments.id;
-import static grakn.core.graql.gremlin.fragment.Fragments.inIsa;
-import static grakn.core.graql.gremlin.fragment.Fragments.inRelates;
-import static grakn.core.graql.gremlin.fragment.Fragments.inSub;
-import static grakn.core.graql.gremlin.fragment.Fragments.outIsa;
-import static grakn.core.graql.gremlin.fragment.Fragments.outRelates;
-import static grakn.core.graql.gremlin.fragment.Fragments.outSub;
-import static grakn.core.graql.gremlin.fragment.Fragments.value;
+import static graql.test.gremlin.GraqlMatchers.feature;
+import static graql.test.gremlin.GraqlMatchers.satisfies;
+import static graql.test.gremlin.fragment.Fragments.id;
+import static graql.test.gremlin.fragment.Fragments.inIsa;
+import static graql.test.gremlin.fragment.Fragments.inRelates;
+import static graql.test.gremlin.fragment.Fragments.inSub;
+import static graql.test.gremlin.fragment.Fragments.outIsa;
+import static graql.test.gremlin.fragment.Fragments.outRelates;
+import static graql.test.gremlin.fragment.Fragments.outSub;
+import static graql.test.gremlin.fragment.Fragments.value;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static java.util.Comparator.comparing;

@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.gremlin;
+package graql.test.gremlin;
 
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.gremlin.fragment.FragmentImpl;
-import grakn.core.graql.gremlin.fragment.Fragments;
+import graql.test.gremlin.fragment.FragmentImpl;
+import graql.test.gremlin.fragment.Fragments;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -35,7 +35,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static grakn.core.graql.gremlin.GraqlMatchers.feature;
+import static graql.test.gremlin.GraqlMatchers.feature;
 import static graql.lang.Graql.and;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package graql.test.query;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.kb.concept.api.Concept;
@@ -27,7 +27,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.graql.graph.MovieGraph;
+import graql.test.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.Session;

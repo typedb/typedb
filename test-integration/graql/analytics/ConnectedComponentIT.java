@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.analytics;
+package graql.test.analytics;
 
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.ConceptId;

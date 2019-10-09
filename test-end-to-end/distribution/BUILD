@@ -5,7 +5,7 @@ java_test(
     test_class = "grakn.core.distribution.GraknGraqlCommandsE2E",
     srcs = [ "GraknGraqlCommandsE2E.java", "DistributionE2EConstants.java" ],
     deps = [
-        "//server",
+        "//server:server",
         "//common",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -21,7 +21,7 @@ java_test(
     test_class = "grakn.core.distribution.GraknGraqlCommands_WithARunningGraknE2E",
     srcs = [ "GraknGraqlCommands_WithARunningGraknE2E.java", "DistributionE2EConstants.java" ],
     deps = [
-        "//server",
+        "//server:server",
         "//common",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -35,7 +35,7 @@ java_test(
     test_class = "grakn.core.distribution.ConcurrencyE2E",
     srcs = ["ConcurrencyE2E.java", "DistributionE2EConstants.java"],
     deps = [
-        "//server",
+        "//server:server",
         "//common",
         "//concept/impl:concept",
         "//dependencies/maven/artifacts/commons-io:commons-io",

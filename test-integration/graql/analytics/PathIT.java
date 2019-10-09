@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.analytics;
+package graql.test.analytics;
 
 import com.google.common.collect.Lists;
 import grakn.core.kb.concept.api.ConceptId;
@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static grakn.core.graql.analytics.Utility.getResourceEdgeId;
+import static graql.test.analytics.Utility.getResourceEdgeId;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})

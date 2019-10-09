@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package graql.test.query;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.kb.concept.api.AttributeType;
@@ -24,12 +24,12 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.graql.gremlin.fragment.FragmentImpl;
-import grakn.core.graql.gremlin.fragment.InIsaFragment;
-import grakn.core.graql.gremlin.fragment.LabelFragment;
-import grakn.core.graql.gremlin.fragment.NeqFragment;
-import grakn.core.graql.gremlin.fragment.OutIsaFragment;
+import graql.test.gremlin.TraversalPlanFactoryImpl;
+import graql.test.gremlin.fragment.FragmentImpl;
+import graql.test.gremlin.fragment.InIsaFragment;
+import graql.test.gremlin.fragment.LabelFragment;
+import graql.test.gremlin.fragment.NeqFragment;
+import graql.test.gremlin.fragment.OutIsaFragment;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;

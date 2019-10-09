@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.query;
+package graql.test.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.graph.MovieGraph;
+import graql.test.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;

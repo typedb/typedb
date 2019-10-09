@@ -30,7 +30,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.core.Schema;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.test.keyspace.KeyspaceImpl;
 import grakn.core.kb.server.Session;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;

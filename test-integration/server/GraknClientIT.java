@@ -48,7 +48,7 @@ import grakn.client.concept.api.Thing;
 import grakn.client.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.SessionException;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.test.keyspace.KeyspaceImpl;
 import grakn.core.kb.server.Session;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;
