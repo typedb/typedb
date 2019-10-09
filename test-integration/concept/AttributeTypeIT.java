@@ -19,14 +19,14 @@
 
 package grakn.core.concept;
 
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.EntityType;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.exception.TransactionException;
-import grakn.core.kb.Session;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.Session;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import org.hamcrest.CoreMatchers;
 import org.junit.After;

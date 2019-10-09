@@ -18,13 +18,15 @@
 
 package grakn.core.kb.reasoner.query;
 
+import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
 import grakn.core.kb.reasoner.graph.GenericSchemaGraph;
 import grakn.core.kb.reasoner.pattern.QueryPattern;
-import grakn.core.kb.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.reasoner.unifier.UnifierType;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;

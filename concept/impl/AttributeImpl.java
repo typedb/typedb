@@ -19,14 +19,14 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.Role;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.Schema;
-import grakn.core.kb.Serialiser;
+import grakn.core.kb.concept.util.Serialiser;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

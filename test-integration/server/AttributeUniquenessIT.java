@@ -19,13 +19,13 @@
 package grakn.core.server;
 
 import grakn.core.common.util.Collections;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Label;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.core.Schema;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
 import org.junit.After;

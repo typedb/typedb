@@ -19,9 +19,9 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.Thing;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.concept.structure.VertexElementImpl;
 
 import java.util.stream.Stream;

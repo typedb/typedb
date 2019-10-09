@@ -18,12 +18,12 @@
 
 package grakn.core.kb.reasoner;
 
-import grakn.core.concept.api.Concept;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;

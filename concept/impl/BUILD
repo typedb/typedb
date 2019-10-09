@@ -18,7 +18,6 @@
 #
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
@@ -26,11 +25,14 @@ java_library(
     srcs = glob(["**/*.java"]),
     deps = [
         # Internal dependencies
-        "//concept:concept",
         "//common:common",
         "//kb:kb",
-        "//concept/structure:structure",
         "//core:core",
+        "//concept/structure:structure",
+        "//kb/concept/api:api",
+        "//kb/concept/util:util",
+        "//kb/concept/manager:manager",
+        "//kb/concept/structure:structure",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -43,21 +45,6 @@ java_library(
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
 
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
-)
-
-
-assemble_maven(
-    name = "assemble-maven",
-    target = ":concept",
-    package = "concept",
-    version_file = "//:VERSION",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
-)
-
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven"
 )
 
 checkstyle_test(

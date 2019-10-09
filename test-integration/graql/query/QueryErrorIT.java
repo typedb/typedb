@@ -19,17 +19,17 @@
 package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.Type;
-import grakn.core.kb.GraqlSemanticException;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.exception.InvalidKBException;
-import grakn.core.kb.exception.TransactionException;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.property.ValueProperty;

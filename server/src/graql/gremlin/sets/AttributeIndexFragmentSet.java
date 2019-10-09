@@ -21,12 +21,12 @@ package grakn.core.graql.gremlin.sets;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.Label;
-import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.kb.planning.Fragment;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 

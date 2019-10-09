@@ -19,23 +19,21 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.ConceptCacheLine;
-import grakn.core.concept.exception.GraknConceptException;
-import Shard;
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.Type;
-import VertexElementImpl;
+import grakn.core.core.ConceptCacheLine;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.concept.structure.Shard;
 import grakn.core.concept.structure.VertexElementImpl;
-import grakn.core.core.EdgeElement;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
-import grakn.core.core.VertexElement;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashMap;

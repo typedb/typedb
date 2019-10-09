@@ -20,17 +20,17 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Tuple;
-import grakn.core.kb.planning.spanningtree.graph.DirectedEdge;
-import grakn.core.kb.planning.spanningtree.graph.EdgeNode;
-import grakn.core.kb.planning.spanningtree.graph.Node;
-import grakn.core.kb.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.planning.spanningtree.util.Weighted;
+import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
+import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
+import grakn.core.kb.graql.planning.spanningtree.graph.Node;
+import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 
 import java.util.Map;
 import java.util.Set;
 
 import static grakn.core.common.util.Collections.tuple;
-import static grakn.core.kb.planning.spanningtree.util.Weighted.weighted;
+import static grakn.core.kb.graql.planning.spanningtree.util.Weighted.weighted;
 
 /**
  * Fragments that represent JanusGraph edges have some different properties when it comes to query planning

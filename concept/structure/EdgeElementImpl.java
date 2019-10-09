@@ -20,9 +20,9 @@
 package grakn.core.concept.structure;
 
 import grakn.core.core.Schema;
-import grakn.core.core.VertexElement;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import grakn.core.core.EdgeElement;
+import grakn.core.kb.concept.structure.EdgeElement;
 
 /**
  * Represent an Edge in a TransactionOLTP

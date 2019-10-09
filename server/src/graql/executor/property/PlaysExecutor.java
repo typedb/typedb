@@ -20,17 +20,17 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Type;
-import grakn.core.kb.executor.WriteExecutor;
-import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.executor.WriteExecutor;
+import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.executor.property.PropertyExecutor;
-import grakn.core.kb.reasoner.atom.Atomic;
-import grakn.core.kb.reasoner.atom.binary.PlaysAtom;
-import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.atom.binary.PlaysAtom;
+import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.PlaysProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import static grakn.core.kb.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.kb.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class PlaysExecutor  implements PropertyExecutor.Definable {
 

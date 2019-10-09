@@ -24,11 +24,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.concept.api.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 
-import grakn.core.kb.planning.Fragment;
-import grakn.core.kb.planning.GraqlTraversal;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

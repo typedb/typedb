@@ -21,12 +21,12 @@ package grakn.core.server.session;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
-import grakn.core.concept.api.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.kb.cache.KeyspaceSchemaCache;
-import grakn.core.kb.statistics.KeyspaceStatistics;
+import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
-import grakn.core.kb.Session;
+import grakn.core.kb.server.Session;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 

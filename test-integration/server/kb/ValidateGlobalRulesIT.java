@@ -18,11 +18,11 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.concept.impl.EntityImpl;
 import grakn.core.concept.impl.EntityTypeImpl;
@@ -30,8 +30,8 @@ import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RoleImpl;
 import grakn.core.concept.impl.ThingImpl;
 import concept.structure.Casting;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.server.ValidateGlobalRules;
 import org.junit.After;
 import org.junit.Before;

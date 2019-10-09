@@ -19,13 +19,13 @@
 
 package grakn.core.concept.structure;
 
-import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Type;
-import grakn.core.core.EdgeElement;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
-import grakn.core.core.VertexElement;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

@@ -18,8 +18,8 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import grakn.core.kb.planning.EquivalentFragmentSet;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.server.Transaction;
 
 import java.util.Collection;
 

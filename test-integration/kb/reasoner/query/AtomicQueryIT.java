@@ -19,12 +19,15 @@
 package grakn.core.kb.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.GraqlSemanticException;
-import grakn.core.kb.reasoner.unifier.MultiUnifier;
-import grakn.core.kb.reasoner.unifier.UnifierType;
+import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.kb.graql.reasoner.atom.Atom;
+import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -101,8 +104,8 @@ public class AtomicQueryIT {
             GraqlGet parentQuery = Graql.parse(parentString).asGet();
             Set<ConceptMap> answers = tx.stream(childQuery, false).collect(toSet());
             Set<ConceptMap> fullAnswers = tx.stream(parentQuery, false).collect(toSet());
-            grakn.core.kb.reasoner.atom.Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();
-            grakn.core.kb.reasoner.atom.Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().getPatterns()), tx).getAtom();
+            Atom childAtom = ReasonerQueries.atomic(conjunction(childQuery.match().getPatterns()), tx).getAtom();
+            Atom parentAtom = ReasonerQueries.atomic(conjunction(parentQuery.match().getPatterns()), tx).getAtom();
 
             MultiUnifier multiUnifier = childAtom.getMultiUnifier(childAtom, UnifierType.RULE);
             Set<ConceptMap> permutedAnswers = answers.stream()

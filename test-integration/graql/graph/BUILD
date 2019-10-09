@@ -23,7 +23,7 @@ java_library(
     srcs = ["MovieGraph.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//server:server",
 
         "@graknlabs_graql//java:graql",

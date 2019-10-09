@@ -29,7 +29,7 @@ import grakn.core.kb.reasoner.graph.ReachabilityGraph;
 import grakn.core.kb.reasoner.graph.TailRecursionGraph;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Transaction;
 import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import org.junit.ClassRule;

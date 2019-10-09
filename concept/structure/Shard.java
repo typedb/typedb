@@ -20,9 +20,9 @@
 package grakn.core.concept.structure;
 
 import com.google.common.annotations.VisibleForTesting;
-import grakn.core.core.EdgeElement;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
-import grakn.core.core.VertexElement;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.stream.Stream;

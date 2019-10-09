@@ -25,7 +25,9 @@ java_library(
     srcs = glob(["*.java"]),
     deps = [
         "//common:common",
-        "//concept:concept",
+        "//kb/concept/api:api",
+        "//kb/concept/structure:structure",
+        "//kb/concept/manager:manager",
         "//core:core",
 
         # External dependenicies from @graknlabs

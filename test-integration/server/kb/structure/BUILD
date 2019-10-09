@@ -5,7 +5,7 @@ java_test(
   srcs = ["CastingIT.java"],
   test_class = "grakn.core.server.kb.structure.CastingIT",
   deps = [
-      "//concept:concept",
+      "//kb/concept/api:api",
       "//server:server",
       "//test-integration/rule:grakn-test-server",
 
@@ -20,7 +20,7 @@ java_test(
   srcs = ["EdgeIT.java"],
   test_class = "grakn.core.server.kb.structure.EdgeIT",
   deps = [
-      "//concept:concept",
+      "//kb/concept/api:api",
       "//server:server",
       "//common",
       "//test-integration/rule:grakn-test-server",

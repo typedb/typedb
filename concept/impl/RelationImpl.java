@@ -20,13 +20,13 @@
 package grakn.core.concept.impl;
 
 import com.google.common.collect.Iterables;
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Thing;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 
 import javax.annotation.Nullable;
 import java.util.Map;

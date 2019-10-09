@@ -23,7 +23,7 @@ java_test(
     test_class = "grakn.core.server.session.SessionIT",
     srcs = ["SessionIT.java"],
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//server:server",
         "//test-integration/rule:grakn-test-server"
     ],
@@ -38,7 +38,7 @@ java_test(
     test_class = "grakn.core.server.session.TransactionOLTPIT",
     deps = [
         "//common",
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -59,7 +59,7 @@ java_test(
         "//server",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
-        "//concept:concept",
+        "//kb/concept/api:api",
         "@graknlabs_graql//java:graql"
     ],
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -72,7 +72,7 @@ java_test(
     deps = [
         "//server",
         "//test-integration/rule:grakn-test-server",
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",

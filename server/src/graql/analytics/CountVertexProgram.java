@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.kb.exception.GraknServerException;
+import grakn.core.kb.server.exception.GraknServerException;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MessageScope;
 import org.apache.tinkerpop.gremlin.process.computer.Messenger;

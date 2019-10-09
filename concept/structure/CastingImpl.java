@@ -19,15 +19,16 @@
 
 package grakn.core.concept.structure;
 
-import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.ConceptCacheLine;
-import grakn.core.core.Casting;
-import grakn.core.core.ConceptManager;
-import grakn.core.core.EdgeElement;
+import grakn.core.core.ConceptCacheLine;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.structure.AbstractElement;
+import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
 
 import javax.annotation.Nullable;

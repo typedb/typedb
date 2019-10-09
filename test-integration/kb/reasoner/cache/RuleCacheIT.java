@@ -19,16 +19,16 @@
 package grakn.core.kb.reasoner.cache;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Rule;
-import grakn.core.concept.api.Type;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
-import grakn.core.kb.cache.RuleCache;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.RuleCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import java.util.Collections;

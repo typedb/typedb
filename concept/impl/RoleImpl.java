@@ -19,13 +19,13 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.ConceptCacheLine;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Type;
+import grakn.core.core.ConceptCacheLine;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.concept.structure.VertexElementImpl;
-import grakn.core.core.Casting;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Casting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;

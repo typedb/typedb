@@ -18,7 +18,7 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.kb.Session;
+import grakn.core.kb.server.Session;
 import grakn.protocol.session.SessionProto;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.SessionFactory;

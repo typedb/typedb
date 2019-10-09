@@ -20,10 +20,9 @@ package grakn.core.graql.gremlin.sets;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.concept.api.SchemaConcept;
-import grakn.core.kb.planning.EquivalentFragmentSet;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.kb.planning.Fragment;
+import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 

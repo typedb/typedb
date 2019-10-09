@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Iterators;
-import grakn.core.concept.api.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.core.Schema;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.MemoryComputeKey;

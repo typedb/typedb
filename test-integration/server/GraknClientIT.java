@@ -25,7 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.concept.api.Rule;
+import grakn.core.kb.concept.api.Rule;
 import grakn.client.GraknClient;
 import grakn.client.answer.AnswerGroup;
 import grakn.client.answer.ConceptList;
@@ -47,11 +47,11 @@ import grakn.client.concept.api.SchemaConcept;
 import grakn.client.concept.api.Thing;
 import grakn.client.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.exception.SessionException;
+import grakn.core.kb.server.exception.SessionException;
 import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.kb.Session;
+import grakn.core.kb.server.Session;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDelete;
@@ -62,7 +62,6 @@ import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
@@ -223,7 +222,7 @@ public class GraknClientIT {
         try (Transaction tx = localSession.readTransaction()) {
             for (ConceptMap answer : answers) {
                 assertThat(answer.map().keySet(), contains(new Variable("x")));
-                assertNotNull(tx.getConcept(grakn.core.concept.api.ConceptId.of(answer.get("x").id().getValue())));
+                assertNotNull(tx.getConcept(grakn.core.kb.concept.api.ConceptId.of(answer.get("x").id().getValue())));
             }
         }
     }
@@ -349,7 +348,7 @@ public class GraknClientIT {
 
             remoteTx.stream(query).forEach(answer -> {
                 Concept remoteConcept = answer.get("x");
-                grakn.core.concept.api.Concept localConcept = localTx.getConcept(grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue()));
+                grakn.core.kb.concept.api.Concept localConcept = localTx.getConcept(grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue()));
 
                 assertEquals(localConcept.isAttribute(), remoteConcept.isAttribute());
                 assertEquals(localConcept.isAttributeType(), remoteConcept.isAttributeType());
@@ -371,17 +370,17 @@ public class GraknClientIT {
     @Test
     public void testExecutingDeleteQueries_ConceptsAreDeleted() {
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.EntityType person = tx.putEntityType("person");
-            grakn.core.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
-            grakn.core.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.concept.api.AttributeType.DataType.STRING);
-            grakn.core.concept.api.Role actor = tx.putRole("actor");
-            grakn.core.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
-            grakn.core.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
+            grakn.core.kb.concept.api.EntityType person = tx.putEntityType("person");
+            grakn.core.kb.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
+            grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
+            grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
-            grakn.core.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
-            grakn.core.concept.api.Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
+            grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
+            grakn.core.kb.concept.api.Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
             hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
             tx.commit();
         }
@@ -400,17 +399,17 @@ public class GraknClientIT {
     @Test
     public void testGettingARelation_TheInformationOnTheRelationIsCorrect() {
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.EntityType person = tx.putEntityType("person");
-            grakn.core.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
-            grakn.core.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.concept.api.AttributeType.DataType.STRING);
-            grakn.core.concept.api.Role actor = tx.putRole("actor");
-            grakn.core.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
-            grakn.core.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
+            grakn.core.kb.concept.api.EntityType person = tx.putEntityType("person");
+            grakn.core.kb.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
+            grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
+            grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
-            grakn.core.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
-            grakn.core.concept.api.Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
+            grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
+            grakn.core.kb.concept.api.Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
             hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
             tx.commit();
         }
@@ -419,16 +418,16 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").isa("has-cast")).get();
             Relation remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelation();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Relation localConcept = localTx.getConcept(localId).asRelation();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.Relation localConcept = localTx.getConcept(localId).asRelation();
 
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Relation::rolePlayers,
+                    grakn.core.kb.concept.api.Relation::rolePlayers,
                     grakn.client.concept.api.Relation::rolePlayers);
 
                     ImmutableMultimap.Builder<String, String> localRolePlayers = ImmutableMultimap.builder();
             localConcept.rolePlayersMap().forEach((role, players) -> {
-                for (grakn.core.concept.api.Thing player : players) {
+                for (grakn.core.kb.concept.api.Thing player : players) {
                     localRolePlayers.put(role.id().toString(), player.id().toString());
                 }
             });
@@ -448,8 +447,8 @@ public class GraknClientIT {
     @Test
     public void testGettingASchemaConcept_TheInformationOnTheSchemaConceptIsCorrect() {
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.EntityType human = tx.putEntityType("human");
-            grakn.core.concept.api.EntityType man = tx.putEntityType("man").sup(human);
+            grakn.core.kb.concept.api.EntityType human = tx.putEntityType("human");
+            grakn.core.kb.concept.api.EntityType man = tx.putEntityType("man").sup(human);
             tx.putEntityType("child").sup(man);
             tx.commit();
         }
@@ -458,17 +457,17 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("man")).get();
             SchemaConcept remoteConcept = remoteTx.stream(query).findAny().get().get("x").asSchemaConcept();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.SchemaConcept localConcept = localTx.getConcept(localId).asSchemaConcept();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.SchemaConcept localConcept = localTx.getConcept(localId).asSchemaConcept();
 
             assertEquals(localConcept.isImplicit(), remoteConcept.isImplicit());
             assertEquals(localConcept.label().toString(), remoteConcept.label().toString());
             assertEquals(localConcept.sup().id().toString(), remoteConcept.sup().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.SchemaConcept::sups,
+                    grakn.core.kb.concept.api.SchemaConcept::sups,
                     grakn.client.concept.api.SchemaConcept::sups);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.SchemaConcept::subs,
+                    grakn.core.kb.concept.api.SchemaConcept::subs,
                     grakn.client.concept.api.SchemaConcept::subs);
         }
     }
@@ -476,17 +475,17 @@ public class GraknClientIT {
     @Test
     public void testGettingAThing_TheInformationOnTheThingIsCorrect() {
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.EntityType person = tx.putEntityType("person");
-            grakn.core.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
-            grakn.core.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.concept.api.AttributeType.DataType.STRING);
-            grakn.core.concept.api.Role actor = tx.putRole("actor");
-            grakn.core.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
-            grakn.core.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
+            grakn.core.kb.concept.api.EntityType person = tx.putEntityType("person");
+            grakn.core.kb.concept.api.AttributeType name = tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.AttributeType email = tx.putAttributeType("email", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
+            grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
+            grakn.core.kb.concept.api.RelationType hasCast = tx.putRelationType("has-cast").relates(actor).relates(characterBeingPlayed);
             person.key(email).has(name);
             person.plays(actor).plays(characterBeingPlayed);
 
-            grakn.core.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
-            grakn.core.concept.api.Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
+            grakn.core.kb.concept.api.Entity marco = person.create().has(name.create("marco")).has(email.create("marco@yolo.com"));
+            grakn.core.kb.concept.api.Entity luca = person.create().has(name.create("luca")).has(email.create("luca@yolo.com"));
             hasCast.create().assign(actor, marco).assign(characterBeingPlayed, luca);
             tx.commit();
         }
@@ -495,22 +494,22 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").isa("person")).get();
             Thing remoteConcept = remoteTx.stream(query).findAny().get().get("x").asThing();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Thing localConcept = localTx.getConcept(localId).asThing();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.Thing localConcept = localTx.getConcept(localId).asThing();
 
             assertEquals(localConcept.isInferred(), remoteConcept.isInferred());
             assertEquals(localConcept.type().id().toString(), remoteConcept.type().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Thing::attributes,
+                    grakn.core.kb.concept.api.Thing::attributes,
                     grakn.client.concept.api.Thing::attributes);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Thing::keys,
+                    grakn.core.kb.concept.api.Thing::keys,
                     grakn.client.concept.api.Thing::keys);
 //            assertEqualConcepts(localConcept, remoteConcept,  //TODO: re-enable when #19630 is fixed
-//                  grakn.core.concept.api.Thing::plays);
+//                  grakn.core.kb.concept.api.Thing::plays);
 //                  grakn.client.concept.Thing::plays);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Thing::relations,
+                    grakn.core.kb.concept.api.Thing::relations,
                     grakn.client.concept.api.Thing::relations);
         }
     }
@@ -518,14 +517,14 @@ public class GraknClientIT {
     @Test
     public void testGettingAType_TheInformationOnTheTypeIsCorrect() {
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.Role productionWithCast = tx.putRole("production-with-cast");
-            grakn.core.concept.api.Role actor = tx.putRole("actor");
-            grakn.core.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
+            grakn.core.kb.concept.api.Role productionWithCast = tx.putRole("production-with-cast");
+            grakn.core.kb.concept.api.Role actor = tx.putRole("actor");
+            grakn.core.kb.concept.api.Role characterBeingPlayed = tx.putRole("character-being-played");
             tx.putRelationType("has-cast").relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
-            grakn.core.concept.api.EntityType person = tx.putEntityType("person").plays(actor).plays(characterBeingPlayed);
+            grakn.core.kb.concept.api.EntityType person = tx.putEntityType("person").plays(actor).plays(characterBeingPlayed);
 
-            person.has(tx.putAttributeType("gender", grakn.core.concept.api.AttributeType.DataType.STRING));
-            person.has(tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING));
+            person.has(tx.putAttributeType("gender", grakn.core.kb.concept.api.AttributeType.DataType.STRING));
+            person.has(tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.DataType.STRING));
 
             person.create();
             person.create();
@@ -536,21 +535,21 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("person")).get();
             Type remoteConcept = remoteTx.stream(query).findAny().get().get("x").asType();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Type localConcept = localTx.getConcept(localId).asType();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.Type localConcept = localTx.getConcept(localId).asType();
 
             assertEquals(localConcept.isAbstract(), remoteConcept.isAbstract());
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Type::playing,
+                    grakn.core.kb.concept.api.Type::playing,
                     grakn.client.concept.api.Type::playing);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Type::instances,
+                    grakn.core.kb.concept.api.Type::instances,
                     grakn.client.concept.api.Type::instances);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Type::attributes,
+                    grakn.core.kb.concept.api.Type::attributes,
                     grakn.client.concept.api.Type::attributes);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Type::keys,
+                    grakn.core.kb.concept.api.Type::keys,
                     grakn.client.concept.api.Type::keys);
         }
     }
@@ -558,9 +557,9 @@ public class GraknClientIT {
     @Test
     public void testGettingARole_TheInformationOnTheRoleIsCorrect() {
         try (Transaction localTx = localSession.writeTransaction()) {
-            grakn.core.concept.api.Role productionWithCast = localTx.putRole("production-with-cast");
-            grakn.core.concept.api.Role actor = localTx.putRole("actor");
-            grakn.core.concept.api.Role characterBeingPlayed = localTx.putRole("character-being-played");
+            grakn.core.kb.concept.api.Role productionWithCast = localTx.putRole("production-with-cast");
+            grakn.core.kb.concept.api.Role actor = localTx.putRole("actor");
+            grakn.core.kb.concept.api.Role characterBeingPlayed = localTx.putRole("character-being-played");
             localTx.putRelationType("has-cast")
                     .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             localTx.commit();
@@ -570,14 +569,14 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("actor")).get();
             Role remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRole();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Role localConcept = localTx.getConcept(localId).asRole();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.Role localConcept = localTx.getConcept(localId).asRole();
 
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Role::players,
+                    grakn.core.kb.concept.api.Role::players,
                     grakn.client.concept.api.Role::players);
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Role::relations,
+                    grakn.core.kb.concept.api.Role::relations,
                     grakn.client.concept.api.Role::relations);
         }
     }
@@ -585,7 +584,7 @@ public class GraknClientIT {
     @Test
     public void testGettingARule_TheInformationOnTheRuleIsCorrect() {
         try (Transaction tx = localSession.writeTransaction()) {
-            tx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
+            tx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
             Pattern when = Graql.parsePattern("$x has name 'expectation-when';");
             Pattern then = Graql.parsePattern("$x has name 'expectation-then';");
 
@@ -602,7 +601,7 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("expectation-rule")).get();
             grakn.client.concept.api.Rule remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRule();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
             Rule localConcept = localTx.getConcept(localId).asRule();
 
             assertEquals(localConcept.when(), remoteConcept.when());
@@ -621,8 +620,8 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("person")).get();
             EntityType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntityType();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.EntityType localConcept = localTx.getConcept(localId).asEntityType();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.EntityType localConcept = localTx.getConcept(localId).asEntityType();
 
             // There actually aren't any new methods on EntityType, but we should still check we can get them
             assertEquals(localConcept.id().toString(), remoteConcept.id().toString());
@@ -632,9 +631,9 @@ public class GraknClientIT {
     @Test
     public void testGettingARelationType_TheInformationOnTheRelationTypeIsCorrect() {
         try (Transaction localTx = localSession.writeTransaction()) {
-            grakn.core.concept.api.Role productionWithCast = localTx.putRole("production-with-cast");
-            grakn.core.concept.api.Role actor = localTx.putRole("actor");
-            grakn.core.concept.api.Role characterBeingPlayed = localTx.putRole("character-being-played");
+            grakn.core.kb.concept.api.Role productionWithCast = localTx.putRole("production-with-cast");
+            grakn.core.kb.concept.api.Role actor = localTx.putRole("actor");
+            grakn.core.kb.concept.api.Role characterBeingPlayed = localTx.putRole("character-being-played");
             localTx.putRelationType("has-cast")
                     .relates(productionWithCast).relates(actor).relates(characterBeingPlayed);
             localTx.commit();
@@ -644,11 +643,11 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("has-cast")).get();
             RelationType remoteConcept = remoteTx.stream(query).findAny().get().get("x").asRelationType();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.RelationType localConcept = localTx.getConcept(localId).asRelationType();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.RelationType localConcept = localTx.getConcept(localId).asRelationType();
 
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.RelationType::roles,
+                    grakn.core.kb.concept.api.RelationType::roles,
                     grakn.client.concept.api.RelationType::roles);
         }
     }
@@ -657,7 +656,7 @@ public class GraknClientIT {
     @Test
     public void testGettingAnAttributeType_TheInformationOnTheAttributeTypeIsCorrect() {
         try (Transaction localTx = localSession.writeTransaction()) {
-            grakn.core.concept.api.AttributeType title = localTx.putAttributeType("title", grakn.core.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.AttributeType title = localTx.putAttributeType("title", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
             title.create("The Muppets");
             localTx.commit();
         }
@@ -666,8 +665,8 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").type("title")).get();
             AttributeType<String> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttributeType();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.AttributeType<String> localConcept = localTx.getConcept(localId).asAttributeType();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.AttributeType<String> localConcept = localTx.getConcept(localId).asAttributeType();
 
             assertEquals(localConcept.dataType().dataClass(), remoteConcept.dataType().dataClass());
             assertEquals(localConcept.regex(), remoteConcept.regex());
@@ -681,7 +680,7 @@ public class GraknClientIT {
     @Test
     public void testGettingAnEntity_TheInformationOnTheEntityIsCorrect() {
         try (Transaction localTx = localSession.writeTransaction()) {
-            grakn.core.concept.api.EntityType movie = localTx.putEntityType("movie");
+            grakn.core.kb.concept.api.EntityType movie = localTx.putEntityType("movie");
             movie.create();
             localTx.commit();
         }
@@ -690,8 +689,8 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").isa("movie")).get();
             Entity remoteConcept = remoteTx.stream(query).findAny().get().get("x").asEntity();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Entity localConcept = localTx.getConcept(localId).asEntity();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.Entity localConcept = localTx.getConcept(localId).asEntity();
 
             // There actually aren't any new methods on Entity, but we should still check we can get them
             assertEquals(localConcept.id().toString(), remoteConcept.id().toString());
@@ -701,10 +700,10 @@ public class GraknClientIT {
     @Test
     public void testGettingAnAttribute_TheInformationOnTheAttributeIsCorrect() {
         try (Transaction localTx = localSession.writeTransaction()) {
-            grakn.core.concept.api.EntityType person = localTx.putEntityType("person");
-            grakn.core.concept.api.AttributeType name = localTx.putAttributeType("name", grakn.core.concept.api.AttributeType.DataType.STRING);
+            grakn.core.kb.concept.api.EntityType person = localTx.putEntityType("person");
+            grakn.core.kb.concept.api.AttributeType name = localTx.putAttributeType("name", grakn.core.kb.concept.api.AttributeType.DataType.STRING);
             person.has(name);
-            grakn.core.concept.api.Attribute alice = name.create("Alice");
+            grakn.core.kb.concept.api.Attribute alice = name.create("Alice");
             person.create().has(alice);
             localTx.commit();
         }
@@ -714,14 +713,14 @@ public class GraknClientIT {
         ) {
             GraqlGet query = Graql.match(var("x").isa("name")).get();
             Attribute<?> remoteConcept = remoteTx.stream(query).findAny().get().get("x").asAttribute();
-            grakn.core.concept.api.ConceptId localId = grakn.core.concept.api.ConceptId.of(remoteConcept.id().getValue());
-            grakn.core.concept.api.Attribute<?> localConcept = localTx.getConcept(localId).asAttribute();
+            grakn.core.kb.concept.api.ConceptId localId = grakn.core.kb.concept.api.ConceptId.of(remoteConcept.id().getValue());
+            grakn.core.kb.concept.api.Attribute<?> localConcept = localTx.getConcept(localId).asAttribute();
 
             assertEquals(localConcept.dataType().dataClass(), remoteConcept.dataType().dataClass());
             assertEquals(localConcept.value(), remoteConcept.value());
             assertEquals(localConcept.owner().id().toString(), remoteConcept.owners().findFirst().get().id().toString());
             assertEqualConcepts(localConcept, remoteConcept,
-                    grakn.core.concept.api.Attribute::owners,
+                    grakn.core.kb.concept.api.Attribute::owners,
                     grakn.client.concept.api.Attribute::owners);
         }
     }
@@ -729,19 +728,19 @@ public class GraknClientIT {
 
     @Test
     public void testExecutingComputeQueryies_ResultsAreCorrect() {
-        grakn.core.concept.api.ConceptId idCoco, idMike, idCocoAndMike;
+        grakn.core.kb.concept.api.ConceptId idCoco, idMike, idCocoAndMike;
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.Role pet = tx.putRole("pet");
-            grakn.core.concept.api.Role owner = tx.putRole("owner");
-            grakn.core.concept.api.EntityType animal = tx.putEntityType("animal").plays(pet);
-            grakn.core.concept.api.EntityType human = tx.putEntityType("human").plays(owner);
-            grakn.core.concept.api.RelationType petOwnership = tx.putRelationType("pet-ownership").relates(pet).relates(owner);
-            grakn.core.concept.api.AttributeType<Long> age = tx.putAttributeType("age", grakn.core.concept.api.AttributeType.DataType.LONG);
+            grakn.core.kb.concept.api.Role pet = tx.putRole("pet");
+            grakn.core.kb.concept.api.Role owner = tx.putRole("owner");
+            grakn.core.kb.concept.api.EntityType animal = tx.putEntityType("animal").plays(pet);
+            grakn.core.kb.concept.api.EntityType human = tx.putEntityType("human").plays(owner);
+            grakn.core.kb.concept.api.RelationType petOwnership = tx.putRelationType("pet-ownership").relates(pet).relates(owner);
+            grakn.core.kb.concept.api.AttributeType<Long> age = tx.putAttributeType("age", grakn.core.kb.concept.api.AttributeType.DataType.LONG);
             human.has(age);
 
-            grakn.core.concept.api.Entity coco = animal.create();
-            grakn.core.concept.api.Entity mike = human.create();
-            grakn.core.concept.api.Relation cocoAndMike = petOwnership.create().assign(pet, coco).assign(owner, mike);
+            grakn.core.kb.concept.api.Entity coco = animal.create();
+            grakn.core.kb.concept.api.Entity mike = human.create();
+            grakn.core.kb.concept.api.Relation cocoAndMike = petOwnership.create().assign(pet, coco).assign(owner, mike);
             mike.has(age.create(10L));
 
             idCoco = coco.id();
@@ -876,7 +875,7 @@ public class GraknClientIT {
         Label label = Label.of("hello");
 
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.Label localLabel = grakn.core.concept.api.Label.of(label.getValue());
+            grakn.core.kb.concept.api.Label localLabel = grakn.core.kb.concept.api.Label.of(label.getValue());
             tx.putEntityType(localLabel);
             tx.commit();
         }
@@ -890,7 +889,7 @@ public class GraknClientIT {
         }
 
         try (Transaction tx = localSession.writeTransaction()) {
-            grakn.core.concept.api.Label localLabel = grakn.core.concept.api.Label.of(label.getValue());
+            grakn.core.kb.concept.api.Label localLabel = grakn.core.kb.concept.api.Label.of(label.getValue());
             assertNull(tx.getSchemaConcept(localLabel));
         }
     }
@@ -947,16 +946,16 @@ public class GraknClientIT {
         }
 
         try (Transaction tx = localSession.readTransaction()) {
-            grakn.core.concept.api.EntityType animal = tx.getEntityType("animal");
-            grakn.core.concept.api.EntityType dog = tx.getEntityType("dog");
-            grakn.core.concept.api.EntityType cat = tx.getEntityType("feline");
-            grakn.core.concept.api.RelationType chases = tx.getRelationType("chases");
-            grakn.core.concept.api.Role chased = tx.getRole("chased");
-            grakn.core.concept.api.Role chaser = tx.getRole("chaser");
-            grakn.core.concept.api.AttributeType<String> name = tx.getAttributeType("name");
-            grakn.core.concept.api.AttributeType<String> id = tx.getAttributeType("id");
-            grakn.core.concept.api.Entity dunstan = Iterators.getOnlyElement(dog.instances().iterator());
-            grakn.core.concept.api.Relation aChase = Iterators.getOnlyElement(chases.instances().iterator());
+            grakn.core.kb.concept.api.EntityType animal = tx.getEntityType("animal");
+            grakn.core.kb.concept.api.EntityType dog = tx.getEntityType("dog");
+            grakn.core.kb.concept.api.EntityType cat = tx.getEntityType("feline");
+            grakn.core.kb.concept.api.RelationType chases = tx.getRelationType("chases");
+            grakn.core.kb.concept.api.Role chased = tx.getRole("chased");
+            grakn.core.kb.concept.api.Role chaser = tx.getRole("chaser");
+            grakn.core.kb.concept.api.AttributeType<String> name = tx.getAttributeType("name");
+            grakn.core.kb.concept.api.AttributeType<String> id = tx.getAttributeType("id");
+            grakn.core.kb.concept.api.Entity dunstan = Iterators.getOnlyElement(dog.instances().iterator());
+            grakn.core.kb.concept.api.Relation aChase = Iterators.getOnlyElement(chases.instances().iterator());
 
             assertEquals(animal, dog.sup());
             assertEquals(animal, cat.sup());
@@ -976,7 +975,7 @@ public class GraknClientIT {
 
             assertEquals("good-dog", Iterables.getOnlyElement(dunstan.keys(id).collect(toSet())).value());
 
-            ImmutableMap<grakn.core.concept.api.Role, ImmutableSet<?>> expectedRolePlayers =
+            ImmutableMap<grakn.core.kb.concept.api.Role, ImmutableSet<?>> expectedRolePlayers =
                     ImmutableMap.of(chaser, ImmutableSet.of(dunstan), chased, ImmutableSet.of());
 
             assertEquals(expectedRolePlayers, aChase.rolePlayersMap());
@@ -1063,8 +1062,8 @@ public class GraknClientIT {
     }
 
 
-    private <T extends grakn.core.concept.api.Concept, S extends Concept> void assertEqualConcepts(
-            T conceptLocal, S conceptRemote, Function<T,Stream<?extends grakn.core.concept.api.Concept>> functionLocal,
+    private <T extends grakn.core.kb.concept.api.Concept, S extends Concept> void assertEqualConcepts(
+            T conceptLocal, S conceptRemote, Function<T,Stream<?extends grakn.core.kb.concept.api.Concept>> functionLocal,
             Function<S, Stream<? extends Concept>> functionRemote
     ) {
         assertEquals(

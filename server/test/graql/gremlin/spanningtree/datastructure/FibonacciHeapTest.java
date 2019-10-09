@@ -18,7 +18,7 @@
 package grakn.core.graql.gremlin.spanningtree.datastructure;
 
 import com.google.common.collect.Maps;
-import grakn.core.kb.planning.spanningtree.datastructure.FibonacciHeap;
+import grakn.core.kb.graql.planning.spanningtree.datastructure.FibonacciHeap;
 import org.junit.Test;
 
 import java.util.Arrays;

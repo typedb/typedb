@@ -19,13 +19,13 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.core.Schema;
-import grakn.core.kb.Transaction;
-import grakn.core.kb.statistics.KeyspaceStatistics;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;

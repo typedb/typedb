@@ -19,17 +19,17 @@
 package grakn.core.server.kb;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.exception.InvalidKBException;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;

@@ -19,7 +19,7 @@
 
 package grakn.core.graql.executor.property;
 
-import grakn.core.kb.GraqlSemanticException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.property.HasAttributeProperty;
@@ -38,8 +38,8 @@ import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.property.WhenProperty;
 import graql.lang.statement.Variable;
-import grakn.core.kb.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.graql.executor.property.PropertyExecutor;
 
 public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 

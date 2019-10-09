@@ -18,11 +18,10 @@
  */
 package grakn.core.concept.structure;
 
-import grakn.core.concept.api.Role;
-import grakn.core.concept.exception.GraknElementException;
-import grakn.core.core.AbstractElement;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.structure.AbstractElement;
 import grakn.core.core.Schema;
-import grakn.core.core.VertexElement;
+import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;

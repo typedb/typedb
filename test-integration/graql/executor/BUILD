@@ -23,7 +23,7 @@ java_test(
     test_class = "grakn.core.graql.executor.IsaExplicitIT",
     srcs = ["IsaExplicitIT.java"],
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 

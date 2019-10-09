@@ -18,12 +18,13 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.kb.exception.GraknServerException;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.keyspace.KeyspaceManager;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.protocol.keyspace.KeyspaceProto;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.kb.server.exception.GraknServerException;
 
 import java.util.stream.Collectors;
 
@@ -41,7 +42,7 @@ public class ServerKeyspaceRequestsHandler implements KeyspaceRequestsHandler {
 
     @Override
     public Iterable<String> retrieve(KeyspaceProto.Keyspace.Retrieve.Req request) {
-        return this.keyspaceManager.keyspaces().stream().map(KeyspaceImpl::name).collect(Collectors.toSet());
+        return this.keyspaceManager.keyspaces().stream().map(Keyspace::name).collect(Collectors.toSet());
     }
 
     @Override

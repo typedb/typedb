@@ -18,7 +18,7 @@
 
 package grakn.core.graql.analytics;
 
-import grakn.core.concept.api.LabelId;
+import grakn.core.kb.concept.api.LabelId;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;

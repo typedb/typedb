@@ -18,12 +18,12 @@
 
 package grakn.core.server.rpc;
 
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.Label;
-import grakn.core.kb.InvalidKBException;
-import grakn.core.kb.Serialiser;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.concept.util.Serialiser;
 import grakn.protocol.session.ConceptProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 public class ConceptMethod {
 
     public static Transaction.Res run(Concept concept, ConceptProto.Method.Req req,
-                                      SessionService.Iterators iterators, grakn.core.kb.Transaction tx) {
+                                      SessionService.Iterators iterators, grakn.core.kb.server.Transaction tx) {
         ConceptHolder con = new ConceptHolder(concept, tx, iterators);
         switch (req.getReqCase()) {
             // Concept methods
@@ -174,17 +174,17 @@ public class ConceptMethod {
      */
     public static class ConceptHolder {
 
-        private grakn.core.concept.api.Concept concept;
-        private grakn.core.kb.Transaction tx;
+        private grakn.core.kb.concept.api.Concept concept;
+        private grakn.core.kb.server.Transaction tx;
         private SessionService.Iterators iterators;
 
-        ConceptHolder(grakn.core.concept.api.Concept concept, grakn.core.kb.Transaction tx, SessionService.Iterators iterators) {
+        ConceptHolder(grakn.core.kb.concept.api.Concept concept, grakn.core.kb.server.Transaction tx, SessionService.Iterators iterators) {
             this.concept = concept;
             this.tx = tx;
             this.iterators = iterators;
         }
 
-        private grakn.core.concept.api.Concept convert(ConceptProto.Concept protoConcept) {
+        private grakn.core.kb.concept.api.Concept convert(ConceptProto.Concept protoConcept) {
             return tx.getConcept(ConceptId.of(protoConcept.getId()));
         }
 
@@ -239,7 +239,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Concept}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Concept}
          */
         private class Concept {
 
@@ -250,7 +250,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.SchemaConcept}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.SchemaConcept}
          */
         private class SchemaConcept {
 
@@ -280,7 +280,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res sup() {
-                grakn.core.concept.api.Concept superConcept = concept.asSchemaConcept().sup();
+                grakn.core.kb.concept.api.Concept superConcept = concept.asSchemaConcept().sup();
 
                 ConceptProto.SchemaConcept.GetSup.Res.Builder responseConcept = ConceptProto.SchemaConcept.GetSup.Res.newBuilder();
                 if (superConcept == null) responseConcept.setNull(ConceptProto.Null.getDefaultInstance());
@@ -296,8 +296,8 @@ public class ConceptMethod {
                 // Make the second argument the super of the first argument
                 // @throws GraqlQueryException if the types are different, or setting the super to be a meta-type
 
-                grakn.core.concept.api.SchemaConcept sup = convert(superConcept).asSchemaConcept();
-                grakn.core.concept.api.SchemaConcept sub = concept.asSchemaConcept();
+                grakn.core.kb.concept.api.SchemaConcept sup = convert(superConcept).asSchemaConcept();
+                grakn.core.kb.concept.api.SchemaConcept sub = concept.asSchemaConcept();
 
                 if (sup.isEntityType()) {
                     sub.asEntityType().sup(sup.asEntityType());
@@ -317,7 +317,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res sups() {
-                Stream<? extends grakn.core.concept.api.SchemaConcept> concepts = concept.asSchemaConcept().sups();
+                Stream<? extends grakn.core.kb.concept.api.SchemaConcept> concepts = concept.asSchemaConcept().sups();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -335,7 +335,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res subs() {
-                Stream<? extends grakn.core.concept.api.SchemaConcept> concepts = concept.asSchemaConcept().subs();
+                Stream<? extends grakn.core.kb.concept.api.SchemaConcept> concepts = concept.asSchemaConcept().subs();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -354,7 +354,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Rule}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Rule}
          */
         private class Rule {
 
@@ -386,12 +386,12 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Role}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Role}
          */
         private class Role {
 
             private Transaction.Res relations() {
-                Stream<grakn.core.concept.api.RelationType> concepts = concept.asRole().relations();
+                Stream<grakn.core.kb.concept.api.RelationType> concepts = concept.asRole().relations();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -409,7 +409,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res players() {
-                Stream<grakn.core.concept.api.Type> concepts = concept.asRole().players();
+                Stream<grakn.core.kb.concept.api.Type> concepts = concept.asRole().players();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -428,12 +428,12 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Type}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Type}
          */
         private class Type {
 
             private Transaction.Res instances() {
-                Stream<? extends grakn.core.concept.api.Thing> concepts = concept.asType().instances();
+                Stream<? extends grakn.core.kb.concept.api.Thing> concepts = concept.asType().instances();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -466,7 +466,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res keys() {
-                Stream<grakn.core.concept.api.AttributeType> concepts = concept.asType().keys();
+                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().keys();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -484,7 +484,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res attributes() {
-                Stream<grakn.core.concept.api.AttributeType> concepts = concept.asType().attributes();
+                Stream<grakn.core.kb.concept.api.AttributeType> concepts = concept.asType().attributes();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -502,7 +502,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res playing() {
-                Stream<grakn.core.concept.api.Role> concepts = concept.asType().playing();
+                Stream<grakn.core.kb.concept.api.Role> concepts = concept.asType().playing();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -520,44 +520,44 @@ public class ConceptMethod {
             }
 
             private Transaction.Res key(ConceptProto.Concept protoKey) {
-                grakn.core.concept.api.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
+                grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
                 concept.asType().key(attributeType);
                 return null;
             }
 
             private Transaction.Res has(ConceptProto.Concept protoAttribute) {
-                grakn.core.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
+                grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
                 concept.asType().has(attributeType);
                 return null;
             }
 
             private Transaction.Res plays(ConceptProto.Concept protoRole) {
-                grakn.core.concept.api.Role role = convert(protoRole).asRole();
+                grakn.core.kb.concept.api.Role role = convert(protoRole).asRole();
                 concept.asType().plays(role);
                 return null;
             }
 
             private Transaction.Res unkey(ConceptProto.Concept protoKey) {
-                grakn.core.concept.api.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
+                grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoKey).asAttributeType();
                 concept.asType().unkey(attributeType);
                 return null;
             }
 
             private Transaction.Res unhas(ConceptProto.Concept protoAttribute) {
-                grakn.core.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
+                grakn.core.kb.concept.api.AttributeType<?> attributeType = convert(protoAttribute).asAttributeType();
                 concept.asType().unhas(attributeType);
                 return null;
             }
 
             private Transaction.Res unplay(ConceptProto.Concept protoRole) {
-                grakn.core.concept.api.Role role = convert(protoRole).asRole();
+                grakn.core.kb.concept.api.Role role = convert(protoRole).asRole();
                 concept.asType().unplay(role);
                 return null;
             }
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.EntityType}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.EntityType}
          */
         private class EntityType {
 
@@ -573,12 +573,12 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.RelationType}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.RelationType}
          */
         private class RelationType {
 
             private Transaction.Res create() {
-                grakn.core.concept.api.Relation relation = concept.asRelationType().create();
+                grakn.core.kb.concept.api.Relation relation = concept.asRelationType().create();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setRelationTypeCreateRes(ConceptProto.RelationType.Create.Res.newBuilder()
@@ -588,7 +588,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res roles() {
-                Stream<grakn.core.concept.api.Role> roles = concept.asRelationType().roles();
+                Stream<grakn.core.kb.concept.api.Role> roles = concept.asRelationType().roles();
 
                 Stream<SessionProto.Transaction.Res> responses = roles.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -606,20 +606,20 @@ public class ConceptMethod {
             }
 
             private Transaction.Res relates(ConceptProto.Concept protoRole) {
-                grakn.core.concept.api.Role role = convert(protoRole).asRole();
+                grakn.core.kb.concept.api.Role role = convert(protoRole).asRole();
                 concept.asRelationType().relates(role);
                 return null;
             }
 
             private Transaction.Res unrelate(ConceptProto.Concept protoRole) {
-                grakn.core.concept.api.Role role = convert(protoRole).asRole();
+                grakn.core.kb.concept.api.Role role = convert(protoRole).asRole();
                 concept.asRelationType().unrelate(role);
                 return null;
             }
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.AttributeType}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.AttributeType}
          */
         private class AttributeType {
 
@@ -645,7 +645,7 @@ public class ConceptMethod {
             }
 
             private <D> Transaction.Res create(D value) {
-                grakn.core.concept.api.Attribute<D> attribute = concept.<D>asAttributeType().create(value);
+                grakn.core.kb.concept.api.Attribute<D> attribute = concept.<D>asAttributeType().create(value);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setAttributeTypeCreateRes(ConceptProto.AttributeType.Create.Res.newBuilder()
@@ -656,7 +656,7 @@ public class ConceptMethod {
 
             private Transaction.Res attribute(ConceptProto.ValueObject protoValue) {
                 Object value = protoValue.getAllFields().values().iterator().next();
-                grakn.core.concept.api.Attribute<?> attribute = concept.asAttributeType().attribute(value);
+                grakn.core.kb.concept.api.Attribute<?> attribute = concept.asAttributeType().attribute(value);
 
                 ConceptProto.AttributeType.Attribute.Res.Builder methodResponse = ConceptProto.AttributeType.Attribute.Res.newBuilder();
                 if (attribute == null) methodResponse.setNull(ConceptProto.Null.getDefaultInstance()).build();
@@ -669,7 +669,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res dataType() {
-                grakn.core.concept.api.AttributeType.DataType<?> dataType = concept.asAttributeType().dataType();
+                grakn.core.kb.concept.api.AttributeType.DataType<?> dataType = concept.asAttributeType().dataType();
 
                 ConceptProto.AttributeType.DataType.Res.Builder methodResponse =
                         ConceptProto.AttributeType.DataType.Res.newBuilder();
@@ -704,7 +704,7 @@ public class ConceptMethod {
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Thing}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Thing}
          */
         private class Thing {
 
@@ -719,7 +719,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res type() {
-                grakn.core.concept.api.Concept type = concept.asThing().type();
+                grakn.core.kb.concept.api.Concept type = concept.asThing().type();
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingTypeRes(ConceptProto.Thing.Type.Res.newBuilder()
@@ -729,10 +729,10 @@ public class ConceptMethod {
             }
 
             private Transaction.Res keys(List<ConceptProto.Concept> protoTypes) {
-                grakn.core.concept.api.AttributeType<?>[] keyTypes = protoTypes.stream()
+                grakn.core.kb.concept.api.AttributeType<?>[] keyTypes = protoTypes.stream()
                         .map(rpcConcept -> convert(rpcConcept))
-                        .toArray(grakn.core.concept.api.AttributeType[]::new);
-                Stream<grakn.core.concept.api.Attribute<?>> concepts = concept.asThing().keys(keyTypes);
+                        .toArray(grakn.core.kb.concept.api.AttributeType[]::new);
+                Stream<grakn.core.kb.concept.api.Attribute<?>> concepts = concept.asThing().keys(keyTypes);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -750,10 +750,10 @@ public class ConceptMethod {
             }
 
             private Transaction.Res attributes(List<ConceptProto.Concept> protoTypes) {
-                grakn.core.concept.api.AttributeType<?>[] attributeTypes = protoTypes.stream()
+                grakn.core.kb.concept.api.AttributeType<?>[] attributeTypes = protoTypes.stream()
                         .map(rpcConcept -> convert(rpcConcept))
-                        .toArray(grakn.core.concept.api.AttributeType[]::new);
-                Stream<grakn.core.concept.api.Attribute<?>> concepts = concept.asThing().attributes(attributeTypes);
+                        .toArray(grakn.core.kb.concept.api.AttributeType[]::new);
+                Stream<grakn.core.kb.concept.api.Attribute<?>> concepts = concept.asThing().attributes(attributeTypes);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -771,10 +771,10 @@ public class ConceptMethod {
             }
 
             private Transaction.Res relations(List<ConceptProto.Concept> protoRoles) {
-                grakn.core.concept.api.Role[] roles = protoRoles.stream()
+                grakn.core.kb.concept.api.Role[] roles = protoRoles.stream()
                         .map(rpcConcept -> convert(rpcConcept))
-                        .toArray(grakn.core.concept.api.Role[]::new);
-                Stream<grakn.core.concept.api.Relation> concepts = concept.asThing().relations(roles);
+                        .toArray(grakn.core.kb.concept.api.Role[]::new);
+                Stream<grakn.core.kb.concept.api.Relation> concepts = concept.asThing().relations(roles);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -792,7 +792,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res roles() {
-                Stream<grakn.core.concept.api.Role> concepts = concept.asThing().roles();
+                Stream<grakn.core.kb.concept.api.Role> concepts = concept.asThing().roles();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -810,8 +810,8 @@ public class ConceptMethod {
             }
 
             private Transaction.Res relhas(ConceptProto.Concept protoAttribute) {
-                grakn.core.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
-                grakn.core.concept.api.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
+                grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
+                grakn.core.kb.concept.api.Relation relation = ConceptHolder.this.concept.asThing().relhas(attribute);
 
                 ConceptProto.Method.Res response = ConceptProto.Method.Res.newBuilder()
                         .setThingRelhasRes(ConceptProto.Thing.Relhas.Res.newBuilder()
@@ -821,23 +821,23 @@ public class ConceptMethod {
             }
 
             private Transaction.Res unhas(ConceptProto.Concept protoAttribute) {
-                grakn.core.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
+                grakn.core.kb.concept.api.Attribute<?> attribute = convert(protoAttribute).asAttribute();
                 concept.asThing().unhas(attribute);
                 return null;
             }
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Relation}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Relation}
          */
         private class Relation {
 
             private Transaction.Res rolePlayersMap() {
-                Map<grakn.core.concept.api.Role, Set<grakn.core.concept.api.Thing>> rolePlayersMap = concept.asRelation().rolePlayersMap();
+                Map<grakn.core.kb.concept.api.Role, Set<grakn.core.kb.concept.api.Thing>> rolePlayersMap = concept.asRelation().rolePlayersMap();
                 Stream.Builder<SessionProto.Transaction.Res> responses = Stream.builder();
 
-                for (Map.Entry<grakn.core.concept.api.Role, Set<grakn.core.concept.api.Thing>> rolePlayers : rolePlayersMap.entrySet()) {
-                    for (grakn.core.concept.api.Thing player : rolePlayers.getValue()) {
+                for (Map.Entry<grakn.core.kb.concept.api.Role, Set<grakn.core.kb.concept.api.Thing>> rolePlayers : rolePlayersMap.entrySet()) {
+                    for (grakn.core.kb.concept.api.Thing player : rolePlayers.getValue()) {
                         ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
                                 .setRelationRolePlayersMapIterRes(ConceptProto.Relation.RolePlayersMap.Iter.Res.newBuilder()
                                                                           .setRole(ResponseBuilder.Concept.concept(rolePlayers.getKey()))
@@ -856,10 +856,10 @@ public class ConceptMethod {
             }
 
             private Transaction.Res rolePlayers(List<ConceptProto.Concept> protoRoles) {
-                grakn.core.concept.api.Role[] roles = protoRoles.stream()
+                grakn.core.kb.concept.api.Role[] roles = protoRoles.stream()
                         .map(rpcConcept -> convert(rpcConcept))
-                        .toArray(grakn.core.concept.api.Role[]::new);
-                Stream<grakn.core.concept.api.Thing> concepts = concept.asRelation().rolePlayers(roles);
+                        .toArray(grakn.core.kb.concept.api.Role[]::new);
+                Stream<grakn.core.kb.concept.api.Thing> concepts = concept.asRelation().rolePlayers(roles);
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()
@@ -877,22 +877,22 @@ public class ConceptMethod {
             }
 
             private Transaction.Res assign(ConceptProto.Relation.Assign.Req request) {
-                grakn.core.concept.api.Role role = convert(request.getRole()).asRole();
-                grakn.core.concept.api.Thing player = convert(request.getPlayer()).asThing();
+                grakn.core.kb.concept.api.Role role = convert(request.getRole()).asRole();
+                grakn.core.kb.concept.api.Thing player = convert(request.getPlayer()).asThing();
                 concept.asRelation().assign(role, player);
                 return null;
             }
 
             private Transaction.Res unassign(ConceptProto.Relation.Unassign.Req request) {
-                grakn.core.concept.api.Role role = convert(request.getRole()).asRole();
-                grakn.core.concept.api.Thing player = convert(request.getPlayer()).asThing();
+                grakn.core.kb.concept.api.Role role = convert(request.getRole()).asRole();
+                grakn.core.kb.concept.api.Thing player = convert(request.getPlayer()).asThing();
                 concept.asRelation().unassign(role, player);
                 return null;
             }
         }
 
         /**
-         * A utility class to execute methods on {@link grakn.core.concept.api.Attribute}
+         * A utility class to execute methods on {@link grakn.core.kb.concept.api.Attribute}
          */
         private class Attribute {
 
@@ -907,7 +907,7 @@ public class ConceptMethod {
             }
 
             private Transaction.Res owners() {
-                Stream<grakn.core.concept.api.Thing> concepts = concept.asAttribute().owners();
+                Stream<grakn.core.kb.concept.api.Thing> concepts = concept.asAttribute().owners();
 
                 Stream<SessionProto.Transaction.Res> responses = concepts.map(con -> {
                     ConceptProto.Method.Iter.Res res = ConceptProto.Method.Iter.Res.newBuilder()

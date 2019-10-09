@@ -19,10 +19,10 @@
 
 package grakn.core.server.session;
 
-import grakn.core.concept.api.LabelId;
+import grakn.core.kb.concept.api.LabelId;
 import grakn.core.core.Schema;
 import grakn.core.server.session.computer.GraknSparkComputer;
-import grakn.core.kb.TransactionAnalytics;
+import grakn.core.kb.server.TransactionAnalytics;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;

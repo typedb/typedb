@@ -19,11 +19,11 @@
 package grakn.core.graql.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.api.AttributeType;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.exception.TransactionException;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;

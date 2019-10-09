@@ -19,8 +19,8 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.AttributeType;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.core.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;

@@ -19,27 +19,25 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.exception.GraknConceptException;
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Rule;
-import grakn.core.concept.api.SchemaConcept;
-import grakn.core.concept.api.Type;
-import grakn.core.core.ConceptManager;
-import grakn.core.core.EdgeElement;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
-import grakn.core.core.VertexElement;
-import grakn.core.kb.Serialiser;
-import grakn.core.kb.TemporaryWriteException;
-import grakn.core.kb.ValueConverter;
-import grakn.core.kb.cache.TransactionCache;
+import grakn.core.kb.concept.structure.VertexElement;
+import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.kb.server.cache.TransactionCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -101,7 +99,7 @@ public class ConceptManagerImpl implements ConceptManager {
     /**
      * @param label             The Label of the SchemaConcept to create
      * @param baseType          The Schema.BaseType of the SchemaConcept to find or create
-     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.concept.api.Type or not
+     * @param isImplicit        a flag indicating if the label we are creating is for an implicit grakn.core.kb.concept.api.Type or not
      */
     private VertexElement createSchemaVertex(Label label, Schema.BaseType baseType, boolean isImplicit) {
         if (!isImplicit && label.getValue().startsWith(Schema.ImplicitType.RESERVED.getValue())) {

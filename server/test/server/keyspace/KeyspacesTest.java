@@ -18,7 +18,7 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.kb.exception.TransactionException;
+import grakn.core.kb.server.exception.TransactionException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;

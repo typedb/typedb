@@ -20,11 +20,14 @@ package grakn.core.kb.reasoner.query;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.kb.reasoner.atom.Atomic;
-import grakn.core.kb.reasoner.atom.AtomicEquivalence;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;

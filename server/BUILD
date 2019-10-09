@@ -47,9 +47,12 @@ java_library(
     deps = [
         # Internal dependencies
         "//common:common",
-        "//concept:concept",
+        "//kb/concept/api:api",
+        "//kb/concept/util:util",
+        "//kb/concept/structure:structure",
         "//concept/structure:structure",
         "//concept/impl:concept",
+        "//concept/answer:answer",
         "//kb:kb",
         "//core:core",
 

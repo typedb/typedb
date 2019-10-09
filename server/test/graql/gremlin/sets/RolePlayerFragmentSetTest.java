@@ -20,11 +20,11 @@ package grakn.core.graql.gremlin.sets;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.SchemaConcept;
-import grakn.core.kb.planning.EquivalentFragmentSet;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.statement.Variable;
 import org.junit.Before;

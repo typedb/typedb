@@ -8,7 +8,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.kb.reasoner.reasoning.NeqIdPredicateIT",
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -24,7 +24,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.kb.reasoner.reasoning.ValuePredicateIT",
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server",
         "//test-integration/rule:grakn-test-server",
@@ -47,7 +47,7 @@ java_test(
     ],
     test_class = "grakn.core.kb.reasoner.reasoning.RecursionIT",
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -73,7 +73,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.kb.reasoner.reasoning.AttributeAttachmentIT",
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
@@ -91,7 +91,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.kb.reasoner.reasoning.TypeGenerationIT",
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -108,7 +108,7 @@ java_test(
     test_class = "grakn.core.kb.reasoner.reasoning.TypeHierarchiesIT",
     deps = [
         "//kb:kb",
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server",
         "//test-integration/rule:grakn-test-server",
@@ -125,7 +125,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.kb.reasoner.reasoning.VariableRolesIT",
     deps = [
-        "//concept:concept",
+        "//kb/concept/api:api",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//server",

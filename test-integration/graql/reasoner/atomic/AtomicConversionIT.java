@@ -19,18 +19,19 @@
 package grakn.core.kb.reasoner.atomic;
 
 import com.google.common.collect.Sets;
-import grakn.core.kb.GraqlQueryException;
-import grakn.core.kb.reasoner.atom.binary.AttributeAtom;
-import grakn.core.kb.reasoner.atom.binary.IsaAtom;
-import grakn.core.kb.reasoner.atom.binary.RelationAtom;
-import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.reasoner.atom.predicate.Predicate;
-import grakn.core.kb.reasoner.atom.predicate.ValuePredicate;
-import grakn.core.kb.reasoner.query.ReasonerQueries;
+import grakn.core.kb.server.exception.GraqlQueryException;
+import grakn.core.kb.graql.reasoner.atom.Atom;
+import grakn.core.kb.graql.reasoner.atom.binary.AttributeAtom;
+import grakn.core.kb.graql.reasoner.atom.binary.IsaAtom;
+import grakn.core.kb.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.kb.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.core.Schema;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
@@ -93,7 +94,7 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingAttributeToIsaAtom_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
+            Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             IsaAtom isa = attribute.toIsaAtom();
 
             assertEquals(
@@ -106,7 +107,7 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingRelationToIsaAtom_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
+            Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
             IsaAtom isa = relation.toIsaAtom();
 
             assertEquals(
@@ -119,7 +120,7 @@ public class AtomicConversionIT {
     @Test (expected = GraqlQueryException.class)
     public void whenConvertingNonImplicitRelationToAttribute_weThrow(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
+            Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
             AttributeAtom attribute = relation.toAttributeAtom();
             assertEquals(
                     relation.getPredicates().collect(toSet()),
@@ -131,7 +132,7 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingImplicitRelationToAttribute_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
+            Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
             AttributeAtom attribute = relation.toAttributeAtom();
 
             assertEquals(
@@ -144,7 +145,7 @@ public class AtomicConversionIT {
     @Test
     public void whenConvertingAttributeToRelation_predicatesArePreserved(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
+            Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             RelationAtom relation = attribute.toRelationAtom();
 
             assertEquals(
@@ -162,7 +163,7 @@ public class AtomicConversionIT {
     @Test
     public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
+            Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             RelationAtom intermittentAtom = attribute.toRelationAtom();
             AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
             assertTrue(attribute.isAlphaEquivalent(equivalentAttribute));
@@ -173,9 +174,9 @@ public class AtomicConversionIT {
     @Test
     public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
         try(Transaction tx = session.readTransaction()){
-            grakn.core.kb.reasoner.atom.Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
+            Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
             AttributeAtom intermittentAtom = relation.toAttributeAtom();
-            grakn.core.kb.reasoner.atom.Atom equivalentRelation = intermittentAtom.toRelationAtom();
+            Atom equivalentRelation = intermittentAtom.toRelationAtom();
             assertEquals(relation, equivalentRelation);
         }
     }

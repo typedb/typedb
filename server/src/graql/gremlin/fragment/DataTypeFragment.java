@@ -19,8 +19,8 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;

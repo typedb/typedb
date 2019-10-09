@@ -19,15 +19,15 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.ConceptCacheLine;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.Rule;
-import grakn.core.concept.api.SchemaConcept;
-import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.concept.structure.PropertyNotUniqueException;
 import grakn.core.concept.structure.VertexElementImpl;
+import grakn.core.core.ConceptCacheLine;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.SchemaConcept;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.HashSet;

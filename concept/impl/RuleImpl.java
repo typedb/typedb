@@ -19,9 +19,9 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.Rule;
-import grakn.core.concept.api.Type;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.Schema;
 import graql.lang.Graql;

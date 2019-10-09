@@ -19,25 +19,26 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Rule;
-import grakn.core.concept.api.SchemaConcept;
-import grakn.core.concept.api.Thing;
-import grakn.core.concept.api.Type;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Attribute;
-import grakn.core.core.Casting;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.core.Schema;
-import grakn.core.kb.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.kb.cache.CacheProvider;
-import grakn.core.kb.cache.RuleCache;
-import grakn.core.kb.cache.TransactionCache;
-import grakn.core.kb.statistics.UncomittedStatisticsDelta;
+import grakn.core.kb.concept.structure.AbstractElement;
+import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.server.cache.CacheProvider;
+import grakn.core.kb.server.cache.RuleCache;
+import grakn.core.kb.server.cache.TransactionCache;
+import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 
 import java.util.List;
 import java.util.function.Supplier;

@@ -19,8 +19,8 @@
 
 package grakn.core.server.keyspace;
 
-import grakn.core.kb.exception.TransactionException;
-import grakn.core.kb.keyspace.Keyspace;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.keyspace.Keyspace;
 
 import javax.annotation.CheckReturnValue;
 import java.io.Serializable;

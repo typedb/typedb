@@ -19,11 +19,11 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Attribute;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.concept.structure.VertexElementImpl;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.GraknConceptException;
 
 import javax.annotation.Nullable;
 import java.util.Objects;

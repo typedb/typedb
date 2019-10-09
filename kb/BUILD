@@ -22,13 +22,20 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "kb",
-    srcs = glob(["**/*.java", "*.java"]),
+    srcs = glob([
+        "graql/**/*.java",
+        "server/**/*.java",
+    ]),
     deps = [
         # Internal dependencies
         "//common:common",
-        "//concept:concept",
-        "//concept/structure:structure",
 
+        "//kb/concept/api:api",
+        "//kb/concept/structure:structure",
+        "//concept/answer:answer",
+
+        "//kb/concept/manager:manager",
+        "//kb/concept/util:util",
         # this is ONLY used for ConceptManager dependency...
         "//core:core",
 

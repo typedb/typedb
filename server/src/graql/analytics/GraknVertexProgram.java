@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.kb.exception.GraknServerException;
+import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.core.Schema;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;

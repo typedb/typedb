@@ -18,10 +18,10 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.kb.GraqlSemanticException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import org.junit.AfterClass;

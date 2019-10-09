@@ -20,7 +20,7 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import grakn.core.core.Schema;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;

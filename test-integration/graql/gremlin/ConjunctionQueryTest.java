@@ -18,11 +18,11 @@
 
 package grakn.core.graql.gremlin;
 
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.Type;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.gremlin.fragment.FragmentImpl;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;

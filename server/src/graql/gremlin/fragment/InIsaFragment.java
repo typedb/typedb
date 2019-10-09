@@ -20,11 +20,11 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.planning.spanningtree.graph.InstanceNode;
-import grakn.core.kb.planning.spanningtree.graph.Node;
-import grakn.core.kb.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
+import grakn.core.kb.graql.planning.spanningtree.graph.Node;
+import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
+import grakn.core.kb.server.Transaction;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

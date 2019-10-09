@@ -18,13 +18,13 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.AttributeType;
-import grakn.core.kb.executor.property.value.ValueComparison;
-import grakn.core.kb.executor.property.value.ValueOperation;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.graql.executor.property.value.ValueComparison;
+import grakn.core.kb.graql.executor.property.value.ValueOperation;
 import grakn.core.core.Schema;
-import grakn.core.kb.Transaction;
-import grakn.core.kb.statistics.KeyspaceStatistics;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;

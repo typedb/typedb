@@ -21,16 +21,20 @@ package grakn.core.kb.reasoner.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.Type;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.gremlin.NodesUtil;
-import grakn.core.kb.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.reasoner.plan.ResolutionPlan;
-import grakn.core.kb.reasoner.plan.ResolutionQueryPlan;
+import grakn.core.kb.graql.reasoner.atom.Atom;
+import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.kb.graql.reasoner.plan.ResolutionPlan;
+import grakn.core.kb.graql.reasoner.plan.ResolutionQueryPlan;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
@@ -136,7 +140,7 @@ public class ResolutionPlanIT {
                 "$w id Vsampleid;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
                 getAtomOfType(query, "someRelation", tx)
@@ -154,7 +158,7 @@ public class ResolutionPlanIT {
                 "$z id Vsampleid;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "derivedRelation", tx),
                 getAtomOfType(query, "someRelation", tx)
         );
@@ -173,7 +177,7 @@ public class ResolutionPlanIT {
                 "$w id Vsampleid2;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
                 getAtomOfType(query, "someRelation", tx)
@@ -191,7 +195,7 @@ public class ResolutionPlanIT {
                 "(someRole:$y, otherRole: $z) isa anotherDerivedRelation;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "someRelation", tx),
                 getAtomOfType(query, "anotherDerivedRelation", tx)
         );
@@ -223,7 +227,7 @@ public class ResolutionPlanIT {
                 "$w has resource 'test';" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
@@ -243,7 +247,7 @@ public class ResolutionPlanIT {
                 "$x has resource 'test';" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "derivedRelation", tx)
         );
@@ -263,7 +267,7 @@ public class ResolutionPlanIT {
                 "$w has resource 'test';" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> correctPlan = ImmutableList.of(
+        ImmutableList<Atom> correctPlan = ImmutableList.of(
                 getAtomOfType(query, "resource", tx),
                 getAtomOfType(query, "yetAnotherRelation", tx),
                 getAtomOfType(query, "anotherRelation", tx),
@@ -420,8 +424,8 @@ public class ResolutionPlanIT {
         checkPlanSanity(queryX);
         checkPlanSanity(queryY);
 
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> xPlan = new ResolutionPlan(queryX).plan();
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> yPlan = new ResolutionPlan(queryY).plan();
+        ImmutableList<Atom> xPlan = new ResolutionPlan(queryX).plan();
+        ImmutableList<Atom> yPlan = new ResolutionPlan(queryY).plan();
         assertNotEquals(xPlan.get(0), getAtomOfType(queryX, "anotherResource", tx));
         assertNotEquals(yPlan.get(0), getAtomOfType(queryY, "resource", tx));
     }
@@ -489,10 +493,10 @@ public class ResolutionPlanIT {
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
 
-        grakn.core.kb.reasoner.atom.Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
-        grakn.core.kb.reasoner.atom.Atom ghAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("g"), new Variable("h")));
+        Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
+        Atom ghAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("g"), new Variable("h")));
 
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> atomPlan = attributedResolutionPlan.plan();
+        ImmutableList<Atom> atomPlan = attributedResolutionPlan.plan();
         assertThat(atomPlan.get(atomPlan.size()-1), anyOf(is(efAtom), is(ghAtom)));
     }
 
@@ -527,10 +531,10 @@ public class ResolutionPlanIT {
         ResolutionPlan attributedResolutionPlan = new ResolutionPlan(attributedQuery);
         checkPlanSanity(attributedQuery);
 
-        grakn.core.kb.reasoner.atom.Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
-        grakn.core.kb.reasoner.atom.Atom cdAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("c"), new Variable("d")));
+        Atom efAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("e"), new Variable("f")));
+        Atom cdAtom = getAtomWithVariables(attributedQuery, Sets.newHashSet(new Variable("c"), new Variable("d")));
 
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> atomPlan = attributedResolutionPlan.plan();
+        ImmutableList<Atom> atomPlan = attributedResolutionPlan.plan();
         assertThat(atomPlan.get(atomPlan.size()-1), anyOf(is(efAtom), is(cdAtom)));
     }
 
@@ -609,7 +613,7 @@ public class ResolutionPlanIT {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
         checkAtomPlanComplete(query, resolutionPlan);
 
-        grakn.core.kb.reasoner.atom.Atom resolvableIsa = getAtomWithVariables(query, Sets.newHashSet(new Variable("x"), new Variable("type")));
+        Atom resolvableIsa = getAtomWithVariables(query, Sets.newHashSet(new Variable("x"), new Variable("type")));
         assertThat(resolutionPlan.plan().get(2), is(resolvableIsa));
 
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
@@ -636,8 +640,8 @@ public class ResolutionPlanIT {
         checkPlanSanity(query);
         checkQueryPlanComplete(query, new ResolutionQueryPlan(query));
 
-        grakn.core.kb.reasoner.atom.Atom specificResource = getAtomOfType(query, "resource", tx);
-        grakn.core.kb.reasoner.atom.Atom someRelation = getAtomOfType(query, "someRelation", tx);
+        Atom specificResource = getAtomOfType(query, "resource", tx);
+        Atom someRelation = getAtomOfType(query, "someRelation", tx);
         assertThat(resolutionPlan.plan().get(0), Matchers.isOneOf(specificResource, someRelation));
     }
 
@@ -683,13 +687,13 @@ public class ResolutionPlanIT {
         );
     }
 
-    private grakn.core.kb.reasoner.atom.Atom getAtomWithVariables(ReasonerQuery query, Set<Variable> vars){
-        return query.getAtoms(grakn.core.kb.reasoner.atom.Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
+    private Atom getAtomWithVariables(ReasonerQuery query, Set<Variable> vars){
+        return query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
-    private grakn.core.kb.reasoner.atom.Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
+    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
         Type type = tx.getType(Label.of(typeString));
-        return query.getAtoms(grakn.core.kb.reasoner.atom.Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
+        return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }
 
     private void checkPlanSanity(ReasonerQueryImpl query){
@@ -709,21 +713,21 @@ public class ResolutionPlanIT {
         checkQueryPlanConnected(plan);
     }
 
-    private void checkOptimalAtomPlanProduced(ReasonerQueryImpl query, ImmutableList<grakn.core.kb.reasoner.atom.Atom> desiredAtomPlan) {
+    private void checkOptimalAtomPlanProduced(ReasonerQueryImpl query, ImmutableList<Atom> desiredAtomPlan) {
         ResolutionPlan resolutionPlan = new ResolutionPlan(query);
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> atomPlan = resolutionPlan.plan();
+        ImmutableList<Atom> atomPlan = resolutionPlan.plan();
         assertEquals(desiredAtomPlan, atomPlan);
         checkAtomPlanComplete(query, resolutionPlan);
         checkAtomPlanConnected(resolutionPlan);
     }
 
     private void checkAtomPlanConnected(ResolutionPlan plan){
-        ImmutableList<grakn.core.kb.reasoner.atom.Atom> atomList = plan.plan();
+        ImmutableList<Atom> atomList = plan.plan();
 
-        UnmodifiableIterator<grakn.core.kb.reasoner.atom.Atom> iterator = atomList.iterator();
+        UnmodifiableIterator<Atom> iterator = atomList.iterator();
         Set<Variable> vars = new HashSet<>(iterator.next().getVarNames());
         while(iterator.hasNext()){
-            grakn.core.kb.reasoner.atom.Atom next = iterator.next();
+            Atom next = iterator.next();
             Set<Variable> varNames = next.getVarNames();
             assertFalse("Disconnected plan produced:\n" + plan, Sets.intersection(varNames, vars).isEmpty());
             vars.addAll(varNames);

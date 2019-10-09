@@ -19,16 +19,16 @@
 
 package grakn.core.concept;
 
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Type;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.exception.InvalidKBException;
-import grakn.core.kb.exception.TransactionException;
-import grakn.core.kb.Session;
-import grakn.core.kb.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

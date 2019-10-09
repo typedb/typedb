@@ -19,20 +19,20 @@
 
 package grakn.core.core;
 
-import grakn.core.concept.api.AttributeType;
-import grakn.core.concept.api.ConceptId;
-import grakn.core.concept.api.Entity;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.LabelId;
-import grakn.core.concept.api.Relation;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.concept.api.Rule;
-import grakn.core.concept.api.SchemaConcept;
-import grakn.core.concept.api.Type;
-import grakn.core.concept.api.Concept;
-import grakn.core.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Attribute;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;

@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.api.Concept;
+import grakn.core.kb.concept.api.Concept;
 
 /**
  * A Concept represented as a VertexElement
