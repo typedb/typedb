@@ -18,7 +18,6 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
-load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
