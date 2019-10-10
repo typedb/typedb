@@ -196,7 +196,6 @@ assemble_apt(
     package_name = "grakn-core-server",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (server)",
-    version_file = "//:VERSION",
     depends = [
       "openjdk-8-jre",
       "grakn-bin (>=%{@graknlabs_common})"
