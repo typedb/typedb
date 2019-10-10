@@ -57,6 +57,7 @@ import grakn.core.concept.structure.PropertyNotUniqueException;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
@@ -564,7 +565,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
-    public MultilevelSemanticCache queryCache() {
+    public QueryCache queryCache() {
         return queryCache;
     }
 

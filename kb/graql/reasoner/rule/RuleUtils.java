@@ -32,9 +32,11 @@ import grakn.core.kb.graql.reasoner.atom.Atom;
 import grakn.core.kb.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.kb.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.kb.graql.reasoner.cache.IndexedAnswerSet;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.common.util.Pair;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.graql.reasoner.utils.TarjanSCC;
 import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
@@ -152,23 +154,24 @@ public class RuleUtils {
 
         typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
+        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx.queryCache());
         //for each cycle in the type dependency graph, check for cycles in the instances
         return typeCycles.stream().anyMatch(typeSet -> {
             Set<ReasonerAtomicQuery> queries = typeSet.stream()
                     .flatMap(type -> typeTCinverse.get(type).stream())
-                    .flatMap(type -> tx.queryCache().getFamily(type).stream())
+                    .flatMap(type -> queryCache.getFamily(type).stream())
                     .map(Equivalence.Wrapper::get)
-                    .filter(q -> tx.queryCache().getParents(q).isEmpty())
+                    .filter(q -> queryCache.getParents(q).isEmpty())
                     .filter(q -> q.getAtom().isRelation() || q.getAtom().isResource())
                     .collect(toSet());
             //if we don't have full information (query answers in cache), we assume reiteration is needed
-            if (!queries.stream().allMatch(q -> tx.queryCache().isDBComplete(q))) return true;
+            if (!queries.stream().allMatch(q -> queryCache.isDBComplete(q))) return true;
 
             HashMultimap<Concept, Concept> conceptMap = HashMultimap.create();
             for (ReasonerAtomicQuery q : queries) {
                 RelationAtom relationAtom = q.getAtom().toRelationAtom();
                 Set<Pair<Variable, Variable>> varPairs = relationAtom.varDirectionality();
-                IndexedAnswerSet answers = tx.queryCache().getEntry(q).cachedElement();
+                IndexedAnswerSet answers = queryCache.getEntry(q).cachedElement();
                 for (ConceptMap ans : answers) {
                     for (Pair<Variable, Variable> p : varPairs) {
                         Concept from = ans.get(p.getKey());

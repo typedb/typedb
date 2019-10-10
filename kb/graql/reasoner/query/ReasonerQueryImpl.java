@@ -35,6 +35,8 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.Atom;
@@ -521,8 +523,9 @@ public class ReasonerQueryImpl implements ResolvableQuery {
      * @return true if this query has complete entries in the cache
      */
     public boolean isCacheComplete(){
+        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx.queryCache());
         if (selectAtoms().count() == 0) return false;
-        if (isAtomic()) return tx.queryCache().isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
+        if (isAtomic()) return queryCache.isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());
         Set<IdPredicate> subs = new HashSet<>();
         Map<ReasonerAtomicQuery, ReasonerAtomicQuery> queryMap = new HashMap<>();
@@ -547,7 +550,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                 .filter(e -> e.getKey().isRuleResolvable())
                 .allMatch(e ->
                         Objects.nonNull(e.getKey().getAtom().getSchemaConcept())
-                                && tx().queryCache().isComplete(e.getValue())
+                                && queryCache.isComplete(e.getValue())
                 );
     }
 

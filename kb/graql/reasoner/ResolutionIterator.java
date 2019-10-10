@@ -20,10 +20,12 @@
 package grakn.core.kb.graql.reasoner;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.kb.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.state.ResolutionState;
 import grakn.core.kb.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,8 +122,10 @@ public class ResolutionIterator extends ReasonerQueryIterator {
             }
         }
 
-        subGoals.forEach(query.tx().queryCache()::ackCompleteness);
-        query.tx().queryCache().propagateAnswers();
+        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(query.tx().queryCache());
+
+        subGoals.forEach(queryCache::ackCompleteness);
+        queryCache.propagateAnswers();
 
         return false;
     }

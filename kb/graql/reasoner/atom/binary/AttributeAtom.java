@@ -36,6 +36,8 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.util.ValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.graql.reasoner.ReasonerException;
@@ -428,10 +430,11 @@ public abstract class AttributeAtom extends Binary{
     private ConceptMap findAnswer(ConceptMap sub){
         //NB: we are only interested in this atom and its subs, not any other constraints
         ReasonerAtomicQuery query = ReasonerQueries.atomic(Collections.singleton(this), tx()).withSubstitution(sub);
-        ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
+        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx().queryCache());
+        ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
 
-        if (answer == null) tx().queryCache().ackDBCompleteness(query);
-        else tx().queryCache().record(query.withSubstitution(answer), answer);
+        if (answer == null) queryCache.ackDBCompleteness(query);
+        else queryCache.record(query.withSubstitution(answer), answer);
         return answer;
     }
 

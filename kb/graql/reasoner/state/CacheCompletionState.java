@@ -21,6 +21,7 @@ package grakn.core.kb.graql.reasoner.state;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 
 /**
  *
@@ -38,7 +39,7 @@ public class CacheCompletionState extends ResolutionState {
 
     @Override
     public ResolutionState generateChildState() {
-        query.tx().queryCache().ackDBCompleteness(query);
+        ReasonerUtils.queryCacheCast(query.tx().queryCache()).ackDBCompleteness(query);
         return null;
     }
 

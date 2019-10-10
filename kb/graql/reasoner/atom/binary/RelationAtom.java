@@ -45,6 +45,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
 import grakn.core.kb.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.graql.reasoner.ReasonerException;
@@ -1049,9 +1050,10 @@ public abstract class RelationAtom extends IsaAtomBase {
 
     private Relation findRelation(ConceptMap sub){
         ReasonerAtomicQuery query = ReasonerQueries.atomic(this).withSubstitution(sub);
-        ConceptMap answer = tx().queryCache().getAnswerStream(query).findFirst().orElse(null);
+        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx().queryCache());
+        ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
 
-        if (answer == null) tx().queryCache().ackDBCompleteness(query);
+        if (answer == null) queryCache.ackDBCompleteness(query);
         return answer != null? answer.get(getVarName()).asRelation() : null;
     }
     

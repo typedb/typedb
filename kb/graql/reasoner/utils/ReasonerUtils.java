@@ -31,9 +31,12 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
+import grakn.core.kb.graql.reasoner.ReasonerException;
 import grakn.core.kb.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.reasoner.unifier.UnifierType;
@@ -48,6 +51,7 @@ import graql.lang.statement.Variable;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 
 import javax.annotation.Nullable;
+import javax.swing.plaf.multi.MultiLabelUI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -334,5 +338,13 @@ public class ReasonerUtils {
         List<T> union = new ArrayList<>(a);
         union.addAll(b);
         return union;
+    }
+
+    public static MultilevelSemanticCache queryCacheCast(QueryCache cache) {
+        if (cache instanceof MultilevelSemanticCache) {
+            return (MultilevelSemanticCache) cache;
+        } else {
+            throw ReasonerException.invalidCast(cache.getClass(), MultilevelSemanticCache.class);
+        }
     }
 }

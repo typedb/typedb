@@ -24,6 +24,8 @@ import grakn.core.common.exception.GraknException;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -34,8 +36,13 @@ public class ReasonerException extends GraknException {
 
     private ReasonerException(String error) { super(error); }
 
+
     @Override
     public String getName() { return getClass().getName(); }
+
+    public static ReasonerException invalidCast(Class<? extends QueryCache> actualClass, Class<MultilevelSemanticCache> targetClass) {
+        return new ReasonerException(ErrorMessage.INVALID_CAST.getMessage(actualClass, targetClass));
+    }
 
     public static ReasonerException maxIterationsReached(Class<?> clazz) {
         return new ReasonerException(ErrorMessage.MAX_ITERATION_REACHED.getMessage(clazz.toString()));

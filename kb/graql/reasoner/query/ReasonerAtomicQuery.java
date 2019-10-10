@@ -208,7 +208,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
-        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = tx().queryCache().getAnswerStreamWithUnifier(this);
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = ReasonerUtils.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
@@ -220,7 +220,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
         boolean doNotResolveFurther = visited
-                || tx().queryCache().isComplete(this)
+                || ReasonerUtils.queryCacheCast(tx().queryCache()).isComplete(this)
                 || (this.isGround() && dbIterator.hasNext());
         Iterator<ResolutionState> subGoalIterator = !doNotResolveFurther?
                 ruleStateIterator(parent, visitedSubGoals) :

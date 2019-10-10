@@ -33,6 +33,7 @@ import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import graql.lang.statement.Variable;
 import java.util.Iterator;
 import java.util.Set;
@@ -100,7 +101,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
      * @return cache unifier if any
      */
     private MultiUnifier getCacheUnifier() {
-        if (cacheUnifier == null) this.cacheUnifier = getQuery().tx().queryCache().getCacheUnifier(getQuery());
+        if (cacheUnifier == null) this.cacheUnifier = ReasonerUtils.queryCacheCast(getQuery().tx().queryCache()).getCacheUnifier(getQuery());
         return cacheUnifier;
     }
 
