@@ -18,7 +18,6 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
@@ -190,19 +189,6 @@ assemble_zip(
       "server/db/queue": "0777",
     },
     visibility = ["//visibility:public"]
-)
-
-assemble_maven(
-    name = "assemble-maven",
-    target = ":server",
-    package = "server",
-    version_file = "//:VERSION",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
-)
-
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven"
 )
 
 assemble_apt(

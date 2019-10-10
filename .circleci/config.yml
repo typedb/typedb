@@ -197,18 +197,6 @@ jobs:
           path: ./cassandra.log
           destination: logs/cassandra.log
 
-  deploy-maven-snapshot:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run: |
-          export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1
-
   deploy-apt-snapshot:
     machine: true
     working_directory: ~/grakn
@@ -371,19 +359,6 @@ jobs:
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           bazel run //:deploy-docker
 
-  deploy-maven:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run: cat VERSION
-      - run: |
-          export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //concept:deploy-maven -- release $(cat VERSION)
-          bazel run //common:deploy-maven -- release $(cat VERSION)
-
   sync-dependencies-release:
     machine: true
     steps:
@@ -516,15 +491,6 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
-      - deploy-maven-snapshot:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
       - deploy-apt-snapshot:
           filters:
             branches:
@@ -560,7 +526,6 @@ workflows:
             branches:
               only: master
           requires:
-            - deploy-maven-snapshot
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
@@ -613,12 +578,6 @@ workflows:
               only: grakn-release-branch
           requires:
             - deploy-approval
-      - deploy-maven:
-          filters:
-            branches:
-              only: grakn-release-branch
-          requires:
-            - deploy-approval
       - sync-dependencies-release:
           filters:
             branches:
@@ -628,7 +587,6 @@ workflows:
             - deploy-rpm
             - deploy-brew
             - deploy-docker
-            - deploy-maven
       - release-notification:
           filters:
             branches:
