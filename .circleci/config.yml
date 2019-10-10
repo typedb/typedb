@@ -203,12 +203,11 @@ jobs:
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //server:deploy-apt -- snapshot
-          bazel run //:deploy-apt -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
 
   deploy-rpm-snapshot:
     machine: true
@@ -322,8 +321,8 @@ jobs:
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //server:deploy-apt -- release
-          bazel run //:deploy-apt -- release
+          bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
+          bazel run --define version=$(cat VERSION) //:deploy-apt -- release
 
   deploy-rpm:
     machine: true
