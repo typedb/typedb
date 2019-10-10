@@ -42,7 +42,6 @@ assemble_maven(
     name = "assemble-maven",
     target = ":concept",
     package = "concept",
-    version_file = "//:VERSION",
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
 )
 

@@ -45,19 +45,6 @@ java_library(
     tags = ["maven_coordinates=io.grakn.core:grakn-daemon:{pom_version}"],
 )
 
-assemble_maven(
-    name = "assemble-maven",
-    target = ":daemon",
-    package = "daemon",
-    version_file = "//:VERSION",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
-)
-
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven"
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [

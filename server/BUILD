@@ -192,19 +192,6 @@ assemble_zip(
     visibility = ["//visibility:public"]
 )
 
-assemble_maven(
-    name = "assemble-maven",
-    target = ":server",
-    package = "server",
-    version_file = "//:VERSION",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
-)
-
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven"
-)
-
 assemble_apt(
     name = "assemble-linux-apt",
     package_name = "grakn-core-server",
