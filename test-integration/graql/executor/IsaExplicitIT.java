@@ -16,22 +16,23 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.executor;
+package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableList;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import graql.test.gremlin.TraversalPlanFactoryImpl;
-import graql.test.gremlin.fragment.FragmentImpl;
-import graql.test.gremlin.fragment.InIsaFragment;
-import graql.test.gremlin.fragment.InSubFragment;
-import graql.test.gremlin.fragment.LabelFragment;
-import graql.test.gremlin.fragment.NeqFragment;
-import graql.test.gremlin.fragment.OutIsaFragment;
-import graql.test.gremlin.fragment.OutRolePlayerFragment;
-import graql.test.gremlin.fragment.OutSubFragment;
+import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.gremlin.fragment.FragmentImpl;
+import grakn.core.graql.gremlin.fragment.InIsaFragment;
+import grakn.core.graql.gremlin.fragment.InSubFragment;
+import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.graql.gremlin.fragment.NeqFragment;
+import grakn.core.graql.gremlin.fragment.OutIsaFragment;
+import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
+import grakn.core.graql.gremlin.fragment.OutSubFragment;
+import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Transaction;
@@ -109,7 +110,7 @@ public class IsaExplicitIT {
         String related = "related";
 
         Pattern pattern;
-        ImmutableList<FragmentImpl> plan;
+        ImmutableList<Fragment> plan;
 
         // test type without subtypes
 
@@ -205,7 +206,7 @@ public class IsaExplicitIT {
         ));
     }
 
-    private ImmutableList<FragmentImpl> getPlan(Pattern pattern) {
+    private ImmutableList<Fragment> getPlan(Pattern pattern) {
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

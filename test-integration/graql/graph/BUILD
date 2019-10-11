@@ -24,6 +24,8 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//core:core",
         "//server:server",
 
         "@graknlabs_graql//java:graql",

@@ -56,7 +56,7 @@ import java.util.function.Consumer;
  * - Only 1 transaction per thread can exist.
  * - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
-public class SessionImpl implements AutoCloseable, Session {
+public class SessionImpl implements Session {
 
     private final HadoopGraph hadoopGraph;
 

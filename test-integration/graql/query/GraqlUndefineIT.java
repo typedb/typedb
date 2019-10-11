@@ -16,22 +16,22 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.query;
+package grakn.core.graql.query;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.graql.graph.MovieGraph;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import graql.test.graph.MovieGraph;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.statement.Statement;
@@ -374,8 +374,8 @@ public class GraqlUndefineIT {
         assertNotNull(tx.getType(Label.of("registration")));
         assertTrue(tx.getType(Label.of("company")).instances().iterator().hasNext());
 
-        exception.expect(TransactionException.class);
-        exception.expectMessage(TransactionException.illegalUnhasWithInstance(
+        exception.expect(GraknConceptException.class);
+        exception.expectMessage(GraknConceptException.illegalUnhasWithInstance(
                 "company", "registration", false).getMessage());
         tx.execute(Graql.undefine(type("company").has("registration")));
     }
@@ -393,8 +393,8 @@ public class GraqlUndefineIT {
         assertNotNull(tx.getType(Label.of("sub-company")));
         assertNotNull(tx.getType(Label.of("registration")));
 
-        exception.expect(TransactionException.class);
-        exception.expectMessage(TransactionException.illegalUnhasInherited(
+        exception.expect(GraknConceptException.class);
+        exception.expectMessage(GraknConceptException.illegalUnhasInherited(
                 "sub-company", "registration", false).getMessage());
         tx.execute(Graql.undefine(type("sub-company").has("registration")));
     }
@@ -404,7 +404,7 @@ public class GraqlUndefineIT {
         assertExists(tx, x.type("movie").sub("entity"));
         assertExists(tx, x.isa("movie"));
 
-        exception.expect(TransactionException.class);
+        exception.expect(GraknConceptException.class);
         exception.expectMessage(allOf(containsString("movie"), containsString("delet")));
         tx.execute(Graql.undefine(type("movie").sub("production")));
     }
@@ -413,7 +413,7 @@ public class GraqlUndefineIT {
     public void whenUndefiningASuperConcept_Throw() {
         assertExists(tx, x.type("production").sub("entity"));
 
-        exception.expect(TransactionException.class);
+        exception.expect(GraknConceptException.class);
         exception.expectMessage(allOf(containsString("production"), containsString("delet")));
         tx.execute(Graql.undefine(type("production").sub(ENTITY)));
     }
@@ -422,7 +422,7 @@ public class GraqlUndefineIT {
     public void whenUndefiningARoleWithPlayers_Throw() {
         assertExists(tx, x.type("actor"));
 
-        exception.expect(TransactionException.class);
+        exception.expect(GraknConceptException.class);
         exception.expectMessage(allOf(containsString("actor"), containsString("delet")));
         tx.execute(Graql.undefine(type("actor").sub(ROLE)));
     }

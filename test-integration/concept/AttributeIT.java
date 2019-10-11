@@ -24,27 +24,21 @@ import grakn.core.concept.impl.AttributeTypeImpl;
 import grakn.core.concept.impl.RelationEdge;
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RelationReified;
-import concept.impl.RelationStructure;
+import grakn.core.concept.impl.RelationStructure;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestServer;
 import junit.framework.TestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -52,6 +46,12 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
@@ -176,8 +176,8 @@ public class AttributeIT {
     public void whenCreatingResourceWithAnInvalidDataType_Throw() {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("long", AttributeType.DataType.LONG);
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(invalidThing, AttributeType.DataType.LONG).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -187,8 +187,8 @@ public class AttributeIT {
     public void whenCreatingResourceWithAnInvalidDataTypeOnADate_Throw() {
         String invalidThing = "Invalid Thing";
         AttributeType longAttributeType = tx.putAttributeType("date", AttributeType.DataType.DATE);
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.invalidAttributeValue(invalidThing, AttributeType.DataType.DATE).getMessage());
         longAttributeType.create(invalidThing);
     }
 
@@ -201,7 +201,7 @@ public class AttributeIT {
         try {
             longAttributeType.create("Invalid Thing");
             fail("Expected to throw");
-        } catch (TransactionException e) {
+        } catch (GraknConceptException e) {
             // expected failure
         }
 

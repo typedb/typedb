@@ -19,27 +19,24 @@
 
 package grakn.core.concept;
 
-import grakn.core.concept.impl.EntityImpl;
-import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.concept.impl.RelationImpl;
-import grakn.core.concept.impl.ThingImpl;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.core.Schema;
-import concept.structure.Casting;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.util.ConceptDowncasting;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -89,7 +86,7 @@ public class EntityIT {
     }
 
     @Test
-    public void whenDeletingInstanceInRelation_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws TransactionException {
+    public void whenDeletingInstanceInRelation_TheInstanceAndCastingsAreDeletedAndTheRelationRemains() throws GraknConceptException {
         //Schema
         EntityType type = tx.putEntityType("Concept Type");
         RelationType relationType = tx.putRelationType("relationTypes");
@@ -98,36 +95,36 @@ public class EntityIT {
         Role role3 = tx.putRole("role3");
 
         //Data
-        ThingImpl<?, ?> rolePlayer1 = (ThingImpl) type.create();
-        ThingImpl<?, ?> rolePlayer2 = (ThingImpl) type.create();
-        ThingImpl<?, ?> rolePlayer3 = (ThingImpl) type.create();
+        Thing rolePlayer1 = type.create();
+        Thing rolePlayer2 = type.create();
+        Thing rolePlayer3 = type.create();
 
         relationType.relates(role1);
         relationType.relates(role2);
         relationType.relates(role3);
 
         //Check Structure is in order
-        RelationImpl relation = (RelationImpl) relationType.create().
+        Relation relation = relationType.create().
                 assign(role1, rolePlayer1).
                 assign(role2, rolePlayer2).
                 assign(role3, rolePlayer3);
 
-        Casting rp1 = rolePlayer1.castingsInstance().findAny().get();
-        Casting rp2 = rolePlayer2.castingsInstance().findAny().get();
-        Casting rp3 = rolePlayer3.castingsInstance().findAny().get();
+        Casting rp1 = ConceptDowncasting.thing(rolePlayer1).castingsInstance().findAny().get();
+        Casting rp2 = ConceptDowncasting.thing(rolePlayer2).castingsInstance().findAny().get();
+        Casting rp3 = ConceptDowncasting.thing(rolePlayer3).castingsInstance().findAny().get();
 
-        assertThat(relation.reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
+        assertThat(ConceptDowncasting.relation(relation).reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp1, rp2, rp3));
 
         //Delete And Check Again
         ConceptId idOfDeleted = rolePlayer1.id();
         rolePlayer1.delete();
 
         assertNull(tx.getConcept(idOfDeleted));
-        assertThat(relation.reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
+        assertThat(ConceptDowncasting.relation(relation).reified().castingsRelation().collect(toSet()), containsInAnyOrder(rp2, rp3));
     }
 
     @Test
-    public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws TransactionException {
+    public void whenDeletingLastRolePlayerInRelation_TheRelationIsDeleted() throws GraknConceptException {
         EntityType type = tx.putEntityType("Concept Type");
         RelationType relationType = tx.putRelationType("relationTypes");
         Role role1 = tx.putRole("role1");
@@ -144,7 +141,7 @@ public class EntityIT {
     }
 
     @Test
-    public void whenAddingResourceToAnEntity_EnsureTheImplicitStructureIsCreated(){
+    public void whenAddingResourceToAnEntity_EnsureTheicitStructureIsCreated(){
         Label resourceLabel = Label.of("A Attribute Thing");
         EntityType entityType = tx.putEntityType("A Thing");
         AttributeType<String> attributeType = tx.putAttributeType(resourceLabel, AttributeType.DataType.STRING);
@@ -156,7 +153,7 @@ public class EntityIT {
         entity.has(attribute);
         Relation relation = entity.relations().iterator().next();
 
-        checkImplicitStructure(attributeType, relation, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
+        checkicitStructure(attributeType, relation, entity, Schema.ImplicitType.HAS, Schema.ImplicitType.HAS_OWNER, Schema.ImplicitType.HAS_VALUE);
     }
 
     @Test
@@ -167,8 +164,8 @@ public class EntityIT {
         Entity entity = entityType.create();
         Attribute attribute = attributeType.create("A attribute thing");
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.hasNotAllowed(entity, attribute).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.hasNotAllowed(entity, attribute).getMessage());
 
         entity.has(attribute);
     }
@@ -206,7 +203,7 @@ public class EntityIT {
         entity.has(attribute);
         Relation relation = entity.relations().iterator().next();
 
-        checkImplicitStructure(attributeType, relation, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
+        checkicitStructure(attributeType, relation, entity, Schema.ImplicitType.KEY, Schema.ImplicitType.KEY_OWNER, Schema.ImplicitType.KEY_VALUE);
     }
 
     @Test
@@ -223,7 +220,7 @@ public class EntityIT {
         tx.commit();
     }
 
-    private void checkImplicitStructure(AttributeType<?> attributeType, Relation relation, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
+    private void checkicitStructure(AttributeType<?> attributeType, Relation relation, Entity entity, Schema.ImplicitType has, Schema.ImplicitType hasOwner, Schema.ImplicitType hasValue){
         assertEquals(2, relation.rolePlayersMap().size());
         assertEquals(has.getLabel(attributeType.label()), relation.type().label());
         relation.rolePlayersMap().entrySet().forEach(entry -> {
@@ -259,7 +256,7 @@ public class EntityIT {
 
     @Test
     public void whenCreatingAnInferredEntity_EnsureMarkedAsInferred(){
-        EntityTypeImpl et = EntityTypeImpl.from(tx.putEntityType("et"));
+        EntityType et = tx.putEntityType("et");
         Entity entity = et.create();
         Entity entityInferred = et.addEntityInferred();
         assertFalse(entity.isInferred());
@@ -292,7 +289,7 @@ public class EntityIT {
 
         //Link Attributes
         e.has(attribute1);
-        EntityImpl.from(e).attributeInferred(attribute2);
+        e.attributeInferred(attribute2);
 
         e.relations().forEach(relation -> {
             relation.rolePlayers().forEach(roleplayer ->{

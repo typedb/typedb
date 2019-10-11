@@ -19,21 +19,20 @@
 package grakn.core.server.statistics;
 
 import grakn.client.GraknClient;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.core.Schema;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.kb.server.Session;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -53,7 +52,7 @@ import static org.junit.Assert.assertSame;
 public class KeyspaceStatisticsIT {
 
     private GraknClient graknClient;
-    private SessionImpl localSession;
+    private Session localSession;
     private GraknClient.Session remoteSession;
 
     @ClassRule
@@ -271,7 +270,7 @@ public class KeyspaceStatisticsIT {
         ExecutorService parallelExecutor = Executors.newFixedThreadPool(2);
 
         CompletableFuture<Void> future1 = CompletableFuture.supplyAsync(() -> {
-            GraknClient.Transaction tx1 = remoteSession.writeTransaction();
+            GraknClient.Transaction tx1 = remoteSession.transaction().write();
             grakn.client.concept.api.AttributeType ageT = tx1.getAttributeType("age");
             grakn.client.concept.api.EntityType personT = tx1.getEntityType("person");
             ageT.create(2);
@@ -282,7 +281,7 @@ public class KeyspaceStatisticsIT {
         }, parallelExecutor);
 
         CompletableFuture<Void> future2 = CompletableFuture.supplyAsync(() -> {
-            GraknClient.Transaction tx2 = remoteSession.writeTransaction();
+            GraknClient.Transaction tx2 = remoteSession.transaction().write();
             grakn.client.concept.api.AttributeType ageT = tx2.getAttributeType("age");
             grakn.client.concept.api.EntityType personT = tx2.getEntityType("person");
             ageT.create(3); // tricky case - this will be merge

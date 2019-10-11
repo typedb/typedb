@@ -205,7 +205,7 @@ public class GraknGraqlCommandsE2E {
         commandExecutor.command("./grakn", "server", "start").execute();
         String host = "localhost:48555";
         GraknClient graknClient = new GraknClient(host);
-        GraknClient.Transaction test = graknClient.session("test").writeTransaction();
+        GraknClient.Transaction test = graknClient.session("test").transaction().write();
         commandExecutor.command("./grakn", "server", "stop").execute();
         assertGraknIsNotRunning();
     }

@@ -136,7 +136,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
     /**
      * Get the estimated complexity of the traversal.
      */
-    double getComplexity() {
+    public double getComplexity() {
 
         double totalCost = 0;
 

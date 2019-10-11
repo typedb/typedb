@@ -23,6 +23,8 @@ java_test(
     srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//graql:graql",
         "//server:server",
 
         "@graknlabs_graql//java:graql",
@@ -40,7 +42,10 @@ java_test(
     deps = [
         "//common:common",
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//core:core",
         "//server:server",
+        "//graql:graql",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
 

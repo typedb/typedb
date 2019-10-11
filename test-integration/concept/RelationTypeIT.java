@@ -23,6 +23,7 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
@@ -118,8 +119,8 @@ public class RelationTypeIT {
 
         RelationType implicitRelationType = tx.getRelationType(Schema.ImplicitType.HAS.getLabel(attributeType.label()).getValue());
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.addingInstancesToAbstractType(implicitRelationType).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.addingInstancesToAbstractType(implicitRelationType).getMessage());
 
         implicitRelationType.isAbstract(true);
     }

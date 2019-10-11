@@ -19,7 +19,9 @@
 
 package grakn.core.concept;
 
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
@@ -29,12 +31,12 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.exception.PropertyNotUniqueException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.util.ConceptDowncasting;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
@@ -106,8 +108,8 @@ public class EntityTypeIT {
         EntityType c2 = tx.putEntityType("C2");
         c1.sup(c2);
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.cannotBeDeleted(c2).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.cannotBeDeleted(c2).getMessage());
 
         c2.delete();
     }
@@ -139,10 +141,10 @@ public class EntityTypeIT {
         EntityType c3 = tx.putEntityType("c3").sup(c2);
         EntityType c4 = tx.putEntityType("c4").sup(c1);
 
-        Set<Type> c1SuperTypes = EntityTypeImpl.from(c1).sups().collect(toSet());
-        Set<Type> c2SuperTypes = EntityTypeImpl.from(c2).sups().collect(toSet());
-        Set<Type> c3SuperTypes = EntityTypeImpl.from(c3).sups().collect(toSet());
-        Set<Type> c4SuperTypes = EntityTypeImpl.from(c4).sups().collect(toSet());
+        Set<Type> c1SuperTypes = c1.sups().collect(toSet());
+        Set<Type> c2SuperTypes = c2.sups().collect(toSet());
+        Set<Type> c3SuperTypes = c3.sups().collect(toSet());
+        Set<Type> c4SuperTypes = c4.sups().collect(toSet());
 
         assertThat(c1SuperTypes, containsInAnyOrder(entityType, c1));
         assertThat(c2SuperTypes, containsInAnyOrder(entityType, c2, c1));
@@ -194,8 +196,8 @@ public class EntityTypeIT {
 
     @Test
     public void overwriteDefaultSuperTypeWithNewSuperType_ReturnNewSuperType(){
-        EntityTypeImpl conceptType = (EntityTypeImpl) tx.putEntityType("A Thing");
-        EntityTypeImpl conceptType2 = (EntityTypeImpl) tx.putEntityType("A Super Thing");
+        EntityType conceptType = tx.putEntityType("A Thing");
+        EntityType conceptType2 = tx.putEntityType("A Super Thing");
 
         assertEquals(tx.getMetaEntityType(), conceptType.sup());
         conceptType.sup(conceptType2);
@@ -234,8 +236,8 @@ public class EntityTypeIT {
     @Test
     public void settingTheSuperTypeToItself_Throw(){
         EntityType entityType = tx.putEntityType("Entity");
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.loopCreated(entityType, entityType).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.loopCreated(entityType, entityType).getMessage());
         entityType.sup(entityType);
     }
 
@@ -247,8 +249,8 @@ public class EntityTypeIT {
         entityType1.sup(entityType2);
         entityType2.sup(entityType3);
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.loopCreated(entityType3, entityType1).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.loopCreated(entityType3, entityType1).getMessage());
 
         entityType3.sup(entityType1);
     }
@@ -257,8 +259,8 @@ public class EntityTypeIT {
     public void whenSettingMetaTypeToAbstract_Throw(){
         Type meta = tx.getMetaEntityType();
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.metaTypeImmutable(meta.label()).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.metaTypeImmutable(meta.label()).getMessage());
 
         meta.isAbstract(true);
     }
@@ -268,8 +270,8 @@ public class EntityTypeIT {
         Type meta = tx.getMetaEntityType();
         Role role = tx.putRole("A Role");
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.metaTypeImmutable(meta.label()).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.metaTypeImmutable(meta.label()).getMessage());
 
         meta.plays(role);
     }
@@ -367,8 +369,8 @@ public class EntityTypeIT {
         entityTypeA.delete();
         assertNull(tx.getEntityType("entityTypeA"));
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.cannotBeDeleted(entityTypeB).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.cannotBeDeleted(entityTypeB).getMessage());
 
         entityTypeB.delete();
     }
@@ -494,18 +496,19 @@ public class EntityTypeIT {
 
     @Test
     public void whenCreatingEntityType_EnsureItHasAShard(){
-        EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("EntityType");
-        assertThat(entityType.shards().collect(toSet()), not(empty()));
-        assertEquals(entityType.shards().iterator().next(), entityType.currentShard());
+        EntityType entityType = tx.putEntityType("EntityType");
+        assertThat(ConceptDowncasting.type(entityType).shards().collect(toSet()), not(empty()));
+        assertEquals(ConceptDowncasting.type(entityType).shards().iterator().next(), ConceptDowncasting.type(entityType).currentShard());
     }
 
     @Test
     public void whenAddingInstanceToType_EnsureIsaEdgeIsPlacedOnShard(){
-        EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("EntityType");
-        Shard shard =  entityType.currentShard();
+        EntityType entityType = tx.putEntityType("EntityType");
+        Shard shard =  ConceptDowncasting.type(entityType).currentShard();
         Entity e1 = entityType.create();
 
-        assertFalse("The isa edge was places on the type rather than the shard", entityType.neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
+        assertFalse("The isa edge was places on the type rather than the shard", ConceptDowncasting.type(entityType)
+                .neighbours(Direction.IN, Schema.EdgeLabel.ISA).iterator().hasNext());
         assertEquals(e1, tx.getConcept(Schema.conceptId(shard.links().findAny().get().element())));
     }
 
@@ -556,8 +559,8 @@ public class EntityTypeIT {
         assertThat(person.attributes().collect(toSet()), containsInAnyOrder(name, age, id));
         assertThat(person.keys().collect(toSet()), containsInAnyOrder(id));
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.illegalUnhasNotExist(
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.illegalUnhasNotExist(
                 person.label().getValue(), id.label().getValue(), false).getMessage());
         person.unhas(id);
     }
@@ -566,8 +569,8 @@ public class EntityTypeIT {
     public void whenCreatingAnEntityTypeWithLabelStartingWithReservedCharachter_Throw(){
         String label = "@what-a-dumb-label-name";
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.invalidLabelStart(Label.of(label)).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.invalidLabelStart(Label.of(label)).getMessage());
 
         tx.putEntityType(label);
     }

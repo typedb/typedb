@@ -18,16 +18,18 @@
 
 package grakn.core.server.kb.structure;
 
-import concept.structure.Casting;
+import grakn.core.concept.impl.RelationImpl;
 import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.concept.impl.RelationImpl;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.util.ConceptDowncasting;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -74,10 +76,10 @@ public class CastingIT {
     public void whenCreatingRelation_EnsureRolePlayerContainsInstanceRoleTypeRelationTypeAndRelation(){
         Entity e1 = entityType.create();
 
-        RelationImpl relation = (RelationImpl) relationType.create().
+        Relation relation = relationType.create().
                 assign(role1, e1);
 
-        Set<Casting> castings = relation.reified().castingsRelation().collect(Collectors.toSet());
+        Set<Casting> castings = ConceptDowncasting.relation(relation).reified().castingsRelation().collect(Collectors.toSet());
 
         castings.forEach(rolePlayer -> {
             assertEquals(e1, rolePlayer.getRolePlayer());
@@ -92,8 +94,8 @@ public class CastingIT {
         Entity e1 = entityType.create();
         Entity e3 = entityType.create();
 
-        RelationImpl relation = (RelationImpl) relationType.create().
-                assign(role1, e1);
+        RelationImpl relation = ConceptDowncasting.relation(relationType.create().
+                assign(role1, e1));
 
         Set<Thing> things = relation.reified().castingsRelation().map(Casting::getRolePlayer).collect(Collectors.toSet());
         Set<Role> roles = relation.reified().castingsRelation().map(Casting::getRole).collect(Collectors.toSet());

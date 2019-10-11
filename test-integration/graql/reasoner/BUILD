@@ -8,7 +8,10 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.ReasoningIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//concept/answer:answer",
+        "//core:core",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
 
@@ -30,7 +33,9 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.GeoInferenceIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//concept/answer:answer",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",

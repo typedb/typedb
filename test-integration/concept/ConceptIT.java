@@ -19,18 +19,18 @@
 
 package grakn.core.concept;
 
-import grakn.core.concept.impl.EntityTypeImpl;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.concept.exception.GraknConceptException;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.core.Schema;
-import concept.structure.EdgeElement;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.util.ConceptDowncasting;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.junit.After;
 import org.junit.Before;
@@ -108,11 +108,11 @@ public class ConceptIT {
     @Test
     public void whenGettingEdgesFromAConcept_EdgesFilteredByLabelAreReturned() {
         EntityType entityType1 = tx.putEntityType("entity type");
-        EntityTypeImpl entityType2 = (EntityTypeImpl) tx.putEntityType("entity type 1").sup(entityType1);
+        EntityType entityType2 = tx.putEntityType("entity type 1").sup(entityType1);
         EntityType entityType3 = tx.putEntityType("entity type 2").sup(entityType2);
 
-        Set<EdgeElement> superType = entityType2.vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
-        Set<EdgeElement> subs = entityType2.vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
+        Set<EdgeElement> superType = ConceptDowncasting.concept(entityType2).vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
+        Set<EdgeElement> subs = ConceptDowncasting.concept(entityType2).vertex().getEdgesOfType(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet());
 
         assertThat(superType, is(not(empty())));
         assertThat(subs, is(not(empty())));

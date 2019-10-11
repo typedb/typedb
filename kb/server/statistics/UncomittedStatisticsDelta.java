@@ -37,7 +37,7 @@ public class UncomittedStatisticsDelta {
         instanceDeltas = new HashMap<>();
     }
 
-    long delta(Label label) {
+    public long delta(Label label) {
         return instanceDeltas.getOrDefault(label, 0L);
     }
 

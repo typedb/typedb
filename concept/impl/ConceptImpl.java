@@ -22,7 +22,7 @@ package grakn.core.concept.impl;
 import grakn.core.core.ConceptCacheLine;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.concept.structure.ElementUtils;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.EdgeElement;
@@ -92,7 +92,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
      * @param label     The edge label to traverse
      * @return The neighbouring concepts found by traversing edges of a specific type
      */
-    <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label) {
+    public <X extends Concept> Stream<X> neighbours(Direction direction, Schema.EdgeLabel label) {
         switch (direction) {
             case BOTH:
                 return vertex().getEdgesOfType(direction, label).

@@ -16,25 +16,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Streams;
+import grakn.core.core.Schema;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.core.Schema;
 import grakn.core.kb.graql.executor.property.value.ValueOperation;
-import graql.test.gremlin.fragment.FragmentImpl;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.GraqlTraversal;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -59,16 +59,16 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
-import static graql.test.gremlin.GraqlMatchers.feature;
-import static graql.test.gremlin.GraqlMatchers.satisfies;
-import static graql.test.gremlin.fragment.Fragments.id;
-import static graql.test.gremlin.fragment.Fragments.inIsa;
-import static graql.test.gremlin.fragment.Fragments.inRelates;
-import static graql.test.gremlin.fragment.Fragments.inSub;
-import static graql.test.gremlin.fragment.Fragments.outIsa;
-import static graql.test.gremlin.fragment.Fragments.outRelates;
-import static graql.test.gremlin.fragment.Fragments.outSub;
-import static graql.test.gremlin.fragment.Fragments.value;
+import static grakn.core.graql.gremlin.GraqlMatchers.feature;
+import static grakn.core.graql.gremlin.GraqlMatchers.satisfies;
+import static grakn.core.graql.gremlin.fragment.Fragments.id;
+import static grakn.core.graql.gremlin.fragment.Fragments.inIsa;
+import static grakn.core.graql.gremlin.fragment.Fragments.inRelates;
+import static grakn.core.graql.gremlin.fragment.Fragments.inSub;
+import static grakn.core.graql.gremlin.fragment.Fragments.outIsa;
+import static grakn.core.graql.gremlin.fragment.Fragments.outRelates;
+import static grakn.core.graql.gremlin.fragment.Fragments.outSub;
+import static grakn.core.graql.gremlin.fragment.Fragments.value;
 import static graql.lang.Graql.and;
 import static graql.lang.Graql.var;
 import static java.util.Comparator.comparing;
@@ -103,10 +103,10 @@ public class GraqlTraversalIT {
     private static final Statement y = Graql.var("y");
     private static final Statement z = Graql.var("z");
     private static final Statement xx = Graql.var("xx");
-    private static final FragmentImpl xId = id(null, x.var(), ConceptId.of("Titanic"));
-    private static final FragmentImpl yId = id(null, y.var(), ConceptId.of("movie"));
-    private static final FragmentImpl xIsaY = outIsa(null, x.var(), y.var());
-    private static final FragmentImpl yTypeOfX = inIsa(null, y.var(), x.var(), true);
+    private static final Fragment xId = id(null, x.var(), ConceptId.of("Titanic"));
+    private static final Fragment yId = id(null, y.var(), ConceptId.of("movie"));
+    private static final Fragment xIsaY = outIsa(null, x.var(), y.var());
+    private static final Fragment yTypeOfX = inIsa(null, y.var(), x.var(), true);
 
     private static final GraqlTraversal fastIsaTraversal = traversal(yId, yTypeOfX);
     private final String ROLE_PLAYER_EDGE = Schema.EdgeLabel.ROLE_PLAYER.getLabel();
@@ -189,10 +189,10 @@ public class GraqlTraversalIT {
 
         assertEquals(12, traversals.size());
 
-        FragmentImpl xId = id(titanicId, x.var(), ConceptId.of("Titanic"));
-        FragmentImpl yId = id(movieId, y.var(), ConceptId.of("movie"));
-        FragmentImpl xSubY = outSub(subProperty, x.var(), y.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
-        FragmentImpl ySubX = inSub(subProperty, y.var(), x.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
+        Fragment xId = id(titanicId, x.var(), ConceptId.of("Titanic"));
+        Fragment yId = id(movieId, y.var(), ConceptId.of("movie"));
+        Fragment xSubY = outSub(subProperty, x.var(), y.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
+        Fragment ySubX = inSub(subProperty, y.var(), x.var(), Fragments.TRAVERSE_ALL_SUB_EDGES);
 
         Set<GraqlTraversal> expected = ImmutableSet.of(
                 traversal(xId, xSubY, yId),
@@ -308,25 +308,25 @@ public class GraqlTraversalIT {
         return planFactory.createTraversal(pattern);
     }
 
-    private static GraqlTraversal traversal(FragmentImpl... fragments) {
+    private static GraqlTraversal traversal(Fragment... fragments) {
         return traversal(ImmutableList.copyOf(fragments));
     }
 
     @SafeVarargs
-    private static GraqlTraversal traversal(ImmutableList<FragmentImpl>... fragments) {
-        ImmutableSet<ImmutableList<FragmentImpl>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversal.create(fragmentsSet);
+    private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
+        ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
+        return GraqlTraversalImpl.create(fragmentsSet);
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
-        List<Set<List<FragmentImpl>>> collect = patterns.stream()
+        List<Set<List<Fragment>>> collect = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 
-        Set<List<List<FragmentImpl>>> lists = Sets.cartesianProduct(collect);
+        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
 
         return lists.stream()
                 .map(Sets::newHashSet)
@@ -335,13 +335,13 @@ public class GraqlTraversalIT {
     }
 
     // Returns a traversal only if the fragment ordering is valid
-    private static Optional<GraqlTraversal> createTraversal(Set<List<FragmentImpl>> fragments) {
+    private static Optional<GraqlTraversal> createTraversal(Set<List<Fragment>> fragments) {
 
         // Make sure all dependencies are met
-        for (List<FragmentImpl> fragmentList : fragments) {
+        for (List<Fragment> fragmentList : fragments) {
             Set<Variable> visited = new HashSet<>();
 
-            for (FragmentImpl fragment : fragmentList) {
+            for (Fragment fragment : fragmentList) {
                 if (!visited.containsAll(fragment.dependencies())) {
                     return Optional.empty();
                 }
@@ -350,14 +350,14 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(GraqlTraversal.create(fragments));
+        return Optional.of(GraqlTraversalImpl.create(fragments));
     }
 
-    private static FragmentImpl outRolePlayer(Variable relation, Variable rolePlayer) {
+    private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {
         return Fragments.outRolePlayer(null, relation, a.var(), rolePlayer, null, null, null);
     }
 
-    private static FragmentImpl inRolePlayer(Variable rolePlayer, Variable relation) {
+    private static Fragment inRolePlayer(Variable rolePlayer, Variable relation) {
         return Fragments.inRolePlayer(null, rolePlayer, c.var(), relation, null, null, null);
     }
 

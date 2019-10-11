@@ -25,6 +25,7 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//server:server",
+        "//kb:kb",
         "//test-integration/rule:grakn-test-server"
     ],
     classpath_resources = ["//test-integration/resources:logback-test"]
@@ -38,7 +39,12 @@ java_test(
     test_class = "grakn.core.server.session.TransactionOLTPIT",
     deps = [
         "//common",
+        "//kb:kb",
+        "//concept/answer:answer",
         "//kb/concept/api:api",
+        "//kb/concept/structure:structure",
+        "//concept/impl:concept",
+        "//core:core",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -46,6 +52,7 @@ java_test(
         "//server:server",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
+        "//test-integration/util:concept-downcasting",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -57,6 +64,7 @@ java_test(
     srcs = ["cache/KeyspaceSchemaCacheIT.java"],
     deps = [
         "//server:server",
+        "//kb:kb",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "//kb/concept/api:api",
@@ -71,6 +79,9 @@ java_test(
     srcs = ["cache/TransactionCacheIT.java"],
     deps = [
         "//server:server",
+        "//kb:kb",
+        "//common:common",
+        "//core:core",
         "//test-integration/rule:grakn-test-server",
         "//kb/concept/api:api",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

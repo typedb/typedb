@@ -26,6 +26,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.AttributeType;
@@ -65,12 +66,12 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 public class RelationIT {
-    private RelationImpl relation;
-    private RoleImpl role1;
-    private ThingImpl rolePlayer1;
-    private RoleImpl role2;
-    private ThingImpl rolePlayer2;
-    private RoleImpl role3;
+    private Relation relation;
+    private Role role1;
+    private Thing rolePlayer1;
+    private Role role2;
+    private Thing rolePlayer2;
+    private Role role3;
     private EntityType type;
     private RelationType relationType;
 
@@ -86,17 +87,17 @@ public class RelationIT {
     public void setUp(){
         session = server.sessionWithNewKeyspace();
         tx = session.writeTransaction();
-        role1 = (RoleImpl) tx.putRole("Role 1");
-        role2 = (RoleImpl) tx.putRole("Role 2");
-        role3 = (RoleImpl) tx.putRole("Role 3");
+        role1 = (Role) tx.putRole("Role 1");
+        role2 = (Role) tx.putRole("Role 2");
+        role3 = (Role) tx.putRole("Role 3");
 
         type = tx.putEntityType("Main concept Type").plays(role1).plays(role2).plays(role3);
         relationType = tx.putRelationType("Main relation type").relates(role1).relates(role2).relates(role3);
 
-        rolePlayer1 = (ThingImpl) type.create();
-        rolePlayer2 = (ThingImpl) type.create();
+        rolePlayer1 = (Thing) type.create();
+        rolePlayer2 = (Thing) type.create();
 
-        relation = (RelationImpl) relationType.create();
+        relation = (Relation) relationType.create();
 
         relation.assign(role1, rolePlayer1);
         relation.assign(role2, rolePlayer2);
@@ -121,7 +122,7 @@ public class RelationIT {
 
     @Test
     public void whenCreatingAnInferredRelation_EnsureMarkedAsInferred(){
-        RelationTypeImpl rt = RelationTypeImpl.from(tx.putRelationType("rt"));
+        RelationType rt = tx.putRelationType("rt");
         Relation relation = rt.create();
         Relation relationInferred = rt.addRelationInferred();
         assertFalse(relation.isInferred());
@@ -138,12 +139,12 @@ public class RelationIT {
         EntityType entType = tx.putEntityType("Entity Type").plays(role1).plays(role2).plays(role3);
 
         //Data
-        EntityImpl entity1r1 = (EntityImpl) entType.create();
-        EntityImpl entity2r1 = (EntityImpl) entType.create();
-        EntityImpl entity3r2r3 = (EntityImpl) entType.create();
-        EntityImpl entity4r3 = (EntityImpl) entType.create();
-        EntityImpl entity5r1 = (EntityImpl) entType.create();
-        EntityImpl entity6r1r2r3 = (EntityImpl) entType.create();
+        Entity entity1r1 = (Entity) entType.create();
+        Entity entity2r1 = (Entity) entType.create();
+        Entity entity3r2r3 = (Entity) entType.create();
+        Entity entity4r3 = (Entity) entType.create();
+        Entity entity5r1 = (Entity) entType.create();
+        Entity entity6r1r2r3 = (Entity) entType.create();
 
         //Relation
         Relation relation = relationType.create();
@@ -173,7 +174,7 @@ public class RelationIT {
     }
     private Set<Concept> followRolePlayerEdgesToNeighbours(Transaction tx, Thing thing) {
         List<Vertex> vertices = tx.getTinkerTraversal().V().
-                hasId(ConceptVertex.from(thing).elementId()).
+                hasId(Schema.elementId(thing.id())).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
@@ -267,8 +268,8 @@ public class RelationIT {
         EntityType entityType = tx.putEntityType("yay").has(attributeType);
         Relation implicitRelation = Iterables.getOnlyElement(entityType.create().has(attribute).relations().collect(Collectors.toSet()));
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.hasNotAllowed(implicitRelation, attribute).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.hasNotAllowed(implicitRelation, attribute).getMessage());
 
         implicitRelation.has(attribute);
     }
@@ -336,7 +337,7 @@ public class RelationIT {
         Attribute attribute = attributeType.create("Things");
         Relation relation = relationType.create();
 
-        RelationImpl.from(relation).attributeInferred(attribute);
+        relation.attributeInferred(attribute);
         assertTrue(relation.relations().findAny().get().isInferred());
     }
 

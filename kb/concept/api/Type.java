@@ -51,6 +51,7 @@ public interface Type extends SchemaConcept {
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
+    Type play(Role role, boolean required);
     Type plays(Role role);
 
     /**

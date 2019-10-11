@@ -16,9 +16,21 @@ java_library(
     ]
 )
 
+java_library(
+    name = "concept-downcasting",
+    srcs = ["ConceptDowncasting.java"],
+    deps = [
+        "//kb/concept/api:api",
+        "//concept/impl:concept"
+    ],
+    visibility=["//test-integration:__subpackages__"]
+)
+
+
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-test-util"
+        ":graql-test-util",
+        ":concept-downcasting"
     ],
 )

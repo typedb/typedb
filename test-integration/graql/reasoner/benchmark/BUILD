@@ -8,6 +8,8 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.benchmark.RuleScalingIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//concept/answer:answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -30,6 +32,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
@@ -52,6 +55,8 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//concept/answer:answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server:server",
         "//test-integration/graql/reasoner/graph:diagonal-graph",

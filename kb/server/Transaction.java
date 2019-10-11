@@ -64,7 +64,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
-public interface Transaction extends AutoCloseable {
+public interface Transaction extends AutoCloseable{
     void open(Type type);
 
     Session session();

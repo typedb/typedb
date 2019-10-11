@@ -25,7 +25,10 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//common",
+        "//kb:kb",
         "//server:server",
+        "//core:core",
+        "//concept/answer:answer",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
@@ -44,6 +47,7 @@ java_test(
         "@graknlabs_client_java//:client-java",
 
         # Internal dependencies
+        "//kb:kb",
         "//kb/concept/api:api",
         "//server:server", # TODO: NEEDS TO GO
         "//test-integration/rule:grakn-test-server",

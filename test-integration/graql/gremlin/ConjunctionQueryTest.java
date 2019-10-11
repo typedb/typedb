@@ -16,12 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package graql.test.gremlin;
+package grakn.core.graql.gremlin;
 
+import grakn.core.graql.gremlin.ConjunctionQuery;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
-import graql.test.gremlin.fragment.FragmentImpl;
-import graql.test.gremlin.fragment.Fragments;
+import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
@@ -35,7 +36,7 @@ import org.junit.Test;
 
 import java.util.stream.Stream;
 
-import static graql.test.gremlin.GraqlMatchers.feature;
+import static grakn.core.graql.gremlin.GraqlMatchers.feature;
 import static graql.lang.Graql.and;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.contains;
@@ -151,7 +152,7 @@ public class ConjunctionQueryTest {
     }
 
     private Matcher<Pattern> usesResourceIndex(Variable varName, Object value) {
-        FragmentImpl resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
+        Fragment resourceIndexFragment = Fragments.attributeIndex(null, varName, resourceTypeWithoutSubTypesLabel, value);
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();

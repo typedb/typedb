@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  * It contains methods which can be accessed regardless of the Relation being a represented by a
  * VertexElement or an EdgeElement
  */
-interface RelationStructure {
+public interface RelationStructure {
 
     /**
      * @return The ConceptId of the Relation

@@ -22,11 +22,12 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.server.util.LockManager;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
@@ -55,7 +56,7 @@ public class SessionFactory {
     // Keep visibility to protected as this is used by KGMS
     protected final LockManager lockManager;
 
-    private final Map<KeyspaceImpl, SharedKeyspaceData> sharedKeyspaceDataMap;
+    private final Map<Keyspace, SharedKeyspaceData> sharedKeyspaceDataMap;
 
     public SessionFactory(LockManager lockManager, JanusGraphFactory janusGraphFactory, HadoopGraphFactory hadoopGraphFactory, Config config) {
         this.janusGraphFactory = janusGraphFactory;
@@ -72,7 +73,7 @@ public class SessionFactory {
      * @param keyspace The keyspace of the Session to retrieve
      * @return a new Session connecting to the provided keyspace
      */
-    public Session session(KeyspaceImpl keyspace) {
+    public Session session(Keyspace keyspace) {
         SharedKeyspaceData cacheContainer;
         StandardJanusGraph graph;
         KeyspaceSchemaCache cache;
@@ -130,7 +131,7 @@ public class SessionFactory {
      *
      * @param keyspace keyspace that is being deleted
      */
-    public void deleteKeyspace(KeyspaceImpl keyspace) {
+    public void deleteKeyspace(Keyspace keyspace) {
         Lock lock = lockManager.getLock(keyspace.name());
         lock.lock();
         try {
@@ -150,7 +151,7 @@ public class SessionFactory {
      * Callback function invoked by Session when it gets closed.
      * This access the sharedKeyspaceDataMap to remove the reference of closed session.
      *
-     * @param session SessionImpl that is being closed
+     * @param session Session that is being closed
      */
     // Keep visibility to protected as this is used by KGMS
     protected void onSessionClose(Session session) {

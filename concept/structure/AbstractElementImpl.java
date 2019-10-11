@@ -19,6 +19,8 @@
 package grakn.core.concept.structure;
 
 import grakn.core.kb.concept.structure.AbstractElement;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;

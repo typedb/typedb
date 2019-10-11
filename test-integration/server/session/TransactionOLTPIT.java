@@ -22,31 +22,32 @@ import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.impl.TypeImpl;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.structure.Shard;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
-import grakn.core.core.Schema;
-import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.kb.concept.structure.Shard;
-import grakn.core.server.keyspace.KeyspaceImpl;
-import grakn.core.server.test.util.LockManager;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.rule.GraknTestServer;
+import grakn.core.server.util.LockManager;
+import grakn.core.util.ConceptDowncasting;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
-import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.Session;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.core.IsInstanceOf;
@@ -91,7 +92,7 @@ public class TransactionOLTPIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
@@ -181,8 +182,8 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept() {
-        EntityTypeImpl et = (EntityTypeImpl) tx.putEntityType("Sample Entity Type");
-        assertEquals(et, tx.factory().buildConcept(et.vertex()));
+        EntityType et = tx.putEntityType("Sample Entity Type");
+        assertEquals(et, tx.factory().buildConcept(ConceptDowncasting.concept(et).vertex()));
     }
 
     @Test
@@ -303,16 +304,17 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard() {
-        EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("The Special Type");
-        Shard s1 = entityType.currentShard();
+        EntityType entityType = tx.putEntityType("The Special Type");
+        Shard s1 = ConceptDowncasting.type(entityType).currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.create();
         Entity s1_e2 = entityType.create();
         Entity s1_e3 = entityType.create();
-        tx.shard(entityType.id());
 
-        Shard s2 = entityType.currentShard();
+        ConceptDowncasting.type(entityType).createShard();
+
+        Shard s2 = ConceptDowncasting.type(entityType).currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.create();
@@ -321,15 +323,15 @@ public class TransactionOLTPIT {
         Entity s2_e4 = entityType.create();
         Entity s2_e5 = entityType.create();
 
-        tx.shard(entityType.id());
-        Shard s3 = entityType.currentShard();
+        ConceptDowncasting.type(entityType).createShard();
+        Shard s3 = ConceptDowncasting.type(entityType).currentShard();
 
         //Add 2 instances to 3rd shard
         Entity s3_e1 = entityType.create();
         Entity s3_e2 = entityType.create();
 
         //Check Type was sharded correctly
-        assertThat(entityType.shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
+        assertThat(ConceptDowncasting.type(entityType).shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
         assertThat(s1.links().map(vertexElement -> tx.getConcept(Schema.conceptId(vertexElement.element()))).collect(toSet()),
@@ -349,8 +351,8 @@ public class TransactionOLTPIT {
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
         SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
-        KeyspaceImpl keyspace = server.randomKeyspaceName();
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        Keyspace keyspace = server.randomKeyspaceName();
+        try (Session session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
@@ -363,7 +365,7 @@ public class TransactionOLTPIT {
             assertEquals(1, typeShards.size());
         }
         ConceptId p1;
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        try (Session session = sessionFactory.session(keyspace)) {
             try (Transaction tx = session.writeTransaction()) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
@@ -377,7 +379,7 @@ public class TransactionOLTPIT {
             assertEquals(2, typeShards.size());
         }
         ConceptId p2;
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        try (Session session = sessionFactory.session(keyspace)) {
             try (Transaction tx = session.writeTransaction()) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
@@ -400,8 +402,8 @@ public class TransactionOLTPIT {
         config.setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 1L);
         JanusGraphFactory janusGraphFactory = new JanusGraphFactory(config);
         SessionFactory sessionFactory = new SessionFactory(new LockManager(), janusGraphFactory, new HadoopGraphFactory(config), config);
-        KeyspaceImpl keyspace = server.randomKeyspaceName();
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        Keyspace keyspace = server.randomKeyspaceName();
+        try (Session session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
@@ -409,19 +411,19 @@ public class TransactionOLTPIT {
                 tx.commit();
             }
         }
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        try (Session session = sessionFactory.session(keyspace)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        try (Session session = sessionFactory.session(keyspace)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
-        try (SessionImpl session = sessionFactory.session(keyspace)) {
+        try (Session session = sessionFactory.session(keyspace)) {
             try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("c").isa("company")).asInsert());
                 tx.commit();
@@ -463,10 +465,10 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenShardingConcepts_EnsureCountsAreUpdated() {
-        EntityType entity = tx.putEntityType("my amazing entity type");
+        TypeImpl entity = ConceptDowncasting.type(tx.putEntityType("my amazing entity type"));
         assertEquals(1L, tx.getShardCount(entity));
 
-        tx.shard(entity.id());
+        entity.createShard();
         assertEquals(2L, tx.getShardCount(entity));
     }
 

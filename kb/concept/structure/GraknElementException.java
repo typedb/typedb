@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.concept.structure;
+package grakn.core.kb.concept.structure;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;

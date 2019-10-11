@@ -25,6 +25,7 @@ java_test(
     deps = [
         "//kb:kb",
         "//core:core",
+        "//graql:graql",
         "@graknlabs_graql//java:graql",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
@@ -51,6 +52,7 @@ java_test(
          "@graknlabs_graql//java:graql",
          "//core:core",
          "//kb:kb",
+         "//graql:graql",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
          "//dependencies/maven/artifacts/com/google/guava:guava"
          ],

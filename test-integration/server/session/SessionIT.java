@@ -48,7 +48,7 @@ public class SessionIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private SessionImpl session;
+    private Session session;
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
@@ -63,7 +63,7 @@ public class SessionIT {
     }
 
     /**
-     * When requesting 2 transactions from the same SessionImpl we expect to receive
+     * When requesting 2 transactions from the same Session we expect to receive
      * 2 different objects
      */
     @Test

@@ -22,7 +22,6 @@ import grakn.client.GraknClient;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;
 import org.junit.After;
 import org.junit.Before;
@@ -43,7 +42,7 @@ public class KeyspaceSchemaCacheIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-    private SessionImpl localSession;
+    private Session localSession;
     private GraknClient.Session remoteSession;
     private GraknClient graknClient;
 
@@ -154,7 +153,7 @@ public class KeyspaceSchemaCacheIT {
             tx.putRelationType("test-relationship").relates(role1).relates(role2);
             tx.commit();
         }
-        try (GraknClient.Transaction tx = remoteSession.readTransaction()) {
+        try (GraknClient.Transaction tx = remoteSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(relationshipTypeSubs.contains("test-relationship"));
@@ -172,7 +171,7 @@ public class KeyspaceSchemaCacheIT {
             tx.commit();
         }
         GraknClient.Session testSession = new GraknClient(server.grpcUri()).session(localSession.keyspace().name());
-        try (GraknClient.Transaction tx = testSession.readTransaction()) {
+        try (GraknClient.Transaction tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());
@@ -192,7 +191,7 @@ public class KeyspaceSchemaCacheIT {
         }
         remoteSession.close();
         GraknClient.Session testSession = graknClient.session(localSession.keyspace().name());
-        try (GraknClient.Transaction tx = testSession.readTransaction()) {
+        try (GraknClient.Transaction tx = testSession.transaction().read()) {
             Set<String> entityTypeSubs = tx.getMetaEntityType().subs().map(et -> et.label().getValue()).collect(toSet());
             assertTrue(entityTypeSubs.contains("animal"));
             Set<String> relationshipTypeSubs = tx.getMetaRelationType().subs().map(et -> et.label().getValue()).collect(toSet());

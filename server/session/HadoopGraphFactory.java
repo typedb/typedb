@@ -22,7 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.server.keyspace.KeyspaceImpl;
+import grakn.core.kb.server.keyspace.Keyspace;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.structure.util.GraphFactory;
 
@@ -72,7 +72,7 @@ public class HadoopGraphFactory {
     }
 
     @VisibleForTesting
-    public synchronized HadoopGraph getGraph(KeyspaceImpl keyspace) {
+    public synchronized HadoopGraph getGraph(Keyspace keyspace) {
         return (HadoopGraph) GraphFactory.open(addHadoopProperties(keyspace.name()).properties());
     }
 

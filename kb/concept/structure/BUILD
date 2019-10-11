@@ -24,6 +24,7 @@ java_library(
     name = "structure",
     srcs = glob(["*.java"]),
     deps = [
+        "//common:common",
         "//core:core",
         "//kb/concept/api:api",
 

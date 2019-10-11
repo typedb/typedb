@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
@@ -122,8 +123,8 @@ public class SchemaMutationIT {
         EntityType car = tx.getEntityType("car");
 
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.changingSuperWillDisconnectRole(vehicle, person, driven).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.changingSuperWillDisconnectRole(vehicle, person, driven).getMessage());
 
         car.sup(person);
     }
@@ -133,7 +134,7 @@ public class SchemaMutationIT {
         EntityType man = tx.getEntityType("man");
         man.create();
 
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage(IS_ABSTRACT.getMessage(man.label()));
 
         man.isAbstract(true);
@@ -196,8 +197,8 @@ public class SchemaMutationIT {
 
         assertThat(expectedEdge.type().instances().collect(toSet()), hasItem(expectedEdge));
 
-        expectedException.expect(TransactionException.class);
-        expectedException.expectMessage(TransactionException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), hasNameOwner).getMessage());
+        expectedException.expect(GraknConceptException.class);
+        expectedException.expectMessage(GraknConceptException.changingSuperWillDisconnectRole(animal, tx.getMetaEntityType(), hasNameOwner).getMessage());
 
         //make a dog to not be an animal, and expect exception thrown
         dog.sup(tx.getMetaEntityType());

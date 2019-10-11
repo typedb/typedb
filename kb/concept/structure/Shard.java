@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 public interface Shard {
 
+    VertexElement vertex();
     /**
      * @return The id of this shard. Strings are used because shards are looked up via the string index.
      */

@@ -6,7 +6,10 @@ java_test(
     srcs = ["GraqlComputeIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//core:core",
+        "//concept/answer:answer",
         "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",
@@ -23,7 +26,10 @@ java_test(
     srcs = ["ConnectedComponentIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//core:core",
+        "//concept/answer:answer",
         "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",
@@ -40,7 +46,9 @@ java_test(
     srcs = ["CorenessIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//concept/answer:answer",
         "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",
@@ -55,7 +63,10 @@ java_test(
     srcs = ["CountIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//core:core",
+        "//concept/answer:answer",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
@@ -69,7 +80,9 @@ java_test(
     srcs = ["DegreeIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//concept/answer:answer",
         "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",
@@ -86,6 +99,8 @@ java_test(
     srcs = ["KCoreIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//concept/answer:answer",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -101,6 +116,10 @@ java_test(
     srcs = ["PathIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//graql:graql",
+        "//core:core",
+        "//concept/answer:answer",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
 
@@ -118,7 +137,10 @@ java_test(
     srcs = ["StatisticsIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//concept/answer:answer",
         "//server:server",
+        "//core:core",
         "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",

@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.concept.structure.PropertyNotUniqueException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.core.ConceptCacheLine;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.GraknConceptException;

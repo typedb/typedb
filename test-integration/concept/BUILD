@@ -7,6 +7,10 @@ java_test(
      deps = [
          "//kb/concept/api:api",
          "//server:server",
+         "//kb:kb",
+         "//kb/concept/structure:structure",
+         "//core:core",
+         "//concept/impl:concept",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -22,6 +26,7 @@ java_test(
      deps = [
          "//kb/concept/api:api",
          "//server:server",
+         "//kb:kb",
          "@graknlabs_graql//java:graql",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
@@ -35,9 +40,13 @@ java_test(
      srcs = ["ConceptIT.java"],
      test_class = "grakn.core.server.grakn.core.kb.concept.ConceptIT",
      deps = [
+         "//kb/concept/structure:structure",
+         "//core:core",
          "//kb/concept/api:api",
+         "//kb:kb",
          "//server:server",
          "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:concept-downcasting",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
      ],
@@ -51,8 +60,12 @@ java_test(
      test_class = "grakn.core.server.grakn.core.kb.concept.EntityIT",
      deps = [
          "//kb/concept/api:api",
+         "//kb/concept/structure:structure",
+         "//kb:kb",
          "//server:server",
+         "//core:core",
          "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:concept-downcasting",
 
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
      ],
@@ -67,9 +80,13 @@ java_test(
     deps = [
         # Internal dependencies
         "//common:common",
+        "//kb:kb",
+        "//core:core",
+        "//kb/concept/structure:structure",
         "//kb/concept/api:api",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:concept-downcasting",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -88,8 +105,11 @@ java_test(
      test_class = "grakn.core.server.grakn.core.kb.concept.RelationIT",
      deps = [
          "//common:common",
+         "//kb:kb",
          "//kb/concept/api:api",
          "//server:server",
+         "//core:core",
+         "//concept/answer:answer",
          "@graknlabs_graql//java:graql",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -106,7 +126,9 @@ java_test(
      test_class = "grakn.core.server.grakn.core.kb.concept.RelationTypeIT",
      deps = [
          "//kb/concept/api:api",
+         "//kb:kb",
          "//server:server",
+         "//core:core",
          "//test-integration/rule:grakn-test-server",
 
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
@@ -121,6 +143,7 @@ java_test(
      test_class = "grakn.core.server.grakn.core.kb.concept.RoleIT",
      deps = [
          "//kb/concept/api:api",
+         "//kb:kb",
          "//server:server",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
@@ -135,8 +158,12 @@ java_test(
      test_class = "grakn.core.server.grakn.core.kb.concept.SchemaConceptIT",
      deps = [
          "//common:common",
+         "//kb:kb",
          "//kb/concept/api:api",
+         "//kb/concept/structure:structure",
          "//server:server",
+         "//core:core",
+         "//concept/impl:concept",
          "//test-integration/rule:grakn-test-server",
          "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
          "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -151,6 +178,7 @@ java_test(
      test_class = "grakn.core.server.grakn.core.kb.concept.SchemaMutationIT",
      deps = [
          "//common:common",
+         "//kb:kb",
          "//kb/concept/api:api",
          "//server:server",
          "//test-integration/rule:grakn-test-server",
@@ -160,6 +188,7 @@ java_test(
      classpath_resources = ["//test-integration/resources:logback-test"],
      size = "large"
 )
+
 
 checkstyle_test(
     name = "checkstyle",

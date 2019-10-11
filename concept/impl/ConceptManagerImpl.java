@@ -535,6 +535,7 @@ public class ConceptManagerImpl implements ConceptManager {
      * @param vertex A vertex of an unknown type
      * @return A concept built to the correct type
      */
+    @Override
     public <X extends Concept> X buildConcept(Vertex vertex) {
         return buildConcept(elementFactory.buildVertexElement(vertex));
     }

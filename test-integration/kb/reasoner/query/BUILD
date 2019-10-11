@@ -11,6 +11,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server:server",
+        "//kb:kb",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -29,6 +30,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server:server",
+        "//kb:kb",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -48,6 +50,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.ExplanationIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -68,6 +71,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.MaterialisationIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server:server",
@@ -92,6 +96,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.NegationIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -117,6 +122,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.AtomicQueryUnificationIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -141,7 +147,10 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.QueryIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//server:server",
+        "//graql:graql",
+        "//concept/answer:answer",
         "//test-integration/graql/reasoner/graph:geo-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
@@ -162,6 +171,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.OntologicalQueryIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server:server",
@@ -180,6 +190,9 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.ResolutionPlanIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//graql:graql",
+        "//concept/answer:answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//server:server",
@@ -200,6 +213,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.query.SemanticDifferenceIT",
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//server:server",
         "//test-integration/rule:grakn-test-server",
@@ -218,6 +232,7 @@ java_test(
     ],
     test_class = "grakn.core.kb.graql.reasoner.query.SubsumptionIT",
     deps = [
+        "//kb:kb",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

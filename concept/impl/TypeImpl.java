@@ -165,6 +165,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
         return cachedIsAbstract.get();
     }
 
+    @Override
     public T play(Role role, boolean required) {
         checkSchemaMutationAllowed();
 
@@ -187,6 +188,7 @@ public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl
      * @param role The Role Type which the instances of this Type are allowed to play.
      * @return The Type itself.
      */
+    @Override
     public T plays(Role role) {
         return play(role, false);
     }

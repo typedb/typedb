@@ -24,6 +24,8 @@ java_test(
     srcs = ["PatternIT.java"],
     deps = [
         "//kb/concept/api:api",
+        "//kb:kb",
+        "//concept/answer:answer",
         "//server:server",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",

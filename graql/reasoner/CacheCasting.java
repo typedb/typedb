@@ -25,7 +25,9 @@ import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 
 public class CacheCasting {
+
     // ---------- TODO these casts should be removed when the architecture is improved ---------
+
     public static MultilevelSemanticCache queryCacheCast(QueryCache cache) {
         if (cache instanceof MultilevelSemanticCache) {
             return (MultilevelSemanticCache) cache;

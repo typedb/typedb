@@ -52,4 +52,6 @@ public interface GraqlTraversal {
      * @return graql traversal with concept id transformed according to the provided transform
      */
     GraqlTraversal transform(Map<Variable, ConceptId> transform);
+
+    double getComplexity();
 }

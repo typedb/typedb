@@ -50,6 +50,7 @@ public class ShardImpl implements Shard {
         this.vertexElement = vertexElement;
     }
 
+    @Override
     public VertexElement vertex() {
         return vertexElement;
     }

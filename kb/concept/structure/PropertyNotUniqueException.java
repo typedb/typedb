@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.concept.structure;
+package grakn.core.kb.concept.structure;
 
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;

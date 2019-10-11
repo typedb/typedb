@@ -36,7 +36,6 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -78,7 +77,7 @@ public class QueryIT {
 
     @Test
     public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierarchies_weReiterate(){
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             try (Transaction tx = session.writeTransaction()) {
 
                 Role someRole = tx.putRole("someRole");
@@ -135,7 +134,7 @@ public class QueryIT {
 
     @Test
     public void whenTypeDependencyGraphHasCycles_instancesHaveNonTrivialCycles_weReiterate(){
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             try (Transaction tx = session.writeTransaction()) {
                 Role fromRole = tx.putRole("fromRole");
                 Role toRole = tx.putRole("toRole");
@@ -213,7 +212,7 @@ public class QueryIT {
 
     @Test
     public void whenQueryHasMultipleDisconnectedInferrableAtoms_weReiterate(){
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             try(Transaction tx = session.writeTransaction()) {
                 tx.execute(Graql.parse("define " +
                         "someEntity sub entity," +
@@ -241,7 +240,7 @@ public class QueryIT {
 
     @Test
     public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched(){
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             try (Transaction tx = session.writeTransaction()) {
 
                 AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);

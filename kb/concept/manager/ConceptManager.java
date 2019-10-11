@@ -25,10 +25,12 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.structure.VertexElement;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public interface ConceptManager {
     <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
 
+    <T extends Concept> T buildConcept(Vertex vertex);
     <T extends Concept> T buildConcept(VertexElement vertex);
 
     public Role getRole(String label);

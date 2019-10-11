@@ -25,6 +25,7 @@ java_test(
     srcs = ["UncomittedStatisticsDeltaIT.java"],
     deps = [
         "//server:server",
+        "//kb:kb",
         "//test-integration/rule:grakn-test-server",
         "//kb/concept/api:api",
         "@graknlabs_graql//java:graql",
@@ -38,6 +39,9 @@ java_test(
     srcs = ["KeyspaceStatisticsIT.java"],
     deps = [
         "//server:server",
+        "//kb:kb",
+        "//concept/answer:answer",
+        "//core:core",
         "//test-integration/rule:grakn-test-server",
         "//kb/concept/api:api",
         "@graknlabs_graql//java:graql",

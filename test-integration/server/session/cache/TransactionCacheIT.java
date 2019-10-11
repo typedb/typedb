@@ -99,7 +99,6 @@ public class TransactionCacheIT {
         session.close();
     }
 
-
     @Test
     public void whenOpenTransaction_ConceptCacheIsEmpty() {
         TransactionCache transactionCache = tx.cache();
@@ -349,7 +348,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredEntity_instanceIsTracked(){
         EntityType someEntity = tx.putEntityType("someEntity");
-        Entity entity = EntityTypeImpl.from(someEntity).addEntityInferred();
+        Entity entity = someEntity.addEntityInferred();
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
         entity.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
@@ -359,7 +358,7 @@ public class TransactionCacheIT {
     public void whenInsertingAndDeletingInferredRelation_instanceIsTracked(){
         Role someRole = tx.putRole("someRole");
         RelationType someRelation = tx.putRelationType("someRelation").relates(someRole);
-        Relation relation = RelationTypeImpl.from(someRelation).addRelationInferred();
+        Relation relation = someRelation.addRelationInferred();
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
         relation.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
@@ -368,7 +367,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
-        Attribute attribute = AttributeTypeImpl.from(attributeType).putAttributeInferred("banana");
+        Attribute attribute = attributeType.putAttributeInferred("banana");
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
         attribute.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));

@@ -25,6 +25,8 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//server:server",
+        "//kb:kb",
+        "//graql:graql",
         "//test-integration/rule:grakn-test-server",
 
         "@graknlabs_graql//java:graql",

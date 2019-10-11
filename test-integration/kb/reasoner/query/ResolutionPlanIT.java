@@ -24,7 +24,7 @@ import com.google.common.collect.UnmodifiableIterator;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
-import graql.test.gremlin.NodesUtil;
+import grakn.core.graql.gremlin.NodesUtil;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
