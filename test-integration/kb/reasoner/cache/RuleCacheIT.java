@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.cache;
+package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.Concept;
@@ -25,11 +25,10 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.cache.RuleCacheImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import java.util.Collections;

@@ -35,7 +35,7 @@ import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.kb.server.cache.CacheProvider;
+import grakn.core.server.cache.CacheProviderImpl;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
@@ -84,7 +84,7 @@ public class EdgeIT {
                 new KeyspaceStatistics(), attributeCache, new ReentrantReadWriteLock());
 
         // create the transaction
-        CacheProvider cacheProvider = new CacheProvider(new KeyspaceSchemaCache());
+        CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
         ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
 

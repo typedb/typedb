@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.query;
+package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
@@ -24,8 +24,8 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;

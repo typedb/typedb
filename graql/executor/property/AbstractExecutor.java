@@ -27,7 +27,7 @@ import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.atom.property.IsAbstractAtom;
+import grakn.core.graql.reasoner.atom.property.IsAbstractAtom;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.AbstractProperty;
 import graql.lang.property.VarProperty;

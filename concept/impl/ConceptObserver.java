@@ -19,7 +19,10 @@
 
 package grakn.core.concept.impl;
 
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Relation;
@@ -29,13 +32,10 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Casting;
-import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.server.cache.CacheProvider;
-import grakn.core.kb.server.cache.RuleCache;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 
@@ -52,7 +52,7 @@ import java.util.function.Supplier;
 public class ConceptObserver {
 
     private TransactionCache transactionCache;
-    private MultilevelSemanticCache queryCache;
+    private QueryCache queryCache;
     private RuleCache ruleCache;
     private UncomittedStatisticsDelta statistics;
 

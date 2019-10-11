@@ -28,8 +28,8 @@ import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.atom.binary.SubAtom;
-import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.atom.binary.SubAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.SubProperty;
 import graql.lang.property.VarProperty;
@@ -41,7 +41,7 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
-import static grakn.core.kb.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class SubExecutor  implements PropertyExecutor.Definable {
 

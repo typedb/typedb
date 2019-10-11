@@ -30,7 +30,7 @@ import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.atom.binary.HasAtom;
+import grakn.core.graql.reasoner.atom.binary.HasAtom;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;
 import graql.lang.property.HasAttributeTypeProperty;

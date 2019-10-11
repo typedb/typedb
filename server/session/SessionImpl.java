@@ -30,7 +30,7 @@ import grakn.core.concept.structure.ElementFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionAnalytics;
-import grakn.core.kb.server.cache.CacheProvider;
+import grakn.core.server.cache.CacheProviderImpl;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
@@ -146,7 +146,7 @@ public class SessionImpl implements AutoCloseable, Session {
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
         // caches
-        CacheProvider cacheProvider = new CacheProvider(keyspaceSchemaCache);
+        CacheProviderImpl cacheProvider = new CacheProviderImpl(keyspaceSchemaCache);
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
         ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
 

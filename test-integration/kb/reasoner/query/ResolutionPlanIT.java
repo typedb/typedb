@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.query;
+package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
@@ -25,13 +25,10 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import graql.test.gremlin.NodesUtil;
-import grakn.core.kb.graql.reasoner.atom.Atom;
-import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.plan.ResolutionPlan;
-import grakn.core.kb.graql.reasoner.plan.ResolutionQueryPlan;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.plan.ResolutionPlan;
+import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;

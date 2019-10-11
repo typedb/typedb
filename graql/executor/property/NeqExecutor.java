@@ -24,7 +24,7 @@ import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.atom.predicate.NeqIdPredicate;
+import grakn.core.graql.reasoner.atom.predicate.NeqIdPredicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.NeqProperty;
 import graql.lang.statement.Statement;

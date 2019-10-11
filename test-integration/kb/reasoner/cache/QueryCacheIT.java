@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.cache;
+package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -25,16 +25,13 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
-import grakn.core.kb.graql.reasoner.cache.IndexedAnswerSet;
-import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.kb.graql.reasoner.explanation.LookupExplanation;
-import grakn.core.kb.graql.reasoner.explanation.RuleExplanation;
-import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.explanation.LookupExplanation;
+import grakn.core.graql.reasoner.explanation.RuleExplanation;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -48,6 +45,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;

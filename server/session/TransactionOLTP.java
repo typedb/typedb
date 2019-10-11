@@ -59,13 +59,12 @@ import grakn.core.kb.concept.util.Serialiser;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.cache.CacheProvider;
-import grakn.core.kb.server.cache.RuleCache;
-import grakn.core.kb.server.cache.RuleCacheImpl;
+import grakn.core.server.cache.CacheProviderImpl;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
@@ -137,7 +136,7 @@ public class TransactionOLTP implements Transaction {
     private GraphTraversalSource graphTraversalSource = null;
 
     public TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManagerImpl conceptManager,
-                           CacheProvider cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
+                           CacheProviderImpl cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
         createdInCurrentThread.set(true);
 
         this.session = session;

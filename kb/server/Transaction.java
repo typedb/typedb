@@ -43,7 +43,7 @@ import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.server.cache.RuleCache;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.keyspace.Keyspace;

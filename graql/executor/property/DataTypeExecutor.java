@@ -25,7 +25,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.graql.reasoner.atom.property.DataTypeAtom;
+import grakn.core.graql.reasoner.atom.property.DataTypeAtom;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.Graql;

@@ -20,7 +20,8 @@
 package grakn.core.kb.graql.reasoner.cache;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.common.util.Pair;
 
@@ -70,6 +71,10 @@ public interface QueryCache<
     Pair<S, MultiUnifier> getAnswersWithUnifier(Q query);
 
     Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(Q query);
+
+    void ackInsertion();
+
+    void ackDeletion(Type type);
 
     /**
      * Query cache containment check

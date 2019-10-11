@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.query;
+package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -29,14 +29,11 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.kb.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
-import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.graph.GeoGraph;
-import grakn.core.kb.graql.reasoner.rule.InferenceRule;
-import grakn.core.kb.graql.reasoner.rule.RuleUtils;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.server.session.SessionImpl;
