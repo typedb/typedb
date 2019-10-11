@@ -17,6 +17,8 @@
 #
 
 version: 2.1
+orbs:
+  win: circleci/windows@2.0.0
 commands:
   install-bazel-linux-rbe:
     steps:
@@ -151,13 +153,14 @@ jobs:
           destination: logs/cassandra.log
 
   test-assembly-windows-zip:
-    machine: true
+    executor:
+      name: win/default
+      shell: cmd.exe
     working_directory: ~/grakn
     steps:
       - checkout
-      - run:
-          command: test/assembly/windows/windows-zip.py
-          no_output_timeout: 20m
+      - run: .circleci\windows\prepare.bat
+      - run: .circleci\windows\test-assembly.bat
 
   test-assembly-linux-targz:
     machine: true
@@ -194,31 +197,17 @@ jobs:
           path: ./cassandra.log
           destination: logs/cassandra.log
 
-  deploy-maven-snapshot:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run: |
-          export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //api:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run //concept:deploy-maven -- snapshot $CIRCLE_SHA1
-          bazel run //common:deploy-maven -- snapshot $CIRCLE_SHA1
-
   deploy-apt-snapshot:
     machine: true
     working_directory: ~/grakn
     steps:
       - install-bazel-linux-rbe
       - checkout
-      - run: echo 0.0.0-$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //server:deploy-apt -- snapshot
-          bazel run //:deploy-apt -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-apt -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-apt -- snapshot
 
   deploy-rpm-snapshot:
     machine: true
@@ -320,7 +309,7 @@ jobs:
           bazel run @graknlabs_build_tools//ci:release-notes -- grakn $(cat VERSION) ./RELEASE_TEMPLATE.md
       - run: |
           export DEPLOY_GITHUB_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run //:deploy-github -- $CIRCLE_SHA1
+          bazel run --define version=$(cat VERSION) //:deploy-github -- $CIRCLE_SHA1
 
   deploy-apt:
     machine: true
@@ -332,8 +321,8 @@ jobs:
       - run: |
           export DEPLOY_APT_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_APT_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //server:deploy-apt -- release
-          bazel run //:deploy-apt -- release
+          bazel run --define version=$(cat VERSION) //server:deploy-apt -- release
+          bazel run --define version=$(cat VERSION) //:deploy-apt -- release
 
   deploy-rpm:
     machine: true
@@ -368,20 +357,6 @@ jobs:
       - run: |
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           bazel run //:deploy-docker
-
-  deploy-maven:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
-      - run: cat VERSION
-      - run: |
-          export DEPLOY_MAVEN_USERNAME=$REPO_GRAKN_USERNAME
-          export DEPLOY_MAVEN_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //api:deploy-maven -- release $(cat VERSION)
-          bazel run //concept:deploy-maven -- release $(cat VERSION)
-          bazel run //common:deploy-maven -- release $(cat VERSION)
 
   sync-dependencies-release:
     machine: true
@@ -515,15 +490,6 @@ workflows:
             - test-integration-reasoner
             - test-integration-analytics
             - test-end-to-end
-      - deploy-maven-snapshot:
-          filters:
-            branches:
-              only: master
-          requires:
-            - test-assembly-mac-zip
-            - test-assembly-windows-zip
-            - test-assembly-linux-targz
-            - test-assembly-docker
       - deploy-apt-snapshot:
           filters:
             branches:
@@ -559,7 +525,6 @@ workflows:
             branches:
               only: master
           requires:
-            - deploy-maven-snapshot
             - test-deployment-linux-apt
             - test-deployment-linux-rpm
       - release-approval:
@@ -612,12 +577,6 @@ workflows:
               only: grakn-release-branch
           requires:
             - deploy-approval
-      - deploy-maven:
-          filters:
-            branches:
-              only: grakn-release-branch
-          requires:
-            - deploy-approval
       - sync-dependencies-release:
           filters:
             branches:
@@ -627,7 +586,6 @@ workflows:
             - deploy-rpm
             - deploy-brew
             - deploy-docker
-            - deploy-maven
       - release-notification:
           filters:
             branches:
