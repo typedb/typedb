@@ -23,9 +23,10 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
+import grakn.core.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.binary.TypeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
@@ -38,16 +39,16 @@ import grakn.core.graql.reasoner.state.AtomicStateProducer;
 import grakn.core.graql.reasoner.state.CacheCompletionState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import grakn.core.graql.reasoner.state.VariableComparisonState;
-import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.common.util.Pair;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -210,7 +211,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
-        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = ReasonerUtils.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.getKey()
                 .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
@@ -222,7 +223,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
         boolean doNotResolveFurther = visited
-                || ReasonerUtils.queryCacheCast(tx().queryCache()).isComplete(this)
+                || CacheCasting.queryCacheCast(tx().queryCache()).isComplete(this)
                 || (this.isGround() && dbIterator.hasNext());
         Iterator<ResolutionState> subGoalIterator = !doNotResolveFurther?
                 ruleStateIterator(parent, visitedSubGoals) :

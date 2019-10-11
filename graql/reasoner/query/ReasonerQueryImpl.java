@@ -28,6 +28,7 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
@@ -524,7 +525,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
      * @return true if this query has complete entries in the cache
      */
     public boolean isCacheComplete(){
-        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx.queryCache());
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx.queryCache());
         if (selectAtoms().count() == 0) return false;
         if (isAtomic()) return queryCache.isComplete(ReasonerQueries.atomic(selectAtoms().iterator().next()));
         List<ReasonerAtomicQuery> queries = resolutionPlan().plan().stream().map(ReasonerQueries::atomic).collect(Collectors.toList());

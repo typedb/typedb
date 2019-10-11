@@ -26,7 +26,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -229,10 +228,6 @@ public class GraqlSemanticException extends GraknException {
 
     public static GraqlSemanticException attributesWithDifferentDataTypes(Collection<String> attributeTypes) {
         return new GraqlSemanticException("resource types " + attributeTypes + " have different data types");
-    }
-
-    public static GraqlSemanticException unsafeNegationBlock(ResolvableQuery query) {
-        return new GraqlSemanticException(ErrorMessage.UNSAFE_NEGATION_BLOCK.getMessage(query));
     }
 
     public static GraqlSemanticException usingNegationWithReasoningOff(Pattern pattern) {

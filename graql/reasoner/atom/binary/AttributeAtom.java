@@ -24,11 +24,22 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.core.Schema;
+import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.cache.SemanticDifference;
+import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
+import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -38,25 +49,13 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.util.ValueConverter;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.util.ConceptUtils;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.server.Transaction;
-import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.kb.concept.util.ValueConverter;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.atom.binary.AutoValue_AttributeAtom;
-import grakn.core.graql.reasoner.cache.SemanticDifference;
-import grakn.core.graql.reasoner.cache.VariableDefinition;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierImpl;
-import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.HasAttributeProperty;
@@ -308,7 +307,7 @@ public abstract class AttributeAtom extends Binary{
         if(getMultiPredicate().isEmpty()) {
             Variable attrVar = getAttributeVariable();
             AttributeType.DataType<Object> dataType = getSchemaConcept().asAttributeType().dataType();
-            ResolvableQuery body = ReasonerUtils.ruleCacheCast(tx().ruleCache()).getRule(rule).getBody();
+            ResolvableQuery body = CacheCasting.ruleCacheCast(tx().ruleCache()).getRule(rule).getBody();
             ErrorMessage incompatibleValuesMsg = ErrorMessage.VALIDATION_RULE_ILLEGAL_HEAD_COPYING_INCOMPATIBLE_ATTRIBUTE_VALUES;
             body.getAtoms(AttributeAtom.class)
                     .filter(at -> at.getAttributeVariable().equals(attrVar))
@@ -430,7 +429,7 @@ public abstract class AttributeAtom extends Binary{
     private ConceptMap findAnswer(ConceptMap sub){
         //NB: we are only interested in this atom and its subs, not any other constraints
         ReasonerAtomicQuery query = ReasonerQueries.atomic(Collections.singleton(this), tx()).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx().queryCache());
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx().queryCache());
         ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) queryCache.ackDBCompleteness(query);

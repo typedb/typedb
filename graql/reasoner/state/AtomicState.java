@@ -20,21 +20,22 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.util.ConceptUtils;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import graql.lang.statement.Variable;
+
 import java.util.Iterator;
 import java.util.Set;
 
@@ -101,7 +102,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
      * @return cache unifier if any
      */
     private MultiUnifier getCacheUnifier() {
-        if (cacheUnifier == null) this.cacheUnifier = ReasonerUtils.queryCacheCast(getQuery().tx().queryCache()).getCacheUnifier(getQuery());
+        if (cacheUnifier == null) this.cacheUnifier = CacheCasting.queryCacheCast(getQuery().tx().queryCache()).getCacheUnifier(getQuery());
         return cacheUnifier;
     }
 

@@ -21,6 +21,7 @@ package grakn.core.server.cache;
 
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.RuleCacheImpl;
+import grakn.core.kb.server.cache.CacheProvider;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.cache.TransactionCache;
 
@@ -28,7 +29,7 @@ import grakn.core.kb.server.cache.TransactionCache;
  * Implemented CacheProvider as a provider to have a idempotent `get()` methods.
  * This ensures that if the provider is shared, everyone receives the same instances of the Caches
  */
-public class CacheProviderImpl {
+public class CacheProviderImpl implements CacheProvider {
 
     private final RuleCacheImpl ruleCache;
     private final MultilevelSemanticCache queryCache;

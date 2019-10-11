@@ -340,22 +340,5 @@ public class ReasonerUtils {
         union.addAll(b);
         return union;
     }
-
-
-    // ---------- TODO these casts should be removed when the architecture is improved ---------
-    public static MultilevelSemanticCache queryCacheCast(QueryCache cache) {
-        if (cache instanceof MultilevelSemanticCache) {
-            return (MultilevelSemanticCache) cache;
-        } else {
-            throw ReasonerException.invalidCast(cache.getClass(), MultilevelSemanticCache.class);
-        }
-    }
-
-    public static RuleCacheImpl ruleCacheCast(RuleCache cache) {
-        if (cache instanceof RuleCacheImpl) {
-            return (RuleCacheImpl) cache;
-        } else {
-            throw ReasonerException.invalidCast(cache.getClass(), RuleCacheImpl.class);
-        }
-    }
 }
+

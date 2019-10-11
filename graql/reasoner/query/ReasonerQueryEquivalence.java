@@ -23,6 +23,7 @@ import com.google.common.base.Equivalence;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 
 import java.util.Set;
 import java.util.stream.Collectors;

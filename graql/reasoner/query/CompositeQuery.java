@@ -24,10 +24,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -72,7 +74,7 @@ public class CompositeQuery implements ResolvableQuery {
     final private Set<ResolvableQuery> complementQueries;
     final private Transaction tx;
 
-    CompositeQuery(Conjunction<Pattern> pattern, Transaction tx) throws GraqlSemanticException {
+    CompositeQuery(Conjunction<Pattern> pattern, Transaction tx) throws ReasonerException {
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
                         .filter(p -> !p.isNegation())
@@ -88,7 +90,7 @@ public class CompositeQuery implements ResolvableQuery {
                 .collect(Collectors.toSet());
 
         if (!isNegationSafe()){
-            throw GraqlSemanticException.unsafeNegationBlock(this);
+            throw ReasonerException.unsafeNegationBlock(this);
         }
     }
 

@@ -32,7 +32,7 @@ public class CacheEntry<Q extends ReasonerQuery, T> {
     private final Q query;
     private final T cachedElement;
 
-    CacheEntry(Q query, T element) {
+    public CacheEntry(Q query, T element) {
         this.query = query;
         this.cachedElement = element;
     }

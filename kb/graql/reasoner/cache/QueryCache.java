@@ -21,7 +21,7 @@ package grakn.core.kb.graql.reasoner.cache;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.common.util.Pair;
 
@@ -43,7 +43,7 @@ import java.util.stream.Stream;
  * @param <SE> the type of answer being cached
  */
 public interface QueryCache<
-        Q extends ReasonerQueryImpl,
+        Q extends ReasonerQuery,
         S extends Iterable<ConceptMap>,
         SE extends Collection<ConceptMap>> {
 

@@ -24,6 +24,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Rule;
@@ -154,7 +155,7 @@ public class RuleUtils {
 
         typeSCC.successorMap().entries().forEach(e -> typeTCinverse.put(e.getValue(), e.getKey()));
 
-        MultilevelSemanticCache queryCache = ReasonerUtils.queryCacheCast(tx.queryCache());
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx.queryCache());
         //for each cycle in the type dependency graph, check for cycles in the instances
         return typeCycles.stream().anyMatch(typeSet -> {
             Set<ReasonerAtomicQuery> queries = typeSet.stream()

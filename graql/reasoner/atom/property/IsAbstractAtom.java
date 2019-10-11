@@ -22,7 +22,6 @@ package grakn.core.graql.reasoner.atom.property;
 import com.google.auto.value.AutoValue;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
-import grakn.core.kb.graql.reasoner.atom.property.AutoValue_IsAbstractAtom;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
