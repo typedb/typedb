@@ -11,6 +11,8 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//kb",
         "//kb/concept/api",
+        "//concept/answer:answer",
+        "//graql",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
