@@ -43,6 +43,8 @@ import grakn.core.kb.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.utils.conversion.RoleConverter;
 import grakn.core.kb.graql.reasoner.utils.conversion.SchemaConceptConverter;
 import grakn.core.kb.graql.reasoner.utils.conversion.TypeConverter;
+import grakn.core.kb.server.cache.RuleCache;
+import grakn.core.kb.server.cache.RuleCacheImpl;
 import graql.lang.property.IdProperty;
 import graql.lang.property.TypeProperty;
 import graql.lang.property.ValueProperty;
@@ -340,11 +342,21 @@ public class ReasonerUtils {
         return union;
     }
 
+
+    // ---------- TODO these casts should be removed when the architecture is improved ---------
     public static MultilevelSemanticCache queryCacheCast(QueryCache cache) {
         if (cache instanceof MultilevelSemanticCache) {
             return (MultilevelSemanticCache) cache;
         } else {
             throw ReasonerException.invalidCast(cache.getClass(), MultilevelSemanticCache.class);
+        }
+    }
+
+    public static RuleCacheImpl ruleCacheCast(RuleCache cache) {
+        if (cache instanceof RuleCacheImpl) {
+            return (RuleCacheImpl) cache;
+        } else {
+            throw ReasonerException.invalidCast(cache.getClass(), RuleCacheImpl.class);
         }
     }
 }

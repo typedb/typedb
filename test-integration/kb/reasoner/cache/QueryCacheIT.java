@@ -34,6 +34,7 @@ import grakn.core.kb.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.kb.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueries;
 import grakn.core.kb.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -538,7 +539,7 @@ public class QueryCacheIT {
     @Test
     public void whenFullyResolvingAQuery_allSubgoalsAreMarkedAsComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = tx.queryCache();
+            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa baseRelation;"), tx);
 
             Set<ConceptMap> answers = query.resolve().collect(toSet());
@@ -549,7 +550,7 @@ public class QueryCacheIT {
     @Test
     public void whenResolvingASequenceOfQueries_onlyFullyResolvedSubgoalsAreMarkedAsComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = tx.queryCache();
+            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"), tx);
 
             Set<ConceptMap> incompleteAnswers = query.resolve().limit(3).collect(toSet());
@@ -602,7 +603,7 @@ public class QueryCacheIT {
     @Test
     public void whenInstancesAreInserted_weUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = tx.queryCache();
+            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
                     "{" +
                             "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
@@ -631,7 +632,7 @@ public class QueryCacheIT {
     @Test
     public void whenInferredInstancesAreInserted_weDoNotUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = tx.queryCache();
+            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
             Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
                     "{" +
@@ -656,7 +657,7 @@ public class QueryCacheIT {
     @Test
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = tx.queryCache();
+            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
             Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
             Entity anotherBaseRoleEntity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
@@ -697,7 +698,7 @@ public class QueryCacheIT {
     @Test
     public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = tx.queryCache();
+            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
             ReasonerQueryImpl baseQuery = ReasonerQueries.create(conjunction("{$x has resource $r via $rel;};"), tx);
             Set<ConceptMap> answers = baseQuery.resolve().collect(toSet());
 
@@ -753,8 +754,8 @@ public class QueryCacheIT {
     }
 
     private Set<ConceptMap> getCacheContent(Transaction tx){
-        return tx.queryCache().queries().stream()
-                .map(q -> tx.queryCache().getEntry(q))
+        return ReasonerUtils.queryCacheCast(tx.queryCache()).queries().stream()
+                .map(q -> ReasonerUtils.queryCacheCast(tx.queryCache()).getEntry(q))
                 .flatMap(e -> e.cachedElement().getAll().stream())
                 .collect(toSet());
     }

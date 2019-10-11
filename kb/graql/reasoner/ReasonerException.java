@@ -40,7 +40,7 @@ public class ReasonerException extends GraknException {
     @Override
     public String getName() { return getClass().getName(); }
 
-    public static ReasonerException invalidCast(Class<? extends QueryCache> actualClass, Class<MultilevelSemanticCache> targetClass) {
+    public static ReasonerException invalidCast(Class<?> actualClass, Class<?> targetClass) {
         return new ReasonerException(ErrorMessage.INVALID_CAST.getMessage(actualClass, targetClass));
     }
 

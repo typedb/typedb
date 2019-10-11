@@ -31,48 +31,48 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.concept.impl.ConceptManagerImpl;
+import grakn.core.concept.impl.ConceptVertex;
+import grakn.core.concept.impl.SchemaConceptImpl;
+import grakn.core.concept.impl.TypeImpl;
+import grakn.core.concept.structure.GraknElementException;
+import grakn.core.concept.structure.PropertyNotUniqueException;
+import grakn.core.core.Schema;
+import grakn.core.graql.executor.QueryExecutorImpl;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.graql.executor.QueryExecutorImpl;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.concept.structure.GraknElementException;
-import grakn.core.concept.impl.ConceptImpl;
-import grakn.core.concept.impl.ConceptManagerImpl;
-import grakn.core.concept.impl.ConceptVertex;
-import grakn.core.concept.impl.SchemaConceptImpl;
-import grakn.core.concept.impl.TypeImpl;
-import grakn.core.concept.structure.PropertyNotUniqueException;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.server.Validator;
-import grakn.core.kb.server.cache.RuleCache;
 import grakn.core.kb.server.cache.CacheProvider;
+import grakn.core.kb.server.cache.RuleCache;
+import grakn.core.kb.server.cache.RuleCacheImpl;
 import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
-import graql.lang.Graql;
-import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.server.Validator;
+import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -568,7 +568,6 @@ public class TransactionOLTP implements Transaction {
     public QueryCache queryCache() {
         return queryCache;
     }
-
 
     /**
      * Gets the config option which determines the number of instances a grakn.core.kb.concept.api.Type must have before the grakn.core.kb.concept.api.Type

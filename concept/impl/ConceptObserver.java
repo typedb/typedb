@@ -32,7 +32,6 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.core.Schema;
-import grakn.core.kb.concept.structure.AbstractElement;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.server.cache.CacheProvider;

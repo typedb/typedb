@@ -27,17 +27,17 @@ import grakn.core.kb.graql.reasoner.cache.MultilevelSemanticCache;
  */
 public class CacheProvider {
 
-    private final RuleCache ruleCache;
+    private final RuleCacheImpl ruleCache;
     private final MultilevelSemanticCache queryCache;
     private final TransactionCache transactionCache;
 
     public CacheProvider(KeyspaceSchemaCache keyspaceSchemaCache) {
-        this.ruleCache = new RuleCache();
+        this.ruleCache = new RuleCacheImpl();
         this.queryCache = new MultilevelSemanticCache();
         this.transactionCache = new TransactionCache(keyspaceSchemaCache);
     }
 
-    public RuleCache getRuleCache() {
+    public RuleCacheImpl getRuleCache() {
         return ruleCache;
     }
 

@@ -44,6 +44,7 @@ import grakn.core.kb.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.ReasonerException;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -232,7 +233,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             getPotentialRules()
-                    .map(rule -> tx().ruleCache().getRule(rule))
+                    .map(rule -> ReasonerUtils.ruleCacheCast(tx().ruleCache()).getRule(rule))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -255,7 +256,7 @@ public abstract class Atom extends AtomicBase {
      */
     public boolean requiresDecomposition() {
         return this.getPotentialRules()
-                .map(r -> tx().ruleCache().getRule(r))
+                .map(r -> ReasonerUtils.ruleCacheCast(tx().ruleCache()).getRule(r))
                 .anyMatch(InferenceRule::appendsRolePlayers);
     }
 

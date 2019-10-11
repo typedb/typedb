@@ -38,14 +38,16 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.server.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
-import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.server.keyspace.Keyspace;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -56,7 +58,6 @@ import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import grakn.core.kb.concept.manager.ConceptManager;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -150,7 +151,7 @@ public interface Transaction extends AutoCloseable {
 
     Stream<? extends Answer> stream(GraqlQuery query, boolean infer);
 
-    grakn.core.kb.server.cache.RuleCache ruleCache();
+    RuleCache ruleCache();
 
     QueryCache queryCache();
 

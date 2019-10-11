@@ -25,10 +25,11 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.cache.RuleCache;
+import grakn.core.kb.server.cache.RuleCacheImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import java.util.Collections;
@@ -70,7 +71,7 @@ public class RuleCacheIT {
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            RuleCache ruleCache = tx.ruleCache();
+            RuleCacheImpl ruleCache = ReasonerUtils.ruleCacheCast(tx.ruleCache());
 
             Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
             Type ternary = tx.getType(Label.of("ternary"));
