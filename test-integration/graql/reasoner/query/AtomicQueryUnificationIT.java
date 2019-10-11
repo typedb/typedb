@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
@@ -22,34 +23,33 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.kb.graql.reasoner.pattern.QueryPattern;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.kb.graql.reasoner.pattern.QueryPattern.subListExcludingElements;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;

@@ -14,45 +14,46 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.graql.reasoner.graph.ReachabilityGraph;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Negation;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;

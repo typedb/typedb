@@ -14,25 +14,29 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -40,10 +44,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;

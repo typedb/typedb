@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
@@ -21,31 +22,32 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.cache.SemanticDifference;
 import grakn.core.graql.reasoner.cache.VariableDefinition;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.common.util.Pair;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsEqual;
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;

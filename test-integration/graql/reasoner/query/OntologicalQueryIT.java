@@ -14,28 +14,30 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;

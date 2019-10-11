@@ -14,20 +14,20 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.graql.reasoner.graph.GeoGraph;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
@@ -303,7 +303,7 @@ public class ExplanationIT {
     @Ignore("We cannot solve this with current answer handling/cache implementation. Maybe cardinality constraints would help?")
     @Test
     public void whenRulesAreMutuallyRecursive_explanationsAreRecognisedAsRuleOnes() {
-        try (SessionImpl session = server.sessionWithNewKeyspace()) {
+        try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet30.gql", session);
             for(int i = 0 ; i < 10 ; i++) {
                 try (Transaction tx = session.writeTransaction()) {

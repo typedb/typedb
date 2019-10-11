@@ -18,27 +18,23 @@
 
 package grakn.core.server.session.cache;
 
+import grakn.core.common.util.Pair;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.common.util.Pair;
-import grakn.core.kb.server.cache.TransactionCache;
-import grakn.core.rule.GraknTestServer;
-import grakn.core.core.Schema;
-import grakn.core.concept.impl.AttributeTypeImpl;
-import grakn.core.concept.impl.EntityImpl;
-import grakn.core.concept.impl.EntityTypeImpl;
-import grakn.core.concept.impl.RelationTypeImpl;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.TransactionCache;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -377,7 +373,7 @@ public class TransactionCacheIT {
     public void whenInsertingAndDeletingAttribute_attributeCachedIsUpdated(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
         String value = "banana";
-        Attribute attribute = AttributeTypeImpl.from(attributeType).create(value);
+        Attribute attribute = attributeType.create(value);
         String index = Schema.generateAttributeIndex(attributeType.label(), value);
 
         Attribute cachedAttribute = tx.cache().getAttributeCache().get(index);
@@ -395,7 +391,7 @@ public class TransactionCacheIT {
         EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");
-        Relation implicitRelation = EntityImpl.from(owner).attributeInferred(attribute);
+        Relation implicitRelation = owner.attributeInferred(attribute);
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));
         implicitRelation.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));

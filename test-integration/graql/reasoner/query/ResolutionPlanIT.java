@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
@@ -21,28 +22,22 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.gremlin.NodesUtil;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -54,6 +49,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;

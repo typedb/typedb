@@ -35,7 +35,6 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Casting;
-import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -330,17 +329,17 @@ public class TransactionCache {
         return removedAttributes;
     }
 
-    @VisibleForTesting
-    Map<ConceptId, Concept> getConceptCache() {
-        return conceptCache;
-    }
-
     public Map<String, Attribute> getAttributeCache() {
         return attributeCache;
     }
 
     @VisibleForTesting
-    Map<Label, SchemaConcept> getSchemaConceptCache() {
+    public Map<ConceptId, Concept> getConceptCache() {
+        return conceptCache;
+    }
+
+    @VisibleForTesting
+    public Map<Label, SchemaConcept> getSchemaConceptCache() {
         return schemaConceptCache;
     }
 

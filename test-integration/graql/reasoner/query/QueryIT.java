@@ -14,41 +14,43 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
+import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
-import grakn.core.graql.reasoner.atom.binary.RelationAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.graph.GeoGraph;
-import grakn.core.graql.reasoner.rule.InferenceRule;
-import grakn.core.graql.reasoner.rule.RuleUtils;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;

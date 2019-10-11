@@ -14,27 +14,28 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
-import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.graph.GenericSchemaGraph;
 import grakn.core.kb.graql.reasoner.pattern.QueryPattern;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
-import java.util.List;
-import java.util.Set;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.List;
+import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
