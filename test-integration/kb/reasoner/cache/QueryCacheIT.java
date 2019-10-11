@@ -20,37 +20,37 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
+import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
+
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -538,7 +538,7 @@ public class QueryCacheIT {
     @Test
     public void whenFullyResolvingAQuery_allSubgoalsAreMarkedAsComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa baseRelation;"), tx);
 
             Set<ConceptMap> answers = query.resolve().collect(toSet());
@@ -549,7 +549,7 @@ public class QueryCacheIT {
     @Test
     public void whenResolvingASequenceOfQueries_onlyFullyResolvedSubgoalsAreMarkedAsComplete(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(symmetricRole: $x, symmetricRole: $y) isa binary-symmetric;"), tx);
 
             Set<ConceptMap> incompleteAnswers = query.resolve().limit(3).collect(toSet());
@@ -602,7 +602,7 @@ public class QueryCacheIT {
     @Test
     public void whenInstancesAreInserted_weUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
                     "{" +
                             "(symmetricRole: $x, symmetricRole: $y) isa binary-trans;" +
@@ -631,7 +631,7 @@ public class QueryCacheIT {
     @Test
     public void whenInferredInstancesAreInserted_weDoNotUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             Entity entity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
                     "{" +
@@ -656,7 +656,7 @@ public class QueryCacheIT {
     @Test
     public void whenInstancesAreDeleted_weUpdateCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             Entity subRoleEntity = tx.getEntityType("subRoleEntity").instances().iterator().next();
             Entity anotherBaseRoleEntity = tx.getEntityType("anotherBaseRoleEntity").instances().iterator().next();
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction(
@@ -697,7 +697,7 @@ public class QueryCacheIT {
     @Test
     public void whenRecordingQueryWithUniqueAnswer_weAckCompleteness(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
-            MultilevelSemanticCache cache = ReasonerUtils.queryCacheCast(tx.queryCache());
+            MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             ReasonerQueryImpl baseQuery = ReasonerQueries.create(conjunction("{$x has resource $r via $rel;};"), tx);
             Set<ConceptMap> answers = baseQuery.resolve().collect(toSet());
 
@@ -753,8 +753,8 @@ public class QueryCacheIT {
     }
 
     private Set<ConceptMap> getCacheContent(Transaction tx){
-        return ReasonerUtils.queryCacheCast(tx.queryCache()).queries().stream()
-                .map(q -> ReasonerUtils.queryCacheCast(tx.queryCache()).getEntry(q))
+        return CacheCasting.queryCacheCast(tx.queryCache()).queries().stream()
+                .map(q -> CacheCasting.queryCacheCast(tx.queryCache()).getEntry(q))
                 .flatMap(e -> e.cachedElement().getAll().stream())
                 .collect(toSet());
     }

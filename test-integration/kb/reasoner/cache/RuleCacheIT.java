@@ -19,25 +19,26 @@
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
-import java.util.Collections;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
@@ -70,7 +71,7 @@ public class RuleCacheIT {
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
         try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
-            RuleCacheImpl ruleCache = ReasonerUtils.ruleCacheCast(tx.ruleCache());
+            RuleCacheImpl ruleCache = CacheCasting.ruleCacheCast(tx.ruleCache());
 
             Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
             Type ternary = tx.getType(Label.of("ternary"));

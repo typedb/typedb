@@ -35,11 +35,12 @@ public class OutPlaysFragmentTest {
 
     private final Variable start = new Variable();
     private final Variable end = new Variable();
-    private final FragmentImpl fragment = new AutoValue_OutPlaysFragment(null , start, end, false);
+    private FragmentImpl fragment;
 
     @Test
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsUpwards() {
+        fragment = new AutoValue_OutPlaysFragment(null , start, end, false);
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 
