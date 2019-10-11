@@ -20,15 +20,15 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "session-it",
-    test_class = "grakn.core.server.session.SessionIT",
     srcs = ["SessionIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.session.SessionIT",
     deps = [
-        "//kb/concept/api:api",
-        "//server:server",
-        "//kb:kb",
-        "//test-integration/rule:grakn-test-server"
+        "//kb",
+        "//kb/concept/api",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
@@ -39,57 +39,53 @@ java_test(
     test_class = "grakn.core.server.session.TransactionOLTPIT",
     deps = [
         "//common",
-        "//kb:kb",
-        "//concept/answer:answer",
-        "//kb/concept/api:api",
-        "//kb/concept/structure:structure",
+        "//concept/answer",
         "//concept/impl:concept",
-        "//core:core",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//server:server",
+        "//kb",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//server",
         "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
         "//test-integration/util:concept-downcasting",
+        "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
     ],
 )
 
-
 java_test(
     name = "keyspace-schema-cache-it",
-    test_class = "grakn.core.server.session.cache.KeyspaceSchemaCacheIT",
     srcs = ["cache/KeyspaceSchemaCacheIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.session.cache.KeyspaceSchemaCacheIT",
     deps = [
-        "//server:server",
-        "//kb:kb",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_client_java//:client-java",
-        "//kb/concept/api:api",
-        "@graknlabs_graql//java:graql"
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
     name = "transaction-cache-it",
-    test_class = "grakn.core.server.session.cache.TransactionCacheIT",
     srcs = ["cache/TransactionCacheIT.java"],
-    deps = [
-        "//server:server",
-        "//kb:kb",
-        "//common:common",
-        "//core:core",
-        "//test-integration/rule:grakn-test-server",
-        "//kb/concept/api:api",
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-    ],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    data = ["//test-integration/resources:grakn-small-tx-cache"]
+    data = ["//test-integration/resources:grakn-small-tx-cache"],
+    test_class = "grakn.core.server.session.cache.TransactionCacheIT",
+    deps = [
+        "//common",
+        "//core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
@@ -98,6 +94,6 @@ checkstyle_test(
         ":session-it",
         ":transaction-oltp-it",
         ":keyspace-schema-cache-it",
-        ":transaction-cache-it"
+        ":transaction-cache-it",
     ],
 )

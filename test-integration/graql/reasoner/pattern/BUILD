@@ -11,12 +11,11 @@ java_library(
     srcs = ["RelationPattern.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "@graknlabs_graql//java:graql",
-        "//kb/concept/api:api",
-        "//common:common",
-        "//server:server",
+        "//common",
         "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/concept/api",
         "//test-integration/graql/reasoner/pattern:query-pattern",
+        "@graknlabs_graql//java:graql",
     ],
 )
 
@@ -26,8 +25,7 @@ java_library(
     visibility = ["//test-integration:__subpackages__"],
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "//kb/concept/api:api",
-        "//server:server",
+        "//kb/concept/api",
         "//test-integration/graql/reasoner/pattern:query-pattern",
     ],
 )
@@ -37,10 +35,9 @@ java_library(
     srcs = ["TypePattern.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb/concept/api:api",
-        "//server:server",
-        "//test-integration/graql/reasoner/pattern:query-pattern",
         "//dependencies/maven/artifacts/com/google/guava",
+        "//kb/concept/api",
+        "//test-integration/graql/reasoner/pattern:query-pattern",
     ],
 )
 
@@ -50,6 +47,6 @@ checkstyle_test(
         ":query-pattern",
         ":relation-pattern",
         ":resource-pattern",
-        ":type-pattern"
-    ]
+        ":type-pattern",
+    ],
 )

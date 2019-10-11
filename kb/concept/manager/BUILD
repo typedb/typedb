@@ -24,22 +24,18 @@ java_library(
     name = "manager",
     srcs = glob(["*.java"]),
     deps = [
-        "//kb/concept/api:api",
-        "//kb/concept/structure:structure",
-
-        "//core:core",
+        "//kb/concept/api",
+        "//kb/concept/structure",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
     ],
 )
-
-
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":manager"
+        ":manager",
     ],
 )

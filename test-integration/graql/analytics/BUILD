@@ -2,153 +2,133 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "graql-compute-it",
-    test_class = "grakn.core.graql.analytics.GraqlComputeIT",
-    srcs = ["GraqlComputeIT.java"],
-    deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//server:server",
-        "//core:core",
-        "//concept/answer:answer",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["GraqlComputeIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.GraqlComputeIT",
+    deps = [
+        "//concept/answer",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "connected-component-it",
-    test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
-    srcs = ["ConnectedComponentIT.java"],
-    deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//server:server",
-        "//core:core",
-        "//concept/answer:answer",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["ConnectedComponentIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.ConnectedComponentIT",
+    deps = [
+        "//concept/answer",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "coreness-it",
-    test_class = "grakn.core.graql.analytics.CorenessIT",
+    size = "large",
     srcs = ["CorenessIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.CorenessIT",
     deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//server:server",
-        "//concept/answer:answer",
+        "//concept/answer",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
-
         "@graknlabs_graql//java:graql",
     ],
-    size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
     name = "count-it",
-    test_class = "grakn.core.graql.analytics.CountIT",
+    size = "large",
     srcs = ["CountIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.CountIT",
     deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//server:server",
-        "//core:core",
-        "//concept/answer:answer",
+        "//concept/answer",
+        "//core",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
-    size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
     name = "degree-it",
-    test_class = "grakn.core.graql.analytics.DegreeIT",
-    srcs = ["DegreeIT.java"],
-    deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//server:server",
-        "//concept/answer:answer",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["DegreeIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.DegreeIT",
+    deps = [
+        "//concept/answer",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "kcore-it",
-    test_class = "grakn.core.graql.analytics.KCoreIT",
+    size = "large",
     srcs = ["KCoreIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.KCoreIT",
     deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//concept/answer:answer",
-        "//server:server",
+        "//concept/answer",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
-
         "@graknlabs_graql//java:graql",
     ],
-    size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
 )
 
 java_test(
     name = "path-it",
-    test_class = "grakn.core.graql.analytics.PathIT",
-    srcs = ["PathIT.java"],
-    deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//graql:graql",
-        "//core:core",
-        "//concept/answer:answer",
-        "//server:server",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["PathIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.PathIT",
+    deps = [
+        "//concept/answer",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//graql",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "statistics-it",
-    test_class = "grakn.core.graql.analytics.StatisticsIT",
-    srcs = ["StatisticsIT.java"],
-    deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//concept/answer:answer",
-        "//server:server",
-        "//core:core",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava"
-    ],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["StatisticsIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.analytics.StatisticsIT",
+    deps = [
+        "//concept/answer",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
@@ -161,6 +141,6 @@ checkstyle_test(
         ":degree-it",
         ":kcore-it",
         ":path-it",
-        ":statistics-it"
-    ]
+        ":statistics-it",
+    ],
 )

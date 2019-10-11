@@ -5,32 +5,28 @@ java_library(
     srcs = ["GraqlTestUtil.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb/concept/api:api",
-        "//server:server",
-        "//kb:kb",
-
+        "//dependencies/maven/artifacts/commons-collections",
+        "//dependencies/maven/artifacts/junit",
+        "//kb",
+        "//kb/concept/api",
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/commons-collections:commons-collections",
-        "//dependencies/maven/artifacts/junit:junit"
-    ]
+    ],
 )
 
 java_library(
     name = "concept-downcasting",
     srcs = ["ConceptDowncasting.java"],
+    visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//kb/concept/api:api",
-        "//concept/impl:concept"
+        "//concept/impl:concept",
+        "//kb/concept/api",
     ],
-    visibility=["//test-integration:__subpackages__"]
 )
-
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":graql-test-util",
-        ":concept-downcasting"
+        ":concept-downcasting",
     ],
 )

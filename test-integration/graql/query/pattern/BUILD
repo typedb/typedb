@@ -20,28 +20,24 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "pattern-it",
-    test_class = "grakn.core.graql.query.pattern.PatternIT",
+    size = "medium",
     srcs = ["PatternIT.java"],
+    test_class = "grakn.core.graql.query.pattern.PatternIT",
     deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//concept/answer:answer",
-        "//server:server",
+        "//concept/answer",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/graql/graph:movie-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-
         "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-
     ],
-    size = "medium"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":pattern-it"
+        ":pattern-it",
     ],
 )

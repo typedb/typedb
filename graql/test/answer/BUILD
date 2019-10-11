@@ -20,25 +20,21 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "concept-map-test",
-    test_class = "grakn.core.graql.answer.ConceptMapTest",
+    size = "small",
     srcs = ["ConceptMapTest.java"],
+    test_class = "grakn.core.graql.answer.ConceptMapTest",
     deps = [
-        "//kb/concept/api:api",
-        "//server:server",
-        "//kb:kb",
-        "//concept/answer:answer",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//concept/answer",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//kb/concept/api",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":concept-map-test",
-    ]
+    ],
 )

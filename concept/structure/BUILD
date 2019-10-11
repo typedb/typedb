@@ -24,28 +24,22 @@ java_library(
     name = "structure",
     srcs = glob(["*.java"]),
     deps = [
-        "//common:common",
-        "//kb/concept/api:api",
-        "//kb/concept/structure:structure",
-        "//kb/concept/manager:manager",
-        "//core:core",
-
-        # External dependenicies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//kb/concept/manager",
+        "//core",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
+        "//dependencies/maven/artifacts/com/google/guava",
     ],
 )
-
-
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":structure"
+        ":structure",
     ],
 )

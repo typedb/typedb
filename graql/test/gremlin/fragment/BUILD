@@ -20,43 +20,38 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "in-plays-fragment-test",
+    size = "small",
     srcs = ["InPlaysFragmentTest.java"],
     test_class = "grakn.core.graql.gremlin.fragment.InPlaysFragmentTest",
     deps = [
-        "//kb:kb",
-        "//core:core",
-        "//graql:graql",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//graql",
         "@graknlabs_graql//java:graql",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
-    size = "small"
 )
 
 java_test(
     name = "isa-explicit-test",
+    size = "small",
     srcs = ["IsaExplicitTest.java"],
     test_class = "grakn.core.graql.gremlin.fragment.IsaExplicitTest",
-    deps = [
-        "@graknlabs_graql//java:graql",
-        "//server:server",
-    ],
-    size = "small"
+    deps = ["@graknlabs_graql//java:graql"],
 )
 
 java_test(
-     name = "out-plays-fragment-test",
-     srcs = ["OutPlaysFragmentTest.java"],
-     test_class = "grakn.core.graql.gremlin.fragment.OutPlaysFragmentTest",
-     deps = [
-         "@graknlabs_graql//java:graql",
-         "//core:core",
-         "//kb:kb",
-         "//graql:graql",
-         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-         "//dependencies/maven/artifacts/com/google/guava:guava"
-         ],
-     size = "small"
+    name = "out-plays-fragment-test",
+    size = "small",
+    srcs = ["OutPlaysFragmentTest.java"],
+    test_class = "grakn.core.graql.gremlin.fragment.OutPlaysFragmentTest",
+    deps = [
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//graql",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
@@ -64,6 +59,6 @@ checkstyle_test(
     targets = [
         ":in-plays-fragment-test",
         ":isa-explicit-test",
-        ":out-plays-fragment-test"
+        ":out-plays-fragment-test",
     ],
 )

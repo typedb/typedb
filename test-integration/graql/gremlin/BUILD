@@ -19,49 +19,49 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "conjunction-query-test",
+    size = "small",
+    srcs = [
+        "ConjunctionQueryTest.java",
+        "GraqlMatchers.java",
+    ],
     test_class = "grakn.core.graql.gremlin.ConjunctionQueryTest",
-    srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//graql:graql",
-        "//server:server",
-
-        "@graknlabs_graql//java:graql",
-
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//graql",
+        "//kb",
+        "//kb/concept/api",
+        "//server",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "small"
 )
 
 java_test(
     name = "graql-traversal-test",
-    test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
-    srcs = ["GraqlTraversalIT.java", "GraqlMatchers.java"],
-    deps = [
-        "//common:common",
-        "//kb/concept/api:api",
-        "//kb:kb",
-        "//core:core",
-        "//server:server",
-        "//graql:graql",
-        "//test-integration/graql/graph:movie-graph",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+    size = "small",
+    srcs = [
+        "GraqlMatchers.java",
+        "GraqlTraversalIT.java",
     ],
-    size = "small"
+    test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
+    deps = [
+        "//common",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//graql",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":graql-traversal-test",
-        ":conjunction-query-test"
+        ":conjunction-query-test",
     ],
 )

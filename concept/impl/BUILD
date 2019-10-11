@@ -24,32 +24,29 @@ java_library(
     name = "concept",
     srcs = glob(["**/*.java"]),
     deps = [
-        # Internal dependencies
-        "//common:common",
-        "//kb:kb",
-        "//core:core",
-        "//concept/structure:structure",
-        "//kb/concept/api:api",
-        "//kb/concept/util:util",
-        "//kb/concept/manager:manager",
-        "//kb/concept/structure:structure",
+        "//kb",
+        "//core",
+        "//concept/structure",
+        "//kb/concept/api",
+        "//kb/concept/util",
+        "//kb/concept/manager",
+        "//kb/concept/structure",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-
     ],
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":concept"
+        ":concept",
     ],
 )

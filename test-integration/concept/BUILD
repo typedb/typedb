@@ -1,90 +1,85 @@
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
-     name = "attribute-it",
-     srcs = ["AttributeIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.AttributeIT",
-     deps = [
-         "//kb/concept/api:api",
-         "//server:server",
-         "//kb:kb",
-         "//kb/concept/structure:structure",
-         "//core:core",
-         "//concept/impl:concept",
-         "//test-integration/rule:grakn-test-server",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-         "//dependencies/maven/artifacts/com/google/guava:guava",
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium",
+    name = "attribute-it",
+    size = "medium",
+    srcs = ["AttributeIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.AttributeIT",
+    deps = [
+        "//concept/impl:concept",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+    ],
 )
 
 java_test(
-     name = "attribute-type-it",
-     srcs = ["AttributeTypeIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.AttributeTypeIT",
-     deps = [
-         "//kb/concept/api:api",
-         "//server:server",
-         "//kb:kb",
-         "@graknlabs_graql//java:graql",
-         "//test-integration/rule:grakn-test-server",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    name = "attribute-type-it",
+    size = "medium",
+    srcs = ["AttributeTypeIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.AttributeTypeIT",
+    deps = [
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
-     name = "concept-it",
-     srcs = ["ConceptIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.ConceptIT",
-     deps = [
-         "//kb/concept/structure:structure",
-         "//core:core",
-         "//kb/concept/api:api",
-         "//kb:kb",
-         "//server:server",
-         "//test-integration/rule:grakn-test-server",
+    name = "concept-it",
+    size = "medium",
+    srcs = ["ConceptIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.ConceptIT",
+    deps = [
+        "//core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//test-integration/rule:grakn-test-server",
         "//test-integration/util:concept-downcasting",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    ],
 )
 
 java_test(
-     name = "entity-it",
-     srcs = ["EntityIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.EntityIT",
-     deps = [
-         "//kb/concept/api:api",
-         "//kb/concept/structure:structure",
-         "//kb:kb",
-         "//server:server",
-         "//core:core",
-         "//test-integration/rule:grakn-test-server",
+    name = "entity-it",
+    size = "medium",
+    srcs = ["EntityIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.EntityIT",
+    deps = [
+        "//core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//test-integration/rule:grakn-test-server",
         "//test-integration/util:concept-downcasting",
-
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    ],
 )
 
 java_test(
     name = "entity-type-it",
+    size = "large",
     srcs = ["EntityTypeIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.grakn.core.kb.concept.EntityTypeIT",
     deps = [
         # Internal dependencies
-        "//common:common",
-        "//kb:kb",
-        "//core:core",
-        "//kb/concept/structure:structure",
-        "//kb/concept/api:api",
-        "//server:server",
+        "//common",
+        "//kb",
+        "//core",
+        "//kb/concept/structure",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:concept-downcasting",
 
@@ -93,102 +88,93 @@ java_test(
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
     ],
+)
+
+java_test(
+    name = "relation-it",
+    size = "medium",
+    srcs = ["RelationIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    size = "large"
+    test_class = "grakn.core.server.grakn.core.kb.concept.RelationIT",
+    deps = [
+        "//common",
+        "//concept/answer",
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
-     name = "relation-it",
-     srcs = ["RelationIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.RelationIT",
-     deps = [
-         "//common:common",
-         "//kb:kb",
-         "//kb/concept/api:api",
-         "//server:server",
-         "//core:core",
-         "//concept/answer:answer",
-         "@graknlabs_graql//java:graql",
-         "//test-integration/rule:grakn-test-server",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-         "//dependencies/maven/artifacts/com/google/guava:guava",
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    name = "relation-type-it",
+    size = "medium",
+    srcs = ["RelationTypeIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.RelationTypeIT",
+    deps = [
+        "//core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+    ],
 )
 
 java_test(
-     name = "relation-type-it",
-     srcs = ["RelationTypeIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.RelationTypeIT",
-     deps = [
-         "//kb/concept/api:api",
-         "//kb:kb",
-         "//server:server",
-         "//core:core",
-         "//test-integration/rule:grakn-test-server",
-
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    name = "role-it",
+    size = "medium",
+    srcs = ["RoleIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.RoleIT",
+    deps = [
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+    ],
 )
 
 java_test(
-     name = "role-it",
-     srcs = ["RoleIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.RoleIT",
-     deps = [
-         "//kb/concept/api:api",
-         "//kb:kb",
-         "//server:server",
-         "//test-integration/rule:grakn-test-server",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    name = "schema-concept-it",
+    size = "medium",
+    srcs = ["SchemaConceptIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.SchemaConceptIT",
+    deps = [
+        "//common",
+        "//concept/impl:concept",
+        "//core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//kb/concept/structure",
+        "//test-integration/rule:grakn-test-server",
+    ],
 )
 
 java_test(
-     name = "schema-concept-it",
-     srcs = ["SchemaConceptIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.SchemaConceptIT",
-     deps = [
-         "//common:common",
-         "//kb:kb",
-         "//kb/concept/api:api",
-         "//kb/concept/structure:structure",
-         "//server:server",
-         "//core:core",
-         "//concept/impl:concept",
-         "//test-integration/rule:grakn-test-server",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "medium"
+    name = "schema-mutation-it",
+    size = "large",
+    srcs = ["SchemaMutationIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.grakn.core.kb.concept.SchemaMutationIT",
+    deps = [
+        "//common",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+    ],
 )
-
-java_test(
-     name = "schema-mutation-it",
-     srcs = ["SchemaMutationIT.java"],
-     test_class = "grakn.core.server.grakn.core.kb.concept.SchemaMutationIT",
-     deps = [
-         "//common:common",
-         "//kb:kb",
-         "//kb/concept/api:api",
-         "//server:server",
-         "//test-integration/rule:grakn-test-server",
-         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-         "//dependencies/maven/artifacts/com/google/guava:guava",
-     ],
-     classpath_resources = ["//test-integration/resources:logback-test"],
-     size = "large"
-)
-
 
 checkstyle_test(
     name = "checkstyle",
@@ -203,5 +189,5 @@ checkstyle_test(
         ":role-it",
         ":schema-concept-it",
         ":schema-mutation-it",
-    ]
+    ],
 )
