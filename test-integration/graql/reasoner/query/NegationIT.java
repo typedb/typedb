@@ -22,6 +22,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
@@ -99,7 +100,7 @@ public class NegationIT {
     @org.junit.Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
-    @Test (expected = GraqlSemanticException.class)
+    @Test (expected = ReasonerException.class)
     public void whenNegatingSinglePattern_exceptionIsThrown () {
         try(Transaction tx = negationSession.writeTransaction()) {
             Negation<Pattern> pattern = not(var("x").has("attribute", "value"));
@@ -107,7 +108,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlSemanticException.class)
+    @Test (expected = ReasonerException.class)
     public void whenExecutingUnboundNegationPattern_exceptionIsThrown () {
         try(Transaction tx = negationSession.writeTransaction()) {
             Negation<Pattern> pattern = not(var("x").has("attribute", "value"));
@@ -115,7 +116,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlSemanticException.class)
+    @Test (expected = ReasonerException.class)
     public void whenIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
         try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(
@@ -131,7 +132,7 @@ public class NegationIT {
         }
     }
 
-    @Test (expected = GraqlSemanticException.class)
+    @Test (expected = ReasonerException.class)
     public void whenExecutingIncorrectlyBoundNestedNegationBlock_exceptionIsThrown () {
         try(Transaction tx = negationSession.writeTransaction()) {
             Conjunction<?> pattern = and(

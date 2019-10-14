@@ -97,7 +97,7 @@ public class GraknDaemon {
         if (!javaVersion.equals("1.8")) {
             throw new RuntimeException(ErrorMessage.UNSUPPORTED_JAVA_VERSION.getMessage(javaVersion));
         }
-        if (!graknHome.resolve("server").resolve("conf").toFile().exists()) {
+        if (!graknHome.resolve("server").resolve("server/conf").toFile().exists()) {
             throw new RuntimeException(ErrorMessage.UNABLE_TO_GET_GRAKN_HOME_FOLDER.getMessage());
         }
         if (!graknProperties.toFile().exists()) {

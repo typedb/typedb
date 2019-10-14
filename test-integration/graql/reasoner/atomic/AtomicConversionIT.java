@@ -19,6 +19,7 @@
 package grakn.core.kb.graql.reasoner.atomic;
 
 import com.google.common.collect.Sets;
+import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.kb.server.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
@@ -117,7 +118,7 @@ public class AtomicConversionIT {
         }
     }
 
-    @Test (expected = GraqlQueryException.class)
+    @Test (expected = ReasonerException.class)
     public void whenConvertingNonImplicitRelationToAttribute_weThrow(){
         try(Transaction tx = session.readTransaction()){
             Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
