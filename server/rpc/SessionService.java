@@ -295,7 +295,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             sessionId = request.getSessionId();
             Session session = openSessions.get(sessionId);
 
-            grakn.core.kb.server.Transaction.Type type = grakn.core.kb.server.Transaction.Type.of(request.getType().getNumber());
+            Transaction.Type type = request.getType();
             if (type != null && type.equals(Transaction.Type.WRITE)) {
                 tx = session.writeTransaction();
             } else if (type != null && type.equals(Transaction.Type.READ)) {
