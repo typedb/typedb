@@ -48,7 +48,6 @@ public class IsaExplicitTest {
     }
 
 
-
     @Test
     public void testMatchSyntax() {
         MatchClause matchQuery;

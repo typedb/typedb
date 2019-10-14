@@ -9,9 +9,10 @@ java_library(
     ],
 )
 
-java_library(
-    name = "impl",
-    srcs = glob(["*.java"]),
-    deps = [
-    ],
-)
+
+checkstyle_test(
+     name = "checkstyle",
+     targets = [
+         ":concept",
+     ],
+ )
