@@ -25,7 +25,6 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.graql.gremlin.sets.LabelFragmentSet;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;

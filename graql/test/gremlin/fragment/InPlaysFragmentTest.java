@@ -41,7 +41,8 @@ public class InPlaysFragmentTest {
     @Test
     @SuppressWarnings("unchecked")
     public void testApplyTraversalFollowsSubsDownwards() {
-        fragment = new AutoValue_InPlaysFragment(null, start, end, false);
+        // TODO fix this explicit cast when have a better testing mechanism for fragments
+        fragment = (FragmentImpl) Fragments.inPlays(null, start, end, false);
         GraphTraversal<Vertex, Vertex> traversal = __.V();
         fragment.applyTraversalInner(traversal, null, ImmutableSet.of());
 

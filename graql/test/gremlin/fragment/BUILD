@@ -22,11 +22,12 @@ java_test(
     name = "in-plays-fragment-test",
     size = "small",
     srcs = ["InPlaysFragmentTest.java"],
-    test_class = "grakn.core.graql.gremlin.fragment.InPlaysFragmentTest",
+    test_class = "grakn.core.graql.gremlin.fragmenttest.InPlaysFragmentTest",
     deps = [
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//graql",
         "@graknlabs_graql//java:graql",
     ],
@@ -36,7 +37,7 @@ java_test(
     name = "isa-explicit-test",
     size = "small",
     srcs = ["IsaExplicitTest.java"],
-    test_class = "grakn.core.graql.gremlin.fragment.IsaExplicitTest",
+    test_class = "grakn.core.graql.gremlin.fragmenttest.IsaExplicitTest",
     deps = ["@graknlabs_graql//java:graql"],
 )
 
@@ -44,11 +45,13 @@ java_test(
     name = "out-plays-fragment-test",
     size = "small",
     srcs = ["OutPlaysFragmentTest.java"],
-    test_class = "grakn.core.graql.gremlin.fragment.OutPlaysFragmentTest",
+    test_class = "grakn.core.graql.gremlin.fragmenttest.OutPlaysFragmentTest",
     deps = [
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
+
         "//graql",
         "@graknlabs_graql//java:graql",
     ],

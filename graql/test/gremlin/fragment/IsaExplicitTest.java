@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graql.gremlin.fragment;
+package grakn.core.graql.gremlin.fragmenttest;
 
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;

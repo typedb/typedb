@@ -19,6 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
+import com.google.common.annotations.VisibleForTesting;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
@@ -36,7 +37,8 @@ import java.util.HashSet;
 import static grakn.core.core.Schema.EdgeLabel.PLAYS;
 
 @AutoValue
-abstract class InPlaysFragment extends EdgeFragment {
+@VisibleForTesting
+public abstract class InPlaysFragment extends EdgeFragment {
 
     @Override
     public abstract Variable end();
