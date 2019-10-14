@@ -16,9 +16,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.common.test.util;
+package grakn.core.common.util;
 
-import grakn.core.common.util.LazyMergingStream;
 import org.junit.Test;
 
 import java.util.Arrays;
