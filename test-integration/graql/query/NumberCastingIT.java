@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.Session;
@@ -152,28 +153,28 @@ public class NumberCastingIT {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws GraknConceptException {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-date");
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.time.LocalDateTime]");
         verifyWrite(session, pattern);
     }
 
     @Test
-    public void whenAddressingDoubleAsBoolean_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingDoubleAsBoolean_exceptionIsThrown() throws GraknConceptException {
         boolean value = true;
         Pattern pattern = Graql.var("x").val(value).isa("attr-double");
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of datatype [java.lang.Double]");
         verifyWrite(session, pattern);
     }
 
     @Test
-    public void whenAddressingLongAsDouble_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingLongAsDouble_exceptionIsThrown() throws GraknConceptException {
         double value = 10.1;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.lang.Long]");
         verifyWrite(session, pattern);
     }

@@ -20,6 +20,7 @@ package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
@@ -191,7 +192,7 @@ public class QueryErrorIT {
                     type("name").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
             ));
 
-            exception.expect(TransactionException.class);
+            exception.expect(GraknConceptException.class);
             exception.expectMessage(allOf(
                     containsString("person"),
                     containsString("name")
