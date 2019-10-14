@@ -20,16 +20,15 @@
 package grakn.core.concept.structure;
 
 import grakn.core.core.ConceptCacheLine;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.structure.AbstractElement;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
 
 import javax.annotation.Nullable;
 
@@ -42,7 +41,7 @@ public class CastingImpl implements Casting {
 
     private final EdgeElement edgeElement;
     private ConceptManager conceptManager;
-    private final ConceptCacheLine<Role> cachedRole = new ConceptCacheLine<>(() -> conceptManager().getRole(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID)).toString()));
+    private final ConceptCacheLine<Role> cachedRole = new ConceptCacheLine<>(() -> conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))).asRole());
     private final ConceptCacheLine<Thing> cachedInstance = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().target()).asThing());
     private final ConceptCacheLine<Relation> cachedRelation = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().source()).asRelation());
 

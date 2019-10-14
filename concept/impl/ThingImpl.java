@@ -22,6 +22,7 @@ package grakn.core.concept.impl;
 import com.google.common.collect.Sets;
 import grakn.core.concept.structure.CastingImpl;
 import grakn.core.core.ConceptCacheLine;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -37,7 +38,6 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
