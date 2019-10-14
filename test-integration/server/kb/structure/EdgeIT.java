@@ -49,6 +49,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -68,7 +69,8 @@ public class EdgeIT {
 
     @Before
     public void setUp(){
-        Keyspace keyspace = new KeyspaceImpl("");
+        String keyspaceName = "ksp_"+UUID.randomUUID().toString().substring(0, 20).replace("-", "_");
+        Keyspace keyspace = new KeyspaceImpl(keyspaceName);
         final int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
         final int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
