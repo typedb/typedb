@@ -234,7 +234,7 @@ public class Storage {
     }
 
     private List<String> storageCommand() {
-        Path logback = graknHome.resolve("server/services").resolve("cassandra").resolve("logback.xml");
+        Path logback = graknHome.resolve("services").resolve("cassandra").resolve("logback.xml");
         ArrayList<String> storageCommand = new ArrayList<>();
         storageCommand.add("java");
         storageCommand.add("-cp");
@@ -254,14 +254,14 @@ public class Storage {
     }
 
     private String getStorageClassPath() {
-        return graknHome.resolve("server").resolve("server/services").resolve("lib").toString() + File.separator + "*"
-                + File.pathSeparator + graknHome.resolve("server").resolve("server/services").resolve("cassandra");
+        return graknHome.resolve("server").resolve("services").resolve("lib").toString() + File.separator + "*"
+                + File.pathSeparator + graknHome.resolve("server").resolve("services").resolve("cassandra");
     }
 
 
     private List<String> nodetoolCommand() {
-        Path logback = graknHome.resolve("server").resolve("server/services").resolve("cassandra").resolve("logback.xml");
-        String classpath = graknHome.resolve("server").resolve("server/services").resolve("lib").toString() + File.separator + "*";
+        Path logback = graknHome.resolve("server").resolve("services").resolve("cassandra").resolve("logback.xml");
+        String classpath = graknHome.resolve("server").resolve("services").resolve("lib").toString() + File.separator + "*";
         return Arrays.asList(
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,
