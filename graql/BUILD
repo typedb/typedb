@@ -75,6 +75,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql",
+        ":graql-tmp-name",
     ],
 )

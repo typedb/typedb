@@ -28,7 +28,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
-        "graql:graql-tmp-fix",
+        "//graql:graql-tmp-name",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -52,7 +52,7 @@ java_test(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
 
-        "graql:graql-tmp-fix",
+        "//graql:graql-tmp-name",
         "@graknlabs_graql//java:graql",
     ],
 )

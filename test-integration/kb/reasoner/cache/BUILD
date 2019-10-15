@@ -12,7 +12,7 @@ java_test(
         "//kb",
         "//kb/concept/api",
         "//concept/answer:answer",
-        "graql:graql-tmp-fix",
+        "//graql:graql-tmp-name",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
@@ -28,7 +28,7 @@ java_test(
     test_class = "grakn.core.kb.graql.reasoner.cache.RuleCacheIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
-        "graql:graql-tmp-fix",
+        "//graql:graql-tmp-name",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",

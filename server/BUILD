@@ -54,7 +54,7 @@ java_library(
         "//concept/answer:answer",
         "//kb:kb",
         "//core:core",
-        "//graql:graql-tmp-fix",
+        "//graql:graql-tmp-name",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
