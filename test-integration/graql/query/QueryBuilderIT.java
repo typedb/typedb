@@ -18,11 +18,11 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.server.exception.GraqlSemanticException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlInsert;

@@ -18,12 +18,12 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.concept.api.Label;
-import grakn.core.concept.api.EntityType;
-import grakn.core.concept.api.RelationType;
-import grakn.core.concept.api.Role;
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.getInstance;
 import static grakn.core.util.GraqlTestUtil.loadFromFile;

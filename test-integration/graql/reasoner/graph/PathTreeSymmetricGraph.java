@@ -18,8 +18,8 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.Session;
-import grakn.core.server.Transaction;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeSymmetricGraph extends PathTreeGraph {

@@ -5,7 +5,7 @@ java_test(
     size = "small",
     srcs = ["RuleScalingIT.java"],
     classpath_resources = ["//test-integration/resources:logback-test"],
-    test_class = "grakn.core.graql.reasoner.benchmark.RuleScalingIT",
+    test_class = "grakn.core.kb.graql.reasoner.benchmark.RuleScalingIT",
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -26,7 +26,7 @@ java_test(
         "//test-integration/graql/reasoner/resources:linear-transivity",
         "//test-integration/graql/reasoner/resources:multi-join",
     ],
-    test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkBigIT",
+    test_class = "grakn.core.kb.graql.reasoner.benchmark.BenchmarkBigIT",
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -46,7 +46,7 @@ java_test(
         "//test-integration/graql/reasoner/resources:generic-schema",
         "//test-integration/graql/reasoner/resources:unification-with-types",
     ],
-    test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
+    test_class = "grakn.core.kb.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
