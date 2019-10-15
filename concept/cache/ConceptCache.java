@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.core;
+package grakn.core.concept.cache;
 
 import javax.annotation.Nullable;
 import java.util.function.Consumer;
@@ -31,13 +31,13 @@ import java.util.function.Supplier;
  *
  * @param <V> The object it is caching
  */
-public class ConceptCacheLine<V> {
+public class ConceptCache<V> {
     //If no cache can produce the data then the database is read
     private final Supplier<V> reader;
     private V value = null;
     private boolean cached;
 
-    public ConceptCacheLine(Supplier<V> reader) {
+    public ConceptCache(Supplier<V> reader) {
         this.reader = reader;
         this.cached = false;
     }

@@ -22,6 +22,7 @@ import grakn.client.GraknClient;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -211,6 +212,8 @@ public class GraknGraqlCommandsE2E {
     }
 
     @Test
+    // TODO re-enable when console is updated
+    @Ignore
     public void grakn_shouldBeAbleToExecuteGraknServerClean_withCustomDbDirectory() throws IOException, TimeoutException, InterruptedException {
         // modify the path to the `db` folder in `grakn.properties`
         final Path graknProperties = GRAKN_UNZIPPED_DIRECTORY.resolve("server").resolve("conf").resolve("grakn.properties");

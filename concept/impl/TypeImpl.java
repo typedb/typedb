@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -52,10 +52,10 @@ import java.util.stream.Stream;
  */
 public class TypeImpl<T extends Type, V extends Thing> extends SchemaConceptImpl<T> implements Type {
 
-    private final ConceptCacheLine<Boolean> cachedIsAbstract = new ConceptCacheLine<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
+    private final ConceptCache<Boolean> cachedIsAbstract = new ConceptCache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_ABSTRACT));
 
     //This cache is different in order to keep track of which plays are required
-    private final ConceptCacheLine<Map<Role, Boolean>> cachedDirectPlays = new ConceptCacheLine<>(() -> {
+    private final ConceptCache<Map<Role, Boolean>> cachedDirectPlays = new ConceptCache<>(() -> {
         Map<Role, Boolean> roleTypes = new HashMap<>();
 
         vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.PLAYS).forEach(edge -> {

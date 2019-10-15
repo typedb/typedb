@@ -19,7 +19,7 @@
 
 package grakn.core.concept.structure;
 
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Relation;
@@ -41,11 +41,11 @@ public class CastingImpl implements Casting {
 
     private final EdgeElement edgeElement;
     private ConceptManager conceptManager;
-    private final ConceptCacheLine<Role> cachedRole = new ConceptCacheLine<>(() -> conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))).asRole());
-    private final ConceptCacheLine<Thing> cachedInstance = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().target()).asThing());
-    private final ConceptCacheLine<Relation> cachedRelation = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().source()).asRelation());
+    private final ConceptCache<Role> cachedRole = new ConceptCache<>(() -> conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.ROLE_LABEL_ID))).asRole());
+    private final ConceptCache<Thing> cachedInstance = new ConceptCache<>(() -> conceptManager().buildConcept(edge().target()).asThing());
+    private final ConceptCache<Relation> cachedRelation = new ConceptCache<>(() -> conceptManager().buildConcept(edge().source()).asRelation());
 
-    private final ConceptCacheLine<RelationType> cachedRelationType = new ConceptCacheLine<>(() -> {
+    private final ConceptCache<RelationType> cachedRelationType = new ConceptCache<>(() -> {
         if (cachedRelation.isCached()) {
             return cachedRelation.get().type();
         } else {

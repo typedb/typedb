@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
@@ -41,8 +41,8 @@ import java.util.stream.Stream;
  * 2. It is special in that it is unique to RelationTypes.
  */
 public class RoleImpl extends SchemaConceptImpl<Role> implements Role {
-    private final ConceptCacheLine<Set<Type>> cachedDirectPlayedByTypes = new ConceptCacheLine<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
-    private final ConceptCacheLine<Set<RelationType>> cachedRelationTypes = new ConceptCacheLine<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final ConceptCache<Set<Type>> cachedDirectPlayedByTypes = new ConceptCache<>(() -> this.<Type>neighbours(Direction.IN, Schema.EdgeLabel.PLAYS).collect(Collectors.toSet()));
+    private final ConceptCache<Set<RelationType>> cachedRelationTypes = new ConceptCache<>(() -> this.<RelationType>neighbours(Direction.IN, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RoleImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);

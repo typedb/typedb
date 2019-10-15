@@ -28,6 +28,7 @@ java_library(
         "//kb/concept/structure",
         "//kb/concept/manager",
         "//core",
+        "//concept/cache:conceptcache",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

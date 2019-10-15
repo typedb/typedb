@@ -20,7 +20,7 @@
 package grakn.core.concept.impl;
 
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
@@ -46,11 +46,11 @@ import java.util.stream.Stream;
  *            For example an EntityType or RelationType or Role
  */
 public abstract class SchemaConceptImpl<T extends SchemaConcept> extends ConceptImpl implements SchemaConcept {
-    private final ConceptCacheLine<Label> cachedLabel = new ConceptCacheLine<>(() -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
-    private final ConceptCacheLine<LabelId> cachedLabelId = new ConceptCacheLine<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
-    private final ConceptCacheLine<T> cachedSuperType = new ConceptCacheLine<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
-    private final ConceptCacheLine<Set<T>> cachedDirectSubTypes = new ConceptCacheLine<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
-    private final ConceptCacheLine<Boolean> cachedIsImplicit = new ConceptCacheLine<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
+    private final ConceptCache<Label> cachedLabel = new ConceptCache<>(() -> Label.of(vertex().property(Schema.VertexProperty.SCHEMA_LABEL)));
+    private final ConceptCache<LabelId> cachedLabelId = new ConceptCache<>(() -> LabelId.of(vertex().property(Schema.VertexProperty.LABEL_ID)));
+    private final ConceptCache<T> cachedSuperType = new ConceptCache<>(() -> this.<T>neighbours(Direction.OUT, Schema.EdgeLabel.SUB).findFirst().orElse(null));
+    private final ConceptCache<Set<T>> cachedDirectSubTypes = new ConceptCache<>(() -> this.<T>neighbours(Direction.IN, Schema.EdgeLabel.SUB).collect(Collectors.toSet()));
+    private final ConceptCache<Boolean> cachedIsImplicit = new ConceptCache<>(() -> vertex().propertyBoolean(Schema.VertexProperty.IS_IMPLICIT));
 
     SchemaConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         super(vertexElement, conceptManager, conceptObserver);

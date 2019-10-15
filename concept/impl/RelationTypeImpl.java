@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -40,7 +40,7 @@ import java.util.stream.Stream;
  * They are used to model and categorise n-ary relations.
  */
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
-    private final ConceptCacheLine<Set<Role>> cachedRelates = new ConceptCacheLine<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
+    private final ConceptCache<Set<Role>> cachedRelates = new ConceptCache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
     RelationTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptBuilder, ConceptObserver conceptObserver) {
         super(vertexElement, conceptBuilder, conceptObserver);

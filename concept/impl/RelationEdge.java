@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
@@ -52,17 +52,17 @@ public class RelationEdge implements RelationStructure {
     private final ConceptManagerImpl conceptManager;
     private ConceptObserver conceptObserver;
 
-    private final ConceptCacheLine<RelationType> relationType = new ConceptCacheLine<>(() ->
+    private final ConceptCache<RelationType> relationType = new ConceptCache<>(() ->
             conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
 
-    private final ConceptCacheLine<Role> ownerRole = new ConceptCacheLine<>(() -> conceptManager().getSchemaConcept(LabelId.of(
+    private final ConceptCache<Role> ownerRole = new ConceptCache<>(() -> conceptManager().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID))));
 
-    private final ConceptCacheLine<Role> valueRole = new ConceptCacheLine<>(() -> conceptManager().getSchemaConcept(LabelId.of(
+    private final ConceptCache<Role> valueRole = new ConceptCache<>(() -> conceptManager().getSchemaConcept(LabelId.of(
             edge().property(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID))));
 
-    private final ConceptCacheLine<Thing> owner = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().source()));
-    private final ConceptCacheLine<Thing> value = new ConceptCacheLine<>(() -> conceptManager().buildConcept(edge().target()));
+    private final ConceptCache<Thing> owner = new ConceptCache<>(() -> conceptManager().buildConcept(edge().source()));
+    private final ConceptCache<Thing> value = new ConceptCache<>(() -> conceptManager().buildConcept(edge().target()));
 
     RelationEdge(EdgeElement edgeElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         this.edgeElement = edgeElement;

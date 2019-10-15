@@ -19,7 +19,7 @@
 
 package grakn.core.concept.impl;
 
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.structure.GraknElementException;
@@ -44,9 +44,9 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
 
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final ConceptCacheLine<Shard> currentShard = new ConceptCacheLine<>(() -> vertex().currentShard());
-    private final ConceptCacheLine<Long> shardCount = new ConceptCacheLine<>(() -> shards().count());
-    private final ConceptCacheLine<ConceptId> conceptId = new ConceptCacheLine<>(() -> Schema.conceptId(vertex().element()));
+    private final ConceptCache<Shard> currentShard = new ConceptCache<>(() -> vertex().currentShard());
+    private final ConceptCache<Long> shardCount = new ConceptCache<>(() -> shards().count());
+    private final ConceptCache<ConceptId> conceptId = new ConceptCache<>(() -> Schema.conceptId(vertex().element()));
 
     ConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         this.vertexElement = vertexElement;

@@ -21,7 +21,7 @@ package grakn.core.concept.impl;
 
 import com.google.common.collect.Sets;
 import grakn.core.concept.structure.CastingImpl;
-import grakn.core.core.ConceptCacheLine;
+import grakn.core.concept.cache.ConceptCache;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -65,7 +65,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
     private Boolean isInferred = null;
 
-    private final ConceptCacheLine<V> cachedType = new ConceptCacheLine<>(() -> {
+    private final ConceptCache<V> cachedType = new ConceptCache<>(() -> {
         Optional<V> type = vertex().getEdgesOfType(Direction.OUT, Schema.EdgeLabel.ISA)
                 .map(EdgeElement::target)
                 .flatMap(edge -> edge.getEdgesOfType(Direction.OUT, Schema.EdgeLabel.SHARD))

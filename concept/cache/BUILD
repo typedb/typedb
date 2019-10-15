@@ -21,33 +21,19 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "impl",
-    srcs = glob(["**/*.java"]),
+    name = "conceptcache",
+    srcs = glob(["*.java"]),
     deps = [
-        "//kb",
-        "//core",
-        "//concept/structure:structureimpl",
-        "//concept/cache:conceptcache",
-        "//kb/concept/api",
-        "//kb/concept/util",
-        "//kb/concept/manager",
-        "//kb/concept/structure",
-
-        # External dependenicies from @graknlabs
-        "@graknlabs_graql//java:graql",
-
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
 )
+
+
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":impl",
+        ":conceptcache"
     ],
 )
