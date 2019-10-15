@@ -22,7 +22,6 @@ import grakn.core.server.templates.Version;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -80,8 +79,6 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
      * test 'graql console' and 'define person sub entity;' from inside the console
      */
     @Test
-    // TODO re-enable when console is updated
-    @Ignore
     public void graql_shouldBeAbleToExecuteQuery_fromConsoleSession() throws IOException, InterruptedException, TimeoutException {
         String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
         String graql = "define person sub entity; insert $x isa person; match $x isa person; get;\n";
@@ -95,8 +92,6 @@ public class GraknGraqlCommands_WithARunningGraknE2E {
     }
 
     @Test
-    // TODO re-enable when console is updated
-    @Ignore
     public void graql_shouldBeAbleToLoadFile_whenPathIsRelative() throws IOException, InterruptedException, TimeoutException {
         String randomKeyspace = "keyspace_" + UUID.randomUUID().toString().replace("-", "");
         String graql = "define person sub entity; insert $x isa person; match $x isa person; get;\n";

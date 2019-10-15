@@ -57,7 +57,7 @@ def graknlabs_console():
     git_repository(
         name = "graknlabs_console",
         remote = "https://github.com/graknlabs/console",
-        commit = "28116e6019c29beb0eeec4d2aca64676ffed915f"
+        commit = "4ef9b54c5fe9c0b24a62dccf2ae193e6d0a40ae4"
     )
 
 def graknlabs_benchmark():
