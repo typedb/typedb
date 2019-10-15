@@ -216,12 +216,11 @@ jobs:
       - install-bazel-linux-rbe
       - checkout
       - run: sudo apt-get update && sudo apt-get install rpm
-      - run: echo 0.0.0_$CIRCLE_SHA1 > VERSION && cat VERSION
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //server:deploy-rpm -- snapshot
-          bazel run //:deploy-rpm -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //server:deploy-rpm -- snapshot
+          bazel run --define version=$(git rev-parse HEAD) //:deploy-rpm -- snapshot
 
   test-deployment-linux-apt:
     machine: true
@@ -335,8 +334,8 @@ jobs:
       - run: |
           export DEPLOY_RPM_USERNAME=$REPO_GRAKN_USERNAME
           export DEPLOY_RPM_PASSWORD=$REPO_GRAKN_PASSWORD
-          bazel run //server:deploy-rpm -- release
-          bazel run //:deploy-rpm -- release
+          bazel run --define version=$(cat VERSION) //server:deploy-rpm -- release
+          bazel run --define version=$(cat VERSION) //:deploy-rpm -- release
 
   deploy-brew:
     machine: true
@@ -346,7 +345,7 @@ jobs:
       - checkout
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN
-          bazel run //:deploy-brew -- release
+          bazel run --define version=$(cat VERSION) //:deploy-brew -- release
 
   deploy-docker:
     machine: true
