@@ -16,13 +16,13 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.pattern;
+package grakn.core.graql.reasoner.pattern;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
 import grakn.core.common.util.Pair;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;

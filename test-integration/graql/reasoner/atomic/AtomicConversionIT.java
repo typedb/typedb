@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.atomic;
+package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.Sets;
 import grakn.core.graql.reasoner.ReasonerException;
-import grakn.core.kb.server.exception.GraqlQueryException;
+import grakn.core.server.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
@@ -31,8 +31,8 @@ import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.core.Schema;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;

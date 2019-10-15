@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.graph;
+package grakn.core.graql.reasoner.graph;
 
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeSymmetricGraph extends PathTreeGraph {

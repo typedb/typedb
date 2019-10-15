@@ -16,20 +16,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.reasoning;
+package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
-import grakn.core.kb.graql.reasoner.graph.LinearTransitivityMatrixGraph;
-import grakn.core.kb.graql.reasoner.graph.NguyenGraph;
-import grakn.core.kb.graql.reasoner.graph.PathMatrixGraph;
-import grakn.core.kb.graql.reasoner.graph.PathTreeGraph;
-import grakn.core.kb.graql.reasoner.graph.PathTreeSymmetricGraph;
-import grakn.core.kb.graql.reasoner.graph.ReachabilityGraph;
-import grakn.core.kb.graql.reasoner.graph.TailRecursionGraph;
-import grakn.core.kb.server.Session;
+import grakn.core.graql.reasoner.graph.DualLinearTransitivityMatrixGraph;
+import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
+import grakn.core.graql.reasoner.graph.NguyenGraph;
+import grakn.core.graql.reasoner.graph.PathMatrixGraph;
+import grakn.core.graql.reasoner.graph.PathTreeGraph;
+import grakn.core.graql.reasoner.graph.PathTreeSymmetricGraph;
+import grakn.core.graql.reasoner.graph.ReachabilityGraph;
+import grakn.core.graql.reasoner.graph.TailRecursionGraph;
+import grakn.core.server.Session;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.Transaction;
+import grakn.core.server.Transaction;
 import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import org.junit.ClassRule;

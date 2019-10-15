@@ -16,18 +16,18 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner;
+package grakn.core.graql.reasoner;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
+import grakn.core.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.server.Session;
+import grakn.core.concept.api.Attribute;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.server.Session;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.Transaction;
+import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;

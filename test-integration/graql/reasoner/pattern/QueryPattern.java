@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.pattern;
+package grakn.core.graql.reasoner.pattern;
 
 import java.util.ArrayList;
 import java.util.Collection;

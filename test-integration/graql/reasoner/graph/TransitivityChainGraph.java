@@ -16,16 +16,16 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.graph;
+package grakn.core.graql.reasoner.graph;
 
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Thing;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.concept.api.Role;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;

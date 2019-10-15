@@ -20,10 +20,10 @@ package grakn.core.graql.gremlin;
 
 import grakn.core.graql.gremlin.ConjunctionQuery;
 import grakn.core.graql.gremlin.fragment.Fragments;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.server.Transaction;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Type;
+import grakn.core.graql.planning.Fragment;
+import grakn.core.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;

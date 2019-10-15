@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.cache;
@@ -23,23 +24,25 @@ import com.google.common.collect.Sets;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.explanation.RuleExplanation;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.concept.api.Concept;
+import grakn.core.concept.api.ConceptId;
+import grakn.core.concept.api.Entity;
+import grakn.core.concept.api.Relation;
+import grakn.core.graql.reasoner.cache.CacheEntry;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
+import junit.framework.TestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -105,7 +108,7 @@ public class QueryCacheIT {
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(query);
             assertFalse(cacheEntry.cachedElement().contains(specificAnswer));
             cache.record(query, specificAnswer);
-            assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
+            TestCase.assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
         }
     }
 
@@ -143,7 +146,7 @@ public class QueryCacheIT {
             assertNull(cache.getEntry(childQuery));
             cache.record(childQuery, specificAnswer);
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(childQuery);
-            assertEquals(tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()), cacheEntry.cachedElement().getAll());
+            TestCase.assertEquals(tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()), cacheEntry.cachedElement().getAll());
         }
     }
 
@@ -531,7 +534,7 @@ public class QueryCacheIT {
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> match = cache.getEntry(query);
 
             assertNotNull(match);
-            assertEquals(answers, match.cachedElement().getAll());
+            TestCase.assertEquals(answers, match.cachedElement().getAll());
         }
     }
 

@@ -15,23 +15,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-package grakn.core.kb.graql.reasoner.graph;
+package grakn.core.graql.reasoner.graph;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.Relation;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.graql.reasoner.pattern.AttributePattern;
-import grakn.core.kb.graql.reasoner.pattern.QueryPattern;
-import grakn.core.kb.graql.reasoner.pattern.RelationPattern;
-import grakn.core.kb.graql.reasoner.pattern.TypePattern;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.concept.api.Label;
+import grakn.core.concept.api.Attribute;
+import grakn.core.concept.api.Entity;
+import grakn.core.concept.api.Relation;
+import grakn.core.concept.api.AttributeType;
+import grakn.core.concept.api.EntityType;
+import grakn.core.concept.api.RelationType;
+import grakn.core.graql.reasoner.pattern.AttributePattern;
+import grakn.core.graql.reasoner.pattern.QueryPattern;
+import grakn.core.graql.reasoner.pattern.RelationPattern;
+import grakn.core.graql.reasoner.pattern.TypePattern;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;

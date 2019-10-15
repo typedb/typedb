@@ -16,12 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.kb.graql.reasoner.reasoning;
+package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
-import grakn.core.kb.concept.api.Label;
+import grakn.core.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Type;
+import grakn.core.concept.api.Type;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -32,8 +32,8 @@ import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.common.util.Pair;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.kb.server.Session;
-import grakn.core.kb.server.Transaction;
+import grakn.core.server.Session;
+import grakn.core.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
