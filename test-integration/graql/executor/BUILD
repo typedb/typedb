@@ -27,7 +27,7 @@ java_test(
     deps = [
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//graql",
+        "graql:graql-tmp-fix",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",

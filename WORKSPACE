@@ -30,7 +30,7 @@ load(
     "graknlabs_graql",
     "graknlabs_protocol",
     "graknlabs_client_java",
-    "graknlabs_console",
+#    "graknlabs_console",
     "graknlabs_benchmark"
 )
 graknlabs_build_tools()

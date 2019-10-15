@@ -28,7 +28,7 @@ java_test(
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//graql",
+        "graql:graql-tmp-fix",
         "//kb",
         "//kb/concept/api",
         "//server",
@@ -50,7 +50,7 @@ java_test(
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//graql",
+        "graql:graql-tmp-fix",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
