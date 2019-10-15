@@ -40,7 +40,7 @@ java_test(
     deps = [
         "//common",
         "//concept/answer",
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",

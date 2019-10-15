@@ -7,7 +7,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.grakn.core.kb.concept.AttributeIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -149,7 +149,7 @@ java_test(
     test_class = "grakn.core.server.grakn.core.kb.concept.SchemaConceptIT",
     deps = [
         "//common",
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

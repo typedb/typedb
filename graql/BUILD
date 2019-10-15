@@ -32,7 +32,7 @@ java_library(
         "//kb/concept/api",
         "//kb/concept/util",
         "//concept/answer",
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//kb",
         "//core",
 

@@ -182,7 +182,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryPlannerIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//dependencies/maven/artifacts/com/google/guava",
         "//graql",
         "//kb",

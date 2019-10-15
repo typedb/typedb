@@ -38,7 +38,7 @@ graknlabs_common()
 graknlabs_graql()
 graknlabs_protocol()
 graknlabs_client_java()
-graknlabs_console()
+#graknlabs_console()
 graknlabs_benchmark()
 
 load("@graknlabs_build_tools//distribution:dependencies.bzl", "graknlabs_bazel_distribution")

@@ -50,7 +50,7 @@ java_library(
         "//kb/concept/util:util",
         "//kb/concept/structure:structure",
         "//concept/structure:structure",
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//concept/answer:answer",
         "//kb:kb",
         "//core:core",

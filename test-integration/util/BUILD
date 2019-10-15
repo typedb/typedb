@@ -18,7 +18,7 @@ java_library(
     srcs = ["ConceptDowncasting.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//kb/concept/api",
     ],
 )

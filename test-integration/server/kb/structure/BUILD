@@ -7,7 +7,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.structure.CastingIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",
         "//kb/concept/api",
@@ -24,7 +24,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.structure.EdgeIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//concept/structure",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",

@@ -23,7 +23,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.ValidateGlobalRulesIT",
     deps = [
-        "//concept/impl:concept",
+        "//concept/impl:impl",
         "//kb",
         "//kb/concept/api",
         "//kb/concept/structure",
