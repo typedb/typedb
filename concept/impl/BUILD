@@ -26,7 +26,7 @@ java_library(
     deps = [
         "//kb",
         "//core",
-        "//concept/structure",
+        "//concept/structure:structureimpl",
         "//kb/concept/api",
         "//kb/concept/util",
         "//kb/concept/manager",
