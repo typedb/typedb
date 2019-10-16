@@ -98,6 +98,18 @@ public abstract class Fragment {
 
     private Double accurateFragmentCost = null;
 
+
+    protected final VarProperty varProperty;
+    protected final Variable start;
+
+    Fragment(VarProperty varProperty, Variable start) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+    }
+
     /*
      * This is the memoized result of {@link #vars()}
      */
@@ -116,12 +128,16 @@ public abstract class Fragment {
      * Get the corresponding property
      */
     @Nullable
-    public abstract VarProperty varProperty();
+    public VarProperty varProperty() {
+        return varProperty;
+    }
 
     /**
      * @return the variable name that this fragment starts from in the query
      */
-    public abstract Variable start();
+    public Variable start() {
+        return start;
+    }
 
     /**
      * @return the variable name that this fragment ends at in the query, if this query has an end variable

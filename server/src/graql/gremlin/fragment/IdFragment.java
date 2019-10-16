@@ -18,7 +18,6 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.concept.ConceptId;
 import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
@@ -27,12 +26,12 @@ import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.property.IdProperty;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
@@ -41,10 +40,21 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-@AutoValue
 public abstract class IdFragment extends Fragment {
 
-    abstract ConceptId id();
+    private final ConceptId id;
+
+    IdFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            ConceptId id) {
+        super(varProperty, start);
+        if (id == null) {
+            throw new NullPointerException("Null id");
+        }
+        this.id = id;
+    }
+
 
     public Fragment transform(Map<Variable, ConceptId> transform) {
         ConceptId toId = transform.get(start());
@@ -72,6 +82,10 @@ public abstract class IdFragment extends Fragment {
         } else {
             return vertexTraversal(traversal);
         }
+    }
+
+    ConceptId id() {
+        return id;
     }
 
     private GraphTraversal<Vertex, Vertex> vertexTraversal(GraphTraversal<Vertex, ? extends Element> traversal) {
@@ -123,5 +137,31 @@ public abstract class IdFragment extends Fragment {
     public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         // only ever 1 matching concept for an ID - a good starting point
         return 1.0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdFragment) {
+            IdFragment that = (IdFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.id.equals(that.id()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.id.hashCode();
+        return h;
     }
 }

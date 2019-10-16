@@ -94,7 +94,7 @@ public class Fragments {
     }
 
     public static Fragment dataType(VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
-        return new AutoValue_DataTypeFragment(varProperty, start, dataType);
+        return new DataTypeFragment(varProperty, start, dataType);
     }
 
     public static Fragment inPlays(VarProperty varProperty, Variable start, Variable end, boolean required) {

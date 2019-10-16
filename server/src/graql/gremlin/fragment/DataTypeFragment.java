@@ -18,22 +18,36 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 import static grakn.core.server.kb.Schema.VertexProperty.DATA_TYPE;
 
-@AutoValue
 abstract class DataTypeFragment extends Fragment {
+    private final AttributeType.DataType dataType;
 
-    abstract AttributeType.DataType dataType();
+    DataTypeFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            AttributeType.DataType dataType) {
+        super(varProperty, start);
+        if (dataType == null) {
+            throw new NullPointerException("Null dataType");
+        }
+        this.dataType = dataType;
+    }
+
+    AttributeType.DataType dataType() {
+        return dataType;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -49,5 +63,31 @@ abstract class DataTypeFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_DATA_TYPE;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DataTypeFragment) {
+            DataTypeFragment that = (DataTypeFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.dataType.equals(that.dataType()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.dataType.hashCode();
+        return h;
     }
 }

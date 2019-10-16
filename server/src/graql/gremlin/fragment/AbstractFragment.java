@@ -29,24 +29,11 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Collection;
 
-import static grakn.core.graql.gremlin.fragment.Fragment.COST_NODE_IS_ABSTRACT;
-
 abstract class AbstractFragment extends Fragment {
 
-    private final VarProperty varProperty;
-    private final Variable start;
-
-
-    AbstractFragment(
-            @Nullable VarProperty varProperty,
-            Variable start) {
-        this.varProperty = varProperty;
-        if (start == null) {
-            throw new NullPointerException("Null start");
-        }
-        this.start = start;
+    AbstractFragment(@Nullable VarProperty varProperty, Variable start) {
+        super(varProperty, start);
     }
-
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -63,15 +50,6 @@ abstract class AbstractFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_IS_ABSTRACT;
-    }
-
-    @Nullable
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    public Variable start() {
-        return start;
     }
 
     @Override

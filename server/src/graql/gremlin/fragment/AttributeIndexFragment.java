@@ -18,7 +18,6 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.concept.Label;
 import grakn.core.concept.type.AttributeType;
 import grakn.core.concept.type.RelationType;
@@ -36,12 +35,9 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import static grakn.core.graql.gremlin.fragment.Fragment.COST_NODE_INDEX;
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
 
 public abstract class AttributeIndexFragment extends Fragment {
-    private final VarProperty varProperty;
-    private final Variable start;
     private final Label attributeLabel;
     private final String attributeValue;
 
@@ -50,11 +46,8 @@ public abstract class AttributeIndexFragment extends Fragment {
             Variable start,
             Label attributeLabel,
             String attributeValue) {
-        this.varProperty = varProperty;
-        if (start == null) {
-            throw new NullPointerException("Null start");
-        }
-        this.start = start;
+        super(varProperty, start);
+
         if (attributeLabel == null) {
             throw new NullPointerException("Null attributeLabel");
         }
@@ -80,15 +73,6 @@ public abstract class AttributeIndexFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_INDEX;
-    }
-
-    @Nullable
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    public Variable start() {
-        return start;
     }
 
     public Label attributeLabel() {
