@@ -109,7 +109,7 @@ public class IsaExplicitIT {
         String related = "related";
 
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         // test type without subtypes
 
@@ -205,7 +205,7 @@ public class IsaExplicitIT {
         ));
     }
 
-    private ImmutableList<Fragment> getPlan(Pattern pattern) {
+    private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }
