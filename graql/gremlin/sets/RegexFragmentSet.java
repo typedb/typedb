@@ -59,7 +59,7 @@ class RegexFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof RegexFragmentSet) {
             RegexFragmentSet that = (RegexFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.attributeType.equals(that.attributeType))
                     && (this.regex.equals(that.regex));
         }
@@ -68,6 +68,6 @@ class RegexFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, attributeType, regex);
+        return Objects.hash(varProperty(), attributeType, regex);
     }
 }

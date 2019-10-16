@@ -43,9 +43,9 @@ import java.util.stream.Stream;
  */
 public abstract class AtomicBase implements Atomic {
 
-    final ReasonerQuery parentQuery;
-    final Variable varName;
-    final Statement pattern;
+    private final ReasonerQuery parentQuery;
+    private final Variable varName;
+    private final Statement pattern;
 
     public AtomicBase(ReasonerQuery parentQuery, Variable varName, Statement pattern) {
         this.parentQuery = parentQuery;

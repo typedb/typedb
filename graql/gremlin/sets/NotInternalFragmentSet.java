@@ -55,7 +55,7 @@ class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof NotInternalFragmentSet) {
             NotInternalFragmentSet that = (NotInternalFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.var.equals(that.var));
         }
         return false;
@@ -63,7 +63,7 @@ class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, var);
+        return Objects.hash(varProperty(), var);
     }
 
 }

@@ -69,6 +69,6 @@ class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, attributeType, dataType);
+        return Objects.hash(varProperty(), attributeType, dataType);
     }
 }

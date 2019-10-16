@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import autovalue.shaded.com.squareup.javapoet$.$ArrayTypeName;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;

@@ -60,13 +60,13 @@ class ValueFragmentSet extends EquivalentFragmentSetImpl {
 
         ValueFragmentSet that = (ValueFragmentSet) o;
 
-        return (Objects.equals(this.varProperty, that.varProperty) &&
+        return (Objects.equals(this.varProperty(), that.varProperty()) &&
                 this.var.equals(that.var()) &&
                 this.operation.equals(that.operation()));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, var, operation);
+        return Objects.hash(varProperty(), var, operation);
     }
 }

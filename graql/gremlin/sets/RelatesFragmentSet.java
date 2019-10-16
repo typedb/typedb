@@ -61,7 +61,7 @@ class RelatesFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof RelatesFragmentSet) {
             RelatesFragmentSet that = (RelatesFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.relationType.equals(that.relationType))
                     && (this.role.equals(that.role));
         }
@@ -70,6 +70,6 @@ class RelatesFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, relationType, role);
+        return Objects.hash(varProperty(), relationType, role);
     }
 }

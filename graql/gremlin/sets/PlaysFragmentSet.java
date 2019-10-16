@@ -63,7 +63,7 @@ class PlaysFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof PlaysFragmentSet) {
             PlaysFragmentSet that = (PlaysFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.type.equals(that.type))
                     && (this.role.equals(that.role))
                     && (this.required == that.required);
@@ -73,6 +73,6 @@ class PlaysFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, type, role, required);
+        return Objects.hash(varProperty(), type, role, required);
     }
 }

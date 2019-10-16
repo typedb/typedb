@@ -128,6 +128,6 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, instance, type, mayHaveEdgeInstances);
+        return Objects.hash(varProperty(), instance, type, mayHaveEdgeInstances);
     }
 }

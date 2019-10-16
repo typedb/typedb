@@ -123,7 +123,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof SubFragmentSet) {
             SubFragmentSet that = (SubFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.subConcept.equals(that.subConcept))
                     && (this.superConcept.equals(that.superConcept))
                     && (this.explicitSub == that.explicitSub);
@@ -133,6 +133,6 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, subConcept, superConcept, explicitSub);
+        return Objects.hash(varProperty(), subConcept, superConcept, explicitSub);
     }
 }

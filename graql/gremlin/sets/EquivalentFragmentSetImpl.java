@@ -31,7 +31,7 @@ import static java.util.stream.Collectors.joining;
 
 public abstract class EquivalentFragmentSetImpl implements EquivalentFragmentSet, Iterable<Fragment> {
 
-    VarProperty varProperty;
+    private final VarProperty varProperty;
 
     public EquivalentFragmentSetImpl(VarProperty varProperty) {
         this.varProperty = varProperty;

@@ -294,7 +294,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof RolePlayerFragmentSet) {
             RolePlayerFragmentSet that = (RolePlayerFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.relation.equals(that.relation))
                     && (this.edge.equals(that.edge))
                     && (this.rolePlayer.equals(that.rolePlayer))
@@ -307,6 +307,6 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
+        return Objects.hash(varProperty(), relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 }

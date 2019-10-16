@@ -68,6 +68,6 @@ class IdFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, var, id);
+        return Objects.hash(varProperty(), var, id);
     }
 }

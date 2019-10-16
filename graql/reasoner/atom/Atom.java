@@ -68,7 +68,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
-    final ConceptId typeId;
+    private final ConceptId typeId;
 
     public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
         super(reasonerQuery, varName, pattern);

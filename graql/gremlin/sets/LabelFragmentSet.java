@@ -130,7 +130,7 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof LabelFragmentSet) {
             LabelFragmentSet that = (LabelFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.var.equals(that.var()))
                     && (this.labels.equals(that.labels()));
         }
@@ -139,6 +139,6 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, var, labels);
+        return Objects.hash(varProperty(), var, labels);
     }
 }

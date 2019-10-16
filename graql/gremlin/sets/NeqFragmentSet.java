@@ -60,7 +60,7 @@ class NeqFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof NeqFragmentSet) {
             NeqFragmentSet that = (NeqFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.varA.equals(that.varA))
                     && (this.varB.equals(that.varB));
         }
@@ -69,6 +69,6 @@ class NeqFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, varA, varB);
+        return Objects.hash(varProperty(), varA, varB);
     }
 }

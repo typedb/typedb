@@ -64,6 +64,6 @@ class IsAbstractFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        return Objects.hash(varProperty, var);
+        return Objects.hash(varProperty(), var);
     }
 }
