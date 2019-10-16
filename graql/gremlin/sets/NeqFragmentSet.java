@@ -42,13 +42,7 @@ class NeqFragmentSet extends EquivalentFragmentSetImpl {
             Variable varA,
             Variable varB) {
         super(varProperty);
-        if (varA == null) {
-            throw new NullPointerException("Null varA");
-        }
         this.varA = varA;
-        if (varB == null) {
-            throw new NullPointerException("Null varB");
-        }
         this.varB = varB;
     }
 

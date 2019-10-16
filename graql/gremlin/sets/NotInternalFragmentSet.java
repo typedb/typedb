@@ -40,9 +40,6 @@ class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable VarProperty varProperty,
             Variable var) {
         super(varProperty);
-        if (var == null) {
-            throw new NullPointerException("Null var");
-        }
         this.var = var;
     }
 

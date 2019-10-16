@@ -315,7 +315,7 @@ public class GraqlTraversalIT {
     @SafeVarargs
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
         ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversalImpl.create(fragmentsSet);
+        return new GraqlTraversalImpl(fragmentsSet);
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
@@ -350,7 +350,7 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(GraqlTraversalImpl.create(fragments));
+        return Optional.of(new GraqlTraversalImpl(fragments));
     }
 
     private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {

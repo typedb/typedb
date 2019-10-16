@@ -48,13 +48,7 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
             Variable var,
             ImmutableSet<Label> labels) {
         super(varProperty);
-        if (var == null) {
-            throw new NullPointerException("Null var");
-        }
         this.var = var;
-        if (labels == null) {
-            throw new NullPointerException("Null labels");
-        }
         this.labels = labels;
     }
 

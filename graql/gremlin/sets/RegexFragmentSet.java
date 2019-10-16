@@ -42,13 +42,7 @@ class RegexFragmentSet extends EquivalentFragmentSetImpl {
             Variable attributeType,
             String regex) {
         super(varProperty);
-        if (attributeType == null) {
-            throw new NullPointerException("Null attributeType");
-        }
         this.attributeType = attributeType;
-        if (regex == null) {
-            throw new NullPointerException("Null regex");
-        }
         this.regex = regex;
     }
 

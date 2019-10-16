@@ -47,13 +47,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
             Variable superConcept,
             boolean explicitSub) {
         super(varProperty);
-        if (subConcept == null) {
-            throw new NullPointerException("Null subConcept");
-        }
         this.subConcept = subConcept;
-        if (superConcept == null) {
-            throw new NullPointerException("Null superConcept");
-        }
         this.superConcept = superConcept;
         this.explicitSub = explicitSub;
     }

@@ -36,13 +36,7 @@ class ValueFragmentSet extends EquivalentFragmentSetImpl {
 
     ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, ValueOperation<?, ?> operation) {
         super(varProperty);
-        if (var == null) {
-            throw new NullPointerException("Null var");
-        }
         this.var = var;
-        if (operation == null) {
-            throw new NullPointerException("Null operation");
-        }
         this.operation = operation;
     }
 

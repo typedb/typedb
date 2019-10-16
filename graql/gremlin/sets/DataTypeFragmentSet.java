@@ -43,13 +43,7 @@ class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
             AttributeType.DataType dataType) {
         super(varProperty);
 
-        if (attributeType == null) {
-            throw new NullPointerException("Null attributeType");
-        }
         this.attributeType = attributeType;
-        if (dataType == null) {
-            throw new NullPointerException("Null dataType");
-        }
         this.dataType = dataType;
     }
 

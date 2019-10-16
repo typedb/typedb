@@ -42,13 +42,7 @@ class RelatesFragmentSet extends EquivalentFragmentSetImpl {
             Variable relationType,
             Variable role) {
         super(varProperty);
-        if (relationType == null) {
-            throw new NullPointerException("Null relationType");
-        }
         this.relationType = relationType;
-        if (role == null) {
-            throw new NullPointerException("Null role");
-        }
         this.role = role;
     }
 

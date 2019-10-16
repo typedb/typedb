@@ -43,13 +43,7 @@ class IdFragmentSet extends EquivalentFragmentSetImpl {
             Variable var,
             ConceptId id) {
         super(varProperty);
-        if (var == null) {
-            throw new NullPointerException("Null var");
-        }
         this.var = var;
-        if (id == null) {
-            throw new NullPointerException("Null id");
-        }
         this.id = id;
     }
 

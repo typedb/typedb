@@ -48,13 +48,7 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
             Variable type,
             boolean mayHaveEdgeInstances) {
         super(varProperty);
-        if (instance == null) {
-            throw new NullPointerException("Null instance");
-        }
         this.instance = instance;
-        if (type == null) {
-            throw new NullPointerException("Null type");
-        }
         this.type = type;
         this.mayHaveEdgeInstances = mayHaveEdgeInstances;
     }

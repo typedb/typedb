@@ -88,12 +88,12 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     public GraqlTraversal createTraversal(Pattern pattern) {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
-        Set<? extends List<Fragment>> fragments = patterns.stream()
+        Set<List<? extends Fragment>> fragments = patterns.stream()
                 .map(conjunction -> new ConjunctionQuery(conjunction, tx))
                 .map((ConjunctionQuery query) -> planForConjunction(query, tx))
                 .collect(ImmutableSet.toImmutableSet());
 
-        return GraqlTraversalImpl.create(fragments);
+        return new GraqlTraversalImpl(fragments);
     }
 
     /**

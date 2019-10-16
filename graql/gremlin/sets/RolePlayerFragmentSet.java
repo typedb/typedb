@@ -60,17 +60,8 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable ImmutableSet<Label> roleLabels,
             @Nullable ImmutableSet<Label> relationTypeLabels) {
         super(varProperty);
-        if (relation == null) {
-            throw new NullPointerException("Null relation");
-        }
         this.relation = relation;
-        if (edge == null) {
-            throw new NullPointerException("Null edge");
-        }
         this.edge = edge;
-        if (rolePlayer == null) {
-            throw new NullPointerException("Null rolePlayer");
-        }
         this.rolePlayer = rolePlayer;
         this.role = role;
         this.roleLabels = roleLabels;

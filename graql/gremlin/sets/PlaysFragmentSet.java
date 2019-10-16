@@ -44,13 +44,7 @@ class PlaysFragmentSet extends EquivalentFragmentSetImpl {
             Variable role,
             boolean required) {
         super(varProperty);
-        if (type == null) {
-            throw new NullPointerException("Null type");
-        }
         this.type = type;
-        if (role == null) {
-            throw new NullPointerException("Null role");
-        }
         this.role = role;
         this.required = required;
     }

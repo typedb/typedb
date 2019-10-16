@@ -61,17 +61,8 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
             Label label,
             Object value) {
         super(null);
-        if (var == null) {
-            throw new NullPointerException("Null var");
-        }
         this.var = var;
-        if (label == null) {
-            throw new NullPointerException("Null label");
-        }
         this.label = label;
-        if (value == null) {
-            throw new NullPointerException("Null value");
-        }
         this.value = value;
     }
 
