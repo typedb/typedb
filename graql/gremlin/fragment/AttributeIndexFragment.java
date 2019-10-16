@@ -39,6 +39,9 @@ import static grakn.core.core.Schema.VertexProperty.INDEX;
 
 public class AttributeIndexFragment extends FragmentImpl {
 
+    private final Label attributeLabel;
+    private final String attributeValue;
+
     AttributeIndexFragment(@Nullable VarProperty varProperty, Variable start, Label attributeLabel, String attributeValue) {
         super(varProperty, start);
 

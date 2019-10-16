@@ -39,8 +39,7 @@ import java.util.HashSet;
  *
  */
 
-class OutSubFragment extends EdgeFragment {
-    private final Variable end;
+public class OutSubFragment extends EdgeFragment {
     private final int subTraversalDepthLimit;
 
     OutSubFragment(
@@ -48,19 +47,10 @@ class OutSubFragment extends EdgeFragment {
             Variable start,
             Variable end,
             int subTraversalDepthLimit) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
+        super(varProperty, start, end);
         this.subTraversalDepthLimit = subTraversalDepthLimit;
     }
 
-    public Variable end() {
-        return end;
-    }
-
-    @Override
     // -1 implies no depth limit
     public int subTraversalDepthLimit() {
         return subTraversalDepthLimit;

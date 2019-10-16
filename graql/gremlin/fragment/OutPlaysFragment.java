@@ -38,7 +38,6 @@ import static grakn.core.core.Schema.EdgeLabel.PLAYS;
 
 class OutPlaysFragment extends EdgeFragment {
 
-    private final Variable end;
     private final boolean required;
 
     OutPlaysFragment(
@@ -46,20 +45,8 @@ class OutPlaysFragment extends EdgeFragment {
             Variable start,
             Variable end,
             boolean required) {
-        this.varProperty = varProperty;
-        if (start == null) {
-            throw new NullPointerException("Null start");
-        }
-        this.start = start;
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
+        super(varProperty, start, end);
         this.required = required;
-    }
-
-    public Variable end() {
-        return end;
     }
 
     boolean required() {

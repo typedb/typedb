@@ -45,23 +45,13 @@ import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
  *
  */
 
-class OutIsaFragment extends EdgeFragment {
-
-    private final Variable end;
+public class OutIsaFragment extends EdgeFragment {
 
     OutIsaFragment(
             @Nullable VarProperty varProperty,
             Variable start,
             Variable end) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
-    }
-
-    public Variable end() {
-        return end;
+        super(varProperty, start, end);
     }
 
 

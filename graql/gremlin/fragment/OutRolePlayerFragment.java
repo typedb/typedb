@@ -19,8 +19,8 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.concept.Label;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -48,9 +48,8 @@ import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
  * Part of a EquivalentFragmentSet, along with InRolePlayerFragment.
  *
  */
-class OutRolePlayerFragment extends AbstractRolePlayerFragment {
+public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
-    private final Variable end;
     private final Variable edge;
     private final Variable role;
     private final ImmutableSet<Label> roleLabels;
@@ -64,11 +63,7 @@ class OutRolePlayerFragment extends AbstractRolePlayerFragment {
             @Nullable Variable role,
             @Nullable ImmutableSet<Label> roleLabels,
             @Nullable ImmutableSet<Label> relationTypeLabels) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
+        super(varProperty, start, end);
         if (edge == null) {
             throw new NullPointerException("Null edge");
         }
@@ -76,10 +71,6 @@ class OutRolePlayerFragment extends AbstractRolePlayerFragment {
         this.role = role;
         this.roleLabels = roleLabels;
         this.relationTypeLabels = relationTypeLabels;
-    }
-
-    public Variable end() {
-        return end;
     }
 
     @Override

@@ -40,14 +40,24 @@ import static grakn.core.kb.graql.planning.spanningtree.util.Weighted.weighted;
  * has it's own definiton of the middle node's ID. However, they all have the same implementation of
  * methods to do with building the Query Planning Graph
  */
-public class EdgeFragment extends FragmentImpl {
+public abstract class EdgeFragment extends FragmentImpl {
+
+    protected Variable end;
 
     abstract protected NodeId getMiddleNodeId();
     abstract protected Node startNode();
     abstract protected Node endNode();
 
-    EdgeFragment(VarProperty varProperty, Variable start) {
+    EdgeFragment(VarProperty varProperty, Variable start, Variable end) {
         super(varProperty, start);
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+    }
+
+    public Variable end() {
+        return end;
     }
 
     @Override

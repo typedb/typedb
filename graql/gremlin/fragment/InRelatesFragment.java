@@ -37,21 +37,11 @@ import static grakn.core.core.Schema.EdgeLabel.RELATES;
 
 class InRelatesFragment extends EdgeFragment {
 
-    private final Variable end;
-
     InRelatesFragment(
             @Nullable VarProperty varProperty,
             Variable start,
             Variable end) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
-    }
-
-    public Variable end() {
-        return end;
+        super(varProperty, start, end);
     }
 
     @Override

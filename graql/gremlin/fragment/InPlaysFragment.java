@@ -37,7 +37,6 @@ import java.util.HashSet;
 import static grakn.core.core.Schema.EdgeLabel.PLAYS;
 
 class InPlaysFragment extends EdgeFragment {
-    private final Variable end;
     private final boolean required;
 
     InPlaysFragment(
@@ -45,16 +44,8 @@ class InPlaysFragment extends EdgeFragment {
             Variable start,
             Variable end,
             boolean required) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
+        super(varProperty, start, end);
         this.required = required;
-    }
-
-    public Variable end() {
-        return end;
     }
 
     boolean required() {

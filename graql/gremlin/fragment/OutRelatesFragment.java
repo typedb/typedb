@@ -41,15 +41,7 @@ class OutRelatesFragment extends EdgeFragment {
             @Nullable VarProperty varProperty,
             Variable start,
             Variable end) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
-    }
-
-    public Variable end() {
-        return end;
+        super(varProperty, start, end);
     }
 
     @Override

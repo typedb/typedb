@@ -19,11 +19,12 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.concept.ConceptId;
-import grakn.core.graql.gremlin.spanningtree.graph.IdNode;
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.server.kb.Schema;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.graql.planning.spanningtree.graph.IdNode;
+import grakn.core.kb.graql.planning.spanningtree.graph.Node;
+import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
+import grakn.core.kb.server.Transaction;
 import graql.lang.property.IdProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -33,12 +34,15 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-class IdFragment extends Fragment {
+class IdFragment extends FragmentImpl {
+
+    private final ConceptId id;
 
     IdFragment(
             @Nullable VarProperty varProperty,
@@ -51,11 +55,10 @@ class IdFragment extends Fragment {
         this.id = id;
     }
 
-
-    public Fragment transform(Map<Variable, ConceptId> transform) {
+    public FragmentImpl transform(Map<Variable, ConceptId> transform) {
         ConceptId toId = transform.get(start());
         if (toId == null) return this;
-        return new AutoValue_IdFragment(new IdProperty(toId.getValue()), start(), toId);
+        return new IdFragment(new IdProperty(toId.getValue()), start(), toId);
     }
 
     @Override

@@ -18,11 +18,11 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import grakn.core.core.Schema;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.executor.property.value.ValueComparison;
 import grakn.core.kb.graql.executor.property.value.ValueOperation;
+import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
@@ -39,7 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
-class ValueFragment extends FragmentImpl {
+public class ValueFragment extends FragmentImpl {
 
     private final ValueOperation<?, ?> operation;
 

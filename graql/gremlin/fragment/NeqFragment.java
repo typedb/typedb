@@ -19,6 +19,8 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -34,7 +36,7 @@ import java.util.Collection;
  * Used for concept comparison, not attribute values
  *
  */
-class NeqFragment extends Fragment {
+public class NeqFragment extends FragmentImpl {
 
     private final Variable other;
 
@@ -42,11 +44,7 @@ class NeqFragment extends Fragment {
             @Nullable VarProperty varProperty,
             Variable start,
             Variable other) {
-        this.varProperty = varProperty;
-        if (start == null) {
-            throw new NullPointerException("Null start");
-        }
-        this.start = start;
+        super(varProperty, start);
         if (other == null) {
             throw new NullPointerException("Null other");
         }

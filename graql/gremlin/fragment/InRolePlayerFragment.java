@@ -50,7 +50,6 @@ import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
  */
 class InRolePlayerFragment extends AbstractRolePlayerFragment {
 
-    private final Variable end;
     private final Variable edge;
     private final Variable role;
     private final ImmutableSet<Label> roleLabels;
@@ -64,11 +63,8 @@ class InRolePlayerFragment extends AbstractRolePlayerFragment {
             @Nullable Variable role,
             @Nullable ImmutableSet<Label> roleLabels,
             @Nullable ImmutableSet<Label> relationTypeLabels) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
+        super(varProperty, start, end);
+
         if (edge == null) {
             throw new NullPointerException("Null edge");
         }

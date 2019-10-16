@@ -30,7 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Collection;
 
-abstract class NotInternalFragment extends FragmentImpl {
+class NotInternalFragment extends FragmentImpl {
 
     NotInternalFragment(@Nullable VarProperty varProperty, Variable start) {
         super(varProperty, start);

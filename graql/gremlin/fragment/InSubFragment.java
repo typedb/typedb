@@ -18,17 +18,12 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import grakn.core.graql.gremlin.spanningtree.graph.Node;
-import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
-import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
-import grakn.core.server.session.TransactionOLTP;
-import graql.lang.property.VarProperty;
-import com.google.auto.value.AutoValue;
+import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -44,9 +39,8 @@ import java.util.HashSet;
  *
  */
 
-class InSubFragment extends EdgeFragment {
+public class InSubFragment extends EdgeFragment {
 
-    private final Variable end;
     private final int subTraversalDepthLimit;
 
     InSubFragment(
@@ -54,16 +48,8 @@ class InSubFragment extends EdgeFragment {
             Variable start,
             Variable end,
             int subTraversalDepthLimit) {
-        super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
+        super(varProperty, start, end);
         this.subTraversalDepthLimit = subTraversalDepthLimit;
-    }
-
-    public Variable end() {
-        return end;
     }
 
     public int subTraversalDepthLimit() {

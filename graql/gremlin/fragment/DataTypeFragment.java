@@ -20,6 +20,7 @@ package grakn.core.graql.gremlin.fragment;
 
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -31,6 +32,8 @@ import java.util.Collection;
 import static grakn.core.core.Schema.VertexProperty.DATA_TYPE;
 
 class DataTypeFragment extends FragmentImpl {
+
+    private final AttributeType.DataType dataType;
 
     DataTypeFragment(@Nullable VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
         super(varProperty, start);

@@ -53,9 +53,8 @@ import static grakn.core.core.Schema.VertexProperty.LABEL_ID;
  *
  */
 
-class InIsaFragment extends EdgeFragment {
+public class InIsaFragment extends EdgeFragment {
 
-    private final Variable end;
     private final boolean mayHaveEdgeInstances;
 
     InIsaFragment(
@@ -63,17 +62,9 @@ class InIsaFragment extends EdgeFragment {
             Variable start,
             Variable end,
             boolean mayHaveEdgeInstances) {
-        super(varProperty, start);
+        super(varProperty, start, end);
 
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
-        this.end = end;
         this.mayHaveEdgeInstances = mayHaveEdgeInstances;
-    }
-
-    public Variable end() {
-        return end;
     }
 
     boolean mayHaveEdgeInstances() {

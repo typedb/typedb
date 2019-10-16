@@ -46,7 +46,7 @@ import static java.util.stream.Collectors.toSet;
  * A fragment representing traversing a label.
  */
 
-abstract class LabelFragment extends FragmentImpl {
+public class LabelFragment extends FragmentImpl {
     private final ImmutableSet<Label> labels;
 
     LabelFragment(@Nullable VarProperty varProperty, Variable start, ImmutableSet<Label> labels) {
