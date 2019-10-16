@@ -18,13 +18,12 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
@@ -50,11 +49,40 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOf
  * to perform a unique lookup in constant time.
  *
  */
-@AutoValue
-abstract class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
+public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
 
-    static AttributeIndexFragmentSet of(Variable var, Label label, Object value) {
-        return new AutoValue_AttributeIndexFragmentSet(var, label, value);
+    private final Variable var;
+    private final Label label;
+    private final Object value;
+
+    AttributeIndexFragmentSet(
+            Variable var,
+            Label label,
+            Object value) {
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+        if (label == null) {
+            throw new NullPointerException("Null label");
+        }
+        this.label = label;
+        if (value == null) {
+            throw new NullPointerException("Null value");
+        }
+        this.value = value;
+    }
+
+    Variable var() {
+        return var;
+    }
+
+    Label label() {
+        return label;
+    }
+
+    Object value() {
+        return value;
     }
 
     @Override
@@ -67,10 +95,6 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.attributeIndex(varProperty(), var(), label(), value()));
     }
-
-    abstract Variable var();
-    abstract Label label();
-    abstract Object value();
 
     static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, tx) -> {
         Iterable<ValueFragmentSet> valueSets = equalsValueFragments(fragmentSets)::iterator;
@@ -123,13 +147,39 @@ abstract class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
                 value = ((Long) value).doubleValue();
             }
         }
-        AttributeIndexFragmentSet indexFragmentSet = AttributeIndexFragmentSet.of(attribute, label, value);
+        AttributeIndexFragmentSet indexFragmentSet = new AttributeIndexFragmentSet(attribute, label, value);
         fragmentSets.add(indexFragmentSet);
     }
 
     private static Stream<ValueFragmentSet> equalsValueFragments(Collection<EquivalentFragmentSet> fragmentSets) {
         return fragmentSetOfType(ValueFragmentSet.class, fragmentSets)
                 .filter(valueFragmentSet -> valueFragmentSet.operation().isValueEquality());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof AttributeIndexFragmentSet) {
+            AttributeIndexFragmentSet that = (AttributeIndexFragmentSet) o;
+            return (this.var.equals(that.var()))
+                    && (this.label.equals(that.label()))
+                    && (this.value.equals(that.value()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= this.var.hashCode();
+        h *= 1000003;
+        h ^= this.label.hashCode();
+        h *= 1000003;
+        h ^= this.value.hashCode();
+        return h;
     }
 
 }

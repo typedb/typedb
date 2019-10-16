@@ -18,28 +18,81 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#id(VarProperty, Variable, ConceptId)
  *
  */
-@AutoValue
-abstract class IdFragmentSet extends EquivalentFragmentSetImpl {
+class IdFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable var;
+    private final ConceptId id;
+
+    IdFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable var,
+            ConceptId id) {
+        this.varProperty = varProperty;
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+        if (id == null) {
+            throw new NullPointerException("Null id");
+        }
+        this.id = id;
+    }
+
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    private Variable var() {
+        return var;
+    }
+
+    private ConceptId id() {
+        return id;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.id(varProperty(), var(), id()));
     }
 
-    abstract Variable var();
-    abstract ConceptId id();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdFragmentSet) {
+            IdFragmentSet that = (IdFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.var.equals(that.var()))
+                    && (this.id.equals(that.id()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.var.hashCode();
+        h *= 1000003;
+        h ^= this.id.hashCode();
+        return h;
+    }
 }

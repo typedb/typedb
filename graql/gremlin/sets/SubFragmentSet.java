@@ -18,13 +18,13 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
@@ -34,8 +34,29 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.labelOf;
  * @see EquivalentFragmentSets#sub(VarProperty, Variable, Variable)
  *
  */
-@AutoValue
-abstract class SubFragmentSet extends EquivalentFragmentSetImpl {
+class SubFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable subConcept;
+    private final Variable superConcept;
+    private final boolean explicitSub;
+
+    SubFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable subConcept,
+            Variable superConcept,
+            boolean explicitSub) {
+        this.varProperty = varProperty;
+        if (subConcept == null) {
+            throw new NullPointerException("Null subConcept");
+        }
+        this.subConcept = subConcept;
+        if (superConcept == null) {
+            throw new NullPointerException("Null superConcept");
+        }
+        this.superConcept = superConcept;
+        this.explicitSub = explicitSub;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
@@ -53,9 +74,22 @@ abstract class SubFragmentSet extends EquivalentFragmentSetImpl {
         }
     }
 
-    abstract Variable subConcept();
-    abstract Variable superConcept();
-    abstract boolean explicitSub();
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    private Variable subConcept() {
+        return subConcept;
+    }
+
+    private Variable superConcept() {
+        return superConcept;
+    }
+
+    private boolean explicitSub() {
+        return explicitSub;
+    }
+
 
     /**
      * A query can avoid navigating the sub hierarchy when the following conditions are met:

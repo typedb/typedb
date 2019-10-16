@@ -18,12 +18,11 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
@@ -38,16 +37,43 @@ import static java.util.stream.Collectors.toSet;
  * @see EquivalentFragmentSets#label(VarProperty, Variable, ImmutableSet)
  *
  */
-@AutoValue
-public abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
+public class LabelFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable var;
+    private final ImmutableSet<Label> labels;
+
+    LabelFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable var,
+            ImmutableSet<Label> labels) {
+        this.varProperty = varProperty;
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+        if (labels == null) {
+            throw new NullPointerException("Null labels");
+        }
+        this.labels = labels;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.label(varProperty(), var(), labels()));
     }
 
-    abstract Variable var();
-    abstract ImmutableSet<Label> labels();
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    Variable var() {
+        return var;
+    }
+
+    ImmutableSet<Label> labels() {
+        return labels;
+    }
 
     /**
      * Expand a LabelFragmentSet to match all sub-concepts of the single existing Label.
@@ -65,7 +91,7 @@ public abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
 
         Set<Label> newLabels = concept.subs().map(SchemaConcept::label).collect(toSet());
 
-        return new AutoValue_LabelFragmentSet(varProperty(), typeVar, ImmutableSet.copyOf(newLabels));
+        return new LabelFragmentSet(varProperty(), typeVar, ImmutableSet.copyOf(newLabels));
     }
 
     /**
@@ -77,7 +103,7 @@ public abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
-    public static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
+    static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
 
         if (fragmentSets.size() <= 1) return false;
 
@@ -107,4 +133,29 @@ public abstract class LabelFragmentSet extends EquivalentFragmentSetImpl {
         return false;
     };
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof LabelFragmentSet) {
+            LabelFragmentSet that = (LabelFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.var.equals(that.var()))
+                    && (this.labels.equals(that.labels()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.var.hashCode();
+        h *= 1000003;
+        h ^= this.labels.hashCode();
+        return h;
+    }
 }

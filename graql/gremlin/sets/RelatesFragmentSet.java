@@ -18,21 +18,39 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#relates(VarProperty, Variable, Variable)
  *
  */
-@AutoValue
-abstract class RelatesFragmentSet extends EquivalentFragmentSetImpl {
+class RelatesFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable relationType;
+    private final Variable role;
+
+    RelatesFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable relationType,
+            Variable role) {
+        this.varProperty = varProperty;
+        if (relationType == null) {
+            throw new NullPointerException("Null relationType");
+        }
+        this.relationType = relationType;
+        if (role == null) {
+            throw new NullPointerException("Null role");
+        }
+        this.role = role;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
@@ -42,6 +60,41 @@ abstract class RelatesFragmentSet extends EquivalentFragmentSetImpl {
         );
     }
 
-    abstract Variable relationType();
-    abstract Variable role();
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    private Variable relationType() {
+        return relationType;
+    }
+
+    private Variable role() {
+        return role;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RelatesFragmentSet) {
+            RelatesFragmentSet that = (RelatesFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.relationType.equals(that.relationType()))
+                    && (this.role.equals(that.role()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.relationType.hashCode();
+        h *= 1000003;
+        h ^= this.role.hashCode();
+        return h;
+    }
 }

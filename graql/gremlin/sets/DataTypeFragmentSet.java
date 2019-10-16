@@ -18,28 +18,80 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#dataType(VarProperty, Variable, AttributeType.DataType)
  *
  */
-@AutoValue
-abstract class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
+class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
+    private final VarProperty varProperty;
+    private final Variable attributeType;
+    private final AttributeType.DataType dataType;
+
+    DataTypeFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable attributeType,
+            AttributeType.DataType dataType) {
+        this.varProperty = varProperty;
+        if (attributeType == null) {
+            throw new NullPointerException("Null attributeType");
+        }
+        this.attributeType = attributeType;
+        if (dataType == null) {
+            throw new NullPointerException("Null dataType");
+        }
+        this.dataType = dataType;
+    }
+
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    private Variable attributeType() {
+        return attributeType;
+    }
+
+    private AttributeType.DataType dataType() {
+        return dataType;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType(), dataType()));
     }
 
-    abstract Variable attributeType();
-    abstract AttributeType.DataType dataType();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DataTypeFragmentSet) {
+            DataTypeFragmentSet that = (DataTypeFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.attributeType.equals(that.attributeType()))
+                    && (this.dataType.equals(that.dataType()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.attributeType.hashCode();
+        h *= 1000003;
+        h ^= this.dataType.hashCode();
+        return h;
+    }
 }

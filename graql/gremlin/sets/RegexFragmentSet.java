@@ -18,27 +18,80 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#regex(VarProperty, Variable, String)
  *
  */
-@AutoValue
-abstract class RegexFragmentSet extends EquivalentFragmentSetImpl {
+class RegexFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable attributeType;
+    private final String regex;
+
+    RegexFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable attributeType,
+            String regex) {
+        this.varProperty = varProperty;
+        if (attributeType == null) {
+            throw new NullPointerException("Null attributeType");
+        }
+        this.attributeType = attributeType;
+        if (regex == null) {
+            throw new NullPointerException("Null regex");
+        }
+        this.regex = regex;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.regex(varProperty(), attributeType(), regex()));
     }
 
-    abstract Variable attributeType();
-    abstract String regex();
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    Variable attributeType() {
+        return attributeType;
+    }
+
+    String regex() {
+        return regex;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RegexFragmentSet) {
+            RegexFragmentSet that = (RegexFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.attributeType.equals(that.attributeType()))
+                    && (this.regex.equals(that.regex()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.attributeType.hashCode();
+        h *= 1000003;
+        h ^= this.regex.hashCode();
+        return h;
+    }
 }

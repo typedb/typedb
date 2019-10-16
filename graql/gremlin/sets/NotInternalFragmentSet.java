@@ -18,27 +18,68 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#notInternalFragmentSet(VarProperty, Variable)
  *
  */
-@AutoValue
-abstract class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
+class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable var;
+
+    NotInternalFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable var) {
+        this.varProperty = varProperty;
+        if (var == null) {
+            throw new NullPointerException("Null var");
+        }
+        this.var = var;
+    }
+
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    private Variable var() {
+        return var;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.notInternal(varProperty(), var()));
     }
 
-    abstract Variable var();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof NotInternalFragmentSet) {
+            NotInternalFragmentSet that = (NotInternalFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.var.equals(that.var()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.var.hashCode();
+        return h;
+    }
+
 }

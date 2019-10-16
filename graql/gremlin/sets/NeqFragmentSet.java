@@ -18,22 +18,39 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#neq(VarProperty, Variable, Variable)
  *
  */
-@AutoValue
-abstract class NeqFragmentSet extends EquivalentFragmentSetImpl {
+class NeqFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final VarProperty varProperty;
+    private final Variable varA;
+    private final Variable varB;
+
+    NeqFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable varA,
+            Variable varB) {
+        this.varProperty = varProperty;
+        if (varA == null) {
+            throw new NullPointerException("Null varA");
+        }
+        this.varA = varA;
+        if (varB == null) {
+            throw new NullPointerException("Null varB");
+        }
+        this.varB = varB;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
@@ -42,6 +59,41 @@ abstract class NeqFragmentSet extends EquivalentFragmentSetImpl {
         );
     }
 
-    abstract Variable varA();
-    abstract Variable varB();
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    Variable varA() {
+        return varA;
+    }
+
+    Variable varB() {
+        return varB;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof NeqFragmentSet) {
+            NeqFragmentSet that = (NeqFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.varA.equals(that.varA()))
+                    && (this.varB.equals(that.varB()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.varA.hashCode();
+        h *= 1000003;
+        h ^= this.varB.hashCode();
+        return h;
+    }
 }

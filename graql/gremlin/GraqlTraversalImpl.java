@@ -18,14 +18,12 @@
 
 package grakn.core.graql.gremlin;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.ConceptId;
-
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.GraqlTraversal;
 import grakn.core.kb.server.Transaction;
@@ -51,16 +49,30 @@ import static java.util.stream.Collectors.joining;
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  */
-@AutoValue
-public abstract class GraqlTraversalImpl implements GraqlTraversal {
+public class GraqlTraversalImpl implements GraqlTraversal {
+
+    private final ImmutableSet<ImmutableList<Fragment>> fragments;
 
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
     private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
+    GraqlTraversalImpl(
+            ImmutableSet<ImmutableList<Fragment>> fragments) {
+        if (fragments == null) {
+            throw new NullPointerException("Null fragments");
+        }
+        this.fragments = fragments;
+    }
+
+    @Override
+    public ImmutableSet<ImmutableList<Fragment>> fragments() {
+        return fragments;
+    }
+
     static GraqlTraversalImpl create(Set<? extends List<Fragment>> fragments) {
         ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
-        return new AutoValue_GraqlTraversalImpl(copy);
+        return new GraqlTraversalImpl(copy);
     }
 
     /**
@@ -88,11 +100,6 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         }
     }
 
-
-    // autovalue
-    @Override
-    public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
-
     /**
      * @param transform map defining id transform var -> new id
      * @return graql traversal with concept id transformed according to the provided transform
@@ -102,7 +109,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
-        return new AutoValue_GraqlTraversalImpl(ImmutableSet.of(fragments));
+        return new GraqlTraversalImpl(ImmutableSet.of(fragments));
     }
 
     /**
