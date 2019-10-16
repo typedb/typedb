@@ -117,7 +117,7 @@ public class SessionFactory {
     }
 
     // Keep visibility to protected as this is used by KGMS
-    private Cache<String, ConceptId> buildAttributeCache() {
+    protected Cache<String, ConceptId> buildAttributeCache() {
         return CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)

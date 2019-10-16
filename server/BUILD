@@ -125,7 +125,6 @@ java_deps(
     name = "server-deps",
     target = ":server-binary",
     java_deps_root = "server/services/lib/",
-    version_file = "//:VERSION",
     visibility = ["//:__pkg__"]
 )
 
@@ -242,7 +241,6 @@ assemble_rpm(
     name = "assemble-linux-rpm",
     package_name = "grakn-core-server",
     installation_dir = "/opt/grakn/core/",
-    version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-core-server.spec",
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps"],
