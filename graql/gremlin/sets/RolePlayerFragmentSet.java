@@ -44,7 +44,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable relation;
     private final Variable edge;
     private final Variable rolePlayer;
@@ -60,7 +59,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable Variable role,
             @Nullable ImmutableSet<Label> roleLabels,
             @Nullable ImmutableSet<Label> relationTypeLabels) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (relation == null) {
             throw new NullPointerException("Null relation");
         }
@@ -90,42 +89,10 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.inRolePlayer(varProperty(), rolePlayer(), edge(), relation(), role(), roleLabels(), relationTypeLabels()),
-                Fragments.outRolePlayer(varProperty(), relation(), edge(), rolePlayer(), role(), roleLabels(), relationTypeLabels())
+                Fragments.inRolePlayer(varProperty(), rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
+                Fragments.outRolePlayer(varProperty(), relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
     }
-
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    Variable relation() {
-        return relation;
-    }
-
-    Variable edge() {
-        return edge;
-    }
-
-    Variable rolePlayer() {
-        return rolePlayer;
-    }
-
-    @Nullable
-    Variable role() {
-        return role;
-    }
-
-    @Nullable
-    ImmutableSet<Label> roleLabels() {
-        return roleLabels;
-    }
-
-    @Nullable
-    ImmutableSet<Label> relationTypeLabels() {
-        return relationTypeLabels;
-    }
-
 
     /**
      * A query can use the role-type labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
@@ -150,7 +117,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
-            Variable roleVar = rolePlayer.role();
+            Variable roleVar = rolePlayer.role;
 
             if (roleVar == null) continue;
 
@@ -197,8 +164,8 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
             @Nullable RolePlayerFragmentSet newRolePlayer = null;
 
-            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationTypeLabels();
-            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels();
+            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationTypeLabels;
+            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels;
             if(relLabels == null || roleLabels == null) continue;
 
             Set<RelationType> relTypes = relLabels.stream()
@@ -256,9 +223,9 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
 
-            if (rolePlayer.relationTypeLabels() != null) continue;
+            if (rolePlayer.relationTypeLabels != null) continue;
 
-            @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(rolePlayer.relation(), fragmentSets);
+            @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(rolePlayer.relation, fragmentSets);
 
             if (isa == null) continue;
 
@@ -289,9 +256,9 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
                 null;
 
         return new RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null,
-                newRoleLabels!= null? newRoleLabels : roleLabels(),
-                newRoleTypeLabels != null? newRoleTypeLabels : relationTypeLabels()
+                varProperty(), relation, edge, rolePlayer, null,
+                newRoleLabels!= null? newRoleLabels : roleLabels,
+                newRoleTypeLabels != null? newRoleTypeLabels : relationTypeLabels
         );
     }
 
@@ -302,14 +269,14 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * @return a new RolePlayerFragmentSet with the same properties excepting role-types
      */
     private RolePlayerFragmentSet substituteRoleLabel(Stream<Role> roles) {
-        Preconditions.checkNotNull(this.role());
-        Preconditions.checkState(roleLabels() == null);
+        Preconditions.checkNotNull(this.role);
+        Preconditions.checkState(roleLabels == null);
 
         ImmutableSet<Label> newRoleLabels =
                 roles.flatMap(Role::subs).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet());
 
         return new RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null, newRoleLabels, relationTypeLabels()
+                varProperty(), relation, edge, rolePlayer, null, newRoleLabels, relationTypeLabels
         );
     }
 
@@ -320,11 +287,11 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * @return a new RolePlayerFragmentSet with the same properties excepting relation-type labels
      */
     private RolePlayerFragmentSet addRelationTypeLabels(ImmutableSet<Label> relTypeLabels) {
-        Preconditions.checkState(relationTypeLabels() == null);
+        Preconditions.checkState(relationTypeLabels == null);
 
         return new RolePlayerFragmentSet(
                 varProperty(),
-                relation(), edge(), rolePlayer(), role(), roleLabels(), relTypeLabels
+                relation, edge, rolePlayer, role, roleLabels, relTypeLabels
         );
     }
 
@@ -332,9 +299,9 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * Remove any specified role variable
      */
     private RolePlayerFragmentSet removeRoleVar() {
-        Preconditions.checkNotNull(role());
+        Preconditions.checkNotNull(role);
         return new RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null, roleLabels(), relationTypeLabels()
+                varProperty(), relation, edge, rolePlayer, null, roleLabels, relationTypeLabels
         );
     }
 
@@ -346,33 +313,18 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
         if (o instanceof RolePlayerFragmentSet) {
             RolePlayerFragmentSet that = (RolePlayerFragmentSet) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.relation.equals(that.relation()))
-                    && (this.edge.equals(that.edge()))
-                    && (this.rolePlayer.equals(that.rolePlayer()))
-                    && ((this.role == null) ? (that.role() == null) : this.role.equals(that.role()))
-                    && ((this.roleLabels == null) ? (that.roleLabels() == null) : this.roleLabels.equals(that.roleLabels()))
-                    && ((this.relationTypeLabels == null) ? (that.relationTypeLabels() == null) : this.relationTypeLabels.equals(that.relationTypeLabels()));
+                    && (this.relation.equals(that.relation))
+                    && (this.edge.equals(that.edge))
+                    && (this.rolePlayer.equals(that.rolePlayer))
+                    && (Objects.equals(this.role, that.role))
+                    && (Objects.equals(this.roleLabels, that.roleLabels))
+                    && (Objects.equals(this.relationTypeLabels, that.relationTypeLabels));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.relation.hashCode();
-        h *= 1000003;
-        h ^= this.edge.hashCode();
-        h *= 1000003;
-        h ^= this.rolePlayer.hashCode();
-        h *= 1000003;
-        h ^= (role == null) ? 0 : this.role.hashCode();
-        h *= 1000003;
-        h ^= (roleLabels == null) ? 0 : this.roleLabels.hashCode();
-        h *= 1000003;
-        h ^= (relationTypeLabels == null) ? 0 : this.relationTypeLabels.hashCode();
-        return h;
+        return Objects.hash(varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 }

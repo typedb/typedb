@@ -25,6 +25,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -33,30 +34,21 @@ import java.util.Set;
  */
 class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable var;
 
     NotInternalFragmentSet(
             @Nullable VarProperty varProperty,
             Variable var) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (var == null) {
             throw new NullPointerException("Null var");
         }
         this.var = var;
     }
 
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable var() {
-        return var;
-    }
-
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.notInternal(varProperty(), var()));
+        return ImmutableSet.of(Fragments.notInternal(varProperty(), var));
     }
 
     @Override
@@ -67,19 +59,14 @@ class NotInternalFragmentSet extends EquivalentFragmentSetImpl {
         if (o instanceof NotInternalFragmentSet) {
             NotInternalFragmentSet that = (NotInternalFragmentSet) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.var.equals(that.var()));
+                    && (this.var.equals(that.var));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.var.hashCode();
-        return h;
+        return Objects.hash(varProperty, var);
     }
 
 }

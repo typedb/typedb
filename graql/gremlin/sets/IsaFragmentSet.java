@@ -26,6 +26,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
@@ -37,7 +38,6 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.labelOf;
  */
 class IsaFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable instance;
     private final Variable type;
     private final boolean mayHaveEdgeInstances;
@@ -47,7 +47,7 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
             Variable instance,
             Variable type,
             boolean mayHaveEdgeInstances) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (instance == null) {
             throw new NullPointerException("Null instance");
         }
@@ -65,10 +65,6 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
                 Fragments.outIsa(varProperty(), instance(), type()),
                 Fragments.inIsa(varProperty(), type(), instance(), mayHaveEdgeInstances())
         );
-    }
-
-    public VarProperty varProperty() {
-        return varProperty;
     }
 
     Variable instance() {
@@ -128,7 +124,7 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof IsaFragmentSet) {
             IsaFragmentSet that = (IsaFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
                     && (this.instance.equals(that.instance()))
                     && (this.type.equals(that.type()))
                     && (this.mayHaveEdgeInstances == that.mayHaveEdgeInstances());
@@ -138,15 +134,6 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.instance.hashCode();
-        h *= 1000003;
-        h ^= this.type.hashCode();
-        h *= 1000003;
-        h ^= this.mayHaveEdgeInstances ? 1231 : 1237;
-        return h;
+        return Objects.hash(varProperty, instance, type, mayHaveEdgeInstances);
     }
 }

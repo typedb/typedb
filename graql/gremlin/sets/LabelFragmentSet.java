@@ -29,6 +29,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
@@ -39,7 +40,6 @@ import static java.util.stream.Collectors.toSet;
  */
 public class LabelFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable var;
     private final ImmutableSet<Label> labels;
 
@@ -47,7 +47,7 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable VarProperty varProperty,
             Variable var,
             ImmutableSet<Label> labels) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -61,10 +61,6 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(Fragments.label(varProperty(), var(), labels()));
-    }
-
-    public VarProperty varProperty() {
-        return varProperty;
     }
 
     Variable var() {
@@ -149,13 +145,6 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.var.hashCode();
-        h *= 1000003;
-        h ^= this.labels.hashCode();
-        return h;
+        return Objects.hash(varProperty, var, labels);
     }
 }

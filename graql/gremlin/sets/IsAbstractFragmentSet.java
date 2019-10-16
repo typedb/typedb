@@ -24,6 +24,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.fragment.Fragments.isAbstract;
@@ -34,30 +35,21 @@ import static grakn.core.graql.gremlin.fragment.Fragments.isAbstract;
  */
 class IsAbstractFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable var;
 
     IsAbstractFragmentSet(
             @Nullable VarProperty varProperty,
             Variable var) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (var == null) {
             throw new NullPointerException("Null var");
         }
         this.var = var;
     }
 
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable var() {
-        return var;
-    }
-
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(isAbstract(varProperty(), var()));
+        return ImmutableSet.of(isAbstract(varProperty(), var));
     }
 
     @Override
@@ -67,19 +59,14 @@ class IsAbstractFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof IsAbstractFragmentSet) {
             IsAbstractFragmentSet that = (IsAbstractFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.var.equals(that.var()));
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.var.equals(that.var));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.var.hashCode();
-        return h;
+        return Objects.hash(varProperty, var);
     }
 }

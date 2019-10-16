@@ -21,6 +21,7 @@ package grakn.core.graql.gremlin.sets;
 
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.Fragment;
+import graql.lang.property.VarProperty;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Iterator;
@@ -29,6 +30,16 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.joining;
 
 public abstract class EquivalentFragmentSetImpl implements EquivalentFragmentSet, Iterable<Fragment> {
+
+    VarProperty varProperty;
+
+    public EquivalentFragmentSetImpl(VarProperty varProperty) {
+        this.varProperty = varProperty;
+    }
+
+    public VarProperty varProperty() {
+        return varProperty;
+    }
 
     @Override
     @CheckReturnValue

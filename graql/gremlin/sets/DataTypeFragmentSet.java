@@ -26,6 +26,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -33,7 +34,6 @@ import java.util.Set;
  *
  */
 class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
-    private final VarProperty varProperty;
     private final Variable attributeType;
     private final AttributeType.DataType dataType;
 
@@ -41,7 +41,8 @@ class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable VarProperty varProperty,
             Variable attributeType,
             AttributeType.DataType dataType) {
-        this.varProperty = varProperty;
+        super(varProperty);
+
         if (attributeType == null) {
             throw new NullPointerException("Null attributeType");
         }
@@ -52,21 +53,10 @@ class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
         this.dataType = dataType;
     }
 
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable attributeType() {
-        return attributeType;
-    }
-
-    private AttributeType.DataType dataType() {
-        return dataType;
-    }
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType(), dataType()));
+        return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType, dataType));
     }
 
     @Override
@@ -76,22 +66,15 @@ class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof DataTypeFragmentSet) {
             DataTypeFragmentSet that = (DataTypeFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.attributeType.equals(that.attributeType()))
-                    && (this.dataType.equals(that.dataType()));
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.attributeType.equals(that.attributeType))
+                    && (this.dataType.equals(that.dataType));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.attributeType.hashCode();
-        h *= 1000003;
-        h ^= this.dataType.hashCode();
-        return h;
+        return Objects.hash(varProperty, attributeType, dataType);
     }
 }

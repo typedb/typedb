@@ -25,6 +25,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -33,7 +34,6 @@ import java.util.Set;
  */
 class PlaysFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable type;
     private final Variable role;
     private final boolean required;
@@ -43,7 +43,7 @@ class PlaysFragmentSet extends EquivalentFragmentSetImpl {
             Variable type,
             Variable role,
             boolean required) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (type == null) {
             throw new NullPointerException("Null type");
         }
@@ -58,27 +58,10 @@ class PlaysFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.outPlays(varProperty(), type(), role(), required()),
-                Fragments.inPlays(varProperty(), role(), type(), required())
+                Fragments.outPlays(varProperty(), type, role, required),
+                Fragments.inPlays(varProperty(), role, type, required)
         );
     }
-
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable type() {
-        return type;
-    }
-
-    private Variable role() {
-        return role;
-    }
-
-    private boolean required() {
-        return required;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (o == this) {
@@ -87,24 +70,15 @@ class PlaysFragmentSet extends EquivalentFragmentSetImpl {
         if (o instanceof PlaysFragmentSet) {
             PlaysFragmentSet that = (PlaysFragmentSet) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.type.equals(that.type()))
-                    && (this.role.equals(that.role()))
-                    && (this.required == that.required());
+                    && (this.type.equals(that.type))
+                    && (this.role.equals(that.role))
+                    && (this.required == that.required);
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.type.hashCode();
-        h *= 1000003;
-        h ^= this.role.hashCode();
-        h *= 1000003;
-        h ^= this.required ? 1231 : 1237;
-        return h;
+        return Objects.hash(varProperty, type, role, required);
     }
 }

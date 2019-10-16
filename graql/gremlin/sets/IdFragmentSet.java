@@ -26,6 +26,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -34,7 +35,6 @@ import java.util.Set;
  */
 class IdFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable var;
     private final ConceptId id;
 
@@ -42,7 +42,7 @@ class IdFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable VarProperty varProperty,
             Variable var,
             ConceptId id) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -53,21 +53,9 @@ class IdFragmentSet extends EquivalentFragmentSetImpl {
         this.id = id;
     }
 
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable var() {
-        return var;
-    }
-
-    private ConceptId id() {
-        return id;
-    }
-
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.id(varProperty(), var(), id()));
+        return ImmutableSet.of(Fragments.id(varProperty(), var, id));
     }
 
     @Override
@@ -77,22 +65,15 @@ class IdFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof IdFragmentSet) {
             IdFragmentSet that = (IdFragmentSet) o;
-            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.var.equals(that.var()))
-                    && (this.id.equals(that.id()));
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.var.equals(that.var))
+                    && (this.id.equals(that.id));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.var.hashCode();
-        h *= 1000003;
-        h ^= this.id.hashCode();
-        return h;
+        return Objects.hash(varProperty, var, id);
     }
 }

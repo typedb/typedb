@@ -31,6 +31,7 @@ import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -55,10 +56,11 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
     private final Label label;
     private final Object value;
 
-    AttributeIndexFragmentSet(
+    private AttributeIndexFragmentSet(
             Variable var,
             Label label,
             Object value) {
+        super(null);
         if (var == null) {
             throw new NullPointerException("Null var");
         }
@@ -73,27 +75,9 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
         this.value = value;
     }
 
-    Variable var() {
-        return var;
-    }
-
-    Label label() {
-        return label;
-    }
-
-    Object value() {
-        return value;
-    }
-
-    @Override
-    @Nullable
-    public final VarProperty varProperty() {
-        return null;
-    }
-
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.attributeIndex(varProperty(), var(), label(), value()));
+        return ImmutableSet.of(Fragments.attributeIndex(varProperty(), var, label, value));
     }
 
     static final FragmentSetOptimisation ATTRIBUTE_INDEX_OPTIMISATION = (fragmentSets, tx) -> {
@@ -163,23 +147,16 @@ public class AttributeIndexFragmentSet extends EquivalentFragmentSetImpl {
         }
         if (o instanceof AttributeIndexFragmentSet) {
             AttributeIndexFragmentSet that = (AttributeIndexFragmentSet) o;
-            return (this.var.equals(that.var()))
-                    && (this.label.equals(that.label()))
-                    && (this.value.equals(that.value()));
+            return (this.var.equals(that.var))
+                    && (this.label.equals(that.label))
+                    && (this.value.equals(that.value));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= this.var.hashCode();
-        h *= 1000003;
-        h ^= this.label.hashCode();
-        h *= 1000003;
-        h ^= this.value.hashCode();
-        return h;
+        return Objects.hash(var, label, value);
     }
 
 }

@@ -25,6 +25,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -33,7 +34,6 @@ import java.util.Set;
  */
 class RelatesFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable relationType;
     private final Variable role;
 
@@ -41,7 +41,7 @@ class RelatesFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable VarProperty varProperty,
             Variable relationType,
             Variable role) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (relationType == null) {
             throw new NullPointerException("Null relationType");
         }
@@ -55,21 +55,9 @@ class RelatesFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.outRelates(varProperty(), relationType(), role()),
-                Fragments.inRelates(varProperty(), role(), relationType())
+                Fragments.outRelates(varProperty(), relationType, role),
+                Fragments.inRelates(varProperty(), role, relationType)
         );
-    }
-
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable relationType() {
-        return relationType;
-    }
-
-    private Variable role() {
-        return role;
     }
 
     @Override
@@ -80,21 +68,14 @@ class RelatesFragmentSet extends EquivalentFragmentSetImpl {
         if (o instanceof RelatesFragmentSet) {
             RelatesFragmentSet that = (RelatesFragmentSet) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.relationType.equals(that.relationType()))
-                    && (this.role.equals(that.role()));
+                    && (this.relationType.equals(that.relationType))
+                    && (this.role.equals(that.role));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.relationType.hashCode();
-        h *= 1000003;
-        h ^= this.role.hashCode();
-        return h;
+        return Objects.hash(varProperty, relationType, role);
     }
 }

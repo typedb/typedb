@@ -25,6 +25,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -33,7 +34,6 @@ import java.util.Set;
  */
 class RegexFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable attributeType;
     private final String regex;
 
@@ -41,7 +41,7 @@ class RegexFragmentSet extends EquivalentFragmentSetImpl {
             @Nullable VarProperty varProperty,
             Variable attributeType,
             String regex) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (attributeType == null) {
             throw new NullPointerException("Null attributeType");
         }
@@ -54,20 +54,9 @@ class RegexFragmentSet extends EquivalentFragmentSetImpl {
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.regex(varProperty(), attributeType(), regex()));
+        return ImmutableSet.of(Fragments.regex(varProperty(), attributeType, regex));
     }
 
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    Variable attributeType() {
-        return attributeType;
-    }
-
-    String regex() {
-        return regex;
-    }
 
     @Override
     public boolean equals(Object o) {
@@ -77,21 +66,14 @@ class RegexFragmentSet extends EquivalentFragmentSetImpl {
         if (o instanceof RegexFragmentSet) {
             RegexFragmentSet that = (RegexFragmentSet) o;
             return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
-                    && (this.attributeType.equals(that.attributeType()))
-                    && (this.regex.equals(that.regex()));
+                    && (this.attributeType.equals(that.attributeType))
+                    && (this.regex.equals(that.regex));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.attributeType.hashCode();
-        h *= 1000003;
-        h ^= this.regex.hashCode();
-        return h;
+        return Objects.hash(varProperty, attributeType, regex);
     }
 }

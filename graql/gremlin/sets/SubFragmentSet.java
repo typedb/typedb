@@ -25,6 +25,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
@@ -36,7 +37,6 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.labelOf;
  */
 class SubFragmentSet extends EquivalentFragmentSetImpl {
 
-    private final VarProperty varProperty;
     private final Variable subConcept;
     private final Variable superConcept;
     private final boolean explicitSub;
@@ -46,7 +46,7 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
             Variable subConcept,
             Variable superConcept,
             boolean explicitSub) {
-        this.varProperty = varProperty;
+        super(varProperty);
         if (subConcept == null) {
             throw new NullPointerException("Null subConcept");
         }
@@ -61,33 +61,17 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
     @Override
     public final Set<Fragment> fragments() {
 
-        if (explicitSub()) {
+        if (explicitSub) {
             return ImmutableSet.of(
-                    Fragments.outSub(varProperty(), subConcept(), superConcept(), Fragments.TRAVERSE_ONE_SUB_EDGE),
-                    Fragments.inSub(varProperty(), superConcept(), subConcept(), Fragments.TRAVERSE_ONE_SUB_EDGE)
+                    Fragments.outSub(varProperty(), subConcept, superConcept, Fragments.TRAVERSE_ONE_SUB_EDGE),
+                    Fragments.inSub(varProperty(), superConcept, subConcept, Fragments.TRAVERSE_ONE_SUB_EDGE)
             );
         } else {
             return ImmutableSet.of(
-                    Fragments.outSub(varProperty(), subConcept(), superConcept(),Fragments.TRAVERSE_ALL_SUB_EDGES),
-                    Fragments.inSub(varProperty(), superConcept(), subConcept(), Fragments.TRAVERSE_ALL_SUB_EDGES)
+                    Fragments.outSub(varProperty(), subConcept, superConcept,Fragments.TRAVERSE_ALL_SUB_EDGES),
+                    Fragments.inSub(varProperty(), superConcept, subConcept, Fragments.TRAVERSE_ALL_SUB_EDGES)
             );
         }
-    }
-
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    private Variable subConcept() {
-        return subConcept;
-    }
-
-    private Variable superConcept() {
-        return superConcept;
-    }
-
-    private boolean explicitSub() {
-        return explicitSub;
     }
 
 
@@ -114,12 +98,12 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
 
         for (SubFragmentSet subSet : subSets) {
             // skip optimising explicit subs until we have a clean implementation (add direct sub to Graql and use it in tryExpandSubs if is explicit sub here)
-            if (subSet.explicitSub()) continue;
+            if (subSet.explicitSub) continue;
 
-            LabelFragmentSet labelSet = labelOf(subSet.superConcept(), fragmentSets);
+            LabelFragmentSet labelSet = labelOf(subSet.superConcept, fragmentSets);
             if (labelSet == null) continue;
 
-            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept(), tx);
+            LabelFragmentSet newLabelSet = labelSet.tryExpandSubs(subSet.subConcept, tx);
 
             // Disable this optimisation if there isn't exactly one possible label.
             // This is because JanusGraph doesn't optimise P.within correctly when the property is indexed.
@@ -137,4 +121,24 @@ class SubFragmentSet extends EquivalentFragmentSetImpl {
 
         return false;
     };
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof SubFragmentSet) {
+            SubFragmentSet that = (SubFragmentSet) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.subConcept.equals(that.subConcept))
+                    && (this.superConcept.equals(that.superConcept))
+                    && (this.explicitSub == that.explicitSub);
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, subConcept, superConcept, explicitSub);
+    }
 }
