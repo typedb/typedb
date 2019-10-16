@@ -33,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static grakn.core.core.Schema.VertexProperty.INDEX;
@@ -138,15 +139,6 @@ public class AttributeIndexFragment extends FragmentImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.attributeLabel.hashCode();
-        h *= 1000003;
-        h ^= this.attributeValue.hashCode();
-        return h;
+        return Objects.hash(varProperty, start, attributeLabel, attributeValue);
     }
 }

@@ -139,13 +139,6 @@ public class ValueFragment extends FragmentImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.operation.hashCode();
-        return h;
+        return Objects.hash(varProperty, start, operation);
     }
 }

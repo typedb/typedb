@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.VertexProperty.REGEX;
 
@@ -82,13 +83,6 @@ class RegexFragment extends FragmentImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.regex.hashCode();
-        return h;
+        return Objects.hash(varProperty, start, regex);
     }
 }

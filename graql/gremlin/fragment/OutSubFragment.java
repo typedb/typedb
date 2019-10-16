@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 /**
  * Fragment for following out sub edges, potentially limited to some number of `sub` edges
@@ -114,15 +115,6 @@ public class OutSubFragment extends EdgeFragment {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.end.hashCode();
-        h *= 1000003;
-        h ^= this.subTraversalDepthLimit;
-        return h;
+        return Objects.hash(varProperty, start, end, subTraversalDepthLimit);
     }
 }

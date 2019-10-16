@@ -33,6 +33,7 @@ import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.PLAYS;
 
@@ -112,15 +113,6 @@ class InPlaysFragment extends EdgeFragment {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.end.hashCode();
-        h *= 1000003;
-        h ^= this.required ? 1231 : 1237;
-        return h;
+        return Objects.hash(varProperty, start, end, required);
     }
 }

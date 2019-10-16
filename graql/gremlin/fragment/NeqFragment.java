@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * A fragment representing a negation.
@@ -98,13 +99,6 @@ public class NeqFragment extends FragmentImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.other.hashCode();
-        return h;
+        return Objects.hash(varProperty, start, other);
     }
 }

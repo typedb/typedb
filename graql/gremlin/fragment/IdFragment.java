@@ -38,6 +38,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 class IdFragment extends FragmentImpl {
@@ -154,13 +155,6 @@ class IdFragment extends FragmentImpl {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.id.hashCode();
-        return h;
+        return Objects.hash(varProperty, start, id);
     }
 }

@@ -34,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.ROLE_PLAYER;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
@@ -170,21 +171,6 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.end.hashCode();
-        h *= 1000003;
-        h ^= this.edge.hashCode();
-        h *= 1000003;
-        h ^= (role == null) ? 0 : this.role.hashCode();
-        h *= 1000003;
-        h ^= (roleLabels == null) ? 0 : this.roleLabels.hashCode();
-        h *= 1000003;
-        h ^= (relationTypeLabels == null) ? 0 : this.relationTypeLabels.hashCode();
-        return h;
+        return Objects.hash(varProperty, start, end, edge, role, roleLabels, relationTypeLabels);
     }
 }
