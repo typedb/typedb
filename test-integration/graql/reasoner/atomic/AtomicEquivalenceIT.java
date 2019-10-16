@@ -21,14 +21,14 @@ package grakn.core.graql.reasoner.atomic;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.graql.reasoner.atom.Atomic;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.concept.ValueConverter;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.util.ValueConverter;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -62,7 +62,7 @@ public class AtomicEquivalenceIT {
 
     private static Session genericSchemaSession;
 
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void loadContext() {
@@ -78,7 +78,7 @@ public class AtomicEquivalenceIT {
 
     @Before
     public void setUp() {
-        tx = genericSchemaSession.transaction().write();
+        tx = genericSchemaSession.writeTransaction();
     }
 
     @After
@@ -251,7 +251,7 @@ public class AtomicEquivalenceIT {
         atomicEquality(typeIsAbstract, isAbstract, false, tx);
     }
 
-    private void testEquality_DifferentTypeVariants(TransactionOLTP tx, String keyword, String label, String label2) {
+    private void testEquality_DifferentTypeVariants(Transaction tx, String keyword, String label, String label2) {
         String variantAString = "{ $x " + keyword + " " + label + "; };";
         String variantAString2 = "{ $y " + keyword + " " + label + "; };";
         String variantAString3 = "{ $y " + keyword + " " + label2 + "; };";
@@ -278,7 +278,7 @@ public class AtomicEquivalenceIT {
         atomicEquality(variantBString, variantCString, false, tx);
     }
 
-    private void atomicEquivalence(String patternA, String patternB, boolean expectation, AtomicEquivalence equiv, TransactionOLTP tx) {
+    private void atomicEquivalence(String patternA, String patternB, boolean expectation, AtomicEquivalence equiv, Transaction tx) {
         Atomic atomA = Iterables.getOnlyElement(ReasonerQueries.create(conjunction(patternA), tx).getAtoms());
         Atomic atomB = Iterables.getOnlyElement(ReasonerQueries.create(conjunction(patternB), tx).getAtoms());
         atomicEquivalence(atomA, atomA, true, equiv);
@@ -287,7 +287,7 @@ public class AtomicEquivalenceIT {
         atomicEquivalence(atomB, atomA, expectation, equiv);
     }
 
-    private void atomicEquality(String patternA, String patternB, boolean expectation, TransactionOLTP tx) {
+    private void atomicEquality(String patternA, String patternB, boolean expectation, Transaction tx) {
         atomicEquivalence(patternA, patternB, expectation, AtomicEquivalence.Equality, tx);
     }
 

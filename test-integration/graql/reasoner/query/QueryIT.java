@@ -14,41 +14,43 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.Rule;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.rule.RuleUtils;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.graql.reasoner.graph.GeoGraph;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static graql.lang.Graql.type;
 import static java.util.stream.Collectors.toSet;
@@ -78,7 +80,7 @@ public class QueryIT {
     @Test
     public void whenTypeDependencyGraphHasCycles_RuleBodiesHaveTypeHierarchies_weReiterate(){
         try (Session session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
 
                 Role someRole = tx.putRole("someRole");
                 EntityType genericEntity = tx.putEntityType("genericEntity")
@@ -116,7 +118,7 @@ public class QueryIT {
 
                 tx.commit();
             }
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 String patternString = "{ ($x, $y) isa inferred; };";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet());
@@ -135,7 +137,7 @@ public class QueryIT {
     @Test
     public void whenTypeDependencyGraphHasCycles_instancesHaveNonTrivialCycles_weReiterate(){
         try (Session session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 Role fromRole = tx.putRole("fromRole");
                 Role toRole = tx.putRole("toRole");
                 EntityType someEntity = tx.putEntityType("someEntity")
@@ -194,7 +196,7 @@ public class QueryIT {
                 someRelation.create().assign(fromRole, entityF).assign(toRole, entityG);
                 tx.commit();
             }
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 String patternString = "{ (fromRole: $x, toRole: $y) isa transRelation; };";
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(patternString, tx), tx);
                 Set<InferenceRule> rules = tx.ruleCache().getRules().map(r -> new InferenceRule(r, tx)).collect(toSet());
@@ -213,7 +215,7 @@ public class QueryIT {
     @Test
     public void whenQueryHasMultipleDisconnectedInferrableAtoms_weReiterate(){
         try (Session session = server.sessionWithNewKeyspace()) {
-            try(TransactionOLTP tx = session.transaction().write()) {
+            try(Transaction tx = session.writeTransaction()) {
                 tx.execute(Graql.parse("define " +
                         "someEntity sub entity," +
                         "has derivedResource;" +
@@ -230,7 +232,7 @@ public class QueryIT {
                     Graql.var("x").has("derivedResource", Graql.var("value")),
                     Graql.var("y").has("derivedResource", Graql.var("anotherValue"))
             );
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 ReasonerQueryImpl query = ReasonerQueries.create(conjunction(pattern.toString(), tx), tx);
                 assertTrue(query.requiresReiteration());
             }
@@ -241,7 +243,7 @@ public class QueryIT {
     @Test
     public void whenRetrievingVariablesFromQueryWithComparisons_variablesFromValuePredicatesAreFetched(){
         try (Session session = server.sessionWithNewKeyspace()) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
 
                 AttributeType<Long> resource = tx.putAttributeType("resource", AttributeType.DataType.LONG);
                 resource.create(1337L);
@@ -250,7 +252,7 @@ public class QueryIT {
                         .has(resource);
                 tx.commit();
             }
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 Attribute<Long> attribute = tx.getAttributesByValue(1337L).iterator().next();
                 String basePattern = "{" +
                         "$x isa someEntity;" +
@@ -270,7 +272,7 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_simpleChainWithAttributeAndTypeGuards() {
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
+        try(Transaction tx = geoSession.writeTransaction()) {
             String patternString = "{ " +
                     "$x isa city, has name 'Warsaw';" +
                     "$y isa region;" +
@@ -294,7 +296,7 @@ public class QueryIT {
     @Ignore ("we currently do not fully support equivalence checks for non-atomic queries")
     @Test
     public void testAlphaEquivalence_chainTreeAndLoopStructure() {
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
+        try(Transaction tx = geoSession.writeTransaction()) {
             String chainString = "{" +
                     "($x, $y) isa is-located-in;" +
                     "($y, $z) isa is-located-in;" +
@@ -324,7 +326,7 @@ public class QueryIT {
 
     @Test //tests various configurations of alpha-equivalence with extra type atoms present
     public void testAlphaEquivalence_nonMatchingTypes() {
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
+        try(Transaction tx = geoSession.writeTransaction()) {
             String polandId = getConcept(tx, "name", "Poland").id().getValue();
             String patternString = "{ $y id " + polandId + "; $y isa country; (geo-entity: $y1, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ $x1 id " + polandId + "; $y isa country; (geo-entity: $x1, entity-location: $x2) isa is-located-in; };";
@@ -351,7 +353,7 @@ public class QueryIT {
 
     @Test //tests alpha-equivalence of queries with indirect types
     public void testAlphaEquivalence_indirectTypes(){
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
+        try(Transaction tx = geoSession.writeTransaction()) {
             String patternString = "{ (entity-location: $x2, geo-entity: $x1) isa is-located-in;" +
                     "$x1 isa $t1; $t1 sub geoObject; };";
             String patternString2 = "{ (geo-entity: $y1, entity-location: $y2) isa is-located-in;" +
@@ -365,7 +367,7 @@ public class QueryIT {
 
     @Test
     public void testAlphaEquivalence_RelationsWithSubstitution(){
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
+        try(Transaction tx = geoSession.writeTransaction()) {
             String patternString = "{ (role: $x, role: $y);$x id V666; };";
             String patternString2 = "{ (role: $x, role: $y);$y id V666; };";
             String patternString3 = "{ (role: $x, role: $y);$x id V666;$y id V667; };";
@@ -420,7 +422,7 @@ public class QueryIT {
 
     @Test
     public void whenReifyingRelation_extraAtomIsCreatedWithUserDefinedName(){
-        try(TransactionOLTP tx = geoSession.transaction().write()) {
+        try(Transaction tx = geoSession.writeTransaction()) {
             String patternString = "{ (geo-entity: $x, entity-location: $y) isa is-located-in; };";
             String patternString2 = "{ ($x, $y) has name 'Poland'; };";
 
@@ -444,14 +446,14 @@ public class QueryIT {
         }
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
+    private Conjunction<Statement> conjunction(String patternString, Transaction tx){
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());
         return Graql.and(vars);
     }
 
-    private static Concept getConcept(TransactionOLTP tx, String typeLabel, String val){
+    private static Concept getConcept(Transaction tx, String typeLabel, String val){
         return tx.stream(Graql.match((Pattern) Graql.var("x").has(typeLabel, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().get();
     }

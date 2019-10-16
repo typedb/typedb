@@ -22,25 +22,28 @@ import com.google.common.collect.Sets;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.concept.type.Type;
+import grakn.core.concept.impl.TypeImpl;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.structure.Shard;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.server.kb.structure.Shard;
-import grakn.core.server.keyspace.Keyspace;
 import grakn.core.server.util.LockManager;
+import grakn.core.util.ConceptDowncasting;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
@@ -89,13 +92,13 @@ public class TransactionOLTPIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -179,8 +182,8 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept() {
-        EntityTypeImpl et = (EntityTypeImpl) tx.putEntityType("Sample Entity Type");
-        assertEquals(et, tx.factory().buildConcept(et.vertex()));
+        EntityType et = tx.putEntityType("Sample Entity Type");
+        assertEquals(et, tx.factory().buildConcept(ConceptDowncasting.concept(et).vertex()));
     }
 
     @Test
@@ -210,7 +213,7 @@ public class TransactionOLTPIT {
         }
         assertTrue("Graph not correctly closed", errorThrown);
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.putEntityType("A Thing");
     }
 
@@ -239,17 +242,17 @@ public class TransactionOLTPIT {
         String relationType1 = "My Relation Type 1";
 
         //Fail Some Mutations
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.putEntityType(entityType);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.putRole(roleType1);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.putRelationType(relationType1);
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
         tx.commit();
@@ -261,11 +264,11 @@ public class TransactionOLTPIT {
         tx.close();
         String entityType = "person";
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.putEntityType(entityType);
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         EntityType person = tx.getEntityType("person");
         Entity human = person.create();
         expectedException.expectMessage(ErrorMessage.TRANSACTION_READ_ONLY.getMessage(tx.keyspace()));
@@ -278,7 +281,7 @@ public class TransactionOLTPIT {
         failAtOpeningTx(session, true, keyspace);
         tx.close();
 
-        session.transaction().write();
+        session.writeTransaction();
         failAtOpeningTx(session, false, keyspace);
     }
 
@@ -287,9 +290,9 @@ public class TransactionOLTPIT {
         try {
             //noinspection ResultOfMethodCallIgnored
             if (write) {
-                session.transaction().write();
+                session.writeTransaction();
             } else {
-                session.transaction().read();
+                session.readTransaction();
             }
         } catch (TransactionException e) {
             exception = e;
@@ -301,16 +304,17 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenShardingSuperNode_EnsureNewInstancesGoToNewShard() {
-        EntityTypeImpl entityType = (EntityTypeImpl) tx.putEntityType("The Special Type");
-        Shard s1 = entityType.currentShard();
+        EntityType entityType = tx.putEntityType("The Special Type");
+        Shard s1 = ConceptDowncasting.type(entityType).currentShard();
 
         //Add 3 instances to first shard
         Entity s1_e1 = entityType.create();
         Entity s1_e2 = entityType.create();
         Entity s1_e3 = entityType.create();
-        tx.shard(entityType.id());
 
-        Shard s2 = entityType.currentShard();
+        ConceptDowncasting.type(entityType).createShard();
+
+        Shard s2 = ConceptDowncasting.type(entityType).currentShard();
 
         //Add 5 instances to second shard
         Entity s2_e1 = entityType.create();
@@ -319,15 +323,15 @@ public class TransactionOLTPIT {
         Entity s2_e4 = entityType.create();
         Entity s2_e5 = entityType.create();
 
-        tx.shard(entityType.id());
-        Shard s3 = entityType.currentShard();
+        ConceptDowncasting.type(entityType).createShard();
+        Shard s3 = ConceptDowncasting.type(entityType).currentShard();
 
         //Add 2 instances to 3rd shard
         Entity s3_e1 = entityType.create();
         Entity s3_e2 = entityType.create();
 
         //Check Type was sharded correctly
-        assertThat(entityType.shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
+        assertThat(ConceptDowncasting.type(entityType).shards().collect(toSet()), containsInAnyOrder(s1, s2, s3));
 
         //Check shards have correct instances
         assertThat(s1.links().map(vertexElement -> tx.getConcept(Schema.conceptId(vertexElement.element()))).collect(toSet()),
@@ -350,7 +354,7 @@ public class TransactionOLTPIT {
         Keyspace keyspace = server.randomKeyspaceName();
         try (Session session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.commit();
             }
@@ -362,7 +366,7 @@ public class TransactionOLTPIT {
         }
         ConceptId p1;
         try (Session session = sessionFactory.session(keyspace)) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 p1 = tx.execute(insert(var("p1").isa("person")).asInsert()).get(0).get("p1").id();
                 tx.commit();
             }
@@ -376,7 +380,7 @@ public class TransactionOLTPIT {
         }
         ConceptId p2;
         try (Session session = sessionFactory.session(keyspace)) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 p2 = tx.execute(insert(var("p2").isa("person")).asInsert()).get(0).get("p2").id();
                 tx.commit();
             }
@@ -401,26 +405,26 @@ public class TransactionOLTPIT {
         Keyspace keyspace = server.randomKeyspaceName();
         try (Session session = sessionFactory.session(keyspace)) {
             keyspace = session.keyspace();
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 tx.execute(define(type("person").sub("entity")).asDefine());
                 tx.execute(define(type("company").sub("entity")).asDefine());
                 tx.commit();
             }
         }
         try (Session session = sessionFactory.session(keyspace)) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
         try (Session session = sessionFactory.session(keyspace)) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("p").isa("person")).asInsert());
                 tx.commit();
             }
         }
         try (Session session = sessionFactory.session(keyspace)) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 tx.execute(insert(var("c").isa("company")).asInsert());
                 tx.commit();
             }
@@ -441,7 +445,7 @@ public class TransactionOLTPIT {
 
         executor.submit(() -> {
             //Resources
-            try (TransactionOLTP tx = localSession.transaction().write()) {
+            try (Transaction tx = localSession.writeTransaction()) {
                 AttributeType<Long> int_ = tx.putAttributeType("int", AttributeType.DataType.LONG);
                 AttributeType<Long> foo = tx.putAttributeType("foo", AttributeType.DataType.LONG).sup(int_);
                 tx.putAttributeType("bar", AttributeType.DataType.LONG).sup(int_);
@@ -452,7 +456,7 @@ public class TransactionOLTPIT {
         }).get();
 
         //Relation Which Has Resources
-        try (TransactionOLTP tx = localSession.transaction().write()) {
+        try (Transaction tx = localSession.writeTransaction()) {
             tx.putEntityType("BAR").has(tx.getAttributeType("bar"));
             tx.commit();
         }
@@ -461,10 +465,10 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenShardingConcepts_EnsureCountsAreUpdated() {
-        EntityType entity = tx.putEntityType("my amazing entity type");
+        TypeImpl entity = ConceptDowncasting.type(tx.putEntityType("my amazing entity type"));
         assertEquals(1L, tx.getShardCount(entity));
 
-        tx.shard(entity.id());
+        entity.createShard();
         assertEquals(2L, tx.getShardCount(entity));
     }
 
@@ -484,12 +488,12 @@ public class TransactionOLTPIT {
     public void insertAndDeleteRelationInSameTransaction_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
         tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
         tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         assertEquals(2, rolePlayersResult.size());
         List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
@@ -500,15 +504,15 @@ public class TransactionOLTPIT {
     public void insertAndDeleteSameRelationInDifferentTransactions_relationIsCorrectlyDeletedAndRolePlayersAreInserted(){
         tx.execute(Graql.parse("define person sub entity, plays friend; friendship sub relation, relates friend;").asDefine());
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         String relId = tx.execute(Graql.parse("insert $x isa person; $y isa person; $r (friend: $x, friend: $y) isa friendship;").asInsert()).get(0).get("r").id().getValue();
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.parse("match $r id " + relId + "; delete $r;").asDelete());
         tx.commit();
 
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> rolePlayersResult = tx.execute(Graql.parse("match $x isa person; get;").asGet());
         assertEquals(2, rolePlayersResult.size());
         List<ConceptMap> relationResult = tx.execute(Graql.parse("match $r id " + relId + "; get;").asGet());
@@ -532,15 +536,15 @@ public class TransactionOLTPIT {
             ));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has name $n; get;"), false);
         assertTrue(answers.isEmpty());
     }
@@ -561,17 +565,17 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.<GraqlInsert>parse("insert $p isa person, has score 10.0;"));
         tx.execute(Graql.<GraqlInsert>parse("insert $q isa person;"));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"));
         assertEquals(2, answers.size());
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), false);
         assertEquals(1, answers.size());
     }
@@ -602,7 +606,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -620,7 +624,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -672,7 +676,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$finalRel (someRole: $p, anotherRole: $q) isa yetAnotherInferredRelation;" +
@@ -681,7 +685,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         List<ConceptMap> relationsWithInferredRolePlayerPostCommit = tx.execute(Graql.parse(
                 "match " +
                         "$rel  (someRole: $p, anotherRole: $q) isa inferredRelation;" +
@@ -717,7 +721,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -728,7 +732,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.execute(Graql.<GraqlGet>parse(
                 "match " +
                         "$rel (someRole: $p, anotherRole: $r) isa someRelation;" +
@@ -764,7 +768,7 @@ public class TransactionOLTPIT {
         ));
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> relationsWithInferredRolePlayer = tx.execute(Graql.<GraqlInsert>parse(
                 "match " +
                         "$p isa someEntity;" +
@@ -776,7 +780,7 @@ public class TransactionOLTPIT {
 
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> relationsWithInferredRolePlayerPostCommitWithoutInference = tx.execute(Graql.parse(
                 "match $r isa inferrableAttribute; get;")
                 .asGet(), false);
@@ -786,7 +790,7 @@ public class TransactionOLTPIT {
         assertCollectionsNonTriviallyEqual(relationsWithInferredRolePlayerPostCommitWithoutInference, relationsWithInferredRolePlayerPostCommit);
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         List<ConceptMap> relationsWithInferredRolePlayerRequeriedWithoutInference = tx.execute(Graql.parse(
                 "match $r isa inferrableAttribute; get;")
                 .asGet(), false);

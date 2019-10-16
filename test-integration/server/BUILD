@@ -20,32 +20,39 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "attribute-uniqueness-it",
-    test_class = "grakn.core.server.AttributeUniquenessIT",
-    srcs = ["AttributeUniquenessIT.java"],
-    deps = [
-        "//concept:concept",
-        "//common",
-        "//server:server",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library"],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["AttributeUniquenessIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.AttributeUniquenessIT",
+    deps = [
+        "//common",
+        "//concept/answer",
+        "//core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 java_test(
     name = "grakn-client-it",
+    size = "large",
     srcs = ["GraknClientIT.java"],
+    classpath_resources = [
+        "//test-integration/resources:logback-test",
+        "//test-integration/resources:cassandra-embedded",
+        "//server:conf/grakn.properties",
+    ],
     test_class = "grakn.core.server.GraknClientIT",
     deps = [
         # Package dependencies
         "@graknlabs_client_java//:client-java",
 
         # Internal dependencies
-        "//concept:concept",
-        "//server:server", # TODO: NEEDS TO GO
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
 
         # External depencies from @graknlabs
@@ -54,20 +61,14 @@ java_test(
         # External depencncies from Maven
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/google/guava:guava"
+        "//dependencies/maven/artifacts/com/google/guava",
     ],
-    size = "large",
-    classpath_resources = [
-        "//test-integration/resources:logback-test",
-        "//test-integration/resources:cassandra-embedded",
-        "//server:conf/grakn.properties"
-    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":attribute-uniqueness-it",
-        ":grakn-client-it"
+        ":grakn-client-it",
     ],
 )

@@ -14,28 +14,30 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Label;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
-import java.util.List;
-import java.util.stream.Collectors;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
@@ -66,7 +68,7 @@ public class OntologicalQueryIT {
         Session session = server.sessionWithNewKeyspace();
         loadFromFileAndCommit(resourcePath, "matchingTypesTest.gql", session);
         for(int i = 0; i < 500 ; i++) {
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                 String basePattern = "$x isa service;" +
                         "$y isa service;" +
                         "(owner: $x, capability: $xx) isa has-capability; $xx isa $type;" +
@@ -97,7 +99,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void instancesOfSubsetOfTypesExcludingGivenType() {
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             String queryString = "match $x isa $type; $type sub entity; $type2 type noRoleEntity; $type2 != $type; get $x, $type;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet(), false);
@@ -112,7 +114,7 @@ public class OntologicalQueryIT {
     @Ignore
     @Test
     public void allInstancesAndTheirType() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -123,7 +125,7 @@ public class OntologicalQueryIT {
     @Test
     @Ignore //TODO: re-enable this test once we figure out why it randomly fails
     public void allRolePlayerPairsAndTheirRelationType() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String relationString = "match $x isa relation; get;";
             String rolePlayerPairString = "match ($u, $v) isa $type; get;";
 
@@ -152,7 +154,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatCanHaveAGivenResourceType() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; $type has name; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -164,7 +166,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatCanHaveAGivenResourceType_needInferenceToGetAllResults() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; $type has description; get;";
             String specificQueryString = "match $x isa reifiable-relation;get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -180,7 +182,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; $type sub noRoleEntity; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -191,7 +193,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatAreSubTypeOfGivenType_needInferenceToGetAllResults() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; $type sub relation; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
@@ -202,7 +204,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allTypesAGivenTypeSubs() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match binary sub $x; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
@@ -223,7 +225,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfTypesThatPlayGivenRole() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; $type plays someRole; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -239,7 +241,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfRelationsThatRelateGivenRole() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa $type; $type relates someRole; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
 
@@ -252,7 +254,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allRolesGivenRelationRelates() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match reifying-relation relates $x; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -269,7 +271,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allTypesOfRolePlayerInASpecificRelationWithSpecifiedRoles() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match (someRole: $x, subRole: $y) isa reifiable-relation;$x isa $type; get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -280,7 +282,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allTypesOfRolePlayerInASpecificRelationWithUnspecifiedRoles() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match ($x, $y) isa reifiable-relation;$x isa $type; get;";
 
             //3 instances * {anotherTwoRoleEntity, anotherSingleRoleEntity, noRoleEntity, entity, Thing} * arity
@@ -295,7 +297,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaEntity() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             final long noOfEntities = tx.getMetaEntityType().instances().count();
             String queryString = "match $x isa entity;get;";
 
@@ -306,7 +308,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaRelation() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa relation;get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -323,7 +325,7 @@ public class OntologicalQueryIT {
 
     @Test
     public void allInstancesOfMetaResource() {
-        try(TransactionOLTP tx = session.transaction().read()) {
+        try(Transaction tx = session.readTransaction()) {
             String queryString = "match $x isa attribute;get;";
 
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());

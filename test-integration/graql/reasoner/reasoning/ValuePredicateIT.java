@@ -19,9 +19,9 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Iterables;
-import grakn.core.concept.Label;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.Type;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
@@ -29,11 +29,11 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
-import grakn.core.graql.reasoner.utils.Pair;
+import grakn.core.common.util.Pair;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -76,7 +76,7 @@ public class ValuePredicateIT {
     @Test
     public void whenResolvingInferrableAttributesWithBounds_answersAreCalculatedCorrectly(){
         Session session = server.sessionWithNewKeyspace();
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
@@ -97,32 +97,32 @@ public class ValuePredicateIT {
         Statement value = Graql.var("value");
         Pattern basePattern = Graql.var("x").has("derivedResource", value);
 
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gt(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() > bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gte(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() >= bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lt(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() < bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lte(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() <= bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.eq(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() == bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.neq(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
@@ -132,7 +132,7 @@ public class ValuePredicateIT {
     @Test
     public void whenResolvableAttributesHaveVariableComparisons_answersAreCalculatedCorrectly(){
         Session session = server.sessionWithNewKeyspace();
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
@@ -155,42 +155,42 @@ public class ValuePredicateIT {
                 Graql.var("y").has("derivedResource", anotherValue)
         );
 
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gt(anotherValue))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
                 assertTrue((long) ans.get(value.var()).asAttribute().value() > (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.gte(anotherValue))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
                 assertTrue((long) ans.get(value.var()).asAttribute().value() >= (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lt(anotherValue))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
                 assertTrue((long) ans.get(value.var()).asAttribute().value() < (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.lte(anotherValue))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
                 assertTrue((long) ans.get(value.var()).asAttribute().value() <= (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.eq(anotherValue))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
                 assertEquals((long) ans.get(value.var()).asAttribute().value(), (long) ans.get(anotherValue.var()).asAttribute().value());
             });
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, value.neq(anotherValue))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> {
@@ -202,7 +202,7 @@ public class ValuePredicateIT {
     @Test
     public void whenResolvableAttributesHaveVariableComparisonsWithABound_answersAreCalculatedCorrectly(){
         Session session = server.sessionWithNewKeyspace();
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.parse("define " +
                     "someEntity sub entity," +
                     "has derivedResource;" +
@@ -228,32 +228,32 @@ public class ValuePredicateIT {
                 value.eq(anotherValue)
         );
 
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.gt(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() > bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.gte(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() >= bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.lt(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() < bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.lte(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() <= bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.eq(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() == bound));
         }
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(Graql.match(Graql.and(basePattern, anotherValue.neq(bound))).get());
             assertFalse(answers.isEmpty());
             answers.forEach(ans -> assertTrue((long) ans.get(value.var()).asAttribute().value() != bound));
@@ -262,7 +262,7 @@ public class ValuePredicateIT {
 
     @Test
     public void whenParsingNeqValueVPs_ensureTheyAreParsedIntoAtomsCorrectly() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             Conjunction<Pattern> neqWithoutBound = Iterables.getOnlyElement(
                     Graql.parsePattern(
                             "{" +
@@ -349,7 +349,7 @@ public class ValuePredicateIT {
 
     @Test
     public void whenParsingNeqValueVPsWithValue_equivalentPatternsMakeEquivalentQueries() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             Conjunction<Pattern> neqOutsideAttribute = Iterables.getOnlyElement(Graql.parsePattern(
                     "{" +
                             "$x has derived-resource-string $val;$val !== 'unattached';" +
@@ -380,7 +380,7 @@ public class ValuePredicateIT {
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireInequalityBetweenResources() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String neqVariant = "{ " +
                     "$x has derived-resource-string $value;" +
                     "$y has derived-resource-string $anotherValue;" +
@@ -447,7 +447,7 @@ public class ValuePredicateIT {
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireNotHavingSpecificValue() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String neqHardBound = "{ " +
                     "$x has derived-resource-string $val;$val !== 'unattached';" +
                     "};";
@@ -505,7 +505,7 @@ public class ValuePredicateIT {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireResourceValuesToBeDifferent() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String neqVersion = "match " +
                     "$x has derived-resource-string $val;" +
                     "$y has reattachable-resource-string $anotherVal;" +
@@ -528,7 +528,7 @@ public class ValuePredicateIT {
 
     @Test //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void derivingResources_requireInstanceValuesToBeDifferent() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String neqVersion = "match " +
                     "$val isa derived-resource-string;" +
                     "$anotherVal isa reattachable-resource-string;" +
@@ -551,7 +551,7 @@ public class ValuePredicateIT {
 
     @Test
     public void derivingResources_requireAnEntityToHaveTwoDistinctResourcesOfNotAbstractType() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String queryString = "match " +
                     "$x has derivable-resource-string $value;" +
                     "$x has derivable-resource-string $unwantedValue;" +

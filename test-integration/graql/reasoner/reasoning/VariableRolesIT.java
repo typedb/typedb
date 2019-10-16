@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
@@ -63,7 +63,7 @@ public class VariableRolesIT {
 
     @Test
     public void binaryRelationWithDifferentVariantsOfVariableRoles(){
-        try(TransactionOLTP tx = variableRoleSession.transaction().write()) {
+        try(Transaction tx = variableRoleSession.writeTransaction()) {
             //9 binary-base instances with {role, role2} = 2 roles for r2 -> 18 answers
             String queryString = "match " +
                     "(role1: $a, $r2: $b) isa binary-base;" +
@@ -183,7 +183,7 @@ public class VariableRolesIT {
     }
 
     private void ternaryNaryRelationWithVariableRoles(String label, int conceptDOF){
-        try(TransactionOLTP tx = variableRoleSession.transaction().write()) {
+        try(Transaction tx = variableRoleSession.writeTransaction()) {
                         final int arity = (int) tx.getRelationType(label).roles().count();
 
             Statement resourcePattern = var("a1").has("name", "a");

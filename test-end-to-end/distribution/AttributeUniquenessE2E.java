@@ -20,7 +20,6 @@ package grakn.core.distribution;
 
 
 import grakn.client.GraknClient;
-import grakn.core.concept.answer.ConceptMap;
 import graql.lang.Graql;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;

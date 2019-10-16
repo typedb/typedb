@@ -19,17 +19,18 @@
 package grakn.core.graql.query;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.Type;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.property.ValueProperty;
@@ -61,7 +62,7 @@ public class QueryErrorIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
     private static Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -71,7 +72,7 @@ public class QueryErrorIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -185,13 +186,13 @@ public class QueryErrorIT {
     public void testExceptionWhenNoHasResourceRelation() throws InvalidKBException {
         // Create a fresh graph, with no has between person and name
         Session newSession = graknServer.sessionWithNewKeyspace();
-        try (TransactionOLTP newTx = newSession.transaction().write()) {
+        try (Transaction newTx = newSession.writeTransaction()) {
             newTx.execute(Graql.define(
                     type("person").sub("entity"),
                     type("name").sub(Graql.Token.Type.ATTRIBUTE).datatype(Graql.Token.DataType.STRING)
             ));
 
-            exception.expect(TransactionException.class);
+            exception.expect(GraknConceptException.class);
             exception.expectMessage(allOf(
                     containsString("person"),
                     containsString("name")
