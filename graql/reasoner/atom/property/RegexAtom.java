@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.atom.property;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -30,20 +29,26 @@ import graql.lang.statement.Variable;
 /**
  * Atomic corresponding to RegexProperty.
  */
-@AutoValue
-public abstract class RegexAtom extends AtomicBase {
+public class RegexAtom extends AtomicBase {
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
-    public abstract String getRegex();
+    private final String regex;
+
+    private RegexAtom(Variable varName, Statement pattern, ReasonerQuery parent, String regex) {
+        super(parent, varName, pattern);
+        this.regex = regex;
+    }
 
     public static RegexAtom create(Variable var, RegexProperty prop, ReasonerQuery parent) {
         Variable varName = var.asReturnedVar();
-        return new AutoValue_RegexAtom(varName, new Statement(varName).regex(prop.regex()), parent, prop.regex());
+        return new RegexAtom(varName, new Statement(varName).regex(prop.regex()), parent, prop.regex());
     }
 
     private static RegexAtom create(RegexAtom a, ReasonerQuery parent) {
-        return new AutoValue_RegexAtom(a.getVarName(), a.getPattern(), parent, a.getRegex());
+        return new RegexAtom(a.getVarName(), a.getPattern(), parent, a.getRegex());
+    }
+
+    public String getRegex() {
+        return regex;
     }
 
     @Override

@@ -77,15 +77,6 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
         this.relationTypeLabels = relationTypeLabels;
     }
 
-    public static RolePlayerFragmentSet of(
-            VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
-            @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relationTypeLabels
-    ) {
-        return new RolePlayerFragmentSet(
-                varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels
-        );
-    }
-
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(

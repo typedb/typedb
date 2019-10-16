@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -31,17 +30,17 @@ import graql.lang.statement.Variable;
 /**
  * TypeAtom corresponding to graql a PlaysProperty property.
  */
-@AutoValue
-public abstract class PlaysAtom extends OntologicalAtom {
+public class PlaysAtom extends OntologicalAtom {
 
-    @Override public abstract Variable getPredicateVariable();
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
+    PlaysAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+            Variable predicateVariable) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable);
+    }
 
     public static PlaysAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
-        return new AutoValue_PlaysAtom(varName.asReturnedVar(), predicateId, predicateVar, new Statement(varName).plays(new Statement(predicateVar)), parent);
+        return new PlaysAtom(varName.asReturnedVar(), new Statement(varName).plays(new Statement(predicateVar)), parent, predicateId, predicateVar);
     }
 
     private static PlaysAtom create(PlaysAtom a, ReasonerQuery parent) {

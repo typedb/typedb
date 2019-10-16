@@ -37,27 +37,13 @@ import java.util.Set;
  */
 public abstract class Predicate<T> extends AtomicBase {
 
-    private final Variable varName;
-    private final Statement pattern;
-    private final ReasonerQuery parentQuery;
     private final T predicate;
 
     public Predicate(Variable varName, Statement pattern, T predicate, ReasonerQuery parentQuery) {
-        this.varName = varName;
-        this.pattern = pattern;
-        this.parentQuery = parentQuery;
+        super(parentQuery, varName, pattern);
         this.predicate = predicate;
     }
 
-    public Variable getVarName() {
-        return varName;
-    }
-    public Statement getPattern() {
-        return pattern;
-    }
-    public ReasonerQuery getParentQuery() {
-        return parentQuery;
-    }
     public T getPredicate() { return predicate; }
     public abstract String getPredicateValue();
 

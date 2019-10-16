@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.atom.property;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.graql.reasoner.atom.AtomicBase;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -31,20 +30,26 @@ import graql.lang.statement.Variable;
 /**
  * Atomic corresponding to DataTypeProperty.
  */
-@AutoValue
-public abstract class DataTypeAtom extends AtomicBase {
+public class DataTypeAtom extends AtomicBase {
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
-    public abstract AttributeType.DataType<?> getDataType();
+    private final AttributeType.DataType<?> dataType;
+
+    private DataTypeAtom(Variable varName, Statement pattern, ReasonerQuery parentQuery, AttributeType.DataType<?> dataType) {
+        super(parentQuery, varName, pattern);
+        this.dataType = dataType;
+    }
 
     public static DataTypeAtom create(Variable var, DataTypeProperty prop, ReasonerQuery parent, AttributeType.DataType<?> dataType) {
         Variable varName = var.asReturnedVar();
-        return new AutoValue_DataTypeAtom(varName, new Statement(varName).datatype(prop.dataType()), parent, dataType);
+        return new DataTypeAtom(varName, new Statement(varName).datatype(prop.dataType()), parent, dataType);
     }
 
     private static DataTypeAtom create(DataTypeAtom a, ReasonerQuery parent) {
-        return new AutoValue_DataTypeAtom(a.getVarName(), a.getPattern(), parent, a.getDataType());
+        return new DataTypeAtom(a.getVarName(), a.getPattern(), parent, a.getDataType());
+    }
+
+    public AttributeType.DataType<?> getDataType() {
+        return dataType;
     }
 
     @Override

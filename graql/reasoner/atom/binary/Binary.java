@@ -19,6 +19,7 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import autovalue.shaded.com.squareup.javapoet$.$ArrayTypeName;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
@@ -30,6 +31,7 @@ import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
@@ -58,8 +60,22 @@ import javax.annotation.Nullable;
  */
 public abstract class Binary extends Atom {
 
-    public abstract Variable getPredicateVariable();
-    @Nullable @Override public abstract ConceptId getTypeId();
+    final Variable predicateVariable;
+
+    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+           Variable predicateVariable) {
+        super(reasonerQuery, varName, pattern, typeId);
+
+        if (predicateVariable == null) {
+            throw new NullPointerException("Null predicateVariable");
+        }
+        this.predicateVariable = predicateVariable;
+    }
+
+    public Variable getPredicateVariable() {
+        return predicateVariable;
+    }
+
 
     private SchemaConcept type = null;
     private IdPredicate typePredicate = null;

@@ -19,7 +19,10 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collection;
@@ -31,6 +34,11 @@ import java.util.stream.Collectors;
  * Base class for isa atoms.
  */
 public abstract class IsaAtomBase extends TypeAtom{
+
+    IsaAtomBase(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+             Variable predicateVariable) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable);
+    }
 
     @Override
     public Set<TypeAtom> unify(Unifier u){

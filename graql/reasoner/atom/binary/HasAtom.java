@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
@@ -30,21 +29,26 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
+
 /**
  * TypeAtom corresponding to graql a HasAttributeTypeProperty property.
  */
-@AutoValue
-public abstract class HasAtom extends OntologicalAtom {
+public class HasAtom extends OntologicalAtom {
 
-    @Override public abstract Variable getPredicateVariable();
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
+    HasAtom(Variable varName,
+            Statement pattern,
+            ReasonerQuery parentQuery,
+            @Nullable ConceptId typeId,
+            Variable predicateVariable) {
+        super(varName, pattern, parentQuery, typeId, predicateVariable);
+    }
 
     public static HasAtom create(Variable var, Variable pVar, ConceptId predicateId, ReasonerQuery parent) {
         Variable varName = var.asReturnedVar();
         Variable predicateVar = pVar.asReturnedVar();
         Label label = parent.tx().getConcept(predicateId).asType().label();
-        return new AutoValue_HasAtom(varName, predicateId, predicateVar, new Statement(varName).has(Graql.type(label.getValue())), parent);
+        return new HasAtom(varName, new Statement(varName).has(Graql.type(label.getValue())), parent, predicateId, predicateVar);
     }
 
     private static HasAtom create(TypeAtom a, ReasonerQuery parent) {
