@@ -72,9 +72,6 @@ public abstract class Atom extends AtomicBase {
 
     public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
         super(reasonerQuery, varName, pattern);
-        if (typeId == null) {
-            throw new NullPointerException("Null TypeId");
-        }
         this.typeId = typeId;
     }
 

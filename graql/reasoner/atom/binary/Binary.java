@@ -65,10 +65,6 @@ public abstract class Binary extends Atom {
     Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
            Variable predicateVariable) {
         super(reasonerQuery, varName, pattern, typeId);
-
-        if (predicateVariable == null) {
-            throw new NullPointerException("Null predicateVariable");
-        }
         this.predicateVariable = predicateVariable;
     }
 
