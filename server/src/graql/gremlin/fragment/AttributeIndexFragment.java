@@ -37,15 +37,11 @@ import java.util.stream.Stream;
 
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
 
-public abstract class AttributeIndexFragment extends Fragment {
+class AttributeIndexFragment extends Fragment {
     private final Label attributeLabel;
     private final String attributeValue;
 
-    AttributeIndexFragment(
-            @Nullable VarProperty varProperty,
-            Variable start,
-            Label attributeLabel,
-            String attributeValue) {
+    AttributeIndexFragment(@Nullable VarProperty varProperty, Variable start, Label attributeLabel, String attributeValue) {
         super(varProperty, start);
 
         if (attributeLabel == null) {

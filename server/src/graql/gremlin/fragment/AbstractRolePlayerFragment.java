@@ -42,7 +42,7 @@ import static java.util.stream.Collectors.toSet;
  * OutRolePlayerFragment.
  *
  */
-public abstract class AbstractRolePlayerFragment extends EdgeFragment {
+abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     static final Variable RELATION_EDGE = reservedVar("RELATION_EDGE");
     static final Variable RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");

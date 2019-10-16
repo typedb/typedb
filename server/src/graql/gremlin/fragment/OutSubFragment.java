@@ -18,16 +18,17 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -37,13 +38,32 @@ import java.util.HashSet;
  *
  */
 
-@AutoValue
 public abstract class OutSubFragment extends EdgeFragment {
-    @Override
-    public abstract Variable end();
+    private final Variable end;
+    private final int subTraversalDepthLimit;
 
+    OutSubFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            int subTraversalDepthLimit) {
+        super(varProperty, start);
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+        this.subTraversalDepthLimit = subTraversalDepthLimit;
+    }
+
+    public Variable end() {
+        return end;
+    }
+
+    @Override
     // -1 implies no depth limit
-    public abstract int subTraversalDepthLimit();
+    public int subTraversalDepthLimit() {
+        return subTraversalDepthLimit;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -84,5 +104,34 @@ public abstract class OutSubFragment extends EdgeFragment {
     @Override
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.SUB, new HashSet<>(Arrays.asList(start(), end())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof OutSubFragment) {
+            OutSubFragment that = (OutSubFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.subTraversalDepthLimit == that.subTraversalDepthLimit());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.end.hashCode();
+        h *= 1000003;
+        h ^= this.subTraversalDepthLimit;
+        return h;
     }
 }

@@ -20,8 +20,10 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.concept.Label;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -31,6 +33,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.ROLE_PLAYER;
@@ -48,6 +51,57 @@ import static grakn.core.server.kb.Schema.EdgeProperty.ROLE_LABEL_ID;
  */
 @AutoValue
 abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
+
+    private final Variable end;
+    private final Variable edge;
+    private final Variable role;
+    private final ImmutableSet<Label> roleLabels;
+    private final ImmutableSet<Label> relationTypeLabels;
+
+    InRolePlayerFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            Variable edge,
+            @Nullable Variable role,
+            @Nullable ImmutableSet<Label> roleLabels,
+            @Nullable ImmutableSet<Label> relationTypeLabels) {
+        super(varProperty, start);
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+        if (edge == null) {
+            throw new NullPointerException("Null edge");
+        }
+        this.edge = edge;
+        this.role = role;
+        this.roleLabels = roleLabels;
+        this.relationTypeLabels = relationTypeLabels;
+    }
+
+    public Variable end() {
+        return end;
+    }
+
+    Variable edge() {
+        return edge;
+    }
+
+    @Nullable
+    Variable role() {
+        return role;
+    }
+
+    @Nullable
+    ImmutableSet<Label> roleLabels() {
+        return roleLabels;
+    }
+
+    @Nullable
+    ImmutableSet<Label> relationTypeLabels() {
+        return relationTypeLabels;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -98,5 +152,43 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     @Override
     public double internalFragmentCost() {
         return COST_RELATIONS_PER_INSTANCE;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InRolePlayerFragment) {
+            InRolePlayerFragment that = (InRolePlayerFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.edge.equals(that.edge()))
+                    && ((this.role == null) ? (that.role() == null) : this.role.equals(that.role()))
+                    && ((this.roleLabels == null) ? (that.roleLabels() == null) : this.roleLabels.equals(that.roleLabels()))
+                    && ((this.relationTypeLabels == null) ? (that.relationTypeLabels() == null) : this.relationTypeLabels.equals(that.relationTypeLabels()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.end.hashCode();
+        h *= 1000003;
+        h ^= this.edge.hashCode();
+        h *= 1000003;
+        h ^= (role == null) ? 0 : this.role.hashCode();
+        h *= 1000003;
+        h ^= (roleLabels == null) ? 0 : this.roleLabels.hashCode();
+        h *= 1000003;
+        h ^= (relationTypeLabels == null) ? 0 : this.relationTypeLabels.hashCode();
+        return h;
     }
 }

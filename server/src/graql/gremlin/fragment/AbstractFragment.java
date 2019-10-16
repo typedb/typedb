@@ -29,7 +29,7 @@ import org.apache.tinkerpop.gremlin.structure.Vertex;
 import javax.annotation.Nullable;
 import java.util.Collection;
 
-abstract class AbstractFragment extends Fragment {
+class AbstractFragment extends Fragment {
 
     AbstractFragment(@Nullable VarProperty varProperty, Variable start) {
         super(varProperty, start);

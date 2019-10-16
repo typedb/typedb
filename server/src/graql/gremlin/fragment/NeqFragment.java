@@ -18,15 +18,16 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
@@ -34,10 +35,28 @@ import java.util.Collection;
  * Used for concept comparison, not attribute values
  *
  */
-@AutoValue
 public abstract class NeqFragment extends Fragment {
 
-    public abstract Variable other();
+    private final Variable other;
+
+    NeqFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable other) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+        if (other == null) {
+            throw new NullPointerException("Null other");
+        }
+        this.other = other;
+    }
+
+    public Variable other() {
+        return other;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -64,5 +83,31 @@ public abstract class NeqFragment extends Fragment {
     @Override
     public ImmutableSet<Variable> dependencies() {
         return ImmutableSet.of(other());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof NeqFragment) {
+            NeqFragment that = (NeqFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.other.equals(that.other()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.other.hashCode();
+        return h;
     }
 }

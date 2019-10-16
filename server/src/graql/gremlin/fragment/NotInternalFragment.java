@@ -18,19 +18,23 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
-@AutoValue
 abstract class NotInternalFragment extends Fragment {
+
+    NotInternalFragment(@Nullable VarProperty varProperty, Variable start) {
+        super(varProperty, start);
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -52,4 +56,28 @@ abstract class NotInternalFragment extends Fragment {
     public double internalFragmentCost() {
         return COST_NODE_NOT_INTERNAL;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof NotInternalFragment) {
+            NotInternalFragment that = (NotInternalFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        return h;
+    }
+
 }

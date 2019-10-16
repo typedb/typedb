@@ -41,16 +41,10 @@ import java.util.stream.Stream;
 
 public class ValueFragment extends Fragment {
 
-    private final VarProperty varProperty;
-    private final Variable start;
     private final ValueOperation<?, ?> operation;
 
     ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueOperation<?, ?> operation) {
-        this.varProperty = varProperty;
-        if (start == null) {
-            throw new NullPointerException("Null start");
-        }
-        this.start = start;
+        super(varProperty, start);
         if (operation == null) {
             throw new NullPointerException("Null operation");
         }
@@ -64,22 +58,9 @@ public class ValueFragment extends Fragment {
         return operation;
     }
 
-    @Nullable
-    @Override
-    public VarProperty varProperty() {
-        return varProperty;
-    }
-
-    @Override
-    public Variable start() {
-        return start;
-    }
-
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars
-    ) {
-
+            GraphTraversal<Vertex, ? extends Element> traversal, TransactionOLTP tx, Collection<Variable> vars) {
         return predicate().apply(traversal);
     }
 
@@ -113,30 +94,6 @@ public class ValueFragment extends Fragment {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ValueFragment that = (ValueFragment) o;
-
-        return (Objects.equals(this.varProperty, that.varProperty) &&
-                this.start.equals(that.start()) &&
-                this.operation.equals(that.predicate()));
-    }
-
-    @Override
-    public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.start.hashCode();
-        h *= 1000003;
-        h ^= this.operation.hashCode();
-        return h;
-    }
-
-    @Override
     public double estimatedCostAsStartingPoint(TransactionOLTP tx) {
         KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
 
@@ -166,5 +123,29 @@ public class ValueFragment extends Fragment {
         } else {
             return (double) totalImplicitRels / totalAttributes;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ValueFragment that = (ValueFragment) o;
+
+        return (Objects.equals(this.varProperty, that.varProperty) &&
+                this.start.equals(that.start()) &&
+                this.operation.equals(that.predicate()));
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.operation.hashCode();
+        return h;
     }
 }

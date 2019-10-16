@@ -18,30 +18,53 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.PLAYS;
 
-@AutoValue
 abstract class OutPlaysFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    private final Variable end;
+    private final boolean required;
 
-    abstract boolean required();
+    OutPlaysFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            boolean required) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+        this.required = required;
+    }
+
+    public Variable end() {
+        return end;
+    }
+
+    boolean required() {
+        return required;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -83,5 +106,34 @@ abstract class OutPlaysFragment extends EdgeFragment {
     @Override
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof OutPlaysFragment) {
+            OutPlaysFragment that = (OutPlaysFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.required == that.required());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.end.hashCode();
+        h *= 1000003;
+        h ^= this.required ? 1231 : 1237;
+        return h;
     }
 }

@@ -18,19 +18,20 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.spanningtree.graph.InstanceNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,11 +45,25 @@ import static grakn.core.server.kb.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
  *
  */
 
-@AutoValue
 public abstract class OutIsaFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    private final Variable end;
+
+    OutIsaFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end) {
+        super(varProperty, start);
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+    }
+
+    public Variable end() {
+        return end;
+    }
+
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -89,4 +104,31 @@ public abstract class OutIsaFragment extends EdgeFragment {
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof OutIsaFragment) {
+            OutIsaFragment that = (OutIsaFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.end.hashCode();
+        return h;
+    }
+
 }

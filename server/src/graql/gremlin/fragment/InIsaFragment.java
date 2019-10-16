@@ -25,6 +25,7 @@ import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -33,6 +34,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -55,10 +57,30 @@ import static grakn.core.server.kb.Schema.VertexProperty.LABEL_ID;
 @AutoValue
 public abstract class InIsaFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    private final Variable end;
+    private final boolean mayHaveEdgeInstances;
 
-    abstract boolean mayHaveEdgeInstances();
+    InIsaFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            boolean mayHaveEdgeInstances) {
+        super(varProperty, start);
+
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+        this.mayHaveEdgeInstances = mayHaveEdgeInstances;
+    }
+
+    public Variable end() {
+        return end;
+    }
+
+    boolean mayHaveEdgeInstances() {
+        return mayHaveEdgeInstances;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -148,5 +170,34 @@ public abstract class InIsaFragment extends EdgeFragment {
     @Override
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.ISA, new HashSet<>(Arrays.asList(start(), end())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InIsaFragment) {
+            InIsaFragment that = (InIsaFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.mayHaveEdgeInstances == that.mayHaveEdgeInstances());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.end.hashCode();
+        h *= 1000003;
+        h ^= this.mayHaveEdgeInstances ? 1231 : 1237;
+        return h;
     }
 }

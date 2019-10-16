@@ -25,6 +25,8 @@ import grakn.core.graql.gremlin.spanningtree.graph.EdgeNode;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.util.Weighted;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 
 import java.util.Map;
 import java.util.Set;
@@ -38,11 +40,15 @@ import static grakn.core.graql.gremlin.spanningtree.util.Weighted.weighted;
  * has it's own definiton of the middle node's ID. However, they all have the same implementation of
  * methods to do with building the Query Planning Graph
  */
-public abstract class EdgeFragment extends Fragment {
+abstract class EdgeFragment extends Fragment {
 
     abstract protected NodeId getMiddleNodeId();
     abstract protected Node startNode();
     abstract protected Node endNode();
+
+    EdgeFragment(VarProperty varProperty, Variable start) {
+        super(varProperty, start);
+    }
 
     @Override
     public Set<Node> getNodes() {

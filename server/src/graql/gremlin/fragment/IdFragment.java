@@ -40,7 +40,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-public abstract class IdFragment extends Fragment {
+abstract class IdFragment extends Fragment {
 
     private final ConceptId id;
 

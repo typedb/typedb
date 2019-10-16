@@ -31,13 +31,10 @@ import java.util.Collection;
 
 import static grakn.core.server.kb.Schema.VertexProperty.DATA_TYPE;
 
-abstract class DataTypeFragment extends Fragment {
+class DataTypeFragment extends Fragment {
     private final AttributeType.DataType dataType;
 
-    DataTypeFragment(
-            @Nullable VarProperty varProperty,
-            Variable start,
-            AttributeType.DataType dataType) {
+    DataTypeFragment(@Nullable VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
         super(varProperty, start);
         if (dataType == null) {
             throw new NullPointerException("Null dataType");

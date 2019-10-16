@@ -18,27 +18,41 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.graql.gremlin.spanningtree.graph.Node;
 import grakn.core.graql.gremlin.spanningtree.graph.NodeId;
 import grakn.core.graql.gremlin.spanningtree.graph.SchemaNode;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 
 import static grakn.core.server.kb.Schema.EdgeLabel.RELATES;
 
-@AutoValue
 abstract class InRelatesFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    private final Variable end;
+
+    InRelatesFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end) {
+        super(varProperty, start);
+        if (end == null) {
+            throw new NullPointerException("Null end");
+        }
+        this.end = end;
+    }
+
+    public Variable end() {
+        return end;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -71,4 +85,31 @@ abstract class InRelatesFragment extends EdgeFragment {
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.RELATES, new HashSet<>(Arrays.asList(start(), end())));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InRelatesFragment) {
+            InRelatesFragment that = (InRelatesFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.end.hashCode();
+        return h;
+    }
+
 }
