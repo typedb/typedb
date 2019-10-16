@@ -18,18 +18,35 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 
-@AutoValue
+import static grakn.core.graql.gremlin.fragment.Fragment.COST_NODE_IS_ABSTRACT;
+
 abstract class AbstractFragment extends Fragment {
+
+    private final VarProperty varProperty;
+    private final Variable start;
+
+
+    AbstractFragment(
+            @Nullable VarProperty varProperty,
+            Variable start) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+    }
+
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -46,5 +63,37 @@ abstract class AbstractFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_IS_ABSTRACT;
+    }
+
+    @Nullable
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    public Variable start() {
+        return start;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof AbstractFragment) {
+            AbstractFragment that = (AbstractFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        return h;
     }
 }

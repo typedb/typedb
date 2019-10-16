@@ -119,7 +119,7 @@ public class Fragments {
     }
 
     public static Fragment isAbstract(VarProperty varProperty, Variable start) {
-        return new AutoValue_AbstractFragment(varProperty, start);
+        return new AbstractFragment(varProperty, start);
     }
 
     public static Fragment regex(VarProperty varProperty, Variable start, String regex) {
@@ -139,7 +139,7 @@ public class Fragments {
      */
     public static Fragment attributeIndex(
             @Nullable VarProperty varProperty, Variable start, Label label, Object attributeValue) {
-        return new AutoValue_AttributeIndexFragment(varProperty, start, label, attributeValue.toString());
+        return new AttributeIndexFragment(varProperty, start, label, attributeValue.toString());
     }
 
 

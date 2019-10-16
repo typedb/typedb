@@ -26,22 +26,44 @@ import grakn.core.concept.type.SchemaConcept;
 import grakn.core.server.kb.Schema;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.server.statistics.KeyspaceStatistics;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.gremlin.fragment.Fragment.COST_NODE_INDEX;
 import static grakn.core.server.kb.Schema.VertexProperty.INDEX;
 
-@AutoValue
 public abstract class AttributeIndexFragment extends Fragment {
+    private final VarProperty varProperty;
+    private final Variable start;
+    private final Label attributeLabel;
+    private final String attributeValue;
 
-    public abstract Label attributeLabel();
-
-    abstract String attributeValue();
+    AttributeIndexFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Label attributeLabel,
+            String attributeValue) {
+        this.varProperty = varProperty;
+        if (start == null) {
+            throw new NullPointerException("Null start");
+        }
+        this.start = start;
+        if (attributeLabel == null) {
+            throw new NullPointerException("Null attributeLabel");
+        }
+        this.attributeLabel = attributeLabel;
+        if (attributeValue == null) {
+            throw new NullPointerException("Null attributeValue");
+        }
+        this.attributeValue = attributeValue;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -58,6 +80,23 @@ public abstract class AttributeIndexFragment extends Fragment {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_INDEX;
+    }
+
+    @Nullable
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    public Variable start() {
+        return start;
+    }
+
+    public Label attributeLabel() {
+        return attributeLabel;
+    }
+
+    String attributeValue() {
+        return attributeValue;
     }
 
     @Override
@@ -99,5 +138,34 @@ public abstract class AttributeIndexFragment extends Fragment {
             // may well be 0 or 1 if there are many attributes and not many owners!
             return totalImplicitRels / totalAttributes;
         }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof AttributeIndexFragment) {
+            AttributeIndexFragment that = (AttributeIndexFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.attributeLabel.equals(that.attributeLabel()))
+                    && (this.attributeValue.equals(that.attributeValue()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        int h = 1;
+        h *= 1000003;
+        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
+        h *= 1000003;
+        h ^= this.start.hashCode();
+        h *= 1000003;
+        h ^= this.attributeLabel.hashCode();
+        h *= 1000003;
+        h ^= this.attributeValue.hashCode();
+        return h;
     }
 }
