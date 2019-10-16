@@ -18,10 +18,10 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import org.junit.AfterClass;
@@ -42,12 +42,12 @@ public class QueryValidityIT {
 
     private static Session genericSchemaSession;
 
-    private static TransactionOLTP tx;
+    private static Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
         genericSchemaSession = server.sessionWithNewKeyspace();
-        tx = genericSchemaSession.transaction().write();
+        tx = genericSchemaSession.writeTransaction();
         tx.execute(Graql.parse("define " +
                 "anotherRole sub role;" +
                 "someRel sub relation, relates anotherRole; " +
@@ -55,7 +55,7 @@ public class QueryValidityIT {
                 "binary sub relation, relates role1;" +
                 "name sub attribute, datatype string;").asDefine());
         tx.commit();
-        tx = genericSchemaSession.transaction().write();
+        tx = genericSchemaSession.writeTransaction();
     }
 
     @AfterClass

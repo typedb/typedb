@@ -19,9 +19,9 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.server.Session;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -45,7 +45,7 @@ public class NeqIdPredicateIT {
     public void reasoningWithNeqProperty() {
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet27.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                                 String queryString = "match (related-state: $s) isa holds; get;";
 
                 List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -59,7 +59,7 @@ public class NeqIdPredicateIT {
     public void recursiveRelationWithNeqPredicate(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "$x != $y;";
@@ -98,7 +98,7 @@ public class NeqIdPredicateIT {
     public void recursiveRelationsWithSharedNeqPredicate_relationsAreEquivalent(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "(role1: $x, role2: $z) isa binary-base;" +
@@ -143,7 +143,7 @@ public class NeqIdPredicateIT {
     public void multipleRecursiveRelationsWithSharedNeqPredicate_neqPredicatePreventsLoops(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "(role1: $y, role2: $z) isa binary-base;" +
@@ -192,7 +192,7 @@ public class NeqIdPredicateIT {
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates_symmetricPattern(){
         try(Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y1) isa binary-base;" +
                         "(role1: $x, role2: $z1) isa binary-base;" +
@@ -237,7 +237,7 @@ public class NeqIdPredicateIT {
     public void multipleRecursiveRelationsWithMultipleSharedNeqPredicates() {
         try (Session session = server.sessionWithNewKeyspace()) {
             loadFromFileAndCommit(resourcePath, "testSet29.gql", session);
-            try (TransactionOLTP tx = session.transaction().write()) {
+            try (Transaction tx = session.writeTransaction()) {
                                 String baseQueryString = "match " +
                         "(role1: $x, role2: $y) isa binary-base;" +
                         "$x != $z1;" +

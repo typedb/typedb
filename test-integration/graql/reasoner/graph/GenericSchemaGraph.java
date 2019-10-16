@@ -19,19 +19,19 @@ package grakn.core.graql.reasoner.graph;
 
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.graql.reasoner.pattern.AttributePattern;
 import grakn.core.graql.reasoner.pattern.QueryPattern;
 import grakn.core.graql.reasoner.pattern.RelationPattern;
 import grakn.core.graql.reasoner.pattern.TypePattern;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.property.RelationProperty;
 import graql.lang.statement.Statement;
@@ -60,7 +60,7 @@ public class GenericSchemaGraph {
     public GenericSchemaGraph(Session session){
         loadFromFileAndCommit(gqlPath, gqlFile, session);
 
-        TransactionOLTP tx = session.transaction().read();
+        Transaction tx = session.readTransaction();
         EntityType subRoleEntityType = tx.getEntityType("subRoleEntity");
         EntityType subSubRoleEntity = tx.getEntityType("subSubRoleEntity");
         EntityType entityType = tx.getEntityType("baseRoleEntity");

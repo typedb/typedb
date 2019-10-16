@@ -20,23 +20,27 @@ package grakn.core.server.kb.structure;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.thing.Entity;
+import grakn.core.concept.impl.ConceptManagerImpl;
+import grakn.core.concept.impl.ConceptObserver;
+import grakn.core.concept.structure.EdgeElementImpl;
+import grakn.core.concept.structure.ElementFactory;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.structure.EdgeElement;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.KeyspaceSchemaCache;
+import grakn.core.kb.server.keyspace.Keyspace;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
+import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.ConceptManager;
-import grakn.core.server.kb.concept.ElementFactory;
-import grakn.core.server.kb.concept.EntityImpl;
-import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.server.keyspace.Keyspace;
-import grakn.core.server.session.ConceptObserver;
+import grakn.core.server.cache.CacheProviderImpl;
+import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.JanusGraphFactory;
-import grakn.core.server.session.Session;
+import grakn.core.server.session.SessionImpl;
 import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.session.cache.CacheProvider;
-import grakn.core.server.session.cache.KeyspaceSchemaCache;
-import grakn.core.server.statistics.KeyspaceStatistics;
-import grakn.core.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.util.ConceptDowncasting;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -45,6 +49,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -56,15 +61,16 @@ public class EdgeIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private Session session;
-    private TransactionOLTP tx;
-    private EntityTypeImpl entityType;
-    private EntityImpl entity;
+    private SessionImpl session;
+    private Transaction tx;
+    private EntityType entityType;
+    private Entity entity;
     private EdgeElement edge;
 
     @Before
     public void setUp(){
-        Keyspace keyspace = Keyspace.of("keyspace");
+        String keyspaceName = "ksp_"+UUID.randomUUID().toString().substring(0, 20).replace("-", "_");
+        Keyspace keyspace = new KeyspaceImpl(keyspaceName);
         final int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
         final int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
@@ -78,11 +84,11 @@ public class EdgeIT {
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
 
-        session = new Session(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
+        session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
                 new KeyspaceStatistics(), attributeCache, new ReentrantReadWriteLock());
 
         // create the transaction
-        CacheProvider cacheProvider = new CacheProvider(new KeyspaceSchemaCache());
+        CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
         ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
 
@@ -91,17 +97,17 @@ public class EdgeIT {
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
-        ConceptManager conceptManager = new ConceptManager(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
+        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
 
         tx = new TransactionOLTP(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
-        tx.open(TransactionOLTP.Type.WRITE);
+        tx.open(Transaction.Type.WRITE);
 
         // Create Edge
-        entityType = (EntityTypeImpl) tx.putEntityType("My Entity Type");
-        entity = (EntityImpl) entityType.create();
+        entityType = tx.putEntityType("My Entity Type");
+        entity = entityType.create();
 
         Edge tinkerEdge = tx.getTinkerTraversal().V().hasId(Schema.elementId(entity.id())).outE().next();
-        edge = new EdgeElement(elementFactory, tinkerEdge);
+        edge = new EdgeElementImpl(elementFactory, tinkerEdge);
     }
 
     @After
@@ -114,7 +120,7 @@ public class EdgeIT {
     public void checkEqualityBetweenEdgesBasedOnID() {
         Entity entity2 = entityType.create();
         Edge tinkerEdge = tx.getTinkerTraversal().V().hasId(Schema.elementId(entity2.id())).outE().next();
-        EdgeElement edge2 = new EdgeElement(null, tinkerEdge);
+        EdgeElement edge2 = new EdgeElementImpl(null, tinkerEdge);
 
         assertEquals(edge, edge);
         assertNotEquals(edge, edge2);
@@ -122,12 +128,12 @@ public class EdgeIT {
 
     @Test
     public void whenGettingTheSourceOfAnEdge_ReturnTheConceptTheEdgeComesFrom() {
-        assertEquals(entity.vertex(), edge.source());
+        assertEquals(ConceptDowncasting.concept(entity).vertex(), edge.source());
     }
 
     @Test
     public void whenGettingTheTargetOfAnEdge_ReturnTheConceptTheEdgePointsTowards() {
-        assertEquals(entityType.currentShard().vertex(), edge.target());
+        assertEquals(ConceptDowncasting.type(entityType).currentShard().vertex(), edge.target());
     }
 
     @Test

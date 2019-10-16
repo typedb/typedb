@@ -18,18 +18,19 @@
 
 package grakn.core.server.statistics;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -40,7 +41,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class UncomittedStatisticsDeltaIT {
     private Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
@@ -48,13 +49,13 @@ public class UncomittedStatisticsDeltaIT {
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         AttributeType age = tx.putAttributeType("age", AttributeType.DataType.LONG);
         Role friend = tx.putRole("friend");
         EntityType personType = tx.putEntityType("person").plays(friend).has(age);
         RelationType friendshipType = tx.putRelationType("friendship").relates(friend);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -161,7 +162,7 @@ public class UncomittedStatisticsDeltaIT {
         ConceptId id3 = personType.create().id();
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         // test concept API deletion
         tx.getConcept(id1).delete();
 
@@ -188,7 +189,7 @@ public class UncomittedStatisticsDeltaIT {
 
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         // test concept API deletion
         tx.getConcept(id1).delete();
 
@@ -210,7 +211,7 @@ public class UncomittedStatisticsDeltaIT {
         }
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         // test ConceptAPI deletion
         tx.getConcept(lastAttributeId).delete();
 
@@ -237,7 +238,7 @@ public class UncomittedStatisticsDeltaIT {
 
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // test ConceptAPI deletion
         tx.getConcept(age2Id).delete();

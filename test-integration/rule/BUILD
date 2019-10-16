@@ -22,7 +22,8 @@ java_library(
     name = "grakn-test-server",
     srcs = ["GraknTestServer.java"],
     deps = [
-        "//server",
+        "//server:server",
+        "//kb:kb",
         "//common",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",

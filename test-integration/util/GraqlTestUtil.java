@@ -18,12 +18,12 @@
 
 package grakn.core.util;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.MatchClause;
@@ -47,19 +47,19 @@ import static org.junit.Assert.assertTrue;
 @SuppressWarnings("CheckReturnValue")
 public class GraqlTestUtil {
 
-    public static void assertExists(TransactionOLTP tx, Pattern... patterns) {
+    public static void assertExists(Transaction tx, Pattern... patterns) {
         assertTrue(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertExists(TransactionOLTP tx, MatchClause matchClause) {
+    public static void assertExists(Transaction tx, MatchClause matchClause) {
         assertTrue(tx.stream(matchClause).iterator().hasNext());
     }
 
-    public static void assertNotExists(TransactionOLTP tx, Pattern... patterns) {
+    public static void assertNotExists(Transaction tx, Pattern... patterns) {
         assertFalse(tx.stream(Graql.match(patterns)).iterator().hasNext());
     }
 
-    public static void assertNotExists(TransactionOLTP tx, MatchClause matchClause) {
+    public static void assertNotExists(Transaction tx, MatchClause matchClause) {
         assertFalse(tx.stream(matchClause).iterator().hasNext());
     }
 
@@ -81,7 +81,7 @@ public class GraqlTestUtil {
         assertCollectionsEqual(msg, c1, c2);
     }
 
-    public static void loadFromFile(String gqlPath, String file, TransactionOLTP tx) {
+    public static void loadFromFile(String gqlPath, String file, Transaction tx) {
         try {
             System.out.println("Loading... " + gqlPath + file);
             InputStream inputStream = GraqlTestUtil.class.getClassLoader().getResourceAsStream(gqlPath + file);
@@ -94,20 +94,20 @@ public class GraqlTestUtil {
     }
 
     public static void loadFromFileAndCommit(String gqlPath, String file, Session session) {
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         loadFromFile(gqlPath, file, tx);
         tx.commit();
     }
 
 
-    public static Thing putEntityWithResource(TransactionOLTP tx, String id, EntityType type, Label key) {
+    public static Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         Attribute attributeInstance = tx.getAttributeType(key.getValue()).create(id);
         inst.has(attributeInstance);
         return inst;
     }
 
-    public static Thing getInstance(TransactionOLTP tx, String id){
+    public static Thing getInstance(Transaction tx, String id){
         Set<Thing> things = tx.getAttributesByValue(id)
                 .stream().flatMap(Attribute::owners).collect(toSet());
         if (things.size() != 1) {

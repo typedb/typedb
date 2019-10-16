@@ -8,9 +8,9 @@ java_test(
     test_class = "grakn.core.server.kb.ValidatorIT",
     deps = [
         "//common",
-        "//concept",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//server",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],
@@ -23,9 +23,13 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.ValidateGlobalRulesIT",
     deps = [
-        "//concept",
+        "//concept/impl:impl",
+        "//kb",
+        "//kb/concept/api",
+        "//kb/concept/structure",
         "//server",
         "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:concept-downcasting",
     ],
 )
 
@@ -37,10 +41,12 @@ java_test(
     test_class = "grakn.core.server.kb.RuleValidationIT",
     deps = [
         "//common",
-        "//concept",
+        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//server",
+        "//graql:graql-tmp-name",
+        "//kb",
+        "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
     ],

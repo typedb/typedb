@@ -19,20 +19,20 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptSet;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.core.Schema;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -87,12 +87,12 @@ public class ConnectedComponentIT {
 
     @Test
     public void testNullSourceIdIsIgnored() {
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).where(contains(null)));
         }
 
         addSchemaAndEntities();
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(thing).where(contains(null)));
         }
     }
@@ -100,14 +100,14 @@ public class ConnectedComponentIT {
     @Test(expected = GraqlSemanticException.class)
     public void testSourceDoesNotExistInSubGraph() {
         addSchemaAndEntities();
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).in(thing).where(contains(entityId4.getValue())));
         }
     }
 
     @Test
     public void testConnectedComponentOnEmptyGraph() {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             // test on an empty rule.tx()
             List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
             assertTrue(clusterList.isEmpty());
@@ -123,7 +123,7 @@ public class ConnectedComponentIT {
 
         addSchemaAndEntities();
 
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true).where(size(1L)));
             assertEquals(0, clusterList.size());
 
@@ -133,7 +133,7 @@ public class ConnectedComponentIT {
 
         addResourceRelations();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true).where(size(1L)));
             assertEquals(5, clusterList.size());
 
@@ -155,7 +155,7 @@ public class ConnectedComponentIT {
         addSchemaAndEntities();
         addResourceRelations();
 
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             AttributeType<String> attributeType =
                     tx.putAttributeType(aResourceTypeLabel, AttributeType.DataType.STRING);
             tx.getEntityType(thing).has(attributeType);
@@ -166,7 +166,7 @@ public class ConnectedComponentIT {
             tx.commit();
         }
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             List<ConceptSet> clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT)
                     .in(thing, anotherThing, aResourceTypeLabel, Schema.ImplicitType.HAS.getLabel(aResourceTypeLabel).getValue()));
             assertEquals(1, clusterList.size());
@@ -190,7 +190,7 @@ public class ConnectedComponentIT {
 
         addSchemaAndEntities();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
             assertEquals(1, clusterList.size());
             assertEquals(7, clusterList.iterator().next().set().size()); // 4 entities, 3 assertions
@@ -211,7 +211,7 @@ public class ConnectedComponentIT {
         // add different resources. This may change existing cluster labels.
         addResourceRelations();
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             clusterList = tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT).attributes(true));
             Map<Integer, Integer> populationCount00 = new HashMap<>();
             clusterList.forEach(cluster -> populationCount00.put(cluster.set().size(),
@@ -250,7 +250,7 @@ public class ConnectedComponentIT {
         }
 
         Set<List<ConceptSet>> result = list.parallelStream().map(i -> {
-            try (TransactionOLTP tx = session.transaction().read()) {
+            try (Transaction tx = session.readTransaction()) {
                 return tx.execute(Graql.compute().cluster().using(CONNECTED_COMPONENT));
             }
         }).collect(Collectors.toSet());
@@ -261,7 +261,7 @@ public class ConnectedComponentIT {
     }
 
     private void addSchemaAndEntities() throws InvalidKBException {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
 
             EntityType entityType1 = tx.putEntityType(thing);
             EntityType entityType2 = tx.putEntityType(anotherThing);
@@ -310,7 +310,7 @@ public class ConnectedComponentIT {
     }
 
     private void addResourceRelations() throws InvalidKBException {
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
 
             Entity entity1 = tx.getConcept(entityId1);
             Entity entity2 = tx.getConcept(entityId2);

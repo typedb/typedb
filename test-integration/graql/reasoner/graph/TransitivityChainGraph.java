@@ -18,14 +18,14 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
@@ -43,13 +43,13 @@ public class TransitivityChainGraph {
     }
 
     public final void load(int n) {
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, TransactionOLTP tx){
+    protected void buildExtensionalDB(int n, Transaction tx){
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 

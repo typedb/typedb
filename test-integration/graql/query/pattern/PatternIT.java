@@ -19,13 +19,13 @@
 package grakn.core.graql.query.pattern;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -62,7 +62,7 @@ public class PatternIT {
     public static final GraknTestServer graknServer = new GraknTestServer();
 
     private static Session session;
-    private TransactionOLTP tx;
+    private Transaction tx;
 
 
     @BeforeClass
@@ -73,7 +73,7 @@ public class PatternIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

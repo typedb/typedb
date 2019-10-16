@@ -18,7 +18,7 @@
 
 package grakn.core.distribution;
 
-import grakn.core.server.Version;
+import grakn.core.server.templates.Version;
 import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

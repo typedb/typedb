@@ -22,23 +22,23 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
@@ -101,7 +101,7 @@ public class GraqlInsertIT {
 
     public static Session session;
 
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -111,7 +111,7 @@ public class GraqlInsertIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

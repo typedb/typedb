@@ -18,10 +18,12 @@
 
 package grakn.core.graql.gremlin;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.type.Type;
-import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.graql.gremlin.ConjunctionQuery;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
@@ -54,7 +56,7 @@ public class ConjunctionQueryTest {
     private Statement resourceTypeWithoutSubTypes = Graql.type(resourceTypeWithoutSubTypesLabel.getValue());
     private Statement resourceTypeWithSubTypes = Graql.type(resourceTypeWithSubTypesLabel.getValue());
     private String literalValue = "Bob";
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Statement x = Graql.var("x");
     private Statement y = Graql.var("y");
 

@@ -64,7 +64,7 @@
     </logger>
 
     <!--GRAKN ASCII text on startup goes to Standard Out-->
-    <logger name="grakn.core.server.Server" level="INFO">
+    <logger name="server.Server" level="INFO">
         <appender-ref ref="STDOUT"/>
     </logger>
 

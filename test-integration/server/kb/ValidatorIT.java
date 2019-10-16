@@ -19,17 +19,17 @@
 package grakn.core.server.kb;
 
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.InvalidKBException;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.exception.InvalidKBException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlInsert;
@@ -63,13 +63,13 @@ public class ValidatorIT {
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
-    private TransactionOLTP tx;
+    private Transaction tx;
     private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -211,7 +211,7 @@ public class ValidatorIT {
         }
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // now try to delete all assertions and then the movie
         godfather = tx.getEntityType("movie").instances().iterator().next();
@@ -225,7 +225,7 @@ public class ValidatorIT {
         godfather.delete();
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         assertionIds.forEach(id -> assertNull(tx.getConcept(id)));
 
@@ -625,7 +625,7 @@ public class ValidatorIT {
         tx.execute(insert);
         tx.commit();
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         insert = Graql.insert(var().isa("person").has("email", "unique@email.com"));
         tx.execute(insert);

@@ -51,7 +51,7 @@ public class DistributionE2EConstants {
 
     public static void assertZipExists() {
         if(!ZIP_FULLPATH.toFile().exists()) {
-            Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toAbsolutePath().toString() + "' could not be found. Please ensure it has been build (ie., run `mvn package`)");
+            Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toAbsolutePath().toString() + "' could not be found. Please ensure it has been build (ie., run `bazel build //:assemble-mac-zip`)");
         }
     }
 

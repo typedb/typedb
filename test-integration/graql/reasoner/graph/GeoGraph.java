@@ -18,21 +18,21 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.server.session.Session;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 
 public class GeoGraph {
 
-    private TransactionOLTP tx;
+    private Transaction tx;
     private final Session session;
     private AttributeType<String> key;
 
@@ -52,7 +52,7 @@ public class GeoGraph {
     }
 
     public void load() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         buildSchema();
         buildInstances();
         buildRelations();
@@ -210,7 +210,7 @@ public class GeoGraph {
         tx.putRule("Geo Rule", transitivity_LHS, transitivity_RHS);
     }
 
-    private Thing putEntityWithResource(TransactionOLTP tx, String id, EntityType type, Label key) {
+    private Thing putEntityWithResource(Transaction tx, String id, EntityType type, Label key) {
         Thing inst = type.create();
         putResource(inst, tx.getSchemaConcept(key), id);
         return inst;
