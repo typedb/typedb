@@ -37,7 +37,6 @@ import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.common.util.Pair;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.graql.reasoner.utils.TarjanSCC;
 import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
@@ -71,7 +70,7 @@ public class RuleUtils {
         HashMultimap<Type, Type> graph = HashMultimap.create();
         rules.stream()
                 .flatMap(persistedRuleToTypePair)
-                .forEach(p -> graph.put(p.getKey(), p.getValue()));
+                .forEach(p -> graph.put(p.first(), p.second()));
         return graph;
     }
 
@@ -83,7 +82,7 @@ public class RuleUtils {
         tx.getMetaRule().subs()
                 .filter(rule -> !Schema.MetaSchema.isMetaLabel(rule.label()))
                 .flatMap(ruleToTypePair)
-                .forEach(p -> graph.put(p.getKey(), p.getValue()));
+                .forEach(p -> graph.put(p.first(), p.second()));
         return graph;
     }
 
@@ -175,8 +174,8 @@ public class RuleUtils {
                 IndexedAnswerSet answers = queryCache.getEntry(q).cachedElement();
                 for (ConceptMap ans : answers) {
                     for (Pair<Variable, Variable> p : varPairs) {
-                        Concept from = ans.get(p.getKey());
-                        Concept to = ans.get(p.getValue());
+                        Concept from = ans.get(p.first());
+                        Concept to = ans.get(p.second());
                         if (conceptMap.get(to).contains(from)) return true;
                         conceptMap.put(from, to);
                     }

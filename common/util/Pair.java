@@ -55,6 +55,6 @@ public class Pair<K, V> {
         return data.equals(p.data);
     }
 
-    public K getKey(){ return data.getKey();}
-    public V getValue(){ return data.getValue();}
+    public K first(){ return data.getKey();}
+    public V second(){ return data.getValue();}
 }

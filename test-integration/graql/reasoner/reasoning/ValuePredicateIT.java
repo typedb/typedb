@@ -519,7 +519,7 @@ public class ValuePredicateIT {
             List<ConceptMap> answers = tx.execute(Graql.parse(neqVersion).asGet());
             answers.stream()
                     .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
-                    .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
+                    .forEach(p -> assertNotEquals(p.first(), p.second()));
             List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negationVersion).asGet());
             assertCollectionsNonTriviallyEqual(answers, negationAnswers);
 
@@ -543,7 +543,7 @@ public class ValuePredicateIT {
             List<ConceptMap> answers = tx.execute(Graql.parse(neqVersion).asGet());
             answers.stream()
                     .map(ans -> new Pair<>(ans.get("val").asAttribute().value(), ans.get("anotherVal").asAttribute().value()))
-                    .forEach(p -> assertNotEquals(p.getKey(), p.getValue()));
+                    .forEach(p -> assertNotEquals(p.first(), p.second()));
             List<ConceptMap> negationAnswers = tx.execute(Graql.parse(negationVersion).asGet());
             assertCollectionsNonTriviallyEqual(answers, negationAnswers);
         }

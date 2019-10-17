@@ -30,9 +30,9 @@ import java.util.Set;
 public class Collections {
 
     @SafeVarargs
-    public static <K, V> Map<K, V> map(Tuple<K, V>... tuples) {
+    public static <K, V> Map<K, V> map(Pair<K, V>... pairs) {
         Map<K, V> map = new HashMap<>();
-        for(Tuple<K, V> tuple : tuples) {
+        for(Pair<K, V> tuple : pairs) {
             map.put(tuple.first(), tuple.second());
         }
         return java.util.Collections.unmodifiableMap(map);
@@ -58,8 +58,8 @@ public class Collections {
         return java.util.Collections.unmodifiableList(list);
     }
 
-    public static <A, B> Tuple<A, B> tuple(A first, B second) {
-        return new Tuple<>(first, second);
+    public static <A, B> Pair<A, B> pair(A first, B second) {
+        return new Pair<>(first, second);
     }
 
     public static <A, B, C> Triple<A, B, C> triple(A first, B second, C third) {

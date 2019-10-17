@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.common.util.Tuple;
+import grakn.core.common.util.Pair;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
@@ -356,7 +356,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
         Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
         for (Fragment fragment : connectedFragments) {
-            Tuple<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
+            Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
             if (middleNodeDirectedEdge != null) {
                 middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.first(), new HashMap<>());
                 middleNodeFragmentMapping.get(middleNodeDirectedEdge.first()).put(middleNodeDirectedEdge.second(), fragment);

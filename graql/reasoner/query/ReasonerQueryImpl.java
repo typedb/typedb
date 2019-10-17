@@ -37,7 +37,6 @@ import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.kb.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import grakn.core.kb.server.Transaction;
 import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -342,20 +341,20 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         )
                 .filter(p -> !typedVars.contains(p.getVarName()))
                 .map(p -> new Pair<>(p, tx().<Concept>getConcept(p.getPredicate())))
-                .filter(p -> Objects.nonNull(p.getValue()))
-                .filter(p -> p.getValue().isEntity())
-                .map(p -> IsaAtom.create(p.getKey().getVarName(), new Variable(), p.getValue().asEntity().type(), false,this));
+                .filter(p -> Objects.nonNull(p.second()))
+                .filter(p -> p.second().isEntity())
+                .map(p -> IsaAtom.create(p.first().getVarName(), new Variable(), p.second().asEntity().type(), false,this));
     }
 
     private Multimap<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){
         HashMultimap<Variable, Type> map = HashMultimap.create();
         isas
                 .map(at -> new Pair<>(at.getVarName(), at.getSchemaConcept()))
-                .filter(p -> Objects.nonNull(p.getValue()))
-                .filter(p -> p.getValue().isType())
+                .filter(p -> Objects.nonNull(p.second()))
+                .filter(p -> p.second().isType())
                 .forEach(p -> {
-                    Variable var = p.getKey();
-                    Type newType = p.getValue().asType();
+                    Variable var = p.first();
+                    Type newType = p.second().asType();
                     Set<Type> types = map.get(var);
 
                     if (types.isEmpty()) map.put(var, newType);

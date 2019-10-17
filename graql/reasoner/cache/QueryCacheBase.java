@@ -79,10 +79,10 @@ public abstract class QueryCacheBase<
     }
 
     @Override
-    public R getAnswers(Q query) { return getAnswersWithUnifier(query).getKey(); }
+    public R getAnswers(Q query) { return getAnswersWithUnifier(query).first(); }
 
     @Override
-    public Stream<ConceptMap> getAnswerStream(Q query) { return getAnswerStreamWithUnifier(query).getKey(); }
+    public Stream<ConceptMap> getAnswerStream(Q query) { return getAnswerStreamWithUnifier(query).first(); }
 
     @Override
     public boolean contains(Q query) { return getEntry(query) != null; }

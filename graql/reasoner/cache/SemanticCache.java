@@ -298,10 +298,10 @@ public abstract class SemanticCache<
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
                             Stream.concat(
-                                    getDBAnswerStreamWithUnifier(query).getKey(),
-                                    cachePair.getKey().filter(ans -> ans.explanation().isRuleExplanation())
+                                    getDBAnswerStreamWithUnifier(query).first(),
+                                    cachePair.first().filter(ans -> ans.explanation().isRuleExplanation())
                             ),
-                            cachePair.getValue());
+                            cachePair.second());
         }
 
         //if no match but db-complete parent exists, use parent to create entry
@@ -319,7 +319,7 @@ public abstract class SemanticCache<
 
     @Override
     public Stream<ConceptMap> getAnswerStream(ReasonerAtomicQuery query) {
-        return getAnswerStreamWithUnifier(query).getKey();
+        return getAnswerStreamWithUnifier(query).first();
     }
 
     @Override
@@ -331,8 +331,8 @@ public abstract class SemanticCache<
     public Pair<Set<ConceptMap>, MultiUnifier> getAnswersWithUnifier(ReasonerAtomicQuery query) {
         Pair<Stream<ConceptMap>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
         return new Pair<>(
-                answerStreamWithUnifier.getKey().collect(toSet()),
-                answerStreamWithUnifier.getValue()
+                answerStreamWithUnifier.first().collect(toSet()),
+                answerStreamWithUnifier.second()
         );
     }
 }
