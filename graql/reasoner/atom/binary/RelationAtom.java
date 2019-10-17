@@ -111,13 +111,13 @@ public class RelationAtom extends IsaAtomBase {
     private ImmutableList<Type> possibleTypes = null;
 
     // memoised computed values
-    private volatile int hashCode;
-    private volatile boolean hashCodeMemoized;
-    private volatile int alphaEquivalenceHashCode;
-    private volatile boolean alphaEquivalenceHashCodeMemoized;
-    private volatile Multimap<Role, String> roleConceptIdMap;
-    private volatile Multimap<Role, Type> roleTypeMap;
-    private volatile Multimap<Role, Variable> roleVarMap;
+    private int hashCode;
+    private boolean hashCodeMemoized;
+    private int alphaEquivalenceHashCode;
+    private boolean alphaEquivalenceHashCodeMemoized;
+    private Multimap<Role, String> roleConceptIdMap = null;
+    private Multimap<Role, Type> roleTypeMap = null;
+    private Multimap<Role, Variable> roleVarMap = null;
 
     RelationAtom(
             Variable varName,
@@ -192,10 +192,8 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public int hashCode() {
         if (!hashCodeMemoized) {
-            if (!hashCodeMemoized) {
-                hashCode = computeHashCode();
-                hashCodeMemoized = true;
-            }
+            hashCode = computeHashCode();
+            hashCodeMemoized = true;
         }
         return hashCode;
     }
@@ -425,10 +423,8 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public int alphaEquivalenceHashCode() {
         if (!alphaEquivalenceHashCodeMemoized) {
-            if (!alphaEquivalenceHashCodeMemoized) {
-                alphaEquivalenceHashCode = super.alphaEquivalenceHashCode();
-                alphaEquivalenceHashCodeMemoized = true;
-            }
+            alphaEquivalenceHashCode = super.alphaEquivalenceHashCode();
+            alphaEquivalenceHashCodeMemoized = true;
         }
         return alphaEquivalenceHashCode;
     }
@@ -573,12 +569,7 @@ public class RelationAtom extends IsaAtomBase {
      */
     private Multimap<Role, String> getRoleConceptIdMap() {
         if (roleConceptIdMap == null) {
-            if (roleConceptIdMap == null) {
-                roleConceptIdMap = computeRoleConceptIdMap();
-                if (roleConceptIdMap == null) {
-                    throw new NullPointerException("getRoleConceptIdMap() cannot return null");
-                }
-            }
+            roleConceptIdMap = computeRoleConceptIdMap();
         }
         return roleConceptIdMap;
     }
@@ -593,12 +584,7 @@ public class RelationAtom extends IsaAtomBase {
 
     private Multimap<Role, Type> getRoleTypeMap() {
         if (roleTypeMap == null) {
-            if (roleTypeMap == null) {
-                roleTypeMap = computeRoleTypeMap(false);
-                if (roleTypeMap == null) {
-                    throw new NullPointerException("getRoleTypeMap() cannot return null");
-                }
-            }
+            roleTypeMap = computeRoleTypeMap(false);
         }
         return roleTypeMap;
     }
@@ -909,12 +895,7 @@ public class RelationAtom extends IsaAtomBase {
      */
     public Multimap<Role, Variable> getRoleVarMap() {
         if (roleVarMap == null) {
-            if (roleVarMap == null) {
-                roleVarMap = computeRoleVarMap();
-                if (roleVarMap == null) {
-                    throw new NullPointerException("getRoleVarMap() cannot return null");
-                }
-            }
+            roleVarMap = computeRoleVarMap();
         }
         return roleVarMap;
     }
