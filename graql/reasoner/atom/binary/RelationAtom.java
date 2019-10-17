@@ -192,17 +192,9 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public int hashCode() {
         if (!hashCodeMemoized) {
-            hashCode = computeHashCode();
+            hashCode = Objects.hash(getTypeId(), getVarNames(), getRelationPlayers());
             hashCodeMemoized = true;
         }
-        return hashCode;
-    }
-
-    private int computeHashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
-        hashCode = hashCode * 37 + getVarNames().hashCode();
-        hashCode = hashCode * 37 + getRelationPlayers().hashCode();
         return hashCode;
     }
 

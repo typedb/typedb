@@ -19,7 +19,6 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -57,6 +56,9 @@ import java.util.stream.Stream;
  * TypeAtom corresponding to graql a IsaProperty property.
  */
 public class IsaAtom extends IsaAtomBase {
+
+    private int hashCode;
+    private boolean hashCodeMemoised;
 
     IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
              Variable predicateVariable) {
@@ -118,12 +120,12 @@ public class IsaAtom extends IsaAtomBase {
                 && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
     }
 
-    @Memoized
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + getVarName().hashCode();
-        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+        if (!hashCodeMemoised) {
+            hashCode = Objects.hash(getVarName(), getTypeId());
+            hashCodeMemoised = true;
+        }
         return hashCode;
     }
 
