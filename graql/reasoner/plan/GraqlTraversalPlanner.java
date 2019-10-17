@@ -169,7 +169,7 @@ public class GraqlTraversalPlanner {
         TraversalPlanFactory planFactory = tx.traversalPlanFactory();
 
         GraqlTraversal graqlTraversal = planFactory.createTraversal(queryPattern);
-        ImmutableList<Fragment> fragments = Iterables.getOnlyElement(graqlTraversal.fragments());
+        ImmutableList<? extends Fragment> fragments = Iterables.getOnlyElement(graqlTraversal.fragments());
 
         List<Atom> atomList = new ArrayList<>();
 

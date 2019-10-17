@@ -18,14 +18,15 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.fragmentSetOfType;
@@ -35,8 +36,22 @@ import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.labelOf;
  * @see EquivalentFragmentSets#isa(VarProperty, Variable, Variable, boolean)
  *
  */
-@AutoValue
-abstract class IsaFragmentSet extends EquivalentFragmentSetImpl {
+class IsaFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final Variable instance;
+    private final Variable type;
+    private final boolean mayHaveEdgeInstances;
+
+    IsaFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable instance,
+            Variable type,
+            boolean mayHaveEdgeInstances) {
+        super(varProperty);
+        this.instance = instance;
+        this.type = type;
+        this.mayHaveEdgeInstances = mayHaveEdgeInstances;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
@@ -46,9 +61,17 @@ abstract class IsaFragmentSet extends EquivalentFragmentSetImpl {
         );
     }
 
-    abstract Variable instance();
-    abstract Variable type();
-    abstract boolean mayHaveEdgeInstances();
+    Variable instance() {
+        return instance;
+    }
+
+    Variable type() {
+        return type;
+    }
+
+    private boolean mayHaveEdgeInstances() {
+        return mayHaveEdgeInstances;
+    }
 
     /**
      * We can skip the mid-traversal check for edge instances in the following case:
@@ -83,7 +106,28 @@ abstract class IsaFragmentSet extends EquivalentFragmentSetImpl {
         return false;
     };
 
+    // TODO this is bad form
     private static boolean mayHaveEdgeInstances(SchemaConcept concept) {
         return concept.isRelationType() && concept.isImplicit();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IsaFragmentSet) {
+            IsaFragmentSet that = (IsaFragmentSet) o;
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.instance.equals(that.instance()))
+                    && (this.type.equals(that.type()))
+                    && (this.mayHaveEdgeInstances == that.mayHaveEdgeInstances());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty(), instance, type, mayHaveEdgeInstances);
     }
 }

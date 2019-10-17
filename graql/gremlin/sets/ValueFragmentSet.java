@@ -34,27 +34,14 @@ class ValueFragmentSet extends EquivalentFragmentSetImpl {
     private final Variable var;
     private final ValueOperation<?, ?> operation;
 
-    @Nullable private final VarProperty varProperty;
-
     ValueFragmentSet(@Nullable VarProperty varProperty, Variable var, ValueOperation<?, ?> operation) {
-        this.varProperty = varProperty;
-        if (var == null) {
-            throw new NullPointerException("Null var");
-        }
+        super(varProperty);
         this.var = var;
-        if (operation == null) {
-            throw new NullPointerException("Null operation");
-        }
         this.operation = operation;
     }
 
     Variable var() {
         return var;
-    }
-
-    @Override @Nullable
-    public VarProperty varProperty() {
-        return varProperty;
     }
 
     ValueOperation<?, ?> operation() {
@@ -73,20 +60,13 @@ class ValueFragmentSet extends EquivalentFragmentSetImpl {
 
         ValueFragmentSet that = (ValueFragmentSet) o;
 
-        return (Objects.equals(this.varProperty, that.varProperty) &&
+        return (Objects.equals(this.varProperty(), that.varProperty()) &&
                 this.var.equals(that.var()) &&
                 this.operation.equals(that.operation()));
     }
 
     @Override
     public int hashCode() {
-        int h = 1;
-        h *= 1000003;
-        h ^= (varProperty == null) ? 0 : this.varProperty.hashCode();
-        h *= 1000003;
-        h ^= this.var.hashCode();
-        h *= 1000003;
-        h ^= this.operation.hashCode();
-        return h;
+        return Objects.hash(varProperty(), var, operation);
     }
 }

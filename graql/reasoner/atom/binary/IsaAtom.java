@@ -19,31 +19,31 @@
 
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.auto.value.AutoValue;
-import com.google.auto.value.extension.memoized.Memoized;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.graql.reasoner.unifier.UnifierImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.kb.concept.util.ConceptUtils;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierImpl;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -51,20 +51,22 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  * TypeAtom corresponding to graql a IsaProperty property.
  */
-@AutoValue
-public abstract class IsaAtom extends IsaAtomBase {
+public class IsaAtom extends IsaAtomBase {
 
-    @Override public abstract Variable getPredicateVariable();
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
+    private int hashCode;
+    private boolean hashCodeMemoised;
+
+    IsaAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+             Variable predicateVariable) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable);
+    }
 
     public static IsaAtom create(Variable var, Variable predicateVar, Statement pattern, @Nullable ConceptId predicateId, ReasonerQuery parent) {
-        return new AutoValue_IsaAtom(var.asReturnedVar(), predicateId, predicateVar, pattern, parent);
+        return new IsaAtom(var.asReturnedVar(), pattern, parent, predicateId, predicateVar);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, @Nullable ConceptId predicateId, boolean isDirect, ReasonerQuery parent) {
@@ -72,15 +74,14 @@ public abstract class IsaAtom extends IsaAtomBase {
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
 
-        return new AutoValue_IsaAtom(var, predicateId, predicateVar, pattern, parent);
+        return new IsaAtom(var, pattern, parent, predicateId, predicateVar);
     }
 
     public static IsaAtom create(Variable var, Variable predicateVar, SchemaConcept type, boolean isDirect, ReasonerQuery parent) {
         Statement pattern = isDirect ?
                 new Statement(var).isaX(new Statement(predicateVar)) :
                 new Statement(var).isa(new Statement(predicateVar));
-
-        return new AutoValue_IsaAtom(var, type.id(), predicateVar, pattern, parent);
+        return new IsaAtom(var, pattern, parent, type.id(), predicateVar);
     }
     private static IsaAtom create(IsaAtom a, ReasonerQuery parent) {
         return create(a.getVarName(), a.getPredicateVariable(), a.getPattern(), a.getTypeId(), parent);
@@ -119,12 +120,12 @@ public abstract class IsaAtom extends IsaAtomBase {
                 && ((this.getTypeId() == null) ? (that.getTypeId() == null) : this.getTypeId().equals(that.getTypeId()));
     }
 
-    @Memoized
     @Override
     public int hashCode() {
-        int hashCode = 1;
-        hashCode = hashCode * 37 + getVarName().hashCode();
-        hashCode = hashCode * 37 + (getTypeId() != null ? getTypeId().hashCode() : 0);
+        if (!hashCodeMemoised) {
+            hashCode = Objects.hash(getVarName(), getTypeId());
+            hashCodeMemoised = true;
+        }
         return hashCode;
     }
 

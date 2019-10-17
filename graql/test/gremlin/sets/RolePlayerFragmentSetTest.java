@@ -87,7 +87,7 @@ public class RolePlayerFragmentSetTest {
         RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                RolePlayerFragmentSet.of(null, a, b, c, null, ImmutableSet.of(author, director), null),
+                new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
                 authorLabelFragmentSet
         );
 
@@ -147,7 +147,7 @@ public class RolePlayerFragmentSetTest {
         RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
-                RolePlayerFragmentSet.of(null, a, b, c, null, null, null),
+                new RolePlayerFragmentSet(null, a, b, c, null, null, null),
                 authorLabelFragmentSet
         );
 

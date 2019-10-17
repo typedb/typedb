@@ -18,17 +18,16 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.core.Schema;
+import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
@@ -43,33 +42,39 @@ import static java.util.stream.Collectors.toSet;
  * @see EquivalentFragmentSets#rolePlayer(VarProperty, Variable, Variable, Variable, Variable)
  *
  */
-@AutoValue
-public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
+public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
-    public static RolePlayerFragmentSet of(
-            VarProperty varProperty, Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
-            @Nullable ImmutableSet<Label> roleLabels, @Nullable ImmutableSet<Label> relationTypeLabels
-    ) {
-        return new AutoValue_RolePlayerFragmentSet(
-                varProperty, relation, edge, rolePlayer, role, roleLabels, relationTypeLabels
-        );
+    private final Variable relation;
+    private final Variable edge;
+    private final Variable rolePlayer;
+    private final Variable role;
+    private final ImmutableSet<Label> roleLabels;
+    private final ImmutableSet<Label> relationTypeLabels;
+
+    RolePlayerFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable relation,
+            Variable edge,
+            Variable rolePlayer,
+            @Nullable Variable role,
+            @Nullable ImmutableSet<Label> roleLabels,
+            @Nullable ImmutableSet<Label> relationTypeLabels) {
+        super(varProperty);
+        this.relation = relation;
+        this.edge = edge;
+        this.rolePlayer = rolePlayer;
+        this.role = role;
+        this.roleLabels = roleLabels;
+        this.relationTypeLabels = relationTypeLabels;
     }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.inRolePlayer(varProperty(), rolePlayer(), edge(), relation(), role(), roleLabels(), relationTypeLabels()),
-                Fragments.outRolePlayer(varProperty(), relation(), edge(), rolePlayer(), role(), roleLabels(), relationTypeLabels())
+                Fragments.inRolePlayer(varProperty(), rolePlayer, edge, relation, role, roleLabels, relationTypeLabels),
+                Fragments.outRolePlayer(varProperty(), relation, edge, rolePlayer, role, roleLabels, relationTypeLabels)
         );
     }
-
-    abstract Variable relation();
-    abstract Variable edge();
-    abstract Variable rolePlayer();
-    abstract @Nullable
-    Variable role();
-    abstract @Nullable ImmutableSet<Label> roleLabels();
-    abstract @Nullable ImmutableSet<Label> relationTypeLabels();
 
     /**
      * A query can use the role-type labels on a {@link Schema.EdgeLabel#ROLE_PLAYER} edge when the following criteria are met:
@@ -94,7 +99,7 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
-            Variable roleVar = rolePlayer.role();
+            Variable roleVar = rolePlayer.role;
 
             if (roleVar == null) continue;
 
@@ -141,8 +146,8 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
             @Nullable RolePlayerFragmentSet newRolePlayer = null;
 
-            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationTypeLabels();
-            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels();
+            @Nullable ImmutableSet<Label> relLabels = rolePlayer.relationTypeLabels;
+            @Nullable ImmutableSet<Label> roleLabels = rolePlayer.roleLabels;
             if(relLabels == null || roleLabels == null) continue;
 
             Set<RelationType> relTypes = relLabels.stream()
@@ -200,9 +205,9 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
 
         for (RolePlayerFragmentSet rolePlayer : rolePlayers) {
 
-            if (rolePlayer.relationTypeLabels() != null) continue;
+            if (rolePlayer.relationTypeLabels != null) continue;
 
-            @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(rolePlayer.relation(), fragmentSets);
+            @Nullable IsaFragmentSet isa = EquivalentFragmentSets.typeInformationOf(rolePlayer.relation, fragmentSets);
 
             if (isa == null) continue;
 
@@ -232,10 +237,10 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
                 roles.stream().flatMap(Role::subs).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet()) :
                 null;
 
-        return new AutoValue_RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null,
-                newRoleLabels!= null? newRoleLabels : roleLabels(),
-                newRoleTypeLabels != null? newRoleTypeLabels : relationTypeLabels()
+        return new RolePlayerFragmentSet(
+                varProperty(), relation, edge, rolePlayer, null,
+                newRoleLabels!= null? newRoleLabels : roleLabels,
+                newRoleTypeLabels != null? newRoleTypeLabels : relationTypeLabels
         );
     }
 
@@ -246,14 +251,14 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * @return a new RolePlayerFragmentSet with the same properties excepting role-types
      */
     private RolePlayerFragmentSet substituteRoleLabel(Stream<Role> roles) {
-        Preconditions.checkNotNull(this.role());
-        Preconditions.checkState(roleLabels() == null);
+        Preconditions.checkNotNull(this.role);
+        Preconditions.checkState(roleLabels == null);
 
         ImmutableSet<Label> newRoleLabels =
                 roles.flatMap(Role::subs).map(SchemaConcept::label).collect(ImmutableSet.toImmutableSet());
 
-        return new AutoValue_RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null, newRoleLabels, relationTypeLabels()
+        return new RolePlayerFragmentSet(
+                varProperty(), relation, edge, rolePlayer, null, newRoleLabels, relationTypeLabels
         );
     }
 
@@ -264,11 +269,11 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * @return a new RolePlayerFragmentSet with the same properties excepting relation-type labels
      */
     private RolePlayerFragmentSet addRelationTypeLabels(ImmutableSet<Label> relTypeLabels) {
-        Preconditions.checkState(relationTypeLabels() == null);
+        Preconditions.checkState(relationTypeLabels == null);
 
-        return new AutoValue_RolePlayerFragmentSet(
+        return new RolePlayerFragmentSet(
                 varProperty(),
-                relation(), edge(), rolePlayer(), role(), roleLabels(), relTypeLabels
+                relation, edge, rolePlayer, role, roleLabels, relTypeLabels
         );
     }
 
@@ -276,9 +281,32 @@ public abstract class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * Remove any specified role variable
      */
     private RolePlayerFragmentSet removeRoleVar() {
-        Preconditions.checkNotNull(role());
-        return new AutoValue_RolePlayerFragmentSet(
-                varProperty(), relation(), edge(), rolePlayer(), null, roleLabels(), relationTypeLabels()
+        Preconditions.checkNotNull(role);
+        return new RolePlayerFragmentSet(
+                varProperty(), relation, edge, rolePlayer, null, roleLabels, relationTypeLabels
         );
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RolePlayerFragmentSet) {
+            RolePlayerFragmentSet that = (RolePlayerFragmentSet) o;
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.relation.equals(that.relation))
+                    && (this.edge.equals(that.edge))
+                    && (this.rolePlayer.equals(that.rolePlayer))
+                    && (Objects.equals(this.role, that.role))
+                    && (Objects.equals(this.roleLabels, that.roleLabels))
+                    && (Objects.equals(this.relationTypeLabels, that.relationTypeLabels));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty(), relation, edge, rolePlayer, role, roleLabels, relationTypeLabels);
     }
 }

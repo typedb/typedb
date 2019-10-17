@@ -18,13 +18,13 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -33,9 +33,11 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.BaseType.RELATION_TYPE;
 import static grakn.core.core.Schema.EdgeLabel.ATTRIBUTE;
@@ -52,13 +54,23 @@ import static grakn.core.core.Schema.VertexProperty.LABEL_ID;
  *
  */
 
-@AutoValue
-public abstract class InIsaFragment extends EdgeFragment {
+public class InIsaFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    private final boolean mayHaveEdgeInstances;
 
-    abstract boolean mayHaveEdgeInstances();
+    InIsaFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            boolean mayHaveEdgeInstances) {
+        super(varProperty, start, end);
+
+        this.mayHaveEdgeInstances = mayHaveEdgeInstances;
+    }
+
+    private boolean mayHaveEdgeInstances() {
+        return mayHaveEdgeInstances;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -148,5 +160,25 @@ public abstract class InIsaFragment extends EdgeFragment {
     @Override
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.ISA, new HashSet<>(Arrays.asList(start(), end())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InIsaFragment) {
+            InIsaFragment that = (InIsaFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.mayHaveEdgeInstances == that.mayHaveEdgeInstances());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, end, mayHaveEdgeInstances);
     }
 }

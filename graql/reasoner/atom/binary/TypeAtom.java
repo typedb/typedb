@@ -19,7 +19,11 @@
 package grakn.core.graql.reasoner.atom.binary;
 
 import grakn.core.graql.reasoner.atom.Atom;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.statement.Statement;
+import graql.lang.statement.Variable;
 
 import java.util.Set;
 
@@ -41,6 +45,12 @@ import java.util.Set;
  *
  */
 public abstract class TypeAtom extends Binary{
+
+    TypeAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+                    Variable predicateVariable) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable);
+    }
+
 
     @Override
     public boolean isType(){ return true;}

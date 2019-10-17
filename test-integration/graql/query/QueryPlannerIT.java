@@ -146,7 +146,7 @@ public class QueryPlannerIT {
     @Test
     public void inferUniqueRelationType() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -180,7 +180,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWithMoreThan2Roles() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -205,7 +205,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWithARolePlayerWithNoType() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -228,7 +228,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWhereRolePlayedBySuperType() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy),
@@ -252,7 +252,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWhereAVarHasTwoTypes() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy),
@@ -275,7 +275,7 @@ public class QueryPlannerIT {
     @Test
     public void inferRelationTypeWhereAVarHasIncorrectTypes() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(veryRelated),
@@ -306,7 +306,7 @@ public class QueryPlannerIT {
         );
         // repeat planning step to handle nondeterminism, we may pick different starting points each time
         for (int i = 0; i < 20; i++) {
-            ImmutableList<Fragment> plan = getPlan(pattern);
+            ImmutableList<? extends Fragment> plan = getPlan(pattern);
             assertEquals(6, plan.size());
         }
     }
@@ -320,7 +320,7 @@ public class QueryPlannerIT {
                 var().rel(x).rel(y),
                 y.has(resourceType, "someString"));
 
-        List<Fragment> plan = getPlan(pattern);
+        List<? extends Fragment> plan = getPlan(pattern);
         boolean priorFragmentHasFixedCost = true;
         for (Fragment fragment : plan) {
             if (!fragment.hasFixedFragmentCost()) {
@@ -349,9 +349,9 @@ public class QueryPlannerIT {
                 y.isa(thingy4),
                 var().rel(x).rel(y));
 
-        ImmutableList<Fragment> plan = getPlan(pattern);
+        ImmutableList<? extends Fragment> plan = getPlan(pattern);
         assertEquals(3L, plan.stream().filter(LabelFragment.class::isInstance).count());
-        List<Fragment> nonLabelFragments = plan.stream().filter(f -> !(f instanceof LabelFragment)).collect(Collectors.toList());
+        List<? extends Fragment> nonLabelFragments = plan.stream().filter(f -> !(f instanceof LabelFragment)).collect(Collectors.toList());
         //first fragment after label fragments is an isa fragment so we skip it
         Fragment firstRolePlayerFragment = nonLabelFragments.get(1);
         String relationStartVarName = firstRolePlayerFragment.start().name();
@@ -377,7 +377,7 @@ public class QueryPlannerIT {
     @Test
     public void sameLabelFragmentShouldNotBeAddedTwice() {
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy2),
@@ -414,7 +414,7 @@ public class QueryPlannerIT {
         entityType3.createShard();
 
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         pattern = and(
                 x.isa(thingy1),
@@ -502,7 +502,7 @@ public class QueryPlannerIT {
         assertEquals(y.var(), plan.get(3).end());
     }
 
-    private ImmutableList<Fragment> getPlan(Pattern pattern) {
+    private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }

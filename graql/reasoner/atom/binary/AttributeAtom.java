@@ -18,7 +18,6 @@
  */
 package grakn.core.graql.reasoner.atom.binary;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -64,6 +63,7 @@ import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
@@ -91,15 +91,40 @@ import static java.util.stream.Collectors.toSet;
  *
  *
  */
-@AutoValue
-public abstract class AttributeAtom extends Binary{
+public class AttributeAtom extends Binary{
 
-    public abstract Variable getRelationVariable();
-    public abstract Variable getAttributeVariable();
-    public abstract ImmutableSet<ValuePredicate> getMultiPredicate();
+    private final ImmutableSet<ValuePredicate> multiPredicate;
+    private final Variable attributeVariable;
+    private final Variable relationVariable;
+
+    private AttributeAtom(
+            Variable varName,
+            Statement pattern,
+            ReasonerQuery parentQuery,
+            @Nullable ConceptId typeId,
+            Variable predicateVariable,
+            Variable relationVariable,
+            Variable attributeVariable,
+            ImmutableSet<ValuePredicate> multiPredicate) {
+        super(varName, pattern, parentQuery, typeId, predicateVariable);
+
+        this.relationVariable = relationVariable;
+        this.attributeVariable = attributeVariable;
+        this.multiPredicate = multiPredicate;
+    }
+
+    public Variable getRelationVariable() {
+        return relationVariable;
+    }
+    public Variable getAttributeVariable() {
+        return attributeVariable;
+    }
+    public ImmutableSet<ValuePredicate> getMultiPredicate() {
+        return multiPredicate;
+    }
 
     public static AttributeAtom create(Statement pattern, Variable attributeVariable, Variable relationVariable, Variable predicateVariable, ConceptId predicateId, Set<ValuePredicate> ps, ReasonerQuery parent) {
-        return new AutoValue_AttributeAtom(pattern.var(), pattern, parent, predicateVariable, predicateId, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
+        return new AttributeAtom(pattern.var(), pattern, parent, predicateId, predicateVariable, relationVariable, attributeVariable, ImmutableSet.copyOf(ps));
     }
 
     private static AttributeAtom create(AttributeAtom a, ReasonerQuery parent) {

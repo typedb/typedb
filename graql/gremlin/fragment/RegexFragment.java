@@ -18,22 +18,31 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import graql.lang.util.StringUtil;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.VertexProperty.REGEX;
 
-@AutoValue
-abstract class RegexFragment extends FragmentImpl {
+class RegexFragment extends FragmentImpl {
+    private final String regex;
 
-    abstract String regex();
+    RegexFragment(@Nullable VarProperty varProperty, Variable start, String regex) {
+        super(varProperty, start);
+        this.regex = regex;
+    }
+
+    private String regex() {
+        return regex;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -50,5 +59,24 @@ abstract class RegexFragment extends FragmentImpl {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_REGEX;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RegexFragment) {
+            RegexFragment that = (RegexFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.regex.equals(that.regex()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, regex);
     }
 }

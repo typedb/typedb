@@ -314,8 +314,8 @@ public class GraqlTraversalIT {
 
     @SafeVarargs
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
-        ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversalImpl.create(fragmentsSet);
+        Set<List<? extends Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
+        return new GraqlTraversalImpl(fragmentsSet);
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
@@ -326,7 +326,7 @@ public class GraqlTraversalIT {
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 
-        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
+        Set<List<List<? extends Fragment>>> lists = Sets.cartesianProduct(collect);
 
         return lists.stream()
                 .map(Sets::newHashSet)
@@ -335,10 +335,10 @@ public class GraqlTraversalIT {
     }
 
     // Returns a traversal only if the fragment ordering is valid
-    private static Optional<GraqlTraversal> createTraversal(Set<List<Fragment>> fragments) {
+    private static Optional<GraqlTraversal> createTraversal(Set<List<? extends Fragment>> fragments) {
 
         // Make sure all dependencies are met
-        for (List<Fragment> fragmentList : fragments) {
+        for (List<? extends Fragment> fragmentList : fragments) {
             Set<Variable> visited = new HashSet<>();
 
             for (Fragment fragment : fragmentList) {
@@ -350,7 +350,7 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(GraqlTraversalImpl.create(fragments));
+        return Optional.of(new GraqlTraversalImpl(fragments));
     }
 
     private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {

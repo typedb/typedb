@@ -18,10 +18,11 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.Pop;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -31,7 +32,9 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.ROLE_PLAYER;
 import static grakn.core.core.Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID;
@@ -46,8 +49,51 @@ import static grakn.core.core.Schema.EdgeProperty.ROLE_LABEL_ID;
  * Part of a EquivalentFragmentSet, along with OutRolePlayerFragment.
  *
  */
-@AutoValue
-abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
+class InRolePlayerFragment extends AbstractRolePlayerFragment {
+
+    private final Variable edge;
+    private final Variable role;
+    private final ImmutableSet<Label> roleLabels;
+    private final ImmutableSet<Label> relationTypeLabels;
+
+    InRolePlayerFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            Variable edge,
+            @Nullable Variable role,
+            @Nullable ImmutableSet<Label> roleLabels,
+            @Nullable ImmutableSet<Label> relationTypeLabels) {
+        super(varProperty, start, end);
+
+        this.edge = edge;
+        this.role = role;
+        this.roleLabels = roleLabels;
+        this.relationTypeLabels = relationTypeLabels;
+    }
+
+    public Variable end() {
+        return end;
+    }
+
+    Variable edge() {
+        return edge;
+    }
+
+    @Nullable
+    Variable role() {
+        return role;
+    }
+
+    @Nullable
+    ImmutableSet<Label> roleLabels() {
+        return roleLabels;
+    }
+
+    @Nullable
+    ImmutableSet<Label> relationTypeLabels() {
+        return relationTypeLabels;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -98,5 +144,28 @@ abstract class InRolePlayerFragment extends AbstractRolePlayerFragment {
     @Override
     public double internalFragmentCost() {
         return COST_RELATIONS_PER_INSTANCE;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InRolePlayerFragment) {
+            InRolePlayerFragment that = (InRolePlayerFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.edge.equals(that.edge()))
+                    && ((this.role == null) ? (that.role() == null) : this.role.equals(that.role()))
+                    && ((this.roleLabels == null) ? (that.roleLabels() == null) : this.roleLabels.equals(that.roleLabels()))
+                    && ((this.relationTypeLabels == null) ? (that.relationTypeLabels() == null) : this.relationTypeLabels.equals(that.relationTypeLabels()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, end, edge, role, roleLabels,relationTypeLabels);
     }
 }

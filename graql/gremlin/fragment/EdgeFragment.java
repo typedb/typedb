@@ -25,7 +25,10 @@ import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,9 +43,20 @@ import static grakn.core.kb.graql.planning.spanningtree.util.Weighted.weighted;
  */
 public abstract class EdgeFragment extends FragmentImpl {
 
+    protected Variable end;
+
     abstract protected NodeId getMiddleNodeId();
     abstract protected Node startNode();
     abstract protected Node endNode();
+
+    EdgeFragment(@Nullable VarProperty varProperty, Variable start, Variable end) {
+        super(varProperty, start);
+        this.end = end;
+    }
+
+    public Variable end() {
+        return end;
+    }
 
     @Override
     public Set<Node> getNodes() {

@@ -18,27 +18,40 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * A fragment representing a negation.
  * Used for concept comparison, not attribute values
  *
  */
-@AutoValue
-public abstract class NeqFragment extends FragmentImpl {
+public class NeqFragment extends FragmentImpl {
 
-    public abstract Variable other();
+    private final Variable other;
+
+    NeqFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable other) {
+        super(varProperty, start);
+        this.other = other;
+    }
+
+    public Variable other() {
+        return other;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -65,5 +78,24 @@ public abstract class NeqFragment extends FragmentImpl {
     @Override
     public ImmutableSet<Variable> dependencies() {
         return ImmutableSet.of(other());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof NeqFragment) {
+            NeqFragment that = (NeqFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.other.equals(that.other()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, other);
     }
 }

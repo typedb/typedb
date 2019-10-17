@@ -18,33 +18,44 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
+import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 /**
  * Fragment for following out sub edges, potentially limited to some number of `sub` edges
  *
  */
 
-@AutoValue
-public abstract class OutSubFragment extends EdgeFragment {
-    @Override
-    public abstract Variable end();
+public class OutSubFragment extends EdgeFragment {
+    private final int subTraversalDepthLimit;
+
+    OutSubFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            int subTraversalDepthLimit) {
+        super(varProperty, start, end);
+        this.subTraversalDepthLimit = subTraversalDepthLimit;
+    }
 
     // -1 implies no depth limit
-    public abstract int subTraversalDepthLimit();
+    private int subTraversalDepthLimit() {
+        return subTraversalDepthLimit;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -85,5 +96,25 @@ public abstract class OutSubFragment extends EdgeFragment {
     @Override
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.SUB, new HashSet<>(Arrays.asList(start(), end())));
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof OutSubFragment) {
+            OutSubFragment that = (OutSubFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.subTraversalDepthLimit == that.subTraversalDepthLimit());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, end, subTraversalDepthLimit);
     }
 }

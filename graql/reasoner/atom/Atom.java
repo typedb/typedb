@@ -43,12 +43,14 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import javax.annotation.Nullable;
@@ -67,6 +69,21 @@ import static java.util.stream.Collectors.toSet;
 public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
+    private final ConceptId typeId;
+
+    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
+        super(reasonerQuery, varName, pattern);
+        this.typeId = typeId;
+    }
+
+    /**
+     * @return type id of the corresponding type if any
+     */
+    @Nullable
+    public ConceptId getTypeId() {
+        return typeId;
+    }
+
 
     public RelationAtom toRelationAtom() {
         throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
@@ -267,10 +284,6 @@ public abstract class Atom extends AtomicBase {
      */
     public abstract SchemaConcept getSchemaConcept();
 
-    /**
-     * @return type id of the corresponding type if any
-     */
-    public abstract ConceptId getTypeId();
 
     /**
      * @return value variable name

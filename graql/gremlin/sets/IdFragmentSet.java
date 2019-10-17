@@ -18,28 +18,56 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#id(VarProperty, Variable, ConceptId)
  *
  */
-@AutoValue
-abstract class IdFragmentSet extends EquivalentFragmentSetImpl {
+class IdFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final Variable var;
+    private final ConceptId id;
+
+    IdFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable var,
+            ConceptId id) {
+        super(varProperty);
+        this.var = var;
+        this.id = id;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.id(varProperty(), var(), id()));
+        return ImmutableSet.of(Fragments.id(varProperty(), var, id));
     }
 
-    abstract Variable var();
-    abstract ConceptId id();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdFragmentSet) {
+            IdFragmentSet that = (IdFragmentSet) o;
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.var.equals(that.var))
+                    && (this.id.equals(that.id));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty(), var, id);
+    }
 }

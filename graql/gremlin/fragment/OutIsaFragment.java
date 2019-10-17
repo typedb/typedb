@@ -18,22 +18,24 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.ISA;
 import static grakn.core.core.Schema.EdgeLabel.SHARD;
@@ -44,11 +46,15 @@ import static grakn.core.core.Schema.EdgeProperty.RELATION_TYPE_LABEL_ID;
  *
  */
 
-@AutoValue
-public abstract class OutIsaFragment extends EdgeFragment {
+public class OutIsaFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    OutIsaFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end) {
+        super(varProperty, start, end);
+    }
+
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -89,4 +95,24 @@ public abstract class OutIsaFragment extends EdgeFragment {
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.ISA, new HashSet<>(Arrays.asList(start(), end())));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof OutIsaFragment) {
+            OutIsaFragment that = (OutIsaFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, end);
+    }
+
 }

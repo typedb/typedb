@@ -19,9 +19,8 @@
 
 package grakn.core.graql.reasoner.atom.property;
 
-import com.google.auto.value.AutoValue;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicBase;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -29,19 +28,19 @@ import graql.lang.statement.Variable;
 /**
  * Atomic corresponding to AbstractProperty.
  */
-@AutoValue
-public abstract class IsAbstractAtom extends AtomicBase {
+public class IsAbstractAtom extends AtomicBase {
 
-    @Override public abstract Statement getPattern();
-    @Override public abstract ReasonerQuery getParentQuery();
+    public IsAbstractAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery) {
+        super(reasonerQuery, varName, pattern);
+    }
 
     public static IsAbstractAtom create(Variable var, ReasonerQuery parent) {
         Variable varName = var.asReturnedVar();
-        return new AutoValue_IsAbstractAtom(varName, new Statement(varName).isAbstract(), parent);
+        return new IsAbstractAtom(varName, new Statement(varName).isAbstract(), parent);
     }
 
     private static IsAbstractAtom create(IsAbstractAtom a, ReasonerQuery parent) {
-        return new AutoValue_IsAbstractAtom(a.getVarName(), a.getPattern(), parent);
+        return new IsAbstractAtom(a.getVarName(), a.getPattern(), parent);
     }
 
     @Override

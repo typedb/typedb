@@ -19,25 +19,24 @@
 
 package grakn.core.kb.graql.planning;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import grakn.core.common.util.Partition;
 import grakn.core.kb.graql.planning.spanningtree.datastructure.FibonacciQueue;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.common.util.Partition;
 
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
  * A priority queue of incoming edges for each strongly connected component that we haven't chosen
  * an incoming edge for yet.
- *
  */
 
 class EdgeQueueMap {
@@ -85,13 +84,40 @@ class EdgeQueueMap {
         }
     }
 
-    @AutoValue
-    abstract static class QueueAndReplace {
-        abstract EdgeQueue queue();
-        abstract Weighted<DirectedEdge> replace();
+    static class QueueAndReplace {
+        private final EdgeQueue queue;
+        private final Weighted<DirectedEdge> replace;
+
+        public EdgeQueue queue() {
+            return queue;
+        }
+
+        public Weighted<DirectedEdge> replace(){
+            return replace;
+        }
+
+        QueueAndReplace(EdgeQueue queue, Weighted<DirectedEdge> replace) {
+            this.queue = queue;
+            this.replace = replace;
+        }
 
         static QueueAndReplace of(EdgeQueueMap.EdgeQueue queue, Weighted<DirectedEdge> replace) {
-            return new AutoValue_EdgeQueueMap_QueueAndReplace(queue, replace);
+            return new QueueAndReplace(queue, replace);
+        }
+
+        public boolean equals(Object o) {
+            if (o == this) {
+                return true;
+            } else if (!(o instanceof QueueAndReplace)) {
+                return false;
+            } else {
+                QueueAndReplace that = (QueueAndReplace)o;
+                return this.queue.equals(that.queue()) && this.replace.equals(that.replace());
+            }
+        }
+
+        public int hashCode() {
+            return Objects.hash(queue, replace);
         }
     }
 

@@ -18,28 +18,57 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#dataType(VarProperty, Variable, AttributeType.DataType)
  *
  */
-@AutoValue
-abstract class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
+class DataTypeFragmentSet extends EquivalentFragmentSetImpl {
+    private final Variable attributeType;
+    private final AttributeType.DataType dataType;
+
+    DataTypeFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable attributeType,
+            AttributeType.DataType dataType) {
+        super(varProperty);
+
+        this.attributeType = attributeType;
+        this.dataType = dataType;
+    }
+
 
     @Override
     public final Set<Fragment> fragments() {
-        return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType(), dataType()));
+        return ImmutableSet.of(Fragments.dataType(varProperty(), attributeType, dataType));
     }
 
-    abstract Variable attributeType();
-    abstract AttributeType.DataType dataType();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DataTypeFragmentSet) {
+            DataTypeFragmentSet that = (DataTypeFragmentSet) o;
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.attributeType.equals(that.attributeType))
+                    && (this.dataType.equals(that.dataType));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty(), attributeType, dataType);
+    }
 }

@@ -18,31 +18,61 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#plays(VarProperty, Variable, Variable, boolean)
  *
  */
-@AutoValue
-abstract class PlaysFragmentSet extends EquivalentFragmentSetImpl {
+class PlaysFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final Variable type;
+    private final Variable role;
+    private final boolean required;
+
+    PlaysFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable type,
+            Variable role,
+            boolean required) {
+        super(varProperty);
+        this.type = type;
+        this.role = role;
+        this.required = required;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.outPlays(varProperty(), type(), role(), required()),
-                Fragments.inPlays(varProperty(), role(), type(), required())
+                Fragments.outPlays(varProperty(), type, role, required),
+                Fragments.inPlays(varProperty(), role, type, required)
         );
     }
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof PlaysFragmentSet) {
+            PlaysFragmentSet that = (PlaysFragmentSet) o;
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.type.equals(that.type))
+                    && (this.role.equals(that.role))
+                    && (this.required == that.required);
+        }
+        return false;
+    }
 
-    abstract Variable type();
-    abstract Variable role();
-    abstract boolean required();
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty(), type, role, required);
+    }
 }

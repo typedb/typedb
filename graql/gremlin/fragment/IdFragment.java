@@ -18,16 +18,15 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.planning.spanningtree.graph.IdNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.IdProperty;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
@@ -35,20 +34,26 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
-@AutoValue
-public abstract class IdFragment extends FragmentImpl {
+class IdFragment extends FragmentImpl {
 
-    abstract ConceptId id();
+    private final ConceptId id;
 
-    public Fragment transform(Map<Variable, ConceptId> transform) {
+    IdFragment(@Nullable VarProperty varProperty, Variable start, ConceptId id) {
+        super(varProperty, start);
+        this.id = id;
+    }
+
+    public FragmentImpl transform(Map<Variable, ConceptId> transform) {
         ConceptId toId = transform.get(start());
         if (toId == null) return this;
-        return new AutoValue_IdFragment(new IdProperty(toId.getValue()), start(), toId);
+        return new IdFragment(new IdProperty(toId.getValue()), start(), toId);
     }
 
     @Override
@@ -71,6 +76,10 @@ public abstract class IdFragment extends FragmentImpl {
         } else {
             return vertexTraversal(traversal);
         }
+    }
+
+    private ConceptId id() {
+        return id;
     }
 
     private GraphTraversal<Vertex, Vertex> vertexTraversal(GraphTraversal<Vertex, ? extends Element> traversal) {
@@ -122,5 +131,24 @@ public abstract class IdFragment extends FragmentImpl {
     public double estimatedCostAsStartingPoint(Transaction tx) {
         // only ever 1 matching concept for an ID - a good starting point
         return 1.0;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof IdFragment) {
+            IdFragment that = (IdFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.id.equals(that.id()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, id);
     }
 }

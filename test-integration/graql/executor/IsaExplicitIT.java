@@ -19,12 +19,7 @@
 package grakn.core.graql.executor;
 
 import com.google.common.collect.ImmutableList;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.graql.gremlin.fragment.FragmentImpl;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
@@ -32,10 +27,14 @@ import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.graql.gremlin.fragment.OutRolePlayerFragment;
 import grakn.core.graql.gremlin.fragment.OutSubFragment;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -110,7 +109,7 @@ public class IsaExplicitIT {
         String related = "related";
 
         Pattern pattern;
-        ImmutableList<Fragment> plan;
+        ImmutableList<? extends Fragment> plan;
 
         // test type without subtypes
 
@@ -206,7 +205,7 @@ public class IsaExplicitIT {
         ));
     }
 
-    private ImmutableList<Fragment> getPlan(Pattern pattern) {
+    private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

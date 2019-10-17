@@ -65,7 +65,6 @@ java_library(
         "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
-        "//dependencies/maven/artifacts/com/google/auto/value:auto-value",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-cli:commons-cli", # PREVIOUSLY UNDECLARED

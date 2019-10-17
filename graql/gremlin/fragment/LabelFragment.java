@@ -18,7 +18,6 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.kb.concept.api.Label;
@@ -27,14 +26,17 @@ import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
 
 import static grakn.core.core.Schema.VertexProperty.LABEL_ID;
@@ -45,11 +47,18 @@ import static java.util.stream.Collectors.toSet;
  * A fragment representing traversing a label.
  */
 
-@AutoValue
-public abstract class LabelFragment extends FragmentImpl {
+public class LabelFragment extends FragmentImpl {
+    private final ImmutableSet<Label> labels;
+
+    LabelFragment(@Nullable VarProperty varProperty, Variable start, ImmutableSet<Label> labels) {
+        super(varProperty, start);
+        this.labels = labels;
+    }
 
     // TODO: labels() should return ONE label instead of a set
-    public abstract ImmutableSet<Label> labels();
+    public ImmutableSet<Label> labels() {
+        return labels;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -109,5 +118,24 @@ public abstract class LabelFragment extends FragmentImpl {
                 .reduce(Long::sum)
                 .orElseThrow(() -> new RuntimeException("LabelFragment contains no labels!"));
         return instances;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof LabelFragment) {
+            LabelFragment that = (LabelFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.labels.equals(that.labels()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, labels);
     }
 }

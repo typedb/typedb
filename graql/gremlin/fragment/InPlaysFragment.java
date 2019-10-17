@@ -18,32 +18,41 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
-import com.google.common.annotations.VisibleForTesting;
+import grakn.core.core.Schema;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.PLAYS;
 
-@AutoValue
-@VisibleForTesting
-public abstract class InPlaysFragment extends EdgeFragment {
+class InPlaysFragment extends EdgeFragment {
+    private final boolean required;
 
-    @Override
-    public abstract Variable end();
+    InPlaysFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end,
+            boolean required) {
+        super(varProperty, start, end);
+        this.required = required;
+    }
 
-    abstract boolean required();
+    private boolean required() {
+        return required;
+    }
+
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -87,4 +96,23 @@ public abstract class InPlaysFragment extends EdgeFragment {
         return NodeId.of(NodeId.Type.PLAYS, new HashSet<>(Arrays.asList(start(), end())));
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InPlaysFragment) {
+            InPlaysFragment that = (InPlaysFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()))
+                    && (this.required == that.required());
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, end, required);
+    }
 }

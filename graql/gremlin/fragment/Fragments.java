@@ -58,7 +58,7 @@ public class Fragments {
                                             Variable rolePlayer, Variable edge, Variable relation, @Nullable Variable role,
                                             @Nullable ImmutableSet<Label> roleLabels,
                                             @Nullable ImmutableSet<Label> relationTypeLabels) {
-        return new AutoValue_InRolePlayerFragment(
+        return new InRolePlayerFragment(
                 varProperty, rolePlayer, relation, edge, role, roleLabels, relationTypeLabels);
     }
 
@@ -66,53 +66,53 @@ public class Fragments {
                                              Variable relation, Variable edge, Variable rolePlayer, @Nullable Variable role,
                                              @Nullable ImmutableSet<Label> roleLabels,
                                              @Nullable ImmutableSet<Label> relationTypeLabels) {
-        return new AutoValue_OutRolePlayerFragment(
+        return new OutRolePlayerFragment(
                 varProperty, relation, rolePlayer, edge, role, roleLabels, relationTypeLabels);
     }
 
     public static Fragment inSub(VarProperty varProperty, Variable start, Variable end, int subTraversalDepthlimit) {
-        return new AutoValue_InSubFragment(varProperty, start, end, subTraversalDepthlimit);
+        return new InSubFragment(varProperty, start, end, subTraversalDepthlimit);
     }
 
     public static Fragment outSub(VarProperty varProperty, Variable start, Variable end, int subTraversalDepthLimit) {
-        return new AutoValue_OutSubFragment(varProperty, start, end, subTraversalDepthLimit);
+        return new OutSubFragment(varProperty, start, end, subTraversalDepthLimit);
     }
 
     public static InRelatesFragment inRelates(VarProperty varProperty, Variable start, Variable end) {
-        return new AutoValue_InRelatesFragment(varProperty, start, end);
+        return new InRelatesFragment(varProperty, start, end);
     }
 
     public static Fragment outRelates(VarProperty varProperty, Variable start, Variable end) {
-        return new AutoValue_OutRelatesFragment(varProperty, start, end);
+        return new OutRelatesFragment(varProperty, start, end);
     }
 
     public static Fragment inIsa(VarProperty varProperty, Variable start, Variable end, boolean mayHaveEdgeInstances) {
-        return new AutoValue_InIsaFragment(varProperty, start, end, mayHaveEdgeInstances);
+        return new InIsaFragment(varProperty, start, end, mayHaveEdgeInstances);
     }
 
     public static Fragment outIsa(VarProperty varProperty, Variable start, Variable end) {
-        return new AutoValue_OutIsaFragment(varProperty, start, end);
+        return new OutIsaFragment(varProperty, start, end);
     }
 
     public static Fragment dataType(VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
-        return new AutoValue_DataTypeFragment(varProperty, start, dataType);
+        return new DataTypeFragment(varProperty, start, dataType);
     }
 
     public static Fragment inPlays(VarProperty varProperty, Variable start, Variable end, boolean required) {
-        return new AutoValue_InPlaysFragment(varProperty, start, end, required);
+        return new InPlaysFragment(varProperty, start, end, required);
     }
 
     public static Fragment outPlays(VarProperty varProperty, Variable start, Variable end, boolean required) {
-        return new AutoValue_OutPlaysFragment(varProperty, start, end, required);
+        return new OutPlaysFragment(varProperty, start, end, required);
     }
 
     public static Fragment id(VarProperty varProperty, Variable start, ConceptId id) {
-        return new AutoValue_IdFragment(varProperty, start, id);
+        return new IdFragment(varProperty, start, id);
     }
 
     // TODO: rename this to align with TypeProperty and TypeExecutor
     public static Fragment label(VarProperty varProperty, Variable start, ImmutableSet<Label> labels) {
-        return new AutoValue_LabelFragment(varProperty, start, labels);
+        return new LabelFragment(varProperty, start, labels);
     }
 
     public static Fragment value(VarProperty varProperty, Variable start, ValueOperation<?, ?> predicate) {
@@ -120,19 +120,19 @@ public class Fragments {
     }
 
     public static Fragment isAbstract(VarProperty varProperty, Variable start) {
-        return new AutoValue_AbstractFragment(varProperty, start);
+        return new AbstractFragment(varProperty, start);
     }
 
     public static Fragment regex(VarProperty varProperty, Variable start, String regex) {
-        return new AutoValue_RegexFragment(varProperty, start, regex);
+        return new RegexFragment(varProperty, start, regex);
     }
 
     public static Fragment notInternal(VarProperty varProperty, Variable start) {
-        return new AutoValue_NotInternalFragment(varProperty, start);
+        return new NotInternalFragment(varProperty, start);
     }
 
     public static Fragment neq(VarProperty varProperty, Variable start, Variable other) {
-        return new AutoValue_NeqFragment(varProperty, start, other);
+        return new NeqFragment(varProperty, start, other);
     }
 
     /**
@@ -140,7 +140,7 @@ public class Fragments {
      */
     public static Fragment attributeIndex(
             @Nullable VarProperty varProperty, Variable start, Label label, Object attributeValue) {
-        return new AutoValue_AttributeIndexFragment(varProperty, start, label, attributeValue.toString());
+        return new AttributeIndexFragment(varProperty, start, label, attributeValue.toString());
     }
 
 

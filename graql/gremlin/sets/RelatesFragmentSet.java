@@ -18,30 +18,58 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.Set;
 
 /**
  * @see EquivalentFragmentSets#relates(VarProperty, Variable, Variable)
  *
  */
-@AutoValue
-abstract class RelatesFragmentSet extends EquivalentFragmentSetImpl {
+class RelatesFragmentSet extends EquivalentFragmentSetImpl {
+
+    private final Variable relationType;
+    private final Variable role;
+
+    RelatesFragmentSet(
+            @Nullable VarProperty varProperty,
+            Variable relationType,
+            Variable role) {
+        super(varProperty);
+        this.relationType = relationType;
+        this.role = role;
+    }
 
     @Override
     public final Set<Fragment> fragments() {
         return ImmutableSet.of(
-                Fragments.outRelates(varProperty(), relationType(), role()),
-                Fragments.inRelates(varProperty(), role(), relationType())
+                Fragments.outRelates(varProperty(), relationType, role),
+                Fragments.inRelates(varProperty(), role, relationType)
         );
     }
 
-    abstract Variable relationType();
-    abstract Variable role();
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof RelatesFragmentSet) {
+            RelatesFragmentSet that = (RelatesFragmentSet) o;
+            return ((this.varProperty() == null) ? (that.varProperty() == null) : this.varProperty().equals(that.varProperty()))
+                    && (this.relationType.equals(that.relationType))
+                    && (this.role.equals(that.role));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty(), relationType, role);
+    }
 }

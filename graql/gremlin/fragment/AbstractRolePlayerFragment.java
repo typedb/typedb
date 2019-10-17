@@ -25,6 +25,7 @@ import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -40,19 +41,19 @@ import static java.util.stream.Collectors.toSet;
 /**
  * Abstract class for the fragments that traverse {@link Schema.EdgeLabel#ROLE_PLAYER} edges: InRolePlayerFragment and
  * OutRolePlayerFragment.
- *
  */
-public abstract class AbstractRolePlayerFragment extends EdgeFragment {
+abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     static final Variable RELATION_EDGE = reservedVar("RELATION_EDGE");
     static final Variable RELATION_DIRECTION = reservedVar("RELATION_DIRECTION");
 
+    AbstractRolePlayerFragment(VarProperty varProperty, Variable start, Variable end) {
+        super(varProperty, start, end);
+    }
+
     private static Variable reservedVar(String value) {
         return new Variable(value, Variable.Type.Reserved);
     }
-
-    @Override
-    public abstract Variable end();
 
     abstract Variable edge();
 

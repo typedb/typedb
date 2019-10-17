@@ -22,13 +22,14 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.common.util.Tuple;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -95,11 +96,16 @@ public abstract class FragmentImpl implements Fragment {
 
     private Double accurateFragmentCost = null;
 
-    /*
-     * This is the memoized result of {@link #vars()}
-     */
-    private @Nullable
-    ImmutableSet<Variable> vars = null;
+
+    @Nullable private ImmutableSet<Variable> vars = null;
+    protected final VarProperty varProperty;
+    protected final Variable start;
+
+    FragmentImpl(@Nullable VarProperty varProperty, Variable start) {
+        this.varProperty = varProperty;
+        this.start = start;
+    }
+
 
     /**
      * @param transform map defining id transform var -> new id
@@ -108,6 +114,21 @@ public abstract class FragmentImpl implements Fragment {
     @Override
     public Fragment transform(Map<Variable, ConceptId> transform) {
         return this;
+    }
+
+    /**
+     * Get the corresponding property
+     */
+    @Nullable
+    public VarProperty varProperty() {
+        return varProperty;
+    }
+
+    /**
+     * @return the variable name that this fragment starts from in the query
+     */
+    public Variable start() {
+        return start;
     }
 
     /**
@@ -290,6 +311,7 @@ public abstract class FragmentImpl implements Fragment {
 
     /**
      * Get all variables in the fragment including the start and end (if present)
+     * memoise results in `vars`
      */
     @Override
     public final Set<Variable> vars() {

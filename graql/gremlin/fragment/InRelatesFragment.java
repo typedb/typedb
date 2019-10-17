@@ -18,27 +18,32 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.EdgeLabel.RELATES;
 
-@AutoValue
-abstract class InRelatesFragment extends EdgeFragment {
+class InRelatesFragment extends EdgeFragment {
 
-    @Override
-    public abstract Variable end();
+    InRelatesFragment(
+            @Nullable VarProperty varProperty,
+            Variable start,
+            Variable end) {
+        super(varProperty, start, end);
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -71,4 +76,24 @@ abstract class InRelatesFragment extends EdgeFragment {
     protected NodeId getMiddleNodeId() {
         return NodeId.of(NodeId.Type.RELATES, new HashSet<>(Arrays.asList(start(), end())));
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof InRelatesFragment) {
+            InRelatesFragment that = (InRelatesFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.end.equals(that.end()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, end);
+    }
+
 }

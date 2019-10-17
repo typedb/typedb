@@ -28,6 +28,7 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collection;
@@ -40,6 +41,11 @@ import java.util.stream.Stream;
  * Base class for defining ontological Atom - ones referring to ontological elements.
  */
 public abstract class OntologicalAtom extends TypeAtom {
+
+    OntologicalAtom(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+                    Variable predicateVariable) {
+        super(varName, pattern, reasonerQuery, typeId, predicateVariable);
+    }
 
     abstract OntologicalAtom createSelf(Variable var, Variable predicateVar, ConceptId predicateId, ReasonerQuery parent);
 

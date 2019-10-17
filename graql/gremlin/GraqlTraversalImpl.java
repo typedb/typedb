@@ -18,14 +18,12 @@
 
 package grakn.core.graql.gremlin;
 
-import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.ConceptId;
-
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.GraqlTraversal;
 import grakn.core.kb.server.Transaction;
@@ -51,16 +49,22 @@ import static java.util.stream.Collectors.joining;
  * Comprised of ordered {@code Fragment}s which are used to construct a TinkerPop {@code GraphTraversal}, which can be
  * retrieved and executed.
  */
-@AutoValue
-public abstract class GraqlTraversalImpl implements GraqlTraversal {
+public class GraqlTraversalImpl implements GraqlTraversal {
+
+    private final ImmutableSet<ImmutableList<? extends Fragment>> fragments;
 
     // Just a pretend big number
     private static final long NUM_VERTICES_ESTIMATE = 10_000;
     private static final double COST_NEW_TRAVERSAL = Math.log1p(NUM_VERTICES_ESTIMATE);
 
-    static GraqlTraversalImpl create(Set<? extends List<Fragment>> fragments) {
-        ImmutableSet<ImmutableList<Fragment>> copy = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
-        return new AutoValue_GraqlTraversalImpl(copy);
+    GraqlTraversalImpl(Set<List<? extends Fragment>> fragments) {
+        // copy the fragments
+        this.fragments = fragments.stream().map(ImmutableList::copyOf).collect(ImmutableSet.toImmutableSet());
+    }
+
+    @Override
+    public ImmutableSet<ImmutableList<? extends Fragment>> fragments() {
+        return fragments;
     }
 
     /**
@@ -73,7 +77,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
 
         if (fragments().size() == 1) {
             // If there are no disjunctions, we don't need to union them and get a performance boost
-            ImmutableList<Fragment> list = Iterables.getOnlyElement(fragments());
+            ImmutableList<? extends Fragment> list = Iterables.getOnlyElement(fragments());
             return getConjunctionTraversal(tx, tx.getTinkerTraversal().V(), vars, list);
         } else {
             Traversal[] traversals = fragments().stream()
@@ -88,11 +92,6 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         }
     }
 
-
-    // autovalue
-    @Override
-    public abstract ImmutableSet<ImmutableList<Fragment>> fragments();
-
     /**
      * @param transform map defining id transform var -> new id
      * @return graql traversal with concept id transformed according to the provided transform
@@ -102,7 +101,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         ImmutableList<Fragment> fragments = ImmutableList.copyOf(
                 Iterables.getOnlyElement(fragments()).stream().map(f -> f.transform(transform)).collect(Collectors.toList())
         );
-        return new AutoValue_GraqlTraversalImpl(ImmutableSet.of(fragments));
+        return new GraqlTraversalImpl(ImmutableSet.of(fragments));
     }
 
     /**
@@ -110,13 +109,13 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
      */
     private GraphTraversal<Vertex, Map<String, Element>> getConjunctionTraversal(
             Transaction tx, GraphTraversal<Vertex, Vertex> traversal, Set<Variable> vars,
-            ImmutableList<Fragment> fragmentList) {
+            ImmutableList<? extends Fragment> fragmentList) {
 
         return applyFragments(tx, vars, fragmentList, traversal);
     }
 
     private GraphTraversal<Vertex, Map<String, Element>> applyFragments(
-            Transaction tx, Set<Variable> vars, ImmutableList<Fragment> fragmentList,
+            Transaction tx, Set<Variable> vars, ImmutableList<? extends Fragment> fragmentList,
             GraphTraversal<Vertex, ? extends Element> traversal) {
         Set<Variable> foundVars = new HashSet<>();
 
@@ -140,14 +139,14 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
 
         double totalCost = 0;
 
-        for (List<Fragment> list : fragments()) {
+        for (List<? extends Fragment> list : fragments()) {
             totalCost += fragmentListCost(list);
         }
 
         return totalCost;
     }
 
-    static double fragmentListCost(List<Fragment> fragments) {
+    private static double fragmentListCost(List<? extends Fragment> fragments) {
         Set<Variable> names = new HashSet<>();
 
         double listCost = 0;
@@ -160,7 +159,7 @@ public abstract class GraqlTraversalImpl implements GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, Collection<Variable> names) {
+    private static double fragmentCost(Fragment fragment, Collection<Variable> names) {
         if (names.contains(fragment.start()) || fragment.hasFixedFragmentCost()) {
             return fragment.fragmentCost();
         } else {

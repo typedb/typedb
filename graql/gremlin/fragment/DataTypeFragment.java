@@ -18,22 +18,32 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import com.google.auto.value.AutoValue;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.server.Transaction;
+import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
 
 import static grakn.core.core.Schema.VertexProperty.DATA_TYPE;
 
-@AutoValue
-abstract class DataTypeFragment extends FragmentImpl {
+class DataTypeFragment extends FragmentImpl {
 
-    abstract AttributeType.DataType dataType();
+    private final AttributeType.DataType dataType;
+
+    DataTypeFragment(@Nullable VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
+        super(varProperty, start);
+        this.dataType = dataType;
+    }
+
+    private AttributeType.DataType dataType() {
+        return dataType;
+    }
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
@@ -49,5 +59,24 @@ abstract class DataTypeFragment extends FragmentImpl {
     @Override
     public double internalFragmentCost() {
         return COST_NODE_DATA_TYPE;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+        if (o instanceof DataTypeFragment) {
+            DataTypeFragment that = (DataTypeFragment) o;
+            return ((this.varProperty == null) ? (that.varProperty() == null) : this.varProperty.equals(that.varProperty()))
+                    && (this.start.equals(that.start()))
+                    && (this.dataType.equals(that.dataType()));
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(varProperty, start, dataType);
     }
 }

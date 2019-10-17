@@ -25,11 +25,14 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Pattern;
+import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 
+import javax.annotation.CheckReturnValue;
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.Set;
@@ -39,6 +42,33 @@ import java.util.stream.Stream;
  * Base Atomic implementation providing basic functionalities.
  */
 public abstract class AtomicBase implements Atomic {
+
+    private final ReasonerQuery parentQuery;
+    private final Variable varName;
+    private final Statement pattern;
+
+    public AtomicBase(ReasonerQuery parentQuery, Variable varName, Statement pattern) {
+        this.parentQuery = parentQuery;
+        this.varName = varName;
+        this.pattern = pattern;
+    }
+
+    @CheckReturnValue
+    @Override
+    public Variable getVarName() {
+        return varName;
+    }
+
+    @CheckReturnValue
+    @Override
+    public Statement getPattern() {
+        return pattern;
+    }
+
+    @Override
+    public ReasonerQuery getParentQuery() {
+        return parentQuery;
+    }
 
     @Override public void checkValid(){}
 
