@@ -45,9 +45,6 @@ public class ValueFragment extends FragmentImpl {
 
     ValueFragment(@Nullable VarProperty varProperty, Variable start, ValueOperation<?, ?> operation) {
         super(varProperty, start);
-        if (operation == null) {
-            throw new NullPointerException("Null operation");
-        }
         this.operation = operation;
     }
 

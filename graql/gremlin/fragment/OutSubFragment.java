@@ -53,7 +53,7 @@ public class OutSubFragment extends EdgeFragment {
     }
 
     // -1 implies no depth limit
-    public int subTraversalDepthLimit() {
+    private int subTraversalDepthLimit() {
         return subTraversalDepthLimit;
     }
 

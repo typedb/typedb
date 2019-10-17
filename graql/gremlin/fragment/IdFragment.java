@@ -45,14 +45,8 @@ class IdFragment extends FragmentImpl {
 
     private final ConceptId id;
 
-    IdFragment(
-            @Nullable VarProperty varProperty,
-            Variable start,
-            ConceptId id) {
+    IdFragment(@Nullable VarProperty varProperty, Variable start, ConceptId id) {
         super(varProperty, start);
-        if (id == null) {
-            throw new NullPointerException("Null id");
-        }
         this.id = id;
     }
 
@@ -84,7 +78,7 @@ class IdFragment extends FragmentImpl {
         }
     }
 
-    ConceptId id() {
+    private ConceptId id() {
         return id;
     }
 

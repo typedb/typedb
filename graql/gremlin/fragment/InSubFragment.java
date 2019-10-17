@@ -53,7 +53,7 @@ public class InSubFragment extends EdgeFragment {
         this.subTraversalDepthLimit = subTraversalDepthLimit;
     }
 
-    public int subTraversalDepthLimit() {
+    private int subTraversalDepthLimit() {
         return subTraversalDepthLimit;
     }
 

@@ -35,18 +35,12 @@ import static grakn.core.core.Schema.VertexProperty.REGEX;
 class RegexFragment extends FragmentImpl {
     private final String regex;
 
-    RegexFragment(
-            @Nullable VarProperty varProperty,
-            Variable start,
-            String regex) {
+    RegexFragment(@Nullable VarProperty varProperty, Variable start, String regex) {
         super(varProperty, start);
-        if (regex == null) {
-            throw new NullPointerException("Null regex");
-        }
         this.regex = regex;
     }
 
-    String regex() {
+    private String regex() {
         return regex;
     }
 

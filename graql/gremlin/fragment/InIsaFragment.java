@@ -68,7 +68,7 @@ public class InIsaFragment extends EdgeFragment {
         this.mayHaveEdgeInstances = mayHaveEdgeInstances;
     }
 
-    boolean mayHaveEdgeInstances() {
+    private boolean mayHaveEdgeInstances() {
         return mayHaveEdgeInstances;
     }
 

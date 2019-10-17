@@ -46,9 +46,6 @@ public class NeqFragment extends FragmentImpl {
             Variable start,
             Variable other) {
         super(varProperty, start);
-        if (other == null) {
-            throw new NullPointerException("Null other");
-        }
         this.other = other;
     }
 

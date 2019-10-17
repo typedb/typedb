@@ -100,19 +100,15 @@ public abstract class FragmentImpl implements Fragment {
     protected final VarProperty varProperty;
     protected final Variable start;
 
-    FragmentImpl(VarProperty varProperty, Variable start) {
+    FragmentImpl(@Nullable VarProperty varProperty, Variable start) {
         this.varProperty = varProperty;
-        if (start == null) {
-            throw new NullPointerException("Null start");
-        }
         this.start = start;
     }
 
     /*
      * This is the memoized result of {@link #vars()}
      */
-    private @Nullable
-    ImmutableSet<Variable> vars = null;
+    @Nullable private ImmutableSet<Variable> vars = null;
 
     /**
      * @param transform map defining id transform var -> new id

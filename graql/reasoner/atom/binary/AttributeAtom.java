@@ -108,17 +108,8 @@ public class AttributeAtom extends Binary{
             ImmutableSet<ValuePredicate> multiPredicate) {
         super(varName, pattern, parentQuery, typeId, predicateVariable);
 
-        if (relationVariable == null) {
-            throw new NullPointerException("Null relationVariable");
-        }
         this.relationVariable = relationVariable;
-        if (attributeVariable == null) {
-            throw new NullPointerException("Null attributeVariable");
-        }
         this.attributeVariable = attributeVariable;
-        if (multiPredicate == null) {
-            throw new NullPointerException("Null multiPredicate");
-        }
         this.multiPredicate = multiPredicate;
     }
 

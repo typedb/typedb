@@ -45,14 +45,7 @@ public class AttributeIndexFragment extends FragmentImpl {
 
     AttributeIndexFragment(@Nullable VarProperty varProperty, Variable start, Label attributeLabel, String attributeValue) {
         super(varProperty, start);
-
-        if (attributeLabel == null) {
-            throw new NullPointerException("Null attributeLabel");
-        }
         this.attributeLabel = attributeLabel;
-        if (attributeValue == null) {
-            throw new NullPointerException("Null attributeValue");
-        }
         this.attributeValue = attributeValue;
     }
 
@@ -73,11 +66,11 @@ public class AttributeIndexFragment extends FragmentImpl {
         return COST_NODE_INDEX;
     }
 
-    public Label attributeLabel() {
+    private Label attributeLabel() {
         return attributeLabel;
     }
 
-    String attributeValue() {
+    private String attributeValue() {
         return attributeValue;
     }
 

@@ -59,7 +59,7 @@ import javax.annotation.Nullable;
  */
 public abstract class Binary extends Atom {
 
-    final Variable predicateVariable;
+    private final Variable predicateVariable;
 
     Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
            Variable predicateVariable) {

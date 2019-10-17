@@ -26,10 +26,8 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
-import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
-import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;

@@ -49,7 +49,7 @@ class InPlaysFragment extends EdgeFragment {
         this.required = required;
     }
 
-    boolean required() {
+    private boolean required() {
         return required;
     }
 

@@ -119,7 +119,7 @@ public class RelationAtom extends IsaAtomBase {
     private Multimap<Role, Type> roleTypeMap = null;
     private Multimap<Role, Variable> roleVarMap = null;
 
-    RelationAtom(
+    private RelationAtom(
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
@@ -129,13 +129,7 @@ public class RelationAtom extends IsaAtomBase {
             ImmutableSet<Label> roleLabels) {
         super(varName, pattern, parentQuery, typeId, predicateVariable);
 
-        if (relationPlayers == null) {
-            throw new NullPointerException("Null relationPlayers");
-        }
         this.relationPlayers = relationPlayers;
-        if (roleLabels == null) {
-            throw new NullPointerException("Null roleLabels");
-        }
         this.roleLabels = roleLabels;
     }
 
@@ -167,11 +161,11 @@ public class RelationAtom extends IsaAtomBase {
         return atom;
     }
 
-    ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() {
+    private ImmutableList<RelationProperty.RolePlayer> getRelationPlayers() {
         return relationPlayers;
     }
 
-    ImmutableSet<Label> getRoleLabels() {
+    private ImmutableSet<Label> getRoleLabels() {
         return roleLabels;
     }
 
@@ -415,7 +409,7 @@ public class RelationAtom extends IsaAtomBase {
     @Override
     public int alphaEquivalenceHashCode() {
         if (!alphaEquivalenceHashCodeMemoized) {
-            alphaEquivalenceHashCode = super.alphaEquivalenceHashCode();
+            alphaEquivalenceHashCode = computeAlphaEquivalenceHashCode();
             alphaEquivalenceHashCodeMemoized = true;
         }
         return alphaEquivalenceHashCode;

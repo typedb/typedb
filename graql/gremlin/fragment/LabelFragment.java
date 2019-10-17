@@ -52,9 +52,6 @@ public class LabelFragment extends FragmentImpl {
 
     LabelFragment(@Nullable VarProperty varProperty, Variable start, ImmutableSet<Label> labels) {
         super(varProperty, start);
-        if (labels == null) {
-            throw new NullPointerException("Null labels");
-        }
         this.labels = labels;
     }
 

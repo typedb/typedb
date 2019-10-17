@@ -146,7 +146,7 @@ public class GraqlTraversalImpl implements GraqlTraversal {
         return totalCost;
     }
 
-    static double fragmentListCost(List<? extends Fragment> fragments) {
+    private static double fragmentListCost(List<? extends Fragment> fragments) {
         Set<Variable> names = new HashSet<>();
 
         double listCost = 0;
@@ -159,7 +159,7 @@ public class GraqlTraversalImpl implements GraqlTraversal {
         return listCost;
     }
 
-    static double fragmentCost(Fragment fragment, Collection<Variable> names) {
+    private static double fragmentCost(Fragment fragment, Collection<Variable> names) {
         if (names.contains(fragment.start()) || fragment.hasFixedFragmentCost()) {
             return fragment.fragmentCost();
         } else {

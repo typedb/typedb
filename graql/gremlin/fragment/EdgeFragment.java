@@ -28,6 +28,7 @@ import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
@@ -48,11 +49,8 @@ public abstract class EdgeFragment extends FragmentImpl {
     abstract protected Node startNode();
     abstract protected Node endNode();
 
-    EdgeFragment(VarProperty varProperty, Variable start, Variable end) {
+    EdgeFragment(@Nullable VarProperty varProperty, Variable start, Variable end) {
         super(varProperty, start);
-        if (end == null) {
-            throw new NullPointerException("Null end");
-        }
         this.end = end;
     }
 

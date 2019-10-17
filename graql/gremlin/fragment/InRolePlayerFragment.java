@@ -66,9 +66,6 @@ class InRolePlayerFragment extends AbstractRolePlayerFragment {
             @Nullable ImmutableSet<Label> relationTypeLabels) {
         super(varProperty, start, end);
 
-        if (edge == null) {
-            throw new NullPointerException("Null edge");
-        }
         this.edge = edge;
         this.role = role;
         this.roleLabels = roleLabels;

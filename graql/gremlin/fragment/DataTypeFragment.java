@@ -38,13 +38,10 @@ class DataTypeFragment extends FragmentImpl {
 
     DataTypeFragment(@Nullable VarProperty varProperty, Variable start, AttributeType.DataType dataType) {
         super(varProperty, start);
-        if (dataType == null) {
-            throw new NullPointerException("Null dataType");
-        }
         this.dataType = dataType;
     }
 
-    AttributeType.DataType dataType() {
+    private AttributeType.DataType dataType() {
         return dataType;
     }
 
