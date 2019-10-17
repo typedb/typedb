@@ -69,13 +69,6 @@ dependencies:
       version: "2.9.9"
       lang: java
 
-  com.google.auto.value:
-    auto-value:
-      version: "1.5.3"
-      lang: java
-      processorClasses:
-      - "com.google.auto.value.processor.AutoValueProcessor"
-
   com.google.code.findbugs:
     annotations:
       version: "3.0.1"
