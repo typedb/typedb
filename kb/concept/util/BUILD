@@ -32,6 +32,7 @@ java_library(
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

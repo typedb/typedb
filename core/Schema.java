@@ -43,8 +43,8 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
-import static grakn.core.common.util.Collections.map;
-import static grakn.core.common.util.Collections.pair;
+import static grakn.common.util.Collections.map;
+import static grakn.common.util.Collections.pair;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created

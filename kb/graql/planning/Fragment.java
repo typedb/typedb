@@ -19,7 +19,7 @@
 
 package grakn.core.kb.graql.planning;
 
-import grakn.core.common.util.Pair;
+import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;

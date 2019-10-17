@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.Sets;
-import grakn.core.common.util.Pair;
+import grakn.common.util.Pair;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.EdgeNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
@@ -32,7 +32,7 @@ import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.Set;
 
-import static grakn.core.common.util.Collections.pair;
+import static grakn.common.util.Collections.pair;
 import static grakn.core.kb.graql.planning.spanningtree.util.Weighted.weighted;
 
 /**

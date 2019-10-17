@@ -18,7 +18,7 @@
 
 package grakn.core.server.session.cache;
 
-import grakn.core.common.util.Pair;
+import grakn.common.util.Pair;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;

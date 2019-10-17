@@ -16,6 +16,7 @@ java_library(
         "//kb/concept/api",
         "//test-integration/graql/reasoner/pattern:query-pattern",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
     ],
 )
 

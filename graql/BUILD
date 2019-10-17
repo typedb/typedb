@@ -38,6 +38,7 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
