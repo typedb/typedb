@@ -106,9 +106,6 @@ public abstract class FragmentImpl implements Fragment {
         this.start = start;
     }
 
-    /*
-     * This is the memoized result of {@link #vars()}
-     */
 
     /**
      * @param transform map defining id transform var -> new id
@@ -314,6 +311,7 @@ public abstract class FragmentImpl implements Fragment {
 
     /**
      * Get all variables in the fragment including the start and end (if present)
+     * memoise results in `vars`
      */
     @Override
     public final Set<Variable> vars() {
