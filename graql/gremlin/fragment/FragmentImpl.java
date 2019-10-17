@@ -97,6 +97,7 @@ public abstract class FragmentImpl implements Fragment {
     private Double accurateFragmentCost = null;
 
 
+    @Nullable private ImmutableSet<Variable> vars = null;
     protected final VarProperty varProperty;
     protected final Variable start;
 
@@ -108,7 +109,6 @@ public abstract class FragmentImpl implements Fragment {
     /*
      * This is the memoized result of {@link #vars()}
      */
-    @Nullable private ImmutableSet<Variable> vars = null;
 
     /**
      * @param transform map defining id transform var -> new id

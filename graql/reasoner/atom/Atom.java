@@ -68,6 +68,7 @@ import static java.util.stream.Collectors.toSet;
  */
 public abstract class Atom extends AtomicBase {
 
+    private Set<InferenceRule> applicableRules = null;
     private final ConceptId typeId;
 
     public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
@@ -83,7 +84,6 @@ public abstract class Atom extends AtomicBase {
         return typeId;
     }
 
-    private Set<InferenceRule> applicableRules = null;
 
     public RelationAtom toRelationAtom() {
         throw ReasonerException.illegalAtomConversion(this, RelationAtom.class);
