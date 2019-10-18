@@ -25,7 +25,7 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//server:server",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//kb:kb",
 
         "@graknlabs_graql//java:graql",
@@ -52,7 +52,7 @@ java_test(
     deps = [
         "//kb/concept/api:api",
         "//kb:kb",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//server:server",
 
         "@graknlabs_graql//java:graql",

@@ -184,7 +184,7 @@ java_test(
     deps = [
         "//concept/impl:impl",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",

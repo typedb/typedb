@@ -21,7 +21,7 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "graql-tmp-name",
+    name = "graql",
     srcs = glob(
         ["**/*.java"],
         exclude = ["test/**"],
@@ -77,6 +77,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-tmp-name",
+        ":graql",
     ],
 )
