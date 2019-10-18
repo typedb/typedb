@@ -24,15 +24,16 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.ValuePredicateIT",
     deps = [
-        "//common",
+        "//common:common",
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
     ],
 )
 

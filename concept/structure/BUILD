@@ -36,6 +36,8 @@ java_library(
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
         "//dependencies/maven/artifacts/com/google/guava",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-structure:{pom_version}"],
+
 )
 
 checkstyle_test(

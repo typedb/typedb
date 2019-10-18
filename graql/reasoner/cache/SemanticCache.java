@@ -21,6 +21,7 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
@@ -29,7 +30,6 @@ import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.common.util.Pair;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
 import java.util.Set;
@@ -298,10 +298,10 @@ public abstract class SemanticCache<
             //otherwise lookup and add inferred answers on top
             return new Pair<>(
                             Stream.concat(
-                                    getDBAnswerStreamWithUnifier(query).getKey(),
-                                    cachePair.getKey().filter(ans -> ans.explanation().isRuleExplanation())
+                                    getDBAnswerStreamWithUnifier(query).first(),
+                                    cachePair.first().filter(ans -> ans.explanation().isRuleExplanation())
                             ),
-                            cachePair.getValue());
+                            cachePair.second());
         }
 
         //if no match but db-complete parent exists, use parent to create entry
@@ -319,7 +319,7 @@ public abstract class SemanticCache<
 
     @Override
     public Stream<ConceptMap> getAnswerStream(ReasonerAtomicQuery query) {
-        return getAnswerStreamWithUnifier(query).getKey();
+        return getAnswerStreamWithUnifier(query).first();
     }
 
     @Override
@@ -331,8 +331,8 @@ public abstract class SemanticCache<
     public Pair<Set<ConceptMap>, MultiUnifier> getAnswersWithUnifier(ReasonerAtomicQuery query) {
         Pair<Stream<ConceptMap>, MultiUnifier> answerStreamWithUnifier = getAnswerStreamWithUnifier(query);
         return new Pair<>(
-                answerStreamWithUnifier.getKey().collect(toSet()),
-                answerStreamWithUnifier.getValue()
+                answerStreamWithUnifier.first().collect(toSet()),
+                answerStreamWithUnifier.second()
         );
     }
 }

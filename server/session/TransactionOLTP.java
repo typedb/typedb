@@ -209,12 +209,12 @@ public class TransactionOLTP implements Transaction {
                 // NOTE: we still need to rely on attributesCache instead of checking in the graph
                 // if the index exists, because apparently JanusGraph does not make indexes available
                 // in a Read Committed fashion
-                ConceptId targetId = session.attributesCache().getIfPresent(labelIndexPair.getValue());
+                ConceptId targetId = session.attributesCache().getIfPresent(labelIndexPair.second());
                 if (targetId != null) {
                     merge(getTinkerTraversal(), conceptId, targetId);
-                    statisticsDelta().decrement(labelIndexPair.getKey());
+                    statisticsDelta().decrement(labelIndexPair.first());
                 } else {
-                    session.attributesCache().put(labelIndexPair.getValue(), conceptId);
+                    session.attributesCache().put(labelIndexPair.second(), conceptId);
                 }
             }));
             session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);

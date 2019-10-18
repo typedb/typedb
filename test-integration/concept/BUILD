@@ -75,7 +75,7 @@ java_test(
     test_class = "grakn.core.server.grakn.core.kb.concept.EntityTypeIT",
     deps = [
         # Internal dependencies
-        "//common",
+        "//common:common",
         "//kb",
         "//core",
         "//kb/concept/structure",
@@ -99,7 +99,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.grakn.core.kb.concept.RelationIT",
     deps = [
-        "//common",
+        "//common:common",
         "//concept/answer",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
@@ -148,7 +148,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.grakn.core.kb.concept.SchemaConceptIT",
     deps = [
-        "//common",
+        "//common:common",
         "//concept/impl:impl",
         "//core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -167,7 +167,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.grakn.core.kb.concept.SchemaMutationIT",
     deps = [
-        "//common",
+        "//common:common",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",

@@ -28,7 +28,7 @@ java_test(
     deps = [
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//kb",
         "//kb/concept/api",
         "//server",
@@ -45,12 +45,12 @@ java_test(
     ],
     test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
     deps = [
-        "//common",
+        "//common:common",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",

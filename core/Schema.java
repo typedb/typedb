@@ -43,8 +43,8 @@ import javax.annotation.Nullable;
 import java.util.Map;
 
 import static grakn.core.common.exception.ErrorMessage.INVALID_IMPLICIT_TYPE;
-import static grakn.core.common.util.Collections.map;
-import static grakn.core.common.util.Collections.tuple;
+import static grakn.common.util.Collections.map;
+import static grakn.common.util.Collections.pair;
 
 /**
  * A type enum which restricts the types of links/concepts which can be created
@@ -213,13 +213,13 @@ public final class Schema {
         private final Class dataType;
 
         private static Map<AttributeType.DataType, VertexProperty> dataTypeVertexProperty = map(
-                tuple(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
-                tuple(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
-                tuple(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
-                tuple(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
-                tuple(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
-                tuple(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
-                tuple(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
+                pair(AttributeType.DataType.BOOLEAN, VertexProperty.VALUE_BOOLEAN),
+                pair(AttributeType.DataType.DATE, VertexProperty.VALUE_DATE),
+                pair(AttributeType.DataType.DOUBLE, VertexProperty.VALUE_DOUBLE),
+                pair(AttributeType.DataType.FLOAT, VertexProperty.VALUE_FLOAT),
+                pair(AttributeType.DataType.INTEGER, VertexProperty.VALUE_INTEGER),
+                pair(AttributeType.DataType.LONG, VertexProperty.VALUE_LONG),
+                pair(AttributeType.DataType.STRING, VertexProperty.VALUE_STRING)
         );
 
         VertexProperty(Class dataType) {

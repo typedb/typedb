@@ -22,28 +22,28 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.common.util.Tuple;
-import grakn.core.kb.concept.api.Type;
+import grakn.common.util.Pair;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
+import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.GraqlTraversal;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.server.exception.GraknServerException;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -356,7 +356,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static Map<Node, Map<Node, Fragment>> virtualMiddleNodeToFragmentMapping(Set<Fragment> connectedFragments, Map<NodeId, Node> nodes) {
         Map<Node, Map<Node, Fragment>> middleNodeFragmentMapping = new HashMap<>();
         for (Fragment fragment : connectedFragments) {
-            Tuple<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
+            Pair<Node, Node> middleNodeDirectedEdge = fragment.getMiddleNodeDirectedEdge(nodes);
             if (middleNodeDirectedEdge != null) {
                 middleNodeFragmentMapping.putIfAbsent(middleNodeDirectedEdge.first(), new HashMap<>());
                 middleNodeFragmentMapping.get(middleNodeDirectedEdge.first()).put(middleNodeDirectedEdge.second(), fragment);

@@ -38,7 +38,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.session.TransactionOLTPIT",
     deps = [
-        "//common",
+        "//common:common",
         "//concept/answer",
         "//concept/impl:impl",
         "//core",
@@ -77,7 +77,7 @@ java_test(
     data = ["//test-integration/resources:grakn-small-tx-cache"],
     test_class = "grakn.core.server.session.cache.TransactionCacheIT",
     deps = [
-        "//common",
+        "//common:common",
         "//core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -85,6 +85,7 @@ java_test(
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
     ],
 )
 

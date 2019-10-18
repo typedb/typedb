@@ -24,15 +24,19 @@ java_library(
     name = "daemon",
     srcs = glob(["**/*.java"]),
     deps = [
-        # Package dependencies
-        "//daemon/executor:grakn-daemon-executor",
 
         # Grakn Core dependencies
-        "//common",
+        "//common:common",
         "//server:server",
 
         # External dependencies
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml", # NEEDS TO GO
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",

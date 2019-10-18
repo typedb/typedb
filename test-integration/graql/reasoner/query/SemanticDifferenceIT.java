@@ -22,7 +22,7 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.common.util.Pair;
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
@@ -102,9 +102,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(new Variable("z"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -133,9 +133,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(new Variable("z"), subRoleEntity, null, new HashSet<>(), new HashSet<>())
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -185,9 +185,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(role), new HashSet<>())
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -215,9 +215,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole), new HashSet<>())
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -269,9 +269,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(new Variable("z"), null, null, Sets.newHashSet(subRole1, subRole2), new HashSet<>())
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -290,7 +290,7 @@ public class SemanticDifferenceIT {
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
 
             SemanticDifference expected = new SemanticDifference(ImmutableSet.of());
-            semanticPairs.stream().map(Pair::getValue).forEach(sd -> assertEquals(expected, sd));
+            semanticPairs.stream().map(Pair::second).forEach(sd -> assertEquals(expected, sd));
         }
     }
 
@@ -313,9 +313,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(new Variable("w"), null, null, Sets.newHashSet(subRole2), new HashSet<>())
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -348,7 +348,7 @@ public class SemanticDifferenceIT {
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
-            Unifier unifier = semanticPair.getKey();
+            Unifier unifier = semanticPair.first();
 
             AttributeAtom parentAtom = (AttributeAtom) parent.getAtom();
             Set<ValuePredicate> predicatesToSatisfy = child.getAtom().getInnerPredicates(ValuePredicate.class)
@@ -361,9 +361,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(parentAtom.getAttributeVariable(),null, null, new HashSet<>(), predicatesToSatisfy)
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -379,7 +379,7 @@ public class SemanticDifferenceIT {
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
-            Unifier unifier = semanticPair.getKey();
+            Unifier unifier = semanticPair.first();
 
             AttributeAtom parentAtom = (AttributeAtom) parent.getAtom();
             Set<ValuePredicate> predicatesToSatisfy = child.getAtom().getInnerPredicates(ValuePredicate.class)
@@ -391,9 +391,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(parentAtom.getAttributeVariable(),null, null, new HashSet<>(), predicatesToSatisfy)
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -409,7 +409,7 @@ public class SemanticDifferenceIT {
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
-            Unifier unifier = semanticPair.getKey();
+            Unifier unifier = semanticPair.first();
 
             Set<ValuePredicate> predicatesToSatisfy = child.getAtom().getPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier.inverse()).stream())
@@ -419,9 +419,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(parent.getAtom().getVarName(),null, null, new HashSet<>(), predicatesToSatisfy)
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }
@@ -437,7 +437,7 @@ public class SemanticDifferenceIT {
 
             Set<Pair<Unifier, SemanticDifference>> semanticPairs = parent.getMultiUnifierWithSemanticDiff(child);
             Pair<Unifier, SemanticDifference> semanticPair = Iterables.getOnlyElement(semanticPairs);
-            Unifier unifier = semanticPair.getKey();
+            Unifier unifier = semanticPair.first();
 
             Set<ValuePredicate> predicatesToSatisfy = child.getAtom().getPredicates(ValuePredicate.class)
                     .flatMap(vp -> vp.unify(unifier.inverse()).stream())
@@ -447,9 +447,9 @@ public class SemanticDifferenceIT {
                             new VariableDefinition(parent.getAtom().getVarName(),null, null, new HashSet<>(), predicatesToSatisfy)
                     )
             );
-            assertEquals(expected, semanticPair.getValue());
+            assertEquals(expected, semanticPair.second());
             Set<ConceptMap> childAnswers = tx.stream(child.getQuery(), false).collect(Collectors.toSet());
-            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.getKey(), semanticPair.getValue());
+            Set<ConceptMap> propagatedAnswers = projectAnswersToChild(child, parent, semanticPair.first(), semanticPair.second());
             assertCollectionsNonTriviallyEqual(propagatedAnswers + "\n!=\n" + childAnswers + "\n", childAnswers, propagatedAnswers);
         }
     }

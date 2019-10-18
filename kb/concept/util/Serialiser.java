@@ -26,8 +26,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Map;
 
-import static grakn.core.common.util.Collections.map;
-import static grakn.core.common.util.Collections.tuple;
+import static grakn.common.util.Collections.map;
+import static grakn.common.util.Collections.pair;
 
 public abstract class Serialiser<DESERIALISED, SERIALISED> {
 
@@ -46,13 +46,13 @@ public abstract class Serialiser<DESERIALISED, SERIALISED> {
     public abstract DESERIALISED deserialise(SERIALISED value);
 
     private static Map<AttributeType.DataType<?>, Serialiser<?, ?>> serialisers = map(
-            tuple(AttributeType.DataType.BOOLEAN, BOOLEAN),
-            tuple(AttributeType.DataType.DATE, DATE),
-            tuple(AttributeType.DataType.DOUBLE, DOUBLE),
-            tuple(AttributeType.DataType.FLOAT, FLOAT),
-            tuple(AttributeType.DataType.INTEGER, INTEGER),
-            tuple(AttributeType.DataType.LONG, LONG),
-            tuple(AttributeType.DataType.STRING, STRING)
+            pair(AttributeType.DataType.BOOLEAN, BOOLEAN),
+            pair(AttributeType.DataType.DATE, DATE),
+            pair(AttributeType.DataType.DOUBLE, DOUBLE),
+            pair(AttributeType.DataType.FLOAT, FLOAT),
+            pair(AttributeType.DataType.INTEGER, INTEGER),
+            pair(AttributeType.DataType.LONG, LONG),
+            pair(AttributeType.DataType.STRING, STRING)
     );
 
 

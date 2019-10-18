@@ -54,7 +54,7 @@ java_library(
         "//concept/answer:answer",
         "//kb:kb",
         "//core:core",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -117,6 +117,7 @@ java_binary(
         "//daemon",
         "//server:server"
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
     visibility = ["//:__pkg__"],
 )
 
@@ -124,7 +125,8 @@ java_deps(
     name = "server-deps",
     target = ":server-binary",
     java_deps_root = "server/services/lib/",
-    visibility = ["//:__pkg__"]
+    visibility = ["//:__pkg__"],
+    maven_name = True,
 )
 
 assemble_targz(

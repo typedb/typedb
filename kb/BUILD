@@ -41,6 +41,7 @@ java_library(
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
@@ -50,6 +51,8 @@ java_library(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb:{pom_version}"],
+
 )
 
 

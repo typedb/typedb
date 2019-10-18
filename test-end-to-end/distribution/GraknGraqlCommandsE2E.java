@@ -195,7 +195,6 @@ public class GraknGraqlCommandsE2E {
     }
 
 
-
     /**
      * Grakn should stop correctly when there are client connections still open
      */

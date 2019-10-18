@@ -21,14 +21,14 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "graql-tmp-name",
+    name = "graql",
     srcs = glob(
         ["**/*.java"],
         exclude = ["test/**"],
     ),
     deps = [
         # Internal dependencies
-        "//common",
+        "//common:common",
         "//kb/concept/api",
         "//kb/concept/util",
         "//concept/answer",
@@ -38,6 +38,7 @@ java_library(
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
+        "@graknlabs_common//:common",
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
@@ -69,11 +70,13 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",  # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-graql:{pom_version}"],
+
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":graql-tmp-name",
+        ":graql",
     ],
 )

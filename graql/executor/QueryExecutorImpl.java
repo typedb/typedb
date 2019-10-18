@@ -22,7 +22,7 @@ package grakn.core.graql.executor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.common.util.LazyMergingStream;
+import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;

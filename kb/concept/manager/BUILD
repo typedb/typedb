@@ -31,6 +31,8 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept-manager-api:{pom_version}"],
+
 )
 
 checkstyle_test(

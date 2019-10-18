@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.common.util.Tuple;
+import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.graql.planning.Fragment;
@@ -179,7 +179,7 @@ public abstract class FragmentImpl implements Fragment {
      * @return
      */
     @Override
-    public Tuple<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
+    public Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes) {
         return null;
     }
 

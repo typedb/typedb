@@ -23,7 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
-import grakn.core.common.util.Pair;
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -212,7 +212,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
-        Iterator<AnswerState> dbIterator = cacheEntry.getKey()
+        Iterator<AnswerState> dbIterator = cacheEntry.first()
                 .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
@@ -244,7 +244,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return RuleUtils
                 .stratifyRules(getAtom().getApplicableRules().collect(Collectors.toSet()))
                 .flatMap(r -> r.getMultiUnifier(getAtom()).stream().map(unifier -> new Pair<>(r, unifier)))
-                .map(rulePair -> rulePair.getKey().subGoal(this.getAtom(), rulePair.getValue(), parent, visitedSubGoals))
+                .map(rulePair -> rulePair.first().subGoal(this.getAtom(), rulePair.second(), parent, visitedSubGoals))
                 .iterator();
     }
 }

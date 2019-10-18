@@ -7,7 +7,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.ValidatorIT",
     deps = [
-        "//common",
+        "//common:common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",
         "//kb/concept/api",
@@ -40,11 +40,11 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.kb.RuleValidationIT",
     deps = [
-        "//common",
+        "//common:common",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//graql:graql-tmp-name",
+        "//graql:graql",
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",

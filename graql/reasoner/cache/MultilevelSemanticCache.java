@@ -21,13 +21,13 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.base.Equivalence;
 import com.google.common.base.Preconditions;
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.common.util.Pair;
 import graql.lang.statement.Variable;
 import java.util.HashSet;
 import java.util.Set;
@@ -104,7 +104,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
         parentAnswers.getAll().stream()
                 .filter(parentAns -> propagateInferred || parentAns.explanation().isLookupExplanation())
                 .flatMap(parentAns -> parentToChildUnifierDelta.stream()
-                        .map(unifierDelta -> unifierDelta.getValue().propagateAnswer(parentAns, childPartialSub, childVars, unifierDelta.getKey()))
+                        .map(unifierDelta -> unifierDelta.second().propagateAnswer(parentAns, childPartialSub, childVars, unifierDelta.first()))
                 )
                 .filter(ans -> !ans.isEmpty())
                 .peek(ans -> validateAnswer(ans, child, childVars))

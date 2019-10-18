@@ -19,13 +19,13 @@
 
 package grakn.core.kb.graql.planning;
 
-import grakn.core.common.util.Tuple;
+import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
+import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -91,7 +91,7 @@ public interface Fragment {
      * @param nodes
      * @return
      */
-    Tuple<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes);
+    Pair<Node, Node> getMiddleNodeDirectedEdge(Map<NodeId, Node> nodes);
 
     /**
      * Convert the fragment to a set of weighted edges for query planning

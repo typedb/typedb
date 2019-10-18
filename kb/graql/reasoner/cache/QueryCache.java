@@ -19,11 +19,11 @@
 
 package grakn.core.kb.graql.reasoner.cache;
 
+import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.common.util.Pair;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
