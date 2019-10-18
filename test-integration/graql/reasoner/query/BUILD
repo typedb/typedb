@@ -207,7 +207,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.reasoner.query.SemanticDifferenceIT",
     deps = [
-        "//common",
+        "//common:common-core",
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//graql:graql-tmp-name",

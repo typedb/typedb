@@ -24,7 +24,7 @@ java_test(
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.reasoning.ValuePredicateIT",
     deps = [
-        "//common",
+        "//common:common-core",
         "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//graql:graql-tmp-name",

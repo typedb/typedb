@@ -25,7 +25,7 @@ java_library(
     srcs = glob(["**/*.java"]),
     deps = [
         # Grakn Core dependencies
-        "//common",
+        "//common:common-core",
     ]
 )
 

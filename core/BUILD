@@ -24,7 +24,7 @@ java_library(
     name = "core",
     srcs = glob(["*.java"]),
     deps = [
-        "//common:common",
+        "//common:common-core",
         "//kb/concept/api:api",
 
         # External dependenicies from @graknlabs

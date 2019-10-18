@@ -10,7 +10,7 @@ java_test(
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.distribution.GraknGraqlCommandsE2E",
     deps = [
-        "//common",
+        "//common:common-core",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -28,7 +28,7 @@ java_test(
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.distribution.GraknGraqlCommands_WithARunningGraknE2E",
     deps = [
-        "//common",
+        "//common:common-core",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -47,7 +47,7 @@ java_test(
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.distribution.ConcurrencyE2E",
     deps = [
-        "//common",
+        "//common:common-core",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -67,7 +67,7 @@ java_test(
     test_class = "grakn.core.distribution.AttributeUniquenessE2E",
     deps = [
         # Internal dependencies
-        "//common",
+        "//common:common-core",
 
         # External dependencies from @graknlabs
         "@graknlabs_client_java//:client-java",

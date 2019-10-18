@@ -28,7 +28,7 @@ java_library(
         "//daemon/executor:grakn-daemon-executor",
 
         # Grakn Core dependencies
-        "//common",
+        "//common:common-core",
         "//server:server",
 
         # External dependencies

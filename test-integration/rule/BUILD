@@ -24,7 +24,7 @@ java_library(
     deps = [
         "//server:server",
         "//kb:kb",
-        "//common",
+        "//common:common-core",
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",

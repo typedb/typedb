@@ -28,7 +28,7 @@ java_library(
         "//daemon/exception",
 
         # Grakn Core dependencies
-        "//common",
+        "//common:common-core",
         "//server:server",
 
         # External dependencies

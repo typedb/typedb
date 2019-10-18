@@ -24,7 +24,7 @@ java_library(
     name = "api",
     srcs = glob(["*.java"]),
     deps = [
-        "//common:common",
+        "//common:common-core",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",

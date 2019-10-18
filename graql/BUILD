@@ -28,7 +28,7 @@ java_library(
     ),
     deps = [
         # Internal dependencies
-        "//common",
+        "//common:common-core",
         "//kb/concept/api",
         "//kb/concept/util",
         "//concept/answer",

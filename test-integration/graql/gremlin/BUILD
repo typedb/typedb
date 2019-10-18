@@ -45,7 +45,7 @@ java_test(
     ],
     test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
     deps = [
-        "//common",
+        "//common:common-core",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
