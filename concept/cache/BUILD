@@ -27,7 +27,7 @@ java_library(
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
     ],
-    tags = ["maven_coordinates=io.grakn.core:concept-cache:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept-cache:{pom_version}"],
 
 )
 

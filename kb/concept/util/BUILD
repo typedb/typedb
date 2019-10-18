@@ -39,7 +39,7 @@ java_library(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
-    tags = ["maven_coordinates=io.grakn.core:kb-util:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-util:{pom_version}"],
 
 )
 
