@@ -97,8 +97,6 @@ import java.util.stream.Stream;
 import static grakn.core.kb.concept.util.ConceptUtils.bottom;
 import static grakn.core.kb.concept.util.ConceptUtils.top;
 import static graql.lang.Graql.var;
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 
 /**
  * Atom implementation defining a relation atom corresponding to a combined RelationProperty
@@ -272,7 +270,7 @@ public class RelationAtom extends IsaAtomBase {
     public Set<Atom> rewriteToAtoms() {
         return this.getRelationPlayers().stream()
                 .map(rp -> create(relationPattern(getVarName().asReturnedVar(), Sets.newHashSet(rp)), getPredicateVariable(), getTypeId(), null, this.getParentQuery()))
-                .collect(toSet());
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -310,7 +308,7 @@ public class RelationAtom extends IsaAtomBase {
         List<Role> roleOrdering = roleVarMap.keySet().stream()
                 .sorted(Comparator.comparing(r -> r.label().hashCode()))
                 .distinct()
-                .collect(toList());
+                .collect(Collectors.toList());
 
         Set<Pair<Variable, Variable>> varPairs = new HashSet<>();
         roleVarMap.values().forEach(var -> {
@@ -333,7 +331,7 @@ public class RelationAtom extends IsaAtomBase {
      * @return set constituting the role player var names
      */
     private Set<Variable> getRolePlayers() {
-        return getRelationPlayers().stream().map(c -> c.getPlayer().var()).collect(toSet());
+        return getRelationPlayers().stream().map(c -> c.getPlayer().var()).collect(Collectors.toSet());
     }
 
     /**
@@ -625,7 +623,7 @@ public class RelationAtom extends IsaAtomBase {
     private Set<Type> inferPossibleEntityTypePlayers(ConceptMap sub) {
         return inferPossibleRelationConfigurations(sub).asMap().entrySet().stream()
                 .flatMap(e -> {
-                    Set<Role> rs = e.getKey().roles().collect(toSet());
+                    Set<Role> rs = e.getKey().roles().collect(Collectors.toSet());
                     rs.removeAll(e.getValue());
                     return rs.stream().flatMap(Role::players);
                 }).collect(Collectors.toSet());
@@ -635,16 +633,16 @@ public class RelationAtom extends IsaAtomBase {
      * @return a map of relations and corresponding roles that could be played by this atom
      */
     private Multimap<RelationType, Role> inferPossibleRelationConfigurations(ConceptMap sub) {
-        Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(toSet());
+        Set<Role> roles = getExplicitRoles().filter(r -> !Schema.MetaSchema.isMetaLabel(r.label())).collect(Collectors.toSet());
         SetMultimap<Variable, Type> varTypeMap = getParentQuery().getVarTypeMap(sub);
-        Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).flatMap(v -> varTypeMap.get(v).stream()).collect(toSet());
+        Set<Type> types = getRolePlayers().stream().filter(varTypeMap::containsKey).flatMap(v -> varTypeMap.get(v).stream()).collect(Collectors.toSet());
 
         if (roles.isEmpty() && types.isEmpty()) {
             RelationType metaRelationType = tx().getMetaRelationType();
             Multimap<RelationType, Role> compatibleTypes = HashMultimap.create();
             metaRelationType.subs()
                     .filter(rt -> !rt.equals(metaRelationType))
-                    .forEach(rt -> compatibleTypes.putAll(rt, rt.roles().collect(toSet())));
+                    .forEach(rt -> compatibleTypes.putAll(rt, rt.roles().collect(Collectors.toSet())));
             return compatibleTypes;
         }
 
@@ -687,7 +685,7 @@ public class RelationAtom extends IsaAtomBase {
             Set<Variable> untypedRoleplayers = Sets.difference(getRolePlayers(), getParentQuery().getVarTypeMap().keySet());
             Set<RelationAtom> untypedNeighbours = getNeighbours(RelationAtom.class)
                     .filter(at -> !Sets.intersection(at.getVarNames(), untypedRoleplayers).isEmpty())
-                    .collect(toSet());
+                    .collect(Collectors.toSet());
 
             ImmutableList.Builder<Type> builder = ImmutableList.builder();
             //prioritise relations with higher chance of yielding answers
@@ -708,7 +706,7 @@ public class RelationAtom extends IsaAtomBase {
                             typesFromNeighbour = Sets.intersection(typesFromNeighbour, neighbourIterator.next().inferPossibleEntityTypePlayers(sub));
                         }
 
-                        Set<Role> rs = e.getKey().roles().collect(toSet());
+                        Set<Role> rs = e.getKey().roles().collect(Collectors.toSet());
                         rs.removeAll(e.getValue());
                         return new Pair<>(
                                 e.getKey(),
@@ -825,11 +823,11 @@ public class RelationAtom extends IsaAtomBase {
         //role types can repeat so no matter what has been allocated still the full spectrum of possibilities is present
         //TODO make restrictions based on cardinality constraints
         Set<Role> possibleRoles = relType != null ?
-                relType.roles().collect(toSet()) :
+                relType.roles().collect(Collectors.toSet()) :
                 inferPossibleTypes(sub).stream()
                         .filter(Concept::isRelationType)
                         .map(Concept::asRelationType)
-                        .flatMap(RelationType::roles).collect(toSet());
+                        .flatMap(RelationType::roles).collect(Collectors.toSet());
 
         //possible role types for each casting based on its type
         Map<RelationProperty.RolePlayer, Set<Role>> mappings = new HashMap<>();
@@ -961,14 +959,14 @@ public class RelationAtom extends IsaAtomBase {
                             })
                             //check for substitution compatibility
                             .filter(crp -> {
-                                Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(toSet());
-                                Set<Atomic> childIds = this.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(toSet());
+                                Set<Atomic> parentIds = parentAtom.getPredicates(prp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
+                                Set<Atomic> childIds = this.getPredicates(crp.getPlayer().var(), IdPredicate.class).collect(Collectors.toSet());
                                 return unifierType.idCompatibility(parentIds, childIds);
                             })
                             //check for value predicate compatibility
                             .filter(crp -> {
-                                Set<Atomic> parentVP = parentAtom.getPredicates(prp.getPlayer().var(), ValuePredicate.class).collect(toSet());
-                                Set<Atomic> childVP = this.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(toSet());
+                                Set<Atomic> parentVP = parentAtom.getPredicates(prp.getPlayer().var(), ValuePredicate.class).collect(Collectors.toSet());
+                                Set<Atomic> childVP = this.getPredicates(crp.getPlayer().var(), ValuePredicate.class).collect(Collectors.toSet());
                                 return unifierType.valueCompatibility(parentVP, childVP);
                             })
                             //check linked resources
@@ -1001,7 +999,7 @@ public class RelationAtom extends IsaAtomBase {
                     List<RelationProperty.RolePlayer> listParentRps = list.stream().map(Pair::second).collect(Collectors.toList());
                     return listParentRps.containsAll(parentAtom.getRelationPlayers());
                 })
-                .collect(toSet());
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -1094,7 +1092,7 @@ public class RelationAtom extends IsaAtomBase {
                         .map(Statement::getType)
                         .flatMap(Streams::optionalToStream)
                         .map(Label::of)
-                        .collect(toSet());
+                        .collect(Collectors.toSet());
                 if (!roleLabels.isEmpty()) {
                     requiredRole = tx().getRole(Iterables.getOnlyElement(roleLabels).getValue());
                 }
@@ -1103,8 +1101,8 @@ public class RelationAtom extends IsaAtomBase {
             Set<Role> parentRoles = parentVarRoleMap.get(parentVar);
             Set<Role> playedRoles = bottom(Sets.difference(childRoles, parentRoles)).stream()
                     .filter(playedRole -> !Schema.MetaSchema.isMetaLabel(playedRole.label()))
-                    .filter(playedRole -> Sets.intersection(parentRoles, playedRole.subs().collect(toSet())).isEmpty())
-                    .collect(toSet());
+                    .filter(playedRole -> Sets.intersection(parentRoles, playedRole.subs().collect(Collectors.toSet())).isEmpty())
+                    .collect(Collectors.toSet());
             diff.add(new VariableDefinition(parentVar, null, requiredRole, playedRoles, new HashSet<>()));
         });
         return baseDiff.merge(new SemanticDifference(diff));
