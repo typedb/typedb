@@ -31,7 +31,6 @@ java_library(
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
 
-
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
