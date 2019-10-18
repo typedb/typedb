@@ -21,7 +21,7 @@ package(default_visibility = ["@graknlabs_grakn_core//__subpackages__"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "common-core",
+    name = "common",
     srcs = glob(["**/*.java"], exclude=["test/**"]),
     deps = [
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
@@ -34,5 +34,5 @@ java_library(
 
 checkstyle_test(
     name = "checkstyle",
-    targets = [":common-core"],
+    targets = [":common"],
 )

@@ -24,7 +24,7 @@ java_library(
     name = "api",
     srcs = glob(["*.java"]),
     deps = [
-        "//common:common-core",
+        "//common:common",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -34,6 +34,7 @@ java_library(
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava"
     ],
+    tags = ["maven_coordinates=io.grakn.core:concept-api:{pom_version}"],
 )
 
 checkstyle_test(

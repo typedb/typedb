@@ -43,6 +43,8 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
+
 )
 
 checkstyle_test(

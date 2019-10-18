@@ -28,7 +28,7 @@ java_library(
     ]),
     deps = [
         # Internal dependencies
-        "//common:common-core",
+        "//common:common",
 
         "//kb/concept/api:api",
         "//kb/concept/structure:structure",
@@ -51,6 +51,8 @@ java_library(
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb:{pom_version}"],
+
 )
 
 

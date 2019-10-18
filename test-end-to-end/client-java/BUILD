@@ -11,7 +11,7 @@ java_test(
     test_class = "grakn.core.client.ClientJavaE2E",
     deps = [
         # Internal dependencies
-        "//common:common-core",
+        "//common:common",
 
         # External dependencies from @graknlabs
         "@graknlabs_client_java//:client-java",

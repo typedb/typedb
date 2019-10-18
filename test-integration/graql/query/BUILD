@@ -42,7 +42,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.GraqlDefineIT",
     deps = [
-        "//common:common-core",
+        "//common:common",
         "//concept/answer",
         "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
@@ -165,7 +165,7 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.query.QueryErrorIT",
     deps = [
-        "//common:common-core",
+        "//common:common",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",
         "//kb/concept/api",

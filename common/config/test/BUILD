@@ -22,7 +22,7 @@ java_test(
      name = "grakn-config-test",
      test_class = "grakn.core.common.config.test.ConfigTest",
      srcs = ["ConfigTest.java"],
-     deps = ["//common:common-core"],
+     deps = ["//common:common"],
      resources = ["//server:conf/grakn.properties"],
      size = "small"
  )

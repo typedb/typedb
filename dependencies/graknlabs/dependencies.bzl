@@ -64,5 +64,5 @@ def graknlabs_benchmark():
     git_repository(
         name = "graknlabs_benchmark",
         remote = "https://github.com/graknlabs/benchmark.git",
-        commit = "186eeabf8122c209cc7d0ab290c9fe82b2185cc8" # keep in sync with protocol changes
+        commit = "78869c68a2b6073917f7d6ee085ffd0b0d6a29b0" # keep in sync with protocol changes
     )

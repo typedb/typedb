@@ -28,7 +28,7 @@ java_library(
     ),
     deps = [
         # Internal dependencies
-        "//common:common-core",
+        "//common:common",
         "//kb/concept/api",
         "//kb/concept/util",
         "//concept/answer",
@@ -70,6 +70,8 @@ java_library(
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",  # PREVIOUSLY UNDECLARED
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],
+    tags = ["maven_coordinates=io.grakn.core:grakn-graql:{pom_version}"],
+
 )
 
 checkstyle_test(
