@@ -60,8 +60,6 @@ public class KeyspaceStatistics {
     public void commit(Transaction tx, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
-        statisticsDelta.updateThingCount();
-
         // merge each delta into the cache, then flush the cache to Janus
         Set<Label> labelsToPersist = new HashSet<>();
         deltaMap.entrySet().stream()

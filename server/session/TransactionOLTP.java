@@ -212,7 +212,7 @@ public class TransactionOLTP implements Transaction {
                 ConceptId targetId = session.attributesCache().getIfPresent(labelIndexPair.second());
                 if (targetId != null) {
                     merge(getTinkerTraversal(), conceptId, targetId);
-                    statisticsDelta().decrement(labelIndexPair.first());
+                    statisticsDelta().decrementAttribute(labelIndexPair.first());
                 } else {
                     session.attributesCache().put(labelIndexPair.second(), conceptId);
                 }
