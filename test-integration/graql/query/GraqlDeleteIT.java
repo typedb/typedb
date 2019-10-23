@@ -18,6 +18,7 @@
 
 package grakn.core.graql.query;
 
+import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptMap;
@@ -129,14 +130,17 @@ public class GraqlDeleteIT {
         assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
         assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
 
-        Set<ConceptId> toDelete = answers.stream().map(answer -> answer.get("x").id()).collect(Collectors.toSet());
+        Set<Concept> toDelete = answers.stream().map(answer -> answer.get("x")).collect(Collectors.toSet());
 
-        ConceptSet deleted = tx.execute(
+        Void deleted = tx.execute(
                 Graql.match(var("x").isa("person").has("name", var("y")))
                         .delete().sort("y")
         ).get(0);
 
-        assertTrue(deleted.set().containsAll(toDelete));
+        assertTrue(deleted.message().contains("success"));
+        for (Concept concept : toDelete) {
+            assertTrue(concept.isDeleted());
+        }
     }
 
     @Test
@@ -151,14 +155,17 @@ public class GraqlDeleteIT {
         assertEquals("Bette Midler", answers.get(1).get("y").asAttribute().value());
         assertEquals("Jude Law", answers.get(2).get("y").asAttribute().value());
 
-        Set<ConceptId> toDelete = answers.stream().map(answer -> answer.get("x").id()).collect(Collectors.toSet());
+        Set<Concept> toDelete = answers.stream().map(answer -> answer.get("x")).collect(Collectors.toSet());
 
-        ConceptSet deleted = tx.execute(
+        Void deleted = tx.execute(
                 Graql.match(var("x").isa("person").has("name", var("y")))
                         .delete().sort("y", "asc").limit(3)
         ).get(0);
 
-        assertTrue(deleted.set().containsAll(toDelete));
+        assertTrue(deleted.message().contains("success"));
+        for (Concept concept : toDelete) {
+            assertTrue(concept.isDeleted());
+        }
     }
 
     @Test
@@ -174,14 +181,17 @@ public class GraqlDeleteIT {
         assertEquals("Marlon Brando", answers.get(2).get("y").asAttribute().value());
         assertEquals("Kermit The Frog", answers.get(3).get("y").asAttribute().value());
 
-        Set<ConceptId> toDelete = answers.stream().map(answer -> answer.get("x").id()).collect(Collectors.toSet());
+        Set<Concept> toDelete = answers.stream().map(answer -> answer.get("x")).collect(Collectors.toSet());
 
-        ConceptSet deleted = tx.execute(
+        Void deleted = tx.execute(
                 Graql.match(var("x").isa("person").has("name", var("y")))
                         .delete().sort("y", "desc").offset(3).limit(4)
         ).get(0);
 
-        assertTrue(deleted.set().containsAll(toDelete));
+        assertTrue(deleted.message().contains("success"));
+        for (Concept concept : toDelete) {
+            assertTrue(concept.isDeleted());
+        }
     }
 
     @Test
@@ -536,8 +546,9 @@ public class GraqlDeleteIT {
 
         // try and delete two of the five
         try (Transaction tx = session.writeTransaction()) {
-            List<ConceptSet> deleted = tx.execute(Graql.parse("match $x isa person; delete $x; limit 2;").asDelete());
-            long conceptsDeleted = deleted.stream().flatMap(conceptSet -> conceptSet.set().stream()).count();
+            List<ConceptMap> toDelete = tx.execute(Graql.parse("match $x isa person; get; limit 2;").asGet());
+            List<Void> deleted = tx.execute(Graql.parse("match $x isa person; delete $x; limit 2;").asDelete());
+            long conceptsDeleted = toDelete.stream().filter(conceptMap -> conceptMap.get("x").isDeleted()).count();
             assertEquals(2, conceptsDeleted);
 
             List<Numeric> count = tx.execute(Graql.parse("match $x isa person; get $x; count;").asGetAggregate());
