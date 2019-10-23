@@ -19,44 +19,24 @@
 
 package grakn.core.concept.answer;
 
-import grakn.core.kb.concept.api.ConceptId;
+import javax.annotation.Nullable;
 
-import java.util.Collections;
-import java.util.Set;
-
-/**
- * A type of Answer object that contains a Set.
- */
-public class ConceptSet extends Answer {
-
-    // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
-    private final Set<ConceptId> set;
+public class Void extends Answer {
     private final Explanation explanation;
+    private final String message;
 
-    public ConceptSet(Set<ConceptId> set) {
-        this.set = Collections.unmodifiableSet(set);
-        this.explanation = new Explanation();
+    public Void(String message) {
+        this.message = message;
+        explanation = new Explanation();
     }
 
+    @Nullable
     @Override
     public Explanation explanation() {
         return explanation;
     }
 
-    public Set<ConceptId> set() {
-        return set;
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        ConceptSet a2 = (ConceptSet) obj;
-        return this.set.equals(a2.set);
-    }
-
-    @Override
-    public int hashCode() {
-        return set.hashCode();
+    public String message() {
+        return message;
     }
 }

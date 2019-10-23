@@ -22,6 +22,7 @@ package grakn.core.graql.executor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
@@ -362,7 +363,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
-    public ConceptSet delete(GraqlDelete query) {
+    public Void delete(GraqlDelete query) {
         Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
                 .map(result -> result.project(query.vars()))
                 .distinct();
@@ -379,14 +380,12 @@ public class QueryExecutorImpl implements QueryExecutor {
                 .collect(Collectors.toList());
 
 
-        Set<ConceptId> deletedConceptIds = new HashSet<>();
         conceptsToDelete.forEach(concept -> {
             // a concept is either a schema concept or a thing
             if (concept.isSchemaConcept()) {
                 throw GraqlSemanticException.deleteSchemaConcept(concept.asSchemaConcept());
             } else if (concept.isThing()) {
                 try {
-                    deletedConceptIds.add(concept.id());
                     // a concept may have been cleaned up already
                     // for instance if role players of an implicit attribute relation are deleted, the janus edge disappears
                     concept.delete();
@@ -405,7 +404,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         });
 
         // TODO: return deleted Concepts instead of ConceptIds
-        return new ConceptSet(deletedConceptIds);
+        return new Void("Delete successful.");
     }
 
     @Override
