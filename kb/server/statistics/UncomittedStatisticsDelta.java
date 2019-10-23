@@ -72,11 +72,11 @@ public class UncomittedStatisticsDelta {
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount - 1);
         thingCount--;
-        if (type.getClass().equals(EntityType.class)) {
+        if (type instanceof EntityType) {
             entityCount--;
-        } else if (type.getClass().equals(RelationType.class)) {
+        } else if (type instanceof RelationType) {
             relationCount--;
-        } else if (type.getClass().equals(AttributeType.class)) {
+        } else if (type instanceof AttributeType) {
             attributeCount--;
         } else {
             // some exception
