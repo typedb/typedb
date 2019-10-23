@@ -56,11 +56,11 @@ public class UncomittedStatisticsDelta {
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount + 1);
         thingCount++;
-        if (type.getClass().equals(EntityType.class)) {
+        if (type instanceof EntityType) {
             entityCount++;
-        } else if (type.getClass().equals(RelationType.class)) {
+        } else if (type instanceof RelationType) {
             relationCount++;
-        } else if (type.getClass().equals(AttributeType.class)) {
+        } else if (type instanceof AttributeType) {
             attributeCount++;
         } else {
             // some exception
@@ -96,10 +96,18 @@ public class UncomittedStatisticsDelta {
 
     public HashMap<Label, Long> instanceDeltas() {
         // copy the meta type counts into the map on retrieval
-        instanceDeltas.put(Schema.MetaSchema.THING.getLabel(), thingCount);
-        instanceDeltas.put(Schema.MetaSchema.ENTITY.getLabel(), entityCount);
-        instanceDeltas.put(Schema.MetaSchema.RELATION.getLabel(), relationCount);
-        instanceDeltas.put(Schema.MetaSchema.ATTRIBUTE.getLabel(), attributeCount);
+        if (thingCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.THING.getLabel(), thingCount);
+        }
+        if (entityCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.ENTITY.getLabel(), entityCount);
+        }
+        if (relationCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.RELATION.getLabel(), relationCount);
+        }
+        if (attributeCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.ATTRIBUTE.getLabel(), attributeCount);
+        }
         return instanceDeltas;
     }
 }

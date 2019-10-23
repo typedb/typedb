@@ -342,7 +342,6 @@ public class KeyspaceStatisticsIT {
         assertEquals(2L, personCount - personCountStart);
         assertEquals(3L, ageCount - ageCountStart);
         assertEquals(personCount, entityCount);
-        assertEquals(0L, relationCount);
         assertEquals(ageCount, attributeCount);
         assertEquals(personCount + ageCount, thingCount);
     }
