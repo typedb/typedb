@@ -77,7 +77,6 @@ java_test(
     data = ["//test-integration/resources:grakn-small-tx-cache"],
     test_class = "grakn.core.server.session.cache.TransactionCacheIT",
     deps = [
-        "//common:common",
         "//core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
