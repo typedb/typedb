@@ -21,6 +21,7 @@ package grakn.core.concept;
 
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.ConceptSet;
@@ -418,7 +419,7 @@ public class RelationIT {
         // try to delete the inferred relationship
         tx = session.writeTransaction();
         GraqlDelete delete = Graql.parse("match $r isa aunthood; delete $r;").asDelete();
-        List<ConceptSet> deletedConcepts = tx.execute(delete);
+        List<Void> deletedConcepts = tx.execute(delete);
 
         // normally throws on commit
         tx.commit();

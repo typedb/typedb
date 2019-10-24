@@ -31,6 +31,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.Void;
 import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
@@ -349,22 +350,22 @@ public class TransactionOLTP implements Transaction {
     // Delete query
 
     @Override
-    public List<ConceptSet> execute(GraqlDelete query) {
+    public List<Void> execute(GraqlDelete query) {
         return execute(query, true);
     }
 
     @Override
-    public List<ConceptSet> execute(GraqlDelete query, boolean infer) {
+    public List<Void> execute(GraqlDelete query, boolean infer) {
         return stream(query, infer).collect(Collectors.toList());
     }
 
     @Override
-    public Stream<ConceptSet> stream(GraqlDelete query) {
+    public Stream<Void> stream(GraqlDelete query) {
         return stream(query, true);
     }
 
     @Override
-    public Stream<ConceptSet> stream(GraqlDelete query, boolean infer) {
+    public Stream<Void> stream(GraqlDelete query, boolean infer) {
         return Stream.of(executor(infer).delete(query));
     }
 

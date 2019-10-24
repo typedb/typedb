@@ -19,6 +19,7 @@
 package grakn.core.server.rpc;
 
 import grakn.core.common.exception.GraknException;
+import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -280,6 +281,8 @@ public class ResponseBuilder {
                 answer.setConceptSet(conceptSet((ConceptSet) object));
             } else if (object instanceof Numeric) {
                 answer.setValue(value((Numeric) object));
+            } else if (object instanceof Void) {
+                answer.setVoid(voidMessage((Void) object));
             }
 
             return answer.build();
@@ -364,6 +367,10 @@ public class ResponseBuilder {
 
         static AnswerProto.Number number(Number number) {
             return AnswerProto.Number.newBuilder().setValue(number.toString()).build();
+        }
+
+        static AnswerProto.Void voidMessage(Void voidAnswer) {
+            return AnswerProto.Void.newBuilder().setMessage(voidAnswer.message()).build();
         }
 
         private static AnswerProto.ConceptIds conceptIds(Collection<ConceptId> conceptIds) {

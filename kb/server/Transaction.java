@@ -27,6 +27,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
+import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -87,13 +88,13 @@ public interface Transaction extends AutoCloseable{
 
     Stream<ConceptMap> stream(GraqlInsert query, boolean infer);
 
-    List<ConceptSet> execute(GraqlDelete query);
+    List<Void> execute(GraqlDelete query);
 
-    List<ConceptSet> execute(GraqlDelete query, boolean infer);
+    List<Void> execute(GraqlDelete query, boolean infer);
 
-    Stream<ConceptSet> stream(GraqlDelete query);
+    Stream<Void> stream(GraqlDelete query);
 
-    Stream<ConceptSet> stream(GraqlDelete query, boolean infer);
+    Stream<Void> stream(GraqlDelete query, boolean infer);
 
     List<ConceptMap> execute(GraqlGet query);
 
