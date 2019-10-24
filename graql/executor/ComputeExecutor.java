@@ -74,6 +74,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -297,13 +298,11 @@ class ComputeExecutor {
      * @return a Answer object containing the count value
      */
     private Stream<Numeric> runComputeCount(GraqlCompute.Statistics.Count query) {
-        Set<Label> labels = scopeTypeLabels(query);
         //TODO: simplify this when we update statistics to also contain ENTITY, RELATION and ATTRIBUTE
-        if (labels.contains(Schema.MetaSchema.THING.getLabel())
-                || labels.stream().noneMatch(Schema.MetaSchema::isMetaLabel)){
-            return retrieveCachedCount(query);
-        }
+        return retrieveCachedCount(query);
 
+        // TODO we can re-add this when we move the cached count behavior out of `compute` and into `aggregate` instead
+        /*
         Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels(query));
         Set<LabelId> scopeTypeAndImpliedPlayersLabelIDs = convertLabelsToIds(scopeTypeLabelsImplicitPlayers(query));
         scopeTypeAndImpliedPlayersLabelIDs.addAll(scopeTypeLabelIDs);
@@ -325,6 +324,7 @@ class ComputeExecutor {
 
         LOG.debug("Count = {}", finalCount);
         return Stream.of(new Numeric(finalCount));
+         */
     }
 
     /**
@@ -334,15 +334,34 @@ class ComputeExecutor {
 
     private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query){
         KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
-        Set<Label> labels = scopeTypeLabels(query);
-        Label metaThing = Schema.MetaSchema.THING.getLabel();
-        long totalCount;
-        if (labels.contains(metaThing)){
-            //thing entry already contains an aggregate
-            totalCount = keyspaceStats.count(tx, metaThing);
-        } else {
-            totalCount = labels.stream().mapToLong(l -> keyspaceStats.count(tx, l)).sum();
+
+        // retrieve all types that must be counted
+        Set<Type> types = scopeTypes(query).collect(toSet());
+        if (types.contains(tx.getMetaConcept())) {
+            types = types.stream().filter(type -> type.equals(tx.getMetaConcept())).collect(toSet());
         }
+        if (types.contains(tx.getMetaEntityType())) {
+            types = types.stream()
+                    // discard all entity types except the meta entity type
+                    .filter(type -> !type.isEntityType() || type.equals(tx.getMetaEntityType()))
+                    .collect(toSet());
+        }
+        if (types.contains(tx.getMetaRelationType())) {
+            types = types.stream()
+                    // discard all relation types except the meta relation type
+                    .filter(type -> !type.isRelationType() || type.equals(tx.getMetaRelationType()))
+                    .collect(toSet());
+        }
+
+        if (types.contains(tx.getMetaAttributeType())) {
+            types = types.stream()
+                    // discard all attribute types except the meta attribute type
+                    .filter(type -> !type.isAttributeType() || type.equals(tx.getMetaAttributeType()))
+                    .collect(toSet());
+        }
+
+        // the final set of types should only include the types for whom we should perform counts
+        long totalCount = types.stream().mapToLong(type -> keyspaceStats.count(tx, type.label())).sum();
         return Stream.of(new Numeric(totalCount));
     }
 
