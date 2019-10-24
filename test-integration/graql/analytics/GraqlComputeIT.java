@@ -167,9 +167,7 @@ public class GraqlComputeIT {
             Label topImplicitType = Schema.ImplicitType.HAS.getLabel(metaAttributeLabel);
             GraqlGet thingQuery = Graql.match(
                     Graql.and(
-                            Graql.var("x").isa(tx.getMetaConcept().label().getValue()),
-                            Graql.not(Graql.var("x").isa(metaAttributeLabel.getValue())),
-                            Graql.not(Graql.var("x").isa(topImplicitType.getValue()))
+                            Graql.var("x").isa(tx.getMetaConcept().label().getValue())
                     )
             ).get();
             assertEquals(
