@@ -24,26 +24,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
+import grakn.core.core.Schema;
 import grakn.core.graql.analytics.ClusterMemberMapReduce;
 import grakn.core.graql.analytics.ConnectedComponentVertexProgram;
 import grakn.core.graql.analytics.ConnectedComponentsVertexProgram;
 import grakn.core.graql.analytics.CorenessVertexProgram;
-import grakn.core.graql.analytics.CountMapReduceWithAttribute;
-import grakn.core.graql.analytics.CountVertexProgram;
 import grakn.core.graql.analytics.DegreeDistributionMapReduce;
 import grakn.core.graql.analytics.DegreeStatisticsVertexProgram;
 import grakn.core.graql.analytics.DegreeVertexProgram;
@@ -60,36 +49,43 @@ import grakn.core.graql.analytics.StatisticsMapReduce;
 import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
-
-import java.io.Serializable;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.BiFunction;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
-
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.io.Serializable;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
@@ -538,8 +534,9 @@ class ComputeExecutor {
         }
 
         GraknMapReduce<?> mapReduce;
-        if (restrictSize)
+        if (restrictSize) {
             mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
+        }
         else mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 
         Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
