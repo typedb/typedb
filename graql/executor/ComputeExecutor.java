@@ -68,6 +68,7 @@ import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
+
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -82,6 +83,7 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -186,7 +188,7 @@ class ComputeExecutor {
      */
     private Stream<Numeric> runComputeStd(GraqlCompute.Statistics.Value query) {
         Map<String, Double> stdTuple = runComputeStatistics(query);
-        if (stdTuple == null)  return Stream.empty();
+        if (stdTuple == null) return Stream.empty();
 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
@@ -283,7 +285,7 @@ class ComputeExecutor {
             return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MEAN)) {
             return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
-        }else if (method.equals(STD)) {
+        } else if (method.equals(STD)) {
             return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(SUM)) {
             return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
@@ -332,7 +334,7 @@ class ComputeExecutor {
      * @return aggregate instance counts fetched from keyspace statistics
      */
 
-    private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query){
+    private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query) {
         KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
 
         // retrieve all types that must be counted
@@ -393,8 +395,7 @@ class ComputeExecutor {
             if (scopeIncludesAttributes(query)) {
                 paths = getComputePathResultListIncludingImplicitRelations(paths);
             }
-        }
-        else {
+        } else {
             paths = Collections.emptyList();
         }
 
@@ -446,8 +447,8 @@ class ComputeExecutor {
         Set<LabelId> targetTypeLabelIDs = convertLabelsToIds(targetTypeLabels);
 
         ComputerResult computerResult = compute(new DegreeVertexProgram(targetTypeLabelIDs),
-                                                new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
-                                                scopeTypeLabelIDs);
+                new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
+                scopeTypeLabelIDs);
 
         Map<Long, Set<ConceptId>> centralityMap = computerResult.memory().get(DegreeDistributionMapReduce.class.getName());
 
@@ -495,8 +496,8 @@ class ComputeExecutor {
 
         try {
             result = compute(new CorenessVertexProgram(k),
-                             new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
-                             scopeTypeLabelIDs);
+                    new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
+                    scopeTypeLabelIDs);
         } catch (NoResultException e) {
             return Stream.empty();
         }
@@ -537,7 +538,8 @@ class ComputeExecutor {
         }
 
         GraknMapReduce<?> mapReduce;
-        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
+        if (restrictSize)
+            mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
         else mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 
         Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
@@ -585,7 +587,7 @@ class ComputeExecutor {
      * Helper method to get list of all shortest paths
      *
      * @param resultGraph edge map
-     * @param fromID starting vertex
+     * @param fromID      starting vertex
      * @return
      */
     private List<List<ConceptId>> getComputePathResultList(Multimap<ConceptId, ConceptId> resultGraph, ConceptId fromID) {
@@ -762,19 +764,10 @@ class ComputeExecutor {
      * @return stream of Concept Types
      */
     private Stream<Type> scopeTypes(GraqlCompute query) {
-        // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
-        // Only include attributes and implicit "has-xxx" relations when user specifically asked for them.
+        // Get all types if query.inTypes() is empty, else get all scoped types
         if (query.in().isEmpty()) {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
-
-            if (scopeIncludesAttributes(query)) {
-                tx.getMetaConcept().subs().forEach(typeBuilder::add);
-            } else {
-                tx.getMetaEntityType().subs().forEach(typeBuilder::add);
-                tx.getMetaRelationType().subs()
-                        .filter(relationType -> !relationType.isImplicit()).forEach(typeBuilder::add);
-            }
-
+            tx.getMetaConcept().subs().forEach(typeBuilder::add);
             return typeBuilder.build().stream();
         } else {
             Stream<Type> subTypes = query.in().stream().map(t -> {
@@ -783,10 +776,6 @@ class ComputeExecutor {
                 if (type == null) throw GraqlSemanticException.labelNotFound(label);
                 return type;
             }).flatMap(Type::subs);
-
-            if (!scopeIncludesAttributes(query)) {
-                subTypes = subTypes.filter(relationType -> !relationType.isImplicit());
-            }
 
             return subTypes;
         }
@@ -818,7 +807,7 @@ class ComputeExecutor {
                 .flatMap(pattern -> tx.executor().traverse(pattern))
                 .findFirst().isPresent();
     }
-    
+
     /**
      * Helper method to check if concept instances exist in the query scope
      *
