@@ -25,7 +25,6 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.AttributeUniquenessIT",
     deps = [
-        "//common:common",
         "//concept/answer",
         "//core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",

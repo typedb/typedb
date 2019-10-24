@@ -24,7 +24,6 @@ java_library(
     name = "util",
     srcs = glob(["*.java"]),
     deps = [
-        "//common:common",
         "//kb/concept/api:api",
         "//concept/answer:answer",
 
