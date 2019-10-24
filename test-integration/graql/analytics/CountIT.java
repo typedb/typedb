@@ -67,7 +67,6 @@ public class CountIT {
         // assert the tx is empty
         try (Transaction tx = session.readTransaction()) {
             assertEquals(0, tx.execute(Graql.compute().count()).get(0).number().intValue());
-            assertEquals(0, tx.execute(Graql.compute().count().attributes(true)).get(0).number().intValue());
         }
 
         // add 2 instances
@@ -90,7 +89,7 @@ public class CountIT {
 
         try (Transaction tx = session.readTransaction()) {
             // assert computer returns the correct count of instances
-            assertEquals(2, tx.execute(Graql.compute().count().in(nameThing).attributes(true)).get(0).number().intValue());
+            assertEquals(2, tx.execute(Graql.compute().count().in(nameThing)).get(0).number().intValue());
             assertEquals(3, tx.execute(Graql.compute().count()).get(0).number().intValue());
         }
     }
@@ -145,10 +144,7 @@ public class CountIT {
         Numeric count;
         try (Transaction tx = session.readTransaction()) {
             count = tx.execute(Graql.compute().count()).get(0);
-            assertEquals(1, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().attributes(true)).get(0);
-            assertEquals(3L, count.number().intValue());
+            assertEquals(3, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("name")).get(0);
             assertEquals(1, count.number().intValue());
@@ -163,9 +159,6 @@ public class CountIT {
             assertEquals(2, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("relation")).get(0);
-            assertEquals(0, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -193,15 +186,9 @@ public class CountIT {
 
         try (Transaction tx = session.readTransaction()) {
             count = tx.execute(Graql.compute().count()).get(0);
-            assertEquals(2, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().attributes(true)).get(0);
             assertEquals(5, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("name")).get(0);
-            assertEquals(1, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().attributes(true).in("name")).get(0);
             assertEquals(1, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("@has-name")).get(0);
@@ -214,9 +201,6 @@ public class CountIT {
             assertEquals(3, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("relation")).get(0);
-            assertEquals(0, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }
@@ -252,9 +236,6 @@ public class CountIT {
         Numeric count;
         try (Transaction tx = session.readTransaction()) {
             count = tx.execute(Graql.compute().count()).get(0);
-            assertEquals(1, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().attributes(true)).get(0);
             assertEquals(3, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("name")).get(0);
@@ -267,9 +248,6 @@ public class CountIT {
             assertEquals(2, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("relation")).get(0);
-            assertEquals(0, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(1, count.number().intValue());
         }
 
@@ -282,7 +260,7 @@ public class CountIT {
         }
 
         try (Transaction tx = session.readTransaction()) {
-            count = tx.execute(Graql.compute().count().attributes(true)).get(0);
+            count = tx.execute(Graql.compute().count()).get(0);
             assertEquals(5, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("name")).get(0);
@@ -295,9 +273,6 @@ public class CountIT {
             assertEquals(3, count.number().intValue());
 
             count = tx.execute(Graql.compute().count().in("relation")).get(0);
-            assertEquals(0, count.number().intValue());
-
-            count = tx.execute(Graql.compute().count().in("relation").attributes(true)).get(0);
             assertEquals(2, count.number().intValue());
         }
     }

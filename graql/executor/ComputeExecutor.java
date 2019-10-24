@@ -333,6 +333,9 @@ class ComputeExecutor {
     private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query) {
         KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
 
+        // enforce that query has attributes set true
+        query.attributes(true);
+
         // retrieve all types that must be counted
         Set<Type> types = scopeTypes(query).collect(toSet());
         if (types.contains(tx.getMetaConcept())) {
@@ -761,10 +764,21 @@ class ComputeExecutor {
      * @return stream of Concept Types
      */
     private Stream<Type> scopeTypes(GraqlCompute query) {
-        // Get all types if query.inTypes() is empty, else get all scoped types
+        // Get all types if query.inTypes() is empty, else get all scoped types of each meta type.
+        // Only include attributes and implicit "has-xxx" relations when user specifically asked for them.
         if (query.in().isEmpty()) {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
-            tx.getMetaConcept().subs().forEach(typeBuilder::add);
+
+            if (scopeIncludesAttributes(query)) {
+                // this implies that Attributes and Implicit relations are included
+                // always set with compute count and statistics
+                tx.getMetaConcept().subs().forEach(typeBuilder::add);
+            } else {
+                tx.getMetaEntityType().subs().forEach(typeBuilder::add);
+                tx.getMetaRelationType().subs()
+                        .filter(relationType -> !relationType.isImplicit()).forEach(typeBuilder::add);
+            }
+
             return typeBuilder.build().stream();
         } else {
             Stream<Type> subTypes = query.in().stream().map(t -> {
@@ -774,10 +788,13 @@ class ComputeExecutor {
                 return type;
             }).flatMap(Type::subs);
 
+            if (!scopeIncludesAttributes(query)) {
+                subTypes = subTypes.filter(relationType -> !relationType.isImplicit());
+            }
+
             return subTypes;
         }
     }
-
     /**
      * Helper method to get the labels of the type in the query scope
      *
