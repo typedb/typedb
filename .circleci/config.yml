@@ -60,13 +60,6 @@ jobs:
       - run: bazel run @graknlabs_build_tools//checkstyle:test-coverage
       - run-bazel-rbe:
           command: bazel test $(bazel query 'kind(checkstyle_test, //...)')
-
-  build-unused-deps:
-    machine: true
-    working_directory: ~/grakn
-    steps:
-      - install-bazel-linux-rbe
-      - checkout
       - run:
           command: bazel run @graknlabs_build_tools//unused_deps -- list
           no_output_timeout: 30m
@@ -422,10 +415,6 @@ workflows:
           filters:
             branches:
               only: master
-      - build-unused-deps:
-          filters:
-            branches:
-              ignore: grakn-release-branch
       - test-common:
           filters:
             branches:
@@ -458,7 +447,6 @@ workflows:
             - build
             - build-checkstyle
             - build-analysis
-            - build-unused-deps
             - test-common
             - test-server
             - test-integration
