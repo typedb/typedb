@@ -130,6 +130,13 @@ public class GraknConceptException extends GraknException {
         return create(UNKNOWN_CONCEPT.getMessage(type));
     }
 
+    /**
+     * Thrown when trying to identify the meta type of a type but cannot
+     */
+    public static GraknConceptException unknownTypeMetaType(Type type) {
+        return create(ErrorMessage.UNKNOWN_META_TYPE.getMessage(type.label().toString(), type.getClass().toString()));
+    }
+
 
     /**
      * Thrown when changing the Label of an SchemaConcept which is owned by another SchemaConcept

@@ -19,8 +19,14 @@
 
 package grakn.core.kb.server.statistics;
 
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.server.exception.TransactionException;
 
 import java.util.HashMap;
 
@@ -33,6 +39,12 @@ import java.util.HashMap;
 public class UncomittedStatisticsDelta {
 
     private HashMap<Label, Long> instanceDeltas;
+    // keep these outside of the hashmap to avoid a large number of hash() method calls
+    private long thingCount = 0;
+    private long entityCount = 0;
+    private long relationCount = 0;
+    private long attributeCount = 0;
+
     public UncomittedStatisticsDelta() {
         instanceDeltas = new HashMap<>();
     }
@@ -41,32 +53,63 @@ public class UncomittedStatisticsDelta {
         return instanceDeltas.getOrDefault(label, 0L);
     }
 
-    public void increment(Label label) {
+    public void increment(Type type) {
+        Label label = type.label();
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount + 1);
+        thingCount++;
+        if (type instanceof EntityType) {
+            entityCount++;
+        } else if (type instanceof RelationType) {
+            relationCount++;
+        } else if (type instanceof AttributeType) {
+            attributeCount++;
+        } else {
+            throw GraknConceptException.unknownTypeMetaType(type);
+        }
     }
 
-    public void decrement(Label label) {
+    public void decrement(Type type) {
+        Label label = type.label();
         Long currentCount = instanceDeltas.getOrDefault(label, 0L);
         instanceDeltas.put(label, currentCount - 1);
-    }
-
-    public HashMap<Label, Long> instanceDeltas() {
-        return instanceDeltas;
+        thingCount--;
+        if (type instanceof EntityType) {
+            entityCount--;
+        } else if (type instanceof RelationType) {
+            relationCount--;
+        } else if (type instanceof AttributeType) {
+            attributeCount--;
+        } else {
+            throw GraknConceptException.unknownTypeMetaType(type);
+        }
     }
 
     /**
-     * Updates the concept count for Thing. It overwrites the entry to be equal to the sum of contributions in the
-     * delta map.
+     * Special case decrement for attribute deduplication
+     * @param label
      */
-    void updateThingCount(){
-        // precompute the delta for all Thing's and update the delta map
-        long thingDelta = instanceDeltas.values().stream()
-                .reduce(Long::sum)
-                .orElse(0L);
-        if (thingDelta != 0) {
-            Label thingLabel = Schema.MetaSchema.THING.getLabel();
-            instanceDeltas.put(thingLabel, thingDelta);
+    public void decrementAttribute(Label label) {
+        Long currentCount = instanceDeltas.getOrDefault(label, 0L);
+        instanceDeltas.put(label, currentCount - 1);
+        thingCount--;
+        attributeCount--;
+    }
+
+    public HashMap<Label, Long> instanceDeltas() {
+        // copy the meta type counts into the map on retrieval
+        if (thingCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.THING.getLabel(), thingCount);
         }
+        if (entityCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.ENTITY.getLabel(), entityCount);
+        }
+        if (relationCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.RELATION.getLabel(), relationCount);
+        }
+        if (attributeCount != 0) {
+            instanceDeltas.put(Schema.MetaSchema.ATTRIBUTE.getLabel(), attributeCount);
+        }
+        return instanceDeltas;
     }
 }

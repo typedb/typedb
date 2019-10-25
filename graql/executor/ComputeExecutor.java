@@ -24,26 +24,15 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
+import grakn.core.core.Schema;
 import grakn.core.graql.analytics.ClusterMemberMapReduce;
 import grakn.core.graql.analytics.ConnectedComponentVertexProgram;
 import grakn.core.graql.analytics.ConnectedComponentsVertexProgram;
 import grakn.core.graql.analytics.CorenessVertexProgram;
-import grakn.core.graql.analytics.CountMapReduceWithAttribute;
-import grakn.core.graql.analytics.CountVertexProgram;
 import grakn.core.graql.analytics.DegreeDistributionMapReduce;
 import grakn.core.graql.analytics.DegreeStatisticsVertexProgram;
 import grakn.core.graql.analytics.DegreeVertexProgram;
@@ -60,14 +49,31 @@ import grakn.core.graql.analytics.StatisticsMapReduce;
 import grakn.core.graql.analytics.StdMapReduce;
 import grakn.core.graql.analytics.SumMapReduce;
 import grakn.core.graql.analytics.Utility;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
+import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
+import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
+import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -80,13 +86,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
-import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
-import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.apache.tinkerpop.gremlin.process.computer.VertexProgram;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static graql.lang.Graql.Token.Compute.Algorithm.CONNECTED_COMPONENT;
 import static graql.lang.Graql.Token.Compute.Algorithm.DEGREE;
@@ -185,7 +184,7 @@ class ComputeExecutor {
      */
     private Stream<Numeric> runComputeStd(GraqlCompute.Statistics.Value query) {
         Map<String, Double> stdTuple = runComputeStatistics(query);
-        if (stdTuple == null)  return Stream.empty();
+        if (stdTuple == null) return Stream.empty();
 
         double squareSum = stdTuple.get(StdMapReduce.SQUARE_SUM);
         double sum = stdTuple.get(StdMapReduce.SUM);
@@ -282,7 +281,7 @@ class ComputeExecutor {
             return new MaxMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(MEAN)) {
             return new MeanMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
-        }else if (method.equals(STD)) {
+        } else if (method.equals(STD)) {
             return new StdMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
         } else if (method.equals(SUM)) {
             return new SumMapReduce(targetTypes, targetDataType, DegreeVertexProgram.DEGREE);
@@ -297,13 +296,11 @@ class ComputeExecutor {
      * @return a Answer object containing the count value
      */
     private Stream<Numeric> runComputeCount(GraqlCompute.Statistics.Count query) {
-        Set<Label> labels = scopeTypeLabels(query);
         //TODO: simplify this when we update statistics to also contain ENTITY, RELATION and ATTRIBUTE
-        if (labels.contains(Schema.MetaSchema.THING.getLabel())
-                || labels.stream().noneMatch(Schema.MetaSchema::isMetaLabel)){
-            return retrieveCachedCount(query);
-        }
+        return retrieveCachedCount(query);
 
+        // TODO we can re-add this when we move the cached count behavior out of `compute` and into `aggregate` instead
+        /*
         Set<LabelId> scopeTypeLabelIDs = convertLabelsToIds(scopeTypeLabels(query));
         Set<LabelId> scopeTypeAndImpliedPlayersLabelIDs = convertLabelsToIds(scopeTypeLabelsImplicitPlayers(query));
         scopeTypeAndImpliedPlayersLabelIDs.addAll(scopeTypeLabelIDs);
@@ -325,6 +322,7 @@ class ComputeExecutor {
 
         LOG.debug("Count = {}", finalCount);
         return Stream.of(new Numeric(finalCount));
+         */
     }
 
     /**
@@ -332,17 +330,39 @@ class ComputeExecutor {
      * @return aggregate instance counts fetched from keyspace statistics
      */
 
-    private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query){
+    private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query) {
         KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
-        Set<Label> labels = scopeTypeLabels(query);
-        Label metaThing = Schema.MetaSchema.THING.getLabel();
-        long totalCount;
-        if (labels.contains(metaThing)){
-            //thing entry already contains an aggregate
-            totalCount = keyspaceStats.count(tx, metaThing);
-        } else {
-            totalCount = labels.stream().mapToLong(l -> keyspaceStats.count(tx, l)).sum();
+
+        // enforce that query has attributes set true
+        query.attributes(true);
+
+        // retrieve all types that must be counted
+        Set<Type> types = scopeTypes(query).collect(toSet());
+        if (types.contains(tx.getMetaConcept())) {
+            types = types.stream().filter(type -> type.equals(tx.getMetaConcept())).collect(toSet());
         }
+        if (types.contains(tx.getMetaEntityType())) {
+            types = types.stream()
+                    // discard all entity types except the meta entity type
+                    .filter(type -> !type.isEntityType() || type.equals(tx.getMetaEntityType()))
+                    .collect(toSet());
+        }
+        if (types.contains(tx.getMetaRelationType())) {
+            types = types.stream()
+                    // discard all relation types except the meta relation type
+                    .filter(type -> !type.isRelationType() || type.equals(tx.getMetaRelationType()))
+                    .collect(toSet());
+        }
+
+        if (types.contains(tx.getMetaAttributeType())) {
+            types = types.stream()
+                    // discard all attribute types except the meta attribute type
+                    .filter(type -> !type.isAttributeType() || type.equals(tx.getMetaAttributeType()))
+                    .collect(toSet());
+        }
+
+        // the final set of types should only include the types for whom we should perform counts
+        long totalCount = types.stream().mapToLong(type -> keyspaceStats.count(tx, type.label())).sum();
         return Stream.of(new Numeric(totalCount));
     }
 
@@ -374,8 +394,7 @@ class ComputeExecutor {
             if (scopeIncludesAttributes(query)) {
                 paths = getComputePathResultListIncludingImplicitRelations(paths);
             }
-        }
-        else {
+        } else {
             paths = Collections.emptyList();
         }
 
@@ -427,8 +446,8 @@ class ComputeExecutor {
         Set<LabelId> targetTypeLabelIDs = convertLabelsToIds(targetTypeLabels);
 
         ComputerResult computerResult = compute(new DegreeVertexProgram(targetTypeLabelIDs),
-                                                new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
-                                                scopeTypeLabelIDs);
+                new DegreeDistributionMapReduce(targetTypeLabelIDs, DegreeVertexProgram.DEGREE),
+                scopeTypeLabelIDs);
 
         Map<Long, Set<ConceptId>> centralityMap = computerResult.memory().get(DegreeDistributionMapReduce.class.getName());
 
@@ -476,8 +495,8 @@ class ComputeExecutor {
 
         try {
             result = compute(new CorenessVertexProgram(k),
-                             new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
-                             scopeTypeLabelIDs);
+                    new DegreeDistributionMapReduce(targetTypeLabelIDs, CorenessVertexProgram.CORENESS),
+                    scopeTypeLabelIDs);
         } catch (NoResultException e) {
             return Stream.empty();
         }
@@ -518,7 +537,9 @@ class ComputeExecutor {
         }
 
         GraknMapReduce<?> mapReduce;
-        if (restrictSize) mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
+        if (restrictSize) {
+            mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL, query.where().size().get());
+        }
         else mapReduce = new ClusterMemberMapReduce(ConnectedComponentsVertexProgram.CLUSTER_LABEL);
 
         Memory memory = compute(vertexProgram, mapReduce, scopeTypeLabelIDs).memory();
@@ -566,7 +587,7 @@ class ComputeExecutor {
      * Helper method to get list of all shortest paths
      *
      * @param resultGraph edge map
-     * @param fromID starting vertex
+     * @param fromID      starting vertex
      * @return
      */
     private List<List<ConceptId>> getComputePathResultList(Multimap<ConceptId, ConceptId> resultGraph, ConceptId fromID) {
@@ -749,6 +770,8 @@ class ComputeExecutor {
             ImmutableSet.Builder<Type> typeBuilder = ImmutableSet.builder();
 
             if (scopeIncludesAttributes(query)) {
+                // this implies that Attributes and Implicit relations are included
+                // always set with compute count and statistics
                 tx.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
                 tx.getMetaEntityType().subs().forEach(typeBuilder::add);
@@ -772,7 +795,6 @@ class ComputeExecutor {
             return subTypes;
         }
     }
-
     /**
      * Helper method to get the labels of the type in the query scope
      *
@@ -799,7 +821,7 @@ class ComputeExecutor {
                 .flatMap(pattern -> tx.executor().traverse(pattern))
                 .findFirst().isPresent();
     }
-    
+
     /**
      * Helper method to check if concept instances exist in the query scope
      *

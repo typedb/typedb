@@ -67,17 +67,17 @@ public class ConceptObserver {
         transactionCache.remove(concept);
     }
 
-    public void thingDeleted(Thing thing) {
+    void thingDeleted(Thing thing) {
         Type type = thing.type();
-        statistics.decrement(type.label());
+        statistics.decrement(type);
         queryCache.ackDeletion(type);
         conceptDeleted(thing);
     }
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
     // when the edge is not inferred, which is probably most of the time
-    public void relationEdgeDeleted(RelationEdge edge, Supplier<Concept> wrappingConceptGetter) {
-        statistics.decrement(edge.type().label());
+    void relationEdgeDeleted(RelationEdge edge, Supplier<Concept> wrappingConceptGetter) {
+        statistics.decrement(edge.type());
         if (edge.isInferred()) {
             Concept wrappingConcept = wrappingConceptGetter.get();
             if (wrappingConcept != null) {
@@ -86,7 +86,7 @@ public class ConceptObserver {
         }
     }
 
-    public void schemaConceptDeleted(SchemaConcept schemaConcept) {
+    void schemaConceptDeleted(SchemaConcept schemaConcept) {
         ruleCache.clear();
         conceptDeleted(schemaConcept);
     }
@@ -101,7 +101,7 @@ public class ConceptObserver {
     private void thingCreated(Thing thing, boolean isInferred) {
         Type thingType = thing.type();
         ruleCache.ackTypeInstance(thingType);
-        statistics.increment(thingType.label());
+        statistics.increment(thingType);
 
         if (isInferred) {
             transactionCache.inferredInstance(thing);
@@ -119,7 +119,7 @@ public class ConceptObserver {
         }
     }
 
-    public <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
+    <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
         Type type = attribute.type();
         //Track the attribute by index
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
@@ -127,42 +127,42 @@ public class ConceptObserver {
         thingCreated(attribute, isInferred);
     }
 
-    public void relationCreated(Relation relation, boolean isInferred) {
+    void relationCreated(Relation relation, boolean isInferred) {
         transactionCache.addNewRelation(relation);
         thingCreated(relation, isInferred);
     }
 
-    public void entityCreated(Entity entity, boolean isInferred) {
+    void entityCreated(Entity entity, boolean isInferred) {
         thingCreated(entity, isInferred);
     }
 
-    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
+    void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
         thingCreated(hasAttributeRelation, isInferred);
     }
 
-    public void ruleCreated(Rule rule) {
+    void ruleCreated(Rule rule) {
         transactionCache.trackForValidation(rule);
     }
 
-    public void roleCreated(Role role) {
+    void roleCreated(Role role) {
         transactionCache.trackForValidation(role);
     }
 
-    public void relationTypeCreated(RelationType relationType) {
+    void relationTypeCreated(RelationType relationType) {
         transactionCache.trackForValidation(relationType);
     }
 
     /*
     TODO this pair of methods might be combinable somehow
      */
-    public void labelRemoved(SchemaConcept schemaConcept) {
+    void labelRemoved(SchemaConcept schemaConcept) {
         transactionCache.remove(schemaConcept);
     }
-    public void labelAdded(SchemaConcept schemaConcept) {
+    void labelAdded(SchemaConcept schemaConcept) {
         transactionCache.cacheConcept(schemaConcept);
     }
 
-    public void conceptSetAbstract(Type type, boolean isAbstract) {
+    void conceptSetAbstract(Type type, boolean isAbstract) {
         if (isAbstract) {
             transactionCache.removeFromValidation(type);
         } else {
@@ -170,7 +170,7 @@ public class ConceptObserver {
         }
     }
 
-    public void trackRelationInstancesRolePlayers(RelationType relationType) {
+    void trackRelationInstancesRolePlayers(RelationType relationType) {
         relationType.instances().forEach(concept -> {
             RelationImpl relation = RelationImpl.from(concept);
             RelationReified reifedRelation = relation.reified();
@@ -180,38 +180,38 @@ public class ConceptObserver {
         });
     }
 
-    public void trackEntityInstancesRolesPlayed(EntityType entity) {
+    void trackEntityInstancesRolesPlayed(EntityType entity) {
         entity.instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
                 rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
     }
 
-    public  void trackAttributeInstancesRolesPlayed(AttributeType attributeType) {
+    void trackAttributeInstancesRolesPlayed(AttributeType attributeType) {
         attributeType.instances().forEach(concept -> ((ThingImpl<?, ?>) concept).castingsInstance().forEach(
                 rolePlayer -> transactionCache.trackForValidation(rolePlayer)));
     }
 
-    public void castingDeleted(Casting casting) {
+    void castingDeleted(Casting casting) {
        transactionCache.deleteCasting(casting);
     }
 
-    public void deleteReifiedOwner(Relation owner) {
+    void deleteReifiedOwner(Relation owner) {
         transactionCache.getNewRelations().remove(owner);
         if (owner.isInferred()) {
             transactionCache.removeInferredInstance(owner);
         }
     }
 
-    public void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole) {
+    void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole) {
         transactionCache.trackForValidation(relationType);
         transactionCache.trackForValidation(role);
         conceptsPlayingRole.forEach(casting -> transactionCache.trackForValidation(casting));
     }
 
-    public void roleDeleted(Role role) {
+    void roleDeleted(Role role) {
         transactionCache.trackForValidation(role);
     }
 
-    public void rolePlayerCreated(Casting casting) {
+    void rolePlayerCreated(Casting casting) {
         transactionCache.trackForValidation(casting);
     }
 }
