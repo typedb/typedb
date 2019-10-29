@@ -21,8 +21,8 @@ package grakn.core.graql.reasoner.explanation;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import graql.lang.pattern.Pattern;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,22 +30,17 @@ import java.util.List;
  */
 public class LookupExplanation extends Explanation {
 
-    public LookupExplanation(Pattern pattern){
-        super(pattern);
+    public LookupExplanation(List<ConceptMap> answers){
+        super(answers);
     }
 
-    private LookupExplanation(Pattern pattern, List<ConceptMap> answers){
-        super(pattern, answers);
-    }
-
-    @Override
-    public LookupExplanation setPattern(Pattern pattern){
-        return new LookupExplanation(pattern);
+    public LookupExplanation() {
+        super(new ArrayList<>());
     }
 
     @Override
     public LookupExplanation childOf(ConceptMap ans) {
-        return new LookupExplanation(getPattern(), ans.explanation().getAnswers());
+        return new LookupExplanation(ans.explanation().getAnswers());
     }
 
     @Override

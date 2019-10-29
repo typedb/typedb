@@ -72,7 +72,8 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
         ConceptMap toMerge = state.getSubstitution();
         ConceptMap answer = new ConceptMap(
                 ConceptUtils.mergeAnswers(accumulatedAnswer, toMerge).map(),
-                mergeExplanations(accumulatedAnswer, toMerge));
+                mergeExplanations(accumulatedAnswer, toMerge),
+                null);
 
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());

@@ -21,6 +21,7 @@ package grakn.core.concept.answer;
 
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -42,24 +43,36 @@ public class ConceptMap implements Answer {
 
     private final Map<Variable, Concept> map;
     private final Explanation explanation;
+    private final Pattern pattern;
 
     public ConceptMap() {
         this.map = Collections.emptyMap();
         this.explanation = new Explanation();
+        pattern = null;
     }
 
     public ConceptMap(ConceptMap map) {
-        this(map.map, map.explanation);
+        this(map.map, map.explanation, map.pattern);
     }
 
-    public ConceptMap(Map<Variable, Concept> map, Explanation exp) {
+    public ConceptMap(Map<Variable, Concept> map, Explanation exp, Pattern pattern) {
         this.map = Collections.unmodifiableMap(map);
         this.explanation = exp;
+        this.pattern = pattern;
     }
 
     public ConceptMap(Map<Variable, Concept> m) {
-        this(m, new Explanation());
+        this(m, new Explanation(), null);
     }
+
+    /**
+     * @return query pattern associated this concept map
+     * In other words, return the pattern for which this concept map is a valid substitution
+     * Null if reasoner was not utilised or the query is conjunction
+     */
+    @CheckReturnValue
+    @Nullable
+    public Pattern getPattern() { return pattern;}
 
     /**
      * @return all explanations taking part in the derivation of this answer
@@ -141,8 +154,8 @@ public class ConceptMap implements Answer {
      * @param exp explanation for this answer
      * @return explained answer
      */
-    public ConceptMap explain(Explanation exp) {
-        return new ConceptMap(this.map, exp.childOf(this));
+    public ConceptMap explain(Explanation exp, Pattern pattern) {
+        return new ConceptMap(this.map, exp.childOf(this), pattern);
     }
 
     /**
@@ -155,7 +168,8 @@ public class ConceptMap implements Answer {
                 this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                this.explanation()
+                this.explanation,
+                this.pattern
         );
     }
 }

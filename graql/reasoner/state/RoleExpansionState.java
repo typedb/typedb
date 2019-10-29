@@ -75,7 +75,7 @@ class RoleExpansionState extends ResolutionState {
 
         return Sets.cartesianProduct(entryOptions).stream()
                 .map(mappingList -> new ConceptMap(
-                        mappingList.stream().collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue)), answer.explanation()))
-                .map(ans -> ans.explain(answer.explanation()));
+                        mappingList.stream().collect(Collectors.toMap(AbstractMap.SimpleImmutableEntry::getKey, AbstractMap.SimpleImmutableEntry::getValue)), answer.explanation(), answer.getPattern()))
+                .map(ans -> ans.explain(answer.explanation(), answer.getPattern()));
     }
 }

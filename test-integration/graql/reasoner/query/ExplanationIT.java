@@ -381,7 +381,7 @@ public class ExplanationIT {
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
-        Pattern queryPattern = ans.explanation().getPattern();
+        Pattern queryPattern = ans.getPattern();
         Set<Variable> vars = new HashSet<>();
         if (queryPattern != null){
             queryPattern.statements().forEach(s -> vars.addAll(s.variables()));

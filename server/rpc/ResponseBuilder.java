@@ -312,7 +312,7 @@ public class ResponseBuilder {
 
             if (answer.explanation() != null && !answer.explanation().isEmpty()) {
                 conceptMapProto.setHasExplanation(true);
-                conceptMapProto.setPattern(answer.explanation().getPattern().toString());
+                conceptMapProto.setPattern(answer.getPattern().toString());
             } else {
                 conceptMapProto.setHasExplanation(false);
             }

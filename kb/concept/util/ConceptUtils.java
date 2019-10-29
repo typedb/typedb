@@ -194,6 +194,6 @@ public class ConceptUtils {
                     }
                 });
         if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
-        return new ConceptMap(entryMap, answerA.explanation());
+        return new ConceptMap(entryMap, answerA.explanation(), null);
     }
 }

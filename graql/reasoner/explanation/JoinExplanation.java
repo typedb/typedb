@@ -31,9 +31,8 @@ import java.util.List;
  */
 public class JoinExplanation extends Explanation {
 
-    public JoinExplanation(List<ConceptMap> answers){ super(answers);}
-    public JoinExplanation(Pattern queryPattern, List<ConceptMap> partialAnswers){
-        super(queryPattern, partialAnswers);
+    public JoinExplanation(List<ConceptMap> partialAnswers){
+        super(partialAnswers);
     }
 
     @Override

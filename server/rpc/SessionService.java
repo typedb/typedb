@@ -244,6 +244,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case CONCEPTMETHOD_REQ:
                         conceptMethod(request.getConceptMethodReq());
                         break;
+                    case EXPLANATION_REQ:
+                        explanation(request.getExplanationReq());
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
@@ -399,6 +401,10 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
             Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
             onNextResponse(response);
+        }
+
+        private void explanation(grakn.protocol.session.AnswerProto.Explanation.Req explanationReq) {
+            // TODO
         }
 
         private void next(Transaction.Iter.Req iterate) {
