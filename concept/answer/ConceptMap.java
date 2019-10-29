@@ -24,9 +24,11 @@ import grakn.core.kb.concept.api.GraknConceptException;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -40,26 +42,41 @@ public class ConceptMap extends Answer {
 
     private final Map<Variable, Concept> map;
     private final Explanation explanation;
+    private final boolean hasExplanation;
 
     public ConceptMap() {
         this.map = Collections.emptyMap();
         this.explanation = new Explanation();
+        hasExplanation = false;
     }
 
     public ConceptMap(ConceptMap map) {
-        this(map.map, map.explanation);
+        this(map.map, map.explanation, map.hasExplanation);
     }
 
-    public ConceptMap(Map<Variable, Concept> map, Explanation exp) {
+    public ConceptMap(Map<Variable, Concept> map, Explanation exp, boolean hasExplanation) {
         this.map = Collections.unmodifiableMap(map);
         this.explanation = exp;
+        this.hasExplanation = hasExplanation;
     }
 
     public ConceptMap(Map<Variable, Concept> m) {
-        this(m, new Explanation());
+        this(m, new Explanation(), false);
     }
 
-    @Override
+    /**
+     * @return all explanations taking part in the derivation of this answer
+     */
+    @Nullable
+    @CheckReturnValue
+    public Set<Explanation> explanations() {
+        if (this.explanation() == null) return Collections.emptySet();
+        Set<Explanation> explanations = new HashSet<>();
+        explanations.add(this.explanation());
+        this.explanation().getAnswers().stream().forEach(conceptMap -> explanations.addAll(conceptMap.explanations()));
+        return explanations;
+    }
+
     public Explanation explanation() {
         return explanation;
     }
@@ -141,7 +158,8 @@ public class ConceptMap extends Answer {
                 this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                this.explanation()
+                this.explanation(),
+                this.hasExplanation()
         );
     }
 }
