@@ -294,14 +294,14 @@ public class GraknClientIT {
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
         Set<ConceptMap> answers = deductions(answer).stream()
-                .filter(a -> a.explanation().getPattern() != null)
+                .filter(a -> a.queryPattern() != null)
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans) {
-        Pattern queryPattern = ans.explanation().getPattern();
+        Pattern queryPattern = ans.queryPattern();
         Set<Variable> vars = new HashSet<>();
         if (queryPattern != null) {
             queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
