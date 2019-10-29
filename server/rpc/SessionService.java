@@ -248,7 +248,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
                 }
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
                 close(e);
             }
         }

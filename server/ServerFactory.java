@@ -35,6 +35,13 @@ import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
+import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.ServerChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is a factory class which contains methods for instantiating a Server in different ways.
@@ -103,7 +110,15 @@ public class ServerFactory {
 
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 
-        return ServerBuilder.forPort(grpcPort)
+        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(4);
+        int numThreads = Runtime.getRuntime().availableProcessors() * 2;// Netty default
+
+        return NettyServerBuilder.forPort(grpcPort)
+                .executor(Executors.newFixedThreadPool(numThreads))
+                .workerEventLoopGroup(eventLoopGroup)
+                .bossEventLoopGroup(eventLoopGroup)
+                .maxConnectionIdle(1, TimeUnit.HOURS)
+                .channelType(NioServerSocketChannel.class)
                 .addService(sessionService)
                 .addService(new KeyspaceService(requestsHandler))
                 .build();
