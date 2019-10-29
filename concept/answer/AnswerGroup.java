@@ -30,7 +30,7 @@ import java.util.List;
  *
  * @param <T> the type of Answer being grouped
  */
-public class AnswerGroup<T extends Answer> extends Answer {
+public class AnswerGroup<T extends Answer> implements Answer {
 
     private final Concept owner;
     private final List<T> answers;

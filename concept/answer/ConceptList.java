@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * A type of Answer object that contains a List of Concepts.
  */
-public class ConceptList extends Answer {
+public class ConceptList implements Answer{
 
     // TODO: change to store List<Concept> once we are able to construct Concept without a database look up
     private final List<ConceptId> list;

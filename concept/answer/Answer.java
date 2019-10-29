@@ -20,8 +20,9 @@
 package grakn.core.concept.answer;
 
 /**
- * An object that contains the answer of every Graql Query.
+ * An empty interface that in the future will contain a proper API that all answer types should share
+ * TODO redesign Answer interface
  */
-public abstract class Answer {
+public interface  Answer {
 
 }

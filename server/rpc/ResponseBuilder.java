@@ -288,11 +288,10 @@ public class ResponseBuilder {
             return answer.build();
         }
 
-        static AnswerProto.Explanation explanation(Explanation explanation) {
-            AnswerProto.Explanation.Builder builder = AnswerProto.Explanation.newBuilder()
-                    .addAllAnswers(explanation.getAnswers().stream().map(Answer::conceptMap)
+        static AnswerProto.Explanation.Res explanation(Explanation explanation) {
+            AnswerProto.Explanation.Res.Builder builder = AnswerProto.Explanation.Res.newBuilder()
+                    .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
                             .collect(Collectors.toList()));
-            if (explanation.getPattern() != null) builder.setPattern(explanation.getPattern().toString());
             return builder.build();
         }
 
@@ -301,10 +300,6 @@ public class ResponseBuilder {
                     .setOwner(ResponseBuilder.Concept.concept(answer.owner()))
                     .addAllAnswers(answer.answers().stream().map(Answer::answer).collect(Collectors.toList()));
 
-            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-                answerGroupProto.setExplanation(explanation(answer.explanation()));
-            }
             return answerGroupProto.build();
         }
 
@@ -315,9 +310,11 @@ public class ResponseBuilder {
                 conceptMapProto.putMap(var.name(), conceptProto);
             });
 
-            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
             if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-                conceptMapProto.setExplanation(explanation(answer.explanation()));
+                conceptMapProto.setHasExplanation(true);
+                conceptMapProto.setPattern(answer.explanation().getPattern().toString());
+            } else {
+                conceptMapProto.setHasExplanation(false);
             }
             return conceptMapProto.build();
         }
@@ -326,10 +323,6 @@ public class ResponseBuilder {
             AnswerProto.ConceptList.Builder conceptListProto = AnswerProto.ConceptList.newBuilder();
             conceptListProto.setList(conceptIds(answer.list()));
 
-            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-                conceptListProto.setExplanation(explanation(answer.explanation()));
-            }
             return conceptListProto.build();
         }
 
@@ -337,10 +330,6 @@ public class ResponseBuilder {
             AnswerProto.ConceptSet.Builder conceptSetProto = AnswerProto.ConceptSet.newBuilder();
             conceptSetProto.setSet(conceptIds(answer.set()));
 
-            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-                conceptSetProto.setExplanation(explanation(answer.explanation()));
-            }
             return conceptSetProto.build();
         }
 
@@ -348,20 +337,12 @@ public class ResponseBuilder {
             AnswerProto.ConceptSetMeasure.Builder conceptSetMeasureProto = AnswerProto.ConceptSetMeasure.newBuilder();
             conceptSetMeasureProto.setSet(conceptIds(answer.set()));
             conceptSetMeasureProto.setMeasurement(number(answer.measurement()));
-            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-                conceptSetMeasureProto.setExplanation(explanation(answer.explanation()));
-            }
             return conceptSetMeasureProto.build();
         }
 
         static AnswerProto.Value value(Numeric answer) {
             AnswerProto.Value.Builder valueProto = AnswerProto.Value.newBuilder();
             valueProto.setNumber(number(answer.number()));
-
-            // TODO: answer.explanation should return null, rather than an instance where .getQuery() returns null
-            if (answer.explanation() != null && !answer.explanation().isEmpty()) {
-                valueProto.setExplanation(explanation(answer.explanation()));
-            }
             return valueProto.build();
         }
 

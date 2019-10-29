@@ -38,30 +38,27 @@ import java.util.stream.Collectors;
 /**
  * A type of Answer object that contains a Map of Concepts.
  */
-public class ConceptMap extends Answer {
+public class ConceptMap implements Answer {
 
     private final Map<Variable, Concept> map;
     private final Explanation explanation;
-    private final boolean hasExplanation;
 
     public ConceptMap() {
         this.map = Collections.emptyMap();
         this.explanation = new Explanation();
-        hasExplanation = false;
     }
 
     public ConceptMap(ConceptMap map) {
-        this(map.map, map.explanation, map.hasExplanation);
+        this(map.map, map.explanation);
     }
 
-    public ConceptMap(Map<Variable, Concept> map, Explanation exp, boolean hasExplanation) {
+    public ConceptMap(Map<Variable, Concept> map, Explanation exp) {
         this.map = Collections.unmodifiableMap(map);
         this.explanation = exp;
-        this.hasExplanation = hasExplanation;
     }
 
     public ConceptMap(Map<Variable, Concept> m) {
-        this(m, new Explanation(), false);
+        this(m, new Explanation());
     }
 
     /**
@@ -158,8 +155,7 @@ public class ConceptMap extends Answer {
                 this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                this.explanation(),
-                this.hasExplanation()
+                this.explanation()
         );
     }
 }
