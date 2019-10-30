@@ -34,9 +34,7 @@ import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
-import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
-import io.netty.channel.ServerChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 

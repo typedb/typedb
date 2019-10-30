@@ -70,30 +70,32 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
     private final OpenRequest requestOpener;
     private final Map<String, Session> openSessions;
-    // The following set keeps track of all active transactions, so that if the user wants to stop the server
-    // we can forcefully close all the connections to clients using active transactions.
-    private Set<TransactionListener> transactionListenerSet;
+    // The following map associates SessionId to a collection of TransactionListeners so that:
+    //     - if the user wants to stop the server, we can forcefully close all the connections to clients using active transactions.
+    //     - if a client abruptly closes a connection (usually because of crashes on client side) we can kill all the threads associated
+    //       to transactions previously opened by the client and that were not properly closed before the abrupt closure (see onError()).
+    private Map<String, Set<TransactionListener>> transactionListeners;
 
     public SessionService(OpenRequest requestOpener) {
         this.requestOpener = requestOpener;
         this.openSessions = new HashMap<>();
-        this.transactionListenerSet = new HashSet<>();
+        this.transactionListeners = new HashMap<>();
     }
 
     /**
      * Close all open transactions, sessions and connections with clients - this is invoked by JVM shutdown hook
      */
     public void shutdown() {
-        transactionListenerSet.forEach(transactionListener -> transactionListener.close(null));
-        transactionListenerSet.clear();
+        transactionListeners.values()
+                .forEach(transactionListenerSet ->
+                        transactionListenerSet.forEach(transactionListener -> transactionListener.close(null)));
+        transactionListeners.clear();
         openSessions.values().forEach(Session::close);
     }
 
     @Override
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        TransactionListener transactionListener = new TransactionListener(responseSender, openSessions);
-        transactionListenerSet.add(transactionListener);
-        return transactionListener;
+        return new TransactionListener(responseSender, openSessions);
     }
 
     @Override
@@ -103,6 +105,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Session session = requestOpener.open(request);
             String sessionId = keyspace + UUID.randomUUID().toString();
             openSessions.put(sessionId, session);
+            transactionListeners.put(sessionId, new HashSet<>());
             responseObserver.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionId).build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
@@ -114,8 +117,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     @Override
     public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
         try {
-            Session session = openSessions.remove(request.getSessionId());
-            session.close();
+            String sessionId = request.getSessionId();
+            transactionListeners.remove(sessionId).forEach(transactionListener -> transactionListener.close(null));
+            openSessions.remove(sessionId).close();
             responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
@@ -143,8 +147,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         TransactionListener(StreamObserver<Transaction.Res> responseSender, Map<String, Session> openSessions) {
             this.responseSender = responseSender;
-
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener").build();
             this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.openSessions = openSessions;
         }
@@ -176,22 +179,27 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         @Override
         public void onError(Throwable t) {
-            transactionListenerSet.remove(this);
             // This method is invoked when a client abruptly terminates a connection to the server
-            // so we want to make sure to also close and delete the session to which this transaction is associated to.
+            // so we want to make sure to also close and delete the current session and
+            // all the transactions associated to the same client.
+            transactionListeners.remove(sessionId).forEach(transactionListener -> transactionListener.close(t));
             Session session = openSessions.remove(sessionId);
             session.close();
-            close(t);
+
+
+            // TODO: This might create issues if a session is used by other concurrent clients,
+            // the better approach would be to signal a closure intent to the session and the session should be able to
+            // detect whether it's been used by other connections, if not close it completely.
         }
 
         @Override
         public void onCompleted() {
-            transactionListenerSet.remove(this);
+            transactionListeners.get(sessionId).remove(this);
             close(null);
         }
 
         private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
-            /* this method variant is only called if tracing is active */
+            // this method variant is only called if tracing is active
 
             // close the Span from gRPC thread
             queueSpan.finish(); // time spent in queue
@@ -293,6 +301,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             sessionId = request.getSessionId();
+            transactionListeners.get(sessionId).add(this);
+
             Session session = openSessions.get(sessionId);
 
             Transaction.Type type = request.getType();
