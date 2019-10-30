@@ -193,7 +193,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return this.withSubstitution(answer)
                 .getAtom()
                 .materialise()
-                .map(ans -> ans.explain(answer.explanation(), answer.getPattern()));
+                .map(ans -> ans.explain(answer.explanation(), this.getPattern()));
     }
 
     @Override

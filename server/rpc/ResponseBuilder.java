@@ -133,6 +133,20 @@ public class ResponseBuilder {
         }
 
         /**
+         *
+         * @param explanation
+         * @return
+         */
+        static SessionProto.Transaction.Res explanation(Explanation explanation) {
+            SessionProto.Transaction.Res.Builder res = SessionProto.Transaction.Res.newBuilder();
+            AnswerProto.Explanation.Res.Builder explanationBuilder = AnswerProto.Explanation.Res.newBuilder()
+                    .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
+                            .collect(Collectors.toList()));
+            res.setExplanationRes(explanationBuilder.build());
+            return res.build();
+        }
+
+        /**
          * An RPC Response Builder class for Transaction iterator responses
          */
         static class Iter {
@@ -288,12 +302,6 @@ public class ResponseBuilder {
             return answer.build();
         }
 
-        static AnswerProto.Explanation.Res explanation(Explanation explanation) {
-            AnswerProto.Explanation.Res.Builder builder = AnswerProto.Explanation.Res.newBuilder()
-                    .addAllExplanation(explanation.getAnswers().stream().map(Answer::conceptMap)
-                            .collect(Collectors.toList()));
-            return builder.build();
-        }
 
         static AnswerProto.AnswerGroup answerGroup(AnswerGroup<?> answer) {
             AnswerProto.AnswerGroup.Builder answerGroupProto = AnswerProto.AnswerGroup.newBuilder()

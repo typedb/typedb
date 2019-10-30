@@ -23,6 +23,11 @@ import brave.Span;
 import brave.propagation.TraceContext;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
+import grakn.core.graql.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -34,11 +39,13 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.exception.TransactionException;
+import grakn.protocol.session.AnswerProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -46,10 +53,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +69,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -403,8 +413,29 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
-        private void explanation(grakn.protocol.session.AnswerProto.Explanation.Req explanationReq) {
-            // TODO
+        private void explanation(AnswerProto.Explanation.Req explanationReq) {
+            AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
+            Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
+            List<Pattern> queryPatterns = new ArrayList<>();
+            queryPatterns.add(queryPattern);
+            explainable.getMapMap().forEach(
+                    (var, concept) -> queryPatterns.add(Graql.var(var).id(concept.getId()))
+            );
+
+            GraqlGet getQuery = Graql.match(queryPatterns).get();
+            Stream<ConceptMap> answers = tx.stream(getQuery);
+            ConceptMap answer = answers.findFirst().get();
+            Explanation explanation = answer.explanation();
+
+            List<ConceptMap> subExplanations = explanation.getAnswers();
+            ReasonerQueryImpl q = ReasonerQueries.create(getQuery.match().getPatterns().getDisjunctiveNormalForm().getPatterns().iterator().next(), tx);
+
+            List<ConceptMap> maps = q.selectAtoms().map(ReasonerQueries::atomic).flatMap(aq -> (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq)).collect(Collectors.toList());
+
+            JoinExplanation joined = new JoinExplanation(maps);
+
+            Transaction.Res response = ResponseBuilder.Transaction.explanation(joined);
+            onNextResponse(response);
         }
 
         private void next(Transaction.Iter.Req iterate) {
