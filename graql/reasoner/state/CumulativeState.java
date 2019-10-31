@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static grakn.common.util.Collections.map;
+
 /**
  * Query state corresponding to a an intermediate state obtained from decomposing a conjunctive query (ReasonerQueryImpl) in the resolution tree.
  */
@@ -69,11 +71,12 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap accumulatedAnswer = getSubstitution();
-        ConceptMap toMerge = state.getSubstitution();
+        ConceptMap toMerge = state.getSubstitution().withPattern(getQuery().getPattern());
+        ConceptMap merged = ConceptUtils.mergeAnswers(accumulatedAnswer, toMerge);
         ConceptMap answer = new ConceptMap(
-                ConceptUtils.mergeAnswers(accumulatedAnswer, toMerge).map(),
+                merged.map(),
                 mergeExplanations(accumulatedAnswer, toMerge),
-                null);
+                merged.getPattern());
 
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());

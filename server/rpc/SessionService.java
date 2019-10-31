@@ -25,7 +25,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;

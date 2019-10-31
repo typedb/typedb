@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class LookupExplanation extends Explanation {
 
-    public LookupExplanation(List<ConceptMap> answers){
+    private LookupExplanation(List<ConceptMap> answers){
         super(answers);
     }
 
