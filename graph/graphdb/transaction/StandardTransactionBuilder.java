@@ -1,0 +1,519 @@
+// Copyright 2017 JanusGraph Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package grakn.core.graph.graphdb.transaction;
+
+import com.google.common.base.Preconditions;
+import org.janusgraph.core.TransactionBuilder;
+import org.janusgraph.core.schema.DefaultSchemaMaker;
+import org.janusgraph.diskstorage.BaseTransactionConfig;
+import org.janusgraph.diskstorage.configuration.ConfigElement;
+import org.janusgraph.diskstorage.configuration.ConfigOption;
+import org.janusgraph.diskstorage.configuration.Configuration;
+import org.janusgraph.diskstorage.configuration.MergedConfiguration;
+import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
+import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import org.janusgraph.graphdb.database.StandardJanusGraph;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+
+import java.time.Instant;
+
+import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+
+/**
+ * Used to configure a {@link org.janusgraph.core.JanusGraphTransaction}.
+ *
+ * @see org.janusgraph.core.JanusGraphTransaction
+ */
+public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
+
+    private boolean isReadOnly = false;
+
+    private boolean hasEnabledBatchLoading = false;
+
+    private final boolean assignIDsImmediately;
+
+    private final DefaultSchemaMaker defaultSchemaMaker;
+
+    private boolean verifyExternalVertexExistence = true;
+
+    private boolean verifyInternalVertexExistence = false;
+
+    private final boolean propertyPrefetching;
+
+    private boolean singleThreaded = false;
+
+    private boolean threadBound = false;
+
+    private int vertexCacheSize;
+
+    private int dirtyVertexSize;
+
+    private long indexCacheWeight;
+
+    private String logIdentifier;
+
+    private int[] restrictedPartitions = new int[0];
+
+    private Instant userCommitTime = null;
+
+    private String groupName;
+
+    private final boolean forceIndexUsage;
+
+    private final ModifiableConfiguration writableCustomOptions;
+
+    private final Configuration customOptions;
+
+    private final StandardJanusGraph graph;
+
+    /**
+     * Constructs a new JanusGraphTransaction configuration with default configuration parameters.
+     */
+    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph) {
+        Preconditions.checkNotNull(graphConfig);
+        Preconditions.checkNotNull(graph);
+        if (graphConfig.isReadOnly()) readOnly();
+        if (graphConfig.isBatchLoading()) enableBatchLoading();
+        this.graph = graph;
+        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.assignIDsImmediately = graphConfig.hasFlushIDs();
+        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
+        this.groupName = graphConfig.getMetricsPrefix();
+        this.logIdentifier = null;
+        this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
+        this.writableCustomOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
+        this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
+        vertexCacheSize(graphConfig.getTxVertexCacheSize());
+        dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
+    }
+
+    public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph, Configuration customOptions) {
+        Preconditions.checkNotNull(graphConfig);
+        Preconditions.checkNotNull(graph);
+        if (graphConfig.isReadOnly()) readOnly();
+        if (graphConfig.isBatchLoading()) enableBatchLoading();
+        this.graph = graph;
+        this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
+        this.assignIDsImmediately = graphConfig.hasFlushIDs();
+        this.forceIndexUsage = graphConfig.hasForceIndexUsage();
+        this.groupName = graphConfig.getMetricsPrefix();
+        this.logIdentifier = null;
+        this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
+        this.writableCustomOptions = null;
+        this.customOptions = customOptions;
+        vertexCacheSize(graphConfig.getTxVertexCacheSize());
+        dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
+    }
+
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder threadBound() {
+        this.threadBound = true;
+        this.singleThreaded = true;
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder readOnly() {
+        this.isReadOnly = true;
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder enableBatchLoading() {
+        hasEnabledBatchLoading = true;
+        checkExternalVertexExistence(false);
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder disableBatchLoading() {
+        hasEnabledBatchLoading = false;
+        checkExternalVertexExistence(true);
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder vertexCacheSize(int size) {
+        Preconditions.checkArgument(size >= 0);
+        this.vertexCacheSize = size;
+        this.indexCacheWeight = size / 2;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder dirtyVertexSize(int size) {
+        this.dirtyVertexSize = size;
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder checkInternalVertexExistence(boolean enabled) {
+        this.verifyInternalVertexExistence = enabled;
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder checkExternalVertexExistence(boolean enabled) {
+        this.verifyExternalVertexExistence = enabled;
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder commitTime(Instant timestampSinceEpoch) {
+        this.userCommitTime = timestampSinceEpoch;
+        return this;
+    }
+
+    @Override
+    public void setCommitTime(Instant time) {
+        throw new UnsupportedOperationException("Use setCommitTime(long,TimeUnit)");
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder groupName(String p) {
+        this.groupName = p;
+        return this;
+    }
+
+    @Override
+    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder logIdentifier(String logName) {
+        this.logIdentifier = logName;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder restrictedPartitions(int[] partitions) {
+        Preconditions.checkNotNull(partitions);
+        this.restrictedPartitions = partitions;
+        return this;
+    }
+
+    @Override
+    public TransactionBuilder customOption(String k, Object v) {
+        if (null == writableCustomOptions)
+            throw new IllegalStateException("This builder was not constructed with setCustomOption support");
+        writableCustomOptions.set((ConfigOption<Object>) ConfigElement.parse(ROOT_NS, k).element, v);
+        return this;
+    }
+
+    @Override
+    public StandardJanusGraphTx start() {
+        TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
+                assignIDsImmediately, forceIndexUsage, verifyExternalVertexExistence,
+                verifyInternalVertexExistence,
+                propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
+                indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
+                logIdentifier, restrictedPartitions, groupName,
+                defaultSchemaMaker, customOptions);
+        return graph.newTransaction(immutable);
+    }
+
+    /* ##############################################
+                    TransactionConfig
+    ############################################## */
+
+
+    @Override
+    public final boolean isReadOnly() {
+        return isReadOnly;
+    }
+
+    @Override
+    public final boolean hasAssignIDsImmediately() {
+        return assignIDsImmediately;
+    }
+
+    @Override
+    public final boolean hasForceIndexUsage() {
+        return forceIndexUsage;
+    }
+
+    @Override
+    public boolean hasEnabledBatchLoading() {
+        return hasEnabledBatchLoading;
+    }
+
+    @Override
+    public final boolean hasVerifyExternalVertexExistence() {
+        return verifyExternalVertexExistence;
+    }
+
+    @Override
+    public final boolean hasVerifyInternalVertexExistence() {
+        return verifyInternalVertexExistence;
+    }
+
+    @Override
+    public final DefaultSchemaMaker getAutoSchemaMaker() {
+        return defaultSchemaMaker;
+    }
+
+    public boolean hasPropertyPrefetching() {
+        return propertyPrefetching;
+    }
+
+    @Override
+    public final boolean isSingleThreaded() {
+        return singleThreaded;
+    }
+
+    @Override
+    public final boolean isThreadBound() {
+        return threadBound;
+    }
+
+    @Override
+    public final int getVertexCacheSize() {
+        return vertexCacheSize;
+    }
+
+    @Override
+    public final int getDirtyVertexSize() {
+        return dirtyVertexSize;
+    }
+
+    @Override
+    public final long getIndexCacheWeight() {
+        return indexCacheWeight;
+    }
+
+    @Override
+    public String getLogIdentifier() {
+        return logIdentifier;
+    }
+
+    @Override
+    public int[] getRestrictedPartitions() {
+        return restrictedPartitions;
+    }
+
+    @Override
+    public boolean hasRestrictedPartitions() {
+        return restrictedPartitions.length > 0;
+    }
+
+    @Override
+    public String getGroupName() {
+        return groupName;
+    }
+
+    @Override
+    public boolean hasGroupName() {
+        return null != groupName;
+    }
+
+    @Override
+    public Instant getCommitTime() {
+        return userCommitTime;
+    }
+
+    @Override
+    public boolean hasCommitTime() {
+        return userCommitTime != null;
+    }
+
+    @Override
+    public <V> V getCustomOption(ConfigOption<V> opt) {
+        return getCustomOptions().get(opt);
+    }
+
+    @Override
+    public Configuration getCustomOptions() {
+        return customOptions;
+    }
+
+    @Override
+    public TimestampProvider getTimestampProvider() {
+        return graph.getConfiguration().getTimestampProvider();
+    }
+
+    private static class ImmutableTxCfg implements TransactionConfiguration {
+
+        private final boolean isReadOnly;
+        private final boolean hasEnabledBatchLoading;
+        private final boolean hasAssignIDsImmediately;
+        private final boolean hasForceIndexUsage;
+        private final boolean hasVerifyExternalVertexExistence;
+        private final boolean hasVerifyInternalVertexExistence;
+        private final boolean hasPropertyPrefetching;
+        private final boolean isSingleThreaded;
+        private final boolean isThreadBound;
+        private final long indexCacheWeight;
+        private final int vertexCacheSize;
+        private final int dirtyVertexSize;
+        private final String logIdentifier;
+        private final int[] restrictedPartitions;
+        private final DefaultSchemaMaker defaultSchemaMaker;
+
+        private final BaseTransactionConfig handleConfig;
+
+        ImmutableTxCfg(boolean isReadOnly,
+                       boolean hasEnabledBatchLoading,
+                       boolean hasAssignIDsImmediately,
+                       boolean hasForceIndexUsage,
+                       boolean hasVerifyExternalVertexExistence,
+                       boolean hasVerifyInternalVertexExistence,
+                       boolean hasPropertyPrefetching, boolean isSingleThreaded,
+                       boolean isThreadBound, TimestampProvider times, Instant commitTime,
+                       long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
+                       int[] restrictedPartitions,
+                       String groupName,
+                       DefaultSchemaMaker defaultSchemaMaker,
+                       Configuration customOptions) {
+            this.isReadOnly = isReadOnly;
+            this.hasEnabledBatchLoading = hasEnabledBatchLoading;
+            this.hasAssignIDsImmediately = hasAssignIDsImmediately;
+            this.hasForceIndexUsage = hasForceIndexUsage;
+            this.hasVerifyExternalVertexExistence = hasVerifyExternalVertexExistence;
+            this.hasVerifyInternalVertexExistence = hasVerifyInternalVertexExistence;
+            this.hasPropertyPrefetching = hasPropertyPrefetching;
+            this.isSingleThreaded = isSingleThreaded;
+            this.isThreadBound = isThreadBound;
+            this.indexCacheWeight = indexCacheWeight;
+            this.vertexCacheSize = vertexCacheSize;
+            this.dirtyVertexSize = dirtyVertexSize;
+            this.logIdentifier = logIdentifier;
+            this.restrictedPartitions = restrictedPartitions;
+            this.defaultSchemaMaker = defaultSchemaMaker;
+            this.handleConfig = new StandardBaseTransactionConfig.Builder()
+                    .commitTime(commitTime)
+                    .timestampProvider(times)
+                    .groupName(groupName)
+                    .customOptions(customOptions).build();
+        }
+
+        @Override
+        public boolean hasEnabledBatchLoading() {
+            return hasEnabledBatchLoading;
+        }
+
+        @Override
+        public boolean isReadOnly() {
+            return isReadOnly;
+        }
+
+        @Override
+        public boolean hasAssignIDsImmediately() {
+            return hasAssignIDsImmediately;
+        }
+
+        @Override
+        public final boolean hasForceIndexUsage() {
+            return hasForceIndexUsage;
+        }
+
+        @Override
+        public boolean hasVerifyExternalVertexExistence() {
+            return hasVerifyExternalVertexExistence;
+        }
+
+        @Override
+        public boolean hasVerifyInternalVertexExistence() {
+            return hasVerifyInternalVertexExistence;
+        }
+
+        @Override
+        public DefaultSchemaMaker getAutoSchemaMaker() {
+            return defaultSchemaMaker;
+        }
+
+        @Override
+        public boolean hasPropertyPrefetching() {
+            return hasPropertyPrefetching;
+        }
+
+        @Override
+        public boolean isSingleThreaded() {
+            return isSingleThreaded;
+        }
+
+        @Override
+        public boolean isThreadBound() {
+            return isThreadBound;
+        }
+
+        @Override
+        public int getVertexCacheSize() {
+            return vertexCacheSize;
+        }
+
+        @Override
+        public int getDirtyVertexSize() {
+            return dirtyVertexSize;
+        }
+
+        @Override
+        public long getIndexCacheWeight() {
+            return indexCacheWeight;
+        }
+
+        @Override
+        public String getLogIdentifier() {
+            return logIdentifier;
+        }
+
+        @Override
+        public int[] getRestrictedPartitions() {
+            return restrictedPartitions;
+        }
+
+        @Override
+        public boolean hasRestrictedPartitions() {
+            return restrictedPartitions.length > 0;
+        }
+
+        @Override
+        public Instant getCommitTime() {
+            return handleConfig.getCommitTime();
+        }
+
+        @Override
+        public void setCommitTime(Instant time) {
+            handleConfig.setCommitTime(time);
+        }
+
+        @Override
+        public boolean hasCommitTime() {
+            return handleConfig.hasCommitTime();
+        }
+
+        @Override
+        public String getGroupName() {
+            return handleConfig.getGroupName();
+        }
+
+        @Override
+        public boolean hasGroupName() {
+            return handleConfig.hasGroupName();
+        }
+
+        @Override
+        public <V> V getCustomOption(ConfigOption<V> opt) {
+            return handleConfig.getCustomOption(opt);
+        }
+
+        @Override
+        public Configuration getCustomOptions() {
+            return handleConfig.getCustomOptions();
+        }
+
+        @Override
+        public TimestampProvider getTimestampProvider() {
+            return handleConfig.getTimestampProvider();
+        }
+    }
+}
