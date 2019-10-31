@@ -19,44 +19,49 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "conjunction-query-test",
+    size = "small",
+    srcs = [
+        "ConjunctionQueryTest.java",
+        "GraqlMatchers.java",
+    ],
     test_class = "grakn.core.graql.gremlin.ConjunctionQueryTest",
-    srcs = ["ConjunctionQueryTest.java", "GraqlMatchers.java"],
     deps = [
-        "//concept:concept",
-        "//server:server",
-
-        "@graknlabs_graql//java:graql",
-
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//graql:graql",
+        "//kb",
+        "//kb/concept/api",
+        "//server",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "small"
 )
 
 java_test(
     name = "graql-traversal-test",
+    size = "small",
+    srcs = [
+        "GraqlMatchers.java",
+        "GraqlTraversalIT.java",
+    ],
     test_class = "grakn.core.graql.gremlin.GraqlTraversalTest",
-    srcs = ["GraqlTraversalIT.java", "GraqlMatchers.java"],
     deps = [
         "//common:common",
-        "//concept:concept",
-        "//server:server",
-        "//test-integration/graql/graph:movie-graph",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
+        "//core",
+        "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/org/mockito:mockito-core",
+        "//graql:graql",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
     ],
-    size = "small"
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":graql-traversal-test",
-        ":conjunction-query-test"
+        ":conjunction-query-test",
     ],
 )

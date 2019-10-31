@@ -4,22 +4,22 @@ java_test(
     name = "reasoning-it",
     size = "large",
     srcs = ["ReasoningIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
     resources = ["//test-integration/graql/reasoner/stubs:reasoning-stubs"],
     test_class = "grakn.core.graql.reasoner.ReasoningIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
-
-        "@graknlabs_graql//java:graql",
-
+        "//concept/answer",
+        "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/apache/commons:commons-math3",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "//test-integration/util:graql-test-util",
+        "@graknlabs_graql//java:graql",
     ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
 )
 
 java_test(
@@ -29,17 +29,15 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.graql.reasoner.GeoInferenceIT",
     deps = [
-        "//concept:concept",
-        "//server:server",
-        "//test-integration/graql/reasoner/graph:geo-graph",
-        "//test-integration/rule:grakn-test-server",
-        "//test-integration/util:graql-test-util",
-
-        "@graknlabs_graql//java:graql",
-
+        "//concept/answer",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/commons-collections",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/graql/reasoner/graph:geo-graph",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
     ],
 )
 
@@ -48,5 +46,5 @@ checkstyle_test(
     targets = [
         ":reasoning-it",
         ":geo-inference-it",
-    ]
+    ],
 )

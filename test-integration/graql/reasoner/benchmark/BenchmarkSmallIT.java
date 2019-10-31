@@ -18,20 +18,20 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.concept.Concept;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
@@ -62,10 +62,10 @@ public class BenchmarkSmallIT {
     public void nonRecursiveChainOfRules() {
         final int N = 200;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
 
         //NB: loading data here as defining it as KB and using graql api leads to circular dependencies
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             Role fromRole = tx.putRole("fromRole");
             Role toRole = tx.putRole("toRole");
 
@@ -115,7 +115,7 @@ public class BenchmarkSmallIT {
             tx.commit();
         }
 
-        try( TransactionOLTP tx = session.transaction().read()) {
+        try( Transaction tx = session.readTransaction()) {
             final long limit = 1;
             String queryPattern = "(fromRole: $x, toRole: $y) isa relation" + N + ";";
             String queryString = "match " + queryPattern + " get;";
@@ -156,7 +156,7 @@ public class BenchmarkSmallIT {
     public void testTransitiveMatrixLinear()  {
         int N = 10;
         int limit = 100;
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         LinearTransitivityMatrixGraph linearGraph = new LinearTransitivityMatrixGraph(session);
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
@@ -169,7 +169,7 @@ public class BenchmarkSmallIT {
         linearGraph.load(N, N);
 
         String queryString = "match (P-from: $x, P-to: $y) isa P; get;";
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         executeQuery(queryString, tx, "full");
         executeQuery(Graql.parse(queryString).asGet().match().get().limit(limit), tx, "limit " + limit);
         tx.close();
@@ -196,11 +196,11 @@ public class BenchmarkSmallIT {
         int N = 100;
         int limit = 10;
         int answers = (N+1)*N/2;
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
         TransitivityChainGraph transitivityChainGraph = new TransitivityChainGraph(session);
         transitivityChainGraph.load(N);
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
 
         String queryString = "match (Q-from: $x, Q-to: $y) isa Q; get;";
         GraqlGet query = Graql.parse(queryString).asGet();
@@ -243,7 +243,7 @@ public class BenchmarkSmallIT {
         int N = 10;
         int limit = 100;
 
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         TransitivityMatrixGraph transitivityMatrixGraph = new TransitivityMatrixGraph(session);
         //                         DJ       IC     FO
         //results @N = 15 14400     ?
@@ -252,7 +252,7 @@ public class BenchmarkSmallIT {
         //results @N = 30 216225    ?       ?      ?     30 s
         //results @N = 35 396900   ?        ?      ?     76 s
         transitivityMatrixGraph.load(N, N);
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         
 
         //full result
@@ -306,13 +306,13 @@ public class BenchmarkSmallIT {
 
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
 
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         DiagonalGraph diagonalGraph = new DiagonalGraph(session);
         diagonalGraph.load(N, N);
         //results @N = 40  1444  3.5s
         //results @N = 50  2304    8s    / 1s
         //results @N = 100 9604  loading takes ages
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         
         String queryString = "match (rel-from: $x, rel-to: $y) isa diagonal; get;";
         GraqlGet query = Graql.parse(queryString).asGet();
@@ -363,13 +363,13 @@ public class BenchmarkSmallIT {
         int N = 5;
         int linksPerEntity = 4;
         System.out.println(new Object(){}.getClass().getEnclosingMethod().getName());
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
         PathTreeGraph pathTreeGraph = new PathTreeGraph(session);
         pathTreeGraph.load(N, linksPerEntity);
         int answers = 0;
         for(int i = 1 ; i <= N ; i++) answers += Math.pow(linksPerEntity, i);
 
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
 
         String queryString = "match (path-from: $x, path-to: $y) isa path;" +
                 "$x has index 'a0';" +
@@ -380,11 +380,11 @@ public class BenchmarkSmallIT {
         session.close();
     }
 
-    private List<ConceptMap> executeQuery(String queryString, TransactionOLTP transaction, String msg){
+    private List<ConceptMap> executeQuery(String queryString, Transaction transaction, String msg){
         return executeQuery(Graql.parse(queryString).asGet(), transaction, msg);
     }
 
-    private List<ConceptMap> executeQuery(GraqlGet query, TransactionOLTP transaction, String msg){
+    private List<ConceptMap> executeQuery(GraqlGet query, Transaction transaction, String msg){
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = transaction.execute(query);
         final long answerTime = System.currentTimeMillis() - startTime;

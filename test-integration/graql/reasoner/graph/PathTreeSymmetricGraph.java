@@ -18,18 +18,18 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 
 @SuppressWarnings("CheckReturnValue")
 public class PathTreeSymmetricGraph extends PathTreeGraph {
 
-    public PathTreeSymmetricGraph(SessionImpl session){
+    public PathTreeSymmetricGraph(Session session){
         super(session, "pathTest-symmetric.gql");
     }
 
     @Override
-    protected void buildExtensionalDB(int n, int children, TransactionOLTP tx) {
+    protected void buildExtensionalDB(int n, int children, Transaction tx) {
         buildTree("coordinate", "coordinate", n , children, tx);
     }
 }

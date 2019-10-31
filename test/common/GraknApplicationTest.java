@@ -19,8 +19,9 @@
 package grakn.core.test.common;
 
 import grakn.client.GraknClient;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Numeric;
+import grakn.client.GraknClient.Session;
+import grakn.client.answer.ConceptMap;
+import grakn.client.answer.Numeric;
 import graql.lang.Graql;
 import org.junit.After;
 import org.junit.Before;
@@ -47,7 +48,7 @@ public class GraknApplicationTest {
 
     @Test
     public void testDeployment() {
-        try (GraknClient.Session session = graknClient.session("grakn")) {
+        try (Session session = graknClient.session("grakn")) {
             try (GraknClient.Transaction tx = session.transaction().write()) {
                 List<ConceptMap> result = tx.execute(Graql.match(Graql.var("t").sub("thing")).get());
                 assertTrue(result.size() > 0);
@@ -57,7 +58,7 @@ public class GraknApplicationTest {
 
     @Test
     public void testComputeQuery() {
-        try (GraknClient.Session session = graknClient.session("computetest")) {
+        try (Session session = graknClient.session("computetest")) {
             GraknClient.Transaction tx = session.transaction().write();
             tx.execute(Graql.parse("define person sub entity;").asDefine());
             tx.execute(Graql.parse("insert $x isa person;").asInsert());

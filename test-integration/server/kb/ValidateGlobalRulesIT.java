@@ -18,20 +18,18 @@
 
 package grakn.core.server.kb;
 
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
+import grakn.core.concept.impl.RelationImpl;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.structure.Casting;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.concept.EntityImpl;
-import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.server.kb.concept.RelationImpl;
-import grakn.core.server.kb.concept.RoleImpl;
-import grakn.core.server.kb.concept.ThingImpl;
-import grakn.core.server.kb.structure.Casting;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.ValidateGlobalRules;
+import grakn.core.util.ConceptDowncasting;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -47,13 +45,13 @@ public class ValidateGlobalRulesIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private TransactionOLTP tx;
-    private SessionImpl session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp(){
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -64,17 +62,17 @@ public class ValidateGlobalRulesIT {
 
     @Test
     public void testValidatePlaysStructure() {
-        EntityTypeImpl wolf = (EntityTypeImpl) tx.putEntityType("wolf");
-        EntityTypeImpl creature = (EntityTypeImpl) tx.putEntityType("creature");
-        EntityTypeImpl hunter = (EntityTypeImpl) tx.putEntityType("hunter");
+        EntityType wolf = tx.putEntityType("wolf");
+        EntityType creature = tx.putEntityType("creature");
+        EntityType hunter = tx.putEntityType("hunter");
         RelationType hunts = tx.putRelationType("hunts");
-        RoleImpl witcher = (RoleImpl) tx.putRole("witcher");
-        RoleImpl monster = (RoleImpl) tx.putRole("monster");
+        Role witcher = tx.putRole("witcher");
+        Role monster = tx.putRole("monster");
         Thing geralt = hunter.create();
-        ThingImpl werewolf = (ThingImpl) wolf.create();
+        Thing werewolf = wolf.create();
 
-        RelationImpl assertion = (RelationImpl) hunts.create().
-                assign(witcher, geralt).assign(monster, werewolf);
+        RelationImpl assertion = ConceptDowncasting.relation(hunts.create().
+                assign(witcher, geralt).assign(monster, werewolf));
         assertion.reified().castingsRelation().forEach(rolePlayer ->
                 assertFalse(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
@@ -105,23 +103,23 @@ public class ValidateGlobalRulesIT {
 
         EntityType entityType = tx.putEntityType("et");
 
-        ((EntityTypeImpl) entityType).play(role1, true);
-        ((EntityTypeImpl) entityType).play(role2, false);
+        entityType.play(role1, true);
+        entityType.play(role2, false);
 
         Entity other1 = entityType.create();
         Entity other2 = entityType.create();
 
-        EntityImpl entity = (EntityImpl) entityType.create();
+        Entity entity = entityType.create();
 
-        RelationImpl relation1 = (RelationImpl) relationType.create()
-                .assign(role2, other1).assign(role1, entity);
+        RelationImpl relation1 = ConceptDowncasting.relation(relationType.create()
+                .assign(role2, other1).assign(role1, entity));
 
         // Valid with only a single relation
         relation1.reified().castingsRelation().forEach(rolePlayer ->
                 assertTrue(ValidateGlobalRules.validatePlaysAndRelatesStructure(rolePlayer).isEmpty()));
 
-        RelationImpl relation2 = (RelationImpl) relationType.create()
-                .assign(role2, other2).assign(role1, entity);
+        RelationImpl relation2 = ConceptDowncasting.relation(relationType.create()
+                .assign(role2, other2).assign(role1, entity));
 
         // Invalid with multiple relations
         relation1.reified().castingsRelation().forEach(rolePlayer -> {

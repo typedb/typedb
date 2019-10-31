@@ -19,7 +19,8 @@
 package grakn.core.graql.reasoner.atomic;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.exception.GraqlQueryException;
+import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.kb.server.exception.GraqlQueryException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
 import grakn.core.graql.reasoner.atom.binary.IsaAtom;
@@ -29,9 +30,9 @@ import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.core.Schema;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.property.HasAttributeProperty;
@@ -52,7 +53,7 @@ public class AtomicConversionIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl session;
+    private static Session session;
 
     private static Conjunction<Statement> attributePattern;
     private static Conjunction<Statement> relationPattern;
@@ -93,7 +94,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingAttributeToIsaAtom_predicatesArePreserved(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             IsaAtom isa = attribute.toIsaAtom();
 
@@ -106,7 +107,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingRelationToIsaAtom_predicatesArePreserved(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
             IsaAtom isa = relation.toIsaAtom();
 
@@ -117,9 +118,9 @@ public class AtomicConversionIT {
         }
     }
 
-    @Test (expected = GraqlQueryException.class)
+    @Test (expected = ReasonerException.class)
     public void whenConvertingNonImplicitRelationToAttribute_weThrow(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom relation = ReasonerQueries.atomic(relationPattern, tx).getAtom();
             AttributeAtom attribute = relation.toAttributeAtom();
             assertEquals(
@@ -131,7 +132,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingImplicitRelationToAttribute_predicatesArePreserved(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
             AttributeAtom attribute = relation.toAttributeAtom();
 
@@ -144,7 +145,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenConvertingAttributeToRelation_predicatesArePreserved(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             RelationAtom relation = attribute.toRelationAtom();
 
@@ -162,7 +163,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenPerformingAttributeRelationIdentityConversion_equivalenceIsPreserved(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom attribute = ReasonerQueries.atomic(attributePattern, tx).getAtom();
             RelationAtom intermittentAtom = attribute.toRelationAtom();
             AttributeAtom equivalentAttribute = intermittentAtom.toAttributeAtom();
@@ -173,7 +174,7 @@ public class AtomicConversionIT {
 
     @Test
     public void whenPerformingRelationAttributeIdentityConversion_equivalenceIsPreserved(){
-        try(TransactionOLTP tx = session.transaction().read()){
+        try(Transaction tx = session.readTransaction()){
             Atom relation = ReasonerQueries.atomic(implicitRelationPattern, tx).getAtom();
             AttributeAtom intermittentAtom = relation.toAttributeAtom();
             Atom equivalentRelation = intermittentAtom.toRelationAtom();

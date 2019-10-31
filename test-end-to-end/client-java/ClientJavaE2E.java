@@ -19,8 +19,9 @@
 package grakn.core.client;
 
 import grakn.client.GraknClient;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
+import grakn.client.answer.ConceptMap;
+import grakn.client.answer.ConceptSet;
+import grakn.client.answer.Void;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -273,7 +274,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - match delete...");
             GraqlDelete deleteQuery = Graql.match(var("m").isa("mating")).delete("m");
             LOG.info("clientJavaE2E() - '" + deleteQuery + "'");
-            List<ConceptSet> answer = tx.execute(deleteQuery);
+            tx.execute(deleteQuery);
             List<ConceptMap> matings = tx.execute(Graql.match(var("m").isa("mating")).get());
             assertThat(matings, hasSize(0));
             LOG.info("clientJavaE2E() - done.");

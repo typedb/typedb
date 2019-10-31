@@ -108,7 +108,6 @@ assemble_zip(
 assemble_rpm(
     name = "assemble-linux-rpm",
     package_name = "grakn-core-all",
-    version_file = "//:VERSION",
     spec_file = "//config/rpm:grakn-core-all.spec",
     workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
@@ -119,7 +118,6 @@ assemble_apt(
     package_name = "grakn-core-all",
     maintainer = "Grakn Labs <community@grakn.ai>",
     description = "Grakn Core (all)",
-    version_file = "//:VERSION",
     depends = [
         "openjdk-8-jre",
         "grakn-core-server (=%{version})",
@@ -138,13 +136,11 @@ assemble_versioned(
         "//server:assemble-mac-zip",
         "//server:assemble-windows-zip",
     ],
-    version_file = "//:VERSION",
 )
 
 assemble_versioned(
     name = "assemble-versioned-mac",
     targets = [":assemble-mac-zip"],
-    version_file = "//:VERSION"
 )
 
 checksum(
@@ -159,7 +155,6 @@ deploy_github(
     title_append_version = True,
     release_description = "//:RELEASE_TEMPLATE.md",
     archive = ":assemble-versioned-all",
-    version_file = "//:VERSION"
 )
 
 deploy_brew(
@@ -167,7 +162,6 @@ deploy_brew(
     checksum = "//:checksum-mac",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
     formula = "//config/brew:grakn-core.rb",
-    version_file = "//:VERSION"
 )
 
 deploy_rpm(

@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concept.answer;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 
 import java.util.Collections;
 import java.util.Set;
@@ -33,12 +34,8 @@ public class ConceptSet extends Answer {
     private final Explanation explanation;
 
     public ConceptSet(Set<ConceptId> set) {
-        this(set, new Explanation());
-    }
-
-    public ConceptSet(Set<ConceptId> set, Explanation explanation) {
         this.set = Collections.unmodifiableSet(set);
-        this.explanation = explanation;
+        this.explanation = new Explanation();
     }
 
     @Override

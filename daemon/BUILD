@@ -18,22 +18,25 @@
 
 package(default_visibility = ["//visibility:__pkg__"])
 
-load("@graknlabs_build_tools//distribution/maven:rules.bzl", "assemble_maven", "deploy_maven")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "daemon",
     srcs = glob(["**/*.java"]),
     deps = [
-        # Package dependencies
-        "//daemon/executor:grakn-daemon-executor",
 
         # Grakn Core dependencies
-        "//common",
-        "//server",
+        "//common:common",
+        "//server:server",
 
         # External dependencies
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-core", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind", # NEEDS TO GO
+        "//dependencies/maven/artifacts/com/fasterxml/jackson/dataformat:jackson-dataformat-yaml", # NEEDS TO GO
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
+        "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
@@ -43,19 +46,6 @@ java_library(
     resource_strip_prefix = "daemon",
     visibility = ["//visibility:public"],
     tags = ["maven_coordinates=io.grakn.core:grakn-daemon:{pom_version}"],
-)
-
-assemble_maven(
-    name = "assemble-maven",
-    target = ":daemon",
-    package = "daemon",
-    version_file = "//:VERSION",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json"
-)
-
-deploy_maven(
-    name = "deploy-maven",
-    target = ":assemble-maven"
 )
 
 checkstyle_test(

@@ -18,17 +18,15 @@
 
 package grakn.core.graql.reasoner;
 
-import grakn.core.concept.Concept;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.thing.Relation;
 import grakn.core.graql.reasoner.graph.GeoGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlGet;
-import graql.lang.query.GraqlQuery;
 import graql.lang.statement.Statement;
 import org.apache.commons.collections.CollectionUtils;
 import org.junit.AfterClass;
@@ -51,7 +49,7 @@ public class GeoInferenceIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl geoGraphSession;
+    private static Session geoGraphSession;
 
     @BeforeClass
     public static void loadContext(){
@@ -69,7 +67,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testEntitiesLocatedInThemselves(){
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             String queryString = "match (geo-entity: $x, entity-location: $x) isa is-located-in; get;";
 
             GraqlGet query = Graql.parse(queryString).asGet();
@@ -80,7 +78,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withGuards() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             String queryString = "match " +
                     "$x isa university;$x has name $name;" +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
@@ -99,7 +97,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withGuards_noRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             String queryString = "match " +
                     "$z1 isa university;$z1 has name $name;" +
                     "($z1, $z2) isa is-located-in;" +
@@ -130,7 +128,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withSpecificResource() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             String queryString = "match " +
                     "(geo-entity: $x, entity-location: $y) isa is-located-in;" +
                     "$y has name 'Poland'; get;";
@@ -157,7 +155,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withSpecificResource_noRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
                     "($x, $y) isa is-located-in;" +
@@ -179,7 +177,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withSubstitution() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             Concept poland = getConcept(tx, "name", "Poland");
             Concept europe = getConcept(tx, "name", "Europe");
@@ -205,7 +203,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withSubstitution_noRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
 
             Concept masovia = getConcept(tx, "name", "Masovia");
@@ -229,7 +227,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_withSubstitution_variableRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -246,7 +244,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get;";
 
@@ -257,7 +255,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure_NoRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match ($x, $y) isa is-located-in; get;";
 
@@ -268,7 +266,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure_variableRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match ($r1: $x, $r2: $y) isa is-located-in; get;";
 
@@ -280,7 +278,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_variableRoles_withSubstitution_withRelationVar() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -295,7 +293,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure_variableSpecificRoles() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             Statement rolePattern = var()
                     .rel(var("r1").type("geo-entity"), var("x"))
                     .rel(var("r2").type("entity-location"), var("y"));
@@ -309,7 +307,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure_singleVariableRole() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match ($x, $r2: $y) isa is-located-in; get;";
 
@@ -322,7 +320,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure_singleVariableRole_withSubstitution() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             Concept masovia = getConcept(tx, "name", "Masovia");
             String queryString = "match " +
@@ -339,7 +337,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testTransitiveQuery_Closure_withRelationVar() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match $x (geo-entity: $x1, entity-location: $x2) isa is-located-in; get;";
 
@@ -350,7 +348,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testRelationVarQuery_Closure_withAndWithoutRelationPlayers() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match $x isa is-located-in; get;";
             String queryString2 = "match $x ($x1, $x2) isa is-located-in;get $x;";
@@ -365,7 +363,7 @@ public class GeoInferenceIT {
 
     @Test
     public void testLazy() {
-        try (TransactionOLTP tx = geoGraphSession.transaction().write()) {
+        try (Transaction tx = geoGraphSession.writeTransaction()) {
             
             String queryString = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get; limit 1;";
             String queryString2 = "match (geo-entity: $x, entity-location: $y) isa is-located-in; get; limit 22;";
@@ -379,7 +377,7 @@ public class GeoInferenceIT {
         }
     }
 
-    private Concept getConcept(TransactionOLTP graph, String typeName, String val){
+    private Concept getConcept(Transaction graph, String typeName, String val){
         return graph.stream(Graql.match((Pattern) var("x").has(typeName, val)).get("x"))
                 .map(ans -> ans.get("x")).findAny().orElse(null);
     }

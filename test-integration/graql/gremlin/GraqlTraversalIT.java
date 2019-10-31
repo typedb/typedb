@@ -22,17 +22,19 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.common.util.Streams;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.gremlin.fragment.Fragment;
+import grakn.core.core.Schema;
 import grakn.core.graql.gremlin.fragment.Fragments;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.graql.executor.property.value.ValueOperation;
+import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -80,8 +82,8 @@ import static org.junit.Assert.assertTrue;
 public class GraqlTraversalIT {
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static SessionImpl session;
-    private static TransactionOLTP tx;
+    public static Session session;
+    private static Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -111,12 +113,12 @@ public class GraqlTraversalIT {
 
     @Before
     public void setUp() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         Role wife = tx.putRole("wife");
         EntityType personType = tx.putEntityType("person").plays(wife);
         RelationType marriageType = tx.putRelationType("marriage").relates(wife);
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -302,7 +304,8 @@ public class GraqlTraversalIT {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        return TraversalPlanner.createTraversal(pattern, tx);
+        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx);
+        return planFactory.createTraversal(pattern);
     }
 
     private static GraqlTraversal traversal(Fragment... fragments) {
@@ -311,8 +314,8 @@ public class GraqlTraversalIT {
 
     @SafeVarargs
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
-        ImmutableSet<ImmutableList<Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return GraqlTraversal.create(fragmentsSet);
+        Set<List<? extends Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
+        return new GraqlTraversalImpl(fragmentsSet);
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
@@ -323,7 +326,7 @@ public class GraqlTraversalIT {
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 
-        Set<List<List<Fragment>>> lists = Sets.cartesianProduct(collect);
+        Set<List<List<? extends Fragment>>> lists = Sets.cartesianProduct(collect);
 
         return lists.stream()
                 .map(Sets::newHashSet)
@@ -332,10 +335,10 @@ public class GraqlTraversalIT {
     }
 
     // Returns a traversal only if the fragment ordering is valid
-    private static Optional<GraqlTraversal> createTraversal(Set<List<Fragment>> fragments) {
+    private static Optional<GraqlTraversal> createTraversal(Set<List<? extends Fragment>> fragments) {
 
         // Make sure all dependencies are met
-        for (List<Fragment> fragmentList : fragments) {
+        for (List<? extends Fragment> fragmentList : fragments) {
             Set<Variable> visited = new HashSet<>();
 
             for (Fragment fragment : fragmentList) {
@@ -347,7 +350,7 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(GraqlTraversal.create(fragments));
+        return Optional.of(new GraqlTraversalImpl(fragments));
     }
 
     private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {

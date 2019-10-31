@@ -75,6 +75,7 @@ public enum ErrorMessage {
     INVALID_KEYSPACE_NAME("Keyspace name is invalid: [%s]. Keyspace name cannot start with a number, " +
             "and can only contain maximum 48 characters of lower case, alphanumeric and underscore characters."),
     FILE_WRITE_EXCEPTION("Failed to write to file: %s"),
+    UNKNOWN_META_TYPE("Type [%s] has unknown meta type class [%s]"),
 
     //--------------------------------------------- Validation Errors
     VALIDATION("A structural validation error has occurred. Please correct the [`%s`] errors found. \n"),
@@ -172,6 +173,9 @@ public enum ErrorMessage {
 
     INVALID_STATEMENT("Value [%s] not of type [%s] in data [%s]"),
 
+    NOT_A_TYPE("Concept with id [%s] is not a concept type and has base type [%s]."),
+
+
     //Templating
 
     UNEXPECTED_RESULT("the concept [%s] could not be found in results"),
@@ -194,6 +198,7 @@ public enum ErrorMessage {
     ILLEGAL_ATOM_CONVERSION("Attempted illegal atom conversion of atom [%s] to type [%s]."),
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
     AMBIGUOUS_TYPE("Sought variable [%s] has ambiguous types [%s]"),
+    INVALID_CAST("Cannot cast from class [%s] to target class [%s]"),
 
     //--------------------------------------------- Analytics Errors -----------------------------------------------
 
@@ -201,6 +206,7 @@ public enum ErrorMessage {
     K_SMALLER_THAN_TWO("k can't be smaller than 2."),
     INSTANCE_DOES_NOT_EXIST("Instance does not exist in the subgraph."),
     MAX_ITERATION_REACHED("Max iteration of [%s] reached.");
+
 
     private final String message;
 

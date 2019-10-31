@@ -18,26 +18,23 @@
 
 package grakn.core.server.session.cache;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Attribute;
-import grakn.core.concept.thing.Entity;
-import grakn.core.concept.thing.Relation;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.concept.type.SchemaConcept;
-import grakn.core.graql.reasoner.utils.Pair;
+import grakn.common.util.Pair;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Relation;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.kb.Schema;
-import grakn.core.server.kb.concept.AttributeTypeImpl;
-import grakn.core.server.kb.concept.EntityImpl;
-import grakn.core.server.kb.concept.EntityTypeImpl;
-import grakn.core.server.kb.concept.RelationTypeImpl;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.junit.After;
@@ -83,13 +80,13 @@ public class TransactionCacheIT {
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
-    private TransactionOLTP tx;
-    private SessionImpl session;
+    private Transaction tx;
+    private Session session;
 
     @Before
     public void setUp() {
         session = server.sessionWithNewKeyspace();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
@@ -97,7 +94,6 @@ public class TransactionCacheIT {
         tx.close();
         session.close();
     }
-
 
     @Test
     public void whenOpenTransaction_ConceptCacheIsEmpty() {
@@ -121,7 +117,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         EntityType retrievedPerson = tx.getEntityType("person");
         Entity retrievedPersonInstance = retrievedPerson.instances().collect(Collectors.toList()).get(0);
 
@@ -140,7 +136,7 @@ public class TransactionCacheIT {
         tx.commit();
 
         // examine new transaction's cache
-        tx = session.transaction().read();
+        tx = session.readTransaction();
         tx.getEntityType("person");
 
         TransactionCache transactionCache = tx.cache();
@@ -231,7 +227,7 @@ public class TransactionCacheIT {
         tx.commit();
 
 
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
         tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
         tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
         assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
@@ -265,7 +261,7 @@ public class TransactionCacheIT {
         aRelation.has(aProvenance);
 
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
@@ -323,7 +319,7 @@ public class TransactionCacheIT {
             fillerJanusVertices.add(Schema.elementId(person.create().id()));
         }
         tx.commit();
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
 
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
@@ -348,7 +344,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredEntity_instanceIsTracked(){
         EntityType someEntity = tx.putEntityType("someEntity");
-        Entity entity = EntityTypeImpl.from(someEntity).addEntityInferred();
+        Entity entity = someEntity.addEntityInferred();
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
         entity.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(entity)));
@@ -358,7 +354,7 @@ public class TransactionCacheIT {
     public void whenInsertingAndDeletingInferredRelation_instanceIsTracked(){
         Role someRole = tx.putRole("someRole");
         RelationType someRelation = tx.putRelationType("someRelation").relates(someRole);
-        Relation relation = RelationTypeImpl.from(someRelation).addRelationInferred();
+        Relation relation = someRelation.addRelationInferred();
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
         relation.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(relation)));
@@ -367,7 +363,7 @@ public class TransactionCacheIT {
     @Test
     public void whenInsertingAndDeletingInferredAttribute_instanceIsTracked(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
-        Attribute attribute = AttributeTypeImpl.from(attributeType).putAttributeInferred("banana");
+        Attribute attribute = attributeType.putAttributeInferred("banana");
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
         attribute.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(attribute)));
@@ -377,7 +373,7 @@ public class TransactionCacheIT {
     public void whenInsertingAndDeletingAttribute_attributeCachedIsUpdated(){
         AttributeType<String> attributeType = tx.putAttributeType("resource", AttributeType.DataType.STRING);
         String value = "banana";
-        Attribute attribute = AttributeTypeImpl.from(attributeType).create(value);
+        Attribute attribute = attributeType.create(value);
         String index = Schema.generateAttributeIndex(attributeType.label(), value);
 
         Attribute cachedAttribute = tx.cache().getAttributeCache().get(index);
@@ -395,7 +391,7 @@ public class TransactionCacheIT {
         EntityType someEntity = tx.putEntityType("someEntity").has(attributeType);
         Entity owner = someEntity.create();
         Attribute<String> attribute = attributeType.create("banana");
-        Relation implicitRelation = EntityImpl.from(owner).attributeInferred(attribute);
+        Relation implicitRelation = owner.attributeInferred(attribute);
         assertTrue(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));
         implicitRelation.delete();
         assertFalse(tx.cache().getInferredInstances().anyMatch(inst -> inst.equals(implicitRelation)));

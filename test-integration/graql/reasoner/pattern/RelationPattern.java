@@ -21,9 +21,9 @@ package grakn.core.graql.reasoner.pattern;
 import com.google.common.collect.ImmutableMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multimap;
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.graql.reasoner.utils.Pair;
+import grakn.common.util.Pair;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -103,8 +103,8 @@ public abstract class RelationPattern extends QueryPattern {
 
             Statement rolePlayer = new Statement(entry.getKey().getPlayer().var().asReturnedVar());
 
-            Label type = entry.getValue().getKey();
-            List<ConceptId> ids = entry.getValue().getValue();
+            Label type = entry.getValue().first();
+            List<ConceptId> ids = entry.getValue().second();
             basePattern[0] = basePattern[0].rel(role, rolePlayer);
 
             //rps.put(role, rolePlayer);
