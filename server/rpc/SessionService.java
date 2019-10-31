@@ -40,6 +40,8 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;
