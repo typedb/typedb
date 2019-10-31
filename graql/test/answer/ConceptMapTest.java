@@ -20,13 +20,10 @@ package grakn.core.graql.answer;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.Explanation;
-import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.util.ConceptUtils;
 import graql.lang.statement.Variable;
-import java.util.ArrayList;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -66,14 +63,6 @@ public class ConceptMapTest {
         ConceptMap anotherAnswer = new ConceptMap(ImmutableMap.of(someVar, anotherConcept));
         ConceptMap joinedAnswer = ConceptUtils.joinAnswers(answer, anotherAnswer);
         assertTrue(joinedAnswer.isEmpty());
-    }
-
-    @Test
-    public void whenJoiningAnswers_explanationOfFirstAnswerIsRetained() {
-        Explanation explanation = new JoinExplanation(new ArrayList<>());
-        ConceptMap anotherAnswer = new ConceptMap(ImmutableMap.of(someVar, someConcept)).explain(explanation);
-        ConceptMap joinedAnswer = ConceptUtils.joinAnswers(answer, anotherAnswer);
-        assertEquals(explanation, joinedAnswer.explanation());
     }
 
 }
