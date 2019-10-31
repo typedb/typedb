@@ -159,21 +159,21 @@ public class ConceptUtils {
      * NB: Assumes answers are compatible (concepts corresponding to join vars if any are the same or are compatible types)
      *
      * @param baseAnswer left operand of answer join
-     * @param toMerge right operand of answer join
+     * @param toJoin right operand of answer join
      * @return joined answers
      */
-    public static ConceptMap joinAnswers(ConceptMap baseAnswer, ConceptMap toMerge) {
-        if (toMerge.isEmpty()) return baseAnswer;
-        if (baseAnswer.isEmpty()) return toMerge;
+    public static ConceptMap joinAnswers(ConceptMap baseAnswer, ConceptMap toJoin) {
+        if (toJoin.isEmpty()) return baseAnswer;
+        if (baseAnswer.isEmpty()) return toJoin;
 
-        Set<Variable> joinVars = Sets.intersection(baseAnswer.vars(), toMerge.vars());
+        Set<Variable> joinVars = Sets.intersection(baseAnswer.vars(), toJoin.vars());
         Map<Variable, Concept> entryMap = Stream
-                .concat(baseAnswer.map().entrySet().stream(), toMerge.map().entrySet().stream())
+                .concat(baseAnswer.map().entrySet().stream(), toJoin.map().entrySet().stream())
                 .filter(e -> !joinVars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         for (Variable var : joinVars) {
             Concept concept = baseAnswer.get(var);
-            Concept otherConcept = toMerge.get(var);
+            Concept otherConcept = toJoin.get(var);
             if (concept.equals(otherConcept)) entryMap.put(var, concept);
             else {
                 boolean typeCompatible = concept.isSchemaConcept() && otherConcept.isSchemaConcept()
