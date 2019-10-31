@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
+import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
@@ -256,6 +257,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                         break;
                     case EXPLANATION_REQ:
                         explanation(request.getExplanationReq());
+                        break;
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
@@ -423,16 +425,12 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             );
 
             GraqlGet getQuery = Graql.match(queryPatterns).get();
-            Stream<ConceptMap> answers = tx.stream(getQuery);
-            ConceptMap answer = answers.findFirst().get();
-            Explanation explanation = answer.explanation();
-
-            List<ConceptMap> subExplanations = explanation.getAnswers();
             ReasonerQueryImpl q = ReasonerQueries.create(getQuery.match().getPatterns().getDisjunctiveNormalForm().getPatterns().iterator().next(), tx);
 
-            List<ConceptMap> maps = q.selectAtoms().map(ReasonerQueries::atomic).flatMap(aq -> (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq)).collect(Collectors.toList());
+            List<ConceptMap> maps = q.selectAtoms().map(ReasonerQueries::atomic).flatMap(aq -> (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq))
+                    .collect(Collectors.toList());
 
-            JoinExplanation joined = new JoinExplanation(maps);
+            Explanation joined = maps.size() > 1? new JoinExplanation(maps) : maps.iterator().next().explanation();
 
             Transaction.Res response = ResponseBuilder.Transaction.explanation(joined);
             onNextResponse(response);

@@ -66,6 +66,15 @@ public class ConceptMap implements Answer {
     }
 
     /**
+     * @param pattern
+     * @return Copy of this concept map with a new pattern set
+     */
+    public ConceptMap withPattern(Pattern pattern) {
+        ConceptMap copy = new ConceptMap(map(), explanation(), pattern);
+        return copy;
+    }
+
+    /**
      * @return query pattern associated this concept map
      * In other words, return the pattern for which this concept map is a valid substitution
      * Null if reasoner was not utilised or the query is conjunction

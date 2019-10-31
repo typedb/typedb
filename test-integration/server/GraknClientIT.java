@@ -253,13 +253,24 @@ public class GraknClientIT {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
-                    var("infer").rel("x").rel("z").isa("contains")
+                    var("infer").rel("contained","x").rel("container","z").isa("contains")
             );
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+
+
+            List<Pattern> patterns2 = Lists.newArrayList(
+                    Graql.var("x2").isa("content").has("name", "x"),
+                    var("z2").isa("content").has("name", "z"),
+                    var().rel("contained","x2").rel("container","z2").isa("contains")
+            );
+            ConceptMap answer2 = Iterables.getOnlyElement(tx.execute(Graql.match(patterns2).get()));
+            answer2.explanation();
+
             final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
+            Set<ConceptMap> deductions = deductions(answer);
 
-            assertEquals(patterns.size() + ruleStatements, deductions(answer).size());
+            assertEquals(patterns.size() + ruleStatements, deductions.size());
             assertEquals(patterns.size(), answer.explanation().getAnswers().size());
             answer.explanation().getAnswers().stream()
                     .filter(a -> a.map().containsKey(var("infer").var()))
@@ -269,11 +280,16 @@ public class GraknClientIT {
     }
 
     private Set<ConceptMap> deductions(ConceptMap answer) {
-        Set<ConceptMap> deductions = new HashSet<>(answer.explanation().getAnswers());
-        for (ConceptMap explanationAnswer : answer.explanation().getAnswers()) {
-            deductions.addAll(deductions(explanationAnswer));
+        if (answer.hasExplanation()) {
+            List<ConceptMap> answers = answer.explanation().getAnswers();
+            Set<ConceptMap> deductions = new HashSet<>(answers);
+            for (ConceptMap explanationAnswer : answers) {
+                deductions.addAll(deductions(explanationAnswer));
+            }
+            return deductions;
+        } else {
+            return new HashSet<>();
         }
-        return deductions;
     }
 
     private void testExplanation(ConceptMap answer) {

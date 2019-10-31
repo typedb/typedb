@@ -104,6 +104,6 @@ public class Explanation {
     /**
      * @return true if this is an empty explanation (explanation wasn't recorded)
      */
-    public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
+    public boolean isEmpty() { return !isRuleExplanation() && getAnswers().isEmpty();}
 
 }
