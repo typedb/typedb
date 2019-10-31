@@ -199,7 +199,7 @@ public enum ErrorMessage {
     CONCEPT_NOT_THING("Attempted concept conversion from concept [%s] that is not a thing."),
     AMBIGUOUS_TYPE("Sought variable [%s] has ambiguous types [%s]"),
     INVALID_CAST("Cannot cast from class [%s] to target class [%s]"),
-
+    QUERY_CACHE_ANSWER_NOT_FOUND("Could find cached answer associated with ground query: [%s]"),
     //--------------------------------------------- Analytics Errors -----------------------------------------------
 
     ATTRIBUTE_TYPE_NOT_SPECIFIED("No attribute type provided for compute query."),

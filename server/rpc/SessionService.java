@@ -21,13 +21,16 @@ package grakn.core.server.rpc;
 import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
+import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -414,7 +417,11 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             onNextResponse(response);
         }
 
+        /**
+         * Reconstruct and return the explanation associated with the ConceptMap provided by the user
+         */
         private void explanation(AnswerProto.Explanation.Req explanationReq) {
+            // extract and reconstruct query pattern with the required IDs
             AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
             Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
             List<Pattern> queryPatterns = new ArrayList<>();
@@ -423,15 +430,27 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     (var, concept) -> queryPatterns.add(Graql.var(var).id(concept.getId()))
             );
 
+            // Create the Get query, which we parse into a Reasoner Query format
             GraqlGet getQuery = Graql.match(queryPatterns).get();
-            ReasonerQueryImpl q = ReasonerQueries.create(getQuery.match().getPatterns().getDisjunctiveNormalForm().getPatterns().iterator().next(), tx);
+            ResolvableQuery q = ReasonerQueries.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()), tx);
 
-            List<ConceptMap> maps = q.selectAtoms().map(ReasonerQueries::atomic).flatMap(aq -> (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq))
-                    .collect(Collectors.toList());
+            Explanation explanation;
+            if (q.isAtomic()) {
+                // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
+                // we then return the answer's explanation
+                ConceptMap originatingAnswer = (ConceptMap)tx.queryCache().getAnswerStream(q).findFirst().orElse(null);
+                if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
+                explanation = originatingAnswer.explanation();
+            } else {
+                // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
+                // these are the same components used to re-construct the explanation for our original query, which we
+                // do manually here
+                List<ConceptMap> maps = q.selectAtoms().map(ReasonerQueries::atomic).flatMap(aq -> (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq))
+                        .collect(Collectors.toList());
+                explanation = new JoinExplanation(maps);
+            }
 
-            Explanation joined = maps.size() > 1? new JoinExplanation(maps) : maps.iterator().next().explanation();
-
-            Transaction.Res response = ResponseBuilder.Transaction.explanation(joined);
+            Transaction.Res response = ResponseBuilder.Transaction.explanation(explanation);
             onNextResponse(response);
         }
 
