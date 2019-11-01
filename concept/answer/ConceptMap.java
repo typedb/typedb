@@ -77,7 +77,7 @@ public class ConceptMap implements Answer {
     /**
      * @return query pattern associated this concept map
      * In other words, return the pattern for which this concept map is a valid substitution
-     * Null if reasoner was not utilised or the query is conjunction
+     * Null if reasoner was not utilised
      */
     @CheckReturnValue
     @Nullable

@@ -439,7 +439,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             } else {
                 // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
                 // these are the same components used to re-construct the explanation for our original query, which we
-                // do manually her
+                // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
                 List<ConceptMap> maps = q.selectAtoms()
                         .map(ReasonerQueries::atomic)
                         .flatMap(aq -> {
