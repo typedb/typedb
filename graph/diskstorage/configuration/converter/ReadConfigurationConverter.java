@@ -14,21 +14,22 @@
 
 package grakn.core.graph.diskstorage.configuration.converter;
 
-import org.apache.commons.configuration.BaseConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
+import org.apache.commons.configuration.BaseConfiguration;
 
 /**
  * Converter from {@link ReadConfiguration} into {@link BaseConfiguration}
  */
 public class ReadConfigurationConverter {
 
-    private static org.janusgraph.diskstorage.configuration.converter.ReadConfigurationConverter configurationConverter;
+    private static ReadConfigurationConverter configurationConverter;
 
-    private ReadConfigurationConverter(){}
+    private ReadConfigurationConverter() {
+    }
 
-    public static org.janusgraph.diskstorage.configuration.converter.ReadConfigurationConverter getInstance(){
-        if(configurationConverter == null){
-            configurationConverter = new org.janusgraph.diskstorage.configuration.converter.ReadConfigurationConverter();
+    public static ReadConfigurationConverter getInstance() {
+        if (configurationConverter == null) {
+            configurationConverter = new ReadConfigurationConverter();
         }
         return configurationConverter;
     }

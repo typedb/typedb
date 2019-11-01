@@ -14,14 +14,11 @@
 
 package grakn.core.graph.core.log;
 
-import grakn.core.graph.core.log.ChangeProcessor;
-
 import java.time.Instant;
 
 /**
  * Builder for assembling a processor that processes a particular transaction LOG. A processor can be composed of one or multiple
  * {@link ChangeProcessor}s which are executed independently.
- *
  */
 public interface LogProcessorBuilder {
 
@@ -42,7 +39,7 @@ public interface LogProcessorBuilder {
      * @param name
      * @return
      */
-    org.janusgraph.core.log.LogProcessorBuilder setProcessorIdentifier(String name);
+    LogProcessorBuilder setProcessorIdentifier(String name);
 
     /**
      * Sets the time at which this LOG processor should start processing transaction LOG entries
@@ -50,28 +47,30 @@ public interface LogProcessorBuilder {
      * @param startTime
      * @return
      */
-    org.janusgraph.core.log.LogProcessorBuilder setStartTime(Instant startTime);
+    LogProcessorBuilder setStartTime(Instant startTime);
 
     /**
      * Indicates that the transaction LOG processor should process newly added events.
      *
      * @return
      */
-    org.janusgraph.core.log.LogProcessorBuilder setStartTimeNow();
+    LogProcessorBuilder setStartTimeNow();
 
     /**
      * Adds a {@link ChangeProcessor} to this transaction LOG processor. These are executed independently.
+     *
      * @param processor
      * @return
      */
-    org.janusgraph.core.log.LogProcessorBuilder addProcessor(ChangeProcessor processor);
+    LogProcessorBuilder addProcessor(ChangeProcessor processor);
 
     /**
      * Sets how often this LOG processor should attempt to retry executing a contained {@link ChangeProcessor} in case of failure.
+     *
      * @param attempts
      * @return
      */
-    org.janusgraph.core.log.LogProcessorBuilder setRetryAttempts(int attempts);
+    LogProcessorBuilder setRetryAttempts(int attempts);
 
     /**
      * Builds this transaction LOG processor and starts processing the LOG.

@@ -16,7 +16,6 @@ package grakn.core.graph.diskstorage.log.kcvs;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import org.apache.commons.lang.ArrayUtils;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.StoreMetaData;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
@@ -27,13 +26,13 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.LogManager;
-import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.util.stats.NumberUtil;
 import grakn.core.graph.util.system.IOUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,14 +43,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
+
 
 /**
  * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
  * which wrap around a {@link KeyColumnValueStore}.
- *
  */
 @PreInitializeConfigOptions
 public class KCVSLogManager implements LogManager {
@@ -208,10 +207,10 @@ public class KCVSLogManager implements LogManager {
     }
 
     private static int getTTLSeconds(Duration duration) {
-        Preconditions.checkArgument(duration!=null && !duration.isZero(),"Must provide non-zero TTL");
-        long ttlSeconds = Math.max(1,duration.getSeconds());
-        Preconditions.checkArgument(ttlSeconds<=Integer.MAX_VALUE, "tll value is too large [%s] - value overflow",duration);
-        return (int)ttlSeconds;
+        Preconditions.checkArgument(duration != null && !duration.isZero(), "Must provide non-zero TTL");
+        long ttlSeconds = Math.max(1, duration.getSeconds());
+        Preconditions.checkArgument(ttlSeconds <= Integer.MAX_VALUE, "tll value is too large [%s] - value overflow", duration);
+        return (int) ttlSeconds;
     }
 
     @Override
@@ -229,7 +228,6 @@ public class KCVSLogManager implements LogManager {
     /**
      * Must be triggered by a particular {@link KCVSLog} when it is closed so that this LOG can be removed from the list
      * of open logs.
-     *
      */
     synchronized void closedLog(KCVSLog log) {
         KCVSLog l = openLogs.remove(log.getName());

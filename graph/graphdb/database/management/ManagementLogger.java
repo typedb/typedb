@@ -28,9 +28,6 @@ import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
-import grakn.core.graph.graphdb.database.management.GraphCacheEvictionAction;
-import grakn.core.graph.graphdb.database.management.ManagementSystem;
-import grakn.core.graph.graphdb.database.management.MgmtLogType;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.management.JanusGraphManager;
@@ -47,13 +44,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.DO_NOT_EVICT;
-import static org.janusgraph.graphdb.database.management.GraphCacheEvictionAction.EVICT;
+import static grakn.core.graph.graphdb.database.management.GraphCacheEvictionAction.DO_NOT_EVICT;
+import static grakn.core.graph.graphdb.database.management.GraphCacheEvictionAction.EVICT;
 
 
 public class ManagementLogger implements MessageReader {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.management.ManagementLogger.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagementLogger.class);
 
     private static final Duration SLEEP_INTERVAL = Duration.ofMillis(100L);
     private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(60L);

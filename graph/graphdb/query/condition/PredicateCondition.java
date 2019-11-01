@@ -20,12 +20,10 @@ import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.graphdb.internal.InternalElement;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
-import grakn.core.graph.graphdb.query.condition.Literal;
 import grakn.core.graph.graphdb.util.ElementHelper;
 
 import java.util.Iterator;
 import java.util.Objects;
-
 
 public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<E> {
 
@@ -39,7 +37,6 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         this.predicate = Preconditions.checkNotNull(predicate);
         this.value = value;
     }
-
 
     private boolean satisfiesCondition(Object value) {
         return predicate.test(value, this.value);
@@ -59,7 +56,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         Preconditions.checkNotNull(type);
 
         if (type.isPropertyKey()) {
-            Iterator<Object> iterator = ElementHelper.getValues(element,(PropertyKey)type).iterator();
+            Iterator<Object> iterator = ElementHelper.getValues(element, (PropertyKey) type).iterator();
             if (iterator.hasNext()) {
                 while (iterator.hasNext()) {
                     if (satisfiesCondition(iterator.next()))
@@ -98,7 +95,7 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         if (!getClass().isInstance(other))
             return false;
 
-        org.janusgraph.graphdb.query.condition.PredicateCondition oth = (org.janusgraph.graphdb.query.condition.PredicateCondition) other;
+        PredicateCondition oth = (PredicateCondition) other;
         return key.equals(oth.key) && predicate.equals(oth.predicate) && value.equals(oth.value);
     }
 
@@ -107,8 +104,8 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         return key.toString() + " " + predicate.toString() + " " + value;
     }
 
-    public static <K, E extends JanusGraphElement> org.janusgraph.graphdb.query.condition.PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {
-        return new org.janusgraph.graphdb.query.condition.PredicateCondition<>(key, janusgraphPredicate, condition);
+    public static <K, E extends JanusGraphElement> PredicateCondition<K, E> of(K key, JanusGraphPredicate janusgraphPredicate, Object condition) {
+        return new PredicateCondition<>(key, janusgraphPredicate, condition);
     }
 
 }

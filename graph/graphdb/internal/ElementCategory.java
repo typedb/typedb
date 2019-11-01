@@ -15,9 +15,6 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphTransaction;
@@ -28,6 +25,9 @@ import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import grakn.core.graph.graphdb.types.VertexLabelVertex;
 import grakn.core.graph.graphdb.types.vertices.EdgeLabelVertex;
 import grakn.core.graph.graphdb.types.vertices.PropertyKeyVertex;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public enum ElementCategory {
     VERTEX, EDGE, PROPERTY;
@@ -116,7 +116,7 @@ public enum ElementCategory {
         }
     }
 
-    public static org.janusgraph.graphdb.internal.ElementCategory getByClazz(Class<? extends Element> clazz) {
+    public static ElementCategory getByClazz(Class<? extends Element> clazz) {
         Preconditions.checkArgument(clazz != null, "Need to provide a element class argument");
         if (Vertex.class.isAssignableFrom(clazz)) return VERTEX;
         else if (Edge.class.isAssignableFrom(clazz)) return EDGE;
@@ -124,8 +124,8 @@ public enum ElementCategory {
         else throw new IllegalArgumentException("Invalid clazz provided: " + clazz);
     }
 
-    public static org.janusgraph.graphdb.internal.ElementCategory getByName(String name) {
-        for (org.janusgraph.graphdb.internal.ElementCategory category : values()) {
+    public static ElementCategory getByName(String name) {
+        for (ElementCategory category : values()) {
             if (category.toString().equalsIgnoreCase(name)) return category;
         }
         throw new IllegalArgumentException("Unrecognized name: " + name);

@@ -35,7 +35,7 @@ import java.util.Random;
  */
 public class PartitionIDRange {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PartitionIDRange.class);
     private static final Random RANDOM = new Random();
 
     private final int lowerID;
@@ -120,23 +120,23 @@ public class PartitionIDRange {
     =========== Helper methods to generate PartitionIDRanges ============
      */
 
-    public static List<org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange> getGlobalRange(int partitionBits) {
+    public static List<PartitionIDRange> getGlobalRange(int partitionBits) {
         Preconditions.checkArgument(partitionBits >= 0 && partitionBits < (Integer.SIZE - 1), "Invalid partition bits: %s", partitionBits);
         final int partitionIdBound = (1 << (partitionBits));
-        return ImmutableList.of(new org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange(0, partitionIdBound, partitionIdBound));
+        return ImmutableList.of(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
     }
 
-    public static List<org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange> getIDRanges(int partitionBits, List<KeyRange> locals) {
+    public static List<PartitionIDRange> getIDRanges(int partitionBits, List<KeyRange> locals) {
         Preconditions.checkArgument(partitionBits > 0 && partitionBits < (Integer.SIZE - 1));
         Preconditions.checkArgument(locals != null && !locals.isEmpty(), "KeyRanges are empty");
         int partitionIdBound = (1 << (partitionBits));
         int backShift = Integer.SIZE - partitionBits;
-        List<org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange> partitionRanges = Lists.newArrayList();
+        List<PartitionIDRange> partitionRanges = Lists.newArrayList();
         for (KeyRange local : locals) {
             Preconditions.checkArgument(local.getStart().length() >= 4);
             Preconditions.checkArgument(local.getEnd().length() >= 4);
             if (local.getStart().equals(local.getEnd())) { //Start=End => Partition spans entire range
-                partitionRanges.add(new org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange(0, partitionIdBound, partitionIdBound));
+                partitionRanges.add(new PartitionIDRange(0, partitionIdBound, partitionIdBound));
                 continue;
             }
 
@@ -160,7 +160,7 @@ public class PartitionIDRange {
                 discardRange(local);
                 continue;
             }
-            partitionRanges.add(new org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange(lowerID, upperID, partitionIdBound));
+            partitionRanges.add(new PartitionIDRange(lowerID, upperID, partitionIdBound));
         }
         return partitionRanges;
     }

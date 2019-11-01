@@ -23,8 +23,6 @@ import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.diskstorage.util.time.Timer;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
-import grakn.core.graph.graphdb.database.management.AbstractIndexStatusWatcher;
-import grakn.core.graph.graphdb.database.management.GraphIndexStatusReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +30,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GraphIndexStatusWatcher
-        extends AbstractIndexStatusWatcher<GraphIndexStatusReport, org.janusgraph.graphdb.database.management.GraphIndexStatusWatcher> {
+        extends AbstractIndexStatusWatcher<GraphIndexStatusReport, GraphIndexStatusWatcher> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(org.janusgraph.graphdb.database.management.GraphIndexStatusWatcher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GraphIndexStatusWatcher.class);
 
     private final String graphIndexName;
 
@@ -44,7 +42,7 @@ public class GraphIndexStatusWatcher
     }
 
     @Override
-    protected org.janusgraph.graphdb.database.management.GraphIndexStatusWatcher self() {
+    protected GraphIndexStatusWatcher self() {
         return this;
     }
 

@@ -21,8 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphRelation;
@@ -53,7 +51,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.diskstorage.util.HashingUtil;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.database.serialize.AttributeUtil;
@@ -83,6 +80,8 @@ import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.ParameterIndexField;
 import grakn.core.graph.graphdb.types.ParameterType;
 import grakn.core.graph.util.encoding.LongEncoding;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,12 +97,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NAME_MAPPING;
 
 
 public class IndexSerializer {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.IndexSerializer.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IndexSerializer.class);
 
     private static final int DEFAULT_OBJECT_BYTELEN = 30;
     private static final byte FIRST_INDEX_COLUMN_BYTE = 0;
@@ -537,7 +536,7 @@ public class IndexSerializer {
             }
             return results.stream();
         } else {
-            return tx.indexQuery(index.getBackingIndexName(), query.getMixedQuery()).map(org.janusgraph.graphdb.database.IndexSerializer::string2ElementId);
+            return tx.indexQuery(index.getBackingIndexName(), query.getMixedQuery()).map(IndexSerializer::string2ElementId);
         }
     }
 
@@ -643,7 +642,7 @@ public class IndexSerializer {
                 Preconditions.checkNotNull(key);
                 Preconditions.checkArgument(index.indexesKey(key),
                         "The used key [%s] is not indexed in the targeted index [%s]", key.name(), query.getIndex());
-                orderReplacement.add(new IndexQuery.OrderEntry(key2Field(index, key), org.janusgraph.graphdb.internal.Order.convert(order.value()), key.dataType()));
+                orderReplacement.add(new IndexQuery.OrderEntry(key2Field(index, key), grakn.core.graph.graphdb.internal.Order.convert(order.value()), key.dataType()));
             } else {
                 Preconditions.checkArgument(query.getUnknownKeyName() != null,
                         "Found reference to non-existant property key in query orders %s", order.key());

@@ -33,10 +33,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
-import grakn.core.graph.graphdb.database.idassigner.IDBlockSizer;
-import grakn.core.graph.graphdb.database.idassigner.IDPool;
-import grakn.core.graph.graphdb.database.idassigner.IDPoolExhaustedException;
-import grakn.core.graph.graphdb.database.idassigner.StandardIDPool;
 import grakn.core.graph.graphdb.database.idassigner.placement.IDPlacementStrategy;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
@@ -62,17 +58,17 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_BLOCK_SIZE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_NS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_BUFFER_PERCENTAGE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_TIMEOUT;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_BLOCK_SIZE;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_BUFFER_PERCENTAGE;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_TIMEOUT;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 
 @PreInitializeConfigOptions
 public class VertexIDAssigner implements AutoCloseable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.idassigner.VertexIDAssigner.class);
+    private static final Logger LOG = LoggerFactory.getLogger(VertexIDAssigner.class);
 
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
 

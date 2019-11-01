@@ -21,8 +21,6 @@ import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.IDAuthority;
 import grakn.core.graph.diskstorage.IDBlock;
-import grakn.core.graph.graphdb.database.idassigner.IDPool;
-import grakn.core.graph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +38,7 @@ import java.util.concurrent.TimeoutException;
 
 
 public class StandardIDPool implements IDPool {
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.idassigner.StandardIDPool.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardIDPool.class);
     private static final int RENEW_ID_COUNT = 100;
 
 

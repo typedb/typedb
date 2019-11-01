@@ -19,14 +19,12 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.schema.Mapping;
-import grakn.core.graph.diskstorage.indexing.IndexProvider;
 
 import java.util.Arrays;
 import java.util.Set;
 
 /**
  * Characterizes the features that a particular {@link IndexProvider} implementation supports
- *
  */
 public class IndexFeatures {
 
@@ -44,9 +42,9 @@ public class IndexFeatures {
                          String wildcardField, ImmutableSet<Cardinality> supportedCardinalities, boolean supportsNanoseconds,
                          boolean supportCustomAnalyzer, boolean supportsGeoContains, boolean supportsNotQueryNormalForm) {
 
-        Preconditions.checkArgument(defaultMap!=null && defaultMap!= Mapping.DEFAULT);
-        Preconditions.checkArgument(supportedMap!=null && !supportedMap.isEmpty()
-                                    && supportedMap.contains(defaultMap));
+        Preconditions.checkArgument(defaultMap != null && defaultMap != Mapping.DEFAULT);
+        Preconditions.checkArgument(supportedMap != null && !supportedMap.isEmpty()
+                && supportedMap.contains(defaultMap));
         this.supportsDocumentTTL = supportsDocumentTTL;
         this.defaultStringMapping = defaultMap;
         this.supportedStringMappings = supportedMap;
@@ -107,7 +105,7 @@ public class IndexFeatures {
         private boolean supportNotQueryNormalForm;
 
         public Builder supportsDocumentTTL() {
-            supportsDocumentTTL=true;
+            supportsDocumentTTL = true;
             return this;
         }
 
@@ -151,10 +149,10 @@ public class IndexFeatures {
             return this;
         }
 
-        public org.janusgraph.diskstorage.indexing.IndexFeatures build() {
-            return new org.janusgraph.diskstorage.indexing.IndexFeatures(supportsDocumentTTL, defaultStringMapping, ImmutableSet.copyOf(supportedMappings),
-                wildcardField,  ImmutableSet.copyOf(supportedCardinalities), supportsNanoseconds, supportsCustomAnalyzer,
-                supportsGeoContains, supportNotQueryNormalForm);
+        public IndexFeatures build() {
+            return new IndexFeatures(supportsDocumentTTL, defaultStringMapping, ImmutableSet.copyOf(supportedMappings),
+                    wildcardField, ImmutableSet.copyOf(supportedCardinalities), supportsNanoseconds, supportsCustomAnalyzer,
+                    supportsGeoContains, supportNotQueryNormalForm);
         }
     }
 }

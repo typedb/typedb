@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.concurrent.Callable;
 
 
-public abstract class AbstractIndexStatusWatcher<R, S extends org.janusgraph.graphdb.database.management.AbstractIndexStatusWatcher<R,S>> implements Callable<R> {
+public abstract class AbstractIndexStatusWatcher<R, S extends AbstractIndexStatusWatcher<R,S>> implements Callable<R> {
 
     protected final JanusGraph g;
     protected final List<SchemaStatus> statuses;

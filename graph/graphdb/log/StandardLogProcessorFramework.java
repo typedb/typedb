@@ -17,7 +17,6 @@ package grakn.core.graph.graphdb.log;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.log.Change;
 import grakn.core.graph.core.log.ChangeProcessor;
@@ -37,11 +36,10 @@ import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.internal.ElementLifeCycle;
 import grakn.core.graph.graphdb.internal.InternalRelation;
-import grakn.core.graph.graphdb.log.ModificationDeserializer;
-import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.vertices.StandardVertex;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +173,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
             } else {
                 readMarker = ReadMarker.fromIdentifierOrTime(readMarkerName, startTime);
             }
-            synchronized (org.janusgraph.graphdb.log.StandardLogProcessorFramework.this) {
+            synchronized (StandardLogProcessorFramework.this) {
                 Preconditions.checkArgument(!processorLogs.containsKey(userLogName), "Processors have already been registered for user LOG: %s", userLogName);
                 try {
                     Log log = graph.getBackend().getUserLog(userLogName);
@@ -205,7 +203,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         }
 
         private void readRelations(TransactionLogHeader.Entry transactionEntry,
-                                   StandardJanusGraphTx tx, org.janusgraph.graphdb.log.StandardChangeState changes) {
+                                   StandardJanusGraphTx tx, StandardChangeState changes) {
             for (TransactionLogHeader.Modification modification : transactionEntry.getContentAsModifications(serializer)) {
                 InternalRelation rel = ModificationDeserializer.parseRelation(modification, tx);
 
@@ -226,7 +224,7 @@ public class StandardLogProcessorFramework implements LogProcessorFramework {
         public void read(Message message) {
             for (int i = 1; i <= retryAttempts; i++) {
                 StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.newTransaction();
-                org.janusgraph.graphdb.log.StandardChangeState changes = new org.janusgraph.graphdb.log.StandardChangeState();
+                StandardChangeState changes = new StandardChangeState();
                 StandardTransactionId transactionId;
                 try {
                     ReadBuffer content = message.getContent().asReadBuffer();

@@ -45,16 +45,15 @@ import java.util.function.Function;
  */
 public class JanusGraphManager implements GraphManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.management.JanusGraphManager.class);
-    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG
-            = "Gremlin Server must be configured to use the JanusGraphManager.";
+    private static final Logger LOG = LoggerFactory.getLogger(JanusGraphManager.class);
+    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG = "Gremlin Server must be configured to use the JanusGraphManager.";
 
     private final Map<String, Graph> graphs = new ConcurrentHashMap<>();
     private final Map<String, TraversalSource> traversalSources = new ConcurrentHashMap<>();
     private final Object instantiateGraphLock = new Object();
     private GremlinExecutor gremlinExecutor = null;
 
-    private static org.janusgraph.graphdb.management.JanusGraphManager instance = null;
+    private static JanusGraphManager instance = null;
     private static final String CONFIGURATION_MANAGEMENT_GRAPH_KEY = ConfigurationManagementGraph.class.getSimpleName();
 
     /**
@@ -85,14 +84,14 @@ public class JanusGraphManager implements GraphManager {
         instance = this;
     }
 
-    public static org.janusgraph.graphdb.management.JanusGraphManager getInstance() {
+    public static JanusGraphManager getInstance() {
         return instance;
     }
 
     // To be used for testing purposes only, so we can run tests in parallel
-    public static org.janusgraph.graphdb.management.JanusGraphManager getInstance(boolean forceCreate) {
+    public static JanusGraphManager getInstance(boolean forceCreate) {
         if (forceCreate) {
-            return new org.janusgraph.graphdb.management.JanusGraphManager(new Settings());
+            return new JanusGraphManager(new Settings());
         } else {
             return instance;
         }
@@ -107,10 +106,10 @@ public class JanusGraphManager implements GraphManager {
     }
 
     private class GremlinExecutorGraphBinder implements Runnable {
-        org.janusgraph.graphdb.management.JanusGraphManager graphManager;
+        JanusGraphManager graphManager;
         GremlinExecutor gremlinExecutor;
 
-        public GremlinExecutorGraphBinder(org.janusgraph.graphdb.management.JanusGraphManager graphManager, GremlinExecutor gremlinExecutor) {
+        public GremlinExecutorGraphBinder(JanusGraphManager graphManager, GremlinExecutor gremlinExecutor) {
             this.graphManager = graphManager;
             this.gremlinExecutor = gremlinExecutor;
         }
@@ -259,7 +258,7 @@ public class JanusGraphManager implements GraphManager {
         }
     }
 
-    private void updateTraversalSource(String graphName, Graph graph, GremlinExecutor gremlinExecutor, org.janusgraph.graphdb.management.JanusGraphManager graphManager) {
+    private void updateTraversalSource(String graphName, Graph graph, GremlinExecutor gremlinExecutor, JanusGraphManager graphManager) {
         gremlinExecutor.getScriptEngineManager().put(graphName, graph);
         String traversalName = graphName + "_traversal";
         TraversalSource traversalSource = graph.traversal();

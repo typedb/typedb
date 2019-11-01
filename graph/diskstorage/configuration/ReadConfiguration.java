@@ -19,15 +19,13 @@ import com.google.common.collect.ImmutableList;
 import java.io.Closeable;
 
 /**
- *
  * Read-Only configuration which does not handle namespacing (umbrellaElementes and roots)
-
  */
 public interface ReadConfiguration extends Closeable {
 
-    org.janusgraph.diskstorage.configuration.ReadConfiguration EMPTY = new org.janusgraph.diskstorage.configuration.ReadConfiguration() {
+    ReadConfiguration EMPTY = new ReadConfiguration() {
         @Override
-        public<O> O get(String key, Class<O> datatype) {
+        public <O> O get(String key, Class<O> datatype) {
             return null;
         }
 

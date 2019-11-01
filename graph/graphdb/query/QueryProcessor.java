@@ -21,13 +21,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.QueryException;
-import grakn.core.graph.graphdb.query.BackendQuery;
-import grakn.core.graph.graphdb.query.BackendQueryHolder;
-import grakn.core.graph.graphdb.query.ElementQuery;
-import grakn.core.graph.graphdb.query.Query;
-import grakn.core.graph.graphdb.query.QueryExecutor;
-import grakn.core.graph.graphdb.query.ResultMergeSortIterator;
-import grakn.core.graph.graphdb.query.ResultSetIterator;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.ArrayList;
@@ -49,7 +42,7 @@ import java.util.Set;
  * the iterator which effectively iterates the result set out, sorts it and then returns an iterator (i.e. much more expensive than exploiting existing sort orders).<br>
  * In this way, the individual sub-result sets are prepared and then merged together the MergeSortIterator (which conserves sort order if present).
  * The semantics of the queries is OR, meaning the result sets are combined.
- * However, when {@link org.janusgraph.graphdb.query.ElementQuery#hasDuplicateResults()} is true (which assumes that the result set is sorted) then the merge sort iterator
+ * However, when {@link ElementQuery#hasDuplicateResults()} is true (which assumes that the result set is sorted) then the merge sort iterator
  * filters out immediate duplicates.
  */
 public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphElement, B extends BackendQuery<B>> implements Iterable<R> {
@@ -183,7 +176,7 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
      */
 
 
-    private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<R> {
+    private final class LimitAdjustingIterator extends grakn.core.graph.graphdb.query.LimitAdjustingIterator<R> {
 
         private B backendQuery;
         private final QueryProfiler profiler;

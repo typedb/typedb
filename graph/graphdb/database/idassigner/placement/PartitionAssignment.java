@@ -14,23 +14,19 @@
 
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
-import grakn.core.graph.graphdb.database.idassigner.placement.IDPlacementStrategy;
-
 /**
  * Utility interface used in {@link IDPlacementStrategy} to hold the partition assignment of
  * a vertex (if it is already assigned a partition) or to be assigned a partition id.
- *
  */
 public interface PartitionAssignment {
 
     /**
      * Default assignment (when no id has been assigned yet)
      */
-    org.janusgraph.graphdb.database.idassigner.placement.PartitionAssignment EMPTY = () -> -1;
+    PartitionAssignment EMPTY = () -> -1;
 
     /**
      * Returns the assigned partition id
-     * @return
      */
     int getPartitionID();
 

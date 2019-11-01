@@ -17,13 +17,11 @@ package grakn.core.graph.graphdb.query.condition;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.condition.Condition;
 
 import java.util.Objects;
 
 /**
  * Negates the wrapped condition, i.e. semantic NOT
- *
  */
 public class Not<E extends JanusGraphElement> implements Condition<E> {
 
@@ -70,17 +68,17 @@ public class Not<E extends JanusGraphElement> implements Condition<E> {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || !(other == null || !getClass().isInstance(other)) && condition.equals(((org.janusgraph.graphdb.query.condition.Not) other).condition);
+        return this == other || getClass().isInstance(other) && condition.equals(((Not) other).condition);
 
     }
 
     @Override
     public String toString() {
-        return "!("+ condition.toString()+")";
+        return "!(" + condition.toString() + ")";
     }
 
-    public static <E extends JanusGraphElement> org.janusgraph.graphdb.query.condition.Not<E> of(Condition<E> element) {
-        return new org.janusgraph.graphdb.query.condition.Not<>(element);
+    public static <E extends JanusGraphElement> Not<E> of(Condition<E> element) {
+        return new Not<>(element);
     }
 
 }

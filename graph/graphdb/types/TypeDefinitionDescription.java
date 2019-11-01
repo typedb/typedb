@@ -17,7 +17,6 @@ package grakn.core.graph.graphdb.types;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
-
 public class TypeDefinitionDescription {
 
     private final TypeDefinitionCategory category;
@@ -35,8 +34,8 @@ public class TypeDefinitionDescription {
         this.modifier = modifier;
     }
 
-    public static org.janusgraph.graphdb.types.TypeDefinitionDescription of(TypeDefinitionCategory category) {
-        return new org.janusgraph.graphdb.types.TypeDefinitionDescription(category,null);
+    public static TypeDefinitionDescription of(TypeDefinitionCategory category) {
+        return new TypeDefinitionDescription(category,null);
     }
 
     public TypeDefinitionCategory getCategory() {

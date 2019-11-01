@@ -18,9 +18,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
-import info.ganglia.gmetric4j.gmetric.GMetric.UDPAddressingMode;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.lang3.ClassUtils;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.StandardIndexProvider;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
@@ -36,8 +33,6 @@ import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
-import grakn.core.graph.graphdb.configuration.JanusGraphConstants;
-import grakn.core.graph.graphdb.configuration.RegisteredAttributeClass;
 import grakn.core.graph.graphdb.configuration.converter.RegisteredAttributeClassesConverter;
 import grakn.core.graph.graphdb.database.cache.MetricInstrumentedSchemaCache;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
@@ -48,14 +43,14 @@ import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import grakn.core.graph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
 import grakn.core.graph.graphdb.transaction.StandardTransactionBuilder;
 import grakn.core.graph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
-import grakn.core.graph.util.stats.MetricManager;
 import grakn.core.graph.util.stats.NumberUtil;
 import grakn.core.graph.util.system.ConfigurationUtil;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.lang3.ClassUtils;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.management.MBeanServerFactory;
-import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
@@ -65,7 +60,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * Provides functionality to configure a {@link org.janusgraph.core.JanusGraph} INSTANCE.
+ * Provides functionality to configure a {@link JanusGraph} INSTANCE.
  * <p>
  * <p>
  * A graph database configuration is uniquely associated with a graph database and must not be used for multiple
@@ -810,7 +805,7 @@ public class GraphDatabaseConfiguration {
     // ############## Logging System ######################
     // ################################################
 
-    public static final ConfigNamespace LOG_NS = new ConfigNamespace(org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS, "log", "Configuration options for JanusGraph's logging system", true);
+    public static final ConfigNamespace LOG_NS = new ConfigNamespace(ROOT_NS, "log", "Configuration options for JanusGraph's logging system", true);
 
     public static final String MANAGEMENT_LOG = "janusgraph";
     public static final String TRANSACTION_LOG = "tx";
@@ -1361,27 +1356,28 @@ public class GraphDatabaseConfiguration {
 
     private void configureMetricsConsoleReporter() {
         if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
+//            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
         }
     }
 
     private void configureMetricsCsvReporter() {
         if (configuration.has(METRICS_CSV_DIR)) {
-            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
+//            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
         }
     }
 
     private void configureMetricsJmxReporter() {
         if (configuration.get(METRICS_JMX_ENABLED)) {
-            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
+//            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
         }
     }
 
     private void configureMetricsSlf4jReporter() {
         if (configuration.has(METRICS_SLF4J_INTERVAL)) {
+            //todo-reenable
             // null loggerName is allowed -- that means Metrics will use its internal default
-            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
+//            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
+//                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
         }
     }
 
@@ -1390,14 +1386,14 @@ public class GraphDatabaseConfiguration {
             String host = configuration.get(GANGLIA_HOST_OR_GROUP);
             Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
             Integer port = configuration.get(GANGLIA_PORT);
-
-            UDPAddressingMode addressingMode;
-            String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
-            if (addressingModeString.equalsIgnoreCase("multicast")) {
-                addressingMode = UDPAddressingMode.MULTICAST;
-            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
-                addressingMode = UDPAddressingMode.UNICAST;
-            } else throw new AssertionError();
+//todo-reenable
+//            UDPAddressingMode addressingMode;
+//            String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
+//            if (addressingModeString.equalsIgnoreCase("multicast")) {
+//                addressingMode = UDPAddressingMode.MULTICAST;
+//            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
+//                addressingMode = UDPAddressingMode.UNICAST;
+//            } else throw new AssertionError();
 
             Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
 
@@ -1408,20 +1404,20 @@ public class GraphDatabaseConfiguration {
             String spoof = null;
             if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
 
-            try {
-                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+//            try {
+////                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
+//            } catch (IOException e) {
+//                throw new RuntimeException(e);
+//            }
         }
     }
 
     private void configureMetricsGraphiteReporter() {
         if (configuration.has(GRAPHITE_HOST)) {
-            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
-                    configuration.get(GRAPHITE_PORT),
-                    configuration.get(GRAPHITE_PREFIX),
-                    configuration.get(GRAPHITE_INTERVAL));
+//            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
+//                    configuration.get(GRAPHITE_PORT),
+//                    configuration.get(GRAPHITE_PREFIX),
+//                    configuration.get(GRAPHITE_INTERVAL));
         }
     }
 

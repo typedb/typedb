@@ -78,7 +78,7 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
         super();
     }
 
-    protected IndexRepairJob(org.janusgraph.graphdb.olap.job.IndexRepairJob job) {
+    protected IndexRepairJob(IndexRepairJob job) {
         super(job);
     }
 
@@ -228,8 +228,8 @@ public class IndexRepairJob extends IndexUpdateJob implements VertexScanJob {
     }
 
     @Override
-    public org.janusgraph.graphdb.olap.job.IndexRepairJob clone() {
-        return new org.janusgraph.graphdb.olap.job.IndexRepairJob(this);
+    public IndexRepairJob clone() {
+        return new IndexRepairJob(this);
     }
 
     private static <Q extends BaseVertexQuery> Q addIndexSchemaConstraint(Q query, IndexType indexType) {

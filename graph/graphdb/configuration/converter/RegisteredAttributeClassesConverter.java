@@ -29,13 +29,14 @@ import java.util.Set;
  */
 public class RegisteredAttributeClassesConverter {
 
-    private static org.janusgraph.graphdb.configuration.converter.RegisteredAttributeClassesConverter registeredAttributeClassesConverter;
+    private static RegisteredAttributeClassesConverter registeredAttributeClassesConverter;
 
-    private RegisteredAttributeClassesConverter(){}
+    private RegisteredAttributeClassesConverter() {
+    }
 
-    public static org.janusgraph.graphdb.configuration.converter.RegisteredAttributeClassesConverter getInstance(){
-        if(registeredAttributeClassesConverter == null){
-            registeredAttributeClassesConverter = new org.janusgraph.graphdb.configuration.converter.RegisteredAttributeClassesConverter();
+    public static RegisteredAttributeClassesConverter getInstance() {
+        if (registeredAttributeClassesConverter == null) {
+            registeredAttributeClassesConverter = new RegisteredAttributeClassesConverter();
         }
         return registeredAttributeClassesConverter;
     }
@@ -50,7 +51,7 @@ public class RegisteredAttributeClassesConverter {
             final AttributeSerializer<?> serializer = getAttributeSerializer(configuration, attributeId);
 
             RegisteredAttributeClass reg = new RegisteredAttributeClass(position, clazz, serializer);
-            if(all.contains(reg)){
+            if (all.contains(reg)) {
                 throw new IllegalArgumentException("Duplicate attribute registration: " + reg);
             }
             all.add(reg);
@@ -59,19 +60,19 @@ public class RegisteredAttributeClassesConverter {
         return all;
     }
 
-    private int getAttributePosition(String attributeId){
+    private int getAttributePosition(String attributeId) {
         Preconditions.checkArgument(attributeId.startsWith(GraphDatabaseConfiguration.ATTRIBUTE_PREFIX),
-            "Invalid attribute definition: %s",attributeId);
+                "Invalid attribute definition: %s", attributeId);
         try {
             return Integer.parseInt(attributeId.substring(GraphDatabaseConfiguration.ATTRIBUTE_PREFIX.length()));
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Expected entry of the form ["+
-                GraphDatabaseConfiguration.ATTRIBUTE_PREFIX +"X] where X is a number but given " + attributeId);
+            throw new IllegalArgumentException("Expected entry of the form [" +
+                    GraphDatabaseConfiguration.ATTRIBUTE_PREFIX + "X] where X is a number but given " + attributeId);
         }
     }
 
-    private Class<?> getAttributeClass(Configuration configuration, String attributeId){
-        String classname = configuration.get(GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS,attributeId);
+    private Class<?> getAttributeClass(Configuration configuration, String attributeId) {
+        String classname = configuration.get(GraphDatabaseConfiguration.CUSTOM_ATTRIBUTE_CLASS, attributeId);
         try {
             return Class.forName(classname);
         } catch (ClassNotFoundException e) {
@@ -79,7 +80,7 @@ public class RegisteredAttributeClassesConverter {
         }
     }
 
-    private AttributeSerializer<?> getAttributeSerializer(Configuration configuration, String attributeId){
+    private AttributeSerializer<?> getAttributeSerializer(Configuration configuration, String attributeId) {
         Preconditions.checkArgument(configuration.has(GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS, attributeId));
         String serializerName = configuration.get(GraphDatabaseConfiguration.CUSTOM_SERIALIZER_CLASS, attributeId);
         try {

@@ -15,7 +15,6 @@
 package grakn.core.graph.graphdb.olap.job;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.StringUtils;
 import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.RelationType;
@@ -29,6 +28,7 @@ import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.transaction.StandardTransactionBuilder;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,16 +41,16 @@ public abstract class IndexUpdateJob {
     protected final Logger LOG = LoggerFactory.getLogger(getClass());
 
     private static final String SUCCESS_TX = "success-tx";
-    private static final ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS,"index","Configuration options relating to index jobs");
+    private static final ConfigNamespace INDEX_JOB_NS = new ConfigNamespace(GraphDatabaseConfiguration.JOB_NS, "index", "Configuration options relating to index jobs");
     protected static final String FAILED_TX = "failed-tx";
 
 
-    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<>(INDEX_JOB_NS,"index-name",
+    public static final ConfigOption<String> INDEX_NAME = new ConfigOption<>(INDEX_JOB_NS, "index-name",
             "The name of the index to be repaired. For vertex-centric indexes this is the name of " +
                     "the edge label or property key on which the index is installed.",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<>(INDEX_JOB_NS,"relation-type",
+    public static final ConfigOption<String> INDEX_RELATION_TYPE = new ConfigOption<>(INDEX_JOB_NS, "relation-type",
             "For a vertex-centric index, this is the name of the index associated with the " +
                     "relation type configured under index-name. This should remain empty for global graph indexes.",
             ConfigOption.Type.LOCAL, "", Objects::nonNull);
@@ -67,9 +67,10 @@ public abstract class IndexUpdateJob {
     protected RelationType indexRelationType;
     protected Instant jobStartTime;
 
-    public IndexUpdateJob() { }
+    public IndexUpdateJob() {
+    }
 
-    protected IndexUpdateJob(org.janusgraph.graphdb.olap.job.IndexUpdateJob copy) {
+    protected IndexUpdateJob(IndexUpdateJob copy) {
         this.indexName = copy.indexName;
         this.indexRelationTypeName = copy.indexRelationTypeName;
     }
@@ -80,7 +81,7 @@ public abstract class IndexUpdateJob {
     }
 
     public boolean isGlobalGraphIndex() {
-        return indexRelationTypeName ==null || StringUtils.isBlank(indexRelationTypeName);
+        return indexRelationTypeName == null || StringUtils.isBlank(indexRelationTypeName);
     }
 
     public boolean isRelationTypeIndex() {
@@ -88,8 +89,8 @@ public abstract class IndexUpdateJob {
     }
 
     public void workerIterationStart(JanusGraph graph, Configuration config, ScanMetrics metrics) {
-        this.graph = (StandardJanusGraph)graph;
-        Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME),"Invalid configuration for this job. Start time is required.");
+        this.graph = (StandardJanusGraph) graph;
+        Preconditions.checkArgument(config.has(GraphDatabaseConfiguration.JOB_START_TIME), "Invalid configuration for this job. Start time is required.");
         this.jobStartTime = Instant.ofEpochMilli(config.get(GraphDatabaseConfiguration.JOB_START_TIME));
         if (indexName == null) {
             Preconditions.checkArgument(config.has(INDEX_NAME), "Need to configure the name of the index to be repaired");
@@ -99,16 +100,16 @@ public abstract class IndexUpdateJob {
         }
 
         try {
-            this.managementSystem = (ManagementSystem)graph.openManagement();
+            this.managementSystem = (ManagementSystem) graph.openManagement();
 
             if (isGlobalGraphIndex()) {
                 index = managementSystem.getGraphIndex(indexName);
             } else {
                 indexRelationType = managementSystem.getRelationType(indexRelationTypeName);
-                Preconditions.checkArgument(indexRelationType!=null,"Could not find relation type: %s", indexRelationTypeName);
-                index = managementSystem.getRelationIndex(indexRelationType,indexName);
+                Preconditions.checkArgument(indexRelationType != null, "Could not find relation type: %s", indexRelationTypeName);
+                index = managementSystem.getRelationIndex(indexRelationType, indexName);
             }
-            Preconditions.checkArgument(index!=null,"Could not find index: %s [%s]",indexName,indexRelationTypeName);
+            Preconditions.checkArgument(index != null, "Could not find index: %s [%s]", indexName, indexRelationTypeName);
             LOG.debug("Found index {}", indexName);
             validateIndexStatus();
 
@@ -118,7 +119,7 @@ public abstract class IndexUpdateJob {
         } catch (Exception e) {
             if (null != managementSystem && managementSystem.isOpen())
                 managementSystem.rollback();
-            if (writeTx!=null && writeTx.isOpen())
+            if (writeTx != null && writeTx.isOpen())
                 writeTx.rollback();
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);
@@ -129,7 +130,7 @@ public abstract class IndexUpdateJob {
         try {
             if (null != managementSystem && managementSystem.isOpen())
                 managementSystem.commit();
-            if (writeTx!=null && writeTx.isOpen())
+            if (writeTx != null && writeTx.isOpen())
                 writeTx.commit();
             metrics.incrementCustom(SUCCESS_TX);
         } catch (RuntimeException e) {

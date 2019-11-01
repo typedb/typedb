@@ -15,19 +15,16 @@
 package grakn.core.graph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Token;
-import grakn.core.graph.graphdb.types.system.EmptyRelationType;
-import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import org.apache.commons.lang.StringUtils;
 
 public abstract class BaseRelationType extends EmptyRelationType implements SystemRelationType {
 
     private final String name;
     private final long id;
-
 
     BaseRelationType(String name, long id, JanusGraphSchemaCategory type) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
@@ -73,7 +70,7 @@ public abstract class BaseRelationType extends EmptyRelationType implements Syst
             case EDGELABEL:
                 return IDManager.getSchemaId(IDManager.VertexIDType.SystemEdgeLabel, id);
             case PROPERTYKEY:
-                return IDManager.getSchemaId(IDManager.VertexIDType.SystemPropertyKey,id);
+                return IDManager.getSchemaId(IDManager.VertexIDType.SystemPropertyKey, id);
             default:
                 throw new AssertionError("Illegal argument: " + type);
         }

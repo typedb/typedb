@@ -17,8 +17,6 @@ package grakn.core.graph.graphdb.olap.job;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.schema.JanusGraphIndex;
@@ -40,10 +38,11 @@ import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.olap.QueryContainer;
 import grakn.core.graph.graphdb.olap.VertexJobConverter;
-import grakn.core.graph.graphdb.olap.job.IndexUpdateJob;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.CompositeIndexType;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +59,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     private long graphIndexId;
     private IDManager idManager;
 
-    protected IndexRemoveJob(org.janusgraph.graphdb.olap.job.IndexRemoveJob copy) {
+    protected IndexRemoveJob(IndexRemoveJob copy) {
         super(copy);
         if (copy.graph.isProvided()) this.graph.setGraph(copy.graph.get());
     }
@@ -174,7 +173,7 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
     }
 
     @Override
-    public org.janusgraph.graphdb.olap.job.IndexRemoveJob clone() {
-        return new org.janusgraph.graphdb.olap.job.IndexRemoveJob(this);
+    public IndexRemoveJob clone() {
+        return new IndexRemoveJob(this);
     }
 }

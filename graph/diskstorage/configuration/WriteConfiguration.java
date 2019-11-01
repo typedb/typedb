@@ -14,15 +14,12 @@
 
 package grakn.core.graph.diskstorage.configuration;
 
-
-import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
-
 public interface WriteConfiguration extends ReadConfiguration {
 
     <O> void set(String key, O value);
 
     void remove(String key);
 
-    org.janusgraph.diskstorage.configuration.WriteConfiguration copy();
+    WriteConfiguration copy();
 
 }

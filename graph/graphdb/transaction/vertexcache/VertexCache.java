@@ -19,13 +19,13 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.vertices.AbstractVertex;
 import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 public class VertexCache {
@@ -34,7 +34,7 @@ public class VertexCache {
     private final Cache<Long, InternalVertex> cache;
 
     public VertexCache(long maxCacheSize, int concurrencyLevel, int initialDirtySize) {
-        volatileVertices = new NonBlockingHashMapLong<>(initialDirtySize);
+        volatileVertices = new ConcurrentHashMap<>(initialDirtySize);
         cache = CacheBuilder.newBuilder()
                 .maximumSize(maxCacheSize)
                 .concurrencyLevel(concurrencyLevel)

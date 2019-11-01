@@ -128,11 +128,11 @@ import java.util.stream.StreamSupport;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
+import static RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
 public class ManagementSystem implements JanusGraphManagement {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.management.ManagementSystem.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ManagementSystem.class);
     private static final String CURRENT_INSTANCE_SUFFIX = "(current)";
 
     private final StandardJanusGraph graph;
@@ -977,7 +977,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         @Override
         public Boolean call() throws Exception {
-            org.janusgraph.graphdb.database.management.ManagementSystem management = (org.janusgraph.graphdb.database.management.ManagementSystem) graph.openManagement();
+            ManagementSystem management = (ManagementSystem) graph.openManagement();
             try {
                 JanusGraphVertex vertex = management.transaction.getVertex(schemaVertexId);
                 Preconditions.checkArgument(vertex instanceof JanusGraphSchemaVertex);
@@ -1093,7 +1093,7 @@ public class ManagementSystem implements JanusGraphManagement {
             hashcode = Objects.hash(indexName, relationTypeName);
         }
 
-        private Index retrieve(org.janusgraph.graphdb.database.management.ManagementSystem management) {
+        private Index retrieve(ManagementSystem management) {
             if (relationTypeName == null) return management.getGraphIndex(indexName);
             else return management.getRelationIndex(management.getRelationType(relationTypeName), indexName);
         }
@@ -1128,7 +1128,7 @@ public class ManagementSystem implements JanusGraphManagement {
                 try {
                     if (metrics.get(ScanMetrics.Metric.FAILURE) == 0) {
                         if (action != null) {
-                            org.janusgraph.graphdb.database.management.ManagementSystem management = (org.janusgraph.graphdb.database.management.ManagementSystem) graph.openManagement();
+                            ManagementSystem management = (ManagementSystem) graph.openManagement();
                             try {
                                 Index index = retrieve(management);
                                 management.updateIndex(index, action);

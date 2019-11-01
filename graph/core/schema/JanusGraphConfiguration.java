@@ -17,7 +17,6 @@ package grakn.core.graph.core.schema;
 /**
  * Used to read and change the global JanusGraph configuration.
  * The configuration options are read from the graph and affect the entire database.
- *
  */
 public interface JanusGraphConfiguration {
 
@@ -25,18 +24,12 @@ public interface JanusGraphConfiguration {
      * Returns a string representation of the provided configuration option or namespace for inspection.
      * <p>
      * An exception is thrown if the path is invalid.
-     *
-     * @param path
-     * @return
      */
     String get(String path);
 
     /**
      * Sets the configuration option identified by the provided path to the given value.
-     *
-     * @param path
-     * @param value
      */
-    org.janusgraph.core.schema.JanusGraphConfiguration set(String path, Object value);
+    JanusGraphConfiguration set(String path, Object value);
 
 }

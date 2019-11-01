@@ -24,7 +24,7 @@ import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 public class StandardIndexInformation implements IndexInformation {
 
-    public static final org.janusgraph.graphdb.database.indexing.StandardIndexInformation INSTANCE = new org.janusgraph.graphdb.database.indexing.StandardIndexInformation();
+    public static final StandardIndexInformation INSTANCE = new StandardIndexInformation();
 
     private static final IndexFeatures STANDARD_FEATURES = new IndexFeatures.Builder().build();
 

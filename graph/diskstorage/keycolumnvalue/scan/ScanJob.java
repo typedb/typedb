@@ -14,12 +14,11 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
-import org.apache.tinkerpop.gremlin.process.computer.Memory;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.apache.tinkerpop.gremlin.process.computer.Memory;
 
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,6 @@ import java.util.function.Predicate;
 
 /**
  * A global computation over
- *
  */
 public interface ScanJob extends Cloneable {
 
@@ -35,29 +33,31 @@ public interface ScanJob extends Cloneable {
      * Invoked before a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
      * Can be used to initialize the iteration. This method is called exactly once for each before a block of computation.
      * This method is semantically aligned with {@link org.apache.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationStart(Memory)}
-     *
+     * <p>
      * This method may not be called if there is no data to be processed. Correspondingly, the end method won't be called either.
-     *
+     * <p>
      * No-op default implementation.
      *
-     * @param jobConfiguration configuration for this particular job
+     * @param jobConfiguration   configuration for this particular job
      * @param graphConfiguration configuration options for the entire graph against which this job is executed
-     * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
+     * @param metrics            {@link ScanMetrics} for this job
      */
-    default void workerIterationStart(Configuration jobConfiguration, Configuration graphConfiguration, ScanMetrics metrics) {}
+    default void workerIterationStart(Configuration jobConfiguration, Configuration graphConfiguration, ScanMetrics metrics) {
+    }
 
     /**
      * Invoked after a block of computation (i.e. multiple process() calls) is handed to this particular ScanJob.
      * Can be used to close any resources held by this job. This method is called exactly once for each after a block of computation.
      * This method is semantically aligned with {@link org.apache.tinkerpop.gremlin.process.computer.VertexProgram#workerIterationEnd(Memory)}
-     *
+     * <p>
      * This method may not be called if there is no data to be processed. Correspondingly, the start method won't be called either.
-     *
+     * <p>
      * No-op default implementation.
      *
-     * @param metrics {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics} for this job
+     * @param metrics {@link ScanMetrics} for this job
      */
-    default void workerIterationEnd(ScanMetrics metrics) {}
+    default void workerIterationEnd(ScanMetrics metrics) {
+    }
 
     /**
      * Run this {@code ScanJob}'s computation on the supplied row-key and entries.
@@ -89,10 +89,6 @@ public interface ScanJob extends Cloneable {
      * its respective key yields undefined behavior.
      * <p>
      * This method may be called by concurrent threads in a single process.
-     *
-     * @param key
-     * @param entries
-     * @param metrics
      */
     void process(StaticBuffer key, Map<SliceQuery, EntryList> entries, ScanMetrics metrics);
 
@@ -100,7 +96,7 @@ public interface ScanJob extends Cloneable {
      * Returns one or more {@code SliceQuery} instances belonging to this {@code ScanJob}.
      * <p>
      * Before calling
-     * {@link #process(org.janusgraph.diskstorage.StaticBuffer, Map, ScanMetrics)},
+     * {@link #process(StaticBuffer, Map, ScanMetrics)},
      * users of this interface must check that the key in question contains at least one
      * entry matching the initial {@code SliceQuery} returned by this method.  See the javadoc
      * for the {@code process} method for more information.
@@ -115,7 +111,7 @@ public interface ScanJob extends Cloneable {
 
     /**
      * A predicate that determines whether
-     * {@link #process(org.janusgraph.diskstorage.StaticBuffer, Map, ScanMetrics)}
+     * {@link #process(StaticBuffer, Map, ScanMetrics)}
      * should be invoked for the given key.  If the predicate returns true,
      * then users of this interface should invoke {@code process} for the key and
      * its associated entries.  If the predicate returns false, then users of this
@@ -137,8 +133,8 @@ public interface ScanJob extends Cloneable {
      * Returns a clone of this ScanJob. The clone will not yet be initialized for computation but all of
      * its internal state (if any) must match that of the original copy.
      *
-     * @return A clone of this {@link org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob}
+     * @return A clone of this {@link ScanJob}
      */
-    org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob clone();
+    ScanJob clone();
 
 }

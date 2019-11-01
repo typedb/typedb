@@ -17,6 +17,17 @@ package grakn.core.graph.graphdb.tinkerpop.optimize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import grakn.core.graph.core.BaseVertexQuery;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphProperty;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
 import org.apache.tinkerpop.gremlin.process.traversal.step.Profiling;
@@ -29,20 +40,6 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
-import grakn.core.graph.core.BaseVertexQuery;
-import grakn.core.graph.core.JanusGraphMultiVertexQuery;
-import grakn.core.graph.core.JanusGraphProperty;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.JanusGraphVertexQuery;
-import grakn.core.graph.graphdb.query.BaseQuery;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
-import grakn.core.graph.graphdb.query.Query;
-import grakn.core.graph.graphdb.query.profile.QueryProfiler;
-import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import grakn.core.graph.graphdb.tinkerpop.optimize.MultiQueriable;
-import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -162,8 +159,8 @@ public class JanusGraphPropertiesStep<E> extends PropertiesStep<E> implements Ha
     }
 
     @Override
-    public org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep<E> clone() {
-        org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep<E> clone = (org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep<E>) super.clone();
+    public JanusGraphPropertiesStep<E> clone() {
+        JanusGraphPropertiesStep<E> clone = (JanusGraphPropertiesStep<E>) super.clone();
         clone.initialized = false;
         return clone;
     }

@@ -15,12 +15,9 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.condition.Condition;
-import grakn.core.graph.graphdb.query.condition.MultiCondition;
 
 /**
  * Combines multiple conditions under semantic OR, i.e. at least one condition must be true for this combination to be true
- *
  */
 
 public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
@@ -60,8 +57,8 @@ public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
         return false;
     }
 
-    public static <E extends JanusGraphElement> org.janusgraph.graphdb.query.condition.Or<E> of(Condition<E>... elements) {
-        return new org.janusgraph.graphdb.query.condition.Or<>(elements);
+    public static <E extends JanusGraphElement> Or<E> of(Condition<E>... elements) {
+        return new Or<>(elements);
     }
 
 }

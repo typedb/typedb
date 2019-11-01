@@ -21,15 +21,13 @@ import grakn.core.graph.core.schema.RelationTypeIndex;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.diskstorage.util.time.Timer;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
-import grakn.core.graph.graphdb.database.management.AbstractIndexStatusWatcher;
-import grakn.core.graph.graphdb.database.management.RelationIndexStatusReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class RelationIndexStatusWatcher
-        extends AbstractIndexStatusWatcher<RelationIndexStatusReport, org.janusgraph.graphdb.database.management.RelationIndexStatusWatcher> {
+        extends AbstractIndexStatusWatcher<RelationIndexStatusReport, RelationIndexStatusWatcher> {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(org.janusgraph.graphdb.database.management.RelationIndexStatusWatcher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RelationIndexStatusWatcher.class);
 
     private final String relationIndexName;
     private final String relationTypeName;
@@ -41,7 +39,7 @@ public class RelationIndexStatusWatcher
     }
 
     @Override
-    protected org.janusgraph.graphdb.database.management.RelationIndexStatusWatcher self() {
+    protected RelationIndexStatusWatcher self() {
         return this;
     }
 

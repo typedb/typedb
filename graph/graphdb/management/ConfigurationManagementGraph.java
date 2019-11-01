@@ -234,7 +234,7 @@ public class ConfigurationManagementGraph {
      * @return List&lt;Map&lt;String, Object&gt;&gt;
      */
     public List<Map<String, Object>> getConfigurations() {
-        final List<Map<Object, Object>> graphConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
+        List<Map<Object, Object>> graphConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, false).valueMap().toList();
         return graphConfigurations.stream().map(this::deserializeVertexProperties).collect(Collectors.toList());
     }
 
@@ -244,7 +244,7 @@ public class ConfigurationManagementGraph {
      * @return Map&lt;String, Object&gt;
      */
     public Map<String, Object> getTemplateConfiguration() {
-        final List<Map<Object, Object>> templateConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();
+        List<Map<Object, Object>> templateConfigurations = graph.traversal().V().has(PROPERTY_TEMPLATE, true).valueMap().toList();
         if (templateConfigurations.size() == 0) return null;
 
         if (templateConfigurations.size() > 1) {

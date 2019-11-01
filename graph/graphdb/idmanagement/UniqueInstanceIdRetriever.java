@@ -15,13 +15,13 @@
 package grakn.core.graph.graphdb.idmanagement;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.JanusGraphConfigurationException;
 import grakn.core.graph.diskstorage.configuration.ConfigElement;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.util.encoding.LongEncoding;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,17 +36,18 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class UniqueInstanceIdRetriever {
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever.class);
+    private static final Logger log = LoggerFactory.getLogger(UniqueInstanceIdRetriever.class);
 
-    private static org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever uniqueInstanceIdGenerator;
+    private static UniqueInstanceIdRetriever uniqueInstanceIdGenerator;
 
     private final AtomicLong instanceCounter = new AtomicLong(0);
 
-    private UniqueInstanceIdRetriever(){}
+    private UniqueInstanceIdRetriever() {
+    }
 
-    public static org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever getInstance(){
-        if(uniqueInstanceIdGenerator == null){
-            uniqueInstanceIdGenerator = new org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever();
+    public static UniqueInstanceIdRetriever getInstance() {
+        if (uniqueInstanceIdGenerator == null) {
+            uniqueInstanceIdGenerator = new UniqueInstanceIdRetriever();
         }
         return uniqueInstanceIdGenerator;
     }
@@ -59,7 +60,7 @@ public class UniqueInstanceIdRetriever {
         } else {
             uid = config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID);
         }
-        Preconditions.checkArgument(!StringUtils.containsAny(uid, ConfigElement.ILLEGAL_CHARS),"Invalid unique identifier: %s",uid);
+        Preconditions.checkArgument(!StringUtils.containsAny(uid, ConfigElement.ILLEGAL_CHARS), "Invalid unique identifier: %s", uid);
         return uid;
     }
 
@@ -68,7 +69,7 @@ public class UniqueInstanceIdRetriever {
         final String uid = getUid(config);
         String instanceId = uid + suffix;
         for (char c : ConfigElement.ILLEGAL_CHARS) {
-            instanceId = StringUtils.replaceChars(instanceId,c,'-');
+            instanceId = StringUtils.replaceChars(instanceId, c, '-');
         }
         return instanceId;
     }
@@ -94,7 +95,7 @@ public class UniqueInstanceIdRetriever {
         }
         final String uid;
         if (config.has(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME)
-            && config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME)) {
+                && config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID_HOSTNAME)) {
             uid = localHost.getHostName();
         } else {
             final byte[] addrBytes = localHost.getAddress();
