@@ -130,7 +130,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
         return ConceptUtils.mergeAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
-                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id()));
+                .explain(new RuleExplanation(rule.getRule().id()), query.getPattern());
     }
 
     private ConceptMap materialisedAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
@@ -151,8 +151,8 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         //materialise exhibits put behaviour - duplicates won't be created
         ConceptMap materialisedSub = ruleHead.materialise(answer).findFirst().orElse(null);
         if (materialisedSub != null) {
-            RuleExplanation ruleExplanation = new RuleExplanation(query.getPattern(), rule.getRule().id());
-            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation);
+            RuleExplanation ruleExplanation = new RuleExplanation(rule.getRule().id());
+            ConceptMap ruleAnswer = materialisedSub.explain(ruleExplanation, query.getPattern());
             getQuery().tx().queryCache().record(ruleHead, ruleAnswer);
             Atom ruleAtom = ruleHead.getAtom();
             //if it's an implicit relation also record it as an attribute
@@ -167,6 +167,6 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         return ConceptUtils
                 .mergeAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
-                .explain(new RuleExplanation(query.getPattern(), rule.getRule().id()));
+                .explain(new RuleExplanation(rule.getRule().id()), query.getPattern());
     }
 }

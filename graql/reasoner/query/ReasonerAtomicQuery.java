@@ -193,7 +193,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         return this.withSubstitution(answer)
                 .getAtom()
                 .materialise()
-                .map(ans -> ans.explain(answer.explanation()));
+                .map(ans -> ans.explain(answer.explanation(), this.getPattern()));
     }
 
     @Override
@@ -213,7 +213,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
         Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.first()
-                .map(a -> a.explain(a.explanation().setPattern(this.getPattern())))
+                .map(a -> a.explain(a.explanation(), this.getPattern()))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
                 .iterator();
 

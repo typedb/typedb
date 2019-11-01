@@ -31,6 +31,7 @@ import grakn.client.answer.ConceptList;
 import grakn.client.answer.ConceptMap;
 import grakn.client.answer.ConceptSet;
 import grakn.client.answer.ConceptSetMeasure;
+import grakn.client.answer.Explanation;
 import grakn.client.answer.Numeric;
 import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
@@ -253,13 +254,15 @@ public class GraknClientIT {
             List<Pattern> patterns = Lists.newArrayList(
                     Graql.var("x").isa("content").has("name", "x"),
                     var("z").isa("content").has("name", "z"),
-                    var("infer").rel("x").rel("z").isa("contains")
+                    var("infer").rel("contained","x").rel("container","z").isa("contains")
             );
             ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+
             final int ruleStatements = tx.getRule("transitive-location").when().statements().size();
 
+            Set<ConceptMap> deductions = deductions(answer);
 
-            assertEquals(patterns.size() + ruleStatements, deductions(answer).size());
+            assertEquals(patterns.size() + ruleStatements, deductions.size());
             assertEquals(patterns.size(), answer.explanation().getAnswers().size());
             answer.explanation().getAnswers().stream()
                     .filter(a -> a.map().containsKey(var("infer").var()))
@@ -268,12 +271,59 @@ public class GraknClientIT {
         }
     }
 
-    private Set<ConceptMap> deductions(ConceptMap answer) {
-        Set<ConceptMap> deductions = new HashSet<>(answer.explanation().getAnswers());
-        for (ConceptMap explanationAnswer : answer.explanation().getAnswers()) {
-            deductions.addAll(deductions(explanationAnswer));
+    @Test
+    public void testExecutingAlphaEquivalentQueries_CorrectPatternsAreReturned() {
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            tx.execute(Graql.define(
+                    type("name").sub("attribute").datatype("string"),
+                    type("content").sub("entity").has("name").plays("contained").plays("container"),
+                    type("contains").sub("relation").relates("contained").relates("container"),
+                    type("transitive-location").sub("rule")
+                            .when(and(
+                                    rel("contained", "x").rel("container", "y").isa("contains"),
+                                    rel("contained", "y").rel("container", "z").isa("contains")
+                            ))
+                            .then(rel("contained", "x").rel("container", "z").isa("contains"))
+            ));
+            tx.execute(Graql.insert(
+                    var("x").isa("content").has("name", "x"),
+                    var("y").isa("content").has("name", "y"),
+                    var("z").isa("content").has("name", "z"),
+                    rel("contained", "x").rel("container", "y").isa("contains"),
+                    rel("contained", "y").rel("container", "z").isa("contains")
+            ));
+            tx.commit();
         }
-        return deductions;
+        try (GraknClient.Transaction tx = remoteSession.transaction().write()) {
+            List<Pattern> patterns = Lists.newArrayList(
+                    Graql.var("x").isa("content").has("name", "x"),
+                    var("z").isa("content").has("name", "z"),
+                    var("infer").rel("contained","x").rel("container","z").isa("contains")
+            );
+            ConceptMap answer = Iterables.getOnlyElement(tx.execute(Graql.match(patterns).get()));
+
+
+            List<Pattern> patterns2 = Lists.newArrayList(
+                    Graql.var("x2").isa("content").has("name", "x"),
+                    var("z2").isa("content").has("name", "z"),
+                    var().rel("contained","x2").rel("container","z2").isa("contains")
+            );
+            ConceptMap answer2 = Iterables.getOnlyElement(tx.execute(Graql.match(patterns2).get()));
+            testExplanation(answer2);
+        }
+    }
+
+    private Set<ConceptMap> deductions(ConceptMap answer) {
+        if (answer.hasExplanation()) {
+            List<ConceptMap> answers = answer.explanation().getAnswers();
+            Set<ConceptMap> deductions = new HashSet<>(answers);
+            for (ConceptMap explanationAnswer : answers) {
+                deductions.addAll(deductions(explanationAnswer));
+            }
+            return deductions;
+        } else {
+            return new HashSet<>();
+        }
     }
 
     private void testExplanation(ConceptMap answer) {
@@ -294,14 +344,14 @@ public class GraknClientIT {
 
     private void answerHasConsistentExplanations(ConceptMap answer) {
         Set<ConceptMap> answers = deductions(answer).stream()
-                .filter(a -> a.explanation().getPattern() != null)
+                .filter(a -> a.queryPattern() != null)
                 .collect(Collectors.toSet());
 
         answers.forEach(a -> TestCase.assertTrue("Answer has inconsistent explanations", explanationConsistentWithAnswer(a)));
     }
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans) {
-        Pattern queryPattern = ans.explanation().getPattern();
+        Pattern queryPattern = ans.queryPattern();
         Set<Variable> vars = new HashSet<>();
         if (queryPattern != null) {
             queryPattern.statements().forEach(s -> vars.addAll(s.variables()));

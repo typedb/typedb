@@ -34,22 +34,11 @@ public class AnswerGroup<T extends Answer> extends Answer {
 
     private final Concept owner;
     private final List<T> answers;
-    private final Explanation explanation;
+
 
     public AnswerGroup(Concept owner, List<T> answers) {
-        this(owner, answers, new Explanation());
-    }
-
-    public AnswerGroup(Concept owner, List<T> answers, Explanation explanation) {
         this.owner = owner;
         this.answers = answers;
-        this.explanation = explanation;
-    }
-
-    @Nullable
-    @Override
-    public Explanation explanation() {
-        return explanation;
     }
 
     public Concept owner() {

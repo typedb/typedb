@@ -31,16 +31,9 @@ public class ConceptSet extends Answer {
 
     // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
     private final Set<ConceptId> set;
-    private final Explanation explanation;
 
     public ConceptSet(Set<ConceptId> set) {
         this.set = Collections.unmodifiableSet(set);
-        this.explanation = new Explanation();
-    }
-
-    @Override
-    public Explanation explanation() {
-        return explanation;
     }
 
     public Set<ConceptId> set() {

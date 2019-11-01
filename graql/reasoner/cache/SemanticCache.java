@@ -312,7 +312,7 @@ public abstract class SemanticCache<
         if (fetchFromParent){
             LOG.trace("Query Cache miss: {} with fetch from parents {}", query, parents);
             CacheEntry<ReasonerAtomicQuery, SE> newEntry = addEntry(createEntry(query, new HashSet<>()));
-            return new Pair<>(entryToAnswerStream(newEntry), MultiUnifierImpl.trivial());
+            return new Pair<>(entryToAnswerStreamWithUnifier(query, newEntry).first(), MultiUnifierImpl.trivial());
         }
         return getDBAnswerStreamWithUnifier(query);
     }

@@ -25,20 +25,9 @@ package grakn.core.concept.answer;
 public class Numeric extends Answer {
 
     private final Number number;
-    private final Explanation explanation;
 
     public Numeric(Number number) {
-        this(number, new Explanation());
-    }
-
-    public Numeric(Number number, Explanation explanation) {
         this.number = number;
-        this.explanation = explanation;
-    }
-
-    @Override
-    public Explanation explanation() {
-        return explanation;
     }
 
     public Number number() {

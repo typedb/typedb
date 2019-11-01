@@ -25,6 +25,8 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.SchemaConcept;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
 import grakn.core.core.Schema;
 
@@ -77,10 +79,10 @@ public class ConceptUtils {
      * @param schemaConcept input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<? extends SchemaConcept> nonMetaSups(SchemaConcept schemaConcept){
+    public static Set<? extends SchemaConcept> nonMetaSups(SchemaConcept schemaConcept) {
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
+        while (superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
             superTypes.add(superType);
             superType = superType.sup();
         }
@@ -89,17 +91,17 @@ public class ConceptUtils {
 
     /**
      * @param parent type
-     * @param child type
+     * @param child  type
      * @param direct flag indicating whether only direct types should be considered
      * @return true if child is a subtype of parent
      */
     private static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
-        if (parent == null ) return true;
+        if (parent == null) return true;
         if (child == null) return false;
         if (direct) return parent.equals(child);
         if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
         SchemaConcept superType = child;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
+        while (superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }
@@ -108,19 +110,21 @@ public class ConceptUtils {
 
     /**
      * @param parentTypes set of types defining parent, parent defines type constraints to be fulfilled
-     * @param childTypes set of types defining child
-     * @param direct flag indicating whether only direct types should be considered
+     * @param childTypes  set of types defining child
+     * @param direct      flag indicating whether only direct types should be considered
      * @return true if type sets are disjoint - it's possible to find a disjoint pair among parent and child set
      */
-    public static boolean areDisjointTypeSets(Set<? extends SchemaConcept>  parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
+    public static boolean areDisjointTypeSets(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
         return childTypes.isEmpty() && !parentTypes.isEmpty()
                 || parentTypes.stream().anyMatch(parent -> childTypes.stream()
                 .anyMatch(child -> ConceptUtils.areDisjointTypes(parent, child, direct)));
     }
 
-    /** determines disjointness of parent-child types, parent defines the bound on the child
+    /**
+     * determines disjointness of parent-child types, parent defines the bound on the child
+     *
      * @param parent {@link SchemaConcept}
-     * @param child {@link SchemaConcept}
+     * @param child  {@link SchemaConcept}
      * @param direct flag indicating whether only direct types should be considered
      * @return true if types do not belong to the same type hierarchy, also:
      * - true if parent is null and
@@ -132,17 +136,18 @@ public class ConceptUtils {
 
     /**
      * Computes dependent concepts of a thing - concepts that need to be persisted if we persist the provided thing.
+     *
      * @param topThings things dependants of which we want to retrieve
      * @return stream of things that are dependants of the provided thing - includes non-direct dependants.
      */
-    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings){
+    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings) {
         Set<Thing> things = new HashSet<>(topThings);
         Set<Thing> visitedThings = new HashSet<>();
         Stack<Thing> thingStack = new Stack<>();
         thingStack.addAll(topThings);
-        while(!thingStack.isEmpty()) {
+        while (!thingStack.isEmpty()) {
             Thing thing = thingStack.pop();
-            if (!visitedThings.contains(thing)){
+            if (!visitedThings.contains(thing)) {
                 thing.getDependentConcepts()
                         .peek(things::add)
                         .filter(t -> !visitedThings.contains(t))
@@ -187,13 +192,22 @@ public class ConceptUtils {
                                             Sets.newHashSet(
                                                     concept.asSchemaConcept(),
                                                     otherConcept.asSchemaConcept())
-                                                             )
+                                            )
                                     )
                             );
                         }
                     }
                 });
         if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
-        return new ConceptMap(entryMap, answerA.explanation());
+        Pattern mergedPattern;
+        if (answerA.getPattern() != null && answerB.getPattern() != null) {
+            mergedPattern = Graql.and(answerA.getPattern(), answerB.getPattern());
+        } else if (answerA.getPattern() != null) {
+            mergedPattern = answerA.getPattern();
+        } else {
+            mergedPattern = answerB.getPattern();
+        }
+
+        return new ConceptMap(entryMap, answerA.explanation(), mergedPattern);
     }
 }

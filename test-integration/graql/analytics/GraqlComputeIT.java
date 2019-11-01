@@ -54,6 +54,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
+
+import graql.lang.query.GraqlQuery;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -234,17 +236,17 @@ public class GraqlComputeIT {
     public void testConcurrentAnalyticsJobsBySubmittingGraqlComputeQueries() {
         addSchemaAndEntities();
 
-        List<String> queryList = new ArrayList<>();
-        queryList.add("compute count;");
-        queryList.add("compute cluster using connected-component;");
-        queryList.add("compute cluster using k-core;");
-        queryList.add("compute centrality using degree;");
-        queryList.add("compute centrality using k-core;");
-        queryList.add("compute path from " + entityId1 + ", to " + entityId4 + ";");
+        List<GraqlQuery> queryList = new ArrayList<>();
+        queryList.add(Graql.parse("compute count;").asComputeStatistics());
+        queryList.add(Graql.parse("compute cluster using connected-component;").asComputeCluster());
+        queryList.add(Graql.parse("compute cluster using k-core;").asComputeCluster());
+        queryList.add(Graql.parse("compute centrality using degree;").asComputeCentrality());
+        queryList.add(Graql.parse("compute centrality using k-core;").asComputeCentrality());
+        queryList.add(Graql.parse("compute path from " + entityId1 + ", to " + entityId4 + ";").asComputePath());
 
         List<?> result = queryList.parallelStream().map(query -> {
             try (Transaction tx = session.readTransaction()) {
-                return tx.execute(Graql.<GraqlCompute>parse(query)).toString();
+                return tx.execute(query).toString();
             }
         }).collect(Collectors.toList());
         assertEquals(queryList.size(), result.size());
