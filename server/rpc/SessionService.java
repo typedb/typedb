@@ -29,7 +29,6 @@ import grakn.core.concept.answer.Explanation;
 import grakn.core.graql.reasoner.ReasonerException;
 import grakn.core.graql.reasoner.explanation.JoinExplanation;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
-import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -40,8 +39,6 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.protocol.session.AnswerProto;
@@ -58,7 +55,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -433,6 +429,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             if (q.isAtomic()) {
                 // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
                 // we then return the answer's explanation
+                // Only atomic queries are retrievable directly from the cache
                 ConceptMap originatingAnswer = (ConceptMap)tx.queryCache().getAnswerStream(q).findFirst().orElse(null);
                 if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
                 explanation = originatingAnswer.explanation();
