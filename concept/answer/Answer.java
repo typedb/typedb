@@ -23,6 +23,6 @@ package grakn.core.concept.answer;
  * An empty interface that in the future will contain a proper API that all answer types should share
  * TODO redesign Answer interface
  */
-public interface  Answer {
+public abstract class Answer {
 
 }

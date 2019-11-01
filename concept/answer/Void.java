@@ -19,7 +19,7 @@
 
 package grakn.core.concept.answer;
 
-public class Void implements Answer {
+public class Void extends Answer {
     private final String message;
 
     public Void(String message) {

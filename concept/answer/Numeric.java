@@ -22,7 +22,7 @@ package grakn.core.concept.answer;
 /**
  * A type of Answer object that contains a Number.
  */
-public class Numeric implements Answer {
+public class Numeric extends Answer {
 
     private final Number number;
 

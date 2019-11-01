@@ -27,7 +27,7 @@ import java.util.Set;
 /**
  * A type of Answer object that contains a Set.
  */
-public class ConceptSet implements Answer {
+public class ConceptSet extends Answer {
 
     // TODO: change to store Set<Concept> once we are able to construct Concept without a database look up
     private final Set<ConceptId> set;
