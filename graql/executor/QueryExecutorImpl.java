@@ -139,7 +139,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
                         .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
-                        .map(q -> q.resolve());
+                        .map(q -> q.resolve().map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
                 return mergedStreams.flatStream();

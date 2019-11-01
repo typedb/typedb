@@ -426,14 +426,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             // extract and reconstruct query pattern with the required IDs
             AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
             Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
-            List<Pattern> queryPatterns = new ArrayList<>();
-            queryPatterns.add(queryPattern);
-            explainable.getMapMap().forEach(
-                    (var, concept) -> queryPatterns.add(Graql.var(var).id(concept.getId()))
-            );
-
-            // Create the Get query, which we parse into a Reasoner Query format
-            GraqlGet getQuery = Graql.match(queryPatterns).get();
+            GraqlGet getQuery = Graql.match(queryPattern).get();
             ResolvableQuery q = ReasonerQueries.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()), tx);
 
             Explanation explanation;
@@ -446,8 +439,13 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             } else {
                 // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
                 // these are the same components used to re-construct the explanation for our original query, which we
-                // do manually here
-                List<ConceptMap> maps = q.selectAtoms().map(ReasonerQueries::atomic).flatMap(aq -> (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq))
+                // do manually her
+                List<ConceptMap> maps = q.selectAtoms()
+                        .map(ReasonerQueries::atomic)
+                        .flatMap(aq -> {
+                            Stream<ConceptMap> answerStream = (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq);
+                            return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
+                        })
                         .collect(Collectors.toList());
                 explanation = new JoinExplanation(maps);
             }

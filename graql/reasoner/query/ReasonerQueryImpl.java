@@ -594,7 +594,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
          return this.selectAtoms()
             .map(at -> at.inferTypes(mergedAnswer.project(at.getVarNames())))
             .map(ReasonerQueries::atomic)
-                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(), aq.getPattern()))
+                .map(aq -> mergedAnswer.project(aq.getVarNames()).explain(new LookupExplanation(), aq.withSubstitution(mergedAnswer).getPattern()))
             .collect(Collectors.toList());
     }
 

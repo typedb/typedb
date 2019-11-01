@@ -25,11 +25,13 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Explanation;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.graql.reasoner.graph.GeoGraph;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.property.IdProperty;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Variable;
 import org.junit.AfterClass;
@@ -40,8 +42,11 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -382,10 +387,20 @@ public class ExplanationIT {
 
     private boolean explanationConsistentWithAnswer(ConceptMap ans){
         Pattern queryPattern = ans.getPattern();
-        Set<Variable> vars = new HashSet<>();
+        Map<Variable, String> varIds = new HashMap<>();
         if (queryPattern != null){
-            queryPattern.statements().forEach(s -> vars.addAll(s.variables()));
+            queryPattern.statements().stream()
+                    .filter(statement -> statement.hasProperty(IdProperty.class))
+                    .forEach(statement -> {
+                        String id = statement.getProperty(IdProperty.class).get().id();
+                        Variable var = statement.var();
+                        varIds.put(var, id);
+                    });
         }
-        return vars.containsAll(ans.map().keySet());
+        boolean allVariableIdsMatch = true;
+        for (Map.Entry<Variable, Concept> mapping : ans.map().entrySet()) {
+            allVariableIdsMatch &= mapping.getValue().id().toString().equals(varIds.get(mapping.getKey()));
+        }
+        return allVariableIdsMatch;
     }
 }
