@@ -15,9 +15,9 @@
 package grakn.core.graph.graphdb.transaction.indexcache;
 
 import com.google.common.collect.HashMultimap;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.transaction.indexcache.IndexCache;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.transaction.indexcache.IndexCache;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -16,17 +16,17 @@ package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.graphdb.relations.StandardRelation;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.encoding.LongEncoding;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.relations.StandardRelation;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.util.encoding.LongEncoding;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -55,9 +55,9 @@ public final class RelationIdentifier implements Serializable {
         this.inVertexId = inVertexId;
     }
 
-    static org.janusgraph.graphdb.relations.RelationIdentifier get(InternalRelation r) {
+    static RelationIdentifier get(InternalRelation r) {
         if (r.hasId()) {
-            return new org.janusgraph.graphdb.relations.RelationIdentifier(r.getVertex(0).longId(),
+            return new RelationIdentifier(r.getVertex(0).longId(),
                     r.getType().longId(),
                     r.longId(), (r.isEdge() ? r.getVertex(1).longId() : 0));
         } else return null;
@@ -80,24 +80,24 @@ public final class RelationIdentifier implements Serializable {
         return inVertexId;
     }
 
-    public static org.janusgraph.graphdb.relations.RelationIdentifier get(long[] ids) {
+    public static RelationIdentifier get(long[] ids) {
         if (ids.length != 3 && ids.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
             if (ids[i] < 0)
                 throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         }
-        return new org.janusgraph.graphdb.relations.RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
+        return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
     }
 
-    public static org.janusgraph.graphdb.relations.RelationIdentifier get(int[] ids) {
+    public static RelationIdentifier get(int[] ids) {
         if (ids.length != 3 && ids.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         for (int i = 0; i < 3; i++) {
             if (ids[i] < 0)
                 throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
         }
-        return new org.janusgraph.graphdb.relations.RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
+        return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
     }
 
     public long[] getLongRepresentation() {
@@ -118,7 +118,7 @@ public final class RelationIdentifier implements Serializable {
     public boolean equals(Object other) {
         if (this == other) return true;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.graphdb.relations.RelationIdentifier oth = (org.janusgraph.graphdb.relations.RelationIdentifier) other;
+        RelationIdentifier oth = (RelationIdentifier) other;
         return relationId == oth.relationId && typeId == oth.typeId;
     }
 
@@ -131,12 +131,12 @@ public final class RelationIdentifier implements Serializable {
         return s.toString();
     }
 
-    public static org.janusgraph.graphdb.relations.RelationIdentifier parse(String id) {
+    public static RelationIdentifier parse(String id) {
         String[] elements = id.split(TOSTRING_DELIMITER);
         if (elements.length != 3 && elements.length != 4)
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         try {
-            return new org.janusgraph.graphdb.relations.RelationIdentifier(LongEncoding.decode(elements[1]),
+            return new RelationIdentifier(LongEncoding.decode(elements[1]),
                     LongEncoding.decode(elements[2]),
                     LongEncoding.decode(elements[0]),
                     elements.length == 4 ? LongEncoding.decode(elements[3]) : 0);

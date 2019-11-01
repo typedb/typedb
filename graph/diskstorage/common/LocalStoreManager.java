@@ -15,10 +15,10 @@
 package grakn.core.graph.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.common.AbstractStoreManager;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.util.DirectoryUtil;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.common.AbstractStoreManager;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.util.DirectoryUtil;
 
 import java.io.File;
 

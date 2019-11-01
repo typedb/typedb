@@ -16,15 +16,15 @@ package grakn.core.graph.diskstorage.locking.consistentkey;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import org.janusgraph.diskstorage.locking.consistentkey.LockCleanerService;
-import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable;
-import org.janusgraph.diskstorage.util.KeyColumn;
-import org.janusgraph.diskstorage.util.UncaughtExceptionLogger;
-import org.janusgraph.diskstorage.util.UncaughtExceptionLogger.UELevel;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
+import grakn.core.graph.diskstorage.locking.consistentkey.LockCleanerService;
+import grakn.core.graph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable;
+import grakn.core.graph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.util.UncaughtExceptionLogger;
+import grakn.core.graph.diskstorage.util.UncaughtExceptionLogger.UELevel;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

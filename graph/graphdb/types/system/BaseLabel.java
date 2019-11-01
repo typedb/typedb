@@ -14,22 +14,20 @@
 
 package grakn.core.graph.graphdb.types.system;
 
+import grakn.core.graph.core.Connection;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Connection;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseRelationType;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
-    public static final org.janusgraph.graphdb.types.system.BaseLabel SchemaDefinitionEdge = new org.janusgraph.graphdb.types.system.BaseLabel("SchemaRelated", 36, Direction.BOTH, Multiplicity.MULTI);
-    public static final org.janusgraph.graphdb.types.system.BaseLabel VertexLabelEdge = new org.janusgraph.graphdb.types.system.BaseLabel("vertexlabel", 2, Direction.OUT, Multiplicity.MANY2ONE);
+    public static final BaseLabel SchemaDefinitionEdge = new BaseLabel("SchemaRelated", 36, Direction.BOTH, Multiplicity.MULTI);
+    public static final BaseLabel VertexLabelEdge = new BaseLabel("vertexlabel", 2, Direction.OUT, Multiplicity.MANY2ONE);
 
     private final Direction directionality;
     private final Multiplicity multiplicity;
@@ -82,7 +80,7 @@ public class BaseLabel extends BaseRelationType implements EdgeLabel {
 
     @Override
     public boolean isUnidirected(Direction dir) {
-        return dir== directionality;
+        return dir == directionality;
     }
 
 

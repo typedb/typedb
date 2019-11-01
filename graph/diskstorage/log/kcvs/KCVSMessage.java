@@ -15,9 +15,9 @@
 package grakn.core.graph.diskstorage.log.kcvs;
 
 
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
-import org.janusgraph.diskstorage.log.util.AbstractMessage;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
+import grakn.core.graph.diskstorage.log.util.AbstractMessage;
 
 import java.time.Instant;
 

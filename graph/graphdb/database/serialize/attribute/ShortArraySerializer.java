@@ -14,10 +14,10 @@
 
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
-import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.attribute.ArraySerializer;
+import grakn.core.graph.core.attribute.AttributeSerializer;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.serialize.attribute.ArraySerializer;
 
 import java.lang.reflect.Array;
 

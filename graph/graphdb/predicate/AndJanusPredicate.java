@@ -14,9 +14,9 @@
 
 package grakn.core.graph.graphdb.predicate;
 
-import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
-import org.janusgraph.graphdb.predicate.OrJanusPredicate;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.predicate.ConnectiveJanusPredicate;
+import grakn.core.graph.graphdb.predicate.OrJanusPredicate;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.List;
 

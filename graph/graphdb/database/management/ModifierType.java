@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.database.management;
 
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
 /**
  * @author Joshua Shinavier (http://fortytwo.net)

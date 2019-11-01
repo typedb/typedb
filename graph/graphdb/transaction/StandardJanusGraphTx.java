@@ -14,7 +14,6 @@
 
 package grakn.core.graph.graphdb.transaction;
 
-import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
@@ -23,6 +22,100 @@ import com.google.common.cache.Weigher;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphIndexQuery;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.ReadOnlyTransactionException;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.SchemaViolationException;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.schema.EdgeLabelMaker;
+import grakn.core.graph.core.schema.JanusGraphSchemaElement;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.schema.SchemaInspector;
+import grakn.core.graph.core.schema.VertexLabelMaker;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BackendTransaction;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.util.Hex;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.database.EdgeSerializer;
+import grakn.core.graph.graphdb.database.IndexSerializer;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.database.idassigner.IDPool;
+import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.InternalVertexLabel;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.internal.RelationCategory;
+import grakn.core.graph.graphdb.query.MetricsQueryExecutor;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.QueryExecutor;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.query.condition.And;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.ConditionUtil;
+import grakn.core.graph.graphdb.query.condition.PredicateCondition;
+import grakn.core.graph.graphdb.query.graph.GraphCentricQuery;
+import grakn.core.graph.graphdb.query.graph.GraphCentricQueryBuilder;
+import grakn.core.graph.graphdb.query.graph.IndexQueryBuilder;
+import grakn.core.graph.graphdb.query.graph.JointIndexQuery;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.query.vertex.VertexCentricQuery;
+import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.relations.RelationComparator;
+import grakn.core.graph.graphdb.relations.RelationIdentifier;
+import grakn.core.graph.graphdb.relations.StandardEdge;
+import grakn.core.graph.graphdb.relations.StandardVertexProperty;
+import grakn.core.graph.graphdb.tinkerpop.ElementUtils;
+import grakn.core.graph.graphdb.transaction.addedrelations.AddedRelationsContainer;
+import grakn.core.graph.graphdb.transaction.addedrelations.ConcurrentBufferAddedRelations;
+import grakn.core.graph.graphdb.transaction.addedrelations.SimpleBufferAddedRelations;
+import grakn.core.graph.graphdb.transaction.indexcache.ConcurrentIndexCache;
+import grakn.core.graph.graphdb.transaction.indexcache.IndexCache;
+import grakn.core.graph.graphdb.transaction.indexcache.SimpleIndexCache;
+import grakn.core.graph.graphdb.transaction.vertexcache.VertexCache;
+import grakn.core.graph.graphdb.types.StandardEdgeLabelMaker;
+import grakn.core.graph.graphdb.types.StandardPropertyKeyMaker;
+import grakn.core.graph.graphdb.types.StandardVertexLabelMaker;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
+import grakn.core.graph.graphdb.types.TypeDefinitionMap;
+import grakn.core.graph.graphdb.types.TypeInspector;
+import grakn.core.graph.graphdb.types.TypeUtil;
+import grakn.core.graph.graphdb.types.VertexLabelVertex;
+import grakn.core.graph.graphdb.types.system.BaseKey;
+import grakn.core.graph.graphdb.types.system.BaseLabel;
+import grakn.core.graph.graphdb.types.system.BaseVertexLabel;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import grakn.core.graph.graphdb.types.system.SystemTypeManager;
+import grakn.core.graph.graphdb.types.vertices.EdgeLabelVertex;
+import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import grakn.core.graph.graphdb.types.vertices.PropertyKeyVertex;
+import grakn.core.graph.graphdb.util.SubQueryIterator;
+import grakn.core.graph.graphdb.util.VertexCentricEdgeIterable;
+import grakn.core.graph.graphdb.vertices.CacheVertex;
+import grakn.core.graph.graphdb.vertices.StandardVertex;
+import grakn.core.graph.util.datastructures.Retriever;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
@@ -37,105 +130,6 @@ import org.apache.tinkerpop.gremlin.structure.io.Io;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadedTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.cliffc.high_scale_lib.NonBlockingHashMap;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphIndexQuery;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.ReadOnlyTransactionException;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.SchemaViolationException;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.SchemaInspector;
-import org.janusgraph.core.schema.VertexLabelMaker;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BackendTransaction;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.util.Hex;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.database.EdgeSerializer;
-import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.database.idassigner.IDPool;
-import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.InternalVertexLabel;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.query.MetricsQueryExecutor;
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.QueryExecutor;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.ConditionUtil;
-import org.janusgraph.graphdb.query.condition.PredicateCondition;
-import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
-import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
-import org.janusgraph.graphdb.query.graph.IndexQueryBuilder;
-import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.query.vertex.VertexCentricQuery;
-import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.graphdb.relations.RelationComparator;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.graphdb.relations.StandardEdge;
-import org.janusgraph.graphdb.relations.StandardVertexProperty;
-import org.janusgraph.graphdb.tinkerpop.ElementUtils;
-import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.transaction.TransactionConfiguration;
-import org.janusgraph.graphdb.transaction.VertexIterable;
-import org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer;
-import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentBufferAddedRelations;
-import org.janusgraph.graphdb.transaction.addedrelations.SimpleBufferAddedRelations;
-import org.janusgraph.graphdb.transaction.indexcache.ConcurrentIndexCache;
-import org.janusgraph.graphdb.transaction.indexcache.IndexCache;
-import org.janusgraph.graphdb.transaction.indexcache.SimpleIndexCache;
-import org.janusgraph.graphdb.transaction.vertexcache.VertexCache;
-import org.janusgraph.graphdb.types.StandardEdgeLabelMaker;
-import org.janusgraph.graphdb.types.StandardPropertyKeyMaker;
-import org.janusgraph.graphdb.types.StandardVertexLabelMaker;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionDescription;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
-import org.janusgraph.graphdb.types.TypeInspector;
-import org.janusgraph.graphdb.types.TypeUtil;
-import org.janusgraph.graphdb.types.VertexLabelVertex;
-import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseLabel;
-import org.janusgraph.graphdb.types.system.BaseVertexLabel;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.graphdb.types.system.SystemRelationType;
-import org.janusgraph.graphdb.types.system.SystemTypeManager;
-import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
-import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
-import org.janusgraph.graphdb.util.SubQueryIterator;
-import org.janusgraph.graphdb.util.VertexCentricEdgeIterable;
-import org.janusgraph.graphdb.vertices.CacheVertex;
-import org.janusgraph.graphdb.vertices.StandardVertex;
-import org.janusgraph.util.datastructures.Retriever;
-import org.janusgraph.util.stats.MetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -175,7 +169,7 @@ import java.util.stream.Collectors;
 
 public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspector, SchemaInspector {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardJanusGraphTx.class);
 
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
 
@@ -276,7 +270,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
         int concurrencyLevel = (config.isSingleThreaded()) ? 1 : 4;
         this.addedRelations = (config.isSingleThreaded()) ? new SimpleBufferAddedRelations() : new ConcurrentBufferAddedRelations();
-        this.newTypeCache = (config.isSingleThreaded()) ? new HashMap<>() : new NonBlockingHashMap<>();
+        this.newTypeCache = (config.isSingleThreaded()) ? new HashMap<>() : new ConcurrentHashMap<>();
         this.newVertexIndexEntries = (config.isSingleThreaded()) ? new SimpleIndexCache() : new ConcurrentIndexCache();
 
 
@@ -287,7 +281,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         this.deletedRelations = EMPTY_DELETED_RELATIONS;
 
         if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
+            //TODO-reenable
+
+//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
             elementProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "graph", elementProcessorImpl);
             edgeProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "vertex", edgeProcessorImpl);
         } else {
@@ -434,12 +430,12 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
             @Override
             public void doCommit() {
-                org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this.commit();
+                StandardJanusGraphTx.this.commit();
             }
 
             @Override
             public void doRollback() {
-                org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this.rollback();
+                StandardJanusGraphTx.this.rollback();
             }
 
             @Override
@@ -449,7 +445,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
             @Override
             public boolean isOpen() {
-                return org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this.isOpen();
+                return StandardJanusGraphTx.this.isOpen();
             }
 
             @Override
@@ -506,12 +502,12 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
      * ------------------------------------ External Access ------------------------------------
      */
 
-    public org.janusgraph.graphdb.transaction.StandardJanusGraphTx getNextTx() {
+    public StandardJanusGraphTx getNextTx() {
         Preconditions.checkArgument(isClosed());
         if (!config.isThreadBound()) {
             throw new IllegalStateException("Cannot access element because its enclosing transaction is closed and unbound");
         } else {
-            return (org.janusgraph.graphdb.transaction.StandardJanusGraphTx) graph.getCurrentThreadTx();
+            return (StandardJanusGraphTx) graph.getCurrentThreadTx();
         }
     }
 
@@ -586,7 +582,8 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     public JanusGraphVertex getVertex(long vertexId) {
         verifyOpen();
         if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
+            //TODO-reenable
+//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
         }
         if (!isValidVertexId(vertexId)) return null;
         //Make canonical partitioned vertex id
@@ -602,10 +599,12 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         if (ids == null || ids.length == 0) return (Iterable) getInternalVertices();
 
         if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
+            //TODO-reenable
+
+//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
         }
         List<JanusGraphVertex> result = new ArrayList<>(ids.length);
-        LongArrayList vertexIds = new LongArrayList(ids.length);
+        List<Long> vertexIds = new ArrayList<>(ids.length);
 
         for (long id : ids) {
             if (isValidVertexId(id)) {
@@ -628,8 +627,8 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                     }
                 }
             } else {
-                for (int i = 0; i < vertexIds.size(); i++) {
-                    result.add(vertexCache.get(vertexIds.get(i), externalVertexRetriever));
+                for (Long vertexId : vertexIds) {
+                    result.add(vertexCache.get(vertexId, externalVertexRetriever));
                 }
             }
         }
@@ -682,21 +681,21 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                     if (IDManager.isSystemRelationTypeId(vertexId)) {
                         vertex = SystemTypeManager.getSystemType(vertexId);
                     } else {
-                        vertex = new PropertyKeyVertex(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this, vertexId, lifecycle);
+                        vertex = new PropertyKeyVertex(StandardJanusGraphTx.this, vertexId, lifecycle);
                     }
                 } else {
                     if (IDManager.isSystemRelationTypeId(vertexId)) {
                         vertex = SystemTypeManager.getSystemType(vertexId);
                     } else {
-                        vertex = new EdgeLabelVertex(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this, vertexId, lifecycle);
+                        vertex = new EdgeLabelVertex(StandardJanusGraphTx.this, vertexId, lifecycle);
                     }
                 }
             } else if (idManager.isVertexLabelVertexId(vertexId)) {
-                vertex = new VertexLabelVertex(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this, vertexId, lifecycle);
+                vertex = new VertexLabelVertex(StandardJanusGraphTx.this, vertexId, lifecycle);
             } else if (idManager.isGenericSchemaVertexId(vertexId)) {
-                vertex = new JanusGraphSchemaVertex(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this, vertexId, lifecycle);
+                vertex = new JanusGraphSchemaVertex(StandardJanusGraphTx.this, vertexId, lifecycle);
             } else if (idManager.isUserVertexId(vertexId)) {
-                vertex = new CacheVertex(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this, vertexId, lifecycle);
+                vertex = new CacheVertex(StandardJanusGraphTx.this, vertexId, lifecycle);
             } else throw new IllegalArgumentException("ID could not be recognised");
             return vertex;
         }
@@ -866,7 +865,8 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         }
 
         if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();
+            //TODO-reenable
+//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();
         }
         List<JanusGraphEdge> result = new ArrayList<>(ids.length);
         for (RelationIdentifier id : ids) {
@@ -1120,7 +1120,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     }
 
     public void executeMultiQuery(Collection<InternalVertex> vertices, SliceQuery sq, QueryProfiler profiler) {
-        LongArrayList vertexIds = new LongArrayList(vertices.size());
+        List<Long> vertexIds = new ArrayList<>(vertices.size());
         for (InternalVertex v : vertices) {
             if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq))
                 vertexIds.add(v.longId());
@@ -1203,7 +1203,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
             EntryList iterable = v.loadRelations(sq, query1 -> QueryProfiler.profile(profiler, query1, q -> graph.edgeQuery(v.longId(), q, backendTransaction)));
 
-            return RelationConstructor.readRelation(v, iterable, org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this).iterator();
+            return RelationConstructor.readRelation(v, iterable, StandardJanusGraphTx.this).iterator();
         }
     };
 
@@ -1356,13 +1356,13 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                 return id -> {
                     Preconditions.checkNotNull(id);
                     Preconditions.checkArgument(id instanceof RelationIdentifier);
-                    return ((RelationIdentifier) id).findEdge(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this);
+                    return ((RelationIdentifier) id).findEdge(StandardJanusGraphTx.this);
                 };
             case PROPERTY:
                 return id -> {
                     Preconditions.checkNotNull(id);
                     Preconditions.checkArgument(id instanceof RelationIdentifier);
-                    return ((RelationIdentifier) id).findProperty(org.janusgraph.graphdb.transaction.StandardJanusGraphTx.this);
+                    return ((RelationIdentifier) id).findProperty(StandardJanusGraphTx.this);
                 };
             default:
                 throw new IllegalArgumentException("Unexpected result type: " + elementCategory);
@@ -1388,7 +1388,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
         if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
+            //TODO-reenable
+
+//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
         }
         try {
             if (hasModifications()) {
@@ -1407,7 +1409,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         } finally {
             releaseTransaction();
             if (null != config.getGroupName() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
+                //TODO-reenable
+
+//                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
             }
         }
     }
@@ -1417,7 +1421,8 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
         if (null != config.getGroupName()) {
-            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
+            //TODO-reenable
+//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
         }
         try {
             backendTransaction.rollback();
@@ -1427,7 +1432,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         } finally {
             releaseTransaction();
             if (null != config.getGroupName() && !success) {
-                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
+                //TODO-reenable
+
+//                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
             }
         }
     }

@@ -15,21 +15,21 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.StoreMetaData;
-import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryKeyColumnValueStore;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StoreMetaData;
+import grakn.core.graph.diskstorage.common.AbstractStoreTransaction;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
+import grakn.core.graph.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryKeyColumnValueStore;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.util.List;
 import java.util.Map;

@@ -14,15 +14,15 @@
 
 package grakn.core.graph.graphdb.types.typemaker;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.SchemaManager;
-import org.janusgraph.core.schema.VertexLabelMaker;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.core.schema.EdgeLabelMaker;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.schema.SchemaManager;
+import grakn.core.graph.core.schema.VertexLabelMaker;
 
 
 public class DisableDefaultSchemaMaker implements DefaultSchemaMaker {

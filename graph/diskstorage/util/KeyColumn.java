@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 /**
  * Class representing a (key, column) pair.

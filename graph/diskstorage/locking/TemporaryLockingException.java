@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import org.janusgraph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.TemporaryBackendException;
 
 /**
  * This exception signifies a (potentially) temporary exception while attempting

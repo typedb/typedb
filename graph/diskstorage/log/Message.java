@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.log;
 
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.log.Log;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.log.Log;
 
 import java.time.Instant;
 

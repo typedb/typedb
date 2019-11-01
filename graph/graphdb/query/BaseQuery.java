@@ -14,11 +14,8 @@
 
 package grakn.core.graph.graphdb.query;
 
-import org.janusgraph.graphdb.query.Query;
-
 /**
  * Standard implementation of {@link Query}.
- *
  */
 public class BaseQuery implements Query {
 
@@ -35,7 +32,7 @@ public class BaseQuery implements Query {
     /**
      * Sets the limit of the query if it wasn't specified in the constructor
      */
-    public org.janusgraph.graphdb.query.BaseQuery setLimit(int limit) {
+    public BaseQuery setLimit(int limit) {
         this.limit = limit;
         return this;
     }

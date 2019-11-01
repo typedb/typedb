@@ -14,8 +14,7 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -23,9 +22,8 @@ import java.util.Arrays;
 /**
  * A Buffer that only allows static access. This Buffer is immutable if
  * any returned byte array or ByteBuffer is not mutated.
- *
  */
-public interface StaticBuffer extends Comparable<org.janusgraph.diskstorage.StaticBuffer> {
+public interface StaticBuffer extends Comparable<StaticBuffer> {
 
     int length();
 
@@ -59,9 +57,9 @@ public interface StaticBuffer extends Comparable<org.janusgraph.diskstorage.Stat
 
     double[] getDoubles(int position, int length);
 
-    org.janusgraph.diskstorage.StaticBuffer subrange(int position, int length);
+    StaticBuffer subrange(int position, int length);
 
-    org.janusgraph.diskstorage.StaticBuffer subrange(int position, int length, boolean invert);
+    StaticBuffer subrange(int position, int length, boolean invert);
 
     ReadBuffer asReadBuffer();
 
@@ -77,12 +75,12 @@ public interface StaticBuffer extends Comparable<org.janusgraph.diskstorage.Stat
     }
 
     Factory<byte[]> ARRAY_FACTORY = (array, offset, limit) -> {
-        if (offset==0 && limit==array.length) return array;
-        else return Arrays.copyOfRange(array,offset,limit);
+        if (offset == 0 && limit == array.length) return array;
+        else return Arrays.copyOfRange(array, offset, limit);
     };
 
     Factory<ByteBuffer> BB_FACTORY = (array, offset, limit) -> ByteBuffer.wrap(array, offset, limit - offset);
 
-    Factory<org.janusgraph.diskstorage.StaticBuffer> STATIC_FACTORY = StaticArrayBuffer::new;
+    Factory<StaticBuffer> STATIC_FACTORY = StaticArrayBuffer::new;
 
 }

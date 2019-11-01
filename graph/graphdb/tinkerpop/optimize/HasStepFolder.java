@@ -33,13 +33,13 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.EmptyStep;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphStep;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 import org.javatuples.Pair;
 
 import java.util.ArrayList;
@@ -88,7 +88,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     }
 
     static boolean validJanusGraphOrder(OrderGlobalStep orderGlobalStep, Traversal rootTraversal, boolean isVertexOrder) {
-        final List<Pair<Traversal.Admin, Object>> comparators = orderGlobalStep.getComparators();
+        List<Pair<Traversal.Admin, Object>> comparators = orderGlobalStep.getComparators();
         for (Pair<Traversal.Admin, Object> comp : comparators) {
             final String key;
             if (comp.getValue0() instanceof ElementValueTraversal &&
@@ -113,7 +113,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return true;
     }
 
-    static void foldInIds(org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder janusgraphStep, Traversal.Admin<?, ?> traversal) {
+    static void foldInIds(HasStepFolder janusgraphStep, Traversal.Admin<?, ?> traversal) {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
@@ -150,7 +150,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void foldInHasContainer(org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder janusgraphStep, Traversal.Admin<?, ?> traversal,
+    static void foldInHasContainer(HasStepFolder janusgraphStep, Traversal.Admin<?, ?> traversal,
                                    Traversal<?, ?> rootTraversal) {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
@@ -176,7 +176,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void localFoldInHasContainer(org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal,
+    static void localFoldInHasContainer(HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal,
                                         Traversal<?, ?> rootTraversal) {
         Step<?, ?> currentStep = tinkerpopStep;
         while (true) {
@@ -210,7 +210,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         return Boolean.TRUE.equals(toReturn);
     }
 
-    static Step<?, ?> foldInOrder(org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal,
+    static Step<?, ?> foldInOrder(HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal,
                                   Traversal<?, ?> rootTraversal, boolean isVertexOrder, List<HasContainer> hasContainers) {
         Step<?, ?> currentStep = tinkerpopStep;
         OrderGlobalStep<?, ?> lastOrder = null;
@@ -302,7 +302,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void foldInRange(org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal, List<HasContainer> hasContainers) {
+    static void foldInRange(HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal, List<HasContainer> hasContainers) {
         Step<?, ?> nextStep = tinkerpopStep instanceof IdentityStep ? JanusGraphTraversalUtil.getNextNonIdentityStep(tinkerpopStep) : tinkerpopStep;
         if (nextStep instanceof RangeGlobalStep) {
             RangeGlobalStep range = (RangeGlobalStep) nextStep;

@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import org.janusgraph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
 
 /**
  * Marks a {@link org.janusgraph.core.attribute.AttributeSerializer} that requires a {@link org.janusgraph.graphdb.database.serialize.Serializer}

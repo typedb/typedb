@@ -15,25 +15,24 @@
 package grakn.core.graph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.OrderList;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.ElementQuery;
+import grakn.core.graph.graphdb.query.QueryProcessor;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.relations.RelationComparator;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.ElementQuery;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
-import org.janusgraph.graphdb.relations.RelationComparator;
 
 import java.util.Comparator;
 import java.util.List;
 
 /**
  * A vertex-centric query which implements {@link ElementQuery} so that it can be executed by
- * {@link org.janusgraph.graphdb.query.QueryProcessor}. Most of the query definition
+ * {@link QueryProcessor}. Most of the query definition
  * is in the extended {@link BaseVertexCentricQuery} - this class only adds the base vertex to the mix.
- *
  */
 public class VertexCentricQuery extends BaseVertexCentricQuery implements ElementQuery<JanusGraphRelation, SliceQuery> {
 
@@ -57,6 +56,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
 
     /**
      * Constructs an empty query
+     *
      * @param vertex
      */
     protected VertexCentricQuery(InternalVertex vertex) {
@@ -65,8 +65,8 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
         this.vertex = vertex;
     }
 
-    public static org.janusgraph.graphdb.query.vertex.VertexCentricQuery emptyQuery(InternalVertex vertex) {
-        return new org.janusgraph.graphdb.query.vertex.VertexCentricQuery(vertex);
+    public static VertexCentricQuery emptyQuery(InternalVertex vertex) {
+        return new VertexCentricQuery(vertex);
     }
 
     public InternalVertex getVertex() {
@@ -80,7 +80,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
 
     @Override
     public Comparator getSortOrder() {
-        return new RelationComparator(vertex,getOrders());
+        return new RelationComparator(vertex, getOrders());
     }
 
     @Override
@@ -90,7 +90,7 @@ public class VertexCentricQuery extends BaseVertexCentricQuery implements Elemen
 
     @Override
     public String toString() {
-        return vertex+super.toString();
+        return vertex + super.toString();
     }
 
 }

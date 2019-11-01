@@ -14,9 +14,7 @@
 
 package grakn.core.graph.core;
 
-import com.carrotsearch.hppc.LongArrayList;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexQuery;
+import java.util.List;
 
 /**
  * List of {@link JanusGraphVertex}s.
@@ -28,7 +26,6 @@ import org.janusgraph.core.JanusGraphVertexQuery;
  * getting vertex ids might be significantly faster than retrieving vertex objects.
  */
 public interface VertexList extends Iterable<JanusGraphVertex> {
-
 
     /**
      * Returns the number of vertices in this list.
@@ -46,14 +43,6 @@ public interface VertexList extends Iterable<JanusGraphVertex> {
     JanusGraphVertex get(int pos);
 
     /**
-     * Sorts this list according to vertex ids in increasing order.
-     * If the list is already sorted, invoking this method incurs no cost.
-     *
-     * @throws UnsupportedOperationException If not all vertices in this list have an id
-     */
-    void sort();
-
-    /**
      * Whether this list of vertices is sorted by id in increasing order.
      */
     boolean isSorted();
@@ -61,7 +50,7 @@ public interface VertexList extends Iterable<JanusGraphVertex> {
     /**
      * Returns a sub list of this list of vertices from the given position with the given number of vertices.
      */
-    org.janusgraph.core.VertexList subList(int fromPosition, int length);
+    VertexList subList(int fromPosition, int length);
 
     /**
      * Returns a list of ids of all vertices in this list of vertices in the same order of the original vertex list.
@@ -69,9 +58,8 @@ public interface VertexList extends Iterable<JanusGraphVertex> {
      * Uses an efficient primitive variable-sized array.
      *
      * @return A list of idAuthorities of all vertices in this list of vertices in the same order of the original vertex list.
-     * @see LongArrayList
      */
-    LongArrayList getIDs();
+    List<Long> getIDs();
 
     /**
      * Returns the id of the vertex at the specified position

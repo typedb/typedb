@@ -15,9 +15,9 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.graphdb.query.condition.Condition;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.graphdb.query.condition.Condition;
 
 
 public enum RelationCategory implements Condition<JanusGraphRelation> {

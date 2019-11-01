@@ -15,9 +15,9 @@
 package grakn.core.graph.core.schema;
 
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.schema.Index;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.SchemaStatus;
+import grakn.core.graph.core.schema.Index;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.core.schema.SchemaStatus;
 
 import java.util.Set;
 

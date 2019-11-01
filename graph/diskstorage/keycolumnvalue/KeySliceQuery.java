@@ -16,12 +16,11 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
- *
  */
 
 public class KeySliceQuery extends SliceQuery {
@@ -46,16 +45,15 @@ public class KeySliceQuery extends SliceQuery {
     }
 
     @Override
-    public org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery setLimit(int limit) {
+    public KeySliceQuery setLimit(int limit) {
         super.setLimit(limit);
         return this;
     }
 
     @Override
-    public org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery updateLimit(int newLimit) {
-        return new org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery(key, this).setLimit(newLimit);
+    public KeySliceQuery updateLimit(int newLimit) {
+        return new KeySliceQuery(key, this).setLimit(newLimit);
     }
-
 
     @Override
     public int hashCode() {
@@ -67,11 +65,11 @@ public class KeySliceQuery extends SliceQuery {
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery oth = (org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery) other;
+        KeySliceQuery oth = (KeySliceQuery) other;
         return key.equals(oth.key) && super.equals(oth);
     }
 
-    public boolean subsumes(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery oth) {
+    public boolean subsumes(KeySliceQuery oth) {
         return key.equals(oth.key) && super.subsumes(oth);
     }
 

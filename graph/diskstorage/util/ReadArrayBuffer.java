@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 
 /**
  * Implementation of {@link ReadBuffer} against a byte array.

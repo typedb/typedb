@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core.log;
 
-import org.janusgraph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphException;
 
 /**
  * {@link org.janusgraph.core.log.TransactionRecovery} is a process that runs in the background and read's from the transaction

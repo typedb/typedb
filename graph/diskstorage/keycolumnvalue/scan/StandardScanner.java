@@ -16,17 +16,17 @@ package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.MergedConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 
 import java.util.HashSet;
 import java.util.Map;

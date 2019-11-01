@@ -15,14 +15,14 @@
 package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphIndexQuery;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphQuery;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.SchemaManager;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphIndexQuery;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphQuery;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.SchemaManager;
+import grakn.core.graph.graphdb.relations.RelationIdentifier;
 
 /**
  * Transaction defines a transactional context for a {@link org.janusgraph.core.JanusGraph}. Since JanusGraph is a transactional graph

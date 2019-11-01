@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.log.kcvs;
 
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 
 public interface ExternalPersistor {

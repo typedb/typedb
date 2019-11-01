@@ -15,34 +15,26 @@
 package grakn.core.graph.core;
 
 import com.google.common.collect.Iterables;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * A JanusGraphVertexQuery is a VertexQuery executed for a single vertex.
  * <p>
- * Calling {@link org.janusgraph.core.JanusGraphVertex#query()} builds such a query against the vertex
+ * Calling {@link JanusGraphVertex#query()} builds such a query against the vertex
  * this method is called on. This query builder provides the methods to specify which incident edges or
  * properties to query for.
  *
- *
  * @see BaseVertexQuery
  */
-public interface JanusGraphVertexQuery<Q extends org.janusgraph.core.JanusGraphVertexQuery<Q>> extends BaseVertexQuery<Q> {
+public interface JanusGraphVertexQuery<Q extends JanusGraphVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
-   /* ---------------------------------------------------------------
-    * Query Specification (overwrite to merge BaseVertexQuery with Blueprint's VertexQuery)
-    * ---------------------------------------------------------------
-    */
+    /* ---------------------------------------------------------------
+     * Query Specification (overwrite to merge BaseVertexQuery with Blueprint's VertexQuery)
+     * ---------------------------------------------------------------
+     */
 
     @Override
     Q adjacent(Vertex vertex);
@@ -88,9 +80,9 @@ public interface JanusGraphVertexQuery<Q extends org.janusgraph.core.JanusGraphV
 
 
     /* ---------------------------------------------------------------
-    * Query execution
-    * ---------------------------------------------------------------
-    */
+     * Query execution
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Returns an iterable over all incident edges that match this query

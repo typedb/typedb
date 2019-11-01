@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BackendException;
 
 import java.util.concurrent.Callable;
 

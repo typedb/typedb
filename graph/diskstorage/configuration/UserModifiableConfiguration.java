@@ -15,12 +15,12 @@
 package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.schema.JanusGraphConfiguration;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import grakn.core.graph.core.schema.JanusGraphConfiguration;
+import grakn.core.graph.diskstorage.configuration.ConfigElement;
+import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
+import grakn.core.graph.diskstorage.configuration.ConfigOption;
+import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
+import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 
 import java.lang.reflect.Array;
 import java.time.Duration;

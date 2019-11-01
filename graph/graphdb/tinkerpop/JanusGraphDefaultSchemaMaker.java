@@ -14,22 +14,22 @@
 
 package grakn.core.graph.graphdb.tinkerpop;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.attribute.Geoshape;
+import grakn.core.graph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
 
 import java.util.Date;
 import java.util.UUID;
 
 /**
- * {@link org.janusgraph.core.schema.DefaultSchemaMaker} implementation for Blueprints graphs
+ * {@link DefaultSchemaMaker} implementation for Blueprints graphs
  *
  */
 public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
 
-    public static final DefaultSchemaMaker INSTANCE = new org.janusgraph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker();
+    public static final DefaultSchemaMaker INSTANCE = new JanusGraphDefaultSchemaMaker();
 
     private JanusGraphDefaultSchemaMaker() {
     }

@@ -34,20 +34,20 @@ import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.MultiQueriable;
-import org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
+import grakn.core.graph.core.BaseVertexQuery;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import grakn.core.graph.graphdb.tinkerpop.optimize.MultiQueriable;
+import grakn.core.graph.graphdb.tinkerpop.profile.TP3ProfileWrapper;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -220,8 +220,8 @@ public class JanusGraphVertexStep<E extends Element> extends VertexStep<E> imple
     }
 
     @Override
-    public org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep<E> clone() {
-        org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep<E> clone = (org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep<E>) super.clone();
+    public JanusGraphVertexStep<E> clone() {
+        JanusGraphVertexStep<E> clone = (JanusGraphVertexStep<E>) super.clone();
         clone.initialized = false;
         return clone;
     }

@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.database.management;
 
-import org.janusgraph.core.schema.SchemaStatus;
+import grakn.core.graph.core.schema.SchemaStatus;
 
 import java.time.Duration;
 import java.util.List;

@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.BaseTransactionConfigurable;
+import grakn.core.graph.diskstorage.BaseTransactionConfigurable;
 
 /**
  * A transaction handle uniquely identifies a transaction on the storage backend.

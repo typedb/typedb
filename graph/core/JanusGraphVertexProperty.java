@@ -16,11 +16,11 @@
 package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphProperty;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.PropertyKey;
+import grakn.core.graph.core.JanusGraphProperty;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.PropertyKey;
 
 /**
  * JanusGraphProperty is a {@link JanusGraphRelation} connecting a vertex to a value.

@@ -15,18 +15,18 @@
 package grakn.core.graph.graphdb.configuration.builder;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.BasicConfiguration;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.MergedConfiguration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
-import org.janusgraph.diskstorage.log.kcvs.KCVSLogManager;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.idmanagement.UniqueInstanceIdRetriever;
+import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
+import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
+import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
+import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
+import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.idmanagement.UniqueInstanceIdRetriever;
 
 import java.time.Duration;
 

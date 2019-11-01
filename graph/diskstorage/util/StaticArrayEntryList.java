@@ -15,16 +15,16 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.ReadArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.util.encoding.StringEncoding;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.ReadArrayBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.graphdb.relations.RelationCache;
+import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.nio.ByteBuffer;
 import java.util.AbstractList;

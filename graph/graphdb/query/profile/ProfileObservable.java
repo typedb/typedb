@@ -15,7 +15,7 @@
 package grakn.core.graph.graphdb.query.profile;
 
 
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 public interface ProfileObservable {
 

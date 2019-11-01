@@ -15,10 +15,10 @@
 
 package grakn.core.graph.core;
 
-import org.janusgraph.core.Connection;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
+import grakn.core.graph.core.Connection;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
 
 import java.util.Collection;
 

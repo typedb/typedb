@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
  * Immutable, {@link Builder}-customizable implementation of StoreFeatures.

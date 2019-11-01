@@ -15,9 +15,9 @@
 package grakn.core.graph.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TransactionBuilder;
-import org.janusgraph.graphdb.log.StandardTransactionId;
-import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import grakn.core.graph.core.TransactionBuilder;
+import grakn.core.graph.graphdb.log.StandardTransactionId;
+import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
 
 
 public enum LogTxMeta {

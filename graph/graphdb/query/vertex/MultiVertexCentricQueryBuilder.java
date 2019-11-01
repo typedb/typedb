@@ -16,21 +16,20 @@ package grakn.core.graph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.RelationCategory;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
-import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -40,11 +39,11 @@ import java.util.Set;
 /**
  * Implementation of {@link JanusGraphMultiVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
- * {@link #execute(org.janusgraph.graphdb.internal.RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
+ * {@link #execute(RelationCategory, BasicVertexCentricQueryBuilder.ResultConstructor)}.
  * <p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
  */
-public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder> implements JanusGraphMultiVertexQuery<org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder> {
+public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<MultiVertexCentricQueryBuilder> implements JanusGraphMultiVertexQuery<MultiVertexCentricQueryBuilder> {
 
     /**
      * The base vertices of this query
@@ -57,18 +56,18 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     @Override
-    protected org.janusgraph.graphdb.query.vertex.MultiVertexCentricQueryBuilder getThis() {
+    protected MultiVertexCentricQueryBuilder getThis() {
         return this;
     }
 
     /* ---------------------------------------------------------------
      * Query Construction
-	 * ---------------------------------------------------------------
-	 */
+     * ---------------------------------------------------------------
+     */
 
     @Override
     public JanusGraphMultiVertexQuery addVertex(Vertex vertex) {
-        vertices.add(((InternalVertex)vertex).it());
+        vertices.add(((InternalVertex) vertex).it());
         return this;
     }
 
@@ -80,15 +79,15 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     /* ---------------------------------------------------------------
      * Query Execution
-	 * ---------------------------------------------------------------
-	 */
+     * ---------------------------------------------------------------
+     */
 
     /**
-     * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}.
+     * Constructs the BaseVertexCentricQuery through {@link BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)}.
      * If the query asks for an implicit key, the resulting map is computed and returned directly.
      * If the query is empty, a map that maps each vertex to an empty list is returned.
      * Otherwise, the query is executed for all vertices through the transaction which will effectively
-     * pre-load the return result sets into the associated {@link org.janusgraph.graphdb.vertices.CacheVertex} or
+     * pre-load the return result sets into the associated {@link CacheVertex} or
      * don't do anything at all if the vertex is new (and hence no edges in the storage backend).
      * After that, a map is constructed that maps each vertex to the corresponding VertexCentricQuery and wrapped
      * into a QueryProcessor. Hence, upon iteration the query will be executed like any other VertexCentricQuery
@@ -98,24 +97,24 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
      * @param returnType
      * @return
      */
-    protected<Q> Map<JanusGraphVertex,Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
+    protected <Q> Map<JanusGraphVertex, Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
         final Map<JanusGraphVertex, Q> result = new HashMap<>(vertices.size());
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
-        profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION,true);
-        profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,vertices.size());
+        profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION, true);
+        profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION, vertices.size());
         if (!bq.isEmpty()) {
             for (BackendQueryHolder<SliceQuery> sq : bq.getQueries()) {
                 Set<InternalVertex> adjVertices = Sets.newHashSet(vertices);
                 for (InternalVertex v : vertices) {
                     if (isPartitionedVertex(v)) {
-                        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION,true);
+                        profiler.setAnnotation(QueryProfiler.PARTITIONED_VERTEX_ANNOTATION, true);
                         adjVertices.remove(v);
                         adjVertices.addAll(allRequiredRepresentatives(v));
                     }
                 }
                 //Overwrite with more accurate size accounting for partitioned vertices
-                profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION,adjVertices.size());
+                profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION, adjVertices.size());
                 tx.executeMultiQuery(adjVertices, sq.getBackendQuery(), sq.getProfiler());
             }
             for (InternalVertex v : vertices) {
@@ -129,8 +128,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
     }
 
     private Map<JanusGraphVertex, Iterable<? extends JanusGraphRelation>> executeImplicitKeyQuery() {
-        return new HashMap<JanusGraphVertex, Iterable<? extends JanusGraphRelation>>(vertices.size()){{
-            for (InternalVertex v : vertices ) put(v,executeImplicitKeyQuery(v));
+        return new HashMap<JanusGraphVertex, Iterable<? extends JanusGraphRelation>>(vertices.size()) {{
+            for (InternalVertex v : vertices) put(v, executeImplicitKeyQuery(v));
         }};
     }
 
@@ -141,8 +140,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphVertexProperty>> properties() {
-        return (Map)(isImplicitKeyQuery(RelationCategory.PROPERTY)?
-                executeImplicitKeyQuery():
+        return (Map) (isImplicitKeyQuery(RelationCategory.PROPERTY) ?
+                executeImplicitKeyQuery() :
                 execute(RelationCategory.PROPERTY, new RelationConstructor()));
     }
 
@@ -154,8 +153,8 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
 
     @Override
     public Map<JanusGraphVertex, Iterable<JanusGraphRelation>> relations() {
-        return (Map)(isImplicitKeyQuery(RelationCategory.RELATION)?
-                executeImplicitKeyQuery():
+        return (Map) (isImplicitKeyQuery(RelationCategory.RELATION) ?
+                executeImplicitKeyQuery() :
                 execute(RelationCategory.RELATION, new RelationConstructor()));
     }
 

@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.diskstorage.configuration.ConfigOption;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
 

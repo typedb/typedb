@@ -15,17 +15,14 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.VertexLabelMaker;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
-import org.janusgraph.graphdb.types.VertexLabelVertex;
-import org.janusgraph.graphdb.types.system.SystemTypeManager;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.VertexLabelMaker;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.system.SystemTypeManager;
 
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.PARTITIONED;
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.STATIC;
-
+import static grakn.core.graph.graphdb.types.TypeDefinitionCategory.PARTITIONED;
+import static grakn.core.graph.graphdb.types.TypeDefinitionCategory.STATIC;
 
 public class StandardVertexLabelMaker implements VertexLabelMaker {
 
@@ -39,10 +36,10 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
         this.tx = tx;
     }
 
-    public org.janusgraph.graphdb.types.StandardVertexLabelMaker name(String name) {
+    public StandardVertexLabelMaker name(String name) {
         //Verify name
         SystemTypeManager.throwIfSystemName(JanusGraphSchemaCategory.VERTEXLABEL, name);
-        this.name=name;
+        this.name = name;
         return this;
     }
 
@@ -52,24 +49,24 @@ public class StandardVertexLabelMaker implements VertexLabelMaker {
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardVertexLabelMaker partition() {
-        partitioned=true;
+    public StandardVertexLabelMaker partition() {
+        partitioned = true;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardVertexLabelMaker setStatic() {
+    public StandardVertexLabelMaker setStatic() {
         isStatic = true;
         return this;
     }
 
     @Override
     public VertexLabel make() {
-        Preconditions.checkArgument(!partitioned || !isStatic,"A vertex label cannot be partitioned and static at the same time");
+        Preconditions.checkArgument(!partitioned || !isStatic, "A vertex label cannot be partitioned and static at the same time");
         TypeDefinitionMap def = new TypeDefinitionMap();
         def.setValue(PARTITIONED, partitioned);
         def.setValue(STATIC, isStatic);
 
-        return (VertexLabelVertex)tx.makeSchemaVertex(JanusGraphSchemaCategory.VERTEXLABEL,name,def);
+        return (VertexLabelVertex) tx.makeSchemaVertex(JanusGraphSchemaCategory.VERTEXLABEL, name, def);
     }
 }

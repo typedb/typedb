@@ -15,8 +15,8 @@
 package grakn.core.graph.core.attribute;
 
 import org.apache.commons.lang3.StringUtils;
-import org.janusgraph.core.attribute.Text;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.core.attribute.Text;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 /**
  * A {@link JanusGraphPredicate} that just wraps a TinkerPop {@link Text} predicate.

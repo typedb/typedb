@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import org.janusgraph.diskstorage.PermanentBackendException;
+import grakn.core.graph.diskstorage.PermanentBackendException;
 
 /**
  * This exception signifies a failure to lock based on durable state. For

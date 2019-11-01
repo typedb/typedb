@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 import java.time.Instant;
 

@@ -14,8 +14,8 @@
 
 package grakn.core.graph.core.log;
 
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.log.LogProcessorBuilder;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.log.LogProcessorBuilder;
 
 /**
  * Framework for processing transaction logs. Using the {@link LogProcessorBuilder} returned by

@@ -14,23 +14,21 @@
 
 package grakn.core.graph.graphdb.log;
 
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.log.Change;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.graphdb.database.log.TransactionLogHeader;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.relations.CacheEdge;
-import org.janusgraph.graphdb.relations.CacheVertexProperty;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.relations.StandardEdge;
-import org.janusgraph.graphdb.relations.StandardVertexProperty;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.log.Change;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.relations.CacheEdge;
+import grakn.core.graph.graphdb.relations.CacheVertexProperty;
+import grakn.core.graph.graphdb.relations.RelationCache;
+import grakn.core.graph.graphdb.relations.StandardEdge;
+import grakn.core.graph.graphdb.relations.StandardVertexProperty;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 public class ModificationDeserializer {
 
@@ -41,26 +39,26 @@ public class ModificationDeserializer {
         InternalVertex outVertex = tx.getInternalVertex(outVertexId);
         //Special relation parsing, compare to {@link RelationConstructor}
         RelationCache relCache = tx.getEdgeSerializer().readRelation(relEntry, false, tx);
-        InternalRelationType type = (InternalRelationType)tx.getExistingRelationType(relCache.typeId);
+        InternalRelationType type = (InternalRelationType) tx.getExistingRelationType(relCache.typeId);
         InternalRelation rel;
         if (type.isPropertyKey()) {
-            if (state== Change.REMOVED) {
-                rel = new StandardVertexProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(), ElementLifeCycle.Removed);
+            if (state == Change.REMOVED) {
+                rel = new StandardVertexProperty(relCache.relationId, (PropertyKey) type, outVertex, relCache.getValue(), ElementLifeCycle.Removed);
             } else {
-                rel = new CacheVertexProperty(relCache.relationId,(PropertyKey)type,outVertex,relCache.getValue(),relEntry);
+                rel = new CacheVertexProperty(relCache.relationId, (PropertyKey) type, outVertex, relCache.getValue(), relEntry);
             }
         } else {
             InternalVertex otherVertex = tx.getInternalVertex(relCache.getOtherVertexId());
-            if (state== Change.REMOVED) {
+            if (state == Change.REMOVED) {
                 rel = new StandardEdge(relCache.relationId, (EdgeLabel) type, outVertex, otherVertex, ElementLifeCycle.Removed);
             } else {
-                rel = new CacheEdge(relCache.relationId, (EdgeLabel) type, outVertex, otherVertex,relEntry);
+                rel = new CacheEdge(relCache.relationId, (EdgeLabel) type, outVertex, otherVertex, relEntry);
             }
         }
-        if (state== Change.REMOVED && relCache.hasProperties()) { //copy over properties
-            for (LongObjectCursor<Object> entry : relCache) {
-                rel.setPropertyDirect(tx.getExistingPropertyKey(entry.key),entry.value);
-            }
+        if (state == Change.REMOVED && relCache.hasProperties()) { //copy over properties
+            relCache.properties().entrySet().forEach((entry -> {
+                rel.setPropertyDirect(tx.getExistingPropertyKey(entry.getKey()), entry.getValue());
+            }));
         }
         return rel;
     }

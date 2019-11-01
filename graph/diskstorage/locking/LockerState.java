@@ -15,10 +15,10 @@
 package grakn.core.graph.diskstorage.locking;
 
 import com.google.common.collect.MapMaker;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.AbstractLocker;
-import org.janusgraph.diskstorage.locking.LockStatus;
-import org.janusgraph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.AbstractLocker;
+import grakn.core.graph.diskstorage.locking.LockStatus;
+import grakn.core.graph.diskstorage.util.KeyColumn;
 
 import java.util.HashMap;
 import java.util.Map;

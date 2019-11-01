@@ -14,25 +14,24 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.RelationTypeMaker;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
 
 /**
- * Used to define new {@link org.janusgraph.core.EdgeLabel}s.
+ * Used to define new {@link EdgeLabel}s.
  * An edge label is defined by its name, {@link Multiplicity}, its directionality, and its signature - all of which
  * can be specified in this builder.
- *
  */
 public interface EdgeLabelMaker extends RelationTypeMaker {
 
     /**
-     * Sets the multiplicity of this label. The default multiplicity is {@link org.janusgraph.core.Multiplicity#MULTI}.
+     * Sets the multiplicity of this label. The default multiplicity is {@link Multiplicity#MULTI}.
+     *
      * @return this EdgeLabelMaker
      * @see Multiplicity
      */
-    org.janusgraph.core.schema.EdgeLabelMaker multiplicity(Multiplicity multiplicity);
+    EdgeLabelMaker multiplicity(Multiplicity multiplicity);
 
     /**
      * Configures the label to be directed.
@@ -40,9 +39,9 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the label is directed.
      *
      * @return this EdgeLabelMaker
-     * @see org.janusgraph.core.EdgeLabel#isDirected()
+     * @see EdgeLabel#isDirected()
      */
-    org.janusgraph.core.schema.EdgeLabelMaker directed();
+    EdgeLabelMaker directed();
 
     /**
      * Configures the label to be unidirected.
@@ -50,17 +49,17 @@ public interface EdgeLabelMaker extends RelationTypeMaker {
      * By default, the type is directed.
      *
      * @return this EdgeLabelMaker
-     * @see org.janusgraph.core.EdgeLabel#isUnidirected()
+     * @see EdgeLabel#isUnidirected()
      */
-    org.janusgraph.core.schema.EdgeLabelMaker unidirected();
+    EdgeLabelMaker unidirected();
 
 
     @Override
-    org.janusgraph.core.schema.EdgeLabelMaker signature(PropertyKey... types);
+    EdgeLabelMaker signature(PropertyKey... types);
 
 
     /**
-     * Defines the {@link org.janusgraph.core.EdgeLabel} specified by this EdgeLabelMaker and returns the resulting label
+     * Defines the {@link EdgeLabel} specified by this EdgeLabelMaker and returns the resulting label
      *
      * @return the created {@link EdgeLabel}
      */

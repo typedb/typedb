@@ -16,10 +16,10 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.janusgraph.diskstorage.configuration.ConcurrentWriteConfiguration;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.diskstorage.configuration.ConcurrentWriteConfiguration;
+import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
 
 import java.util.HashMap;
 import java.util.Map;

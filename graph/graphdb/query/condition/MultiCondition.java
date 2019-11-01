@@ -14,10 +14,10 @@
 
 package grakn.core.graph.graphdb.query.condition;
 
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.Or;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.condition.And;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.Or;
 
 import java.util.ArrayList;
 import java.util.Objects;
@@ -46,7 +46,7 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
         }
     }
 
-    MultiCondition(org.janusgraph.graphdb.query.condition.MultiCondition<E> cond) {
+    MultiCondition(MultiCondition<E> cond) {
         this(cond.size());
         super.addAll(cond);
     }
@@ -85,7 +85,7 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
         if (!getClass().isInstance(other))
             return false;
 
-        org.janusgraph.graphdb.query.condition.MultiCondition oth = (org.janusgraph.graphdb.query.condition.MultiCondition)other;
+        MultiCondition oth = (MultiCondition)other;
         if (getType() != oth.getType() || size() != oth.size())
             return false;
 

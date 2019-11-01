@@ -48,15 +48,3 @@ java_library(
 )
 
 
-
-java_library(
-    name = "commons-text",
-    exports = [
-        "//external:jar/org/apache/commons/commons-text"
-    ],
-    visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
-    ]
-)
-
-

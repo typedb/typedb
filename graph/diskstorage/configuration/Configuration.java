@@ -16,12 +16,9 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
 
 import java.util.Map;
 import java.util.Set;
-
 
 public interface Configuration {
 
@@ -31,14 +28,13 @@ public interface Configuration {
 
     Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements);
 
-    Map<String,Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements);
+    Map<String, Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements);
 
-    org.janusgraph.diskstorage.configuration.Configuration restrictTo(String... umbrellaElements);
-
+    Configuration restrictTo(String... umbrellaElements);
 
     //--------------------
 
-    org.janusgraph.diskstorage.configuration.Configuration EMPTY = new org.janusgraph.diskstorage.configuration.Configuration() {
+    Configuration EMPTY = new Configuration() {
         @Override
         public boolean has(ConfigOption option, String... umbrellaElements) {
             return false;
@@ -60,7 +56,7 @@ public interface Configuration {
         }
 
         @Override
-        public org.janusgraph.diskstorage.configuration.Configuration restrictTo(String... umbrellaElements) {
+        public Configuration restrictTo(String... umbrellaElements) {
             return EMPTY;
         }
     };

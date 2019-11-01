@@ -18,16 +18,16 @@ import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.graphdb.types.VertexLabelVertex;
-import org.janusgraph.graphdb.types.vertices.EdgeLabelVertex;
-import org.janusgraph.graphdb.types.vertices.PropertyKeyVertex;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.graphdb.relations.RelationIdentifier;
+import grakn.core.graph.graphdb.types.VertexLabelVertex;
+import grakn.core.graph.graphdb.types.vertices.EdgeLabelVertex;
+import grakn.core.graph.graphdb.types.vertices.PropertyKeyVertex;
 
 public enum ElementCategory {
     VERTEX, EDGE, PROPERTY;

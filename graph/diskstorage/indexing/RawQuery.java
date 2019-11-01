@@ -17,9 +17,9 @@ package grakn.core.graph.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.diskstorage.indexing.IndexQuery;
-import org.janusgraph.graphdb.query.BaseQuery;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.diskstorage.indexing.IndexQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
 
 
 public class RawQuery extends BaseQuery {
@@ -46,14 +46,14 @@ public class RawQuery extends BaseQuery {
         this.orders = orders;
     }
 
-    public org.janusgraph.diskstorage.indexing.RawQuery setOffset(int offset) {
+    public RawQuery setOffset(int offset) {
         Preconditions.checkArgument(offset>=0,"Invalid offset: %s",offset);
         this.offset=offset;
         return this;
     }
 
     @Override
-    public org.janusgraph.diskstorage.indexing.RawQuery setLimit(int limit) {
+    public RawQuery setLimit(int limit) {
         super.setLimit(limit);
         return this;
     }

@@ -14,8 +14,6 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.StaticBuffer;
-
 /**
  * A Buffer that allows simple writes and returns the result as a {@link StaticBuffer}.
  *
@@ -23,26 +21,25 @@ import org.janusgraph.diskstorage.StaticBuffer;
 
 public interface WriteBuffer {
 
+    WriteBuffer putByte(byte val);
 
-    org.janusgraph.diskstorage.WriteBuffer putByte(byte val);
+    WriteBuffer putBytes(byte[] val);
 
-    org.janusgraph.diskstorage.WriteBuffer putBytes(byte[] val);
+    WriteBuffer putBytes(StaticBuffer val);
 
-    org.janusgraph.diskstorage.WriteBuffer putBytes(StaticBuffer val);
+    WriteBuffer putBoolean(boolean val);
 
-    org.janusgraph.diskstorage.WriteBuffer putBoolean(boolean val);
+    WriteBuffer putShort(short val);
 
-    org.janusgraph.diskstorage.WriteBuffer putShort(short val);
+    WriteBuffer putInt(int val);
 
-    org.janusgraph.diskstorage.WriteBuffer putInt(int val);
+    WriteBuffer putLong(long val);
 
-    org.janusgraph.diskstorage.WriteBuffer putLong(long val);
+    WriteBuffer putChar(char val);
 
-    org.janusgraph.diskstorage.WriteBuffer putChar(char val);
+    WriteBuffer putFloat(float val);
 
-    org.janusgraph.diskstorage.WriteBuffer putFloat(float val);
-
-    org.janusgraph.diskstorage.WriteBuffer putDouble(double val);
+    WriteBuffer putDouble(double val);
 
     StaticBuffer getStaticBuffer();
 

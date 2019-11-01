@@ -14,15 +14,15 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
+import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
  * Describes features supported by a storage backend.

@@ -18,51 +18,45 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import grakn.core.graph.core.BaseVertexQuery;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.database.EdgeSerializer;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.RelationCategory;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.QueryProcessor;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.query.ResultMergeSortIterator;
+import grakn.core.graph.graphdb.query.ResultSetIterator;
+import grakn.core.graph.graphdb.query.condition.And;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.DirectionCondition;
+import grakn.core.graph.graphdb.query.condition.IncidenceCondition;
+import grakn.core.graph.graphdb.query.condition.Or;
+import grakn.core.graph.graphdb.query.condition.PredicateCondition;
+import grakn.core.graph.graphdb.query.condition.RelationTypeCondition;
+import grakn.core.graph.graphdb.query.condition.VisibilityFilterCondition;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.relations.StandardVertexProperty;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import grakn.core.graph.util.datastructures.Interval;
+import grakn.core.graph.util.datastructures.PointInterval;
+import grakn.core.graph.util.datastructures.RangeInterval;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.database.EdgeSerializer;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.QueryProcessor;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.query.ResultMergeSortIterator;
-import org.janusgraph.graphdb.query.ResultSetIterator;
-import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.DirectionCondition;
-import org.janusgraph.graphdb.query.condition.IncidenceCondition;
-import org.janusgraph.graphdb.query.condition.Or;
-import org.janusgraph.graphdb.query.condition.PredicateCondition;
-import org.janusgraph.graphdb.query.condition.RelationTypeCondition;
-import org.janusgraph.graphdb.query.condition.VisibilityFilterCondition;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
-import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.query.vertex.SimpleVertexQueryProcessor;
-import org.janusgraph.graphdb.query.vertex.VertexArrayList;
-import org.janusgraph.graphdb.query.vertex.VertexCentricQuery;
-import org.janusgraph.graphdb.query.vertex.VertexListInternal;
-import org.janusgraph.graphdb.relations.StandardVertexProperty;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.graphdb.types.system.SystemRelationType;
-import org.janusgraph.util.datastructures.Interval;
-import org.janusgraph.util.datastructures.PointInterval;
-import org.janusgraph.util.datastructures.RangeInterval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,12 +74,12 @@ import java.util.Set;
 
 /**
  * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into
- * a {@link org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery} which is then executed by one of the extending
+ * a {@link BaseVertexCentricQuery} which is then executed by one of the extending
  * classes.
  */
 public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> extends BaseVertexCentricQueryBuilder<Q> {
     @SuppressWarnings("unused")
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicVertexCentricQueryBuilder.class);
 
     /**
      * Transaction in which this query is executed
@@ -220,14 +214,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      */
 
     /**
-     * If {@link #isImplicitKeyQuery(org.janusgraph.graphdb.internal.RelationCategory)} is true,
+     * If {@link #isImplicitKeyQuery(RelationCategory)} is true,
      * this method provides the result set for the query based on the evaluation of the {@link ImplicitKey}.
      * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.
-     *
-     * @param v
-     * @return
      */
     Iterable<JanusGraphRelation> executeImplicitKeyQuery(InternalVertex v) {
         if (dir == Direction.IN || limit < 1) return ImmutableList.of();
@@ -353,8 +344,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
         return executeIndividualVertices(vertex, baseQuery);
     }
 
-    private Iterable<JanusGraphVertex> executeIndividualVertices(InternalVertex vertex,
-                                                                 BaseVertexCentricQuery baseQuery) {
+    private Iterable<JanusGraphVertex> executeIndividualVertices(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         VertexCentricQuery query = constructQuery(vertex, baseQuery);
         if (useSimpleQueryProcessor(query, vertex)) return new SimpleVertexQueryProcessor(query, tx).vertexIds();
         else return edges2Vertices((Iterable) executeIndividualRelations(vertex, baseQuery), query.getVertex());
@@ -400,12 +390,11 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
 
     /**
      * Constructs a {@link VertexCentricQuery} for this query builder. The query construction and optimization
-     * logic is taken from {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}
+     * logic is taken from {@link #constructQuery(RelationCategory)}
      * This method only adds the additional conditions that are based on the base vertex.
      *
      * @param vertex    for which to construct this query
-     * @param baseQuery as constructed by {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}
-     * @return
+     * @param baseQuery as constructed by {@link #constructQuery(RelationCategory)}
      */
     private VertexCentricQuery constructQuery(InternalVertex vertex, BaseVertexCentricQuery baseQuery) {
         Condition<JanusGraphRelation> condition = baseQuery.getCondition();
@@ -758,7 +747,7 @@ public abstract class BasicVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q
      * the query is not fitted and these remaining conditions must be enforced by filtering in-memory. By filtering in
      * memory, we will discard results returned from the backend and hence we should increase the limit to account for
      * this "waste" in order to not have to adjust the limit too often
-     * in {@link org.janusgraph.graphdb.query.LimitAdjustingIterator}.
+     * in {@link grakn.core.graph.graphdb.query.LimitAdjustingIterator}.
      */
     private int computeLimit(int remainingConditions, int baseLimit) {
         if (baseLimit == Query.NO_LIMIT) {

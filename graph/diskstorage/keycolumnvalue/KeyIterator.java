@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.RecordIterator;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.RecordIterator;
 
 
 public interface KeyIterator extends RecordIterator<StaticBuffer> {

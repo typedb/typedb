@@ -29,7 +29,7 @@ public interface StoreMetaData<T> {
 
     Class<? extends T> getDataType();
 
-    org.janusgraph.diskstorage.StoreMetaData<Integer> TTL = org.janusgraph.diskstorage.TTLImpl.INSTANCE;
+    StoreMetaData<Integer> TTL = TTLImpl.INSTANCE;
 
     Container EMPTY = new Container(false);
 
@@ -37,7 +37,7 @@ public interface StoreMetaData<T> {
 
         private final boolean mutable;
 
-        private final Map<org.janusgraph.diskstorage.StoreMetaData<?>, Object> md = new HashMap<>();
+        private final Map<StoreMetaData<?>, Object> md = new HashMap<>();
 
         public Container() {
             this(true);
@@ -47,16 +47,16 @@ public interface StoreMetaData<T> {
             this.mutable = mutable;
         }
 
-        public <V, K extends org.janusgraph.diskstorage.StoreMetaData<V>> void put(K type, V value) {
+        public <V, K extends StoreMetaData<V>> void put(K type, V value) {
             Preconditions.checkState(mutable);
             md.put(type, value);
         }
 
-        public <V, K extends org.janusgraph.diskstorage.StoreMetaData<V>> V get(K type) {
+        public <V, K extends StoreMetaData<V>> V get(K type) {
             return type.getDataType().cast(md.get(type));
         }
 
-        public <K extends org.janusgraph.diskstorage.StoreMetaData<?>> boolean contains(K type) {
+        public <K extends StoreMetaData<?>> boolean contains(K type) {
             return md.containsKey(type);
         }
 
@@ -77,7 +77,7 @@ public interface StoreMetaData<T> {
  * Subsequent re-openings of an existing store need not check for or
  * modify the existing TTL (though implementations are free to do so).
  */
-enum TTLImpl implements org.janusgraph.diskstorage.StoreMetaData<Integer> {
+enum TTLImpl implements StoreMetaData<Integer> {
     INSTANCE;
 
     @Override

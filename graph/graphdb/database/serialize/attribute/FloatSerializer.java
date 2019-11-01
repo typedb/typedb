@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
-import org.janusgraph.graphdb.database.serialize.attribute.IntegerSerializer;
-import org.janusgraph.util.encoding.NumericUtils;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
+import grakn.core.graph.graphdb.database.serialize.attribute.IntegerSerializer;
+import grakn.core.graph.util.encoding.NumericUtils;
 
 
 public class FloatSerializer implements OrderPreservingSerializer<Float> {

@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
-import org.janusgraph.graphdb.database.idassigner.placement.PartitionAssignment;
-import org.janusgraph.graphdb.database.idassigner.placement.PartitionIDRange;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.InternalElement;
-import org.janusgraph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
+import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.internal.InternalElement;
+import grakn.core.graph.graphdb.internal.InternalVertex;
 
 import java.util.List;
 import java.util.Map;

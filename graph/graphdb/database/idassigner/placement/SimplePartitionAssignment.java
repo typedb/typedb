@@ -15,7 +15,7 @@
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.database.idassigner.placement.PartitionAssignment;
+import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
 
 /**
  * Simple implementation of {@link PartitionAssignment}.

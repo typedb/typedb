@@ -15,18 +15,17 @@
 package grakn.core.graph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendTransaction;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.BaseQuery;
+import grakn.core.graph.diskstorage.BackendTransaction;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-
-public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<org.janusgraph.graphdb.query.graph.MultiKeySliceQuery> {
+public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<MultiKeySliceQuery> {
 
     private final List<KeySliceQuery> queries;
 
@@ -36,8 +35,8 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<org.ja
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.MultiKeySliceQuery updateLimit(int newLimit) {
-        org.janusgraph.graphdb.query.graph.MultiKeySliceQuery newQuery = new org.janusgraph.graphdb.query.graph.MultiKeySliceQuery(queries);
+    public MultiKeySliceQuery updateLimit(int newLimit) {
+        MultiKeySliceQuery newQuery = new MultiKeySliceQuery(queries);
         newQuery.setLimit(newLimit);
         return newQuery;
     }
@@ -64,7 +63,7 @@ public class MultiKeySliceQuery extends BaseQuery implements BackendQuery<org.ja
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.graphdb.query.graph.MultiKeySliceQuery oth = (org.janusgraph.graphdb.query.graph.MultiKeySliceQuery) other;
+        MultiKeySliceQuery oth = (MultiKeySliceQuery) other;
         return getLimit()==oth.getLimit() && queries.equals(oth.queries);
     }
 

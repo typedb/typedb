@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
 
 
 public class WriteBufferUtil {

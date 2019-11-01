@@ -15,9 +15,8 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.ReadArrayBuffer;
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -49,26 +48,26 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     public StaticArrayBuffer(StaticBuffer buffer) {
-        this((org.janusgraph.diskstorage.util.StaticArrayBuffer) buffer);
+        this((StaticArrayBuffer) buffer);
     }
 
-    public StaticArrayBuffer(org.janusgraph.diskstorage.util.StaticArrayBuffer buffer) {
+    public StaticArrayBuffer(StaticArrayBuffer buffer) {
         this(buffer.array, buffer.offset, buffer.limit);
     }
 
-    public static org.janusgraph.diskstorage.util.StaticArrayBuffer of(byte[] array) {
-        return new org.janusgraph.diskstorage.util.StaticArrayBuffer(array);
+    public static StaticArrayBuffer of(byte[] array) {
+        return new StaticArrayBuffer(array);
     }
 
-    public static org.janusgraph.diskstorage.util.StaticArrayBuffer of(ByteBuffer b) {
+    public static StaticArrayBuffer of(ByteBuffer b) {
         if (b.hasArray()) {
-            return new org.janusgraph.diskstorage.util.StaticArrayBuffer(b.array(), b.arrayOffset() + b.position(), b.arrayOffset() + b.limit());
+            return new StaticArrayBuffer(b.array(), b.arrayOffset() + b.position(), b.arrayOffset() + b.limit());
         } else {
             byte[] array = new byte[b.remaining()];
             b.mark();
             b.get(array);
             b.reset();
-            return org.janusgraph.diskstorage.util.StaticArrayBuffer.of(array);
+            return StaticArrayBuffer.of(array);
         }
     }
 
@@ -111,14 +110,14 @@ public class StaticArrayBuffer implements StaticBuffer {
         if (position < 0 || length < 0 || (offset + position + length) > limit)
             throw new ArrayIndexOutOfBoundsException("Position [" + position + "] and or length [" + length + "] out of bounds");
         if (!invert) {
-            return new org.janusgraph.diskstorage.util.StaticArrayBuffer(array, offset + position, offset + position + length);
+            return new StaticArrayBuffer(array, offset + position, offset + position + length);
         } else {
             byte[] inverted = new byte[length];
             System.arraycopy(array, offset + position, inverted, 0, length);
             for (int i = 0; i < inverted.length; i++) {
                 inverted[i] = (byte) ~inverted[i];
             }
-            return new org.janusgraph.diskstorage.util.StaticArrayBuffer(inverted);
+            return new StaticArrayBuffer(inverted);
         }
     }
 
@@ -362,18 +361,18 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public int compareTo(StaticBuffer other) {
-        return compareTo((org.janusgraph.diskstorage.util.StaticArrayBuffer) other);
+        return compareTo((StaticArrayBuffer) other);
     }
 
-    public int compareTo(org.janusgraph.diskstorage.util.StaticArrayBuffer other) {
+    public int compareTo(StaticArrayBuffer other) {
         return compareTo(array, offset, limit, other.array, other.offset, other.limit);
     }
 
     protected int compareTo(int length, StaticBuffer buffer, int bufferLen) {
-        return compareTo(length, (org.janusgraph.diskstorage.util.StaticArrayBuffer) buffer, bufferLen);
+        return compareTo(length, (StaticArrayBuffer) buffer, bufferLen);
     }
 
-    protected int compareTo(int length, org.janusgraph.diskstorage.util.StaticArrayBuffer buffer, int bufferLen) {
+    protected int compareTo(int length, StaticArrayBuffer buffer, int bufferLen) {
         Preconditions.checkArgument(length <= length() && bufferLen <= buffer.length());
         return compareTo(array, offset, offset + length, buffer.array, buffer.offset, buffer.offset + bufferLen);
     }

@@ -18,7 +18,7 @@ import com.google.common.collect.Iterators;
 import org.apache.tinkerpop.gremlin.process.traversal.step.util.ElementValueComparator;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.util.function.MultiComparator;
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 
 import java.util.ArrayList;
 import java.util.Comparator;

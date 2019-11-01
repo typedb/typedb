@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.transaction.indexcache;
 
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
 
 
 public interface IndexCache {

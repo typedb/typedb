@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage.configuration;
 
 
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
+import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 
 public interface ConcurrentWriteConfiguration extends WriteConfiguration {
 

@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.olap;
 
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import org.janusgraph.graphdb.olap.QueryContainer;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import grakn.core.graph.graphdb.olap.QueryContainer;
 
 /**
  * Expresses a computation over all vertices ina a graph database. Process is called for each vertex that is previously

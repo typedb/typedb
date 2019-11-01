@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.query.vertex;
 
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.VertexList;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.VertexList;
 
 /**
  * Extends on the {@link VertexList} interface by provided methods to add elements to the list
@@ -26,15 +26,11 @@ public interface VertexListInternal extends VertexList {
 
     /**
      * Adds the provided vertex to this list.
-     *
-     * @param n
      */
     void add(JanusGraphVertex n);
 
     /**
      * Copies all vertices in the given vertex list into this list.
-     *
-     * @param vertices
      */
     void addAll(VertexList vertices);
 

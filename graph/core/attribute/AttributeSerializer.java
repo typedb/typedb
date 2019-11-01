@@ -15,8 +15,8 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
 
 
 /**

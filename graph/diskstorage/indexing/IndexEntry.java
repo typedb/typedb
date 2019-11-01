@@ -16,9 +16,9 @@ package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.MetaAnnotatable;
-import org.janusgraph.diskstorage.MetaAnnotated;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.MetaAnnotatable;
+import grakn.core.graph.diskstorage.MetaAnnotated;
 
 import java.util.Map;
 

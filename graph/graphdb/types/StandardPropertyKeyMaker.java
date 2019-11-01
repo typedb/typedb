@@ -15,20 +15,18 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.StandardRelationTypeMaker;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.lang.reflect.Modifier;
 
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.DATATYPE;
+import static grakn.core.graph.graphdb.types.TypeDefinitionCategory.DATATYPE;
 
 
 public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implements PropertyKeyMaker {
@@ -47,39 +45,39 @@ public class StandardPropertyKeyMaker extends StandardRelationTypeMaker implemen
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardPropertyKeyMaker dataType(Class<?> clazz) {
+    public StandardPropertyKeyMaker dataType(Class<?> clazz) {
         Preconditions.checkArgument(clazz != null, "Need to specify a data type");
         dataType = clazz;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardPropertyKeyMaker cardinality(Cardinality cardinality) {
+    public StandardPropertyKeyMaker cardinality(Cardinality cardinality) {
         super.multiplicity(Multiplicity.convert(cardinality));
         return this;
     }
 
 
     @Override
-    public org.janusgraph.graphdb.types.StandardPropertyKeyMaker invisible() {
+    public StandardPropertyKeyMaker invisible() {
         super.invisible();
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardPropertyKeyMaker signature(PropertyKey... types) {
+    public StandardPropertyKeyMaker signature(PropertyKey... types) {
         super.signature(types);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardPropertyKeyMaker sortKey(PropertyKey... types) {
+    public StandardPropertyKeyMaker sortKey(PropertyKey... types) {
         super.sortKey(types);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardPropertyKeyMaker sortOrder(Order order) {
+    public StandardPropertyKeyMaker sortOrder(Order order) {
         super.sortOrder(order);
         return this;
     }

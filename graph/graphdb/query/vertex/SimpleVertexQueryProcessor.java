@@ -14,38 +14,38 @@
 
 package grakn.core.graph.graphdb.query.vertex;
 
-import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.database.EdgeSerializer;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.VertexCentricQuery;
-import org.janusgraph.graphdb.query.vertex.VertexLongList;
-import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.database.EdgeSerializer;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.transaction.RelationConstructor;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * This is an optimization of specifically for {@link VertexCentricQuery} that addresses the special but
  * common case that the query is simple (i.e. comprised of only one sub-query and that query is fitted, i.e. does not require
- * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link org.janusgraph.graphdb.query.QueryProcessor}:
+ * in memory filtering). Under these assumptions we can remove a lot of the steps in {@link grakn.core.graph.graphdb.query.QueryProcessor}:
  * merging of result sets, in-memory filtering and the object instantiation required for in-memory filtering.
  * <p>
  * With those complexities removed, the query processor can be much simpler which makes it a lot faster and less
  * memory intense.
  * <p>
  * IMPORTANT: This Iterable is not thread-safe.
- *
  */
 public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
@@ -83,8 +83,6 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
 
     /**
      * Converts the entries from this query result into actual {@link JanusGraphRelation}.
-     *
-     * @return
      */
     public Iterable<JanusGraphRelation> relations() {
         return RelationConstructor.readRelation(vertex, this, tx);
@@ -93,19 +91,16 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     /**
      * Returns the list of adjacent vertex ids for this query. By reading those ids
      * from the entries directly (without creating objects) we get much better performance.
-     *
-     * @return
      */
     public VertexList vertexIds() {
-        LongArrayList list = new LongArrayList();
+        List<Long> list = new ArrayList<>();
         long previousId = 0;
-        for (Long id : Iterables.transform(this, new Function<Entry, Long>() {
-            @Nullable
-            @Override
-            public Long apply(@Nullable Entry entry) {
-                return edgeSerializer.readRelation(entry, true, tx).getOtherVertexId();
-            }
-        })) {
+
+        Iterable<Long> vertexIds = StreamSupport.stream(this.spliterator(), false)
+                .map(entry -> edgeSerializer.readRelation(entry, true, tx).getOtherVertexId())
+                .collect(Collectors.toList());
+
+        for (Long id : vertexIds) {
             list.add(id);
             if (id >= previousId && previousId >= 0) previousId = id;
             else previousId = -1;
@@ -116,7 +111,6 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     /**
      * Executes the query by executing its on {@link SliceQuery} sub-query.
      *
-     * @return
      */
     private Iterator<Entry> getBasicIterator() {
         EntryList result = vertex.loadRelations(sliceQuery, query -> QueryProfiler.profile(profiler, query, q -> tx.getGraph().edgeQuery(vertex.longId(), q, tx.getBackendTransaction())));
@@ -124,7 +118,7 @@ public class SimpleVertexQueryProcessor implements Iterable<Entry> {
     }
 
 
-    private final class LimitAdjustingIterator extends org.janusgraph.graphdb.query.LimitAdjustingIterator<Entry> {
+    private final class LimitAdjustingIterator extends grakn.core.graph.graphdb.query.LimitAdjustingIterator<Entry> {
 
         private LimitAdjustingIterator() {
             super(query.getLimit(), sliceQuery.getLimit());

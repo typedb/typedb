@@ -16,12 +16,12 @@ package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.util.Gremlin;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.TransactionBuilder;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.graphdb.configuration.JanusGraphConstants;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphFactory;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.TransactionBuilder;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.graphdb.configuration.JanusGraphConstants;
 
 /**
  * JanusGraph graph database implementation of the Blueprint's interface.

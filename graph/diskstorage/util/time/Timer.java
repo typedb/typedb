@@ -15,7 +15,6 @@
 package grakn.core.graph.diskstorage.util.time;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,7 +41,7 @@ public class Timer {
         this.times = times;
     }
 
-    public org.janusgraph.diskstorage.util.time.Timer start() {
+    public Timer start() {
         Preconditions.checkState(null == start, "Timer can only be started once");
         start = times.getTime();
         return this;
@@ -53,7 +52,7 @@ public class Timer {
         return start;
     }
 
-    public org.janusgraph.diskstorage.util.time.Timer stop() {
+    public Timer stop() {
         Preconditions.checkNotNull(start, "Timer stopped before it was started");
         stop = times.getTime();
         return this;

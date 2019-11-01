@@ -14,9 +14,9 @@
 
 package grakn.core.graph.graphdb.query.condition;
 
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.MultiCondition;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.MultiCondition;
 
 /**
  * Combines multiple conditions under semantic AND, i.e. all conditions must be true for this combination to be true
@@ -32,13 +32,13 @@ public class And<E extends JanusGraphElement> extends MultiCondition<E> {
         super();
     }
 
-    private And(org.janusgraph.graphdb.query.condition.And<E> clone) {
+    private And(And<E> clone) {
         super(clone);
     }
 
     @Override
-    public org.janusgraph.graphdb.query.condition.And<E> clone() {
-        return new org.janusgraph.graphdb.query.condition.And<>(this);
+    public And<E> clone() {
+        return new And<>(this);
     }
 
     public And(int capacity) {
@@ -60,8 +60,8 @@ public class And<E extends JanusGraphElement> extends MultiCondition<E> {
         return true;
     }
 
-    public static <E extends JanusGraphElement> org.janusgraph.graphdb.query.condition.And<E> of(Condition<E>... elements) {
-        return new org.janusgraph.graphdb.query.condition.And<>(elements);
+    public static <E extends JanusGraphElement> And<E> of(Condition<E>... elements) {
+        return new And<>(elements);
     }
 
 }

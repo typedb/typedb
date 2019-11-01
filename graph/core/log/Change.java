@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core.log;
 
-import org.janusgraph.core.log.ChangeState;
+import grakn.core.graph.core.log.ChangeState;
 
 /**
  * Identifies the type of change has undergone. Used in {@link ChangeState} to retrieve those elements

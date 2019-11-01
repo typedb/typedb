@@ -14,25 +14,21 @@
 
 package grakn.core.graph.graphdb.relations;
 
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.transaction.RelationConstructor;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.relations.AbstractEdge;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.relations.StandardEdge;
-import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class CacheEdge extends AbstractEdge {
@@ -71,10 +67,10 @@ public class CacheEdge extends AbstractEdge {
     }
 
     private void copyProperties(InternalRelation to) {
-        for (LongObjectCursor<Object> entry : getPropertyMap()) {
-            PropertyKey type = tx().getExistingPropertyKey(entry.key);
+        for (Map.Entry<Long, Object> entry : getPropertyMap().properties().entrySet()) {
+            PropertyKey type = tx().getExistingPropertyKey(entry.getKey());
             if (!(type instanceof ImplicitKey))
-                to.setPropertyDirect(type, entry.value);
+                to.setPropertyDirect(type, entry.getValue());
         }
     }
 
@@ -106,14 +102,9 @@ public class CacheEdge extends AbstractEdge {
 
     @Override
     public Iterable<PropertyKey> getPropertyKeysDirect() {
-        RelationCache map = getPropertyMap();
-        List<PropertyKey> types = new ArrayList<>(map.numProperties());
-
-        for (LongObjectCursor<Object> entry : map) {
-            types.add(tx().getExistingPropertyKey(entry.key));
-        }
-
-        return types;
+        return getPropertyMap().properties().keySet().stream()
+                .map(key -> tx().getExistingPropertyKey(key))
+                .collect(Collectors.toList());
     }
 
     @Override

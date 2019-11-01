@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 /**
  * Representation of a (key,value) pair.

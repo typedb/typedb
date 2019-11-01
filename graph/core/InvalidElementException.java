@@ -17,8 +17,8 @@ package grakn.core.graph.core;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphException;
 
 /**
  * Exception thrown when an element is invalid for the executing operation or when an operation could not be performed

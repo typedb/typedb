@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.types.system;
 
-import org.janusgraph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
 
 public interface SystemRelationType extends InternalRelationType {
 

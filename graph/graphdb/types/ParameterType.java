@@ -16,7 +16,7 @@ package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.core.schema.Parameter;
+import grakn.core.graph.core.schema.Parameter;
 
 import java.util.Arrays;
 import java.util.List;

@@ -15,10 +15,10 @@
 package grakn.core.graph.graphdb.configuration.converter;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.configuration.RegisteredAttributeClass;
+import grakn.core.graph.core.attribute.AttributeSerializer;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.configuration.RegisteredAttributeClass;
 
 import java.util.ArrayList;
 import java.util.List;

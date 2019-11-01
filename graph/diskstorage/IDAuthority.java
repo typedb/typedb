@@ -15,11 +15,11 @@
 package grakn.core.graph.diskstorage;
 
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.IDBlock;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.IDBlock;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.database.idassigner.IDBlockSizer;
 
 import java.time.Duration;
 import java.util.List;

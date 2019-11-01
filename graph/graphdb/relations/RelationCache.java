@@ -14,38 +14,32 @@
 
 package grakn.core.graph.graphdb.relations;
 
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Immutable map from long key ids to objects.
  * Implemented for memory and time efficiency.
  *
  */
-public class RelationCache implements Iterable<LongObjectCursor<Object>> {
-
-    private static final LongObjectHashMap<Object> EMPTY = new LongObjectHashMap<>(0);
-
+public class RelationCache{
     public final Direction direction;
     public final long typeId;
     public final long relationId;
     private final Object other;
-    private final LongObjectHashMap<Object> properties;
+    private final Map<Long, Object> properties;
 
-    public RelationCache(Direction direction, long typeId, long relationId,
-                         final Object other, LongObjectHashMap<Object> properties) {
+    public RelationCache(Direction direction, long typeId, long relationId, Object other, Map<Long, Object> properties) {
         this.direction = direction;
         this.typeId = typeId;
         this.relationId = relationId;
         this.other = other;
-        this.properties = (properties == null || properties.size() > 0) ? properties : EMPTY;
+        this.properties = (properties == null || properties.size() > 0) ? properties : new HashMap<>(0);
     }
 
-    public RelationCache(Direction direction, long typeId, long relationId,
-                         final Object other) {
+    public RelationCache(Direction direction, long typeId, long relationId, Object other) {
         this(direction,typeId,relationId,other,null);
     }
 
@@ -58,9 +52,7 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
         return properties != null && !properties.isEmpty();
     }
 
-    public int numProperties() {
-        return properties.size();
-    }
+    public Map<Long, Object> properties(){ return properties;}
 
     public Object getValue() {
         return other;
@@ -68,15 +60,6 @@ public class RelationCache implements Iterable<LongObjectCursor<Object>> {
 
     public Long getOtherVertexId() {
         return (Long) other;
-    }
-
-    public Iterator<LongObjectCursor<Object>> propertyIterator() {
-        return properties.iterator();
-    }
-
-    @Override
-    public Iterator<LongObjectCursor<Object>> iterator() {
-        return propertyIterator();
     }
 
     @Override

@@ -15,9 +15,9 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.BaseTransactionConfigurable;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.BaseTransactionConfigurable;
 
 
 public class DefaultTransaction implements BaseTransactionConfigurable {

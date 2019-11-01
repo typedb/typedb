@@ -15,9 +15,9 @@
 package grakn.core.graph.diskstorage.common;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
  * Abstract implementation of {@link StoreTransaction} to be used as the basis for more specific implementations.

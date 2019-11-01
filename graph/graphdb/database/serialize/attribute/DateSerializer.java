@@ -15,10 +15,10 @@
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
 import org.apache.tinkerpop.shaded.jackson.databind.util.StdDateFormat;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
-import org.janusgraph.graphdb.database.serialize.attribute.LongSerializer;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
+import grakn.core.graph.graphdb.database.serialize.attribute.LongSerializer;
 
 import java.text.ParseException;
 import java.util.Date;

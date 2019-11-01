@@ -16,11 +16,10 @@ package grakn.core.graph.graphdb.transaction.addedrelations;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelation;
 
 import java.util.Collection;
 import java.util.List;
-
 
 public interface AddedRelationsContainer {
 
@@ -35,12 +34,11 @@ public interface AddedRelationsContainer {
     /**
      * This method returns all relations in this container. It may only be invoked at the end
      * of the transaction after there are no additional changes. Otherwise the behavior is non deterministic.
-     * @return
      */
     Collection<InternalRelation> getAll();
 
 
-    org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer EMPTY = new org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer() {
+    AddedRelationsContainer EMPTY = new AddedRelationsContainer() {
         @Override
         public boolean add(InternalRelation relation) {
             throw new UnsupportedOperationException();

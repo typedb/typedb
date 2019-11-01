@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.log;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.log.Log;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.log.Log;
 
 /**
  * Manager interface for opening {@link Log}s against a particular Log implementation.

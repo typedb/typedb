@@ -15,11 +15,11 @@
 package grakn.core.graph.graphdb.types.system;
 
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.system.EmptyVertex;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.system.EmptyVertex;
 
 import java.util.Collections;
 

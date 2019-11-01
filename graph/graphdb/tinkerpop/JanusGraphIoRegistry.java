@@ -14,37 +14,28 @@
 
 package grakn.core.graph.graphdb.tinkerpop;
 
+import grakn.core.graph.core.attribute.Geoshape;
+import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.structure.io.AbstractIoRegistry;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONIo;
 import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoIo;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphPSerializer;
-import org.janusgraph.graphdb.tinkerpop.io.graphson.JanusGraphSONModuleV2d0;
 
-/**
-
- * @author Stephen Mallette (https://stephen.genoprime.com)
- */
 public class JanusGraphIoRegistry extends AbstractIoRegistry {
 
-    private static final org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry INSTANCE = new org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry();
+    private static final JanusGraphIoRegistry INSTANCE = new JanusGraphIoRegistry();
 
     // todo: made the constructor temporarily public to workaround an interoperability issue with hadoop in tp3 GA https://issues.apache.org/jira/browse/TINKERPOP3-771
 
     public JanusGraphIoRegistry() {
-        register(GraphSONIo.class, null, JanusGraphSONModuleV2d0.getInstance());
         register(GryoIo.class, RelationIdentifier.class, null);
         register(GryoIo.class, Geoshape.class, new Geoshape.GeoShapeGryoSerializer());
-        register(GryoIo.class, P.class, new JanusGraphPSerializer());
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry getInstance() {
+    public static JanusGraphIoRegistry getInstance() {
         return INSTANCE;
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry instance() {
+    public static JanusGraphIoRegistry instance() {
         return INSTANCE;
     }
 }

@@ -15,13 +15,13 @@
 package grakn.core.graph.graphdb.types.vertices;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Connection;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import org.janusgraph.graphdb.types.vertices.RelationTypeVertex;
+import grakn.core.graph.core.Connection;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import grakn.core.graph.graphdb.types.vertices.RelationTypeVertex;
 
 import java.util.Collection;
 import java.util.stream.Collectors;

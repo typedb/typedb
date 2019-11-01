@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import org.janusgraph.diskstorage.locking.LocalLockMediator;
-import org.janusgraph.diskstorage.locking.LocalLockMediators;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.diskstorage.locking.LocalLockMediator;
+import grakn.core.graph.diskstorage.locking.LocalLockMediators;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 
 
 /**

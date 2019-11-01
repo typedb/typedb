@@ -14,10 +14,10 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.Namifiable;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.schema.RelationTypeIndex;
+import grakn.core.graph.core.Namifiable;
+import grakn.core.graph.core.schema.JanusGraphIndex;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.schema.RelationTypeIndex;
 
 /**
  * Marks any element that is part of a JanusGraph Schema.

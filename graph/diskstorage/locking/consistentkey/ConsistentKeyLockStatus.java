@@ -15,8 +15,8 @@
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
 
-import org.janusgraph.diskstorage.locking.LockStatus;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import grakn.core.graph.diskstorage.locking.LockStatus;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 
 import java.time.Instant;
 

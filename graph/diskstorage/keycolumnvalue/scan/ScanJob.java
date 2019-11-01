@@ -15,11 +15,11 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 
 import java.util.List;
 import java.util.Map;

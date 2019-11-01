@@ -19,26 +19,27 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.database.management.ManagementSystem;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.transaction.RelationConstructor;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.SchemaSource;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
+import grakn.core.graph.graphdb.types.TypeDefinitionMap;
+import grakn.core.graph.graphdb.types.indextype.CompositeIndexTypeWrapper;
+import grakn.core.graph.graphdb.types.indextype.MixedIndexTypeWrapper;
+import grakn.core.graph.graphdb.types.system.BaseKey;
+import grakn.core.graph.graphdb.types.system.BaseLabel;
+import grakn.core.graph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.SchemaSource;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionDescription;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
-import org.janusgraph.graphdb.types.indextype.CompositeIndexTypeWrapper;
-import org.janusgraph.graphdb.types.indextype.MixedIndexTypeWrapper;
-import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseLabel;
-import org.janusgraph.graphdb.vertices.CacheVertex;
 
 public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 
@@ -100,7 +101,6 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     private ListMultimap<TypeDefinitionCategory, Entry> outRelations = null;
     private ListMultimap<TypeDefinitionCategory, Entry> inRelations = null;
 
-
     @Override
     public Iterable<Entry> getRelated(TypeDefinitionCategory def, Direction dir) {
         ListMultimap<TypeDefinitionCategory, Entry> relations = dir == Direction.OUT ? outRelations : inRelations;
@@ -122,7 +122,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
                 if (desc.getCategory().hasDataType()) {
                     modifier = desc.getModifier();
                 }
-                b.put(desc.getCategory(), new Entry((org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex) oth, modifier));
+                b.put(desc.getCategory(), new Entry((JanusGraphSchemaVertex) oth, modifier));
             }
             relations = b.build();
             if (dir == Direction.OUT) outRelations = relations;
@@ -133,7 +133,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
 
     /**
      * Resets the internal caches used to speed up lookups on this index type.
-     * This is needed when the type gets modified in the {@link org.janusgraph.graphdb.database.management.ManagementSystem}.
+     * This is needed when the type gets modified in the {@link ManagementSystem}.
      */
     @Override
     public void resetCache() {
@@ -147,7 +147,7 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
         return getEdges(def, dir, null);
     }
 
-    public Iterable<JanusGraphEdge> getEdges(TypeDefinitionCategory def, Direction dir, org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex other) {
+    public Iterable<JanusGraphEdge> getEdges(TypeDefinitionCategory def, Direction dir, JanusGraphSchemaVertex other) {
         JanusGraphVertexQuery query = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
         if (other != null) query.adjacent(other);
         return Iterables.filter(query.edges(), (Predicate<JanusGraphEdge>) edge -> {

@@ -17,9 +17,9 @@ package grakn.core.graph.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.diskstorage.indexing.IndexProvider;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.schema.Mapping;
+import grakn.core.graph.diskstorage.indexing.IndexProvider;
 
 import java.util.Arrays;
 import java.util.Set;

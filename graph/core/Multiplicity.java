@@ -16,12 +16,10 @@ package grakn.core.graph.core;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Cardinality;
 
 /**
  * The multiplicity of edges between vertices for a given label. Multiplicity here is understood in the same sense as
  * for UML class diagrams <a href="https://en.wikipedia.org/wiki/Class_diagram#Multiplicity">https://en.wikipedia.org/wiki/Class_diagram#Multiplicity</a>
- *
  */
 public enum Multiplicity {
 
@@ -57,10 +55,9 @@ public enum Multiplicity {
 
     /**
      * Whether this multiplicity imposes any constraint on the number of edges that may exist between a pair of vertices.
-     *
      */
     public boolean isConstrained() {
-        return this!=MULTI;
+        return this != MULTI;
     }
 
     public boolean isConstrained(Direction direction) {
@@ -75,33 +72,42 @@ public enum Multiplicity {
     public boolean isUnique(Direction direction) {
         switch (direction) {
             case IN:
-                return this==ONE2MANY || this==ONE2ONE;
+                return this == ONE2MANY || this == ONE2ONE;
             case OUT:
-                return this==MANY2ONE || this==ONE2ONE;
+                return this == MANY2ONE || this == ONE2ONE;
             case BOTH:
-                return this==ONE2ONE;
-            default: throw new AssertionError("Unknown direction: " + direction);
+                return this == ONE2ONE;
+            default:
+                throw new AssertionError("Unknown direction: " + direction);
         }
     }
 
     //######### CONVERTING MULTIPLICITY <-> CARDINALITY ########
 
-    public static org.janusgraph.core.Multiplicity convert(Cardinality cardinality) {
+    public static Multiplicity convert(Cardinality cardinality) {
         Preconditions.checkNotNull(cardinality);
-        switch(cardinality) {
-            case LIST: return MULTI;
-            case SET: return SIMPLE;
-            case SINGLE: return MANY2ONE;
-            default: throw new AssertionError("Unknown cardinality: " + cardinality);
+        switch (cardinality) {
+            case LIST:
+                return MULTI;
+            case SET:
+                return SIMPLE;
+            case SINGLE:
+                return MANY2ONE;
+            default:
+                throw new AssertionError("Unknown cardinality: " + cardinality);
         }
     }
 
     public Cardinality getCardinality() {
         switch (this) {
-            case MULTI: return Cardinality.LIST;
-            case SIMPLE: return Cardinality.SET;
-            case MANY2ONE: return Cardinality.SINGLE;
-            default: throw new AssertionError("Invalid multiplicity: " + this);
+            case MULTI:
+                return Cardinality.LIST;
+            case SIMPLE:
+                return Cardinality.SET;
+            case MANY2ONE:
+                return Cardinality.SINGLE;
+            default:
+                throw new AssertionError("Invalid multiplicity: " + this);
         }
     }
 

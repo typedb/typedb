@@ -14,10 +14,10 @@
 
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
-import org.janusgraph.graphdb.database.serialize.attribute.ShortSerializer;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
+import grakn.core.graph.graphdb.database.serialize.attribute.ShortSerializer;
 
 public class CharacterSerializer implements OrderPreservingSerializer<Character> {
 

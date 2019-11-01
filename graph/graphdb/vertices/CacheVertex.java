@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.vertices;
 
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.vertices.StandardVertex;
-import org.janusgraph.util.datastructures.Retriever;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.vertices.StandardVertex;
+import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.HashMap;
 import java.util.Map;

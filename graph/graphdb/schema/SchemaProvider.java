@@ -15,10 +15,10 @@
 package grakn.core.graph.graphdb.schema;
 
 
-import org.janusgraph.graphdb.schema.EdgeLabelDefinition;
-import org.janusgraph.graphdb.schema.PropertyKeyDefinition;
-import org.janusgraph.graphdb.schema.RelationTypeDefinition;
-import org.janusgraph.graphdb.schema.VertexLabelDefinition;
+import grakn.core.graph.graphdb.schema.EdgeLabelDefinition;
+import grakn.core.graph.graphdb.schema.PropertyKeyDefinition;
+import grakn.core.graph.graphdb.schema.RelationTypeDefinition;
+import grakn.core.graph.graphdb.schema.VertexLabelDefinition;
 
 public interface SchemaProvider {
 

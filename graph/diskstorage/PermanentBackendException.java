@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BackendException;
 
 /**
  * This exception signifies a permanent exception in a JanusGraph storage backend,

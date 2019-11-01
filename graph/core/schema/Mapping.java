@@ -15,19 +15,16 @@
 package grakn.core.graph.core.schema;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.types.ParameterType;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.diskstorage.indexing.KeyInformation;
+import grakn.core.graph.graphdb.types.ParameterType;
 
 /**
  * Used to change the default mapping of an indexed key by providing the mapping explicitly as a parameter to
- * {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}.
+ * {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, PropertyKey, Parameter[])}.
  * <p>
  * This applies mostly to string data types of keys, where the mapping specifies whether the string value is tokenized
  * ({@link #TEXT}) or indexed as a whole ({@link #STRING}), or both ({@link #TEXTSTRING}).
- *
  */
 public enum Mapping {
 
@@ -38,8 +35,7 @@ public enum Mapping {
     PREFIX_TREE;
 
     /**
-     * Returns the mapping as a parameter so that it can be passed to {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, org.janusgraph.core.PropertyKey, Parameter[])}
-     * @return
+     * Returns the mapping as a parameter so that it can be passed to {@link JanusGraphManagement#addIndexKey(JanusGraphIndex, PropertyKey, Parameter[])}
      */
     public Parameter asParameter() {
         return ParameterType.MAPPING.getParameter(this);
@@ -47,21 +43,21 @@ public enum Mapping {
 
     //------------ USED INTERNALLY -----------
 
-    public static org.janusgraph.core.schema.Mapping getMapping(KeyInformation information) {
-        Object value = ParameterType.MAPPING.findParameter(information.getParameters(),null);
-        if (value==null) return DEFAULT;
+    public static Mapping getMapping(KeyInformation information) {
+        Object value = ParameterType.MAPPING.findParameter(information.getParameters(), null);
+        if (value == null) return DEFAULT;
         else {
-            Preconditions.checkArgument((value instanceof org.janusgraph.core.schema.Mapping || value instanceof String),"Invalid mapping specified: %s",value);
+            Preconditions.checkArgument((value instanceof Mapping || value instanceof String), "Invalid mapping specified: %s", value);
             if (value instanceof String) {
-                value = org.janusgraph.core.schema.Mapping.valueOf(value.toString().toUpperCase());
+                value = Mapping.valueOf(value.toString().toUpperCase());
             }
-            return (org.janusgraph.core.schema.Mapping)value;
+            return (Mapping) value;
         }
     }
 
-    public static org.janusgraph.core.schema.Mapping getMapping(String store, String key, KeyInformation.IndexRetriever information) {
+    public static Mapping getMapping(String store, String key, KeyInformation.IndexRetriever information) {
         KeyInformation ki = information.get(store, key);
-        Preconditions.checkNotNull(ki, "Could not find key information for: %s",key);
+        Preconditions.checkNotNull(ki, "Could not find key information for: %s", key);
         return getMapping(ki);
     }
 

@@ -15,7 +15,7 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.Collection;
 

@@ -14,9 +14,9 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
 
 import java.io.Closeable;
 

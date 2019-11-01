@@ -14,14 +14,13 @@
 
 package grakn.core.graph.graphdb.types.system;
 
+import grakn.core.graph.graphdb.internal.InternalVertexLabel;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.graphdb.internal.InternalVertexLabel;
-import org.janusgraph.graphdb.types.system.EmptyVertex;
 
 
 public class BaseVertexLabel extends EmptyVertex implements InternalVertexLabel {
 
-    public static final org.janusgraph.graphdb.types.system.BaseVertexLabel DEFAULT_VERTEXLABEL = new org.janusgraph.graphdb.types.system.BaseVertexLabel(Vertex.DEFAULT_LABEL);
+    public static final BaseVertexLabel DEFAULT_VERTEXLABEL = new BaseVertexLabel(Vertex.DEFAULT_LABEL);
 
     private final String name;
 

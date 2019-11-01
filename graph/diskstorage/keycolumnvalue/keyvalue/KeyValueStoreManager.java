@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 
 /**
  * {@link StoreManager} for {@link KeyValueStore}.

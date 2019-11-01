@@ -14,21 +14,20 @@
 
 package grakn.core.graph.graphdb.database.idhandling;
 
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.diskstorage.util.WriteByteBuffer;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.WriteByteBuffer;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.RelationCategory;
+import grakn.core.graph.diskstorage.util.BufferUtil;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.graphdb.internal.RelationCategory;
 
-import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemEdgeLabel;
-import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.SystemPropertyKey;
-import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.UserEdgeLabel;
-import static org.janusgraph.graphdb.idmanagement.IDManager.VertexIDType.UserPropertyKey;
+import static grakn.core.graph.graphdb.idmanagement.IDManager.VertexIDType.SystemEdgeLabel;
+import static grakn.core.graph.graphdb.idmanagement.IDManager.VertexIDType.SystemPropertyKey;
+import static grakn.core.graph.graphdb.idmanagement.IDManager.VertexIDType.UserEdgeLabel;
+import static grakn.core.graph.graphdb.idmanagement.IDManager.VertexIDType.UserPropertyKey;
 
 
 public class IDHandler {
@@ -120,7 +119,7 @@ public class IDHandler {
 
     public static StaticBuffer getRelationType(long relationTypeId, DirectionID dirID, boolean invisible) {
         WriteBuffer b = new WriteByteBuffer(relationTypeLength(relationTypeId));
-        org.janusgraph.graphdb.database.idhandling.IDHandler.writeRelationType(b, relationTypeId, dirID, invisible);
+        IDHandler.writeRelationType(b, relationTypeId, dirID, invisible);
         return b.getStaticBuffer();
     }
 

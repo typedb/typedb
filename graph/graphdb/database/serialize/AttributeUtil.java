@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.attribute.Geoshape;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.attribute.Geoshape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

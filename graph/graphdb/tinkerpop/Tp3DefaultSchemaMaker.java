@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.tinkerpop;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.schema.DefaultSchemaMaker;
 
 
 public class Tp3DefaultSchemaMaker implements DefaultSchemaMaker {

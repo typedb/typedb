@@ -15,8 +15,8 @@
 package grakn.core.graph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.schema.SchemaStatus;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.schema.SchemaStatus;
 
 import java.time.Duration;
 import java.time.temporal.TemporalUnit;

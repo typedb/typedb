@@ -17,39 +17,33 @@ package grakn.core.graph.diskstorage.locking.consistentkey;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.JanusGraphConfigurationException;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.TemporaryBackendException;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.AbstractLocker;
-import org.janusgraph.diskstorage.locking.LocalLockMediator;
-import org.janusgraph.diskstorage.locking.LocalLockMediators;
-import org.janusgraph.diskstorage.locking.Locker;
-import org.janusgraph.diskstorage.locking.LockerState;
-import org.janusgraph.diskstorage.locking.PermanentLockingException;
-import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import org.janusgraph.diskstorage.locking.consistentkey.ExpiredLockException;
-import org.janusgraph.diskstorage.locking.consistentkey.LockCleanerService;
-import org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerService;
-import org.janusgraph.diskstorage.locking.consistentkey.TimestampRid;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.KeyColumn;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.diskstorage.util.time.Timer;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.core.JanusGraphConfigurationException;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.PermanentBackendException;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.configuration.ConfigElement;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.AbstractLocker;
+import grakn.core.graph.diskstorage.locking.LocalLockMediator;
+import grakn.core.graph.diskstorage.locking.LocalLockMediators;
+import grakn.core.graph.diskstorage.locking.Locker;
+import grakn.core.graph.diskstorage.locking.LockerState;
+import grakn.core.graph.diskstorage.locking.PermanentLockingException;
+import grakn.core.graph.diskstorage.locking.TemporaryLockingException;
+import grakn.core.graph.diskstorage.util.BufferUtil;
+import grakn.core.graph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.util.time.Timer;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +53,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
+import static grakn.core.graph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 /**
  * A global {@link Locker} that resolves inter-thread lock contention via
@@ -186,9 +180,9 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * least one zero bit that makes it sort before.
      */
     public static final StaticBuffer LOCK_COL_START = BufferUtil.zeroBuffer(1);
-    public static final StaticBuffer LOCK_COL_END   = BufferUtil.oneBuffer(9);
+    public static final StaticBuffer LOCK_COL_END = BufferUtil.oneBuffer(9);
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.class);
+    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLocker.class);
 
     public static class Builder extends AbstractLocker.Builder<ConsistentKeyLockStatus, Builder> {
         // Required (no default)
@@ -240,7 +234,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         public Builder fromConfig(Configuration config) {
             rid(new StaticArrayBuffer(config.get(GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID)
-                .getBytes(UTF8_CHARSET)));
+                    .getBytes(UTF8_CHARSET)));
 
             final String llmPrefix = config.get(GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP);
 
@@ -261,25 +255,25 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             return this;
         }
 
-        public org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker build() {
+        public ConsistentKeyLocker build() {
             preBuild();
 
             final LockCleanerService cleaner;
 
             switch (cleanerConfig) {
-            case STANDARD:
-                Preconditions.checkArgument(null == customCleanerService);
-                cleaner = new StandardLockCleanerService(store, serializer, times);
-                break;
-            case CUSTOM:
-                Preconditions.checkArgument(null != customCleanerService);
-                cleaner = customCleanerService;
-                break;
-            default:
-                cleaner = null;
+                case STANDARD:
+                    Preconditions.checkArgument(null == customCleanerService);
+                    cleaner = new StandardLockCleanerService(store, serializer, times);
+                    break;
+                case CUSTOM:
+                    Preconditions.checkArgument(null != customCleanerService);
+                    cleaner = customCleanerService;
+                    break;
+                default:
+                    cleaner = null;
             }
 
-            return new org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker(store, manager, rid, times,
+            return new ConsistentKeyLocker(store, manager, rid, times,
                     serializer, llm,
                     lockWait,
                     lockRetryCount,
@@ -300,7 +294,6 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     /**
      * Create a new locker.
-     *
      */
     private ConsistentKeyLocker(KeyColumnValueStore store, StoreManager manager, StaticBuffer rid,
                                 TimestampProvider times, ConsistentKeyLockerSerializer serializer,
@@ -318,18 +311,18 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
     /**
      * Try to write a lock record remotely up to the configured number of
-     *  times. If the store produces
+     * times. If the store produces
      * {@link TemporaryLockingException}, then we'll call mutate again to add a
      * new column with an updated timestamp and to delete the column that tried
      * to write when the store threw an exception. We continue like that up to
      * the retry limit. If the store throws anything else, such as an unchecked
-     * exception or a {@link org.janusgraph.diskstorage.PermanentBackendException}, then we'll try to
+     * exception or a PermanentBackendException, then we'll try to
      * delete whatever we added and return without further retries.
      *
      * @param lockID lock to acquire
      * @param txh    transaction
      * @return the timestamp, in nanoseconds since UNIX Epoch, on the lock
-     *         column that we successfully wrote to the store
+     * column that we successfully wrote to the store
      * @throws TemporaryLockingException if the lock retry count is exceeded without successfully
      *                                   writing the lock in less than the wait limit
      * @throws Throwable                 if the storage layer throws anything else
@@ -368,7 +361,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
      * @param wr      result of the mutation
      * @param txh     transaction attempting the lock
      * @throws Throwable if {@link WriteResult#getThrowable()} is not an instance of
-     *                   {@link org.janusgraph.diskstorage.TemporaryBackendException}
+     *                   {@link TemporaryBackendException}
      */
     private void handleMutationFailure(KeyColumn lockID, StaticBuffer lockKey, WriteResult wr,
                                        StoreTransaction txh) throws Throwable {
@@ -387,25 +380,25 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 WriteResult dwr = tryDeleteLockOnce(lockKey, wr.getLockCol(), txh);
                 if (!dwr.isSuccessful()) {
                     log.warn("Failed to delete lock write: abandoning potentially-unreleased lock on {}",
-                        lockID, dwr.getThrowable());
+                            lockID, dwr.getThrowable());
                 }
                 throw error;
             }
         } else {
             log.warn("Lock write succeeded but took too long: duration {} exceeded limit {}",
-                wr.getDuration(), lockWait);
+                    wr.getDuration(), lockWait);
         }
     }
 
     private WriteResult tryWriteLockOnce(StaticBuffer key, StaticBuffer del, StoreTransaction txh) {
         Throwable t = null;
-        final Timer writeTimer = times.getTimer().start();
+        Timer writeTimer = times.getTimer().start();
         StaticBuffer newLockCol = serializer.toLockCol(writeTimer.getStartTime(), rid, times);
         Entry newLockEntry = StaticArrayEntry.of(newLockCol, zeroBuf);
         try {
             final StoreTransaction newTx = overrideTimestamp(txh, writeTimer.getStartTime());
             store.mutate(key, Collections.singletonList(newLockEntry),
-                null == del ? KeyColumnValueStore.NO_DELETIONS : Collections.singletonList(del), newTx);
+                    null == del ? KeyColumnValueStore.NO_DELETIONS : Collections.singletonList(del), newTx);
         } catch (BackendException e) {
             log.debug("Lock write attempt failed with exception", e);
             t = e;
@@ -442,12 +435,12 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         // Slice the store
         KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), LOCK_COL_START,
-            LOCK_COL_END);
+                LOCK_COL_END);
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
 
         // Extract timestamp and rid from the column in each returned Entry...
         final Iterable<TimestampRid> iterable = Iterables.transform(claimEntries,
-            e -> serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times));
+                e -> serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times));
         // ...and then filter out the TimestampRid objects with expired timestamps
         // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
         final List<TimestampRid> unexpiredTRs = new ArrayList<>(Iterables.size(iterable));
@@ -514,7 +507,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             }
 
             log.warn("Skipping outdated lock on {} with our rid ({}) but mismatched timestamp (actual ts {}, expected ts {})",
-                target, tr.getRid(), tr.getTimestamp(), ls.getWriteTimestamp());
+                    target, tr.getRid(), tr.getTimestamp(), ls.getWriteTimestamp());
         }
 
         /*
@@ -570,7 +563,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     private StoreTransaction overrideTimestamp(StoreTransaction tx,
                                                final Instant commitTime) throws BackendException {
         StandardBaseTransactionConfig newCfg = new StandardBaseTransactionConfig.Builder(tx.getConfiguration())
-               .commitTime(commitTime).build();
+                .commitTime(commitTime).build();
         return manager.beginTransaction(newCfg);
     }
 

@@ -15,29 +15,26 @@
 package grakn.core.graph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.TransactionBuilder;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.MergedConfiguration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.TransactionBuilder;
+import grakn.core.graph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.configuration.ConfigElement;
+import grakn.core.graph.diskstorage.configuration.ConfigOption;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
+import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
+import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 import java.time.Instant;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 /**
- * Used to configure a {@link org.janusgraph.core.JanusGraphTransaction}.
- *
- * @see org.janusgraph.core.JanusGraphTransaction
+ * Used to configure a {@link JanusGraphTransaction}.
  */
 public class StandardTransactionBuilder implements TransactionConfiguration, TransactionBuilder {
 
@@ -120,34 +117,34 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
 
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder threadBound() {
+    public StandardTransactionBuilder threadBound() {
         this.threadBound = true;
         this.singleThreaded = true;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder readOnly() {
+    public StandardTransactionBuilder readOnly() {
         this.isReadOnly = true;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder enableBatchLoading() {
+    public StandardTransactionBuilder enableBatchLoading() {
         hasEnabledBatchLoading = true;
         checkExternalVertexExistence(false);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder disableBatchLoading() {
+    public StandardTransactionBuilder disableBatchLoading() {
         hasEnabledBatchLoading = false;
         checkExternalVertexExistence(true);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder vertexCacheSize(int size) {
+    public StandardTransactionBuilder vertexCacheSize(int size) {
         Preconditions.checkArgument(size >= 0);
         this.vertexCacheSize = size;
         this.indexCacheWeight = size / 2;
@@ -161,19 +158,19 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder checkInternalVertexExistence(boolean enabled) {
+    public StandardTransactionBuilder checkInternalVertexExistence(boolean enabled) {
         this.verifyInternalVertexExistence = enabled;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder checkExternalVertexExistence(boolean enabled) {
+    public StandardTransactionBuilder checkExternalVertexExistence(boolean enabled) {
         this.verifyExternalVertexExistence = enabled;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder commitTime(Instant timestampSinceEpoch) {
+    public StandardTransactionBuilder commitTime(Instant timestampSinceEpoch) {
         this.userCommitTime = timestampSinceEpoch;
         return this;
     }
@@ -184,13 +181,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder groupName(String p) {
+    public StandardTransactionBuilder groupName(String p) {
         this.groupName = p;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.transaction.StandardTransactionBuilder logIdentifier(String logName) {
+    public StandardTransactionBuilder logIdentifier(String logName) {
         this.logIdentifier = logName;
         return this;
     }

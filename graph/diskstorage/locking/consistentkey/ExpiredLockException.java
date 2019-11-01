@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
 
-import org.janusgraph.diskstorage.locking.TemporaryLockingException;
+import grakn.core.graph.diskstorage.locking.TemporaryLockingException;
 
 public class ExpiredLockException extends TemporaryLockingException {
 

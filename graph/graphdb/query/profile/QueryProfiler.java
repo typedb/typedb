@@ -14,15 +14,14 @@
 
 package grakn.core.graph.graphdb.query.profile;
 
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.graph.JointIndexQuery.Subquery;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.graph.JointIndexQuery.Subquery;
 
 import java.util.Collection;
 import java.util.function.Function;
 
 
 public interface QueryProfiler {
-
     String CONDITION_ANNOTATION = "condition";
     String ORDERS_ANNOTATION = "orders";
     String LIMIT_ANNOTATION = "limit";
@@ -42,14 +41,14 @@ public interface QueryProfiler {
     String AND_QUERY = "AND-query";
     String OPTIMIZATION = "optimization";
 
-    org.janusgraph.graphdb.query.profile.QueryProfiler NO_OP = new org.janusgraph.graphdb.query.profile.QueryProfiler() {
+    QueryProfiler NO_OP = new QueryProfiler() {
         @Override
-        public org.janusgraph.graphdb.query.profile.QueryProfiler addNested(String groupName) {
+        public QueryProfiler addNested(String groupName) {
             return this;
         }
 
         @Override
-        public org.janusgraph.graphdb.query.profile.QueryProfiler setAnnotation(String key, Object value) {
+        public QueryProfiler setAnnotation(String key, Object value) {
             return this;
         }
 
@@ -66,10 +65,9 @@ public interface QueryProfiler {
         }
     };
 
+    QueryProfiler addNested(String groupName);
 
-    org.janusgraph.graphdb.query.profile.QueryProfiler addNested(String groupName);
-
-    org.janusgraph.graphdb.query.profile.QueryProfiler setAnnotation(String key, Object value);
+    QueryProfiler setAnnotation(String key, Object value);
 
     void startTimer();
 
@@ -77,30 +75,30 @@ public interface QueryProfiler {
 
     void setResultSize(long size);
 
-    static<Q extends Query,R extends Collection> R profile(org.janusgraph.graphdb.query.profile.QueryProfiler profiler, Q query, Function<Q, R> queryExecutor) {
-        return profile(profiler,query,false,queryExecutor);
+    static <Q extends Query, R extends Collection> R profile(QueryProfiler profiler, Q query, Function<Q, R> queryExecutor) {
+        return profile(profiler, query, false, queryExecutor);
     }
 
-    static<Q extends Query,R extends Collection> R profile(String groupName, org.janusgraph.graphdb.query.profile.QueryProfiler profiler, Q query, Function<Q, R> queryExecutor) {
-        return profile(groupName,profiler,query,false,queryExecutor);
+    static <Q extends Query, R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, Function<Q, R> queryExecutor) {
+        return profile(groupName, profiler, query, false, queryExecutor);
     }
 
-    static<Q extends Query,R extends Collection> R profile(org.janusgraph.graphdb.query.profile.QueryProfiler profiler, Q query, boolean multiQuery, Function<Q, R> queryExecutor) {
-        return profile("backend-query",profiler,query,multiQuery,queryExecutor);
+    static <Q extends Query, R extends Collection> R profile(QueryProfiler profiler, Q query, boolean multiQuery, Function<Q, R> queryExecutor) {
+        return profile("backend-query", profiler, query, multiQuery, queryExecutor);
     }
 
-    static<Q extends Query,R extends Collection> R profile(String groupName, org.janusgraph.graphdb.query.profile.QueryProfiler profiler, Q query, boolean multiQuery, Function<Q, R> queryExecutor) {
-        final org.janusgraph.graphdb.query.profile.QueryProfiler sub = profiler.addNested(groupName);
+    static <Q extends Query, R extends Collection> R profile(String groupName, QueryProfiler profiler, Q query, boolean multiQuery, Function<Q, R> queryExecutor) {
+        QueryProfiler sub = profiler.addNested(groupName);
         sub.setAnnotation(QUERY_ANNOTATION, query);
-        if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION,query.getLimit());
+        if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION, query.getLimit());
         sub.startTimer();
-        final R result = queryExecutor.apply(query);
+        R result = queryExecutor.apply(query);
         sub.stopTimer();
         long resultSize = 0;
-        if (multiQuery && profiler!= org.janusgraph.graphdb.query.profile.QueryProfiler.NO_OP) {
+        if (multiQuery && profiler != QueryProfiler.NO_OP) {
             //The result set is a collection of collections, but don't do this computation if profiling is disabled
             for (Object r : result) {
-                if (r instanceof Collection) resultSize+=((Collection)r).size();
+                if (r instanceof Collection) resultSize += ((Collection) r).size();
                 else resultSize++;
             }
         } else {
@@ -110,10 +108,10 @@ public interface QueryProfiler {
         return result;
     }
 
-    static org.janusgraph.graphdb.query.profile.QueryProfiler startProfile(org.janusgraph.graphdb.query.profile.QueryProfiler profiler, Subquery query) {
-        final org.janusgraph.graphdb.query.profile.QueryProfiler sub = profiler.addNested("backend-query");
+    static QueryProfiler startProfile(QueryProfiler profiler, Subquery query) {
+        QueryProfiler sub = profiler.addNested("backend-query");
         sub.setAnnotation(QUERY_ANNOTATION, query);
-        if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION,query.getLimit());
+        if (query.hasLimit()) sub.setAnnotation(LIMIT_ANNOTATION, query.getLimit());
         sub.startTimer();
         return sub;
     }

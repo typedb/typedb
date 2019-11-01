@@ -16,9 +16,9 @@ package grakn.core.graph.graphdb.transaction.indexcache;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.transaction.indexcache.IndexCache;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.transaction.indexcache.IndexCache;
 
 
 public class SimpleIndexCache implements IndexCache {

@@ -14,12 +14,12 @@
 
 package grakn.core.graph.graphdb.database.indexing;
 
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.diskstorage.indexing.IndexFeatures;
-import org.janusgraph.diskstorage.indexing.IndexInformation;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.attribute.Contain;
+import grakn.core.graph.diskstorage.indexing.IndexFeatures;
+import grakn.core.graph.diskstorage.indexing.IndexInformation;
+import grakn.core.graph.diskstorage.indexing.KeyInformation;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 
 public class StandardIndexInformation implements IndexInformation {

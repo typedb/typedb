@@ -16,11 +16,10 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
 import java.util.EnumMap;
 import java.util.Set;
-
 
 public class TypeDefinitionMap extends EnumMap<TypeDefinitionCategory, Object> {
 
@@ -28,14 +27,14 @@ public class TypeDefinitionMap extends EnumMap<TypeDefinitionCategory, Object> {
         super(TypeDefinitionCategory.class);
     }
 
-    public TypeDefinitionMap(org.janusgraph.graphdb.types.TypeDefinitionMap copy) {
+    public TypeDefinitionMap(TypeDefinitionMap copy) {
         this();
         for (Entry<TypeDefinitionCategory, Object> entry : copy.entrySet()) {
             this.setValue(entry.getKey(), entry.getValue());
         }
     }
 
-    public org.janusgraph.graphdb.types.TypeDefinitionMap setValue(TypeDefinitionCategory type, Object value) {
+    public TypeDefinitionMap setValue(TypeDefinitionCategory type, Object value) {
         super.put(type, value);
         return this;
     }

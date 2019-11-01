@@ -14,68 +14,67 @@
 
 package grakn.core.graph.graphdb.tinkerpop.plugin;
 
+import grakn.core.graph.core.BaseVertexQuery;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.ConfiguredGraphFactory;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.Idfiable;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphComputer;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphFactory;
+import grakn.core.graph.core.JanusGraphIndexQuery;
+import grakn.core.graph.core.JanusGraphMultiVertexQuery;
+import grakn.core.graph.core.JanusGraphProperty;
+import grakn.core.graph.core.JanusGraphQuery;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.Namifiable;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.QueryDescription;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.TransactionBuilder;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.core.attribute.AttributeSerializer;
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.attribute.Contain;
+import grakn.core.graph.core.attribute.Geo;
+import grakn.core.graph.core.attribute.Geoshape;
+import grakn.core.graph.core.attribute.JtsGeoshapeHelper;
+import grakn.core.graph.core.attribute.Text;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.core.schema.EdgeLabelMaker;
+import grakn.core.graph.core.schema.Index;
+import grakn.core.graph.core.schema.JanusGraphConfiguration;
+import grakn.core.graph.core.schema.JanusGraphIndex;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.core.schema.JanusGraphSchemaElement;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.schema.JobStatus;
+import grakn.core.graph.core.schema.Mapping;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.schema.RelationTypeIndex;
+import grakn.core.graph.core.schema.RelationTypeMaker;
+import grakn.core.graph.core.schema.SchemaAction;
+import grakn.core.graph.core.schema.SchemaInspector;
+import grakn.core.graph.core.schema.SchemaManager;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.core.schema.VertexLabelMaker;
+import grakn.core.graph.graphdb.database.management.ManagementSystem;
+import grakn.core.graph.graphdb.management.ConfigurationManagementGraph;
+import grakn.core.graph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.apache.tinkerpop.gremlin.jsr223.AbstractGremlinPlugin;
 import org.apache.tinkerpop.gremlin.jsr223.Customizer;
 import org.apache.tinkerpop.gremlin.jsr223.DefaultImportCustomizer;
 import org.apache.tinkerpop.gremlin.jsr223.ImportCustomizer;
-import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.ConfiguredGraphFactory;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Idfiable;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphComputer;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphFactory;
-import org.janusgraph.core.JanusGraphIndexQuery;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphProperty;
-import org.janusgraph.core.JanusGraphQuery;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.Namifiable;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.QueryDescription;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.TransactionBuilder;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.core.attribute.Geo;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.core.attribute.JtsGeoshapeHelper;
-import org.janusgraph.core.attribute.Text;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.Index;
-import org.janusgraph.core.schema.JanusGraphConfiguration;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.schema.JobStatus;
-import org.janusgraph.core.schema.Mapping;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.RelationTypeIndex;
-import org.janusgraph.core.schema.RelationTypeMaker;
-import org.janusgraph.core.schema.SchemaAction;
-import org.janusgraph.core.schema.SchemaInspector;
-import org.janusgraph.core.schema.SchemaManager;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.core.schema.VertexLabelMaker;
-import org.janusgraph.example.GraphOfTheGodsFactory;
-import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -102,9 +101,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
-/**
- * @author Marko A. Rodriguez (https://markorodriguez.com)
- */
 public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
 
     private static final String NAME = "janusgraph.imports";
@@ -176,7 +172,6 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         CLASS_IMPORTS.add(SchemaStatus.class);
         CLASS_IMPORTS.add(VertexLabelMaker.class);
 
-        CLASS_IMPORTS.add(GraphOfTheGodsFactory.class);
         CLASS_IMPORTS.add(JanusGraphIoRegistry.class);
         CLASS_IMPORTS.add(ConfigurationManagementGraph.class);
         CLASS_IMPORTS.add(ManagementSystem.class);
@@ -218,41 +213,41 @@ public class JanusGraphGremlinPlugin extends AbstractGremlinPlugin {
         // also make sure the class is imported for these methods
 
         Stream.of(Geo.values())
-            .map(v -> {
-                try {
-                    return Geo.class.getMethod(v.toString(), Object.class);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
-            })
-            .filter(org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin::isMethodStatic)
-            .forEach(METHOD_IMPORTS::add);
+                .map(v -> {
+                    try {
+                        return Geo.class.getMethod(v.toString(), Object.class);
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .filter(JanusGraphGremlinPlugin::isMethodStatic)
+                .forEach(METHOD_IMPORTS::add);
 
         Stream.of(Text.values())
-            .map(v -> {
-                try {
-                    return Text.class.getMethod(v.toString(), Object.class);
-                } catch (NoSuchMethodException e) {
-                    throw new RuntimeException(e);
-                }
-            })
-            .filter(org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin::isMethodStatic)
-            .forEach(METHOD_IMPORTS::add);
+                .map(v -> {
+                    try {
+                        return Text.class.getMethod(v.toString(), Object.class);
+                    } catch (NoSuchMethodException e) {
+                        throw new RuntimeException(e);
+                    }
+                })
+                .filter(JanusGraphGremlinPlugin::isMethodStatic)
+                .forEach(METHOD_IMPORTS::add);
     }
 
     private static final ImportCustomizer IMPORTS = DefaultImportCustomizer.build()
-        .addClassImports(CLASS_IMPORTS)
-        .addEnumImports(ENUM_IMPORTS)
-        .addMethodImports(METHOD_IMPORTS)
-        .create();
+            .addClassImports(CLASS_IMPORTS)
+            .addEnumImports(ENUM_IMPORTS)
+            .addMethodImports(METHOD_IMPORTS)
+            .create();
 
-    private static final org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin instance = new org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin();
+    private static final JanusGraphGremlinPlugin instance = new JanusGraphGremlinPlugin();
 
     public JanusGraphGremlinPlugin() {
         super(NAME, IMPORTS);
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.plugin.JanusGraphGremlinPlugin instance() {
+    public static JanusGraphGremlinPlugin instance() {
         return instance;
     }
 

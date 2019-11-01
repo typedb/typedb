@@ -15,8 +15,8 @@
 package grakn.core.graph.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.core.attribute.AttributeSerializer;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
 
 /**
  * Helper class for registering data types with JanusGraph

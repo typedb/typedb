@@ -14,10 +14,10 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.PermanentLockingException;
-import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.janusgraph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.PermanentLockingException;
+import grakn.core.graph.diskstorage.locking.TemporaryLockingException;
+import grakn.core.graph.diskstorage.util.KeyColumn;
 
 /**
  * Threadsafe discretionary locking within and between processes JanusGraph.

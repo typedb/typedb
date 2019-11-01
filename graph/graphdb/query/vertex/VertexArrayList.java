@@ -14,26 +14,23 @@
 
 package grakn.core.graph.graphdb.query.vertex;
 
-import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.graphdb.query.vertex.VertexListInternal;
-import org.janusgraph.graphdb.query.vertex.VertexLongList;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.IterablesUtil;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.util.datastructures.IterablesUtil;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link VertexListInternal} that stores the actual vertex references
  * and simply wraps an {@link ArrayList} and keeps a boolean flag to remember whether this list is in sort order.
- *
  */
 public class VertexArrayList implements VertexListInternal {
 
@@ -44,15 +41,15 @@ public class VertexArrayList implements VertexListInternal {
     private boolean sorted;
 
     private VertexArrayList(StandardJanusGraphTx tx, List<JanusGraphVertex> vertices, boolean sorted) {
-        Preconditions.checkArgument(tx!=null && vertices!=null);
+        Preconditions.checkArgument(tx != null && vertices != null);
         this.tx = tx;
-        this.vertices=vertices;
-        this.sorted=sorted;
+        this.vertices = vertices;
+        this.sorted = sorted;
     }
 
     public VertexArrayList(StandardJanusGraphTx tx) {
         Preconditions.checkNotNull(tx);
-        this.tx=tx;
+        this.tx = tx;
         vertices = new ArrayList<>();
         sorted = true;
     }
@@ -60,7 +57,7 @@ public class VertexArrayList implements VertexListInternal {
 
     @Override
     public void add(JanusGraphVertex n) {
-        if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size()-1).longId()<=n.longId());
+        if (!vertices.isEmpty()) sorted = sorted && (vertices.get(vertices.size() - 1).longId() <= n.longId());
         vertices.add(n);
     }
 
@@ -70,20 +67,13 @@ public class VertexArrayList implements VertexListInternal {
     }
 
     @Override
-    public LongArrayList getIDs() {
-        return toLongList(vertices);
+    public List<Long> getIDs() {
+        return vertices.stream().map(JanusGraphElement::longId).collect(Collectors.toList());
     }
 
     @Override
     public JanusGraphVertex get(int pos) {
         return vertices.get(pos);
-    }
-
-    @Override
-    public void sort() {
-        if (sorted) return;
-        vertices.sort(VERTEX_ID_COMPARATOR);
-        sorted = true;
     }
 
     @Override
@@ -93,7 +83,7 @@ public class VertexArrayList implements VertexListInternal {
 
     @Override
     public VertexList subList(int fromPosition, int length) {
-        return new org.janusgraph.graphdb.query.vertex.VertexArrayList(tx,vertices.subList(fromPosition,fromPosition+length),sorted);
+        return new VertexArrayList(tx, vertices.subList(fromPosition, fromPosition + length), sorted);
     }
 
     @Override
@@ -103,9 +93,8 @@ public class VertexArrayList implements VertexListInternal {
 
     @Override
     public void addAll(VertexList vertexlist) {
-        Preconditions.checkArgument(vertexlist instanceof org.janusgraph.graphdb.query.vertex.VertexArrayList, "Only supporting union of identical lists.");
-        org.janusgraph.graphdb.query.vertex.VertexArrayList other = (vertexlist instanceof org.janusgraph.graphdb.query.vertex.VertexArrayList)?(org.janusgraph.graphdb.query.vertex.VertexArrayList)vertexlist:
-                ((VertexLongList)vertexlist).toVertexArrayList();
+        Preconditions.checkArgument(vertexlist instanceof VertexArrayList, "Only supporting union of identical lists.");
+        VertexArrayList other = ((VertexArrayList) vertexlist);
         if (sorted && other.isSorted()) {
             //Merge sort
             vertices = IterablesUtil.mergeSort(vertices, other.vertices, VERTEX_ID_COMPARATOR);
@@ -115,28 +104,9 @@ public class VertexArrayList implements VertexListInternal {
         }
     }
 
-    public VertexLongList toVertexLongList() {
-        LongArrayList list = toLongList(vertices);
-        return new VertexLongList(tx,list,sorted);
-    }
-
     @Override
     public Iterator<JanusGraphVertex> iterator() {
         return Iterators.unmodifiableIterator(vertices.iterator());
-    }
-
-    /**
-     * Utility method used to convert the list of vertices into a list of vertex ids (assuming all vertices have ids)
-     *
-     * @param vertices
-     * @return
-     */
-    private static LongArrayList toLongList(List<JanusGraphVertex> vertices) {
-        LongArrayList result = new LongArrayList(vertices.size());
-        for (JanusGraphVertex n : vertices) {
-            result.add(n.longId());
-        }
-        return result;
     }
 
 }

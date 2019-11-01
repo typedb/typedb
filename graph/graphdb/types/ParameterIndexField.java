@@ -15,12 +15,9 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.types.IndexField;
-import org.janusgraph.graphdb.types.ParameterType;
-
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.core.schema.SchemaStatus;
 
 public class ParameterIndexField extends IndexField {
 
@@ -33,15 +30,15 @@ public class ParameterIndexField extends IndexField {
 
     public SchemaStatus getStatus() {
         SchemaStatus status = ParameterType.STATUS.findParameter(parameters, null);
-        return Preconditions.checkNotNull(status,"Field [%s] did not have a status",this);
+        return Preconditions.checkNotNull(status, "Field [%s] did not have a status", this);
     }
 
     public Parameter[] getParameters() {
         return parameters;
     }
 
-    public static org.janusgraph.graphdb.types.ParameterIndexField of(PropertyKey key, Parameter... parameters) {
-        return new org.janusgraph.graphdb.types.ParameterIndexField(key,parameters);
+    public static ParameterIndexField of(PropertyKey key, Parameter... parameters) {
+        return new ParameterIndexField(key, parameters);
     }
 
 

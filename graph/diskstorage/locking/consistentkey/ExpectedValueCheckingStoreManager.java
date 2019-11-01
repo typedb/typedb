@@ -15,22 +15,22 @@
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.MergedConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVSManagerProxy;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.LockerProvider;
-import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
-import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
-import org.janusgraph.diskstorage.util.StandardBaseTransactionConfig;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVSManagerProxy;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.StandardStoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.LockerProvider;
+import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
+import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
+import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

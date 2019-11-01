@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.database.idassigner;
 
-import org.janusgraph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphException;
 
 
 public class IDPoolExhaustedException extends JanusGraphException {

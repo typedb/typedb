@@ -15,20 +15,18 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.EdgeLabelMaker;
+import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.graphdb.database.serialize.AttributeHandler;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.StandardRelationTypeMaker;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
 
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.INVISIBLE;
-import static org.janusgraph.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
+import static grakn.core.graph.graphdb.types.TypeDefinitionCategory.INVISIBLE;
+import static grakn.core.graph.graphdb.types.TypeDefinitionCategory.UNIDIRECTIONAL;
 
 
 public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements EdgeLabelMaker {
@@ -46,47 +44,47 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker directed() {
+    public StandardEdgeLabelMaker directed() {
         unidirectionality = Direction.BOTH;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker unidirected() {
+    public StandardEdgeLabelMaker unidirected() {
         return unidirected(Direction.OUT);
     }
 
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker unidirected(Direction dir) {
+    public StandardEdgeLabelMaker unidirected(Direction dir) {
         unidirectionality = Preconditions.checkNotNull(dir);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker multiplicity(Multiplicity multiplicity) {
+    public StandardEdgeLabelMaker multiplicity(Multiplicity multiplicity) {
         super.multiplicity(multiplicity);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker signature(PropertyKey... types) {
+    public StandardEdgeLabelMaker signature(PropertyKey... types) {
         super.signature(types);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker sortKey(PropertyKey... types) {
+    public StandardEdgeLabelMaker sortKey(PropertyKey... types) {
         super.sortKey(types);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker sortOrder(Order order) {
+    public StandardEdgeLabelMaker sortOrder(Order order) {
         super.sortOrder(order);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.types.StandardEdgeLabelMaker invisible() {
+    public StandardEdgeLabelMaker invisible() {
         super.invisible();
         return this;
     }
@@ -94,13 +92,12 @@ public class StandardEdgeLabelMaker extends StandardRelationTypeMaker implements
     @Override
     public EdgeLabel make() {
         TypeDefinitionMap definition = makeDefinition();
-        Preconditions.checkArgument(unidirectionality== Direction.BOTH || !getMultiplicity().isUnique(unidirectionality.opposite()),
+        Preconditions.checkArgument(unidirectionality == Direction.BOTH || !getMultiplicity().isUnique(unidirectionality.opposite()),
                 "Unidirectional labels cannot have restricted multiplicity at the other end");
-        Preconditions.checkArgument(unidirectionality== Direction.BOTH || !hasSortKey() ||
-                !getMultiplicity().isUnique(unidirectionality),
+        Preconditions.checkArgument(unidirectionality == Direction.BOTH || !hasSortKey() ||
+                        !getMultiplicity().isUnique(unidirectionality),
                 "Unidirectional labels with restricted multiplicity cannot have a sort key");
-        Preconditions.checkArgument(unidirectionality!= Direction.IN || definition.getValue(INVISIBLE,Boolean.class));
-
+        Preconditions.checkArgument(unidirectionality != Direction.IN || definition.getValue(INVISIBLE, Boolean.class));
 
         definition.setValue(UNIDIRECTIONAL, unidirectionality);
         return tx.makeEdgeLabel(getName(), definition);

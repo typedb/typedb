@@ -27,22 +27,22 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.MultiQueriable;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
+import grakn.core.graph.graphdb.tinkerpop.optimize.MultiQueriable;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Collections;
 import java.util.Set;
 
 public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
-    private static final org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy INSTANCE = new org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy();
+    private static final JanusGraphLocalQueryOptimizerStrategy INSTANCE = new JanusGraphLocalQueryOptimizerStrategy();
 
     private JanusGraphLocalQueryOptimizerStrategy() {
     }
@@ -205,7 +205,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
         return PRIORS;
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy instance() {
+    public static JanusGraphLocalQueryOptimizerStrategy instance() {
         return INSTANCE;
     }
 }

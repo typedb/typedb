@@ -15,15 +15,10 @@
 package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.BasicConfiguration;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
 
 import java.util.Map;
 
-import static org.janusgraph.graphdb.configuration.JanusGraphConstants.UPGRADEABLE_FIXED;
+import static grakn.core.graph.graphdb.configuration.JanusGraphConstants.UPGRADEABLE_FIXED;
 
 /**
  * This configuration extends BasicConfiguration, adding 'set' and 'remove' capabilities to it.
@@ -43,7 +38,7 @@ public class ModifiableConfiguration extends BasicConfiguration {
         this.config = config;
     }
 
-    public <O> org.janusgraph.diskstorage.configuration.ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
+    public <O> ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
         verifyOption(option);
         Preconditions.checkArgument(hasUpgradeableFixed(option.getName()) ||
                 !option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);

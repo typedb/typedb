@@ -18,12 +18,11 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
+import grakn.core.graph.diskstorage.util.time.TimestampProviders;
+import grakn.core.graph.graphdb.database.management.ManagementSystem;
+import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import org.apache.commons.lang3.StringUtils;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.janusgraph.graphdb.database.serialize.StandardSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +64,7 @@ public class ConfigOption<O> extends ConfigElement {
         LOCAL
     }
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.diskstorage.configuration.ConfigOption.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigOption.class);
     private static final EnumSet<Type> managedTypes = EnumSet.of(Type.FIXED, Type.GLOBAL_OFFLINE, Type.GLOBAL);
 
     /**
@@ -97,8 +96,8 @@ public class ConfigOption<O> extends ConfigElement {
         for (Class<?> c : ACCEPTED_DATATYPES) {
             if (!ss.validDataType(c)) {
                 String msg = String.format("%s datatype %s is not accepted by %s",
-                        org.janusgraph.diskstorage.configuration.ConfigOption.class.getSimpleName(), c, StandardSerializer.class.getSimpleName());
-                log.error(msg);
+                        ConfigOption.class.getSimpleName(), c, StandardSerializer.class.getSimpleName());
+                LOG.error(msg);
                 throw new IllegalStateException(msg);
             }
         }
@@ -111,7 +110,7 @@ public class ConfigOption<O> extends ConfigElement {
     private final O defaultValue;
     private final Predicate<O> verificationFct;
     private boolean isHidden = false;
-    private org.janusgraph.diskstorage.configuration.ConfigOption<?> supersededBy;
+    private ConfigOption<?> supersededBy;
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, O defaultValue) {
         this(parent, name, description, type, defaultValue, disallowEmpty((Class<O>) defaultValue.getClass()));
@@ -137,7 +136,7 @@ public class ConfigOption<O> extends ConfigElement {
         this(parent, name, description, type, dataType, defaultValue, verificationFct, null);
     }
 
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct, org.janusgraph.diskstorage.configuration.ConfigOption<?> supersededBy) {
+    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(dataType);
@@ -150,12 +149,12 @@ public class ConfigOption<O> extends ConfigElement {
         // A static initializer calls this constructor, so LOG before throwing the IAE
         if (!ACCEPTED_DATATYPES.contains(dataType)) {
             String msg = String.format("Datatype %s is not one of %s", dataType, ACCEPTED_DATATYPES_STRING);
-            log.error(msg);
+            LOG.error(msg);
             throw new IllegalArgumentException(msg);
         }
     }
 
-    public org.janusgraph.diskstorage.configuration.ConfigOption<O> hide() {
+    public ConfigOption<O> hide() {
         this.isHidden = true;
         return this;
     }
@@ -187,7 +186,7 @@ public class ConfigOption<O> extends ConfigElement {
     /**
      * Returns true on config options whose values are not local or maskable, that is,
      * cluster-wide options that are either fixed or which can be changed only by using
-     * the {@link org.janusgraph.graphdb.database.management.ManagementSystem}
+     * the {@link ManagementSystem}
      * (and not by editing the local config).
      *
      * @return true for managed options, false otherwise
@@ -208,7 +207,7 @@ public class ConfigOption<O> extends ConfigElement {
         return null != supersededBy;
     }
 
-    public org.janusgraph.diskstorage.configuration.ConfigOption<?> getDeprecationReplacement() {
+    public ConfigOption<?> getDeprecationReplacement() {
         return supersededBy;
     }
 

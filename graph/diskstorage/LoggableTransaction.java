@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.BaseTransaction;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.diskstorage.BaseTransaction;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
 
 
 public interface LoggableTransaction extends BaseTransaction {

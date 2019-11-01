@@ -14,10 +14,10 @@
 
 package grakn.core.graph.graphdb.types;
 
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.VertexLabel;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.VertexLabel;
 
 
 public interface TypeInspector {

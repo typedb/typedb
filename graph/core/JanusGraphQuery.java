@@ -14,30 +14,27 @@
 
 package grakn.core.graph.core;
 
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * Constructs a query against a mixed index to retrieve all elements (either vertices or edges)
  * that match all conditions.
  * <p>
  * Finding matching elements efficiently using this query mechanism requires that appropriate index structures have
- * been defined for the keys. See {@link org.janusgraph.core.schema.JanusGraphManagement} for more information
+ * been defined for the keys. See {@link JanusGraphManagement} for more information
  * on how to define index structures in JanusGraph.
  *
-
  * @since 0.3.0
  */
 
-public interface JanusGraphQuery<Q extends org.janusgraph.core.JanusGraphQuery<Q>> {
+public interface JanusGraphQuery<Q extends JanusGraphQuery<Q>> {
 
-   /* ---------------------------------------------------------------
-    * Query Specification
-    * ---------------------------------------------------------------
-    */
+    /* ---------------------------------------------------------------
+     * Query Specification
+     * ---------------------------------------------------------------
+     */
 
     /**
      * The returned element must have a property for the given key that matches the condition according to the
@@ -45,7 +42,6 @@ public interface JanusGraphQuery<Q extends org.janusgraph.core.JanusGraphQuery<Q
      *
      * @param key       Key that identifies the property
      * @param predicate Relation between property and condition
-     * @param condition
      * @return This query
      */
     Q has(String key, JanusGraphPredicate predicate, Object condition);
@@ -76,34 +72,27 @@ public interface JanusGraphQuery<Q extends org.janusgraph.core.JanusGraphQuery<Q
      *
      * @param key   The key of the properties on which to order
      * @param order the ordering direction
-     * @return
      */
     Q orderBy(String key, Order order);
 
 
     /* ---------------------------------------------------------------
-    * Query Execution
-    * ---------------------------------------------------------------
-    */
+     * Query Execution
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Returns all vertices that match the conditions.
-     *
-     * @return
      */
     Iterable<JanusGraphVertex> vertices();
 
     /**
      * Returns all edges that match the conditions.
-     *
-     * @return
      */
     Iterable<JanusGraphEdge> edges();
 
     /**
      * Returns all properties that match the conditions
-     *
-     * @return
      */
     Iterable<JanusGraphVertexProperty> properties();
 

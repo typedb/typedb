@@ -16,9 +16,9 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
+import grakn.core.graph.diskstorage.configuration.ConfigOption;
+import grakn.core.graph.diskstorage.configuration.Configuration;
 
 import java.util.Map;
 import java.util.Set;

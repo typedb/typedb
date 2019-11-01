@@ -14,28 +14,27 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
 
 /**
- * RelationTypeMaker is a factory for {@link org.janusgraph.core.RelationType}s. RelationType can be configured to provide data verification,
- * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link org.janusgraph.core.JanusGraphRelation}s
+ * RelationTypeMaker is a factory for {@link RelationType}s. RelationType can be configured to provide data verification,
+ * better storage efficiency, and higher performance. The RelationType defines the schema for all {@link JanusGraphRelation}s
  * of that type.
  * <p>
- * There are two kinds of RelationTypes: {@link org.janusgraph.core.EdgeLabel} and {@link org.janusgraph.core.PropertyKey} which
+ * There are two kinds of RelationTypes: {@link EdgeLabel} and {@link PropertyKey} which
  * are defined via their builders {@link EdgeLabelMaker} and {@link PropertyKeyMaker} respectively. This interface just defines builder methods
  * common to both of them.
  * <p>
  *
- * @see org.janusgraph.core.RelationType
+ * @see RelationType
  */
 public interface RelationTypeMaker {
 
     /**
      * Returns the name of this configured relation type.
-     *
      */
     String getName();
 
@@ -56,7 +55,7 @@ public interface RelationTypeMaker {
      * @param keys PropertyKey composing the signature for the configured relation type. The order is irrelevant.
      * @return this RelationTypeMaker
      */
-    org.janusgraph.core.schema.RelationTypeMaker signature(PropertyKey... keys);
+    RelationTypeMaker signature(PropertyKey... keys);
 
     /**
      * Builds the configured relation type

@@ -17,13 +17,13 @@ package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.InvalidElementException;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.InvalidElementException;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
 
 /**
  * JanusGraphRelation is the most abstract form of a relation between a vertex and some other entity, where

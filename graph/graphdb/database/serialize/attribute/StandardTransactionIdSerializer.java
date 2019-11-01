@@ -14,13 +14,13 @@
 
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
-import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.database.serialize.SerializerInjected;
-import org.janusgraph.graphdb.log.StandardTransactionId;
+import grakn.core.graph.core.attribute.AttributeSerializer;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.database.serialize.SerializerInjected;
+import grakn.core.graph.graphdb.log.StandardTransactionId;
 
 import java.time.Instant;
 

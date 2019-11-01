@@ -16,10 +16,10 @@ package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
-import org.janusgraph.diskstorage.Mutation;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import grakn.core.graph.diskstorage.Mutation;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 
 import javax.annotation.Nullable;
 

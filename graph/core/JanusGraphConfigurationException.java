@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core;
 
-import org.janusgraph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphException;
 
 /**
  * Exception thrown due to invalid configuration options or when errors

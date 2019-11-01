@@ -14,22 +14,18 @@
 
 package grakn.core.graph.graphdb.relations;
 
-import com.carrotsearch.hppc.cursors.LongObjectCursor;
 import com.google.common.collect.Iterables;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.relations.AbstractVertexProperty;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.relations.StandardVertexProperty;
-import org.janusgraph.graphdb.transaction.RelationConstructor;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.transaction.RelationConstructor;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 
 public class CacheVertexProperty extends AbstractVertexProperty {
@@ -52,17 +48,17 @@ public class CacheVertexProperty extends AbstractVertexProperty {
             //Test whether this relation has been replaced
             final long id = longId();
             it = Iterables.getOnlyElement(startVertex.getAddedRelations(
-                internalRelation -> (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id), null);
+                    internalRelation -> (internalRelation instanceof StandardVertexProperty) && ((StandardVertexProperty) internalRelation).getPreviousID() == id), null);
         }
 
         return (it != null) ? it : super.it();
     }
 
     private void copyProperties(InternalRelation to) {
-        for (LongObjectCursor<Object> entry : getPropertyMap()) {
-            PropertyKey type = tx().getExistingPropertyKey(entry.key);
+        for (Map.Entry<Long, Object> entry : getPropertyMap().properties().entrySet()) {
+            PropertyKey type = tx().getExistingPropertyKey(entry.getKey());
             if (!(type instanceof ImplicitKey))
-                to.setPropertyDirect(type, entry.value);
+                to.setPropertyDirect(type, entry.getValue());
         }
     }
 
@@ -72,7 +68,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
         copy.remove();
 
         StandardVertexProperty u = (StandardVertexProperty) tx().addProperty(getVertex(0), propertyKey(), value());
-        if (type.getConsistencyModifier()!= ConsistencyModifier.FORK) u.setId(longId());
+        if (type.getConsistencyModifier() != ConsistencyModifier.FORK) u.setId(longId());
         u.setPreviousID(longId());
         copyProperties(u);
         return u;
@@ -93,13 +89,9 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     @Override
     public Iterable<PropertyKey> getPropertyKeysDirect() {
-        RelationCache map = getPropertyMap();
-        List<PropertyKey> types = new ArrayList<>(map.numProperties());
-
-        for (LongObjectCursor<Object> entry : map) {
-            types.add(tx().getExistingPropertyKey(entry.key));
-        }
-        return types;
+        return getPropertyMap().properties().keySet().stream()
+                .map(key -> tx().getExistingPropertyKey(key))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -123,7 +115,7 @@ public class CacheVertexProperty extends AbstractVertexProperty {
     public void remove() {
         if (!tx().isRemovedRelation(longId())) {
             tx().removeRelation(this);
-        }// else throw InvalidElementException.removedException(this);
+        }
     }
 
 

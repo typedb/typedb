@@ -16,17 +16,17 @@ package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.internal.AbstractElement;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.relations.EdgeDirection;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.internal.AbstractElement;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.internal.OrderList;
+import grakn.core.graph.graphdb.relations.EdgeDirection;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Comparator;
 

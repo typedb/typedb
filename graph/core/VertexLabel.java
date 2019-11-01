@@ -14,8 +14,8 @@
 
 package grakn.core.graph.core;
 
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
 
 /**
  * A vertex label is a label attached to vertices in a JanusGraph graph. This can be used to define the nature of a

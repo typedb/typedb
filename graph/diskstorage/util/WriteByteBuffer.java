@@ -15,25 +15,24 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
 
 import java.nio.ByteBuffer;
 
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.BYTE_LEN;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.CHAR_LEN;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.DOUBLE_LEN;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.FLOAT_LEN;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.INT_LEN;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.LONG_LEN;
-import static org.janusgraph.diskstorage.util.StaticArrayBuffer.SHORT_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.BYTE_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.CHAR_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.DOUBLE_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.FLOAT_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.INT_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.LONG_LEN;
+import static grakn.core.graph.diskstorage.util.StaticArrayBuffer.SHORT_LEN;
 
 
 public class WriteByteBuffer implements WriteBuffer {
 
-    public static final int DEFAULT_CAPACITY = 64;
-    public static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; //128 MB
+    private static final int DEFAULT_CAPACITY = 64;
+    private static final int MAX_BUFFER_CAPACITY = 128 * 1024 * 1024; //128 MB
 
     private ByteBuffer buffer;
 
@@ -42,19 +41,19 @@ public class WriteByteBuffer implements WriteBuffer {
     }
 
     public WriteByteBuffer(int capacity) {
-        Preconditions.checkArgument(capacity<=MAX_BUFFER_CAPACITY,"Capacity exceeds max buffer capacity: %s",MAX_BUFFER_CAPACITY);
+        Preconditions.checkArgument(capacity <= MAX_BUFFER_CAPACITY, "Capacity exceeds max buffer capacity: %s", MAX_BUFFER_CAPACITY);
         buffer = ByteBuffer.allocate(capacity);
     }
 
     private void require(int size) {
-        if (buffer.capacity()-buffer.position()<size) {
+        if (buffer.capacity() - buffer.position() < size) {
             //Need to resize
             int newCapacity = buffer.position() + size + buffer.capacity(); //extra capacity as buffer
-            Preconditions.checkArgument(newCapacity<=MAX_BUFFER_CAPACITY,"Capacity exceeds max buffer capacity: %s",MAX_BUFFER_CAPACITY);
+            Preconditions.checkArgument(newCapacity <= MAX_BUFFER_CAPACITY, "Capacity exceeds max buffer capacity: %s", MAX_BUFFER_CAPACITY);
             ByteBuffer newBuffer = ByteBuffer.allocate(newCapacity);
             buffer.flip();
             newBuffer.put(buffer);
-            buffer=newBuffer;
+            buffer = newBuffer;
         }
     }
 
@@ -81,7 +80,7 @@ public class WriteByteBuffer implements WriteBuffer {
 
     @Override
     public WriteBuffer putBoolean(boolean val) {
-        return putByte((byte)(val?1:0));
+        return putByte((byte) (val ? 1 : 0));
     }
 
     @Override
@@ -93,16 +92,16 @@ public class WriteByteBuffer implements WriteBuffer {
 
     @Override
     public WriteBuffer putBytes(byte[] val) {
-        require(BYTE_LEN*val.length);
+        require(BYTE_LEN * val.length);
         buffer.put(val);
         return this;
     }
 
     @Override
     public WriteBuffer putBytes(StaticBuffer val) {
-        require(BYTE_LEN*val.length());
+        require(BYTE_LEN * val.length());
         val.as((array, offset, limit) -> {
-            buffer.put(array,offset,val.length());
+            buffer.put(array, offset, val.length());
             return Boolean.TRUE;
         });
         return this;
@@ -136,16 +135,16 @@ public class WriteByteBuffer implements WriteBuffer {
 
     @Override
     public StaticBuffer getStaticBuffer() {
-        return getStaticBufferFlipBytes(0,0);
+        return getStaticBufferFlipBytes(0, 0);
     }
 
     @Override
     public StaticBuffer getStaticBufferFlipBytes(int from, int to) {
         ByteBuffer b = buffer.duplicate();
         b.flip();
-        Preconditions.checkArgument(from>=0 && from<=to);
-        Preconditions.checkArgument(to<=b.limit());
-        for (int i=from;i<to;i++) b.put(i,(byte)~b.get(i));
+        Preconditions.checkArgument(from >= 0 && from <= to);
+        Preconditions.checkArgument(to <= b.limit());
+        for (int i = from; i < to; i++) b.put(i, (byte) ~b.get(i));
         return StaticArrayBuffer.of(b);
     }
 }

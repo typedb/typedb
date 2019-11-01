@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage.configuration.converter;
 
 import org.apache.commons.configuration.BaseConfiguration;
-import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 
 /**
  * Converter from {@link ReadConfiguration} into {@link BaseConfiguration}

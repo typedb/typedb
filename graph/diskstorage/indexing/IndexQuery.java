@@ -16,13 +16,13 @@ package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.diskstorage.indexing.IndexProvider;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.condition.Condition;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.diskstorage.indexing.IndexProvider;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.condition.Condition;
 
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +35,7 @@ import java.util.Objects;
  *
  */
 
-public class IndexQuery extends BaseQuery implements BackendQuery<org.janusgraph.diskstorage.indexing.IndexQuery> {
+public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
 
     public static final ImmutableList<OrderEntry> NO_ORDER = ImmutableList.of();
 
@@ -82,13 +82,13 @@ public class IndexQuery extends BaseQuery implements BackendQuery<org.janusgraph
     }
 
     @Override
-    public org.janusgraph.diskstorage.indexing.IndexQuery setLimit(int limit) {
+    public IndexQuery setLimit(int limit) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public org.janusgraph.diskstorage.indexing.IndexQuery updateLimit(int newLimit) {
-        return new org.janusgraph.diskstorage.indexing.IndexQuery(store, condition, orders, newLimit);
+    public IndexQuery updateLimit(int newLimit) {
+        return new IndexQuery(store, condition, orders, newLimit);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class IndexQuery extends BaseQuery implements BackendQuery<org.janusgraph
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        final org.janusgraph.diskstorage.indexing.IndexQuery oth = (org.janusgraph.diskstorage.indexing.IndexQuery) other;
+        final IndexQuery oth = (IndexQuery) other;
         return store.equals(oth.store) && orders.equals(oth.orders)
                 && condition.equals(oth.condition) && getLimit() == oth.getLimit();
     }

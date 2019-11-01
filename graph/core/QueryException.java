@@ -14,9 +14,9 @@
 
 package grakn.core.graph.core;
 
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphQuery;
-import org.janusgraph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphQuery;
+import grakn.core.graph.core.JanusGraphVertex;
 
 /**
  * Exception thrown when a user defined query (e.g. a {@link JanusGraphVertex} or {@link JanusGraphQuery})

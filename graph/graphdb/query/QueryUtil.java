@@ -17,26 +17,26 @@ package grakn.core.graph.graphdb.query;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.predicate.AndJanusPredicate;
-import org.janusgraph.graphdb.predicate.OrJanusPredicate;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.MultiCondition;
-import org.janusgraph.graphdb.query.condition.Not;
-import org.janusgraph.graphdb.query.condition.Or;
-import org.janusgraph.graphdb.query.condition.PredicateCondition;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.attribute.Contain;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.predicate.AndJanusPredicate;
+import grakn.core.graph.graphdb.predicate.OrJanusPredicate;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.condition.And;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.MultiCondition;
+import grakn.core.graph.graphdb.query.condition.Not;
+import grakn.core.graph.graphdb.query.condition.Or;
+import grakn.core.graph.graphdb.query.condition.PredicateCondition;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -152,7 +152,7 @@ public class QueryUtil {
      * Prepares the constraints from the query builder into a QNF compliant condition.
      * If the condition is invalid or trivially false, it returns null.
      *
-     * @see #isQueryNormalForm(org.janusgraph.graphdb.query.condition.Condition)
+     * @see #isQueryNormalForm(Condition)
      */
     public static <E extends JanusGraphElement> And<E> constraints2QNF(StandardJanusGraphTx tx, List<PredicateCondition<String, E>> constraints) {
         And<E> conditions = new And<>(constraints.size() + 4);

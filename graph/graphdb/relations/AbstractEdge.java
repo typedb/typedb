@@ -18,12 +18,12 @@ import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.relations.AbstractTypedRelation;
-import org.janusgraph.graphdb.relations.EdgeDirection;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.relations.AbstractTypedRelation;
+import grakn.core.graph.graphdb.relations.EdgeDirection;
 
 public abstract class AbstractEdge extends AbstractTypedRelation implements JanusGraphEdge {
 

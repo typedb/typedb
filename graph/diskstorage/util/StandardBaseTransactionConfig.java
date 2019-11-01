@@ -15,18 +15,14 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.configuration.ConfigOption;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.time.Instant;
 
-/**
-
- * @author Dan LaRocque (dalaro@hopcount.org)
- */
 public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
     private volatile Instant commitTime;
@@ -135,16 +131,16 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
             return this;
         }
 
-        public org.janusgraph.diskstorage.util.StandardBaseTransactionConfig build() {
-            return new org.janusgraph.diskstorage.util.StandardBaseTransactionConfig(groupName, times, commitTime, customOptions);
+        public StandardBaseTransactionConfig build() {
+            return new StandardBaseTransactionConfig(groupName, times, commitTime, customOptions);
         }
     }
 
-    public static org.janusgraph.diskstorage.util.StandardBaseTransactionConfig of(TimestampProvider times) {
+    public static StandardBaseTransactionConfig of(TimestampProvider times) {
         return new Builder().timestampProvider(times).build();
     }
 
-    public static org.janusgraph.diskstorage.util.StandardBaseTransactionConfig of(TimestampProvider times, Configuration customOptions) {
+    public static StandardBaseTransactionConfig of(TimestampProvider times, Configuration customOptions) {
         return new Builder().timestampProvider(times).customOptions(customOptions).build();
     }
 

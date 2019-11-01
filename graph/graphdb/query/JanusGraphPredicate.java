@@ -14,6 +14,13 @@
 
 package grakn.core.graph.graphdb.query;
 
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.attribute.Contain;
+import grakn.core.graph.core.attribute.TinkerPopTextWrappingPredicate;
+import grakn.core.graph.graphdb.predicate.AndJanusPredicate;
+import grakn.core.graph.graphdb.predicate.ConnectiveJanusGraphP;
+import grakn.core.graph.graphdb.predicate.ConnectiveJanusPredicate;
+import grakn.core.graph.graphdb.predicate.OrJanusPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Contains;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -22,13 +29,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.util.HasContainer;
 import org.apache.tinkerpop.gremlin.process.traversal.util.AndP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.ConnectiveP;
 import org.apache.tinkerpop.gremlin.process.traversal.util.OrP;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.core.attribute.TinkerPopTextWrappingPredicate;
-import org.janusgraph.graphdb.predicate.AndJanusPredicate;
-import org.janusgraph.graphdb.predicate.ConnectiveJanusGraphP;
-import org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate;
-import org.janusgraph.graphdb.predicate.OrJanusPredicate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,6 @@ import java.util.function.BiPredicate;
  * query answering and evaluation.
  * <p>
  * This class contains a subclass used to convert Tinkerpop's {@link BiPredicate} implementations to the corresponding JanusGraph predicates.
- *
  */
 public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
@@ -48,9 +47,6 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
      * Whether the given condition is a valid condition for this predicate.
      * <p>
      * For instance, the {@link Cmp#GREATER_THAN} would require that the condition is comparable and not null.
-     *
-     * @param condition
-     * @return
      */
     boolean isValidCondition(Object condition);
 
@@ -58,30 +54,23 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
      * Whether the given class is a valid data type for a value to which this predicate may be applied.
      * <p>
      * For instance, the {@link Cmp#GREATER_THAN} can only be applied to {@link Comparable} values.
-     *
-     * @param clazz
-     * @return
      */
     boolean isValidValueType(Class<?> clazz);
 
     /**
      * Whether this predicate has a predicate that is semantically its negation.
      * For instance, {@link Cmp#EQUAL} and {@link Cmp#NOT_EQUAL} are negatives of each other.
-     *
-     * @return
      */
     boolean hasNegation();
 
     /**
      * Returns the negation of this predicate if it exists, otherwise an exception is thrown. Check {@link #hasNegation()} first.
-     * @return
      */
     @Override
-    org.janusgraph.graphdb.query.JanusGraphPredicate negate();
+    JanusGraphPredicate negate();
 
     /**
      * Returns true if this predicate is in query normal form.
-     * @return
      */
     boolean isQNF();
 
@@ -99,42 +88,53 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
          * @return A JanusGraphPredicate equivalent to the given predicate
          * @throws IllegalArgumentException if the given Predicate is unknown
          */
-        public static org.janusgraph.graphdb.query.JanusGraphPredicate convertInternal(BiPredicate p) {
-            if (p instanceof org.janusgraph.graphdb.query.JanusGraphPredicate) {
-                return (org.janusgraph.graphdb.query.JanusGraphPredicate)p;
+        public static JanusGraphPredicate convertInternal(BiPredicate p) {
+            if (p instanceof JanusGraphPredicate) {
+                return (JanusGraphPredicate) p;
             } else if (p instanceof Compare) {
-                final Compare comp = (Compare)p;
-                switch(comp) {
-                    case eq: return Cmp.EQUAL;
-                    case neq: return Cmp.NOT_EQUAL;
-                    case gt: return Cmp.GREATER_THAN;
-                    case gte: return Cmp.GREATER_THAN_EQUAL;
-                    case lt: return Cmp.LESS_THAN;
-                    case lte: return Cmp.LESS_THAN_EQUAL;
-                    default: throw new IllegalArgumentException("Unexpected comparator: " + comp);
+                final Compare comp = (Compare) p;
+                switch (comp) {
+                    case eq:
+                        return Cmp.EQUAL;
+                    case neq:
+                        return Cmp.NOT_EQUAL;
+                    case gt:
+                        return Cmp.GREATER_THAN;
+                    case gte:
+                        return Cmp.GREATER_THAN_EQUAL;
+                    case lt:
+                        return Cmp.LESS_THAN;
+                    case lte:
+                        return Cmp.LESS_THAN_EQUAL;
+                    default:
+                        throw new IllegalArgumentException("Unexpected comparator: " + comp);
                 }
             } else if (p instanceof Contains) {
-                final Contains con = (Contains)p;
+                final Contains con = (Contains) p;
                 switch (con) {
-                    case within: return Contain.IN;
-                    case without: return Contain.NOT_IN;
-                    default: throw new IllegalArgumentException("Unexpected container: " + con);
+                    case within:
+                        return Contain.IN;
+                    case without:
+                        return Contain.NOT_IN;
+                    default:
+                        throw new IllegalArgumentException("Unexpected container: " + con);
 
                 }
             } else return null;
         }
 
-        public static org.janusgraph.graphdb.query.JanusGraphPredicate convert(BiPredicate p) {
-            final org.janusgraph.graphdb.query.JanusGraphPredicate janusgraphPredicate = convertInternal(p);
-            if (janusgraphPredicate==null) throw new IllegalArgumentException("JanusGraph does not support the given predicate: " + p);
+        public static JanusGraphPredicate convert(BiPredicate p) {
+            final JanusGraphPredicate janusgraphPredicate = convertInternal(p);
+            if (janusgraphPredicate == null)
+                throw new IllegalArgumentException("JanusGraph does not support the given predicate: " + p);
             return janusgraphPredicate;
         }
 
         public static boolean supports(BiPredicate p) {
-            return convertInternal(p)!=null;
+            return convertInternal(p) != null;
         }
 
-        public static HasContainer convert(HasContainer container){
+        public static HasContainer convert(HasContainer container) {
             if (!(container.getPredicate() instanceof ConnectiveP)) {
                 return container;
             }
@@ -144,9 +144,9 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
         public static ConnectiveJanusPredicate instanceConnectiveJanusPredicate(P<?> predicate) {
             final ConnectiveJanusPredicate connectivePredicate;
-            if (predicate.getClass().isAssignableFrom(AndP.class)){
+            if (predicate.getClass().isAssignableFrom(AndP.class)) {
                 connectivePredicate = new AndJanusPredicate();
-            } else if (predicate.getClass().isAssignableFrom(OrP.class)){
+            } else if (predicate.getClass().isAssignableFrom(OrP.class)) {
                 connectivePredicate = new OrJanusPredicate();
             } else {
                 throw new IllegalArgumentException("JanusGraph does not support the given predicate: " + predicate);
@@ -156,10 +156,10 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
 
         public static List<Object> convert(ConnectiveP<?> predicate, ConnectiveJanusPredicate connectivePredicate) {
             final List<Object> toReturn = new ArrayList<>();
-            for (P<?> p : predicate.getPredicates()){
+            for (P<?> p : predicate.getPredicates()) {
                 if (p instanceof ConnectiveP) {
                     final ConnectiveJanusPredicate subPredicate = instanceConnectiveJanusPredicate(p);
-                    toReturn.add(convert((ConnectiveP<?>)p, subPredicate));
+                    toReturn.add(convert((ConnectiveP<?>) p, subPredicate));
                     connectivePredicate.add(subPredicate);
                 } else if (p.getBiPredicate() instanceof Text) {
                     Text text = (Text) p.getBiPredicate();

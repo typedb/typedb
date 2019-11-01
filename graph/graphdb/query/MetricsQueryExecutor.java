@@ -17,12 +17,12 @@ package grakn.core.graph.graphdb.query;
 import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.ElementQuery;
-import org.janusgraph.graphdb.query.QueryExecutor;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.util.stats.MetricManager;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.ElementQuery;
+import grakn.core.graph.graphdb.query.QueryExecutor;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.util.stats.MetricManager;
 
 import java.util.Iterator;
 

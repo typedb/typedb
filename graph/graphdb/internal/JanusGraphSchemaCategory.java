@@ -15,10 +15,10 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.internal.Token;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
-import org.janusgraph.graphdb.types.TypeUtil;
+import grakn.core.graph.graphdb.internal.Token;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionMap;
+import grakn.core.graph.graphdb.types.TypeUtil;
 
 
 public enum JanusGraphSchemaCategory {

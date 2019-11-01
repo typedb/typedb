@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.schema;
 
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.graphdb.schema.SchemaElementDefinition;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.graphdb.schema.SchemaElementDefinition;
 
 
 public class VertexLabelDefinition extends SchemaElementDefinition {

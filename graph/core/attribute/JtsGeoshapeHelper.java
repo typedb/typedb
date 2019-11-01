@@ -15,7 +15,7 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.attribute.Geoshape;
+import grakn.core.graph.core.attribute.Geoshape;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.context.jts.DatelineRule;

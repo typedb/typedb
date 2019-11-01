@@ -15,7 +15,7 @@
 package grakn.core.graph.graphdb.database.idassigner;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.database.idassigner.IDBlockSizer;
+import grakn.core.graph.graphdb.database.idassigner.IDBlockSizer;
 
 
 public class StaticIDBlockSizer implements IDBlockSizer {

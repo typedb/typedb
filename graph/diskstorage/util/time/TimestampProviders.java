@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.util.time;
 
-import org.janusgraph.diskstorage.util.time.Temporals;
-import org.janusgraph.diskstorage.util.time.Timer;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.diskstorage.util.time.Temporals;
+import grakn.core.graph.diskstorage.util.time.Timer;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

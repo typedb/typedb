@@ -15,19 +15,17 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.internal.Order;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.PropertyKey;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderList.OrderEntry> {
 
-public class OrderList implements Comparator<JanusGraphElement>, Iterable<org.janusgraph.graphdb.internal.OrderList.OrderEntry> {
-
-    public static final org.janusgraph.graphdb.internal.OrderList NO_ORDER = new org.janusgraph.graphdb.internal.OrderList() {{
+    public static final OrderList NO_ORDER = new OrderList() {{
         makeImmutable();
     }};
 
@@ -70,21 +68,19 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<org.ja
 
     /**
      * Whether all individual orders are the same
-     *
-     * @return
      */
     public boolean hasCommonOrder() {
         Order lastOrder = null;
         for (OrderEntry oe : list) {
-            if (lastOrder==null) lastOrder=oe.order;
-            else if (lastOrder!=oe.order) return false;
+            if (lastOrder == null) lastOrder = oe.order;
+            else if (lastOrder != oe.order) return false;
         }
         return true;
     }
 
     public Order getCommonOrder() {
-        Preconditions.checkArgument(hasCommonOrder(),"This OrderList does not have a common order");
-        return isEmpty()? Order.DEFAULT:getOrder(0);
+        Preconditions.checkArgument(hasCommonOrder(), "This OrderList does not have a common order");
+        return isEmpty() ? Order.DEFAULT : getOrder(0);
     }
 
     @Override
@@ -107,7 +103,7 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<org.ja
         if (this == oth) return true;
         else if (oth == null) return false;
         else if (!getClass().isInstance(oth)) return false;
-        return list.equals(((org.janusgraph.graphdb.internal.OrderList) oth).list);
+        return list.equals(((OrderList) oth).list);
     }
 
     @Override
@@ -116,10 +112,8 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<org.ja
             int cmp = aList.compare(o1, o2);
             if (cmp != 0) return cmp;
         }
-//        return o1.compareTo(o2);
         return 0;
     }
-
 
 
     public static class OrderEntry implements Comparator<JanusGraphElement> {

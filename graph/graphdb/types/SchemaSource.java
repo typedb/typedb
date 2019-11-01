@@ -15,11 +15,8 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
+import grakn.core.graph.core.schema.SchemaStatus;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
 
 
 public interface SchemaSource {
@@ -44,15 +41,15 @@ public interface SchemaSource {
 
     class Entry {
 
-        private final org.janusgraph.graphdb.types.SchemaSource schemaType;
+        private final SchemaSource schemaType;
         private final Object modifier;
 
-        public Entry(org.janusgraph.graphdb.types.SchemaSource schemaType, Object modifier) {
+        public Entry(SchemaSource schemaType, Object modifier) {
             this.schemaType = Preconditions.checkNotNull(schemaType);
             this.modifier = modifier;
         }
 
-        public org.janusgraph.graphdb.types.SchemaSource getSchemaType() {
+        public SchemaSource getSchemaType() {
             return schemaType;
         }
 

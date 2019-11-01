@@ -16,17 +16,17 @@ package grakn.core.graph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.collections.comparators.ComparableComparator;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.ElementQuery;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.FixedCondition;
-import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.profile.ProfileObservable;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.internal.OrderList;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.ElementQuery;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.FixedCondition;
+import grakn.core.graph.graphdb.query.graph.JointIndexQuery;
+import grakn.core.graph.graphdb.query.profile.ProfileObservable;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -71,9 +71,9 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         this.indexQuery = indexQuery;
     }
 
-    static org.janusgraph.graphdb.query.graph.GraphCentricQuery emptyQuery(ElementCategory resultType) {
-        final Condition<JanusGraphElement> cond = new FixedCondition<>(false);
-        return new org.janusgraph.graphdb.query.graph.GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
+    static GraphCentricQuery emptyQuery(ElementCategory resultType) {
+        Condition<JanusGraphElement> cond = new FixedCondition<>(false);
+        return new GraphCentricQuery(resultType, cond, OrderList.NO_ORDER,
                 new BackendQueryHolder<>(new JointIndexQuery(),
                         true, false), 0);
     }
@@ -110,7 +110,7 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        final org.janusgraph.graphdb.query.graph.GraphCentricQuery oth = (org.janusgraph.graphdb.query.graph.GraphCentricQuery) other;
+        GraphCentricQuery oth = (GraphCentricQuery) other;
         return resultType == oth.resultType && condition.equals(oth.condition) &&
                 orders.equals(oth.getOrder()) && getLimit() == oth.getLimit();
     }

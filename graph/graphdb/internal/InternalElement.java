@@ -14,28 +14,22 @@
 
 package grakn.core.graph.graphdb.internal;
 
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 /**
  * Internal Element interface adding methods that should only be used by JanusGraph
- *
  */
 public interface InternalElement extends JanusGraphElement {
 
     /**
      * Returns this element in the context of the current transaction.
-     *
-     * @return
      */
-    org.janusgraph.graphdb.internal.InternalElement it();
+    InternalElement it();
 
     /**
      * Returns the transaction to which the element is currently bound or should be refreshed into
-     *
-     * @return
      */
     StandardJanusGraphTx tx();
 
@@ -55,8 +49,6 @@ public interface InternalElement extends JanusGraphElement {
 
     /**
      * Whether this element is invisible and should only be returned to queries that explicitly ask for invisible elements.
-     *
-     * @return
      */
     boolean isInvisible();
 

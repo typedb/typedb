@@ -15,14 +15,14 @@
 package grakn.core.graph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.RelationTypeIndex;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.diskstorage.util.time.Timer;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.janusgraph.graphdb.database.management.AbstractIndexStatusWatcher;
-import org.janusgraph.graphdb.database.management.RelationIndexStatusReport;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.core.schema.RelationTypeIndex;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.diskstorage.util.time.Timer;
+import grakn.core.graph.diskstorage.util.time.TimestampProviders;
+import grakn.core.graph.graphdb.database.management.AbstractIndexStatusWatcher;
+import grakn.core.graph.graphdb.database.management.RelationIndexStatusReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

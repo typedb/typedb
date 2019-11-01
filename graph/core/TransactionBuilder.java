@@ -14,15 +14,14 @@
 
 package grakn.core.graph.core;
 
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.time.Instant;
 
 /**
- * Constructor returned by {@link org.janusgraph.core.JanusGraph#buildTransaction()} to build a new transaction.
+ * Constructor returned by {@link JanusGraph#buildTransaction()} to build a new transaction.
  * The TransactionBuilder allows certain aspects of the resulting transaction to be configured up-front.
- *
  */
 public interface TransactionBuilder {
 
@@ -32,7 +31,7 @@ public interface TransactionBuilder {
      *
      * @return Object containing read-only properties set to true
      */
-    org.janusgraph.core.TransactionBuilder readOnly();
+    TransactionBuilder readOnly();
 
     /**
      * Enabling batch loading disables a number of consistency checks inside JanusGraph to speed up the ingestion of
@@ -40,7 +39,7 @@ public interface TransactionBuilder {
      *
      * @return Object containting properties that will enable batch loading
      */
-    org.janusgraph.core.TransactionBuilder enableBatchLoading();
+    TransactionBuilder enableBatchLoading();
 
     /**
      * Disables batch loading by ensuring that consistency checks are applied in this transaction. This allows
@@ -49,7 +48,7 @@ public interface TransactionBuilder {
      *
      * @return Object containting properties that will disable batch loading
      */
-    org.janusgraph.core.TransactionBuilder disableBatchLoading();
+    TransactionBuilder disableBatchLoading();
 
     /**
      * Configures the size of the internal caches used in the transaction.
@@ -57,7 +56,7 @@ public interface TransactionBuilder {
      * @param size The size of the initial cache for the transaction
      * @return Object containing the internal cache properties
      */
-    org.janusgraph.core.TransactionBuilder vertexCacheSize(int size);
+    TransactionBuilder vertexCacheSize(int size);
 
     /**
      * Configures the initial size of the map of modified vertices held by this
@@ -68,7 +67,7 @@ public interface TransactionBuilder {
      * @param size The initial size of the transaction's dirty vertex collection
      * @return Object containing properties that configure inital map size of modified vertices
      */
-    org.janusgraph.core.TransactionBuilder dirtyVertexSize(int size);
+    TransactionBuilder dirtyVertexSize(int size);
 
     /**
      * Enables/disables checks that verify that each vertex actually exists in the underlying data store when it is retrieved.
@@ -81,7 +80,7 @@ public interface TransactionBuilder {
      * @param enabled Enable or disable the internal vertex existence checks
      * @return Object with the internal vertex existence check properties
      */
-    org.janusgraph.core.TransactionBuilder checkInternalVertexExistence(boolean enabled);
+    TransactionBuilder checkInternalVertexExistence(boolean enabled);
 
     /**
      * Enables/disables checking whether the vertex with a user provided id indeed exists. If the user is absolutely sure
@@ -93,7 +92,7 @@ public interface TransactionBuilder {
      * @param enabled Enable or disable the external vertex existence checks
      * @return Object with the external vertex existence check properties
      */
-    org.janusgraph.core.TransactionBuilder checkExternalVertexExistence(boolean enabled);
+    TransactionBuilder checkExternalVertexExistence(boolean enabled);
 
     /**
      * Sets the timestamp for this transaction. The transaction will be recorded
@@ -103,13 +102,13 @@ public interface TransactionBuilder {
      * @param instant The instant at which the commit took place
      * @return Object with the commit time property
      */
-    org.janusgraph.core.TransactionBuilder commitTime(Instant instant);
+    TransactionBuilder commitTime(Instant instant);
 
 
     /**
      * Sets the group name for this transaction which provides a way for gathering
      * reporting on multiple transactions into one group.
-     *
+     * <p>
      * By setting a group one enables Metrics for this transaction, and defines what string
      * should start the transaction's metric names.
      * <p>
@@ -131,7 +130,7 @@ public interface TransactionBuilder {
      * <p>
      * The default value is
      * {@link GraphDatabaseConfiguration#METRICS_PREFIX_DEFAULT}.
-     *
+     * <p>
      * Sets the name prefix used for Metrics recorded by this transaction. If
      * metrics is enabled via {@link GraphDatabaseConfiguration#BASIC_METRICS},
      * this string will be prepended to all JanusGraph metric names.
@@ -139,7 +138,7 @@ public interface TransactionBuilder {
      * @param name Metric name prefix for this transaction
      * @return Object containing transaction prefix name property
      */
-    org.janusgraph.core.TransactionBuilder groupName(String name);
+    TransactionBuilder groupName(String name);
 
     /**
      * Name of the LOG to be used for logging the mutations in this transaction. If no LOG identifier is set,
@@ -148,7 +147,7 @@ public interface TransactionBuilder {
      * @param logName name of transaction LOG
      * @return Object containing LOG identifier property
      */
-    org.janusgraph.core.TransactionBuilder logIdentifier(String logName);
+    TransactionBuilder logIdentifier(String logName);
 
     /**
      * Configures this transaction such that queries against partitioned vertices are
@@ -157,15 +156,16 @@ public interface TransactionBuilder {
      * @param partitions Array of the int identifier of the partitions to be queried
      * @return Object with restricted partitions
      */
-    org.janusgraph.core.TransactionBuilder restrictedPartitions(int[] partitions);
+    TransactionBuilder restrictedPartitions(int[] partitions);
 
     /**
      * Configures a custom option on this transaction which will be passed through to the storage and indexing backends.
+     *
      * @param k Name of the configuration element.
      * @param v Object containing the custom options to be applied.
      * @return Object containing the properties in param v
      */
-    org.janusgraph.core.TransactionBuilder customOption(String k, Object v);
+    TransactionBuilder customOption(String k, Object v);
 
     /**
      * Starts and returns the transaction build by this builder

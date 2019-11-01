@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.cache;
 
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
 
 import java.util.List;
 

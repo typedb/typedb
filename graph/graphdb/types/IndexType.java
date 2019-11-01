@@ -14,10 +14,10 @@
 
 package grakn.core.graph.graphdb.types;
 
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.types.IndexField;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.types.IndexField;
 
 
 public interface IndexType {

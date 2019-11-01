@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.VertexLabel;
+import grakn.core.graph.core.VertexLabel;
 
 /**
  * A builder to create new {@link VertexLabel}s.
@@ -41,7 +41,7 @@ public interface VertexLabelMaker {
      *
      * @return this VertexLabelMaker
      */
-    org.janusgraph.core.schema.VertexLabelMaker partition();
+    VertexLabelMaker partition();
 
     /**
      * Makes this vertex label static, which means that vertices of this label cannot be modified outside of the transaction
@@ -49,7 +49,7 @@ public interface VertexLabelMaker {
      *
      * @return this VertexLabelMaker
      */
-    org.janusgraph.core.schema.VertexLabelMaker setStatic();
+    VertexLabelMaker setStatic();
 
     /**
      * Creates a {@link VertexLabel} according to the specifications of this builder.

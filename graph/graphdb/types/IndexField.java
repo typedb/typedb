@@ -16,7 +16,7 @@ package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.PropertyKey;
+import grakn.core.graph.core.PropertyKey;
 
 
 public class IndexField {
@@ -31,8 +31,8 @@ public class IndexField {
         return key;
     }
 
-    public static org.janusgraph.graphdb.types.IndexField of(PropertyKey key) {
-        return new org.janusgraph.graphdb.types.IndexField(key);
+    public static IndexField of(PropertyKey key) {
+        return new IndexField(key);
     }
 
     @Override
@@ -42,16 +42,16 @@ public class IndexField {
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
-        org.janusgraph.graphdb.types.IndexField other = (org.janusgraph.graphdb.types.IndexField)oth;
-        if (key==null) return key==other.key;
+        if (this == oth) return true;
+        else if (!getClass().isInstance(oth)) return false;
+        IndexField other = (IndexField) oth;
+        if (key == null) return key == other.key;
         else return key.equals(other.key);
     }
 
     @Override
     public String toString() {
-        return "["+key.name()+"]";
+        return "[" + key.name() + "]";
     }
 
 }

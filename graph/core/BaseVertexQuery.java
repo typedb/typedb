@@ -15,14 +15,10 @@
 
 package grakn.core.graph.core;
 
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraphMultiVertexQuery;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
 
 /**
  * BaseVertexQuery constructs and executes a query over incident edges or properties from the perspective of a vertex.
@@ -32,7 +28,7 @@ import org.janusgraph.graphdb.query.JanusGraphPredicate;
  * 1) Define the query by specifying what to retrieve and
  * 2) execute the query for the elements to retrieve.
  * <p>
- * This is the base interface for the specific implementations of a VertexQuery. Calling {@link org.janusgraph.core.JanusGraphVertex#query()}
+ * This is the base interface for the specific implementations of a VertexQuery. Calling {@link JanusGraphVertex#query()}
  * returns a {@link JanusGraphVertexQuery} for querying a single vertex.
  * Calling JanusGraphTransaction#multiQuery() returns a {@link JanusGraphMultiVertexQuery} to execute
  * the same query against multiple vertices at the same time which is typically faster.
@@ -40,17 +36,16 @@ import org.janusgraph.graphdb.query.JanusGraphPredicate;
  * @see JanusGraphVertexQuery
  * @see JanusGraphMultiVertexQuery
  */
-public interface BaseVertexQuery<Q extends org.janusgraph.core.BaseVertexQuery<Q>> {
+public interface BaseVertexQuery<Q extends BaseVertexQuery<Q>> {
 
     /* ---------------------------------------------------------------
-    * Query Specification
-    * ---------------------------------------------------------------
-    */
+     * Query Specification
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Restricts this query to only those edges that point to the given vertex.
      *
-     * @param vertex
      * @return this query builder
      */
     Q adjacent(Vertex vertex);
@@ -107,7 +102,7 @@ public interface BaseVertexQuery<Q extends org.janusgraph.core.BaseVertexQuery<Q
      * this key-value pair.
      * If type is an edge label, then it is expected that this label is unidirected ({@link EdgeLabel#isUnidirected()}
      * and the query is restricted to edges or properties having an incident unidirectional edge pointing to the value which is
-     * expected to be a {@link org.janusgraph.core.JanusGraphVertex}.
+     * expected to be a {@link JanusGraphVertex}.
      *
      * @param type  JanusGraphType name
      * @param value Value for the property of the given key to match, or vertex to point unidirectional edge to
@@ -118,7 +113,6 @@ public interface BaseVertexQuery<Q extends org.janusgraph.core.BaseVertexQuery<Q
     /**
      * Query for edges or properties that have defined property with the given key
      *
-     * @param key
      * @return this query
      */
     Q has(String key);
@@ -126,7 +120,6 @@ public interface BaseVertexQuery<Q extends org.janusgraph.core.BaseVertexQuery<Q
     /**
      * Query for edges or properties that DO NOT have a defined property with the given key
      *
-     * @param key
      * @return this query
      */
     Q hasNot(String key);
@@ -134,10 +127,6 @@ public interface BaseVertexQuery<Q extends org.janusgraph.core.BaseVertexQuery<Q
     /**
      * Identical to {@link #has(String, Object)} but negates the condition, i.e. matches those edges or properties
      * that DO NOT satisfy this property condition.
-     *
-     * @param key
-     * @param value
-     * @return
      */
     Q hasNot(String key, Object value);
 

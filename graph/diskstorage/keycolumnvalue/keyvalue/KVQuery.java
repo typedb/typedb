@@ -16,11 +16,11 @@ package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeySelector;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
-import org.janusgraph.graphdb.query.BaseQuery;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeySelector;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import grakn.core.graph.graphdb.query.BaseQuery;
 
 /**
  * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and

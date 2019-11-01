@@ -14,9 +14,6 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-
 /**
  * A Buffer that allows sequential reads and static reads.
  * Should not be used by multiple threads.
@@ -30,6 +27,6 @@ public interface ReadBuffer extends ScanBuffer, StaticBuffer {
 
     <T> T asRelative(Factory<T> factory);
 
-    org.janusgraph.diskstorage.ReadBuffer subrange(int length, boolean invert);
+    ReadBuffer subrange(int length, boolean invert);
 
 }

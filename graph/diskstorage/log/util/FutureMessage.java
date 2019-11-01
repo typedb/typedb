@@ -16,7 +16,7 @@ package grakn.core.graph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.AbstractFuture;
-import org.janusgraph.diskstorage.log.Message;
+import grakn.core.graph.diskstorage.log.Message;
 
 /**
  * Implementation of a {@link java.util.concurrent.Future} for {@link Message}s that

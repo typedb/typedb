@@ -14,13 +14,13 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.EdgeLabelMaker;
-import org.janusgraph.core.schema.PropertyKeyMaker;
-import org.janusgraph.core.schema.SchemaInspector;
-import org.janusgraph.core.schema.VertexLabelMaker;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.EdgeLabelMaker;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.schema.SchemaInspector;
+import grakn.core.graph.core.schema.VertexLabelMaker;
 
 
 public interface SchemaManager extends SchemaInspector {

@@ -15,13 +15,13 @@
 package grakn.core.graph.graphdb.internal;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.types.IndexType;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.types.IndexType;
 
 /**
  * Internal Type interface adding methods that should only be used by JanusGraph
@@ -45,9 +45,9 @@ public interface InternalRelationType extends RelationType, InternalVertex {
 
     boolean isUnidirected(Direction dir);
 
-    org.janusgraph.graphdb.internal.InternalRelationType getBaseType();
+    InternalRelationType getBaseType();
 
-    Iterable<org.janusgraph.graphdb.internal.InternalRelationType> getRelationIndexes();
+    Iterable<InternalRelationType> getRelationIndexes();
 
     SchemaStatus getStatus();
 

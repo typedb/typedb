@@ -15,18 +15,18 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.MetaAnnotatable;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.graphdb.relations.RelationCache;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.MetaAnnotatable;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
 import java.util.Map;
 
 
-public class StaticArrayEntry extends org.janusgraph.diskstorage.util.BaseStaticArrayEntry implements Entry, MetaAnnotatable {
+public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, MetaAnnotatable {
 
     public StaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
         super(array, offset, limit, valuePosition);
@@ -88,18 +88,18 @@ public class StaticArrayEntry extends org.janusgraph.diskstorage.util.BaseStatic
     //########### CONSTRUCTORS AND UTILITIES ###########
 
     public static Entry of(StaticBuffer buffer) {
-        return new org.janusgraph.diskstorage.util.StaticArrayEntry(buffer,buffer.length());
+        return new StaticArrayEntry(buffer,buffer.length());
     }
 
-    public static <E> Entry ofBytes(E element, org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal<E,byte[]> getter) {
+    public static <E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
         return of(element, getter, ByteArrayHandler.INSTANCE);
     }
 
-    public static <E> Entry ofByteBuffer(E element, org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E> Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
         return of(element, getter, ByteBufferHandler.INSTANCE);
     }
 
-    public static <E> Entry ofStaticBuffer(E element, org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal<E, StaticBuffer> getter) {
+    public static <E> Entry ofStaticBuffer(E element, StaticArrayEntry.GetColVal<E, StaticBuffer> getter) {
         return of(element, getter, StaticBufferHandler.INSTANCE);
     }
 
@@ -107,8 +107,8 @@ public class StaticArrayEntry extends org.janusgraph.diskstorage.util.BaseStatic
         return of(column, value, StaticBufferHandler.INSTANCE);
     }
 
-    private static <E,D> Entry of(E element, org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal<E,D> getter, org.janusgraph.diskstorage.util.StaticArrayEntry.DataHandler<D> dataHandler) {
-        org.janusgraph.diskstorage.util.StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),dataHandler);
+    private static <E,D> Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
+        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),dataHandler);
         //Add meta data if exists
         if (getter.getMetaSchema(element).length>0) {
             for (EntryMetaData meta : getter.getMetaSchema(element)) {
@@ -118,12 +118,12 @@ public class StaticArrayEntry extends org.janusgraph.diskstorage.util.BaseStatic
         return entry;
     }
 
-    private static <E,D> org.janusgraph.diskstorage.util.StaticArrayEntry of(D column, D value, org.janusgraph.diskstorage.util.StaticArrayEntry.DataHandler<D> dataHandler) {
+    private static <E,D> StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> dataHandler) {
         int valuePos = dataHandler.getSize(column);
         byte[] data = new byte[valuePos+dataHandler.getSize(value)];
         dataHandler.copy(column,data,0);
         dataHandler.copy(value,data,valuePos);
-        return new org.janusgraph.diskstorage.util.StaticArrayEntry(data,valuePos);
+        return new StaticArrayEntry(data,valuePos);
     }
 
     public interface GetColVal<E,D> {

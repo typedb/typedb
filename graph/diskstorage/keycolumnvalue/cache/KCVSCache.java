@@ -15,18 +15,18 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVSProxy;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import org.janusgraph.diskstorage.util.CacheMetricsAction;
-import org.janusgraph.util.stats.MetricManager;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVSProxy;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import grakn.core.graph.diskstorage.util.CacheMetricsAction;
+import grakn.core.graph.util.stats.MetricManager;
 
 import java.util.List;
 import java.util.Map;
@@ -49,7 +49,8 @@ public abstract class KCVSCache extends KCVSProxy {
 
     protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {
         if (metricsName != null && txh.getConfiguration().hasGroupName()) {
-            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getGroupName(), metricsName, action.getName()).inc(by);
+            //TODO-reenable
+//            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getGroupName(), metricsName, action.getName()).inc(by);
         }
     }
 

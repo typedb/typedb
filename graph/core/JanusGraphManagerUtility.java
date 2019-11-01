@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core;
 
-import org.janusgraph.graphdb.management.JanusGraphManager;
+import grakn.core.graph.graphdb.management.JanusGraphManager;
 
 /**
  * This class allows an access point to the {@link JanusGraphManager}

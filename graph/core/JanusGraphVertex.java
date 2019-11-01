@@ -18,13 +18,13 @@ package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.core.VertexLabel;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.core.VertexLabel;
 
 /**
  * JanusGraphVertex is the basic unit of a {@link JanusGraph}.

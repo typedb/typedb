@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import org.janusgraph.core.attribute.AttributeSerializer;
+import grakn.core.graph.core.attribute.AttributeSerializer;
 
 
 public interface AttributeHandler {

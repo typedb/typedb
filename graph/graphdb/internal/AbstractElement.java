@@ -19,12 +19,12 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalElement;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.relations.RelationIdentifier;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalElement;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.relations.RelationIdentifier;
 
 /**
  * AbstractElement is the base class for all elements in JanusGraph.

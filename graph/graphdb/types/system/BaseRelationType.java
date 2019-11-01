@@ -16,12 +16,12 @@ package grakn.core.graph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Token;
-import org.janusgraph.graphdb.types.system.EmptyRelationType;
-import org.janusgraph.graphdb.types.system.SystemRelationType;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.internal.Token;
+import grakn.core.graph.graphdb.types.system.EmptyRelationType;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
 
 public abstract class BaseRelationType extends EmptyRelationType implements SystemRelationType {
 

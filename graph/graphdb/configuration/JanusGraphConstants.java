@@ -16,7 +16,7 @@ package grakn.core.graph.graphdb.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import org.janusgraph.core.JanusGraphFactory;
+import grakn.core.graph.core.JanusGraphFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,7 +27,6 @@ import java.util.stream.Stream;
 
 /**
  * Collection of constants used throughput the JanusGraph codebase.
- *
  */
 public class JanusGraphConstants {
 
@@ -50,7 +49,7 @@ public class JanusGraphConstants {
 
 
     /**
-     * List of FIXED fields that can be modified when graph.allow-upgrade is set to true 
+     * List of FIXED fields that can be modified when graph.allow-upgrade is set to true
      */
     public static final Set<String> UPGRADEABLE_FIXED;
 
@@ -62,10 +61,10 @@ public class JanusGraphConstants {
          * if something goes horribly wrong, even a cryptic error message is
          * better than a message-less NPE.
          */
-        Package p = org.janusgraph.graphdb.configuration.JanusGraphConstants.class.getPackage();
-        Preconditions.checkNotNull(p, "Unable to load package containing class " + org.janusgraph.graphdb.configuration.JanusGraphConstants.class);
+        Package p = JanusGraphConstants.class.getPackage();
+        Preconditions.checkNotNull(p, "Unable to load package containing class " + JanusGraphConstants.class);
         String packageName = p.getName();
-        Preconditions.checkNotNull(packageName, "Unable to get name of package containing " + org.janusgraph.graphdb.configuration.JanusGraphConstants.class);
+        Preconditions.checkNotNull(packageName, "Unable to get name of package containing " + JanusGraphConstants.class);
         String resourceName = packageName.replace('.', '/') + "/" + JANUSGRAPH_PROPERTIES_FILE;
 
         Properties props = new Properties();

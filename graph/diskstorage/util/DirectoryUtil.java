@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.PermanentBackendException;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.PermanentBackendException;
 
 import java.io.File;
 

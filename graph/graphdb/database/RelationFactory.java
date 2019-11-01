@@ -15,7 +15,7 @@
 package grakn.core.graph.graphdb.database;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.RelationType;
+import grakn.core.graph.core.RelationType;
 
 
 public interface RelationFactory {

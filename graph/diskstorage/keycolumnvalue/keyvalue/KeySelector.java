@@ -17,8 +17,8 @@ package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
 
 /**
  * A {@link org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeySelector} utility that can be generated out of a given {@link KVQuery}

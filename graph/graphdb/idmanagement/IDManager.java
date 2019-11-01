@@ -16,10 +16,10 @@ package grakn.core.graph.graphdb.idmanagement;
 
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.BufferUtil;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 
 /**
  * Handles the allocation of ids based on the type of element

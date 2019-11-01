@@ -20,9 +20,9 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalCause;
 import com.google.common.cache.RemovalListener;
 import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.vertices.AbstractVertex;
-import org.janusgraph.util.datastructures.Retriever;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.vertices.AbstractVertex;
+import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.ArrayList;
 import java.util.List;

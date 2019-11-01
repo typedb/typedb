@@ -15,8 +15,7 @@
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 import java.util.Objects;
 
@@ -29,15 +28,12 @@ import java.util.Objects;
  * The limit of a KeyRangeQuery applies to the maximum number of columns
  * returned per key which fall into the specified slice range and NOT to the
  * maximum number of keys returned.
- *
-
  */
 
 public class KeyRangeQuery extends SliceQuery {
 
     private final StaticBuffer keyStart;
     private final StaticBuffer keyEnd;
-
 
     public KeyRangeQuery(StaticBuffer keyStart, StaticBuffer keyEnd, StaticBuffer sliceStart, StaticBuffer sliceEnd) {
         super(sliceStart, sliceEnd);
@@ -52,7 +48,6 @@ public class KeyRangeQuery extends SliceQuery {
     }
 
 
-
     public StaticBuffer getKeyStart() {
         return keyStart;
     }
@@ -62,14 +57,14 @@ public class KeyRangeQuery extends SliceQuery {
     }
 
     @Override
-    public org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery setLimit(int limit) {
+    public KeyRangeQuery setLimit(int limit) {
         super.setLimit(limit);
         return this;
     }
 
     @Override
-    public org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery updateLimit(int newLimit) {
-        return new org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery(keyStart,keyEnd,this).setLimit(newLimit);
+    public KeyRangeQuery updateLimit(int newLimit) {
+        return new KeyRangeQuery(keyStart, keyEnd, this).setLimit(newLimit);
     }
 
 
@@ -80,24 +75,24 @@ public class KeyRangeQuery extends SliceQuery {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery oth = (org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery)other;
+        KeyRangeQuery oth = (KeyRangeQuery) other;
         return keyStart.equals(oth.keyStart) && keyEnd.equals(oth.keyEnd) && super.equals(oth);
     }
 
-    public boolean subsumes(org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery oth) {
-        return super.subsumes(oth) && keyStart.compareTo(oth.keyStart)<=0 && keyEnd.compareTo(oth.keyEnd)>=0;
+    public boolean subsumes(KeyRangeQuery oth) {
+        return super.subsumes(oth) && keyStart.compareTo(oth.keyStart) <= 0 && keyEnd.compareTo(oth.keyEnd) >= 0;
     }
 
     @Override
     public String toString() {
         return String.format("KeyRangeQuery(start: %s, end: %s, columns:[start: %s, end: %s], limit=%d)",
-                             keyStart,
-                             keyEnd,
-                             getSliceStart(),
-                             getSliceEnd(),
-                             getLimit());
+                keyStart,
+                keyEnd,
+                getSliceStart(),
+                getSliceEnd(),
+                getLimit());
     }
 }

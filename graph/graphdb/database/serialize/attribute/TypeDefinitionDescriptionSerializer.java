@@ -15,14 +15,14 @@
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.attribute.AttributeSerializer;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.database.serialize.SerializerInjected;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionDescription;
+import grakn.core.graph.core.attribute.AttributeSerializer;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.database.serialize.SerializerInjected;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
 
 
 public class TypeDefinitionDescriptionSerializer implements AttributeSerializer<TypeDefinitionDescription>, SerializerInjected {

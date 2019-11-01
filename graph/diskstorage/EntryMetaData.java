@@ -16,13 +16,12 @@ package grakn.core.graph.diskstorage;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import org.janusgraph.util.encoding.StringEncoding;
+import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.util.EnumMap;
 import java.util.function.Function;
 
 /**
-
  * @author Alexander Patrikalakis (amcp@mit.edu)
  */
 public enum EntryMetaData {
@@ -36,7 +35,8 @@ public enum EntryMetaData {
         this.identifying = identifying;
         this.validator = validator;
     }
-    public static final java.util.Map<org.janusgraph.diskstorage.EntryMetaData,Object> EMPTY_METADATA = ImmutableMap.of();
+
+    public static final java.util.Map<EntryMetaData, Object> EMPTY_METADATA = ImmutableMap.of();
 
     private final Class<?> dataType;
     private final boolean identifying;
@@ -52,6 +52,7 @@ public enum EntryMetaData {
 
     /**
      * Validates a datum according to the metadata type.
+     *
      * @param datum object to validate
      * @return true if datum is a valid instance of this type and false otherwise.
      */
@@ -63,7 +64,7 @@ public enum EntryMetaData {
     /**
      * EntryMetaData.Map extends EnumMap to add validation prior to invoking the superclass EnumMap::put(k,v) method.
      */
-    public static class Map extends EnumMap<org.janusgraph.diskstorage.EntryMetaData,Object> {
+    public static class Map extends EnumMap<org.janusgraph.diskstorage.EntryMetaData, Object> {
 
         public Map() {
             super(org.janusgraph.diskstorage.EntryMetaData.class);
@@ -71,8 +72,8 @@ public enum EntryMetaData {
 
         @Override
         public Object put(org.janusgraph.diskstorage.EntryMetaData key, Object value) {
-            Preconditions.checkArgument(key.isValidData(value),"Invalid meta data [%s] for [%s]",value,key);
-            return super.put(key,value);
+            Preconditions.checkArgument(key.isValidData(value), "Invalid meta data [%s] for [%s]", value, key);
+            return super.put(key, value);
         }
 
     }

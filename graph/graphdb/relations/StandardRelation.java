@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.relations;
 
-import org.janusgraph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelation;
 
 
 public interface StandardRelation extends InternalRelation {

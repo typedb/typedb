@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.query.condition;
 
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.condition.Literal;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.condition.Literal;
 
 import java.util.Objects;
 

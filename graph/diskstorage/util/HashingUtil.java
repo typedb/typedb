@@ -15,9 +15,9 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.hash.HashCode;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.HashUtility;
-import org.janusgraph.diskstorage.util.WriteByteBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.HashUtility;
+import grakn.core.graph.diskstorage.util.WriteByteBuffer;
 
 
 public class HashingUtil {

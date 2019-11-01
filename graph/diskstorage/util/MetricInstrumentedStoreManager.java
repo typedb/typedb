@@ -14,27 +14,20 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import com.codahale.metrics.Timer;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.StoreMetaData;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.MetricInstrumentedStore;
-import org.janusgraph.util.stats.MetricManager;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StoreMetaData;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.util.stats.MetricManager;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_CALLS;
-import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_EXCEPTIONS;
-import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_MUTATE;
-import static org.janusgraph.diskstorage.util.MetricInstrumentedStore.M_TIME;
 
 
 public class MetricInstrumentedStoreManager implements KeyColumnValueStoreManager {
@@ -66,41 +59,43 @@ public class MetricInstrumentedStoreManager implements KeyColumnValueStoreManage
 
     @Override
     public KeyColumnValueStore openDatabase(String name, StoreMetaData.Container metaData) throws BackendException {
-        MetricManager.INSTANCE.getCounter(GLOBAL_PREFIX, managerMetricsName, M_OPEN_DATABASE, M_CALLS).inc();
-        return new MetricInstrumentedStore(backend.openDatabase(name, metaData),getMetricsStoreName(name));
+        //TODO-reenable
+//        MetricManager.INSTANCE.getCounter(GLOBAL_PREFIX, managerMetricsName, M_OPEN_DATABASE, M_CALLS).inc();
+        return new MetricInstrumentedStore(backend.openDatabase(name, metaData), getMetricsStoreName(name));
     }
 
     @Override
     public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         if (!txh.getConfiguration().hasGroupName()) {
-            backend.mutateMany(mutations,txh);
+            backend.mutateMany(mutations, txh);
         }
         String prefix = txh.getConfiguration().getGroupName();
 
         final MetricManager mgr = MetricManager.INSTANCE;
-        mgr.getCounter(prefix, managerMetricsName, M_MUTATE, M_CALLS).inc();
-        final Timer.Context tc = mgr.getTimer(prefix,  managerMetricsName, M_MUTATE, M_TIME).time();
+        //todo-reenable
+//        mgr.getCounter(prefix, managerMetricsName, M_MUTATE, M_CALLS).inc();
+//        final Timer.Context tc = mgr.getTimer(prefix,  managerMetricsName, M_MUTATE, M_TIME).time();
 
-        try {
-            backend.mutateMany(mutations,txh);
-        } catch (BackendException | RuntimeException e) {
-            mgr.getCounter(prefix,  managerMetricsName, M_MUTATE, M_EXCEPTIONS).inc();
-            throw e;
-        } finally {
-            tc.stop();
-        }
+//        try {
+//            backend.mutateMany(mutations,txh);
+//        } catch (BackendException | RuntimeException e) {
+//            mgr.getCounter(prefix,  managerMetricsName, M_MUTATE, M_EXCEPTIONS).inc();
+//            throw e;
+//        } finally {
+//            tc.stop();
+//        }
     }
 
     @Override
     public StoreTransaction beginTransaction(BaseTransactionConfig config) throws BackendException {
-        MetricManager.INSTANCE.getCounter(GLOBAL_PREFIX, managerMetricsName, M_START_TX, M_CALLS).inc();
+//        MetricManager.INSTANCE.getCounter(GLOBAL_PREFIX, managerMetricsName, M_START_TX, M_CALLS).inc();
         return backend.beginTransaction(config);
     }
 
     @Override
     public void close() throws BackendException {
         backend.close();
-        MetricManager.INSTANCE.getCounter(GLOBAL_PREFIX, managerMetricsName, M_CLOSE_MANAGER, M_CALLS).inc();
+//        MetricManager.INSTANCE.getCounter(GLOBAL_PREFIX, managerMetricsName, M_CLOSE_MANAGER, M_CALLS).inc();
     }
 
     @Override

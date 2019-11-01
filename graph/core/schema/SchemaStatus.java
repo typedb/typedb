@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.schema.Index;
+import grakn.core.graph.core.schema.Index;
 
 /**
  * Designates the status of a {@link Index} in a graph.

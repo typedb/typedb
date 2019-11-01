@@ -16,16 +16,16 @@ package grakn.core.graph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.internal.ElementLifeCycle;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.transaction.addedrelations.AddedRelationsContainer;
-import org.janusgraph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
-import org.janusgraph.graphdb.transaction.addedrelations.SimpleAddedRelations;
-import org.janusgraph.graphdb.vertices.AbstractVertex;
-import org.janusgraph.util.datastructures.Retriever;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.internal.ElementLifeCycle;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.transaction.addedrelations.AddedRelationsContainer;
+import grakn.core.graph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
+import grakn.core.graph.graphdb.transaction.addedrelations.SimpleAddedRelations;
+import grakn.core.graph.graphdb.vertices.AbstractVertex;
+import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.List;
 

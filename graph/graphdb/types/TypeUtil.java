@@ -19,17 +19,17 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.graphdb.database.management.ModifierType;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.SchemaSource;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.graphdb.database.management.ModifierType;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.SchemaSource;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
 /**
 

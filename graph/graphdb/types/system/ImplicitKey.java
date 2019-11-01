@@ -19,22 +19,22 @@ import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.T;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphProperty;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.graphdb.internal.InternalElement;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.InternalVertexLabel;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Token;
-import org.janusgraph.graphdb.types.system.BaseRelationType;
-import org.janusgraph.graphdb.types.system.EmptyRelationType;
-import org.janusgraph.graphdb.types.system.SystemRelationType;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.JanusGraphProperty;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.graphdb.internal.InternalElement;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.InternalVertexLabel;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.internal.Token;
+import grakn.core.graph.graphdb.types.system.BaseRelationType;
+import grakn.core.graph.graphdb.types.system.EmptyRelationType;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -42,28 +42,28 @@ import java.util.Map;
 
 public class ImplicitKey extends EmptyRelationType implements SystemRelationType, PropertyKey {
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey ID = new org.janusgraph.graphdb.types.system.ImplicitKey(1001, T.id.getAccessor(), Object.class);
+    public static final ImplicitKey ID = new ImplicitKey(1001, T.id.getAccessor(), Object.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey JANUSGRAPHID = new org.janusgraph.graphdb.types.system.ImplicitKey(1002, Token.makeSystemName("nid"), Long.class);
+    public static final ImplicitKey JANUSGRAPHID = new ImplicitKey(1002, Token.makeSystemName("nid"), Long.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey LABEL = new org.janusgraph.graphdb.types.system.ImplicitKey(11, T.label.getAccessor(), String.class);
+    public static final ImplicitKey LABEL = new ImplicitKey(11, T.label.getAccessor(), String.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey KEY = new org.janusgraph.graphdb.types.system.ImplicitKey(12, T.key.getAccessor(), String.class);
+    public static final ImplicitKey KEY = new ImplicitKey(12, T.key.getAccessor(), String.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey VALUE = new org.janusgraph.graphdb.types.system.ImplicitKey(13, T.value.getAccessor(), Object.class);
+    public static final ImplicitKey VALUE = new ImplicitKey(13, T.value.getAccessor(), Object.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey ADJACENT_ID = new org.janusgraph.graphdb.types.system.ImplicitKey(1003, Token.makeSystemName("adjacent"), Long.class);
+    public static final ImplicitKey ADJACENT_ID = new ImplicitKey(1003, Token.makeSystemName("adjacent"), Long.class);
 
     //######### IMPLICIT KEYS WITH ID ############
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey TIMESTAMP = new org.janusgraph.graphdb.types.system.ImplicitKey(5, Token.makeSystemName("timestamp"), Instant.class);
+    public static final ImplicitKey TIMESTAMP = new ImplicitKey(5, Token.makeSystemName("timestamp"), Instant.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey VISIBILITY = new org.janusgraph.graphdb.types.system.ImplicitKey(6, Token.makeSystemName("visibility"), String.class);
+    public static final ImplicitKey VISIBILITY = new ImplicitKey(6, Token.makeSystemName("visibility"), String.class);
 
-    public static final org.janusgraph.graphdb.types.system.ImplicitKey TTL = new org.janusgraph.graphdb.types.system.ImplicitKey(7, Token.makeSystemName("ttl"), Duration.class);
+    public static final ImplicitKey TTL = new ImplicitKey(7, Token.makeSystemName("ttl"), Duration.class);
 
 
-    public static final Map<EntryMetaData, org.janusgraph.graphdb.types.system.ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
+    public static final Map<EntryMetaData, ImplicitKey> MetaData2ImplicitKey = ImmutableMap.of(
             EntryMetaData.TIMESTAMP, TIMESTAMP,
             EntryMetaData.TTL, TTL,
             EntryMetaData.VISIBILITY, VISIBILITY);

@@ -17,23 +17,19 @@ package grakn.core.graph.graphdb.types;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.database.management.ModifierType;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.types.TypeDefinitionMap;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.database.management.ModifierType;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.internal.RelationCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionMap;
 
 import java.util.Set;
 
-/**
-
- * @author Joshua Shinavier (http://fortytwo.net)
- */
 public enum TypeDefinitionCategory {
     //Don't change the order because it breaks backward compatibility.
     //Relation Types
@@ -74,14 +70,14 @@ public enum TypeDefinitionCategory {
     CONNECTION_EDGE(RelationCategory.EDGE, String.class),
     UPDATE_CONNECTION_EDGE();
 
-    public static final Set<org.janusgraph.graphdb.types.TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
-    public static final Set<org.janusgraph.graphdb.types.TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
-    public static final Set<org.janusgraph.graphdb.types.TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
-    public static final Set<org.janusgraph.graphdb.types.TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED, STATIC);
-    public static final Set<org.janusgraph.graphdb.types.TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES;
+    public static final Set<TypeDefinitionCategory> PROPERTYKEY_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, DATATYPE);
+    public static final Set<TypeDefinitionCategory> EDGELABEL_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, INVISIBLE, SORT_KEY, SORT_ORDER, SIGNATURE, MULTIPLICITY, UNIDIRECTIONAL);
+    public static final Set<TypeDefinitionCategory> INDEX_DEFINITION_CATEGORIES = ImmutableSet.of(STATUS, ELEMENT_CATEGORY,INDEX_CARDINALITY,INTERNAL_INDEX, BACKING_INDEX,INDEXSTORE_NAME);
+    public static final Set<TypeDefinitionCategory> VERTEXLABEL_DEFINITION_CATEGORIES = ImmutableSet.of(PARTITIONED, STATIC);
+    public static final Set<TypeDefinitionCategory> TYPE_MODIFIER_DEFINITION_CATEGORIES;
 
     static {
-        ImmutableSet.Builder<org.janusgraph.graphdb.types.TypeDefinitionCategory> builder = ImmutableSet.builder();
+        ImmutableSet.Builder<TypeDefinitionCategory> builder = ImmutableSet.builder();
         for (ModifierType type : ModifierType.values()) {
             builder.add(type.getCategory());
         }

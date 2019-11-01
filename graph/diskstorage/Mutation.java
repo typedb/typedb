@@ -28,7 +28,6 @@ import java.util.Set;
 /**
  * Container for collection mutations against a data store.
  * Mutations are either additions or deletions.
- *
  */
 
 public abstract class Mutation<E,K> {
@@ -53,7 +52,6 @@ public abstract class Mutation<E,K> {
 
     /**
      * Whether this mutation has additions
-     * @return
      */
     public boolean hasAdditions() {
         return additions!=null && !additions.isEmpty();
@@ -61,7 +59,6 @@ public abstract class Mutation<E,K> {
 
     /**
      * Whether this mutation has deletions
-     * @return
      */
     public boolean hasDeletions() {
         return deletions != null && !deletions.isEmpty();
@@ -69,7 +66,6 @@ public abstract class Mutation<E,K> {
 
     /**
      * Returns the list of additions in this mutation
-     * @return
      */
     public List<E> getAdditions() {
         if (additions==null) return ImmutableList.of();
@@ -78,8 +74,6 @@ public abstract class Mutation<E,K> {
 
     /**
      * Returns the list of deletions in this mutation.
-     *
-     * @return
      */
     public List<K> getDeletions() {
         if (deletions==null) return ImmutableList.of();
@@ -88,8 +82,6 @@ public abstract class Mutation<E,K> {
 
     /**
      * Adds a new entry as an addition to this mutation
-     *
-     * @param entry
      */
     public void addition(E entry) {
         if (additions==null) additions = new ArrayList<>();
@@ -98,8 +90,6 @@ public abstract class Mutation<E,K> {
 
     /**
      * Adds a new key as a deletion to this mutation
-     *
-     * @param key
      */
     public void deletion(K key) {
         if (deletions==null) deletions = new ArrayList<>();
@@ -109,10 +99,8 @@ public abstract class Mutation<E,K> {
     /**
      * Merges another mutation into this mutation. Ensures that all additions and deletions
      * are added to this mutation. Does not remove duplicates if such exist - this needs to be ensured by the caller.
-     *
-     * @param m
      */
-    public void merge(org.janusgraph.diskstorage.Mutation<E,K> m) {
+    public void merge(Mutation<E,K> m) {
         Preconditions.checkNotNull(m);
 
         if (null != m.additions) {
@@ -162,10 +150,6 @@ public abstract class Mutation<E,K> {
      * Checks whether this mutation is consolidated in the sense of {@link #consolidate(com.google.common.base.Function, com.google.common.base.Function)}.
      * This should only be used in assertions and tests due to the performance penalty.
      *
-     * @param convertAdditions
-     * @param convertDeletions
-     * @param <V>
-     * @return
      */
     public<V> boolean isConsolidated(Function<E,V> convertAdditions, Function<K,V> convertDeletions) {
         int delBefore = getDeletions().size();
@@ -174,7 +158,5 @@ public abstract class Mutation<E,K> {
     }
 
     public abstract boolean isConsolidated();
-
-
 
 }

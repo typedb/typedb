@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.transaction;
 
-import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.diskstorage.util.RecordIterator;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

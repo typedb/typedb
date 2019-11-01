@@ -14,19 +14,19 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.TemporaryBackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
-import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import grakn.core.graph.diskstorage.util.RecordIterator;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.util.StaticArrayEntryList;
 
 import java.io.IOException;
 

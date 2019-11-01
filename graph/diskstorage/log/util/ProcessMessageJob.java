@@ -15,8 +15,8 @@
 package grakn.core.graph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.log.Message;
-import org.janusgraph.diskstorage.log.MessageReader;
+import grakn.core.graph.diskstorage.log.Message;
+import grakn.core.graph.diskstorage.log.MessageReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

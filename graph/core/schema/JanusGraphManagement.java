@@ -14,25 +14,16 @@
 
 package grakn.core.graph.core.schema;
 
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.Index;
-import org.janusgraph.core.schema.JanusGraphConfiguration;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.RelationTypeIndex;
-import org.janusgraph.core.schema.SchemaAction;
-import org.janusgraph.core.schema.SchemaManager;
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 
 import java.time.Duration;
 import java.util.Set;
@@ -46,7 +37,7 @@ import java.util.concurrent.Future;
  * <p>
  * JanusGraphManagement behaves like a transaction in that it opens a transactional scope for reading the schema and making
  * changes to it. As such, it needs to be explicitly closed via its {@link #commit()} or {@link #rollback()} methods.
- * A JanusGraphManagement transaction is opened on a graph via {@link org.janusgraph.core.JanusGraph#openManagement()}.
+ * A JanusGraphManagement transaction is opened on a graph via {@link JanusGraph#openManagement()}.
  * <p>
  * JanusGraphManagement provides methods to:
  * <ul>
@@ -55,7 +46,6 @@ import java.util.concurrent.Future;
  * <li>Graph Index: View and create graph-wide indexes for efficient element retrieval</li>
  * <li>Consistency Management: Set the consistency level of individual schema elements</li>
  * </ul>
- *
  */
 public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaManager {
 
@@ -64,13 +54,9 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      */
 
     /**
-     * Identical to {@link #buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
+     * Identical to {@link #buildEdgeIndex(EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, PropertyKey...)}
      * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#asc}.
      *
-     * @param label
-     * @param name
-     * @param direction
-     * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
     RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, PropertyKey... sortKeys);
@@ -82,22 +68,14 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * An indexed is defined by its name, the direction in which the index should be created (can be restricted to one
      * direction or both), the sort order and - most importantly - the sort keys which define the index key.
      *
-     * @param label
-     * @param name
-     * @param direction
-     * @param sortOrder
-     * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
     RelationTypeIndex buildEdgeIndex(EdgeLabel label, String name, Direction direction, Order sortOrder, PropertyKey... sortKeys);
 
     /**
-     * Identical to {@link #buildPropertyIndex(org.janusgraph.core.PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
+     * Identical to {@link #buildPropertyIndex(PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, PropertyKey...)}
      * with default sort order {@link org.apache.tinkerpop.gremlin.process.traversal.Order#asc}.
      *
-     * @param key
-     * @param name
-     * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
     RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, PropertyKey... sortKeys);
@@ -108,38 +86,23 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * <p>
      * An indexed is defined by its name, the sort order and - most importantly - the sort keys which define the index key.
      *
-     * @param key
-     * @param name
-     * @param sortOrder
-     * @param sortKeys
      * @return the created {@link RelationTypeIndex}
      */
     RelationTypeIndex buildPropertyIndex(PropertyKey key, String name, Order sortOrder, PropertyKey... sortKeys);
 
     /**
      * Whether a {@link RelationTypeIndex} with the given name has been defined for the provided {@link RelationType}
-     *
-     * @param type
-     * @param name
-     * @return
      */
     boolean containsRelationIndex(RelationType type, String name);
 
     /**
      * Returns the {@link RelationTypeIndex} with the given name for the provided {@link RelationType} or null
      * if it does not exist
-     *
-     * @param type
-     * @param name
-     * @return
      */
     RelationTypeIndex getRelationIndex(RelationType type, String name);
 
     /**
      * Returns an {@link Iterable} over all {@link RelationTypeIndex}es defined for the provided {@link RelationType}
-     *
-     * @param type
-     * @return
      */
     Iterable<RelationTypeIndex> getRelationIndexes(RelationType type);
 
@@ -150,35 +113,22 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
 
     /**
      * Whether the graph has a graph index defined with the given name.
-     *
-     * @param name
-     * @return
      */
     boolean containsGraphIndex(String name);
 
     /**
      * Returns the graph index with the given name or null if it does not exist
-     *
-     * @param name
-     * @return
      */
     JanusGraphIndex getGraphIndex(String name);
 
     /**
      * Returns all graph indexes that index the given element type.
-     *
-     * @param elementType
-     * @return
      */
     Iterable<JanusGraphIndex> getGraphIndexes(Class<? extends Element> elementType);
 
     /**
      * Returns an {@link IndexBuilder} to add a graph index to this JanusGraph graph. The index to-be-created
      * has the provided name and indexes elements of the given type.
-     *
-     * @param indexName
-     * @param elementType
-     * @return
      */
     IndexBuilder buildIndex(String indexName, Class<? extends Element> elementType);
 
@@ -193,7 +143,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
         /**
          * Adds the given key to the composite key of this index
          *
-         * @param key
          * @return this IndexBuilder
          */
         IndexBuilder addKey(PropertyKey key);
@@ -201,8 +150,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
         /**
          * Adds the given key and associated parameters to the composite key of this index
          *
-         * @param key
-         * @param parameters
          * @return this IndexBuilder
          */
         IndexBuilder addKey(PropertyKey key, Parameter... parameters);
@@ -212,7 +159,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
          * vertices, then the argument is expected to be a vertex label and only vertices with that label will be indexed.
          * Likewise, for edges and properties only those with the matching relation type will be indexed.
          *
-         * @param schemaType
          * @return this IndexBuilder
          */
         IndexBuilder indexOnly(JanusGraphSchemaType schemaType);
@@ -276,27 +222,18 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Retrieves the consistency modifier for the given {@link JanusGraphSchemaElement}. If none has been explicitly
      * defined, {@link ConsistencyModifier#DEFAULT} is returned.
-     *
-     * @param element
-     * @return
      */
     ConsistencyModifier getConsistency(JanusGraphSchemaElement element);
 
     /**
      * Sets the consistency modifier for the given {@link JanusGraphSchemaElement}. Note, that only {@link RelationType}s
      * and composite graph indexes allow changing of the consistency level.
-     *
-     * @param element
-     * @param consistency
      */
     void setConsistency(JanusGraphSchemaElement element, ConsistencyModifier consistency);
 
     /**
      * Retrieves the time-to-live for the given {@link JanusGraphSchemaType} as a {@link Duration}.
      * If no TTL has been defined, the returned Duration will be zero-length ("lives forever").
-     *
-     * @param type
-     * @return
      */
     Duration getTTL(JanusGraphSchemaType type);
 
@@ -306,8 +243,8 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * The {@code ttl} must be non-negative.  When {@code ttl} is zero, any existing TTL on {@code type} is removed
      * ("lives forever"). Positive {@code ttl} values are interpreted literally.
      *
-     * @param type the affected type
-     * @param duration  time-to-live
+     * @param type     the affected type
+     * @param duration time-to-live
      */
     void setTTL(JanusGraphSchemaType type, Duration duration);
 
@@ -318,27 +255,21 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Changes the name of a {@link JanusGraphSchemaElement} to the provided new name.
      * The new name must be valid and not already in use, otherwise an {@link IllegalArgumentException} is thrown.
-     *
-     * @param element
-     * @param newName
      */
     void changeName(JanusGraphSchemaElement element, String newName);
 
     /**
      * Updates the provided index according to the given {@link SchemaAction}
      *
-     * @param index
-     * @param updateAction
      * @return a future that completes when the index action is done
      */
     IndexJobFuture updateIndex(Index index, SchemaAction updateAction);
 
     /**
      * If an index update job was triggered through {@link #updateIndex(Index, SchemaAction)} with schema actions
-     * {@link org.janusgraph.core.schema.SchemaAction#REINDEX} or {@link org.janusgraph.core.schema.SchemaAction#REMOVE_INDEX}
+     * {@link SchemaAction#REINDEX} or {@link SchemaAction#REMOVE_INDEX}
      * then this method can be used to track the status of this asynchronous process.
      *
-     * @param index
      * @return A message that reflects the status of the index job
      */
     IndexJobFuture getIndexJobStatus(Index index);
@@ -350,8 +281,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /**
      * Returns a set of unique instance ids for all JanusGraph instances that are currently
      * part of this graph cluster.
-     *
-     * @return
      */
     Set<String> getOpenInstances();
 
@@ -367,8 +296,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * Throws an exception if the instance is not part of this cluster or if the instance has
      * been started after the start of this management transaction which is indicative of the instance
      * having been restarted successfully.
-     *
-     * @param instanceId
      */
     void forceCloseInstance(String instanceId);
 
@@ -377,36 +304,31 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
      * {@link PropertyKey} which returns all keys, or {@link RelationType} which returns all types).
      *
      * @param clazz {@link RelationType} or sub-interface
-     * @param <T>
      * @return Iterable over all types for the given category (label, key, or both)
      */
     <T extends RelationType> Iterable<T> getRelationTypes(Class<T> clazz);
 
     /**
      * Returns an {@link Iterable} over all defined {@link VertexLabel}s.
-     *
-     * @return
      */
     Iterable<VertexLabel> getVertexLabels();
 
     /**
      * Whether this management transaction is open or has been closed (i.e. committed or rolled-back)
-     *
-     * @return
      */
     boolean isOpen();
 
     /**
      * Commits this management transaction and persists all schema changes. Closes this transaction.
      *
-     * @see org.janusgraph.core.JanusGraphTransaction#commit()
+     * @see JanusGraphTransaction#commit()
      */
     void commit();
 
     /**
      * Closes this management transaction and discards all changes.
      *
-     * @see org.janusgraph.core.JanusGraphTransaction#rollback()
+     * @see JanusGraphTransaction#rollback()
      */
     void rollback();
 

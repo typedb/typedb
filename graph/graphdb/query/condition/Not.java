@@ -16,8 +16,8 @@ package grakn.core.graph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.condition.Condition;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.condition.Condition;
 
 import java.util.Objects;
 

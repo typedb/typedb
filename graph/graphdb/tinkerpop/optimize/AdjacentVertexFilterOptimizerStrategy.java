@@ -32,18 +32,18 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
 
 import java.util.List;
 
 public class AdjacentVertexFilterOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
-    private static final org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy INSTANCE = new org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy();
+    private static final AdjacentVertexFilterOptimizerStrategy INSTANCE = new AdjacentVertexFilterOptimizerStrategy();
 
     private AdjacentVertexFilterOptimizerStrategy() {
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy instance() {
+    public static AdjacentVertexFilterOptimizerStrategy instance() {
         return INSTANCE;
     }
 

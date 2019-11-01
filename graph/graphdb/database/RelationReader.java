@@ -14,9 +14,9 @@
 
 package grakn.core.graph.graphdb.database;
 
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.types.TypeInspector;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.graphdb.relations.RelationCache;
+import grakn.core.graph.graphdb.types.TypeInspector;
 
 
 public interface RelationReader {

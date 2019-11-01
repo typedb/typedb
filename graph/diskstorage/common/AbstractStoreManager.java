@@ -16,11 +16,11 @@ package grakn.core.graph.diskstorage.common;
 
 
 import com.google.common.collect.Lists;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreManager;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 
 import java.util.List;
 

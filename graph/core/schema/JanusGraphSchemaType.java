@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
+import grakn.core.graph.core.schema.JanusGraphSchemaElement;
 
 /**
  * A JanusGraphSchemaType is a {@link JanusGraphSchemaElement} that represents a label or key

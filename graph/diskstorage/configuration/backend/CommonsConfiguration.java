@@ -19,9 +19,9 @@ import com.google.common.collect.Lists;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.diskstorage.configuration.ReadConfiguration;
-import org.janusgraph.diskstorage.configuration.WriteConfiguration;
-import org.janusgraph.diskstorage.util.time.Durations;
+import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
+import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
+import grakn.core.graph.diskstorage.util.time.Durations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

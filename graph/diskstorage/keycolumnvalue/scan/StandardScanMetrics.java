@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

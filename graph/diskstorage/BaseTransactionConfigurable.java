@@ -15,8 +15,8 @@
 package grakn.core.graph.diskstorage;
 
 
-import org.janusgraph.diskstorage.BaseTransaction;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.BaseTransaction;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
  * An extension to the {@link BaseTransaction} interface that exposes a

@@ -15,13 +15,13 @@
 package grakn.core.graph.graphdb.database.cache;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.util.CacheMetricsAction;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.cache.SchemaCache;
-import org.janusgraph.graphdb.database.cache.StandardSchemaCache;
-import org.janusgraph.graphdb.types.system.BaseRelationType;
-import org.janusgraph.util.stats.MetricManager;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.util.CacheMetricsAction;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.database.cache.SchemaCache;
+import grakn.core.graph.graphdb.database.cache.StandardSchemaCache;
+import grakn.core.graph.graphdb.types.system.BaseRelationType;
+import grakn.core.graph.util.stats.MetricManager;
 
 
 public class MetricInstrumentedSchemaCache implements SchemaCache {
@@ -50,7 +50,8 @@ public class MetricInstrumentedSchemaCache implements SchemaCache {
     }
 
     private void incAction(String type, CacheMetricsAction action) {
-        MetricManager.INSTANCE.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, type, action.getName()).inc();
+        //todo-reenable
+//        MetricManager.INSTANCE.getCounter(GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT, METRICS_NAME, type, action.getName()).inc();
     }
 
     @Override

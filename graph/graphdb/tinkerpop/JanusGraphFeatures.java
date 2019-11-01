@@ -14,16 +14,15 @@
 
 package grakn.core.graph.graphdb.tinkerpop;
 
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 
 /**
  * Blueprint's features of a JanusGraph.
- *
  */
 
 public class JanusGraphFeatures implements Graph.Features {
@@ -61,8 +60,8 @@ public class JanusGraphFeatures implements Graph.Features {
         return StringFactory.featureString(this);
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures getFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures) {
-        return new org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures(graph,storageFeatures);
+    public static JanusGraphFeatures getFeatures(StandardJanusGraph graph, StoreFeatures storageFeatures) {
+        return new JanusGraphFeatures(graph, storageFeatures);
     }
 
     private static class JanusGraphDataTypeFeatures implements DataTypeFeatures {
@@ -88,7 +87,8 @@ public class JanusGraphFeatures implements Graph.Features {
         }
     }
 
-    private static class JanusGraphVariableFeatures extends JanusGraphDataTypeFeatures implements VariableFeatures { }
+    private static class JanusGraphVariableFeatures extends JanusGraphDataTypeFeatures implements VariableFeatures {
+    }
 
     private static class JanusGraphGeneralFeatures extends JanusGraphDataTypeFeatures implements GraphFeatures {
 
@@ -132,7 +132,9 @@ public class JanusGraphFeatures implements Graph.Features {
         }
 
         @Override
-        public boolean supportsNumericIds() { return false; }
+        public boolean supportsNumericIds() {
+            return false;
+        }
 
         @Override
         public boolean supportsAnyIds() {
@@ -153,9 +155,10 @@ public class JanusGraphFeatures implements Graph.Features {
 
         @Override
         public VertexProperty.Cardinality getCardinality(String key) {
-            StandardJanusGraphTx tx = (StandardJanusGraphTx) org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures.this.graph.newTransaction();
+            StandardJanusGraphTx tx = (StandardJanusGraphTx) JanusGraphFeatures.this.graph.newTransaction();
             try {
-                if (!tx.containsPropertyKey(key)) return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
+                if (!tx.containsPropertyKey(key))
+                    return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
                 return tx.getPropertyKey(key).cardinality().convert();
             } finally {
                 tx.rollback();
@@ -168,8 +171,7 @@ public class JanusGraphFeatures implements Graph.Features {
         }
 
         @Override
-        public boolean supportsNumericIds()
-        {
+        public boolean supportsNumericIds() {
             return true;
         }
 
@@ -189,14 +191,12 @@ public class JanusGraphFeatures implements Graph.Features {
         }
 
         @Override
-        public boolean supportsStringIds()
-        {
+        public boolean supportsStringIds() {
             return false;
         }
 
         @Override
-        public boolean supportsCustomIds()
-        {
+        public boolean supportsCustomIds() {
             return false;
         }
     }
@@ -208,8 +208,7 @@ public class JanusGraphFeatures implements Graph.Features {
         }
 
         @Override
-        public boolean supportsCustomIds()
-        {
+        public boolean supportsCustomIds() {
             return true;
         }
 
@@ -219,7 +218,9 @@ public class JanusGraphFeatures implements Graph.Features {
         }
 
         @Override
-        public boolean supportsNumericIds() { return false; }
+        public boolean supportsNumericIds() {
+            return false;
+        }
 
         @Override
         public boolean supportsAnyIds() {
@@ -232,8 +233,7 @@ public class JanusGraphFeatures implements Graph.Features {
         }
 
         @Override
-        public boolean supportsStringIds()
-        {
+        public boolean supportsStringIds() {
             return false;
         }
     }

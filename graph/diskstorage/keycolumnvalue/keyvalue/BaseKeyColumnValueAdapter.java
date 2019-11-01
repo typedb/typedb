@@ -15,9 +15,9 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 
 
 public abstract class BaseKeyColumnValueAdapter implements KeyColumnValueStore {

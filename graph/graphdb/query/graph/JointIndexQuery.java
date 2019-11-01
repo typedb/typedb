@@ -16,16 +16,15 @@ package grakn.core.graph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.janusgraph.diskstorage.indexing.IndexQuery;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
-import org.janusgraph.graphdb.query.graph.MultiKeySliceQuery;
-import org.janusgraph.graphdb.query.profile.ProfileObservable;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.MixedIndexType;
+import grakn.core.graph.diskstorage.indexing.IndexQuery;
+import grakn.core.graph.graphdb.database.IndexSerializer;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.profile.ProfileObservable;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.types.CompositeIndexType;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.MixedIndexType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,13 +34,13 @@ import java.util.Objects;
  * A component/sub-query of a {@link GraphCentricQuery} that gets executed against an indexing backend or the index store
  * by the query processor of the enclosing transaction.
  * <p>
- * This query itself can contain multiple sub-queries which are individually executed by the {@link org.janusgraph.graphdb.database.IndexSerializer}
+ * This query itself can contain multiple sub-queries which are individually executed by the {@link IndexSerializer}
  * and the result sets merged.
  * <p>
  * Those sub-queries are either targeting an external indexing backend or the internal index store which is a distinction this
  * query keeps track of through the sub-class {@link Subquery}, since their definition and execution differs starkly.
  */
-public class JointIndexQuery extends BaseQuery implements BackendQuery<org.janusgraph.graphdb.query.graph.JointIndexQuery>, ProfileObservable {
+public class JointIndexQuery extends BaseQuery implements BackendQuery<JointIndexQuery>, ProfileObservable {
 
     private final List<Subquery> queries;
 
@@ -88,7 +87,7 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<org.janus
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.graphdb.query.graph.JointIndexQuery oth = (org.janusgraph.graphdb.query.graph.JointIndexQuery) other;
+        JointIndexQuery oth = (JointIndexQuery) other;
         return oth.queries.equals(queries);
     }
 
@@ -98,8 +97,8 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<org.janus
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.JointIndexQuery updateLimit(int newLimit) {
-        org.janusgraph.graphdb.query.graph.JointIndexQuery ji = new org.janusgraph.graphdb.query.graph.JointIndexQuery(Lists.newArrayList(queries));
+    public JointIndexQuery updateLimit(int newLimit) {
+        JointIndexQuery ji = new JointIndexQuery(Lists.newArrayList(queries));
         ji.setLimit(newLimit);
         return ji;
     }

@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 /**
  * Interface for a data store that represents data in the simple key-&gt;value data model where each key is uniquely

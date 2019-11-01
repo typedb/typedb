@@ -17,22 +17,22 @@ package grakn.core.graph.core;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.BaseVertexQuery;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.core.BaseVertexQuery;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.Collection;
 import java.util.Map;
 
 /**
  * A MultiVertexQuery is identical to a {@link JanusGraphVertexQuery} but executed against a set of vertices simultaneously.
- * In other words, {@link org.janusgraph.core.JanusGraphMultiVertexQuery} allows identical {@link JanusGraphVertexQuery} executed against a non-trivial set
+ * In other words, {@link JanusGraphMultiVertexQuery} allows identical {@link JanusGraphVertexQuery} executed against a non-trivial set
  * of vertices to be executed in one batch which can significantly reduce the query latency.
  * <p>
  * The query specification methods are identical to {@link JanusGraphVertexQuery}. The result set method return Maps from the specified
@@ -45,7 +45,7 @@ import java.util.Map;
  * @see JanusGraphVertexQuery
 
  */
-public interface JanusGraphMultiVertexQuery<Q extends org.janusgraph.core.JanusGraphMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {
+public interface JanusGraphMultiVertexQuery<Q extends JanusGraphMultiVertexQuery<Q>> extends BaseVertexQuery<Q> {
 
    /* ---------------------------------------------------------------
     * Query Specification
@@ -55,18 +55,16 @@ public interface JanusGraphMultiVertexQuery<Q extends org.janusgraph.core.JanusG
     /**
      * Adds the given vertex to the set of vertices against which to execute this query.
      *
-     * @param vertex
      * @return this query builder
      */
-    org.janusgraph.core.JanusGraphMultiVertexQuery addVertex(Vertex vertex);
+    JanusGraphMultiVertexQuery addVertex(Vertex vertex);
 
     /**
      * Adds the given collection of vertices to the set of vertices against which to execute this query.
      *
-     * @param vertices
      * @return this query builder
      */
-    org.janusgraph.core.JanusGraphMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices);
+    JanusGraphMultiVertexQuery addAllVertices(Collection<? extends Vertex> vertices);
 
 
     @Override

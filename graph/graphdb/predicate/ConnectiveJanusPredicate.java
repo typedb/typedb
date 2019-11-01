@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.predicate;
 
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.ArrayList;
 import java.util.Iterator;

@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BackendException;
 
 /**
  * Represents a transaction for a particular storage backend.

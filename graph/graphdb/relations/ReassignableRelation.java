@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.relations;
 
-import org.janusgraph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.InternalVertex;
 
 
 public interface ReassignableRelation {

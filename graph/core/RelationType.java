@@ -15,22 +15,17 @@
 package grakn.core.graph.core;
 
 
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.schema.RelationTypeMaker;
 
 /**
- * RelationType defines the schema for {@link JanusGraphRelation}. RelationType can be configured through {@link org.janusgraph.core.schema.RelationTypeMaker} to
+ * RelationType defines the schema for {@link JanusGraphRelation}. RelationType can be configured through {@link RelationTypeMaker} to
  * provide data verification, better storage efficiency, and higher retrieval performance.
  * <br>
  * Each {@link JanusGraphRelation} has a unique type which defines many important characteristics of that relation.
  * <br>
- * RelationTypes are constructed through {@link org.janusgraph.core.schema.RelationTypeMaker} which is accessed in the context of a {@link JanusGraphTransaction}
- * via {@link org.janusgraph.core.JanusGraphTransaction#makePropertyKey(String)} for property keys or {@link org.janusgraph.core.JanusGraphTransaction#makeEdgeLabel(String)}
+ * RelationTypes are constructed through {@link RelationTypeMaker} which is accessed in the context of a {@link JanusGraphTransaction}
+ * via {@link JanusGraphTransaction#makePropertyKey(String)} for property keys or {@link JanusGraphTransaction#makeEdgeLabel(String)}
  * for edge labels. Identical methods exist on {@link JanusGraph}.
  * Note, relation types will only be visible once the transaction in which they were created has been committed.
  * <br>
@@ -38,7 +33,7 @@ import org.janusgraph.core.schema.JanusGraphSchemaType;
  * instead of the actual type reference. That also means, that edge labels and property keys may not have the same name.
  *
  * @see JanusGraphRelation
- * @see org.janusgraph.core.schema.RelationTypeMaker
+ * @see RelationTypeMaker
  * @see <a href="https://docs.janusgraph.org/latest/schema.html">"Schema and Data Modeling" manual chapter</a>
  */
 public interface RelationType extends JanusGraphVertex, JanusGraphSchemaType {

@@ -17,12 +17,12 @@ package grakn.core.graph.graphdb.database.idassigner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.IDAuthority;
-import org.janusgraph.diskstorage.IDBlock;
-import org.janusgraph.graphdb.database.idassigner.IDPool;
-import org.janusgraph.graphdb.database.idassigner.IDPoolExhaustedException;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.IDAuthority;
+import grakn.core.graph.diskstorage.IDBlock;
+import grakn.core.graph.graphdb.database.idassigner.IDPool;
+import grakn.core.graph.graphdb.database.idassigner.IDPoolExhaustedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

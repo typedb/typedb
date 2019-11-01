@@ -16,7 +16,7 @@ package grakn.core.graph.diskstorage.util.time;
 
 
 
-import org.janusgraph.diskstorage.util.time.Timer;
+import grakn.core.graph.diskstorage.util.time.Timer;
 
 import java.time.Duration;
 import java.time.Instant;

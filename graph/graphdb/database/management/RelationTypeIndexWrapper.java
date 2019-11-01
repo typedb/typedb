@@ -17,11 +17,11 @@ package grakn.core.graph.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.schema.RelationTypeIndex;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.schema.RelationTypeIndex;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 
 public class RelationTypeIndexWrapper implements RelationTypeIndex {

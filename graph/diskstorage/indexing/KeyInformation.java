@@ -14,9 +14,9 @@
 
 package grakn.core.graph.diskstorage.indexing;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.diskstorage.indexing.IndexProvider;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.diskstorage.indexing.IndexProvider;
 
 /**
  * Helper class that provides information on the data type and additional parameters that
@@ -29,7 +29,7 @@ import org.janusgraph.diskstorage.indexing.IndexProvider;
  *
  * <p>
  *
- * {@link IndexRetriever} returns {@link org.janusgraph.diskstorage.indexing.KeyInformation} for a given store and given key. This will be provided to an
+ * {@link IndexRetriever} returns {@link KeyInformation} for a given store and given key. This will be provided to an
  * index when the key is not fixed in the context, e.g. in {@link IndexProvider#mutate(java.util.Map, IndexRetriever, org.janusgraph.diskstorage.BaseTransaction)}
  *
  * <p>
@@ -41,22 +41,17 @@ import org.janusgraph.diskstorage.indexing.IndexProvider;
 public interface KeyInformation {
 
     /**
-     * Returns the data type of the key's values.
-     *
-     * @return
+     * Returns the data type of the key's values.return
      */
     Class<?> getDataType();
 
     /**
      * Returns the parameters of the key's configuration.
-     *
-     * @return
      */
     Parameter[] getParameters();
 
     /**
-     * Returns the {@link org.janusgraph.core.Cardinality} for this key.
-     * @return
+     * Returns the {@link Cardinality} for this key.
      */
     Cardinality getCardinality();
 
@@ -64,29 +59,21 @@ public interface KeyInformation {
     interface StoreRetriever {
 
         /**
-         * Returns the {@link org.janusgraph.diskstorage.indexing.KeyInformation} for a particular key for this store
-         * @param key
-         * @return
+         * Returns the {@link KeyInformation} for a particular key for this store
          */
-        org.janusgraph.diskstorage.indexing.KeyInformation get(String key);
+        KeyInformation get(String key);
 
     }
 
     interface IndexRetriever {
 
         /**
-         * Returns the {@link org.janusgraph.diskstorage.indexing.KeyInformation} for a particular key in a given store.
-         *
-         * @param store
-         * @param key
-         * @return
+         * Returns the {@link KeyInformation} for a particular key in a given store.
          */
-        org.janusgraph.diskstorage.indexing.KeyInformation get(String store, String key);
+        KeyInformation get(String store, String key);
 
         /**
          * Returns a {@link StoreRetriever} for the given store on this IndexRetriever
-         * @param store
-         * @return
          */
         StoreRetriever get(String store);
 
@@ -96,8 +83,6 @@ public interface KeyInformation {
 
         /**
          * Returns the {@link IndexRetriever} for a given index.
-         * @param index
-         * @return
          */
         IndexRetriever get(String index);
 

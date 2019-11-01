@@ -15,10 +15,10 @@
 package grakn.core.graph.graphdb.query;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.QueryExecutor;
-import org.janusgraph.graphdb.query.profile.ProfileObservable;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.QueryExecutor;
+import grakn.core.graph.graphdb.query.profile.ProfileObservable;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 /**
  * Holds a {@link BackendQuery} and captures additional information that pertains to its execution and to be used by a

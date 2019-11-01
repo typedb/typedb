@@ -15,24 +15,16 @@
 package grakn.core.graph.diskstorage.locking;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.TemporaryBackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.LocalLockMediator;
-import org.janusgraph.diskstorage.locking.LocalLockMediators;
-import org.janusgraph.diskstorage.locking.LockStatus;
-import org.janusgraph.diskstorage.locking.Locker;
-import org.janusgraph.diskstorage.locking.LockerState;
-import org.janusgraph.diskstorage.locking.PermanentLockingException;
-import org.janusgraph.diskstorage.locking.TemporaryLockingException;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import org.janusgraph.diskstorage.util.KeyColumn;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.util.stats.MetricManager;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
+import grakn.core.graph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.diskstorage.util.time.TimestampProviders;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,7 +129,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             this.llm = null; // redundant, but it preserves this constructor's overall pattern
             this.lockState = new LockerState<>();
             this.lockExpire = GraphDatabaseConfiguration.LOCK_EXPIRE.getDefaultValue();
-            this.log = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.AbstractLocker.class);
+            this.log = LoggerFactory.getLogger(AbstractLocker.class);
         }
 
         /**
@@ -294,7 +286,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     public void writeLock(KeyColumn lockID, StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
         if (null != tx.getConfiguration().getGroupName()) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_WRITE, M_CALLS).inc();
+            //todo-reenable
+//            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_WRITE, M_CALLS).inc();
         }
 
         if (lockState.has(tx, lockID)) {
@@ -322,7 +315,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
                     // lockState.release(tx, lockID); // has no effect
                     unlockLocally(lockID, tx);
                     if (null != tx.getConfiguration().getGroupName()) {
-                        MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_WRITE, M_EXCEPTIONS).inc();
+//                        MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_WRITE, M_EXCEPTIONS).inc();
                     }
                 }
             }
@@ -336,7 +329,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     public void checkLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
 
         if (null != tx.getConfiguration().getGroupName()) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_CHECK, M_CALLS).inc();
+//            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_CHECK, M_CALLS).inc();
         }
 
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
@@ -363,7 +356,7 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             throw new PermanentLockingException(t);
         } finally {
             if (!ok && null != tx.getConfiguration().getGroupName()) {
-                MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_CHECK, M_CALLS).inc();
+//                MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_CHECK, M_CALLS).inc();
             }
         }
     }
@@ -371,16 +364,16 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
     @Override
     public void deleteLocks(StoreTransaction tx) throws TemporaryLockingException, PermanentLockingException {
         if (null != tx.getConfiguration().getGroupName()) {
-            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_DELETE, M_CALLS).inc();
+//            MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_DELETE, M_CALLS).inc();
         }
 
         Map<KeyColumn, S> m = lockState.getLocksForTx(tx);
 
-        final Iterator<Map.Entry<KeyColumn, S>> iterator = m.entrySet().iterator();
+        Iterator<Map.Entry<KeyColumn, S>> iterator = m.entrySet().iterator();
         while (iterator.hasNext()) {
-            final Map.Entry<KeyColumn, S> entry = iterator.next();
-            final KeyColumn kc = entry.getKey();
-            final S ls = entry.getValue();
+            Map.Entry<KeyColumn, S> entry = iterator.next();
+            KeyColumn kc = entry.getKey();
+            S ls = entry.getValue();
             try {
                 deleteSingleLock(kc, ls, tx);
             } catch (AssertionError ae) {
@@ -388,7 +381,8 @@ public abstract class AbstractLocker<S extends LockStatus> implements Locker {
             } catch (Throwable t) {
                 log.error("Exception while deleting lock on " + kc, t);
                 if (null != tx.getConfiguration().getGroupName()) {
-                    MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_DELETE, M_CALLS).inc();
+                    //todo-reenable
+//                    MetricManager.INSTANCE.getCounter(tx.getConfiguration().getGroupName(), M_LOCKS, M_DELETE, M_CALLS).inc();
                 }
             }
             // Regardless of whether we successfully deleted the lock from storage, take it out of the local mediator

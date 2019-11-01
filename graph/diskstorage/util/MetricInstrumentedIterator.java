@@ -16,13 +16,13 @@ package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
-import org.janusgraph.diskstorage.util.IOCallable;
-import org.janusgraph.diskstorage.util.MetricInstrumentedStore;
-import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.diskstorage.util.UncheckedCallable;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
+import grakn.core.graph.diskstorage.util.IOCallable;
+import grakn.core.graph.diskstorage.util.MetricInstrumentedStore;
+import grakn.core.graph.diskstorage.util.RecordIterator;
+import grakn.core.graph.diskstorage.util.UncheckedCallable;
 
 import java.io.IOException;
 

@@ -15,9 +15,9 @@
 package grakn.core.graph.graphdb.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.graphdb.schema.SchemaElementDefinition;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.graphdb.schema.SchemaElementDefinition;
 
 
 public abstract class RelationTypeDefinition extends SchemaElementDefinition {

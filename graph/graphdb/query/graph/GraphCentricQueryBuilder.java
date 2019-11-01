@@ -18,45 +18,45 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphQuery;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.attribute.Cmp;
-import org.janusgraph.core.attribute.Contain;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.OrderList;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.janusgraph.graphdb.query.Query;
-import org.janusgraph.graphdb.query.QueryProcessor;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.ConditionUtil;
-import org.janusgraph.graphdb.query.condition.MultiCondition;
-import org.janusgraph.graphdb.query.condition.Or;
-import org.janusgraph.graphdb.query.condition.PredicateCondition;
-import org.janusgraph.graphdb.query.graph.GraphCentricQuery;
-import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.IndexField;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.MixedIndexType;
-import org.janusgraph.graphdb.types.ParameterIndexField;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphQuery;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.attribute.Cmp;
+import grakn.core.graph.core.attribute.Contain;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.database.IndexSerializer;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.internal.OrderList;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.graphdb.query.Query;
+import grakn.core.graph.graphdb.query.QueryProcessor;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.query.condition.And;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.ConditionUtil;
+import grakn.core.graph.graphdb.query.condition.MultiCondition;
+import grakn.core.graph.graphdb.query.condition.Or;
+import grakn.core.graph.graphdb.query.condition.PredicateCondition;
+import grakn.core.graph.graphdb.query.graph.GraphCentricQuery;
+import grakn.core.graph.graphdb.query.graph.JointIndexQuery;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.CompositeIndexType;
+import grakn.core.graph.graphdb.types.IndexField;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.MixedIndexType;
+import grakn.core.graph.graphdb.types.ParameterIndexField;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,9 +75,9 @@ import java.util.stream.StreamSupport;
  * is then executed through a {@link QueryProcessor}.
  *
  */
-public class GraphCentricQueryBuilder implements JanusGraphQuery<org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder> {
+public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQueryBuilder> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(GraphCentricQueryBuilder.class);
     private static final int DEFAULT_NO_LIMIT = 1000;
     private static final int MAX_BASE_LIMIT = 20000;
     private static final int HARD_MAX_LIMIT = 100000;
@@ -162,14 +162,14 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<org.janusgraph.
         return constraints;
     }
 
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder profiler(QueryProfiler profiler) {
+    public GraphCentricQueryBuilder profiler(QueryProfiler profiler) {
         Preconditions.checkNotNull(profiler);
         this.profiler = profiler;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder has(String key, JanusGraphPredicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(String key, JanusGraphPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         Preconditions.checkNotNull(predicate);
         Preconditions.checkArgument(predicate.isValidCondition(condition), "Invalid condition: %s", condition);
@@ -181,46 +181,46 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<org.janusgraph.
         return this;
     }
 
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder has(PropertyKey key, JanusGraphPredicate predicate, Object condition) {
+    public GraphCentricQueryBuilder has(PropertyKey key, JanusGraphPredicate predicate, Object condition) {
         Preconditions.checkNotNull(key);
         return has(key.name(), predicate, condition);
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder has(String key) {
+    public GraphCentricQueryBuilder has(String key) {
         return has(key, Cmp.NOT_EQUAL, null);
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder hasNot(String key) {
+    public GraphCentricQueryBuilder hasNot(String key) {
         return has(key, Cmp.EQUAL, null);
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder has(String key, Object value) {
+    public GraphCentricQueryBuilder has(String key, Object value) {
         return has(key, Cmp.EQUAL, value);
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder hasNot(String key, Object value) {
+    public GraphCentricQueryBuilder hasNot(String key, Object value) {
         return has(key, Cmp.NOT_EQUAL, value);
     }
 
     @Override
-    public <T extends Comparable<?>> org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder interval(String s, T t1, T t2) {
+    public <T extends Comparable<?>> GraphCentricQueryBuilder interval(String s, T t1, T t2) {
         has(s, Cmp.GREATER_THAN_EQUAL, t1);
         return has(s, Cmp.LESS_THAN, t2);
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder limit(int limit) {
+    public GraphCentricQueryBuilder limit(int limit) {
         Preconditions.checkArgument(limit >= 0, "Non-negative limit expected: %s", limit);
         this.limit = limit;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder orderBy(String keyName, org.apache.tinkerpop.gremlin.process.traversal.Order order) {
+    public GraphCentricQueryBuilder orderBy(String keyName, org.apache.tinkerpop.gremlin.process.traversal.Order order) {
         Preconditions.checkArgument(tx.containsPropertyKey(keyName), "Provided key does not exist: %s", keyName);
         PropertyKey key = tx.getPropertyKey(keyName);
         Preconditions.checkArgument(key != null && order != null, "Need to specify and key and an order");
@@ -234,7 +234,7 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<org.janusgraph.
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder or(org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder subQuery) {
+    public GraphCentricQueryBuilder or(GraphCentricQueryBuilder subQuery) {
         this.globalConstraints.add(subQuery.getConstraints());
         return this;
     }

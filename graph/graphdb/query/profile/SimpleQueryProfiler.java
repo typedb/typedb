@@ -16,7 +16,7 @@ package grakn.core.graph.graphdb.query.profile;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.ArrayList;
 import java.util.HashMap;

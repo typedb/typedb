@@ -16,9 +16,9 @@ package grakn.core.graph.graphdb.util;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.RelationCategory;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.RelationCategory;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

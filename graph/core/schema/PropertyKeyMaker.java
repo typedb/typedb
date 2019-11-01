@@ -14,25 +14,22 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.RelationTypeMaker;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.PropertyKey;
 
 /**
- * Used to define new {@link org.janusgraph.core.PropertyKey}s.
+ * Used to define new {@link PropertyKey}s.
  * An property key is defined by its name, {@link Cardinality}, its data type, and its signature - all of which
  * can be specified in this builder.
- *
  */
 public interface PropertyKeyMaker extends RelationTypeMaker {
 
     /**
-     * Configures the {@link org.janusgraph.core.Cardinality} of this property key.
+     * Configures the {@link Cardinality} of this property key.
      *
-     * @param cardinality
      * @return this PropertyKeyMaker
      */
-    org.janusgraph.core.schema.PropertyKeyMaker cardinality(Cardinality cardinality);
+    PropertyKeyMaker cardinality(Cardinality cardinality);
 
     /**
      * Configures the data type for this property key.
@@ -46,16 +43,16 @@ public interface PropertyKeyMaker extends RelationTypeMaker {
      *
      * @param clazz Data type to be configured.
      * @return this PropertyKeyMaker
-     * @see org.janusgraph.core.PropertyKey#dataType()
+     * @see PropertyKey#dataType()
      */
-    org.janusgraph.core.schema.PropertyKeyMaker dataType(Class<?> clazz);
+    PropertyKeyMaker dataType(Class<?> clazz);
 
     @Override
-    org.janusgraph.core.schema.PropertyKeyMaker signature(PropertyKey... types);
+    PropertyKeyMaker signature(PropertyKey... types);
 
 
     /**
-     * Defines the {@link org.janusgraph.core.PropertyKey} specified by this PropertyKeyMaker and returns the resulting key.
+     * Defines the {@link PropertyKey} specified by this PropertyKeyMaker and returns the resulting key.
      *
      * @return the created {@link PropertyKey}
      */

@@ -14,44 +14,44 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
 
 public interface DataOutput extends WriteBuffer {
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putLong(long val);
+    DataOutput putLong(long val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putInt(int val);
+    DataOutput putInt(int val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putShort(short val);
+    DataOutput putShort(short val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putByte(byte val);
+    DataOutput putByte(byte val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putBytes(byte[] val);
+    DataOutput putBytes(byte[] val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putBytes(StaticBuffer val);
+    DataOutput putBytes(StaticBuffer val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putChar(char val);
+    DataOutput putChar(char val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putFloat(float val);
+    DataOutput putFloat(float val);
 
     @Override
-    org.janusgraph.graphdb.database.serialize.DataOutput putDouble(double val);
+    DataOutput putDouble(double val);
 
-    org.janusgraph.graphdb.database.serialize.DataOutput writeObject(Object object, Class<?> type);
+    DataOutput writeObject(Object object, Class<?> type);
 
-    org.janusgraph.graphdb.database.serialize.DataOutput writeObjectByteOrder(Object object, Class<?> type);
+    DataOutput writeObjectByteOrder(Object object, Class<?> type);
 
-    org.janusgraph.graphdb.database.serialize.DataOutput writeObjectNotNull(Object object);
+    DataOutput writeObjectNotNull(Object object);
 
-    org.janusgraph.graphdb.database.serialize.DataOutput writeClassAndObject(Object object);
+    DataOutput writeClassAndObject(Object object);
 
 }

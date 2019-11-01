@@ -15,20 +15,20 @@
 package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransaction;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.LoggableTransaction;
-import org.janusgraph.diskstorage.indexing.IndexEntry;
-import org.janusgraph.diskstorage.indexing.IndexMutation;
-import org.janusgraph.diskstorage.indexing.IndexProvider;
-import org.janusgraph.diskstorage.indexing.IndexQuery;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.diskstorage.indexing.RawQuery;
-import org.janusgraph.diskstorage.util.BackendOperation;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.util.StreamIterable;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransaction;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.LoggableTransaction;
+import grakn.core.graph.diskstorage.indexing.IndexEntry;
+import grakn.core.graph.diskstorage.indexing.IndexMutation;
+import grakn.core.graph.diskstorage.indexing.IndexProvider;
+import grakn.core.graph.diskstorage.indexing.IndexQuery;
+import grakn.core.graph.diskstorage.indexing.KeyInformation;
+import grakn.core.graph.diskstorage.indexing.RawQuery;
+import grakn.core.graph.diskstorage.util.BackendOperation;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.graphdb.util.StreamIterable;
 
 import java.time.Duration;
 import java.util.HashMap;

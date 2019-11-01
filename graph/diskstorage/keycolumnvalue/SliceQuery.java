@@ -15,13 +15,13 @@
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.StaticArrayEntryList;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.BaseQuery;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.BufferUtil;
+import grakn.core.graph.diskstorage.util.StaticArrayEntryList;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.BaseQuery;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,10 +33,9 @@ import java.util.Objects;
  * Returns all {@link StaticBuffer}s that lie in this range up to the given limit.
  * <p>
  * If a SliceQuery is marked <i>static</i> it is expected that the result set does not change.
- *
  */
 
-public class SliceQuery extends BaseQuery implements BackendQuery<org.janusgraph.diskstorage.keycolumnvalue.SliceQuery> {
+public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     private final StaticBuffer sliceStart;
     private final StaticBuffer sliceEnd;
@@ -46,7 +45,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<org.janusgraph
         this.sliceEnd = sliceEnd;
     }
 
-    public SliceQuery(org.janusgraph.diskstorage.keycolumnvalue.SliceQuery query) {
+    public SliceQuery(SliceQuery query) {
         this(query.getSliceStart(), query.getSliceEnd());
         setLimit(query.getLimit());
     }
@@ -82,13 +81,13 @@ public class SliceQuery extends BaseQuery implements BackendQuery<org.janusgraph
         if (other == null && !getClass().isInstance(other))
             return false;
 
-        org.janusgraph.diskstorage.keycolumnvalue.SliceQuery oth = (org.janusgraph.diskstorage.keycolumnvalue.SliceQuery) other;
+        SliceQuery oth = (SliceQuery) other;
         return sliceStart.equals(oth.sliceStart)
                 && sliceEnd.equals(oth.sliceEnd)
                 && getLimit() == oth.getLimit();
     }
 
-    public boolean subsumes(org.janusgraph.diskstorage.keycolumnvalue.SliceQuery oth) {
+    public boolean subsumes(SliceQuery oth) {
         Preconditions.checkNotNull(oth);
         if (this == oth) return true;
         if (oth.getLimit() > getLimit()) return false;
@@ -99,7 +98,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<org.janusgraph
     }
 
     //TODO: make this more efficient by using reuseIterator() on otherResult
-    public EntryList getSubset(org.janusgraph.diskstorage.keycolumnvalue.SliceQuery otherQuery, EntryList otherResult) {
+    public EntryList getSubset(SliceQuery otherQuery, EntryList otherResult) {
         int pos = Collections.binarySearch(otherResult, sliceStart);
         if (pos < 0) pos = -pos - 1;
 
@@ -113,7 +112,7 @@ public class SliceQuery extends BaseQuery implements BackendQuery<org.janusgraph
     }
 
     public boolean contains(StaticBuffer buffer) {
-        return sliceStart.compareTo(buffer)<=0 && sliceEnd.compareTo(buffer)>0;
+        return sliceStart.compareTo(buffer) <= 0 && sliceEnd.compareTo(buffer) > 0;
     }
 
     public static StaticBuffer pointRange(StaticBuffer point) {
@@ -121,15 +120,15 @@ public class SliceQuery extends BaseQuery implements BackendQuery<org.janusgraph
     }
 
     @Override
-    public org.janusgraph.diskstorage.keycolumnvalue.SliceQuery setLimit(int limit) {
+    public SliceQuery setLimit(int limit) {
         Preconditions.checkArgument(!hasLimit());
         super.setLimit(limit);
         return this;
     }
 
     @Override
-    public org.janusgraph.diskstorage.keycolumnvalue.SliceQuery updateLimit(int newLimit) {
-        return new org.janusgraph.diskstorage.keycolumnvalue.SliceQuery(sliceStart, sliceEnd).setLimit(newLimit);
+    public SliceQuery updateLimit(int newLimit) {
+        return new SliceQuery(sliceStart, sliceEnd).setLimit(newLimit);
     }
 
 }

@@ -17,12 +17,12 @@ package grakn.core.graph.graphdb.query.condition;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.condition.And;
-import org.janusgraph.graphdb.query.condition.Condition;
-import org.janusgraph.graphdb.query.condition.MultiCondition;
-import org.janusgraph.graphdb.query.condition.Not;
-import org.janusgraph.graphdb.query.condition.Or;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.condition.And;
+import grakn.core.graph.graphdb.query.condition.Condition;
+import grakn.core.graph.graphdb.query.condition.MultiCondition;
+import grakn.core.graph.graphdb.query.condition.Not;
+import grakn.core.graph.graphdb.query.condition.Or;
 
 import javax.annotation.Nullable;
 

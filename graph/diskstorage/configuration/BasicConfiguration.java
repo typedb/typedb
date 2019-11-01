@@ -18,11 +18,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ReadConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +30,7 @@ import java.util.Set;
 public class BasicConfiguration implements Configuration {
 
     private final ConfigNamespace root;
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.configuration.BasicConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BasicConfiguration.class);
 
     public enum Restriction {LOCAL, GLOBAL, NONE}
 

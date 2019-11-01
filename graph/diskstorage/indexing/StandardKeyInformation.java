@@ -15,10 +15,10 @@
 package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.diskstorage.indexing.KeyInformation;
 
 
 public class StandardKeyInformation implements KeyInformation {

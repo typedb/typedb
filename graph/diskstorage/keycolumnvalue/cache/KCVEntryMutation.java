@@ -15,9 +15,9 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.cache;
 
 import com.google.common.base.Function;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.Mutation;
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.Mutation;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 import javax.annotation.Nullable;
 import java.util.List;

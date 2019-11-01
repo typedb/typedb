@@ -14,7 +14,6 @@
 
 package grakn.core.graph.graphdb.database;
 
-import com.carrotsearch.hppc.LongArrayList;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ImmutableMap;
@@ -22,6 +21,68 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.diskstorage.Backend;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BackendTransaction;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
+import grakn.core.graph.diskstorage.indexing.IndexEntry;
+import grakn.core.graph.diskstorage.indexing.IndexTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
+import grakn.core.graph.diskstorage.log.Log;
+import grakn.core.graph.diskstorage.log.Message;
+import grakn.core.graph.diskstorage.log.ReadMarker;
+import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
+import grakn.core.graph.diskstorage.util.RecordIterator;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.database.cache.SchemaCache;
+import grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner;
+import grakn.core.graph.graphdb.database.idhandling.IDHandler;
+import grakn.core.graph.graphdb.database.log.LogTxStatus;
+import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
+import grakn.core.graph.graphdb.database.management.ManagementLogger;
+import grakn.core.graph.graphdb.database.management.ManagementSystem;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.InternalVertexLabel;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.relations.EdgeDirection;
+import grakn.core.graph.graphdb.tinkerpop.JanusGraphFeatures;
+import grakn.core.graph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.transaction.StandardTransactionBuilder;
+import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
+import grakn.core.graph.graphdb.types.CompositeIndexType;
+import grakn.core.graph.graphdb.types.MixedIndexType;
+import grakn.core.graph.graphdb.types.system.BaseKey;
+import grakn.core.graph.graphdb.types.system.BaseRelationType;
+import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import grakn.core.graph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -30,78 +91,8 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONVersion;
-import org.apache.tinkerpop.gremlin.structure.io.gryo.GryoVersion;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.diskstorage.Backend;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BackendTransaction;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.configuration.BasicConfiguration;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.ModifiableConfiguration;
-import org.janusgraph.diskstorage.indexing.IndexEntry;
-import org.janusgraph.diskstorage.indexing.IndexTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures;
-import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
-import org.janusgraph.diskstorage.log.Log;
-import org.janusgraph.diskstorage.log.Message;
-import org.janusgraph.diskstorage.log.ReadMarker;
-import org.janusgraph.diskstorage.log.kcvs.KCVSLog;
-import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.database.EdgeSerializer;
-import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.database.RelationQueryCache;
-import org.janusgraph.graphdb.database.cache.SchemaCache;
-import org.janusgraph.graphdb.database.idassigner.VertexIDAssigner;
-import org.janusgraph.graphdb.database.idhandling.IDHandler;
-import org.janusgraph.graphdb.database.log.LogTxStatus;
-import org.janusgraph.graphdb.database.log.TransactionLogHeader;
-import org.janusgraph.graphdb.database.management.ManagementLogger;
-import org.janusgraph.graphdb.database.management.ManagementSystem;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.idmanagement.IDManager;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.InternalVertexLabel;
-import org.janusgraph.graphdb.query.QueryUtil;
-import org.janusgraph.graphdb.relations.EdgeDirection;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphFeatures;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistryV1d0;
-import org.janusgraph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphIoRegistrationStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphLocalQueryOptimizerStrategy;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.transaction.StandardTransactionBuilder;
-import org.janusgraph.graphdb.transaction.TransactionConfiguration;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.MixedIndexType;
-import org.janusgraph.graphdb.types.system.BaseKey;
-import org.janusgraph.graphdb.types.system.BaseRelationType;
-import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import org.janusgraph.util.system.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,13 +112,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 
 public class StandardJanusGraph implements JanusGraph {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.StandardJanusGraph.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardJanusGraph.class);
 
     // Filters used to retain Schema vertices(SCHEMA_FILTER), NOT Schema vertices(NO_SCHEMA_FILTER) and to not filter anything (NO_FILTER).
     private static final Predicate<InternalRelation> SCHEMA_FILTER = internalRelation -> internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
@@ -137,11 +129,10 @@ public class StandardJanusGraph implements JanusGraph {
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
                 .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(),
-                        JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance(),
-                        JanusGraphIoRegistrationStrategy.instance());
+                        JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance());
 
         //Register with cache
-        TraversalStrategies.GlobalCache.registerStrategies(org.janusgraph.graphdb.database.StandardJanusGraph.class, graphStrategies);
+        TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, graphStrategies);
     }
 
@@ -258,13 +249,7 @@ public class StandardJanusGraph implements JanusGraph {
 
     @Override
     public <I extends Io> I io(Io.Builder<I> builder) {
-        if (builder.requiresVersion(GryoVersion.V1_0) || builder.requiresVersion(GraphSONVersion.V1_0)) {
-            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(JanusGraphIoRegistryV1d0.getInstance())).create();
-        } else if (builder.requiresVersion(GraphSONVersion.V2_0)) {
-            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(JanusGraphIoRegistry.getInstance())).create();
-        } else {
-            return (I) builder.graph(this).onMapper(mapper -> mapper.addRegistry(JanusGraphIoRegistry.getInstance())).create();
-        }
+        return null;
     }
 
     @Override
@@ -319,7 +304,7 @@ public class StandardJanusGraph implements JanusGraph {
         private ThreadLocal<StandardJanusGraphTx> localJanusTransaction = ThreadLocal.withInitial(() -> null);
 
         AutomaticLocalTinkerTransaction() {
-            super(org.janusgraph.graphdb.database.StandardJanusGraph.this);
+            super(StandardJanusGraph.this);
         }
 
         public StandardJanusGraphTx getJanusTransaction() {
@@ -351,7 +336,7 @@ public class StandardJanusGraph implements JanusGraph {
 
         @Override
         public boolean isOpen() {
-            if (org.janusgraph.graphdb.database.StandardJanusGraph.this.isClosed()) {
+            if (StandardJanusGraph.this.isClosed()) {
                 // Graph has been closed
                 return false;
             }
@@ -368,7 +353,7 @@ public class StandardJanusGraph implements JanusGraph {
 
         @Override
         public Transaction onReadWrite(Consumer<Transaction> transactionConsumer) {
-            if (org.janusgraph.graphdb.database.StandardJanusGraph.this.isClosed()) { //cannot start a transaction if the enclosing graph is closed
+            if (StandardJanusGraph.this.isClosed()) { //cannot start a transaction if the enclosing graph is closed
                 throw new IllegalStateException("Graph has been closed");
             }
             Preconditions.checkArgument(transactionConsumer instanceof READ_WRITE_BEHAVIOR, "Only READ_WRITE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
@@ -546,8 +531,8 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = org.janusgraph.graphdb.database.StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        org.janusgraph.graphdb.database.StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
+                        StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
                 consistentTx.getBackendTransaction().disableCache();
                 JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
                 return v != null ? v.longId() : null;
@@ -568,8 +553,7 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = org.janusgraph.graphdb.database.StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        org.janusgraph.graphdb.database.StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
                 consistentTx.getBackendTransaction().disableCache();
                 return edgeQuery(schemaId, query, consistentTx.getBackendTransaction());
             } finally {
@@ -625,13 +609,8 @@ public class StandardJanusGraph implements JanusGraph {
         return tx.edgeStoreQuery(new KeySliceQuery(idManager.getKey(vid), query));
     }
 
-    public List<EntryList> edgeMultiQuery(LongArrayList vertexIdsAsLongs, SliceQuery query, BackendTransaction tx) {
-        Preconditions.checkArgument(vertexIdsAsLongs != null && !vertexIdsAsLongs.isEmpty());
-        List<StaticBuffer> vertexIds = new ArrayList<>(vertexIdsAsLongs.size());
-        for (int i = 0; i < vertexIdsAsLongs.size(); i++) {
-            Preconditions.checkArgument(vertexIdsAsLongs.get(i) > 0);
-            vertexIds.add(idManager.getKey(vertexIdsAsLongs.get(i)));
-        }
+    public List<EntryList> edgeMultiQuery(List<Long> vertexIdsAsLongs, SliceQuery query, BackendTransaction tx) {
+        List<StaticBuffer> vertexIds = vertexIdsAsLongs.stream().map(idManager::getKey).collect(Collectors.toList());
         Map<StaticBuffer, EntryList> result = tx.edgeStoreMultiQuery(vertexIds, query);
         List<EntryList> resultList = new ArrayList<>(result.size());
         for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
@@ -639,8 +618,7 @@ public class StandardJanusGraph implements JanusGraph {
     }
 
     private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
-        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
     }
 
     // ################### WRITE #########################

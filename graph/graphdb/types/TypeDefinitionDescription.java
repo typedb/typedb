@@ -15,7 +15,7 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
 
 public class TypeDefinitionDescription {

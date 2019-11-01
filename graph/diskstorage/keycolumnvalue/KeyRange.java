@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 /**
  * A range of bytes between start and end where start is inclusive and end is exclusive.

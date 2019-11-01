@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.query;
 
-import org.janusgraph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphElement;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;

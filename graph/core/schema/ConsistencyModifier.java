@@ -14,8 +14,8 @@
 
 package grakn.core.graph.core.schema;
 
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.core.schema.JanusGraphSchemaElement;
 
 /**
  * Used to control JanusGraph's consistency behavior on eventually consistent or other non-transactional backend systems.

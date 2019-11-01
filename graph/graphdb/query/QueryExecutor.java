@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.query;
 
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.graphdb.query.BackendQuery;
-import org.janusgraph.graphdb.query.ElementQuery;
-import org.janusgraph.graphdb.query.QueryProcessor;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.query.BackendQuery;
+import grakn.core.graph.graphdb.query.ElementQuery;
+import grakn.core.graph.graphdb.query.QueryProcessor;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.Iterator;
 

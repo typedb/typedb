@@ -33,9 +33,6 @@ public enum Order {
     /**
      * Modulates the result of a {@link Comparable#compareTo(Object)} execution for this specific
      * order, i.e. it negates the result if the order is {@link #DESC}.
-     *
-     * @param compare
-     * @return
      */
     public int modulateNaturalOrder(int compare) {
         switch (this) {
@@ -51,7 +48,7 @@ public enum Order {
     /**
      * The default order when none is specified
      */
-    public static final org.janusgraph.graphdb.internal.Order DEFAULT = ASC;
+    public static final Order DEFAULT = ASC;
 
     public org.apache.tinkerpop.gremlin.process.traversal.Order getTP() {
         switch (this) {
@@ -61,7 +58,7 @@ public enum Order {
         }
     }
 
-    public static org.janusgraph.graphdb.internal.Order convert(org.apache.tinkerpop.gremlin.process.traversal.Order order) {
+    public static Order convert(org.apache.tinkerpop.gremlin.process.traversal.Order order) {
         switch(order) {
             case asc: case incr: return ASC;
             case desc: case decr: return DESC;

@@ -15,8 +15,8 @@
 package grakn.core.graph.graphdb.transaction.addedrelations;
 
 import com.google.common.base.Predicate;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.transaction.addedrelations.SimpleBufferAddedRelations;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.transaction.addedrelations.SimpleBufferAddedRelations;
 
 import java.util.List;
 

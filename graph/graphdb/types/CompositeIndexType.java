@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.types;
 
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.types.IndexField;
-import org.janusgraph.graphdb.types.IndexType;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.types.IndexField;
+import grakn.core.graph.graphdb.types.IndexType;
 
 
 public interface CompositeIndexType extends IndexType {

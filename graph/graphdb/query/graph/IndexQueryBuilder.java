@@ -18,20 +18,20 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphIndexQuery;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.graphdb.database.IndexSerializer;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.util.StreamIterable;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphIndexQuery;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.query.BaseQuery;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.util.StreamIterable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,11 +51,10 @@ import java.util.stream.Stream;
  * <p>
  * This class essentially just acts as a builder, uses the {@link IndexSerializer} to execute the query, and then post-processes
  * the result set to return to the user.
- *
  */
 public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery {
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.graphdb.query.graph.IndexQueryBuilder.class);
+    private static final Logger log = LoggerFactory.getLogger(IndexQueryBuilder.class);
 
     private static final String VERTEX_PREFIX = "v.";
     private static final String EDGE_PREFIX = "e.";
@@ -137,7 +136,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder setElementIdentifier(String identifier) {
+    public IndexQueryBuilder setElementIdentifier(String identifier) {
         Preconditions.checkArgument(StringUtils.isNotBlank(identifier), "Prefix may not be a blank string");
         this.prefix = identifier;
         return this;
@@ -152,20 +151,20 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     // Builder Methods
     //################################################
 
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder setIndex(String indexName) {
+    public IndexQueryBuilder setIndex(String indexName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         this.indexName = indexName;
         return this;
     }
 
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder setQuery(String query) {
+    public IndexQueryBuilder setQuery(String query) {
         Preconditions.checkArgument(StringUtils.isNotBlank(query));
         this.query = query;
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder offset(int offset) {
+    public IndexQueryBuilder offset(int offset) {
         Preconditions.checkArgument(offset >= 0, "Invalid offset provided: %s", offset);
         this.offset = offset;
         return this;
@@ -179,25 +178,25 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder limit(int limit) {
+    public IndexQueryBuilder limit(int limit) {
         super.setLimit(limit);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder addParameter(Parameter para) {
+    public IndexQueryBuilder addParameter(Parameter para) {
         parameters.add(para);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder addParameters(Iterable<Parameter> paras) {
+    public IndexQueryBuilder addParameters(Iterable<Parameter> paras) {
         Iterables.addAll(parameters, paras);
         return this;
     }
 
     @Override
-    public org.janusgraph.graphdb.query.graph.IndexQueryBuilder addParameters(Parameter... paras) {
+    public IndexQueryBuilder addParameters(Parameter... paras) {
         for (Parameter para : paras) addParameter(para);
         return this;
     }

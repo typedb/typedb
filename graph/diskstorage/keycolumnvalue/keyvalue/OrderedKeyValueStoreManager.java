@@ -14,11 +14,11 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KVMutation;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
-import org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVMutation;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
+import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 
 import java.util.Map;
 

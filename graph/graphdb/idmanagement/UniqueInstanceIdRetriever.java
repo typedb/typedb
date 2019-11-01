@@ -17,11 +17,11 @@ package grakn.core.graph.graphdb.idmanagement;
 import com.google.common.base.Preconditions;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.core.JanusGraphConfigurationException;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.util.encoding.LongEncoding;
+import grakn.core.graph.core.JanusGraphConfigurationException;
+import grakn.core.graph.diskstorage.configuration.ConfigElement;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -14,21 +14,19 @@
 
 package grakn.core.graph.graphdb.query.vertex;
 
-import com.carrotsearch.hppc.LongArrayList;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.graphdb.query.vertex.VertexArrayList;
-import org.janusgraph.graphdb.query.vertex.VertexListInternal;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.util.datastructures.AbstractLongListUtil;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
  * An implementation of {@link VertexListInternal} that stores only the vertex ids
- * and simply wraps an {@link LongArrayList} and keeps a boolean flag to remember whether this list is in sort order.
+ * and simply wraps an {@link ArrayList} and keeps a boolean flag to remember whether this list is in sort order.
  * In addition, we need a transaction reference in order to construct actual vertex references on request.
  * <p>
  * This is a more efficient way to represent a vertex result set but only applies to loaded vertices that have ids.
@@ -37,14 +35,10 @@ import java.util.NoSuchElementException;
 public class VertexLongList implements VertexListInternal {
 
     private final StandardJanusGraphTx tx;
-    private LongArrayList vertices;
+    private List<Long> vertices;
     private boolean sorted;
 
-    public VertexLongList(StandardJanusGraphTx tx) {
-        this(tx, new LongArrayList(10), true);
-    }
-
-    public VertexLongList(StandardJanusGraphTx tx, LongArrayList vertices, boolean sorted) {
+    public VertexLongList(StandardJanusGraphTx tx, List<Long> vertices, boolean sorted) {
         this.tx = tx;
         this.vertices = vertices;
         this.sorted = sorted;
@@ -62,7 +56,7 @@ public class VertexLongList implements VertexListInternal {
     }
 
     @Override
-    public LongArrayList getIDs() {
+    public List<Long> getIDs() {
         return vertices;
     }
 
@@ -72,22 +66,15 @@ public class VertexLongList implements VertexListInternal {
     }
 
     @Override
-    public void sort() {
-        if (sorted) return;
-        Arrays.sort(vertices.buffer, 0, vertices.size());
-        sorted = true;
-    }
-
-    @Override
     public boolean isSorted() {
         return sorted;
     }
 
     @Override
     public VertexList subList(int fromPosition, int length) {
-        LongArrayList subList = new LongArrayList(length);
-        subList.add(vertices.buffer, fromPosition, length);
-        return new org.janusgraph.graphdb.query.vertex.VertexLongList(tx, subList, sorted);
+        List<Long> subList = new ArrayList<>(length);
+        subList.addAll(vertices.subList(fromPosition, fromPosition + length));
+        return new VertexLongList(tx, subList, sorted);
     }
 
     @Override
@@ -95,33 +82,24 @@ public class VertexLongList implements VertexListInternal {
         return vertices.size();
     }
 
+    //TODO this seems to be used only in tests (indirectly) - verify and delete if not necessary
     @Override
     public void addAll(VertexList vertexlist) {
-        final LongArrayList otherVertexIds;
-        if (vertexlist instanceof org.janusgraph.graphdb.query.vertex.VertexLongList) {
-            otherVertexIds = ((org.janusgraph.graphdb.query.vertex.VertexLongList) vertexlist).vertices;
+        List<Long> otherVertexIds;
+        if (vertexlist instanceof VertexLongList) {
+            otherVertexIds = ((VertexLongList) vertexlist).vertices;
         } else if (vertexlist instanceof VertexArrayList) {
             VertexArrayList other = (VertexArrayList) vertexlist;
-            otherVertexIds = new LongArrayList(other.size());
+            otherVertexIds = new ArrayList<>(other.size());
             for (int i = 0; i < other.size(); i++) otherVertexIds.add(other.getID(i));
         } else {
             throw new IllegalArgumentException("Unsupported vertex-list: " + vertexlist.getClass());
         }
+        vertices.addAll(otherVertexIds);
         if (sorted && vertexlist.isSorted()) {
             //Merge join
-            vertices = AbstractLongListUtil.mergeSort(vertices, otherVertexIds);
-        } else {
-            sorted = false;
-            vertices.add(otherVertexIds.buffer, 0, otherVertexIds.size());
+            vertices.sort(Comparator.comparingLong(v -> v));
         }
-    }
-
-    public VertexArrayList toVertexArrayList() {
-        VertexArrayList list = new VertexArrayList(tx);
-        for (int i = 0; i < vertices.size(); i++) {
-            list.add(get(i));
-        }
-        return list;
     }
 
     @Override

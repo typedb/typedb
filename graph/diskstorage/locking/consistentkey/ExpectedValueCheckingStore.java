@@ -14,16 +14,16 @@
 
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVSProxy;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.locking.Locker;
-import org.janusgraph.diskstorage.locking.PermanentLockingException;
-import org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
-import org.janusgraph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVSProxy;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.Locker;
+import grakn.core.graph.diskstorage.locking.PermanentLockingException;
+import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
+import grakn.core.graph.diskstorage.util.KeyColumn;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

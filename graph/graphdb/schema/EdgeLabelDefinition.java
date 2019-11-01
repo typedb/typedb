@@ -15,9 +15,9 @@
 package grakn.core.graph.graphdb.schema;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.graphdb.schema.RelationTypeDefinition;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.graphdb.schema.RelationTypeDefinition;
 
 
 public class EdgeLabelDefinition extends RelationTypeDefinition {

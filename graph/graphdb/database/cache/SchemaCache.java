@@ -15,8 +15,8 @@
 package grakn.core.graph.graphdb.database.cache;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.graphdb.types.system.BaseRelationType;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.graphdb.types.system.BaseRelationType;
 
 /**
  * This interface defines the methods that a SchemaCache must implement. A SchemaCache is maintained by the JanusGraph graph

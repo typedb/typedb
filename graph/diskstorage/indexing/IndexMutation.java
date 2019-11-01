@@ -16,12 +16,12 @@ package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.Mutation;
-import org.janusgraph.diskstorage.indexing.IndexEntry;
-import org.janusgraph.diskstorage.indexing.IndexProvider;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.Mutation;
+import grakn.core.graph.diskstorage.indexing.IndexEntry;
+import grakn.core.graph.diskstorage.indexing.IndexProvider;
+import grakn.core.graph.diskstorage.indexing.KeyInformation;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -52,7 +52,7 @@ public class IndexMutation extends Mutation<IndexEntry, IndexEntry> {
         this.isDeleted = isDeleted;
     }
 
-    public void merge(org.janusgraph.diskstorage.indexing.IndexMutation m) {
+    public void merge(IndexMutation m) {
         Preconditions.checkArgument(isNew == m.isNew, "Incompatible new status");
         Preconditions.checkArgument(isDeleted == m.isDeleted, "Incompatible delete status");
         super.merge(m);

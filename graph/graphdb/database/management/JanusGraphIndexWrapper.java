@@ -17,15 +17,15 @@ package grakn.core.graph.graphdb.database.management;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.Parameter;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.IndexField;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.MixedIndexType;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.JanusGraphIndex;
+import grakn.core.graph.core.schema.Parameter;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.types.CompositeIndexType;
+import grakn.core.graph.graphdb.types.IndexField;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.MixedIndexType;
 
 
 public class JanusGraphIndexWrapper implements JanusGraphIndex {

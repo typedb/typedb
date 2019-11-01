@@ -15,7 +15,7 @@
 package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.janusgraph.core.PropertyKey;
+import grakn.core.graph.core.PropertyKey;
 
 
 public interface JanusGraphProperty<V> extends Property<V> {

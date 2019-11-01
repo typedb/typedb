@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage;
 
-import org.janusgraph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.Entry;
 
 import java.util.AbstractList;
 import java.util.Iterator;

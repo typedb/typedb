@@ -14,9 +14,9 @@
 
 package grakn.core.graph.graphdb.types;
 
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.ParameterIndexField;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.ParameterIndexField;
 
 
 public interface MixedIndexType extends IndexType {

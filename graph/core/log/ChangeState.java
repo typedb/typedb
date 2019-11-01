@@ -16,14 +16,14 @@ package grakn.core.graph.core.log;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.log.Change;
-import org.janusgraph.core.log.ChangeProcessor;
-import org.janusgraph.core.log.TransactionId;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.log.Change;
+import grakn.core.graph.core.log.ChangeProcessor;
+import grakn.core.graph.core.log.TransactionId;
 
 import java.util.Set;
 

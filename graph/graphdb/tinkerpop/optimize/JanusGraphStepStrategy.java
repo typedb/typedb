@@ -21,15 +21,15 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.janusgraph.graphdb.tinkerpop.ElementUtils;
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStep;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import grakn.core.graph.graphdb.tinkerpop.ElementUtils;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphStep;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
 
 public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
-    private static final org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy INSTANCE = new org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy();
+    private static final JanusGraphStepStrategy INSTANCE = new JanusGraphStepStrategy();
 
     private JanusGraphStepStrategy() {
     }
@@ -67,7 +67,7 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
         });
     }
 
-    public static org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphStepStrategy instance() {
+    public static JanusGraphStepStrategy instance() {
         return INSTANCE;
     }
 }

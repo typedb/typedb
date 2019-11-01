@@ -15,10 +15,10 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.query.condition.Literal;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.graphdb.query.condition.Literal;
 
 import java.util.Objects;
 

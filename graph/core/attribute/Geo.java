@@ -16,8 +16,8 @@ package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.janusgraph.core.attribute.Geoshape;
-import org.janusgraph.graphdb.query.JanusGraphPredicate;
+import grakn.core.graph.core.attribute.Geoshape;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 /**
  * Comparison relations for geographic shapes.

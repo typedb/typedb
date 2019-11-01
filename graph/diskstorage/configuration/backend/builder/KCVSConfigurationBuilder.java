@@ -15,11 +15,11 @@
 package grakn.core.graph.diskstorage.configuration.backend.builder;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.configuration.backend.KCVSConfiguration;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.util.BackendOperation;
-import org.janusgraph.diskstorage.util.time.TimestampProviders;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.backend.KCVSConfiguration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.util.BackendOperation;
+import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 import java.time.Duration;
 

@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
-import org.janusgraph.diskstorage.keycolumnvalue.scan.ScanJob;
+import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
 
 /**
  * Counters associated with a {@link ScanJob}.

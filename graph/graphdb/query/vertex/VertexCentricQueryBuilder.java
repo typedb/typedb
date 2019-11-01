@@ -15,40 +15,36 @@
 package grakn.core.graph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.JanusGraphVertexQuery;
-import org.janusgraph.core.VertexList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.query.BackendQueryHolder;
-import org.janusgraph.graphdb.query.QueryProcessor;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
-import org.janusgraph.graphdb.query.vertex.BaseVertexCentricQuery;
-import org.janusgraph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
-import org.janusgraph.graphdb.query.vertex.SimpleVertexQueryProcessor;
+import grakn.core.graph.core.JanusGraphEdge;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.JanusGraphVertexQuery;
+import grakn.core.graph.core.VertexList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.internal.RelationCategory;
+import grakn.core.graph.graphdb.query.BackendQueryHolder;
+import grakn.core.graph.graphdb.query.QueryProcessor;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.List;
 
 /**
  * Implementation of {@link JanusGraphVertexQuery} that extends {@link BasicVertexCentricQueryBuilder}
  * for all the query building and optimization and adds only the execution logic in
- * {@link #constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}. However, there is
+ * {@link #constructQuery(RelationCategory)}. However, there is
  * one important special case: If the constructed query is simple
  * then we use the {@link SimpleVertexQueryProcessor} to execute the query instead of the generic {@link QueryProcessor}
  * for performance reasons and we compute the result sets differently to make things faster and more memory efficient.
  * <p>
  * The simplified vertex processing only applies to loaded (i.e. non-mutated) vertices. The query can be configured
  * to only included loaded relations in the result set (which is needed, for instance, when computing index deltas in
- * {@link org.janusgraph.graphdb.database.IndexSerializer}) via {@link #queryOnlyLoaded()}.
+ * IndexSerialize}) via {@link #queryOnlyLoaded()}.
  * <p>
  * All other methods just prepare or transform that result set to fit the particular method semantics.
- *
  */
-public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder> implements JanusGraphVertexQuery<org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder> {
+public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<VertexCentricQueryBuilder> implements JanusGraphVertexQuery<VertexCentricQueryBuilder> {
 
     /**
      * The base vertex of this query
@@ -62,7 +58,7 @@ public class VertexCentricQueryBuilder extends BasicVertexCentricQueryBuilder<or
     }
 
     @Override
-    protected org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder getThis() {
+    protected VertexCentricQueryBuilder getThis() {
         return this;
     }
 

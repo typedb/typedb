@@ -14,52 +14,51 @@
 
 package grakn.core.graph.graphdb.database;
 
-import com.carrotsearch.hppc.LongArrayList;
-import com.carrotsearch.hppc.LongHashSet;
-import com.carrotsearch.hppc.LongObjectHashMap;
-import com.carrotsearch.hppc.LongSet;
 import com.google.common.base.Preconditions;
+import grakn.core.graph.core.JanusGraphVertexProperty;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.util.BufferUtil;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.graphdb.database.idhandling.IDHandler;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
+import grakn.core.graph.graphdb.database.serialize.AttributeUtil;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.Order;
+import grakn.core.graph.graphdb.internal.RelationCategory;
+import grakn.core.graph.graphdb.relations.EdgeDirection;
+import grakn.core.graph.graphdb.relations.RelationCache;
+import grakn.core.graph.graphdb.types.TypeInspector;
+import grakn.core.graph.graphdb.types.system.ImplicitKey;
+import grakn.core.graph.util.datastructures.Interval;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.graphdb.database.RelationReader;
-import org.janusgraph.graphdb.database.idhandling.IDHandler;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.database.serialize.AttributeUtil;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.Order;
-import org.janusgraph.graphdb.internal.RelationCategory;
-import org.janusgraph.graphdb.relations.EdgeDirection;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.types.TypeInspector;
-import org.janusgraph.graphdb.types.system.ImplicitKey;
-import org.janusgraph.util.datastructures.Interval;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import static org.janusgraph.graphdb.database.idhandling.IDHandler.DirectionID;
-import static org.janusgraph.graphdb.database.idhandling.IDHandler.RelationTypeParse;
-import static org.janusgraph.graphdb.database.idhandling.IDHandler.getBounds;
+import static grakn.core.graph.graphdb.database.idhandling.IDHandler.DirectionID;
+import static grakn.core.graph.graphdb.database.idhandling.IDHandler.RelationTypeParse;
+import static grakn.core.graph.graphdb.database.idhandling.IDHandler.getBounds;
 
 public class EdgeSerializer implements RelationReader {
     @SuppressWarnings("unused")
-    private static final Logger logger = LoggerFactory.getLogger(org.janusgraph.graphdb.database.EdgeSerializer.class);
-
+    private static final Logger LOG = LoggerFactory.getLogger(EdgeSerializer.class);
 
     private static final int DEFAULT_COLUMN_CAPACITY = 60;
     private static final int DEFAULT_CAPACITY = 128;
@@ -89,7 +88,7 @@ public class EdgeSerializer implements RelationReader {
     public RelationCache parseRelation(Entry data, boolean excludeProperties, TypeInspector tx) {
         ReadBuffer in = data.asReadBuffer();
 
-        LongObjectHashMap properties = excludeProperties ? null : new LongObjectHashMap(4);
+        Map<Long, Object> properties = excludeProperties ? null : new HashMap<>(4);
         RelationTypeParse typeAndDir = IDHandler.readRelationType(in);
 
         long typeId = typeAndDir.typeId;
@@ -175,7 +174,7 @@ public class EdgeSerializer implements RelationReader {
         return new RelationCache(dir, typeId, relationId, other, properties);
     }
 
-    private void readInlineTypes(long[] keyIds, LongObjectHashMap properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
+    private void readInlineTypes(long[] keyIds, Map<Long, Object> properties, ReadBuffer in, TypeInspector tx, InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey keyType = tx.getExistingPropertyKey(keyId);
             Object value = readInline(in, keyType, inlineType);
@@ -290,19 +289,20 @@ public class EdgeSerializer implements RelationReader {
         writeInlineTypes(signature, relation, out, tx, InlineType.SIGNATURE);
 
         //Write remaining properties
-        LongSet writtenTypes = new LongHashSet(sortKey.length + signature.length);
+        Set writtenTypes = new HashSet<Long>(sortKey.length + signature.length);
         if (sortKey.length > 0 || signature.length > 0) {
             for (long id : sortKey) writtenTypes.add(id);
             for (long id : signature) writtenTypes.add(id);
         }
-        LongArrayList remainingTypes = new LongArrayList(8);
+        List<Long> remainingTypes = new ArrayList<>(8);
         for (PropertyKey t : relation.getPropertyKeysDirect()) {
             if (!(t instanceof ImplicitKey) && !writtenTypes.contains(t.longId())) {
                 remainingTypes.add(t.longId());
             }
         }
+
         //Sort types before writing to ensure that value is always written the same way
-        long[] remaining = remainingTypes.toArray();
+        long[] remaining = remainingTypes.stream().mapToLong(x -> x).toArray();
         Arrays.sort(remaining);
         for (long tid : remaining) {
             PropertyKey t = tx.getExistingPropertyKey(tid);

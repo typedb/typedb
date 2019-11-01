@@ -15,14 +15,14 @@
 package grakn.core.graph.graphdb.database.serialize.attribute;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.Namifiable;
-import org.janusgraph.diskstorage.ScanBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.database.serialize.OrderPreservingSerializer;
-import org.janusgraph.graphdb.database.serialize.SupportsNullSerializer;
-import org.janusgraph.graphdb.database.serialize.attribute.CharacterSerializer;
-import org.janusgraph.util.encoding.StringEncoding;
+import grakn.core.graph.core.Namifiable;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
+import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
+import grakn.core.graph.graphdb.database.serialize.SupportsNullSerializer;
+import grakn.core.graph.graphdb.database.serialize.attribute.CharacterSerializer;
+import grakn.core.graph.util.encoding.StringEncoding;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;

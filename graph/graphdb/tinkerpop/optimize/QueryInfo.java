@@ -14,19 +14,14 @@
 
 package grakn.core.graph.graphdb.tinkerpop.optimize;
 
-import org.janusgraph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
+import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder.OrderEntry;
 
 import java.util.List;
 import java.util.Objects;
 
-/**
- *
- *  @author David Clement (david.clement90@laposte.net)
- *
- */
 public class QueryInfo {
 
-    private final  List<OrderEntry> orders;
+    private final List<OrderEntry> orders;
 
     private Integer lowLimit;
 
@@ -50,12 +45,12 @@ public class QueryInfo {
         return highLimit;
     }
 
-    public org.janusgraph.graphdb.tinkerpop.optimize.QueryInfo setLowLimit(Integer lowLimit) {
+    public QueryInfo setLowLimit(Integer lowLimit) {
         this.lowLimit = lowLimit;
         return this;
     }
 
-    public org.janusgraph.graphdb.tinkerpop.optimize.QueryInfo setHighLimit(Integer highLimit) {
+    public QueryInfo setHighLimit(Integer highLimit) {
         this.highLimit = highLimit;
         return this;
     }
@@ -67,10 +62,10 @@ public class QueryInfo {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.graphdb.tinkerpop.optimize.QueryInfo oth = (org.janusgraph.graphdb.tinkerpop.optimize.QueryInfo)other;
+        QueryInfo oth = (QueryInfo) other;
         return Objects.equals(orders, oth.orders) && Objects.equals(lowLimit, oth.lowLimit) && highLimit.equals(oth.highLimit);
     }
 }

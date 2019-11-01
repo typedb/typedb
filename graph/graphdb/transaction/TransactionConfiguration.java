@@ -14,8 +14,8 @@
 
 package grakn.core.graph.graphdb.transaction;
 
-import org.janusgraph.core.schema.DefaultSchemaMaker;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
  * Provides configuration options for {@link org.janusgraph.core.JanusGraphTransaction}.

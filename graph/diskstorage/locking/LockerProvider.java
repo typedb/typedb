@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage.locking;
 
 
-import org.janusgraph.diskstorage.locking.Locker;
+import grakn.core.graph.diskstorage.locking.Locker;
 
 public interface LockerProvider {
 

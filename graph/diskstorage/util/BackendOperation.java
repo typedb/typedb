@@ -14,12 +14,12 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.TemporaryBackendException;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.PermanentBackendException;
+import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

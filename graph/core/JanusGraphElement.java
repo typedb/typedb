@@ -17,13 +17,13 @@ package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Idfiable;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.util.datastructures.Removable;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.Idfiable;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.util.datastructures.Removable;
 
 /**
  * JanusGraphElement represents the abstract concept of an entity in the graph and specifies basic methods for interacting

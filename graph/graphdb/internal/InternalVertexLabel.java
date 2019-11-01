@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.internal;
 
-import org.janusgraph.core.VertexLabel;
+import grakn.core.graph.core.VertexLabel;
 
 
 public interface InternalVertexLabel extends VertexLabel {

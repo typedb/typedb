@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.diskstorage.util.Hex;
+import grakn.core.graph.diskstorage.util.Hex;
 
 import java.nio.ByteBuffer;
 

@@ -14,15 +14,15 @@
 
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.WriteBuffer;
-import org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import org.janusgraph.diskstorage.locking.consistentkey.TimestampRid;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.WriteBufferUtil;
-import org.janusgraph.diskstorage.util.WriteByteBuffer;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
+import grakn.core.graph.diskstorage.locking.consistentkey.TimestampRid;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.WriteBufferUtil;
+import grakn.core.graph.diskstorage.util.WriteByteBuffer;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
 

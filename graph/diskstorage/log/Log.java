@@ -14,11 +14,11 @@
 
 package grakn.core.graph.diskstorage.log;
 
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.log.Message;
-import org.janusgraph.diskstorage.log.MessageReader;
-import org.janusgraph.diskstorage.log.ReadMarker;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.log.Message;
+import grakn.core.graph.diskstorage.log.MessageReader;
+import grakn.core.graph.diskstorage.log.ReadMarker;
 
 import java.util.concurrent.Future;
 

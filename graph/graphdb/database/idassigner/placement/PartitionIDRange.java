@@ -17,8 +17,8 @@ package grakn.core.graph.graphdb.database.idassigner.placement;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRange;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

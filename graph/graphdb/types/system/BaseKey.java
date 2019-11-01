@@ -16,47 +16,45 @@ package grakn.core.graph.graphdb.types.system;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import grakn.core.graph.core.Cardinality;
+import grakn.core.graph.core.Multiplicity;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.ConsistencyModifier;
+import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.core.schema.SchemaStatus;
+import grakn.core.graph.graphdb.internal.ElementCategory;
+import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.internal.Token;
+import grakn.core.graph.graphdb.types.CompositeIndexType;
+import grakn.core.graph.graphdb.types.IndexField;
+import grakn.core.graph.graphdb.types.IndexType;
+import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.Multiplicity;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.schema.ConsistencyModifier;
-import org.janusgraph.core.schema.JanusGraphSchemaType;
-import org.janusgraph.core.schema.SchemaStatus;
-import org.janusgraph.graphdb.internal.ElementCategory;
-import org.janusgraph.graphdb.internal.JanusGraphSchemaCategory;
-import org.janusgraph.graphdb.internal.Token;
-import org.janusgraph.graphdb.types.CompositeIndexType;
-import org.janusgraph.graphdb.types.IndexField;
-import org.janusgraph.graphdb.types.IndexType;
-import org.janusgraph.graphdb.types.TypeDefinitionDescription;
-import org.janusgraph.graphdb.types.system.BaseRelationType;
 
 import java.util.Collections;
 
 public class BaseKey extends BaseRelationType implements PropertyKey {
 
-    private enum Index { NONE, STANDARD, UNIQUE }
+    private enum Index {NONE, STANDARD, UNIQUE}
 
     //We rely on the vertex-existence property to be the smallest (in byte-order) when iterating over the entire graph
-    public static final org.janusgraph.graphdb.types.system.BaseKey VertexExists =
-            new org.janusgraph.graphdb.types.system.BaseKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
+    public static final BaseKey VertexExists =
+            new BaseKey("VertexExists", Boolean.class, 1, Index.NONE, Cardinality.SINGLE);
 
-    public static final org.janusgraph.graphdb.types.system.BaseKey SchemaName =
-            new org.janusgraph.graphdb.types.system.BaseKey("SchemaName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
+    public static final BaseKey SchemaName =
+            new BaseKey("SchemaName", String.class, 32, Index.UNIQUE, Cardinality.SINGLE);
 
-    public static final org.janusgraph.graphdb.types.system.BaseKey SchemaDefinitionProperty =
-            new org.janusgraph.graphdb.types.system.BaseKey("SchemaDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
+    public static final BaseKey SchemaDefinitionProperty =
+            new BaseKey("SchemaDefinitionProperty", Object.class, 33, Index.NONE, Cardinality.LIST);
 
-    public static final org.janusgraph.graphdb.types.system.BaseKey SchemaCategory =
-            new org.janusgraph.graphdb.types.system.BaseKey("SchemaCategory", JanusGraphSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
+    public static final BaseKey SchemaCategory =
+            new BaseKey("SchemaCategory", JanusGraphSchemaCategory.class, 34, Index.STANDARD, Cardinality.SINGLE);
 
-    public static final org.janusgraph.graphdb.types.system.BaseKey SchemaDefinitionDesc =
-            new org.janusgraph.graphdb.types.system.BaseKey("SchemaDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
+    public static final BaseKey SchemaDefinitionDesc =
+            new BaseKey("SchemaDefinitionDescription", TypeDefinitionDescription.class, 35, Index.NONE, Cardinality.SINGLE);
 
-    public static final org.janusgraph.graphdb.types.system.BaseKey SchemaUpdateTime =
-            new org.janusgraph.graphdb.types.system.BaseKey("SchemaUpdateTimestamp", Long.class, 36, Index.NONE, Cardinality.SINGLE);
-
+    public static final BaseKey SchemaUpdateTime =
+            new BaseKey("SchemaUpdateTimestamp", Long.class, 36, Index.NONE, Cardinality.SINGLE);
 
 
     private final Class<?> dataType;
@@ -65,7 +63,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
     private BaseKey(String name, Class<?> dataType, int id, Index index, Cardinality cardinality) {
         super(name, id, JanusGraphSchemaCategory.PROPERTYKEY);
-        Preconditions.checkArgument(index!=null && cardinality!=null);
+        Preconditions.checkArgument(index != null && cardinality != null);
         this.dataType = dataType;
         this.index = index;
         this.cardinality = cardinality;
@@ -93,7 +91,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
     @Override
     public boolean isUnidirected(Direction dir) {
-        return dir== Direction.OUT;
+        return dir == Direction.OUT;
     }
 
     @Override
@@ -103,14 +101,13 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
     @Override
     public Iterable<IndexType> getKeyIndexes() {
-        if (index== Index.NONE) return Collections.EMPTY_LIST;
+        if (index == Index.NONE) return Collections.EMPTY_LIST;
         return ImmutableList.of(indexDef);
     }
 
     private final CompositeIndexType indexDef = new CompositeIndexType() {
 
-        private final IndexField[] fields = {IndexField.of(org.janusgraph.graphdb.types.system.BaseKey.this)};
-//        private final Set<JanusGraphKey> fieldSet = ImmutableSet.of((JanusGraphKey)SystemKey.this);
+        private final IndexField[] fields = {IndexField.of(BaseKey.this)};
 
         @Override
         public String toString() {
@@ -119,7 +116,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public long getID() {
-            return org.janusgraph.graphdb.types.system.BaseKey.this.longId();
+            return BaseKey.this.longId();
         }
 
         @Override
@@ -129,21 +126,24 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public IndexField getField(PropertyKey key) {
-            if (key.equals(org.janusgraph.graphdb.types.system.BaseKey.this)) return fields[0];
+            if (key.equals(BaseKey.this)) return fields[0];
             else return null;
         }
 
         @Override
         public boolean indexesKey(PropertyKey key) {
-            return getField(key)!=null;
+            return getField(key) != null;
         }
 
         @Override
         public Cardinality getCardinality() {
-            switch(index) {
-                case UNIQUE: return Cardinality.SINGLE;
-                case STANDARD: return Cardinality.LIST;
-                default: throw new AssertionError();
+            switch (index) {
+                case UNIQUE:
+                    return Cardinality.SINGLE;
+                case STANDARD:
+                    return Cardinality.LIST;
+                default:
+                    throw new AssertionError();
             }
         }
 
@@ -184,7 +184,7 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
 
         @Override
         public String getName() {
-            return "SystemIndex#"+ org.janusgraph.graphdb.types.system.BaseKey.this.name();
+            return "SystemIndex#" + BaseKey.this.name();
         }
 
         @Override
@@ -193,7 +193,8 @@ public class BaseKey extends BaseRelationType implements PropertyKey {
         }
 
         @Override
-        public void resetCache() {}
+        public void resetCache() {
+        }
 
         //Use default hashcode and equals
     };

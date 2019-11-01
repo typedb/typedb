@@ -15,13 +15,13 @@
 package grakn.core.graph.diskstorage.log.kcvs;
 
 import com.google.common.collect.Lists;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.cache.KCVSCache;
-import org.janusgraph.diskstorage.log.kcvs.ExternalPersistor;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.CacheTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
+import grakn.core.graph.diskstorage.log.kcvs.ExternalPersistor;
 
 
 public class ExternalCachePersistor implements ExternalPersistor {

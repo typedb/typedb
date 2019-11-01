@@ -19,10 +19,10 @@ import org.apache.tinkerpop.gremlin.process.traversal.TraversalSource;
 import org.apache.tinkerpop.gremlin.server.GraphManager;
 import org.apache.tinkerpop.gremlin.server.Settings;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.janusgraph.core.ConfiguredGraphFactory;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.management.ConfigurationManagementGraph;
-import org.janusgraph.graphdb.management.utils.JanusGraphManagerException;
+import grakn.core.graph.core.ConfiguredGraphFactory;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.management.ConfigurationManagementGraph;
+import grakn.core.graph.graphdb.management.utils.JanusGraphManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

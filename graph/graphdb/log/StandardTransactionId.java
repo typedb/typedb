@@ -15,7 +15,7 @@
 package grakn.core.graph.graphdb.log;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.log.TransactionId;
+import grakn.core.graph.core.log.TransactionId;
 
 import java.time.Instant;
 import java.util.Objects;

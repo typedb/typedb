@@ -16,29 +16,27 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.util.ReflectiveConfigOptionLoader;
-import org.janusgraph.diskstorage.configuration.ConfigElement;
+import grakn.core.graph.core.util.ReflectiveConfigOptionLoader;
+import grakn.core.graph.diskstorage.configuration.ConfigElement;
 
 import java.util.Map;
-
 
 public class ConfigNamespace extends ConfigElement {
 
     private final boolean isUmbrella;
     private final Map<String, ConfigElement> children = Maps.newHashMap();
 
-    public ConfigNamespace(org.janusgraph.diskstorage.configuration.ConfigNamespace parent, String name, String description, boolean isUmbrella) {
+    public ConfigNamespace(ConfigNamespace parent, String name, String description, boolean isUmbrella) {
         super(parent,name,description);
         this.isUmbrella=isUmbrella;
     }
 
-    public ConfigNamespace(org.janusgraph.diskstorage.configuration.ConfigNamespace parent, String name, String description) {
+    public ConfigNamespace(ConfigNamespace parent, String name, String description) {
         this(parent,name,description,false);
     }
 
     /**
      * Whether this namespace is an umbrella namespace, that is, is expects immediate sub-namespaces which are user defined.
-     * @return
      */
     public boolean isUmbrella() {
         return isUmbrella;
@@ -46,7 +44,6 @@ public class ConfigNamespace extends ConfigElement {
 
     /**
      * Whether this namespace or any parent namespace is an umbrella namespace.
-     * @return
      */
     public boolean hasUmbrella() {
         return isUmbrella() || (!isRoot() && getNamespace().hasUmbrella());

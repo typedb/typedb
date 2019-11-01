@@ -16,16 +16,16 @@ package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.BaseTransaction;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.BaseTransactionConfigurable;
-import org.janusgraph.diskstorage.indexing.IndexEntry;
-import org.janusgraph.diskstorage.indexing.IndexInformation;
-import org.janusgraph.diskstorage.indexing.IndexMutation;
-import org.janusgraph.diskstorage.indexing.IndexQuery;
-import org.janusgraph.diskstorage.indexing.KeyInformation;
-import org.janusgraph.diskstorage.indexing.RawQuery;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.BaseTransaction;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.BaseTransactionConfigurable;
+import grakn.core.graph.diskstorage.indexing.IndexEntry;
+import grakn.core.graph.diskstorage.indexing.IndexInformation;
+import grakn.core.graph.diskstorage.indexing.IndexMutation;
+import grakn.core.graph.diskstorage.indexing.IndexQuery;
+import grakn.core.graph.diskstorage.indexing.KeyInformation;
+import grakn.core.graph.diskstorage.indexing.RawQuery;
 
 import java.util.List;
 import java.util.Map;

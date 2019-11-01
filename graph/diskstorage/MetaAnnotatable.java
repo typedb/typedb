@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage;
 
 
-import org.janusgraph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.EntryMetaData;
 
 public interface MetaAnnotatable {
 

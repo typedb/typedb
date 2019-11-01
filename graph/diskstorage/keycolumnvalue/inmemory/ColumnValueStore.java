@@ -15,14 +15,14 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.inmemory;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryKeyColumnValueStore;
-import org.janusgraph.diskstorage.util.NoLock;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryKeyColumnValueStore;
+import grakn.core.graph.diskstorage.util.NoLock;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 
 import java.util.ArrayList;
 import java.util.Arrays;

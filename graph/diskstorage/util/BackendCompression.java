@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.util;
 
-import org.janusgraph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
 
 
 public interface BackendCompression {

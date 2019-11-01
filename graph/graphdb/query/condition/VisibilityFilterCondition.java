@@ -14,13 +14,13 @@
 
 package grakn.core.graph.graphdb.query.condition;
 
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.schema.JanusGraphSchemaElement;
-import org.janusgraph.graphdb.internal.InternalElement;
-import org.janusgraph.graphdb.query.condition.Literal;
-import org.janusgraph.graphdb.types.system.SystemRelationType;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.core.schema.JanusGraphSchemaElement;
+import grakn.core.graph.graphdb.internal.InternalElement;
+import grakn.core.graph.graphdb.query.condition.Literal;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
 
 import java.util.Objects;
 

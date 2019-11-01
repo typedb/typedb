@@ -14,7 +14,7 @@
 
 package grakn.core.graph.core.log;
 
-import org.janusgraph.core.log.ChangeProcessor;
+import grakn.core.graph.core.log.ChangeProcessor;
 
 import java.time.Instant;
 

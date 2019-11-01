@@ -14,10 +14,10 @@
 
 package grakn.core.graph.core.log;
 
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.log.ChangeState;
-import org.janusgraph.core.log.LogProcessorBuilder;
-import org.janusgraph.core.log.TransactionId;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.log.ChangeState;
+import grakn.core.graph.core.log.LogProcessorBuilder;
+import grakn.core.graph.core.log.TransactionId;
 
 /**
  * Allows the user to define custom behavior to process those transactional changes that are recorded in a transaction LOG.

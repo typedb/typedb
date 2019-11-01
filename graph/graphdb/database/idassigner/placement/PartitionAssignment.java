@@ -14,7 +14,7 @@
 
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
-import org.janusgraph.graphdb.database.idassigner.placement.IDPlacementStrategy;
+import grakn.core.graph.graphdb.database.idassigner.placement.IDPlacementStrategy;
 
 /**
  * Utility interface used in {@link IDPlacementStrategy} to hold the partition assignment of

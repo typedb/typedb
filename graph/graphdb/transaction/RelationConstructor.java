@@ -15,18 +15,18 @@
 package grakn.core.graph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraphRelation;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.internal.InternalRelationType;
-import org.janusgraph.graphdb.internal.InternalVertex;
-import org.janusgraph.graphdb.relations.CacheEdge;
-import org.janusgraph.graphdb.relations.CacheVertexProperty;
-import org.janusgraph.graphdb.relations.RelationCache;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.TypeUtil;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.internal.InternalRelationType;
+import grakn.core.graph.graphdb.internal.InternalVertex;
+import grakn.core.graph.graphdb.relations.CacheEdge;
+import grakn.core.graph.graphdb.relations.CacheVertexProperty;
+import grakn.core.graph.graphdb.relations.RelationCache;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.TypeUtil;
 
 import java.util.Iterator;
 

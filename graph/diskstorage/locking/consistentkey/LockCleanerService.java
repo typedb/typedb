@@ -14,8 +14,8 @@
 
 package grakn.core.graph.diskstorage.locking.consistentkey;
 
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.KeyColumn;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.util.KeyColumn;
 
 import java.time.Instant;
 

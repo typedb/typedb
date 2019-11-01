@@ -18,12 +18,12 @@
 package grakn.core.graph.graphdb.util;
 
 import com.google.common.cache.Cache;
-import org.janusgraph.core.JanusGraphElement;
-import org.janusgraph.core.JanusGraphException;
-import org.janusgraph.diskstorage.BackendTransaction;
-import org.janusgraph.graphdb.database.IndexSerializer;
-import org.janusgraph.graphdb.query.graph.JointIndexQuery;
-import org.janusgraph.graphdb.query.profile.QueryProfiler;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.diskstorage.BackendTransaction;
+import grakn.core.graph.graphdb.database.IndexSerializer;
+import grakn.core.graph.graphdb.query.graph.JointIndexQuery;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 
 import java.util.ArrayList;
 import java.util.Iterator;

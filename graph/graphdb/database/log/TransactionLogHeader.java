@@ -17,21 +17,19 @@ package grakn.core.graph.graphdb.database.log;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import org.janusgraph.core.log.Change;
-import org.janusgraph.diskstorage.ReadBuffer;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.BufferUtil;
-import org.janusgraph.diskstorage.util.HashingUtil;
-import org.janusgraph.diskstorage.util.time.TimestampProvider;
-import org.janusgraph.graphdb.database.idhandling.VariableLong;
-import org.janusgraph.graphdb.database.log.LogTxMeta;
-import org.janusgraph.graphdb.database.log.LogTxStatus;
-import org.janusgraph.graphdb.database.serialize.DataOutput;
-import org.janusgraph.graphdb.database.serialize.Serializer;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.log.StandardTransactionId;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.transaction.TransactionConfiguration;
+import grakn.core.graph.core.log.Change;
+import grakn.core.graph.diskstorage.ReadBuffer;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.BufferUtil;
+import grakn.core.graph.diskstorage.util.HashingUtil;
+import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
+import grakn.core.graph.graphdb.database.serialize.DataOutput;
+import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.internal.InternalRelation;
+import grakn.core.graph.graphdb.log.StandardTransactionId;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -80,7 +78,7 @@ public class TransactionLogHeader {
         VariableLong.writePositive(out, relations.size());
         for (InternalRelation rel : relations) {
             VariableLong.writePositive(out, rel.getVertex(0).longId());
-            org.janusgraph.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
+            grakn.core.graph.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out, entry);
         }
     }
@@ -153,7 +151,7 @@ public class TransactionLogHeader {
     public static Entry parse(StaticBuffer buffer, Serializer serializer, TimestampProvider times) {
         ReadBuffer read = buffer.asReadBuffer();
         Instant txTimestamp = times.getTime(read.getLong());
-        org.janusgraph.graphdb.database.log.TransactionLogHeader header = new org.janusgraph.graphdb.database.log.TransactionLogHeader(VariableLong.readPositive(read), txTimestamp, times);
+        TransactionLogHeader header = new TransactionLogHeader(VariableLong.readPositive(read), txTimestamp, times);
         LogTxStatus status = serializer.readObjectNotNull(read, LogTxStatus.class);
         EnumMap<LogTxMeta, Object> metadata = new EnumMap<>(LogTxMeta.class);
         int metaSize = VariableLong.unsignedByte(read.getByte());
@@ -170,12 +168,12 @@ public class TransactionLogHeader {
     }
 
     public static class Entry {
-        private final org.janusgraph.graphdb.database.log.TransactionLogHeader header;
+        private final TransactionLogHeader header;
         private final StaticBuffer content;
         private final LogTxStatus status;
         private final EnumMap<LogTxMeta, Object> metadata;
 
-        public Entry(org.janusgraph.graphdb.database.log.TransactionLogHeader header, StaticBuffer content, LogTxStatus status, EnumMap<LogTxMeta, Object> metadata) {
+        public Entry(TransactionLogHeader header, StaticBuffer content, LogTxStatus status, EnumMap<LogTxMeta, Object> metadata) {
             Preconditions.checkArgument(status != null && metadata != null);
             Preconditions.checkArgument(header != null);
             Preconditions.checkArgument(content == null || content.length() > 0);
@@ -185,7 +183,7 @@ public class TransactionLogHeader {
             this.metadata = metadata;
         }
 
-        public org.janusgraph.graphdb.database.log.TransactionLogHeader getHeader() {
+        public TransactionLogHeader getHeader() {
             return header;
         }
 
@@ -225,7 +223,7 @@ public class TransactionLogHeader {
             long size = VariableLong.readPositive(in);
             for (int i = 0; i < size; i++) {
                 long vid = VariableLong.readPositive(in);
-                org.janusgraph.diskstorage.Entry entry = BufferUtil.readEntry(in, serializer);
+                grakn.core.graph.diskstorage.Entry entry = BufferUtil.readEntry(in, serializer);
                 mods.add(new Modification(state, vid, entry));
             }
             return mods;
@@ -252,9 +250,9 @@ public class TransactionLogHeader {
     public static class Modification {
         public final Change state;
         public final long outVertexId;
-        public final org.janusgraph.diskstorage.Entry relationEntry;
+        public final grakn.core.graph.diskstorage.Entry relationEntry;
 
-        private Modification(Change state, long outVertexId, org.janusgraph.diskstorage.Entry relationEntry) {
+        private Modification(Change state, long outVertexId, grakn.core.graph.diskstorage.Entry relationEntry) {
             this.state = state;
             this.outVertexId = outVertexId;
             this.relationEntry = relationEntry;

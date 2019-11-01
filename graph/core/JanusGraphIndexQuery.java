@@ -14,12 +14,9 @@
 
 package grakn.core.graph.core;
 
+import grakn.core.graph.core.schema.Parameter;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.janusgraph.core.JanusGraphEdge;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.core.JanusGraphVertexProperty;
-import org.janusgraph.core.schema.Parameter;
 
 import java.util.stream.Stream;
 
@@ -35,36 +32,36 @@ public interface JanusGraphIndexQuery {
     /**
      * Specifies the maximum number of elements to return
      */
-    org.janusgraph.core.JanusGraphIndexQuery limit(int limit);
+    JanusGraphIndexQuery limit(int limit);
 
     /**
      * Specifies the offset of the query. Query results will be retrieved starting at the given offset.
      */
-    org.janusgraph.core.JanusGraphIndexQuery offset(int offset);
+    JanusGraphIndexQuery offset(int offset);
 
     /**
      * Orders the element results of this query according
      * to their property for the given key in the given order (increasing/decreasing).
      */
-    org.janusgraph.core.JanusGraphIndexQuery orderBy(String key, Order order);
+    JanusGraphIndexQuery orderBy(String key, Order order);
 
     /**
      * Adds the given parameter to the list of parameters of this query.
      * Parameters are passed right through to the indexing backend to modify the query behavior.
      */
-    org.janusgraph.core.JanusGraphIndexQuery addParameter(Parameter para);
+    JanusGraphIndexQuery addParameter(Parameter para);
 
     /**
      * Adds the given parameters to the list of parameters of this query.
      * Parameters are passed right through to the indexing backend to modify the query behavior.
      */
-    org.janusgraph.core.JanusGraphIndexQuery addParameters(Iterable<Parameter> paras);
+    JanusGraphIndexQuery addParameters(Iterable<Parameter> paras);
 
     /**
      * Adds the given parameters to the list of parameters of this query.
      * Parameters are passed right through to the indexing backend to modify the query behavior.
      */
-    org.janusgraph.core.JanusGraphIndexQuery addParameters(Parameter... paras);
+    JanusGraphIndexQuery addParameters(Parameter... paras);
 
     /**
      * Sets the element identifier string that is used by this query builder as the token to identifier key references
@@ -75,7 +72,7 @@ public interface JanusGraphIndexQuery {
      * @param identifier The element identifier which must not be blank
      * @return This query builder
      */
-    org.janusgraph.core.JanusGraphIndexQuery setElementIdentifier(String identifier);
+    JanusGraphIndexQuery setElementIdentifier(String identifier);
 
     /**
      * Returns all vertices that match the query in the indexing backend.

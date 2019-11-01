@@ -16,16 +16,16 @@ package grakn.core.graph.graphdb.schema;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.graphdb.schema.EdgeLabelDefinition;
-import org.janusgraph.graphdb.schema.PropertyKeyDefinition;
-import org.janusgraph.graphdb.schema.RelationTypeDefinition;
-import org.janusgraph.graphdb.schema.SchemaProvider;
-import org.janusgraph.graphdb.schema.VertexLabelDefinition;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.graphdb.schema.EdgeLabelDefinition;
+import grakn.core.graph.graphdb.schema.PropertyKeyDefinition;
+import grakn.core.graph.graphdb.schema.RelationTypeDefinition;
+import grakn.core.graph.graphdb.schema.SchemaProvider;
+import grakn.core.graph.graphdb.schema.VertexLabelDefinition;
 
 import java.util.Map;
 

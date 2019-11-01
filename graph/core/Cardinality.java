@@ -49,7 +49,7 @@ public enum Cardinality {
         }
     }
 
-    public static org.janusgraph.core.Cardinality convert(org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality cardinality) {
+    public static Cardinality convert(org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality cardinality) {
         switch (cardinality) {
             case single: return SINGLE;
             case list: return LIST;

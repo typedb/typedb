@@ -15,7 +15,7 @@
 package grakn.core.graph.diskstorage.configuration;
 
 
-import org.janusgraph.diskstorage.configuration.ReadConfiguration;
+import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 
 public interface WriteConfiguration extends ReadConfiguration {
 

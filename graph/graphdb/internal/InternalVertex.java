@@ -15,13 +15,11 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.base.Predicate;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.graphdb.internal.InternalElement;
-import org.janusgraph.graphdb.internal.InternalRelation;
-import org.janusgraph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import org.janusgraph.util.datastructures.Retriever;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
+import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.List;
 
@@ -32,7 +30,7 @@ import java.util.List;
 public interface InternalVertex extends JanusGraphVertex, InternalElement {
 
     @Override
-    org.janusgraph.graphdb.internal.InternalVertex it();
+    InternalVertex it();
 
     /**
      * Deleted relation e from the adjacency list of this vertex and updates the state of the vertex to reflect
@@ -48,43 +46,32 @@ public interface InternalVertex extends JanusGraphVertex, InternalElement {
 
     /**
      * Add a new relation to the vertex
-     * @param e
-     * @return
      */
     boolean addRelation(InternalRelation e);
 
     /**
      * Returns an iterable over all newly added relations incident on this vertex that match the given predicate
-     * @param query
-     * @return
      */
     List<InternalRelation> getAddedRelations(Predicate<InternalRelation> query);
 
     /**
      * Returns all relations that match the given query. If these matching relations are not currently
      * held in memory, it uses the given {@link Retriever} to retrieve the edges from backend storage.
-     * @param query
-     * @param lookup
-     * @return
      */
     EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup);
 
     /**
      * Returns true if the results for the given query have already been loaded for this vertex and are locally cached.
-     * @param query
-     * @return
      */
     boolean hasLoadedRelations(SliceQuery query);
 
     /**
      * Whether this vertex has removed relations
-     * @return
      */
     boolean hasRemovedRelations();
 
     /**
      * Whether this vertex has added relations
-     * @return
      */
     boolean hasAddedRelations();
 

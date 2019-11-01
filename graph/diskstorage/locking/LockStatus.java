@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import org.janusgraph.diskstorage.locking.AbstractLocker;
+import grakn.core.graph.diskstorage.locking.AbstractLocker;
 
 import java.time.Instant;
 

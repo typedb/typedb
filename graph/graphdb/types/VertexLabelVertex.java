@@ -14,11 +14,11 @@
 
 package grakn.core.graph.graphdb.types;
 
-import org.janusgraph.graphdb.internal.InternalVertexLabel;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
-import org.janusgraph.graphdb.types.TypeDefinitionCategory;
-import org.janusgraph.graphdb.types.TypeUtil;
-import org.janusgraph.graphdb.types.vertices.JanusGraphSchemaVertex;
+import grakn.core.graph.graphdb.internal.InternalVertexLabel;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import grakn.core.graph.graphdb.types.TypeUtil;
+import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
 
 
 public class VertexLabelVertex extends JanusGraphSchemaVertex implements InternalVertexLabel {
