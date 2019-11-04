@@ -26,7 +26,7 @@ import grakn.core.server.Grakn;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -50,7 +50,6 @@ public class Server {
     private static final long SERVER_STARTUP_TIMEOUT_S = 300;
     private static final Path SERVER_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
     private static final String JAVA_OPTS = SystemProperty.SERVER_JAVAOPTS.value();
-    private static final String LOCALHOST = "127.0.0.1";
 
     private final Path graknHome;
     private final Path graknPropertiesPath;
@@ -181,7 +180,7 @@ public class Server {
      */
     private static boolean isServerReady(int port) {
         try {
-            Socket s = new Socket(LOCALHOST, port);
+            ServerSocket s = new ServerSocket(port);
             s.close();
             return true;
         } catch (IOException e) {
