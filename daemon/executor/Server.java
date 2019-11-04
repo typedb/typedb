@@ -50,6 +50,7 @@ public class Server {
     private static final long SERVER_STARTUP_TIMEOUT_S = 300;
     private static final Path SERVER_PIDFILE = Paths.get(System.getProperty("java.io.tmpdir"), "grakn-core-server.pid");
     private static final String JAVA_OPTS = SystemProperty.SERVER_JAVAOPTS.value();
+    private static final String LOCALHOST = "127.0.0.1";
 
     private final Path graknHome;
     private final Path graknPropertiesPath;
@@ -122,10 +123,9 @@ public class Server {
             System.out.print(".");
             System.out.flush();
 
-            String host = graknProperties.getProperty(ConfigKey.SERVER_HOST_NAME);
             int port = graknProperties.getProperty(ConfigKey.GRPC_PORT);
 
-            if (executor.isProcessRunning(SERVER_PIDFILE) && isServerReady(host, port)) {
+            if (executor.isProcessRunning(SERVER_PIDFILE) && isServerReady(port)) {
                 System.out.println("SUCCESS");
                 return;
             }
@@ -174,9 +174,14 @@ public class Server {
                 + File.pathSeparator + graknHome.resolve("server").resolve("conf");
     }
 
-    private static boolean isServerReady(String host, int port) {
+    /**
+     * This method is used to make sure that the gRPC server is ready to serve requests.
+     * It checks if the gRPC port is used on localhost (this method is only used by grakn startup script
+     * which only works on a local machine, it cannot be used to remotely start Grakn)
+     */
+    private static boolean isServerReady(int port) {
         try {
-            Socket s = new Socket(host, port);
+            Socket s = new Socket(LOCALHOST, port);
             s.close();
             return true;
         } catch (IOException e) {

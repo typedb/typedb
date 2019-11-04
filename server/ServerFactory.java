@@ -39,6 +39,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -129,6 +130,7 @@ public class ServerFactory {
      */
     private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager, JanusGraphFactory janusGraphFactory) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
+        String hostname = config.getProperty(ConfigKey.SERVER_HOST_NAME);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
 
         SessionService sessionService = new SessionService(requestOpener);
@@ -142,7 +144,8 @@ public class ServerFactory {
 
         ExecutorService grpcExecutorService = Executors.newFixedThreadPool(GRPC_EXECUTOR_THREADS, new ThreadFactoryBuilder().setNameFormat("grpc-request-handler-%d").build());
 
-        return NettyServerBuilder.forPort(grpcPort)
+        return NettyServerBuilder
+                .forAddress(new InetSocketAddress(hostname, grpcPort))
                 .executor(grpcExecutorService)
                 .workerEventLoopGroup(eventLoopGroup)
                 .bossEventLoopGroup(eventLoopGroup)
