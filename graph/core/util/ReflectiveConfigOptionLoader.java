@@ -57,17 +57,16 @@ public enum ReflectiveConfigOptionLoader {
     private static final String SYS_PROP_NAME = "janusgraph.load.cfg.opts";
     private static final String ENV_VAR_NAME = "JANUSGRAPH_LOAD_CFG_OPTS";
 
-    private static final Logger log =
-            LoggerFactory.getLogger(org.janusgraph.core.util.ReflectiveConfigOptionLoader.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ReflectiveConfigOptionLoader.class);
 
     private volatile LoaderConfiguration cfg = new LoaderConfiguration();
 
-    public org.janusgraph.core.util.ReflectiveConfigOptionLoader setEnabled(boolean enabled) {
+    public ReflectiveConfigOptionLoader setEnabled(boolean enabled) {
         cfg = cfg.setEnabled(enabled);
         return this;
     }
 
-    public org.janusgraph.core.util.ReflectiveConfigOptionLoader reset() {
+    public ReflectiveConfigOptionLoader reset() {
         cfg = new LoaderConfiguration();
         return this;
     }
@@ -138,9 +137,9 @@ public enum ReflectiveConfigOptionLoader {
                 try {
                     Class.forName(c, true, cl);
                     loadedClasses++;
-                    log.debug("Loaded class {} with selected loader {}", c, cl);
+                    LOG.debug("Loaded class {} with selected loader {}", c, cl);
                 } catch (Throwable e) {
-                    log.debug("Unable to load class {} with selected loader {}", c, cl, e);
+                    LOG.debug("Unable to load class {} with selected loader {}", c, cl, e);
                 }
             } else {
                 for (ClassLoader candidate : loaders) {
@@ -148,18 +147,18 @@ public enum ReflectiveConfigOptionLoader {
                     try {
                         Class.forName(c, true, cl);
                         loadedClasses++;
-                        log.debug("Loaded class {} with loader {}", c, cl);
-                        log.debug("Located functioning classloader {}; using it for remaining classload attempts", cl);
+                        LOG.debug("Loaded class {} with loader {}", c, cl);
+                        LOG.debug("Located functioning classloader {}; using it for remaining classload attempts", cl);
                         foundLoader = true;
                         break;
                     } catch (Throwable e) {
-                        log.debug("Unable to load class {} with loader {}", c, cl, e);
+                        LOG.debug("Unable to load class {} with loader {}", c, cl, e);
                     }
                 }
             }
         }
 
-        log.info("Loaded and initialized config classes: {} OK out of {} attempts in {}", loadedClasses, classnames.size(), t.elapsed());
+        LOG.info("Loaded and initialized config classes: {} OK out of {} attempts in {}", loadedClasses, classnames.size(), t.elapsed());
 
         cfg.standardInit = true;
     }
@@ -170,18 +169,18 @@ public enum ReflectiveConfigOptionLoader {
 
         builder.addAll(cfg.preferredLoaders);
         for (ClassLoader c : cfg.preferredLoaders)
-            log.debug("Added preferred classloader to config option loader chain: {}", c);
+            LOG.debug("Added preferred classloader to config option loader chain: {}", c);
 
         if (cfg.useThreadContextLoader) {
             ClassLoader c = Thread.currentThread().getContextClassLoader();
             builder.add(c);
-            log.debug("Added thread context classloader to config option loader chain: {}", c);
+            LOG.debug("Added thread context classloader to config option loader chain: {}", c);
         }
 
         if (cfg.useCallerLoader) {
             ClassLoader c = caller.getClassLoader();
             builder.add(c);
-            log.debug("Added caller classloader to config option loader chain: {}", c);
+            LOG.debug("Added caller classloader to config option loader chain: {}", c);
         }
 
         return builder.build();
@@ -200,7 +199,7 @@ public enum ReflectiveConfigOptionLoader {
             // We could probably narrow the caught exception type to Error or maybe even just LinkageError,
             // but in this case catching anything via Throwable seems appropriate.  RuntimeException is
             // not sufficient -- it wouldn't even catch NoClassDefFoundError.
-            log.error("Failed to iterate over classpath using Reflections; this usually indicates a broken classpath/classloader", PreInitializeConfigOptions.class, t);
+            LOG.error("Failed to iterate over classpath using Reflections; this usually indicates a broken classpath/classloader", PreInitializeConfigOptions.class, t);
         }
     }
 
@@ -217,14 +216,14 @@ public enum ReflectiveConfigOptionLoader {
             try {
                 f = Vfs.getFile(u);
             } catch (Throwable t) {
-                log.debug("Error invoking Vfs.getFile on URL {}", u, t);
+                LOG.debug("Error invoking Vfs.getFile on URL {}", u, t);
                 f = new File(u.getPath());
             }
             if (f == null || !f.exists() || !f.isDirectory() || !f.canRead()) {
-                log.trace("Skipping nonexistent, non-directory, or unreadable classpath element {}", f);
+                LOG.trace("Skipping nonexistent, non-directory, or unreadable classpath element {}", f);
                 i.remove();
             }
-            log.trace("Retaining classpath element {}", f);
+            LOG.trace("Retaining classpath element {}", f);
         }
 
         org.reflections.Configuration rc = new org.reflections.util.ConfigurationBuilder()
@@ -236,12 +235,12 @@ public enum ReflectiveConfigOptionLoader {
             try {
                 loadCount += loadSingleClassUnsafe(c);
             } catch (Throwable t) {
-                log.warn("Failed to load class {} or its referenced types; this usually indicates a broken classpath/classloader", c, t);
+                LOG.warn("Failed to load class {} or its referenced types; this usually indicates a broken classpath/classloader", c, t);
                 errorCount++;
             }
         }
 
-        log.debug("Pre-loaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
+        LOG.debug("Pre-loaded {} config option(s) via Reflections ({} class(es) with errors)", loadCount, errorCount);
 
     }
 
@@ -275,22 +274,22 @@ public enum ReflectiveConfigOptionLoader {
     private int loadSingleClassUnsafe(Class<?> c) {
         int loadCount = 0;
 
-        log.trace("Looking for ConfigOption public static fields on class {}", c);
+        LOG.trace("Looking for ConfigOption public static fields on class {}", c);
 
         for (Field f : c.getDeclaredFields()) {
             final boolean pub = Modifier.isPublic(f.getModifiers());
             final boolean stat = Modifier.isStatic(f.getModifiers());
             final boolean typeMatch = ConfigOption.class.isAssignableFrom(f.getType());
 
-            log.trace("Properties for field \"{}\": public={} static={} assignable={}", f, pub, stat, typeMatch);
+            LOG.trace("Properties for field \"{}\": public={} static={} assignable={}", f, pub, stat, typeMatch);
             if (pub && stat && typeMatch) {
                 try {
                     Object o = f.get(null);
                     Preconditions.checkNotNull(o);
-                    log.debug("Initialized {}={}", f, o);
+                    LOG.debug("Initialized {}={}", f, o);
                     loadCount++;
                 } catch (IllegalArgumentException | IllegalAccessException e) {
-                    log.warn("ConfigOption initialization error", e);
+                    LOG.warn("ConfigOption initialization error", e);
                 }
             }
         }
@@ -300,8 +299,7 @@ public enum ReflectiveConfigOptionLoader {
 
     private static class LoaderConfiguration {
 
-        private static final Logger log =
-                LoggerFactory.getLogger(LoaderConfiguration.class);
+        private static final Logger LOG = LoggerFactory.getLogger(LoaderConfiguration.class);
 
         private final boolean enabled;
         private final List<ClassLoader> preferredLoaders;
@@ -320,7 +318,7 @@ public enum ReflectiveConfigOptionLoader {
 
         private LoaderConfiguration() {
             enabled = getEnabledByDefault();
-            preferredLoaders = ImmutableList.of(org.janusgraph.core.util.ReflectiveConfigOptionLoader.class.getClassLoader());
+            preferredLoaders = ImmutableList.of(ReflectiveConfigOptionLoader.class.getClassLoader());
             useCallerLoader = true;
             useThreadContextLoader = true;
         }
@@ -332,12 +330,12 @@ public enum ReflectiveConfigOptionLoader {
             for (String setting : sources) {
                 if (null != setting) {
                     boolean enabled = setting.equalsIgnoreCase("true");
-                    log.debug("Option loading enabled={}", enabled);
+                    LOG.debug("Option loading enabled={}", enabled);
                     return enabled;
                 }
             }
 
-            log.debug("Option loading enabled by default");
+            LOG.debug("Option loading enabled by default");
 
             return true;
         }

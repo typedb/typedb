@@ -15,16 +15,7 @@
 package grakn.core.graph.diskstorage;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import grakn.core.graph.core.JanusGraphException;
-import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.BaseTransactionConfig;
-import grakn.core.graph.diskstorage.Entry;
-import grakn.core.graph.diskstorage.EntryList;
-import grakn.core.graph.diskstorage.LoggableTransaction;
-import grakn.core.graph.diskstorage.PermanentBackendException;
-import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.indexing.IndexQuery;
 import grakn.core.graph.diskstorage.indexing.IndexTransaction;
 import grakn.core.graph.diskstorage.indexing.RawQuery;
@@ -39,6 +30,8 @@ import grakn.core.graph.diskstorage.log.kcvs.ExternalCachePersistor;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalInterruptedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +53,7 @@ import java.util.stream.Stream;
 
 public class BackendTransaction implements LoggableTransaction {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.BackendTransaction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BackendTransaction.class);
     private static final int MIN_TASKS_TO_PARALLELIZE = 2;
 
     //Assumes 64 bit key length as specified in IDManager
