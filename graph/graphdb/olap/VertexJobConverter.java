@@ -28,8 +28,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
-import grakn.core.graph.graphdb.olap.QueryContainer;
-import grakn.core.graph.graphdb.olap.VertexScanJob;
 import grakn.core.graph.graphdb.relations.RelationCache;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.transaction.StandardTransactionBuilder;
@@ -58,13 +56,13 @@ public class VertexJobConverter implements ScanJob {
     private IDManager idManager;
 
     protected VertexJobConverter(JanusGraph graph, VertexScanJob job) {
-        Preconditions.checkArgument(job!=null);
+        Preconditions.checkArgument(job != null);
         this.graph = new GraphProvider();
-        if (graph!=null) this.graph.setGraph(graph);
+        if (graph != null) this.graph.setGraph(graph);
         this.job = job;
     }
 
-    protected VertexJobConverter(org.janusgraph.graphdb.olap.VertexJobConverter copy) {
+    protected VertexJobConverter(VertexJobConverter copy) {
         this.graph = copy.graph;
         this.job = copy.job.clone();
         this.tx = copy.tx;
@@ -72,11 +70,11 @@ public class VertexJobConverter implements ScanJob {
     }
 
     public static ScanJob convert(JanusGraph graph, VertexScanJob vertexJob) {
-        return new org.janusgraph.graphdb.olap.VertexJobConverter(graph,vertexJob);
+        return new VertexJobConverter(graph, vertexJob);
     }
 
     public static ScanJob convert(VertexScanJob vertexJob) {
-        return new org.janusgraph.graphdb.olap.VertexJobConverter(null,vertexJob);
+        return new VertexJobConverter(null, vertexJob);
     }
 
     public static StandardJanusGraphTx startTransaction(StandardJanusGraph graph) {
@@ -129,7 +127,7 @@ public class VertexJobConverter implements ScanJob {
             SliceQuery sq = entry.getKey();
             if (sq.equals(VERTEX_EXISTS_QUERY)) continue;
             EntryList entryList = entry.getValue();
-            if (entryList.size()>=sq.getLimit()) metrics.incrementCustom(TRUNCATED_ENTRY_LISTS);
+            if (entryList.size() >= sq.getLimit()) metrics.incrementCustom(TRUNCATED_ENTRY_LISTS);
 //            v.addToQueryCache(sq.updateLimit(Query.NO_LIMIT),entryList); // commented out as not sure what's really going on here
         }
         job.process(v, metrics);
@@ -139,7 +137,7 @@ public class VertexJobConverter implements ScanJob {
         if (idManager.isPartitionedVertex(vertexId) && !idManager.isCanonicalVertexId(vertexId)) return false;
 
         RelationCache relCache = tx.getEdgeSerializer().parseRelation(
-                firstEntries.get(0),true,tx);
+                firstEntries.get(0), true, tx);
         return relCache.typeId != BaseKey.VertexExists.longId();
     }
 
@@ -165,8 +163,8 @@ public class VertexJobConverter implements ScanJob {
     }
 
     @Override
-    public org.janusgraph.graphdb.olap.VertexJobConverter clone() {
-        return new org.janusgraph.graphdb.olap.VertexJobConverter(this);
+    public VertexJobConverter clone() {
+        return new VertexJobConverter(this);
     }
 
     protected long getVertexId(StaticBuffer key) {
@@ -175,12 +173,12 @@ public class VertexJobConverter implements ScanJob {
 
     public static class GraphProvider {
 
-        private StandardJanusGraph graph=null;
-        private boolean provided=false;
+        private StandardJanusGraph graph = null;
+        private boolean provided = false;
 
         public void setGraph(JanusGraph graph) {
-            Preconditions.checkArgument(graph!=null && graph.isOpen(),"Need to provide open graph");
-            this.graph = (StandardJanusGraph)graph;
+            Preconditions.checkArgument(graph != null && graph.isOpen(), "Need to provide open graph");
+            this.graph = (StandardJanusGraph) graph;
             provided = true;
         }
 
@@ -193,7 +191,7 @@ public class VertexJobConverter implements ScanJob {
         public void close() {
             if (!provided && null != graph && graph.isOpen()) {
                 graph.close();
-                graph=null;
+                graph = null;
             }
         }
 

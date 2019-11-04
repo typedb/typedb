@@ -66,7 +66,7 @@ public class ResourceUnavailableException extends JanusGraphException {
                 msg.append("] ");
             }
             msg.append("has been closed");
-            throw new org.janusgraph.diskstorage.ResourceUnavailableException(msg.toString());
+            throw new ResourceUnavailableException(msg.toString());
         }
     }
 

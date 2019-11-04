@@ -17,10 +17,6 @@ package grakn.core.graph.graphdb.database.serialize;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
-import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.attribute.AttributeSerializer;
@@ -39,12 +35,6 @@ import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.log.LogTxStatus;
 import grakn.core.graph.graphdb.database.management.GraphCacheEvictionAction;
 import grakn.core.graph.graphdb.database.management.MgmtLogType;
-import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
-import grakn.core.graph.graphdb.database.serialize.DataOutput;
-import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
-import grakn.core.graph.graphdb.database.serialize.Serializer;
-import grakn.core.graph.graphdb.database.serialize.SerializerInjected;
-import grakn.core.graph.graphdb.database.serialize.SupportsNullSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.BooleanArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.BooleanSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.ByteArraySerializer;
@@ -83,6 +73,10 @@ import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.types.ParameterType;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
+import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
+import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -105,7 +99,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     private static final int CLASS_REGISTRATION_OFFSET = 100;
     private static final int MAX_REGISTRATION_NO = 100000;
 
-    private final BiMap<Integer,Class> registrations;
+    private final BiMap<Integer, Class> registrations;
     private final Map<Class, AttributeSerializer> handlers;
 
     public StandardSerializer() {
@@ -117,29 +111,29 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         //Primitive data types
         registerClassInternal(10, Byte.class, new ByteSerializer());
-        registerClassInternal(11,Short.class, new ShortSerializer());
-        registerClassInternal(12,Integer.class, new IntegerSerializer());
-        registerClassInternal(13,Long.class, new LongSerializer());
+        registerClassInternal(11, Short.class, new ShortSerializer());
+        registerClassInternal(12, Integer.class, new IntegerSerializer());
+        registerClassInternal(13, Long.class, new LongSerializer());
 
-        registerClassInternal(14,Character.class, new CharacterSerializer());
-        registerClassInternal(15,Boolean.class, new BooleanSerializer());
-        registerClassInternal(16,Date.class, new DateSerializer());
+        registerClassInternal(14, Character.class, new CharacterSerializer());
+        registerClassInternal(15, Boolean.class, new BooleanSerializer());
+        registerClassInternal(16, Date.class, new DateSerializer());
 
         registerClassInternal(17, Geoshape.class, new Geoshape.GeoshapeSerializer());
-        registerClassInternal(18,String.class, new StringSerializer()); //supports null serialization
-        registerClassInternal(19,Float.class, new FloatSerializer());
-        registerClassInternal(20,Double.class, new DoubleSerializer());
-        registerClassInternal(21,UUID.class, new UUIDSerializer());
+        registerClassInternal(18, String.class, new StringSerializer()); //supports null serialization
+        registerClassInternal(19, Float.class, new FloatSerializer());
+        registerClassInternal(20, Double.class, new DoubleSerializer());
+        registerClassInternal(21, UUID.class, new UUIDSerializer());
 
         //Arrays (support null serialization)
-        registerClassInternal(22,byte[].class, new ByteArraySerializer());
-        registerClassInternal(23,short[].class, new ShortArraySerializer());
-        registerClassInternal(24,int[].class, new IntArraySerializer());
-        registerClassInternal(25,long[].class, new LongArraySerializer());
-        registerClassInternal(26,float[].class, new FloatArraySerializer());
-        registerClassInternal(27,double[].class, new DoubleArraySerializer());
-        registerClassInternal(28,char[].class, new CharArraySerializer());
-        registerClassInternal(29,boolean[].class, new BooleanArraySerializer());
+        registerClassInternal(22, byte[].class, new ByteArraySerializer());
+        registerClassInternal(23, short[].class, new ShortArraySerializer());
+        registerClassInternal(24, int[].class, new IntArraySerializer());
+        registerClassInternal(25, long[].class, new LongArraySerializer());
+        registerClassInternal(26, float[].class, new FloatArraySerializer());
+        registerClassInternal(27, double[].class, new DoubleArraySerializer());
+        registerClassInternal(28, char[].class, new CharArraySerializer());
+        registerClassInternal(29, boolean[].class, new BooleanArraySerializer());
         registerClassInternal(30, String[].class, new StringArraySerializer());
 
         //Needed by JanusGraph
@@ -157,20 +151,20 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(52, LogTxStatus.class, new EnumSerializer<>(LogTxStatus.class));
         registerClassInternal(53, MgmtLogType.class, new EnumSerializer<>(MgmtLogType.class));
         registerClassInternal(54, TimestampProviders.class, new EnumSerializer<>(TimestampProviders.class));
-        registerClassInternal(55,TimeUnit.class, new EnumSerializer<>(TimeUnit.class));
+        registerClassInternal(55, TimeUnit.class, new EnumSerializer<>(TimeUnit.class));
         registerClassInternal(56, Mapping.class, new EnumSerializer<>(Mapping.class));
         registerClassInternal(57, ConflictAvoidanceMode.class, new EnumSerializer<>(ConflictAvoidanceMode.class));
 
-        registerClassInternal(60,Class.class, new ClassSerializer());
+        registerClassInternal(60, Class.class, new ClassSerializer());
         registerClassInternal(61, Parameter.class, new ParameterSerializer());
         registerClassInternal(62, Parameter[].class, new ParameterArraySerializer());
         registerClassInternal(63, TypeDefinitionDescription.class, new TypeDefinitionDescriptionSerializer());
         //Needed for configuration and transaction logging
-        registerClassInternal(64,Duration.class, new DurationSerializer());
-        registerClassInternal(65,Instant.class, new InstantSerializer());
+        registerClassInternal(64, Duration.class, new DurationSerializer());
+        registerClassInternal(65, Instant.class, new InstantSerializer());
         registerClassInternal(66, StandardTransactionId.class, new StandardTransactionIdSerializer());
         registerClassInternal(67, TraverserSet.class, new SerializableSerializer());
-        registerClassInternal(68,HashMap.class, new SerializableSerializer());
+        registerClassInternal(68, HashMap.class, new SerializableSerializer());
         registerClassInternal(69, GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
         registerClassInternal(70, ObjectNode.class, new JsonSerializer<>(ObjectNode.class));
         registerClassInternal(71, ArrayNode.class, new JsonSerializer<>(ArrayNode.class));
@@ -184,9 +178,9 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         if (datatype == HashMap.class) {
             final Integer hashMapRegNo = registrations.inverse().get(normalizeDataType(HashMap.class));
             if (hashMapRegNo != null) {
-            	// Remove the default HashMap serializer so we can replace it with the custom one
-            	registrations.remove(hashMapRegNo);
-            	handlers.remove(datatype);
+                // Remove the default HashMap serializer so we can replace it with the custom one
+                registrations.remove(hashMapRegNo);
+                handlers.remove(datatype);
             }
         }
 
@@ -194,13 +188,13 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     }
 
     public synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {
-        Preconditions.checkArgument(registrationNo>0); //must be bigger than 0 since 0 is used to indicate null values
+        Preconditions.checkArgument(registrationNo > 0); //must be bigger than 0 since 0 is used to indicate null values
         Preconditions.checkNotNull(datatype);
         Preconditions.checkArgument(!handlers.containsKey(datatype), "DataType has already been registered: %s", datatype);
-        Preconditions.checkArgument(!registrations.containsKey(registrationNo), "A datatype has already been registered for no: %s",registrationNo);
-        Preconditions.checkNotNull(serializer,"Need to provide a serializer for datatype: %s",datatype);
+        Preconditions.checkArgument(!registrations.containsKey(registrationNo), "A datatype has already been registered for no: %s", registrationNo);
+        Preconditions.checkNotNull(serializer, "Need to provide a serializer for datatype: %s", datatype);
         registrations.put(registrationNo, datatype);
-        if (serializer instanceof SerializerInjected) ((SerializerInjected)serializer).setSerializer(this);
+        if (serializer instanceof SerializerInjected) ((SerializerInjected) serializer).setSerializer(this);
         handlers.put(datatype, serializer);
     }
 
@@ -216,21 +210,21 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         return handlers.containsKey(normalizeDataType(datatype));
     }
 
-    private<T> AttributeSerializer<T> getSerializer(Class<T> datatype) {
+    private <T> AttributeSerializer<T> getSerializer(Class<T> datatype) {
         AttributeSerializer<T> serializer = handlers.get(normalizeDataType(datatype));
-        Preconditions.checkArgument(serializer!=null,"Datatype is not supported by database since no serializer has been registered: %s",datatype);
+        Preconditions.checkArgument(serializer != null, "Datatype is not supported by database since no serializer has been registered: %s", datatype);
         return serializer;
     }
 
     private int getDataTypeRegistration(Class datatype) {
         Integer registrationNo = registrations.inverse().get(normalizeDataType(datatype));
-        Preconditions.checkArgument(registrationNo!=null,"Datatype is not supported by database since no serializer has been registered: %s",datatype);
+        Preconditions.checkArgument(registrationNo != null, "Datatype is not supported by database since no serializer has been registered: %s", datatype);
         return registrationNo;
     }
 
     private Class getDataType(int registrationNo) {
         Class clazz = registrations.get(registrationNo);
-        Preconditions.checkArgument(clazz!=null,"Encountered missing datatype registration for number: %s",registrationNo);
+        Preconditions.checkArgument(clazz != null, "Encountered missing datatype registration for number: %s", registrationNo);
         return clazz;
     }
 
@@ -239,7 +233,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         Preconditions.checkNotNull(datatype);
         Preconditions.checkNotNull(value);
         AttributeSerializer handler = getSerializer(datatype);
-        if (handler!=null) handler.verifyAttribute(value);
+        if (handler != null) handler.verifyAttribute(value);
     }
 
     @Override
@@ -247,7 +241,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         Preconditions.checkNotNull(datatype);
         Preconditions.checkNotNull(value);
         AttributeSerializer handler = getSerializer(datatype);
-        if (handler!=null) return (V)handler.convert(value);
+        if (handler != null) return (V) handler.convert(value);
         else return null;
     }
 
@@ -256,9 +250,9 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         return (getSerializer(datatype) instanceof OrderPreservingSerializer);
     }
 
-    private static<V> OrderPreservingSerializer<V> ensureOrderPreserving(AttributeSerializer<V> serializer, Class<V> type) {
-        Preconditions.checkArgument(serializer instanceof OrderPreservingSerializer,"Registered serializer for datatype does not support order: %s",type);
-        return (OrderPreservingSerializer)serializer;
+    private static <V> OrderPreservingSerializer<V> ensureOrderPreserving(AttributeSerializer<V> serializer, Class<V> type) {
+        Preconditions.checkArgument(serializer instanceof OrderPreservingSerializer, "Registered serializer for datatype does not support order: %s", type);
+        return (OrderPreservingSerializer) serializer;
     }
 
     private boolean supportsNullSerialization(Class type) {
@@ -267,32 +261,32 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
     @Override
     public <T> T readObjectByteOrder(ScanBuffer buffer, Class<T> type) {
-        return readObjectInternal(buffer,type,true);
+        return readObjectInternal(buffer, type, true);
     }
 
     @Override
     public <T> T readObject(ScanBuffer buffer, Class<T> type) {
-        return readObjectInternal(buffer,type,false);
+        return readObjectInternal(buffer, type, false);
     }
 
     @Override
     public <T> T readObjectNotNull(ScanBuffer buffer, Class<T> type) {
-        return readObjectNotNullInternal(buffer,type,false);
+        return readObjectNotNullInternal(buffer, type, false);
     }
 
     private <T> T readObjectInternal(ScanBuffer buffer, Class<T> type, boolean byteOrder) {
         if (supportsNullSerialization(type)) {
             AttributeSerializer<T> s = getSerializer(type);
-            if (byteOrder) return ensureOrderPreserving(s,type).readByteOrder(buffer);
+            if (byteOrder) return ensureOrderPreserving(s, type).readByteOrder(buffer);
             else return s.read(buffer);
         } else {
             //Read flag for null or not
             byte flag = buffer.getByte();
-            if (flag==-1) {
+            if (flag == -1) {
                 return null;
             } else {
-                Preconditions.checkArgument(flag==0,"Invalid flag encountered in serialization: %s. Corrupted data.",flag);
-                return readObjectNotNullInternal(buffer,type,byteOrder);
+                Preconditions.checkArgument(flag == 0, "Invalid flag encountered in serialization: %s. Corrupted data.", flag);
+                return readObjectNotNullInternal(buffer, type, byteOrder);
             }
         }
     }
@@ -300,7 +294,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     private <T> T readObjectNotNullInternal(ScanBuffer buffer, Class<T> type, boolean byteOrder) {
         AttributeSerializer<T> s = getSerializer(type);
         if (byteOrder) {
-            return ensureOrderPreserving(s,type).readByteOrder(buffer);
+            return ensureOrderPreserving(s, type).readByteOrder(buffer);
         } else {
             return s.read(buffer);
         }
@@ -309,8 +303,8 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     @Override
     public Object readClassAndObject(ScanBuffer buffer) {
         long registrationNo = VariableLong.readPositive(buffer);
-        if (registrationNo==0) return null;
-        Class datatype = getDataType((int)registrationNo);
+        if (registrationNo == 0) return null;
+        Class datatype = getDataType((int) registrationNo);
         return readObjectNotNullInternal(buffer, datatype, false);
     }
 
@@ -332,32 +326,32 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         @Override
         public DataOutput writeObjectByteOrder(Object object, Class type) {
-            Preconditions.checkArgument(org.janusgraph.graphdb.database.serialize.StandardSerializer.this.isOrderPreservingDatatype(type),"Invalid serializer for class: %s",type);
-            return writeObjectInternal(object,type,true);
+            Preconditions.checkArgument(StandardSerializer.this.isOrderPreservingDatatype(type), "Invalid serializer for class: %s", type);
+            return writeObjectInternal(object, type, true);
         }
 
         @Override
         public DataOutput writeObject(Object object, Class type) {
-            return writeObjectInternal(object,type,false);
+            return writeObjectInternal(object, type, false);
         }
 
         @Override
         public DataOutput writeObjectNotNull(Object object) {
-            return writeObjectNotNullInternal(object,false);
+            return writeObjectNotNullInternal(object, false);
         }
 
         private DataOutput writeObjectInternal(Object object, Class type, boolean byteOrder) {
             if (supportsNullSerialization(type)) {
                 AttributeSerializer s = getSerializer(type);
-                if (byteOrder) ensureOrderPreserving(s,type).writeByteOrder(this,object);
+                if (byteOrder) ensureOrderPreserving(s, type).writeByteOrder(this, object);
                 else s.write(this, object);
             } else {
                 //write flag for null or not
-                if (object==null) {
-                    putByte((byte)-1);
+                if (object == null) {
+                    putByte((byte) -1);
                 } else {
-                    putByte((byte)0);
-                    writeObjectNotNullInternal(object,byteOrder);
+                    putByte((byte) 0);
+                    writeObjectNotNullInternal(object, byteOrder);
                 }
             }
             return this;
@@ -368,7 +362,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
             Class type = object.getClass();
             AttributeSerializer s = getSerializer(type);
             if (byteOrder) {
-                ensureOrderPreserving(s,type).writeByteOrder(this,object);
+                ensureOrderPreserving(s, type).writeByteOrder(this, object);
             } else {
                 s.write(this, object);
             }
@@ -377,11 +371,11 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         @Override
         public DataOutput writeClassAndObject(Object object) {
-            if (object==null) VariableLong.writePositive(this,0);
+            if (object == null) VariableLong.writePositive(this, 0);
             else {
                 Class type = object.getClass();
-                VariableLong.writePositive(this,getDataTypeRegistration(type));
-                writeObjectNotNullInternal(object,false);
+                VariableLong.writePositive(this, getDataTypeRegistration(type));
+                writeObjectNotNullInternal(object, false);
             }
             return this;
         }
@@ -468,13 +462,13 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         }
 
         private Class getClass(long registrationNo) {
-            if (registrationNo==0) return null;
+            if (registrationNo == 0) return null;
             return getDataType((int) registrationNo);
         }
 
         @Override
         public void write(WriteBuffer buffer, Class attribute) {
-            VariableLong.writePositive(buffer,attribute==null?0:getDataTypeRegistration(attribute));
+            VariableLong.writePositive(buffer, attribute == null ? 0 : getDataTypeRegistration(attribute));
         }
 
         @Override
@@ -484,7 +478,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         @Override
         public Class convert(Object value) {
-            if (value instanceof Class) return (Class)value;
+            if (value instanceof Class) return (Class) value;
             else return null;
         }
     }

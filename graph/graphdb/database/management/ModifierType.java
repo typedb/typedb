@@ -16,9 +16,6 @@ package grakn.core.graph.graphdb.database.management;
 
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 
-/**
- * @author Joshua Shinavier (http://fortytwo.net)
- */
 public enum ModifierType {
     CONSISTENCY(TypeDefinitionCategory.CONSISTENCY_LEVEL),
     TTL(TypeDefinitionCategory.TTL);

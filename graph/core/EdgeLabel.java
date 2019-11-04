@@ -15,11 +15,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.Connection;
-import grakn.core.graph.core.Multiplicity;
-import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.RelationType;
-
 import java.util.Collection;
 
 /**
@@ -56,22 +51,20 @@ public interface EdgeLabel extends RelationType {
 
     /**
      * The {@link Multiplicity} for this edge label.
-     *
-     * @return
      */
     Multiplicity multiplicity();
 
     /**
      * Collects all property constraints.
      *
-     * @return a list of {@link PropertyKey} which represents all property constraints for a {@link org.janusgraph.core.EdgeLabel}.
+     * @return a list of {@link PropertyKey} which represents all property constraints for a {@link EdgeLabel}.
      */
     Collection<PropertyKey> mappedProperties();
 
     /**
      * Collects all connection constraints.
      *
-     * @return a list of {@link Connection} which represents all connection constraints for a {@link org.janusgraph.core.EdgeLabel}.
+     * @return a list of {@link Connection} which represents all connection constraints for a {@link EdgeLabel}.
      */
     Collection<Connection> mappedConnections();
 

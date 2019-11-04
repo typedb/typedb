@@ -97,7 +97,7 @@ public class ResultMergeSortIterator<R> implements Iterator<R> {
     }
 
     public static <R> Iterable<R> mergeSort(Iterable<R> first, Iterable<R> second, Comparator<R> comparator, boolean filterDuplicates) {
-        return () -> new org.janusgraph.graphdb.query.ResultMergeSortIterator<>(first.iterator(), second.iterator(), comparator, filterDuplicates);
+        return () -> new ResultMergeSortIterator<>(first.iterator(), second.iterator(), comparator, filterDuplicates);
     }
 
 

@@ -14,18 +14,14 @@
 
 package grakn.core.graph.core;
 
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import grakn.core.graph.core.JanusGraphEdge;
-import grakn.core.graph.core.JanusGraphIndexQuery;
-import grakn.core.graph.core.JanusGraphMultiVertexQuery;
-import grakn.core.graph.core.JanusGraphQuery;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.VertexLabel;
 import grakn.core.graph.core.schema.SchemaManager;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.relations.RelationIdentifier;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 /**
- * Transaction defines a transactional context for a {@link org.janusgraph.core.JanusGraph}. Since JanusGraph is a transactional graph
+ * Transaction defines a transactional context for a {@link JanusGraph}. Since JanusGraph is a transactional graph
  * database, all interactions with the graph are mitigated by a Transaction.
  * <p>
  * All vertex and edge retrievals are channeled by a graph transaction which bundles all such retrievals, creations and
@@ -42,14 +38,13 @@ import grakn.core.graph.graphdb.relations.RelationIdentifier;
  * <li>Querying edges and vertices</li>
  * <li>Aborting and committing transaction</li>
  * </ul>
- *
  */
 public interface JanusGraphTransaction extends Graph, SchemaManager {
 
-   /* ---------------------------------------------------------------
-    * Modifications
-    * ---------------------------------------------------------------
-    */
+    /* ---------------------------------------------------------------
+     * Modifications
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Creates a new vertex in the graph with the vertex label named by the argument.
@@ -66,13 +61,13 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
     JanusGraphQuery<? extends JanusGraphQuery> query();
 
     /**
-     * Returns a {@link org.janusgraph.core.JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using
+     * Returns a {@link JanusGraphIndexQuery} to query for vertices or edges against the specified indexing backend using
      * the given query string. The query string is analyzed and answered by the underlying storage backend.
      * <p>
      * Note, that using indexQuery may ignore modifications in the current transaction.
      *
      * @param indexName Name of the index to query as configured
-     * @param query Query string
+     * @param query     Query string
      * @return JanusGraphIndexQuery object to query the index directly
      */
     JanusGraphIndexQuery indexQuery(String indexName, String query);
@@ -94,14 +89,14 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists.
      * <p>
-     * A valid JanusGraph vertex ids must be provided. Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}
+     * A valid JanusGraph vertex ids must be provided. Use {@link IDManager#toVertexId(long)}
      * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
-     * {@link org.janusgraph.graphdb.database.StandardJanusGraph#getIDManager()}.
+     * {@link StandardJanusGraph#getIDManager()}.
      * <pre>
      * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
      * </pre>
      *
-     * @param id vertex id of the vertex to be created
+     * @param id          vertex id of the vertex to be created
      * @param vertexLabel vertex label for this vertex - can be null if no vertex label should be set.
      * @return New vertex
      */
@@ -109,7 +104,7 @@ public interface JanusGraphTransaction extends Graph, SchemaManager {
 
     /**
      * Retrieves the vertex for the specified id.
-     *
+     * <p>
      * This method is intended for internal use only. Use {@link org.apache.tinkerpop.gremlin.structure.Graph#vertices(Object...)} instead.
      *
      * @param id id of the vertex to retrieve

@@ -30,7 +30,7 @@ public class RegisteredAttributeClass<T> {
     private final AttributeSerializer<T> serializer;
 
     public RegisteredAttributeClass(int position, Class<T> type, AttributeSerializer<T> serializer) {
-        Preconditions.checkArgument(position>=0,"Position must be a positive integer, given: %s",position);
+        Preconditions.checkArgument(position >= 0, "Position must be a positive integer, given: %s", position);
         this.position = position;
         this.type = Preconditions.checkNotNull(type);
         this.serializer = Preconditions.checkNotNull(serializer);
@@ -38,16 +38,16 @@ public class RegisteredAttributeClass<T> {
 
 
     void registerWith(Serializer s) {
-        s.registerClass(position,type,serializer);
+        s.registerClass(position, type, serializer);
     }
 
     @Override
     public boolean equals(Object oth) {
         if (this == oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
-        return type.equals(((org.janusgraph.graphdb.configuration.RegisteredAttributeClass<?>) oth).type);
+        else if (!getClass().isInstance(oth)) return false;
+        return type.equals(((RegisteredAttributeClass<?>) oth).type);
     }
-    
+
     @Override
     public int hashCode() {
         return type.hashCode() + 110432;

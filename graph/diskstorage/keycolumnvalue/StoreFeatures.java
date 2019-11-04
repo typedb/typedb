@@ -14,21 +14,16 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.StoreMetaData;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
  * Describes features supported by a storage backend.
- *
-
- * @author Dan LaRocque (dalaro@hopcount.org)
  */
 
 public interface StoreFeatures {
@@ -60,22 +55,19 @@ public interface StoreFeatures {
 
     /**
      * Whether this store supports locking via
-     * {@link KeyColumnValueStore#acquireLock(org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, org.janusgraph.diskstorage.StaticBuffer, StoreTransaction)}
-     *
+     * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      */
     boolean hasLocking();
 
     /**
      * Whether this storage backend supports batch mutations via
      * {@link KeyColumnValueStoreManager#mutateMany(java.util.Map, StoreTransaction)}.
-     *
      */
     boolean hasBatchMutation();
 
     /**
      * Whether this storage backend preserves key locality. This affects JanusGraph's
      * use of vertex ID partitioning.
-     *
      */
     boolean isKeyOrdered();
 
@@ -94,7 +86,7 @@ public interface StoreFeatures {
      * Whether this storage backend has a (possibly improper) subset of the
      * its accessible data stored locally, that is, partially available for
      * I/O operations without necessarily going over the network.
-     *
+     * <p>
      * If this is true, then {@link StoreManager#getLocalKeyPartition()} must
      * return a valid list as described in that method.  If this is false, that
      * method will not be invoked.
@@ -115,8 +107,6 @@ public interface StoreFeatures {
     /**
      * Returns true if column-value entries in this storage backend are annotated with a timestamp,
      * else false. It is assumed that the timestamp matches the one set during the committing transaction.
-     *
-     * @return
      */
     boolean hasTimestamps();
 
@@ -126,7 +116,7 @@ public interface StoreFeatures {
      * assume row timestamps are in milliseconds; some Cassandra client utils
      * assume timestamps in microseconds. This method should return null if the
      * backend has no preference for a specific timestamp resolution.
-     *
+     * <p>
      * This method will be ignored by JanusGraph if {@link #hasTimestamps()} is
      * false.
      *
@@ -136,9 +126,9 @@ public interface StoreFeatures {
 
     /**
      * Returns true if this storage backend support time-to-live (TTL) settings for column-value entries. If such a value
-     * is provided as a meta-data annotation on the {@link org.janusgraph.diskstorage.Entry}, the entry will
+     * is provided as a meta-data annotation on the {@link Entry}, the entry will
      * disappear from the storage backend after the given amount of time. See references to
-     * {@link org.janusgraph.diskstorage.EntryMetaData#TTL} for example usage in JanusGraph internals.
+     * {@link EntryMetaData#TTL} for example usage in JanusGraph internals.
      * This is the finer-grained of the two TTL modes.
      *
      * @return true if the storage backend supports cell-level TTL, else false
@@ -148,7 +138,7 @@ public interface StoreFeatures {
     /**
      * Returns true if this storage backend supports time-to-live (TTL) settings on a per-store basis. That means, that
      * entries added to such a store will require after a configured amount of time.  Per-store TTL is represented
-     * by {@link org.janusgraph.diskstorage.StoreMetaData#TTL}.  This is the coarser-grained of the two
+     * by {@link StoreMetaData#TTL}.  This is the coarser-grained of the two
      * TTL modes.
      *
      * @return true if the storage backend supports store-level TTL, else false
@@ -158,14 +148,11 @@ public interface StoreFeatures {
     /**
      * Returns true if this storage backend supports entry-level visibility by attaching a visibility or authentication
      * token to each column-value entry in the data store and limited retrievals to "visible" entries.
-     *
-     * @return
      */
     boolean hasVisibility();
 
     /**
      * Whether the backend supports data persistence. Return false if the backend is in-memory only.
-     * @return
      */
     boolean supportsPersistence();
 
@@ -185,7 +172,7 @@ public interface StoreFeatures {
      * consistency among all replicas in the same datacenter as the node
      * handling the request, but not nodes at other datacenters. This method has
      * undefined behavior when {@link #isKeyConsistent()} is false.
-     *
+     * <p>
      * Backends which don't support the notion of "local" strong consistency may
      * return the same configuration returned by
      * {@link #getKeyConsistentTxConfig()}.
@@ -217,7 +204,6 @@ public interface StoreFeatures {
      * Whether the store will commit pending mutations optimistically and make other pending changes
      * to the same cells fail on tx.commit() (true) or will fail pending mutations pessimistically on tx.commit()
      * if other parallel transactions have already marked the relevant cells dirty.
-     * @return
      */
     boolean hasOptimisticLocking();
 

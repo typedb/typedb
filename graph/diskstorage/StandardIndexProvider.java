@@ -27,9 +27,9 @@ import java.util.Map;
  * It is subject to backwards-incompatible change.
  */
 public enum StandardIndexProvider {
-    LUCENE("org.janusgraph.diskstorage.lucene.LuceneIndex", "lucene"),
-    ELASTICSEARCH("org.janusgraph.diskstorage.es.ElasticSearchIndex", ImmutableList.of("elasticsearch", "es")),
-    SOLR("org.janusgraph.diskstorage.solr.SolrIndex", "solr");
+    LUCENE("grakn.core.graph.diskstorage.lucene.LuceneIndex", "lucene"),
+    ELASTICSEARCH("grakn.core.graph.diskstorage.es.ElasticSearchIndex", ImmutableList.of("elasticsearch", "es")),
+    SOLR("grakn.core.graph.diskstorage.solr.SolrIndex", "solr");
 
     private final String providerName;
     private final ImmutableList<String> shorthands;
@@ -55,10 +55,10 @@ public enum StandardIndexProvider {
     }
 
     static {
-        org.janusgraph.diskstorage.StandardIndexProvider[] backends = values();
-        final List<String> tempShorthands = new ArrayList<>();
-        final Map<String, String> tempClassMap = new HashMap<>();
-        for (org.janusgraph.diskstorage.StandardIndexProvider backend : backends) {
+        StandardIndexProvider[] backends = values();
+        List<String> tempShorthands = new ArrayList<>();
+        Map<String, String> tempClassMap = new HashMap<>();
+        for (StandardIndexProvider backend : backends) {
             tempShorthands.addAll(backend.getShorthands());
             for (String shorthand : backend.getShorthands()) {
                 tempClassMap.put(shorthand, backend.getProviderName());

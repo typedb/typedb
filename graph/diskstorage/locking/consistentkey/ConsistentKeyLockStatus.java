@@ -16,14 +16,12 @@ package grakn.core.graph.diskstorage.locking.consistentkey;
 
 
 import grakn.core.graph.diskstorage.locking.LockStatus;
-import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
 
 import java.time.Instant;
 
 /**
  * The timestamps of a lock held by a {@link ConsistentKeyLocker}
  * and whether the held lock has or has not been checked.
- *
  */
 public class ConsistentKeyLockStatus implements LockStatus {
 
@@ -72,7 +70,7 @@ public class ConsistentKeyLockStatus implements LockStatus {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus other = (org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus) obj;
+        ConsistentKeyLockStatus other = (ConsistentKeyLockStatus) obj;
         if (checked != other.checked)
             return false;
         if (expire == null) {

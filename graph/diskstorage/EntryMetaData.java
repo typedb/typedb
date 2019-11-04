@@ -21,9 +21,6 @@ import grakn.core.graph.util.encoding.StringEncoding;
 import java.util.EnumMap;
 import java.util.function.Function;
 
-/**
- * @author Alexander Patrikalakis (amcp@mit.edu)
- */
 public enum EntryMetaData {
 
     TTL(Integer.class, false, data -> data instanceof Integer && ((Integer) data) >= 0L),
@@ -64,14 +61,14 @@ public enum EntryMetaData {
     /**
      * EntryMetaData.Map extends EnumMap to add validation prior to invoking the superclass EnumMap::put(k,v) method.
      */
-    public static class Map extends EnumMap<org.janusgraph.diskstorage.EntryMetaData, Object> {
+    public static class Map extends EnumMap<EntryMetaData, Object> {
 
         public Map() {
-            super(org.janusgraph.diskstorage.EntryMetaData.class);
+            super(EntryMetaData.class);
         }
 
         @Override
-        public Object put(org.janusgraph.diskstorage.EntryMetaData key, Object value) {
+        public Object put(EntryMetaData key, Object value) {
             Preconditions.checkArgument(key.isValidData(value), "Invalid meta data [%s] for [%s]", value, key);
             return super.put(key, value);
         }

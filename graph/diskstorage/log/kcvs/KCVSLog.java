@@ -39,9 +39,6 @@ import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.diskstorage.log.Message;
 import grakn.core.graph.diskstorage.log.MessageReader;
 import grakn.core.graph.diskstorage.log.ReadMarker;
-import grakn.core.graph.diskstorage.log.kcvs.ExternalPersistor;
-import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
-import grakn.core.graph.diskstorage.log.kcvs.KCVSMessage;
 import grakn.core.graph.diskstorage.log.util.FutureMessage;
 import grakn.core.graph.diskstorage.log.util.ProcessMessageJob;
 import grakn.core.graph.diskstorage.util.BackendOperation;
@@ -50,6 +47,7 @@ import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.WriteByteBuffer;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.util.system.BackgroundThread;
@@ -72,14 +70,14 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NUM_BUCKETS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_BATCH_SIZE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_THREADS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_BATCH_SIZE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NUM_BUCKETS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_BATCH_SIZE;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_THREADS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_BATCH_SIZE;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
  * Implementation of {@link Log} wrapped around a {@link KeyColumnValueStore}. Each message is written as a column-value pair ({@link Entry})
@@ -88,7 +86,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TI
  * <li>The partition id: On storage backends that are key-ordered, a partition bit width can be configured which configures the number of
  * first bits that comprise the partition id. On unordered storage backends, this is always 0</li>
  * <li>A bucket id: The number of parallel buckets that should be maintained is configured by
- * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#LOG_NUM_BUCKETS}. Messages are written to the buckets
+ * {@link GraphDatabaseConfiguration#LOG_NUM_BUCKETS}. Messages are written to the buckets
  * in round-robin fashion and each bucket is identified by a bucket id.
  * Having multiple buckets per timeslice allows for load balancing across multiple keys in the storage backend.</li>
  * <li>The start time of the timeslice: Each time slice is {@link #TIMESLICE_INTERVAL} microseconds long. And all messages that are added between
@@ -113,7 +111,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TI
 @PreInitializeConfigOptions
 public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.log.kcvs.KCVSLog.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KCVSLog.class);
 
     //########## Configuration Options #############
 
@@ -314,7 +312,6 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     /**
      * Closes the LOG by terminating all threads and waiting for their termination.
-     *
      */
     @Override
     public synchronized void close() throws BackendException {
@@ -749,7 +746,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                 query.setLimit(maxReadMsg);
                 LOG.trace("Converted MessagePuller time window to {}", query);
 
-                List<Entry> entries = BackendOperation.execute(getOperation(query), org.janusgraph.diskstorage.log.kcvs.KCVSLog.this, times, maxReadTime);
+                List<Entry> entries = BackendOperation.execute(getOperation(query), KCVSLog.this, times, maxReadTime);
                 prepareMessageProcessing(entries);
                 if (entries.size() >= maxReadMsg) {
                     /*Read another set of messages to ensure that we have exhausted all messages to the next timestamp.
@@ -762,7 +759,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                     //Retrieve all messages up to this adjusted timepoint (no limit this time => get all entries to that point)
                     query = new KeySliceQuery(logKey, BufferUtil.nextBiggerBuffer(lastEntry.getColumn()), BufferUtil.getLongBuffer(times.getTime(messageTimeEnd)));
                     LOG.debug("Converted extended MessagePuller time window to {}", query);
-                    List<Entry> extraEntries = BackendOperation.execute(getOperation(query), org.janusgraph.diskstorage.log.kcvs.KCVSLog.this, times, maxReadTime);
+                    List<Entry> extraEntries = BackendOperation.execute(getOperation(query), KCVSLog.this, times, maxReadTime);
                     prepareMessageProcessing(extraEntries);
                 }
                 messageTimeStart = messageTimeEnd;

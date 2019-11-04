@@ -20,7 +20,6 @@ import grakn.core.graph.core.log.TransactionId;
 import java.time.Instant;
 import java.util.Objects;
 
-
 public class StandardTransactionId implements TransactionId {
 
     private final String instanceId;
@@ -58,7 +57,7 @@ public class StandardTransactionId implements TransactionId {
     public boolean equals(Object oth) {
         if (this == oth) return true;
         else if (!getClass().isInstance(oth)) return false;
-        org.janusgraph.graphdb.log.StandardTransactionId id = (org.janusgraph.graphdb.log.StandardTransactionId) oth;
+        StandardTransactionId id = (StandardTransactionId) oth;
         return instanceId.equals(id.instanceId) && transactionId == id.transactionId
                 && transactionTime.equals(id.transactionTime);
     }

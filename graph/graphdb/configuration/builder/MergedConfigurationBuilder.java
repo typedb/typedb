@@ -30,15 +30,15 @@ import grakn.core.graph.graphdb.idmanagement.UniqueInstanceIdRetriever;
 
 import java.time.Duration;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG_DEFAULT_TTL;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG_DEFAULT_TTL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 /**
  * Builder for {@link GraphDatabaseConfiguration}
@@ -47,8 +47,9 @@ public class MergedConfigurationBuilder {
 
     /**
      * This methods merges the 3 configurations into 1 and provides a wrapper configuration: GraphDatabase config
-     *
+     * <p>
      * We create an 'overwrite' config in order to set and force parameters that were not explicitly set by the user in local config.
+     *
      * @param localBasicConfiguration local configurations provided by user
      * @return Configuration that contains both local and global bits, to bed fed to the new Graph
      */

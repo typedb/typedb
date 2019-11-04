@@ -16,12 +16,12 @@ package grakn.core.graph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.util.time.Durations;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,14 +34,12 @@ import java.util.List;
 
 /**
  * {@link ReadConfiguration} wrapper for Apache Configuration
- *
  */
 public class CommonsConfiguration implements WriteConfiguration {
 
     private final Configuration config;
 
-    private static final Logger log =
-            LoggerFactory.getLogger(org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CommonsConfiguration.class);
 
     public CommonsConfiguration() {
         this(new BaseConfiguration());
@@ -56,12 +54,12 @@ public class CommonsConfiguration implements WriteConfiguration {
     }
 
     @Override
-    public<O> O get(String key, Class<O> dataType) {
+    public <O> O get(String key, Class<O> dataType) {
         if (!config.containsKey(key)) return null;
 
         if (dataType.isArray()) {
-            Preconditions.checkArgument(dataType.getComponentType()==String.class,"Only string arrays are supported: %s",dataType);
-            return (O)config.getStringArray(key);
+            Preconditions.checkArgument(dataType.getComponentType() == String.class, "Only string arrays are supported: %s", dataType);
+            return (O) config.getStringArray(key);
         } else if (Number.class.isAssignableFrom(dataType)) {
             // A properties file configuration returns Strings even for numeric
             // values small enough to fit inside Integer (e.g. 5000). In-memory
@@ -71,25 +69,25 @@ public class CommonsConfiguration implements WriteConfiguration {
             // We try to handle either case here
             Object o = config.getProperty(key);
             if (dataType.isInstance(o)) {
-                return (O)o;
+                return (O) o;
             } else {
                 return constructFromStringArgument(dataType, o.toString());
             }
-        } else if (dataType==String.class) {
-            return (O)config.getString(key);
-        } else if (dataType==Boolean.class) {
+        } else if (dataType == String.class) {
+            return (O) config.getString(key);
+        } else if (dataType == Boolean.class) {
             return (O) Boolean.valueOf(config.getBoolean(key));
         } else if (dataType.isEnum()) {
-            Enum[] constants = (Enum[])dataType.getEnumConstants();
+            Enum[] constants = (Enum[]) dataType.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
 
             String enumString = config.getProperty(key).toString();
             for (Enum ec : constants)
                 if (ec.toString().equals(enumString))
-                    return (O)ec;
+                    return (O) ec;
             throw new IllegalArgumentException("No match for string \"" + enumString + "\" in enum " + dataType);
-        } else if (dataType==Object.class) {
-            return (O)config.getProperty(key);
+        } else if (dataType == Object.class) {
+            return (O) config.getProperty(key);
         } else if (Duration.class.isAssignableFrom(dataType)) {
             // This is a conceptual leak; the config layer should ideally only handle standard library types
             Object o = config.getProperty(key);
@@ -111,15 +109,15 @@ public class CommonsConfiguration implements WriteConfiguration {
                 }
                 return (O) Duration.of(Long.valueOf(comps[0]), unit);
             }
-        // Lists are deliberately not supported.  List's generic parameter
-        // is subject to erasure and can't be checked at runtime.  Someone
-        // could create a ConfigOption<List<Number>>; we would instead return
-        // a List<String> like we always do at runtime, and it wouldn't break
-        // until the client tried to use the contents of the list.
-        //
-        // We could theoretically get around this by adding a type token to
-        // every declaration of a List-typed ConfigOption, but it's just
-        // not worth doing since we only actually use String[] anyway.
+            // Lists are deliberately not supported.  List's generic parameter
+            // is subject to erasure and can't be checked at runtime.  Someone
+            // could create a ConfigOption<List<Number>>; we would instead return
+            // a List<String> like we always do at runtime, and it wouldn't break
+            // until the client tried to use the contents of the list.
+            //
+            // We could theoretically get around this by adding a type token to
+            // every declaration of a List-typed ConfigOption, but it's just
+            // not worth doing since we only actually use String[] anyway.
 //        } else if (List.class.isAssignableFrom(dataType)) {
 //            return (O) config.getProperty(key);
         } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
@@ -129,10 +127,10 @@ public class CommonsConfiguration implements WriteConfiguration {
         try {
             Constructor<O> ctor = dataType.getConstructor(String.class);
             return ctor.newInstance(arg);
-        // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
-        //} catch (ReflectiveOperationException e) {
+            // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
+            //} catch (ReflectiveOperationException e) {
         } catch (Exception e) {
-            log.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, dataType, e);
+            LOG.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, dataType, e);
             throw new RuntimeException(e);
         }
     }
@@ -154,12 +152,12 @@ public class CommonsConfiguration implements WriteConfiguration {
 
     @Override
     public <O> void set(String key, O value) {
-        if (value==null) {
+        if (value == null) {
             config.clearProperty(key);
         } else if (Duration.class.isAssignableFrom(value.getClass())) {
-            config.setProperty(key,((Duration)value).toMillis());
+            config.setProperty(key, ((Duration) value).toMillis());
         } else {
-            config.setProperty(key,value);
+            config.setProperty(key, value);
         }
     }
 
@@ -172,7 +170,7 @@ public class CommonsConfiguration implements WriteConfiguration {
     public WriteConfiguration copy() {
         BaseConfiguration copy = new BaseConfiguration();
         copy.copy(config);
-        return new org.janusgraph.diskstorage.configuration.backend.CommonsConfiguration(copy);
+        return new CommonsConfiguration(copy);
     }
 
 }

@@ -15,14 +15,14 @@
 package grakn.core.graph.core.log;
 
 import grakn.core.graph.core.JanusGraphException;
+import grakn.core.graph.core.JanusGraphFactory;
 
 /**
- * {@link org.janusgraph.core.log.TransactionRecovery} is a process that runs in the background and read's from the transaction
+ * {@link TransactionRecovery} is a process that runs in the background and read's from the transaction
  * write-ahead LOG to determine which transactions have not been successfully persisted against all
  * backends. It then attempts to recover such transactions.
  * <p>
- * This process is started via {@link org.janusgraph.core.JanusGraphFactory}
- *
+ * This process is started via {@link JanusGraphFactory}
  */
 public interface TransactionRecovery {
 

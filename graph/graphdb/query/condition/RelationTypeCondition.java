@@ -18,14 +18,9 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.RelationType;
-import grakn.core.graph.graphdb.query.condition.Literal;
 
 import java.util.Objects;
 
-/**
- *
- *
- */
 public class RelationTypeCondition<E extends JanusGraphElement> extends Literal<E> {
 
     private final RelationType relationType;
@@ -38,7 +33,7 @@ public class RelationTypeCondition<E extends JanusGraphElement> extends Literal<
     @Override
     public boolean evaluate(E element) {
         Preconditions.checkArgument(element instanceof JanusGraphRelation);
-        return relationType.equals(((JanusGraphRelation)element).getType());
+        return relationType.equals(((JanusGraphRelation) element).getType());
     }
 
     @Override
@@ -48,11 +43,11 @@ public class RelationTypeCondition<E extends JanusGraphElement> extends Literal<
 
     @Override
     public boolean equals(Object other) {
-        return this == other || !(other == null || !getClass().isInstance(other)) && relationType.equals(((org.janusgraph.graphdb.query.condition.RelationTypeCondition) other).relationType);
+        return this == other || !(other == null || !getClass().isInstance(other)) && relationType.equals(((RelationTypeCondition) other).relationType);
     }
 
     @Override
     public String toString() {
-        return "type["+ relationType.toString()+"]";
+        return "type[" + relationType.toString() + "]";
     }
 }

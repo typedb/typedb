@@ -14,21 +14,21 @@
 
 package grakn.core.graph.graphdb.database.cache;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
+import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 /**
  * This interface defines the methods that a SchemaCache must implement. A SchemaCache is maintained by the JanusGraph graph
  * database in order to make the frequent lookups of schema vertices and their attributes more efficient through a dedicated
  * caching layer. Schema vertices are type vertices and related vertices.
- *
+ * <p>
  * The SchemaCache speeds up two types of lookups:
  * <ul>
  *     <li>Retrieving a type by its name (index lookup)</li>
- *     <li>Retrieving the relations of a schema vertex for predefined {@link org.janusgraph.graphdb.types.system.SystemRelationType}s</li>
+ *     <li>Retrieving the relations of a schema vertex for predefined {@link SystemRelationType}s</li>
  * </ul>
- *
  */
 public interface SchemaCache {
 
@@ -43,7 +43,6 @@ public interface SchemaCache {
         Long retrieveSchemaByName(String typeName);
 
         EntryList retrieveSchemaRelations(long schemaId, BaseRelationType type, Direction dir);
-
     }
 
 }

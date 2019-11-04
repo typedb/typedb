@@ -20,9 +20,6 @@ import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.util.ReadArrayBuffer;
-import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
-import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.graphdb.relations.RelationCache;
 import grakn.core.graph.util.encoding.StringEncoding;
 
@@ -259,7 +256,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             currentIndex++;
             int newOffset = currentIndex > 0 ? getLimit(limitAndValuePos[currentIndex - 1]) : 0;
             metadata = EntryMetaData.EMPTY_METADATA;
-            if (org.janusgraph.diskstorage.util.StaticArrayEntryList.this.hasMetaData()) {
+            if (StaticArrayEntryList.this.hasMetaData()) {
                 metadata = new EntryMetaData.Map();
                 newOffset = parseMetaData(metadata, newOffset);
             }
@@ -304,7 +301,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             limitAndValuePos[pos] = getOffsetAndValue(cpf.dataOffset, entry.getValuePosition());
             pos++;
         }
-        return new org.janusgraph.diskstorage.util.StaticArrayEntryList(data, limitAndValuePos, metadataSchema);
+        return new StaticArrayEntryList(data, limitAndValuePos, metadataSchema);
     }
 
     private static class CopyFactory implements StaticBuffer.Factory<Boolean> {
@@ -384,7 +381,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             limitAndValuePos[pos] = getOffsetAndValue(offset, valuePos);
             pos++;
         }
-        return new org.janusgraph.diskstorage.util.StaticArrayEntryList(data, limitAndValuePos, metadataSchema);
+        return new StaticArrayEntryList(data, limitAndValuePos, metadataSchema);
     }
 
     private static <E, D> EntryList of(Iterator<E> elements, StaticArrayEntry.GetColVal<E, D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
@@ -431,7 +428,7 @@ public class StaticArrayEntryList extends AbstractList<Entry> implements EntryLi
             System.arraycopy(limitAndValuePos, 0, newPos, 0, pos);
             limitAndValuePos = newPos;
         }
-        return new org.janusgraph.diskstorage.util.StaticArrayEntryList(data, limitAndValuePos, metadataSchema);
+        return new StaticArrayEntryList(data, limitAndValuePos, metadataSchema);
     }
 
     private static byte[] ensureSpace(byte[] data, int offset, int length) {

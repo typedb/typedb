@@ -16,11 +16,6 @@ package grakn.core.graph.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import grakn.core.graph.core.JanusGraph;
-import grakn.core.graph.core.JanusGraphManagerUtility;
 import grakn.core.graph.core.log.LogProcessorFramework;
 import grakn.core.graph.core.log.TransactionRecovery;
 import grakn.core.graph.diskstorage.Backend;
@@ -44,16 +39,19 @@ import grakn.core.graph.graphdb.log.StandardTransactionLogProcessor;
 import grakn.core.graph.graphdb.management.JanusGraphManager;
 import grakn.core.graph.util.system.ConfigurationUtil;
 import grakn.core.graph.util.system.IOUtils;
+import org.apache.commons.configuration.BaseConfiguration;
+import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 import java.util.Set;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
+import static grakn.core.graph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
@@ -63,7 +61,7 @@ import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MA
 
 public class JanusGraphFactory {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.core.JanusGraphFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
 
     /**
      * Opens a {@link JanusGraph} database.
@@ -199,7 +197,7 @@ public class JanusGraphFactory {
         if (graph.isOpen()) {
             graph.close();
         }
-        org.janusgraph.diskstorage.configuration.Configuration backendConfiguration = g.getConfiguration().getConfiguration();
+        Configuration backendConfiguration = g.getConfiguration().getConfiguration();
         KeyColumnValueStoreManager storeManager = getStoreManager(backendConfiguration);
         Backend backend = new Backend(backendConfiguration, storeManager);
         try {
@@ -213,7 +211,7 @@ public class JanusGraphFactory {
      * Returns a {@link Builder} that allows to set the configuration options for opening a JanusGraph graph database.
      * <p>
      * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
-     * the graph can be opened with {@link org.janusgraph.core.JanusGraphFactory.Builder#open()}.
+     * the graph can be opened with {@link JanusGraphFactory.Builder#open()}.
      */
     public static Builder build() {
         return new Builder();
@@ -243,12 +241,12 @@ public class JanusGraphFactory {
         public StandardJanusGraph open() {
             ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                     writeConfiguration.copy(), BasicConfiguration.Restriction.NONE);
-            return org.janusgraph.core.JanusGraphFactory.open(mc);
+            return JanusGraphFactory.open(mc);
         }
     }
 
     /**
-     * Returns a {@link org.janusgraph.core.log.LogProcessorFramework} for processing transaction LOG entries
+     * Returns a {@link LogProcessorFramework} for processing transaction LOG entries
      * against the provided graph instance.
      */
     public static LogProcessorFramework openTransactionLog(JanusGraph graph) {
@@ -269,25 +267,25 @@ public class JanusGraphFactory {
 
 
     @VisibleForTesting
-    public static KeyColumnValueStoreManager getStoreManager(org.janusgraph.diskstorage.configuration.Configuration configuration) {
+    public static KeyColumnValueStoreManager getStoreManager(grakn.core.graph.diskstorage.configuration.Configuration configuration) {
         String className;
         String backendName = configuration.get(STORAGE_BACKEND);
         switch (backendName) {
             case "cql":
-                className = "org.janusgraph.diskstorage.cql.CQLStoreManager";
+                className = "grakn.core.graph.diskstorage.cql.CQLStoreManager";
                 break;
             case "inmemory":
-                className = "org.janusgraph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager";
+                className = "grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager";
                 break;
             case "foundationdb":
                 className = "io.grakn.janusgraph.diskstorage.foundationdb.FoundationDBStoreManager";
-                OrderedKeyValueStoreManager foundationManager = ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{org.janusgraph.diskstorage.configuration.Configuration.class});
+                OrderedKeyValueStoreManager foundationManager = ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{Configuration.class});
                 return new OrderedKeyValueStoreManagerAdapter(foundationManager);
             default:
                 throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);
         }
 
-        return ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{org.janusgraph.diskstorage.configuration.Configuration.class});
+        return ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{Configuration.class});
     }
 
     private static ReadConfiguration getLocalConfiguration(String backendShortcut) {

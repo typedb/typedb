@@ -28,8 +28,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.locking.LockerProvider;
-import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
-import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +46,7 @@ public class ExpectedValueCheckingStoreManager extends KCVSManagerProxy {
 
     private final Map<String, ExpectedValueCheckingStore> stores;
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExpectedValueCheckingStoreManager.class);
 
     public ExpectedValueCheckingStoreManager(KeyColumnValueStoreManager storeManager, String lockStoreSuffix,
                                              LockerProvider lockerProvider, Duration maxReadTime) {

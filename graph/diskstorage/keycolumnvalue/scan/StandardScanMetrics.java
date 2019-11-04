@@ -14,7 +14,6 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,8 +28,7 @@ public class StandardScanMetrics implements ScanMetrics {
     private final EnumMap<Metric,AtomicLong> metrics;
     private final ConcurrentMap<String,AtomicLong> customMetrics;
 
-    private static final Logger log =
-            LoggerFactory.getLogger(org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScanMetrics.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardScanMetrics.class);
 
     public StandardScanMetrics() {
         metrics = new EnumMap<>(ScanMetrics.Metric.class);
@@ -44,14 +42,14 @@ public class StandardScanMetrics implements ScanMetrics {
     public long getCustom(String metric) {
         AtomicLong counter = customMetrics.get(metric);
         if (counter == null) {
-            if (log.isDebugEnabled())
-                log.debug("[{}:{}] Returning zero by default (was null)",
+            if (LOG.isDebugEnabled())
+                LOG.debug("[{}:{}] Returning zero by default (was null)",
                         System.identityHashCode(customMetrics), metric);
             return 0;
         } else {
             long v = counter.get();
-            if (log.isDebugEnabled())
-                log.debug("[{}:{}] Returning {}", System.identityHashCode(customMetrics), metric, v);
+            if (LOG.isDebugEnabled())
+                LOG.debug("[{}:{}] Returning {}", System.identityHashCode(customMetrics), metric, v);
             return v;
         }
     }
@@ -64,8 +62,8 @@ public class StandardScanMetrics implements ScanMetrics {
             counter = customMetrics.get(metric);
         }
         counter.addAndGet(delta);
-        if (log.isDebugEnabled())
-            log.debug("[{}:{}] Incremented by {}", System.identityHashCode(customMetrics), metric, delta);
+        if (LOG.isDebugEnabled())
+            LOG.debug("[{}:{}] Incremented by {}", System.identityHashCode(customMetrics), metric, delta);
     }
 
     @Override

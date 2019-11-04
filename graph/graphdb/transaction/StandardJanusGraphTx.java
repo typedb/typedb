@@ -352,9 +352,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
      * Note, that an exception is thrown if the vertex id is not a valid JanusGraph vertex id or if a vertex with the given
      * id already exists. Only accepts long ids - all others are ignored.
      * <p>
-     * A valid JanusGraph vertex ids must be provided. Use {@link org.janusgraph.graphdb.idmanagement.IDManager#toVertexId(long)}
+     * A valid JanusGraph vertex ids must be provided. Use {@link IDManager#toVertexId(long)}
      * to construct a valid JanusGraph vertex id from a user id, where <code>idManager</code> can be obtained through
-     * {@link org.janusgraph.graphdb.database.StandardJanusGraph#getIDManager()}.
+     * {@link StandardJanusGraph#getIDManager()}.
      * <pre>
      * <code>long vertexId = ((StandardJanusGraph) graph).getIDManager().toVertexId(userVertexId);</code>
      * </pre>

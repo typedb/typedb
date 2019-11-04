@@ -15,16 +15,13 @@
 package grakn.core.graph.graphdb.internal;
 
 import com.google.common.primitives.Longs;
+import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
+import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.idmanagement.IDManager;
-import grakn.core.graph.graphdb.internal.ElementLifeCycle;
-import grakn.core.graph.graphdb.internal.InternalElement;
-import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.relations.RelationIdentifier;
 
 /**
  * AbstractElement is the base class for all elements in JanusGraph.
@@ -64,8 +61,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
                 (this instanceof VertexProperty && other instanceof VertexProperty)))
             return false;
         //Same type => they are the same if they have identical ids.
-        if (other instanceof org.janusgraph.graphdb.internal.AbstractElement) {
-            return getCompareId() == ((org.janusgraph.graphdb.internal.AbstractElement) other).getCompareId();
+        if (other instanceof AbstractElement) {
+            return getCompareId() == ((AbstractElement) other).getCompareId();
         } else if (other instanceof JanusGraphElement) {
             return ((JanusGraphElement) other).hasId() && getCompareId() == ((JanusGraphElement) other).longId();
         } else {
@@ -83,8 +80,8 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
     }
 
     public static int compare(JanusGraphElement e1, JanusGraphElement e2) {
-        long e1id = (e1 instanceof org.janusgraph.graphdb.internal.AbstractElement) ? ((org.janusgraph.graphdb.internal.AbstractElement) e1).getCompareId() : e1.longId();
-        long e2id = (e2 instanceof org.janusgraph.graphdb.internal.AbstractElement) ? ((org.janusgraph.graphdb.internal.AbstractElement) e2).getCompareId() : e2.longId();
+        long e1id = (e1 instanceof AbstractElement) ? ((AbstractElement) e1).getCompareId() : e1.longId();
+        long e2id = (e2 instanceof AbstractElement) ? ((AbstractElement) e2).getCompareId() : e2.longId();
         return Longs.compare(e1id, e2id);
     }
 

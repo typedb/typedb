@@ -14,7 +14,7 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import grakn.core.graph.diskstorage.locking.AbstractLocker;
+import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus;
 
 import java.time.Instant;
 
@@ -22,7 +22,7 @@ import java.time.Instant;
  * A single held lock's expiration time. This is used by {@link AbstractLocker}.
  *
  * @see AbstractLocker
- * @see org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLockStatus
+ * @see ConsistentKeyLockStatus
  */
 public interface LockStatus {
 

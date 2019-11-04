@@ -23,13 +23,13 @@ import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 import java.time.Duration;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_CONFIGURATION_IDENTIFIER;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.SETUP_WAITTIME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_CONFIGURATION_IDENTIFIER;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
 /**
  * Builder to build {@link KCVSConfiguration} instances:
- *
+ * <p>
  * All KCVSConfigurations read from 'system_properties' Store
  */
 public class KCVSConfigurationBuilder {

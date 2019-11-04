@@ -16,8 +16,8 @@ package grakn.core.graph.graphdb.types;
 
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.JanusGraphSchemaType;
+import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.internal.ElementCategory;
-import grakn.core.graph.graphdb.types.IndexField;
 
 
 public interface IndexType {
@@ -44,12 +44,10 @@ public interface IndexType {
 
     /**
      * Resets the internal caches used to speed up lookups on this index.
-     * This is needed when the index gets modified in {@link org.janusgraph.graphdb.database.management.ManagementSystem}.
+     * This is needed when the index gets modified in {@link ManagementSystem}.
      */
     void resetCache();
 
     //TODO: Add in the future
     //public And getCondition();
-
-
 }

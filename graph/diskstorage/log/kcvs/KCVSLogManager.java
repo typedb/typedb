@@ -55,7 +55,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 @PreInitializeConfigOptions
 public class KCVSLogManager implements LogManager {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.log.kcvs.KCVSLogManager.class);
+    private static final Logger LOG = LoggerFactory.getLogger(KCVSLogManager.class);
 
     public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<>(LOG_NS, "fixed-partition",
             "Whether all LOG entries are written to one fixed partition even if the backend store is partitioned." +
@@ -68,7 +68,7 @@ public class KCVSLogManager implements LogManager {
 
     /**
      * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured
-     * {@link org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
+     * {@link GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
      * the number by this constant.
      */
     private static final int CLUSTER_SIZE_DIVIDER = 8;

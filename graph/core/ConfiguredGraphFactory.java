@@ -15,18 +15,15 @@
 package grakn.core.graph.core;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.MapConfiguration;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import grakn.core.graph.core.JanusGraph;
-import grakn.core.graph.core.JanusGraphFactory;
-import grakn.core.graph.core.JanusGraphManagerUtility;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.management.ConfigurationManagementGraph;
 import grakn.core.graph.graphdb.management.JanusGraphManager;
 import grakn.core.graph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.MapConfiguration;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
+import static grakn.core.graph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
 /**
  * This class provides static methods to: 1) create graph references denoted by a
@@ -56,7 +53,7 @@ import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MA
  */
 public class ConfiguredGraphFactory {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.core.ConfiguredGraphFactory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConfiguredGraphFactory.class);
 
     /**
      * Creates a {@link JanusGraph} configuration stored in the {@link ConfigurationManagementGraph}
@@ -150,7 +147,7 @@ public class ConfiguredGraphFactory {
      * @throws ConfigurationManagementGraphNotEnabledException If ConfigurationManagementGraph not
      */
     public static void drop(String graphName) throws Exception {
-        StandardJanusGraph graph = (StandardJanusGraph) org.janusgraph.core.ConfiguredGraphFactory.close(graphName);
+        StandardJanusGraph graph = (StandardJanusGraph) ConfiguredGraphFactory.close(graphName);
         JanusGraphFactory.drop(graph);
         removeConfiguration(graphName);
     }
@@ -169,7 +166,7 @@ public class ConfiguredGraphFactory {
      * Create a configuration according to the supplied {@link Configuration}; you must include
      * the property "graph.graphname" with a value in the configuration; you can then
      * open your graph using graph.graphname without having to supply the
-     * Configuration or File each time using the {@link org.janusgraph.core.ConfiguredGraphFactory}.
+     * Configuration or File each time using the {@link ConfiguredGraphFactory}.
      */
     public static void createConfiguration(Configuration config) {
         ConfigurationManagementGraph configManagementGraph = getConfigGraphManagementInstance();

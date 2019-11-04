@@ -18,8 +18,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import org.apache.commons.collections.comparators.ComparableComparator;
-import grakn.core.graph.util.datastructures.Interval;
-import grakn.core.graph.util.datastructures.RangeInterval;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,7 +35,7 @@ public class PointInterval<T> implements Interval<T> {
     }
 
     public PointInterval(T point) {
-        points= new HashSet<>(1);
+        points = new HashSet<>(1);
         points.add(point);
     }
 
@@ -46,8 +44,8 @@ public class PointInterval<T> implements Interval<T> {
     }
 
     public PointInterval(Iterable<T> points) {
-        this.points= new HashSet<>(4);
-        Iterables.addAll(this.points,points);
+        this.points = new HashSet<>(4);
+        Iterables.addAll(this.points, points);
     }
 
     @Override
@@ -66,14 +64,14 @@ public class PointInterval<T> implements Interval<T> {
 
     @Override
     public T getStart() {
-        Preconditions.checkArgument(!isEmpty(),"There are no points in this interval");
-        return (T)Collections.min(points, ComparableComparator.getInstance());
+        Preconditions.checkArgument(!isEmpty(), "There are no points in this interval");
+        return (T) Collections.min(points, ComparableComparator.getInstance());
     }
 
     @Override
     public T getEnd() {
         Preconditions.checkArgument(!isEmpty(), "There are no points in this interval");
-        return (T)Collections.max(points, ComparableComparator.getInstance());
+        return (T) Collections.max(points, ComparableComparator.getInstance());
     }
 
     @Override
@@ -98,14 +96,14 @@ public class PointInterval<T> implements Interval<T> {
 
     @Override
     public Interval<T> intersect(Interval<T> other) {
-        Preconditions.checkArgument(other!=null);
-        if (other instanceof org.janusgraph.util.datastructures.PointInterval) {
+        Preconditions.checkArgument(other != null);
+        if (other instanceof PointInterval) {
             Sets.newHashSet(points);
-            points.retainAll(((org.janusgraph.util.datastructures.PointInterval)other).points);
-            return new org.janusgraph.util.datastructures.PointInterval<>(points);
+            points.retainAll(((PointInterval) other).points);
+            return new PointInterval<>(points);
         } else if (other instanceof RangeInterval) {
-            final RangeInterval<T> rint = (RangeInterval)other;
-            return new org.janusgraph.util.datastructures.PointInterval<>(Sets.newHashSet(Iterables.filter(points, rint::containsPoint)));
+            final RangeInterval<T> rint = (RangeInterval) other;
+            return new PointInterval<>(Sets.newHashSet(Iterables.filter(points, rint::containsPoint)));
         } else throw new AssertionError("Unexpected interval: " + other);
     }
 
@@ -116,10 +114,10 @@ public class PointInterval<T> implements Interval<T> {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null) return false;
+        if (this == other) return true;
+        else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.util.datastructures.PointInterval oth = (org.janusgraph.util.datastructures.PointInterval)other;
+        PointInterval oth = (PointInterval) other;
         return points.equals(oth.points);
     }
 
@@ -129,7 +127,7 @@ public class PointInterval<T> implements Interval<T> {
         s.append("[");
         int i = 0;
         for (T point : points) {
-            if (i>0) s.append(",");
+            if (i > 0) s.append(",");
             s.append(point);
             i++;
         }

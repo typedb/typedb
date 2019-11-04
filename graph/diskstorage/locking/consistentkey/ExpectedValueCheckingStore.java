@@ -54,7 +54,7 @@ import java.util.List;
  */
 public class ExpectedValueCheckingStore extends KCVSProxy {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingStore.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExpectedValueCheckingStore.class);
 
     private final Locker locker;
 

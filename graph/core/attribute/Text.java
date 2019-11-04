@@ -16,10 +16,10 @@ package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,16 +32,13 @@ import java.util.Set;
 /**
  * Comparison relations for text objects. These comparisons are based on a tokenized representation
  * of the text, i.e. the text is considered as a set of word tokens.
- *
  */
-
 public enum Text implements JanusGraphPredicate {
 
     /**
      * Whether the text contains a given term as a token in the text (case insensitive)
      */
     CONTAINS {
-
         @Override
         public boolean test(Object value, Object condition) {
             this.preevaluate(value, condition);
@@ -65,6 +62,7 @@ public enum Text implements JanusGraphPredicate {
         public boolean isValidCondition(Object condition) {
             return condition instanceof String && StringUtils.isNotBlank((String) condition);
         }
+
         @Override
         public String toString() {
             return "textContains";
@@ -84,7 +82,7 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean evaluateRaw(String value, String prefix) {
             for (String token : tokenize(value.toLowerCase())) {
-                if (PREFIX.evaluateRaw(token,prefix.toLowerCase())) return true;
+                if (PREFIX.evaluateRaw(token, prefix.toLowerCase())) return true;
             }
             return false;
         }
@@ -114,7 +112,7 @@ public enum Text implements JanusGraphPredicate {
         @Override
         public boolean evaluateRaw(String value, String regex) {
             for (String token : tokenize(value.toLowerCase())) {
-                if (REGEX.evaluateRaw(token,regex)) return true;
+                if (REGEX.evaluateRaw(token, regex)) return true;
             }
             return false;
         }
@@ -182,8 +180,8 @@ public enum Text implements JanusGraphPredicate {
             return "textRegex";
         }
 
-    }, 
-    
+    },
+
     /**
      * Whether the text is at X Lenvenstein of a token (case sensitive)
      * with X=:
@@ -200,20 +198,21 @@ public enum Text implements JanusGraphPredicate {
 
         @Override
         public boolean evaluateRaw(String value, String term) {
-            return isFuzzy(term.trim(),value.trim());
+            return isFuzzy(term.trim(), value.trim());
         }
 
         @Override
         public boolean isValidCondition(Object condition) {
             return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
+
         @Override
         public String toString() {
             return "textFuzzy";
         }
 
-    }, 
-    
+    },
+
     /**
      * Whether the text contains a token is at X Lenvenstein of a token (case insensitive)
      * with X=:
@@ -240,6 +239,7 @@ public enum Text implements JanusGraphPredicate {
         public boolean isValidCondition(Object condition) {
             return condition instanceof String && StringUtils.isNotBlank(condition.toString());
         }
+
         @Override
         public String toString() {
             return "textContainsFuzzy";
@@ -248,14 +248,15 @@ public enum Text implements JanusGraphPredicate {
     };
 
     /**
-     * Whether {@code term} is at X Lenvenstein of a {@code value} 
+     * Whether {@code term} is at X Lenvenstein of a {@code value}
      * with X=:
      * - 0 for strings of one or two characters
      * - 1 for strings of three, four or five characters
      * - 2 for strings of more than five characters
-     * @return true if {@code term} is similar to {@code value} 
+     *
+     * @return true if {@code term} is similar to {@code value}
      */
-    private static boolean isFuzzy(String term, String value){
+    private static boolean isFuzzy(String term, String value) {
         int distance;
         term = term.trim();
         if (term.length() < 3) {
@@ -265,10 +266,10 @@ public enum Text implements JanusGraphPredicate {
         } else {
             distance = 2;
         }
-        return LevenshteinDistance.getDefaultInstance().apply(value, term)<=distance;
+        return LevenshteinDistance.getDefaultInstance().apply(value, term) <= distance;
     }
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.core.attribute.Text.class);
+    private static final Logger log = LoggerFactory.getLogger(Text.class);
 
     public void preevaluate(Object value, Object condition) {
         Preconditions.checkArgument(this.isValidCondition(condition), "Invalid condition provided: %s", condition);
@@ -315,28 +316,34 @@ public enum Text implements JanusGraphPredicate {
 
     //////////////// statics
 
-    public final static Set<org.janusgraph.core.attribute.Text> HAS_CONTAINS = Collections
+    public final static Set<Text> HAS_CONTAINS = Collections
             .unmodifiableSet(EnumSet.of(CONTAINS, CONTAINS_PREFIX, CONTAINS_REGEX, CONTAINS_FUZZY));
 
     public static <V> P<V> textContains(V value) {
-        return new P(org.janusgraph.core.attribute.Text.CONTAINS, value);
+        return new P(Text.CONTAINS, value);
     }
+
     public static <V> P<V> textContainsPrefix(V value) {
-        return new P(org.janusgraph.core.attribute.Text.CONTAINS_PREFIX, value);
+        return new P(Text.CONTAINS_PREFIX, value);
     }
+
     public static <V> P<V> textContainsRegex(V value) {
-        return new P(org.janusgraph.core.attribute.Text.CONTAINS_REGEX, value);
+        return new P(Text.CONTAINS_REGEX, value);
     }
+
     public static <V> P<V> textPrefix(V value) {
-        return new P(org.janusgraph.core.attribute.Text.PREFIX, value);
+        return new P(Text.PREFIX, value);
     }
+
     public static <V> P<V> textRegex(V value) {
-        return new P(org.janusgraph.core.attribute.Text.REGEX, value);
+        return new P(Text.REGEX, value);
     }
+
     public static <V> P<V> textContainsFuzzy(V value) {
-        return new P(org.janusgraph.core.attribute.Text.CONTAINS_FUZZY, value);
+        return new P(Text.CONTAINS_FUZZY, value);
     }
+
     public static <V> P<V> textFuzzy(V value) {
-        return new P(org.janusgraph.core.attribute.Text.FUZZY, value);
+        return new P(Text.FUZZY, value);
     }
 }

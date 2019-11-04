@@ -49,8 +49,6 @@ import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
-import grakn.core.graph.graphdb.log.ModificationDeserializer;
-import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.IndexType;
 import grakn.core.graph.graphdb.types.MixedIndexType;
@@ -76,7 +74,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class StandardTransactionLogProcessor implements TransactionRecovery {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.log.StandardTransactionLogProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardTransactionLogProcessor.class);
     private static final Duration CLEAN_SLEEP_TIME = Duration.ofSeconds(5);
     private static final Duration MIN_TX_LENGTH = Duration.ofSeconds(5);
 

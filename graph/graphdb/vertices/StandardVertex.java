@@ -24,7 +24,6 @@ import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.transaction.addedrelations.AddedRelationsContainer;
 import grakn.core.graph.graphdb.transaction.addedrelations.ConcurrentAddedRelations;
 import grakn.core.graph.graphdb.transaction.addedrelations.SimpleAddedRelations;
-import grakn.core.graph.graphdb.vertices.AbstractVertex;
 import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.List;
@@ -101,7 +100,7 @@ public class StandardVertex extends AbstractVertex {
     @Override
     public synchronized void remove() {
         super.remove();
-        ((org.janusgraph.graphdb.vertices.StandardVertex) it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
+        ((StandardVertex) it()).updateLifeCycle(ElementLifeCycle.Event.REMOVED);
     }
 
     @Override

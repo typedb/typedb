@@ -24,7 +24,6 @@ import grakn.core.graph.diskstorage.PermanentBackendException;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.TemporaryBackendException;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
@@ -55,17 +54,17 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_BITS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_RETRIES;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_TAG;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CONFLICT_AVOIDANCE;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
-import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_BITS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_RETRIES;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CAV_TAG;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDAUTHORITY_CONFLICT_AVOIDANCE;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
+import static grakn.core.graph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 /**
- * {@link org.janusgraph.diskstorage.IDAuthority} implementation
+ * {@link IDAuthority} implementation
  * assuming that the backing store supports consistent key operations.
  * <p>
  * ID blocks are allocated by first applying for an id block, waiting for a
@@ -81,7 +80,7 @@ import static org.janusgraph.util.encoding.StringEncoding.UTF8_CHARSET;
 
 public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalProvider, IDAuthority {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.idmanagement.ConsistentKeyIDAuthority.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConsistentKeyIDAuthority.class);
 
     /*
      * ID columns are 17 or more bytes long:

@@ -14,13 +14,12 @@
 
 package grakn.core.graph.graphdb.query.condition;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
-import grakn.core.graph.graphdb.query.condition.Literal;
 import grakn.core.graph.graphdb.relations.CacheEdge;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Objects;
 
@@ -65,7 +64,7 @@ public class DirectionCondition<E extends JanusGraphRelation> extends Literal<E>
         if (!getClass().isInstance(other))
             return false;
 
-        org.janusgraph.graphdb.query.condition.DirectionCondition oth = (org.janusgraph.graphdb.query.condition.DirectionCondition) other;
+        DirectionCondition oth = (DirectionCondition) other;
         return direction == oth.direction && baseVertex.equals(oth.baseVertex);
     }
 

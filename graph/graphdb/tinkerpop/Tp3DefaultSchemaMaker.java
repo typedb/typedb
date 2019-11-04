@@ -20,7 +20,7 @@ import grakn.core.graph.core.schema.DefaultSchemaMaker;
 
 public class Tp3DefaultSchemaMaker implements DefaultSchemaMaker {
 
-    public static final DefaultSchemaMaker INSTANCE = new org.janusgraph.graphdb.tinkerpop.Tp3DefaultSchemaMaker();
+    public static final DefaultSchemaMaker INSTANCE = new Tp3DefaultSchemaMaker();
 
     private Tp3DefaultSchemaMaker() {
     }

@@ -17,7 +17,6 @@ package grakn.core.graph.graphdb.types.indextype;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.JanusGraphSchemaType;
 import grakn.core.graph.graphdb.internal.ElementCategory;
@@ -25,6 +24,7 @@ import grakn.core.graph.graphdb.types.IndexField;
 import grakn.core.graph.graphdb.types.IndexType;
 import grakn.core.graph.graphdb.types.SchemaSource;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Map;
 
@@ -55,8 +55,8 @@ public abstract class IndexTypeWrapper implements IndexType {
     @Override
     public boolean equals(Object oth) {
         if (this == oth) return true;
-        else if (oth == null || !getClass().isInstance(oth)) return false;
-        org.janusgraph.graphdb.types.indextype.IndexTypeWrapper other = (org.janusgraph.graphdb.types.indextype.IndexTypeWrapper) oth;
+        else if (!getClass().isInstance(oth)) return false;
+        IndexTypeWrapper other = (IndexTypeWrapper) oth;
         return base.equals(other.base);
     }
 

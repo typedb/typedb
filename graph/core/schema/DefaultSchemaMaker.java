@@ -18,11 +18,6 @@ import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.EdgeLabel;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.VertexLabel;
-import grakn.core.graph.core.schema.EdgeLabelMaker;
-import grakn.core.graph.core.schema.PropertyKeyMaker;
-import grakn.core.graph.core.schema.RelationTypeMaker;
-import grakn.core.graph.core.schema.SchemaManager;
-import grakn.core.graph.core.schema.VertexLabelMaker;
 
 /**
  * When a graph is configured to automatically create vertex/edge labels and property keys when they are first used,
@@ -49,7 +44,6 @@ public interface DefaultSchemaMaker {
     }
 
     /**
-     *
      * @return the default cardinality of a property if created for the given key
      */
     Cardinality defaultPropertyCardinality(String key);
@@ -69,12 +63,12 @@ public interface DefaultSchemaMaker {
      * Creates a new property key with default settings against the provided {@link PropertyKeyMaker} and value.
      *
      * @param factory PropertyKeyMaker through which the property key is created
-     * @param value the value of the property. The default implementation does not use this parameter.
+     * @param value   the value of the property. The default implementation does not use this parameter.
      * @return A new property key
      * @throws IllegalArgumentException if the name is already in use or if other configured values are invalid.
      */
     default PropertyKey makePropertyKey(PropertyKeyMaker factory, Object value) {
-         return makePropertyKey(factory);
+        return makePropertyKey(factory);
     }
 
     /**
@@ -91,7 +85,7 @@ public interface DefaultSchemaMaker {
     /**
      * Whether to ignore undefined types occurring in a query.
      * <p>
-     * If this method returns true, then undefined types referred to in a {@link org.janusgraph.core.JanusGraphVertexQuery} will be silently
+     * If this method returns true, then undefined types referred to in a {@link JanusGraphVertexQuery} will be silently
      * ignored and an empty result set will be returned. If this method returns false, then usage of undefined types
      * in queries results in an {@link IllegalArgumentException}.
      */
@@ -101,9 +95,9 @@ public interface DefaultSchemaMaker {
      * Add property constraints for a given vertex label using the schema manager.
      *
      * @param vertexLabel to which the constraint applies.
-     * @param key defines the property which should be added to the vertex label as a constraint.
-     * @param manager is used to update the schema.
-     * @see org.janusgraph.core.schema.SchemaManager
+     * @param key         defines the property which should be added to the vertex label as a constraint.
+     * @param manager     is used to update the schema.
+     * @see SchemaManager
      */
     default void makePropertyConstraintForVertex(VertexLabel vertexLabel, PropertyKey key, SchemaManager manager) {
         manager.addProperties(vertexLabel, key);
@@ -113,9 +107,9 @@ public interface DefaultSchemaMaker {
      * Add property constraints for a given edge label using the schema manager.
      *
      * @param edgeLabel to which the constraint applies.
-     * @param key defines the property which should be added to the edge label as a constraint.
-     * @param manager is used to update the schema.
-     * @see org.janusgraph.core.schema.SchemaManager
+     * @param key       defines the property which should be added to the edge label as a constraint.
+     * @param manager   is used to update the schema.
+     * @see SchemaManager
      */
     default void makePropertyConstraintForEdge(EdgeLabel edgeLabel, PropertyKey key, SchemaManager manager) {
         manager.addProperties(edgeLabel, key);
@@ -126,9 +120,9 @@ public interface DefaultSchemaMaker {
      *
      * @param edgeLabel to which the constraint applies.
      * @param outVLabel specifies the outgoing vertex for this connection.
-     * @param inVLabel specifies the incoming vertex for this connection.
-     * @param manager is used to update the schema.
-     * @see org.janusgraph.core.schema.SchemaManager
+     * @param inVLabel  specifies the incoming vertex for this connection.
+     * @param manager   is used to update the
+     * @see SchemaManager
      */
     default void makeConnectionConstraint(EdgeLabel edgeLabel, VertexLabel outVLabel, VertexLabel inVLabel, SchemaManager manager) {
         manager.addConnection(edgeLabel, outVLabel, inVLabel);

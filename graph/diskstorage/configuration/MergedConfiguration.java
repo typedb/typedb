@@ -16,9 +16,6 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
-import grakn.core.graph.diskstorage.configuration.ConfigOption;
-import grakn.core.graph.diskstorage.configuration.Configuration;
 
 import java.util.Map;
 import java.util.Set;
@@ -52,6 +49,7 @@ public class MergedConfiguration implements Configuration {
 
         return option.getDefaultValue();
     }
+
     @Override
     public Set<String> getContainedNamespaces(ConfigNamespace umbrella,
                                               String... umbrellaElements) {
@@ -60,6 +58,7 @@ public class MergedConfiguration implements Configuration {
         b.addAll(second.getContainedNamespaces(umbrella, umbrellaElements));
         return b.build();
     }
+
     @Override
     public Map<String, Object> getSubset(ConfigNamespace umbrella, String... umbrellaElements) {
         ImmutableMap.Builder<String, Object> b = ImmutableMap.builder();
@@ -76,8 +75,9 @@ public class MergedConfiguration implements Configuration {
 
         return b.build();
     }
+
     @Override
     public Configuration restrictTo(String... umbrellaElements) {
-        return new org.janusgraph.diskstorage.configuration.MergedConfiguration(first.restrictTo(umbrellaElements), second.restrictTo(umbrellaElements));
+        return new MergedConfiguration(first.restrictTo(umbrellaElements), second.restrictTo(umbrellaElements));
     }
 }

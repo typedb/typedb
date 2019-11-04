@@ -29,7 +29,7 @@ import java.util.concurrent.Callable;
 
 public class BackendOperation {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.util.BackendOperation.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BackendOperation.class);
     private static final Random random = new Random();
 
     private static final Duration BASE_REATTEMPT_TIME = Duration.ofMillis(50);
@@ -106,10 +106,11 @@ public class BackendOperation {
 
     /**
      * Method used by KCVSLog and KCVSConfiguration to run transactional operations on DB
-     * @param exe Transactional operation on the Database that needs to happen inside a transaction
+     *
+     * @param exe      Transactional operation on the Database that needs to happen inside a transaction
      * @param provider Transactions provider, will provide transaction on which execute the above operation
-     * @param times Provider of timestamp, it is used to get the Time (Timestamp) to set on the transaction which will execute the operation
-     * @param maxTime maxTime for which an operation will be retried, this is because sometimes the Database might need some time to startup or reply to havy workload
+     * @param times    Provider of timestamp, it is used to get the Time (Timestamp) to set on the transaction which will execute the operation
+     * @param maxTime  maxTime for which an operation will be retried, this is because sometimes the Database might need some time to startup or reply to havy workload
      * @throws JanusGraphException if the operation fails
      */
     public static <R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times, Duration maxTime) throws JanusGraphException {

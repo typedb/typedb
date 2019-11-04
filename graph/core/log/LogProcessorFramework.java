@@ -15,12 +15,11 @@
 package grakn.core.graph.core.log;
 
 import grakn.core.graph.core.JanusGraphException;
-import grakn.core.graph.core.log.LogProcessorBuilder;
+import grakn.core.graph.core.TransactionBuilder;
 
 /**
  * Framework for processing transaction logs. Using the {@link LogProcessorBuilder} returned by
  * {@link #addLogProcessor(String)} one can process the change events for a particular transaction LOG identified by name.
- *
  */
 public interface LogProcessorFramework {
 
@@ -29,23 +28,17 @@ public interface LogProcessorFramework {
      * Only one processor may be registered per transaction LOG.
      *
      * @param logIdentifier Name that identifies the transaction LOG to be processed,
-     *                      i.e. the one used in {@link org.janusgraph.core.TransactionBuilder#logIdentifier(String)}
-     * @return
+     *                      i.e. the one used in {@link TransactionBuilder#logIdentifier(String)}
      */
     LogProcessorBuilder addLogProcessor(String logIdentifier);
 
     /**
      * Removes the LOG processor for the given identifier and closes the associated LOG.
-     *
-     * @param logIdentifier
-     * @return
      */
     boolean removeLogProcessor(String logIdentifier);
 
     /**
      * Closes all LOG processors, their associated logs, and the backing graph instance
-     *
-     * @throws JanusGraphException
      */
     void shutdown() throws JanusGraphException;
 

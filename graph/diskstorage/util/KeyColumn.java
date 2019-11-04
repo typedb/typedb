@@ -19,8 +19,6 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 
 /**
  * Class representing a (key, column) pair.
- *
- * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public class KeyColumn {
 
@@ -66,7 +64,7 @@ public class KeyColumn {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        org.janusgraph.diskstorage.util.KeyColumn other = (org.janusgraph.diskstorage.util.KeyColumn) obj;
+        KeyColumn other = (KeyColumn) obj;
         return other.key.equals(key) && other.col.equals(col);
     }
 

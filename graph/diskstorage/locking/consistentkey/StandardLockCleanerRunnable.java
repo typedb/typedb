@@ -21,8 +21,6 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLockerSerializer;
-import grakn.core.graph.diskstorage.locking.consistentkey.TimestampRid;
 import grakn.core.graph.diskstorage.util.KeyColumn;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
@@ -31,13 +29,13 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.List;
 
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
-import static org.janusgraph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
+import static grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_END;
+import static grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker.LOCK_COL_START;
 
 /**
  * Attempt to delete locks before a configurable timestamp cutoff using the
  * provided store, transaction, and serializer.
- *
+ * <p>
  * This implementation is "best-effort." If the store or transaction closes in
  * the middle of its operation, or if the backend emits a storage exception, it
  * will fail without retrying and LOG the exception.
@@ -51,7 +49,7 @@ public class StandardLockCleanerRunnable implements Runnable {
     private final Instant cutoff;
     private final TimestampProvider times;
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable.class);
+    private static final Logger log = LoggerFactory.getLogger(StandardLockCleanerRunnable.class);
 
     public StandardLockCleanerRunnable(KeyColumnValueStore store, KeyColumn target, StoreTransaction tx, ConsistentKeyLockerSerializer serializer, Instant cutoff, TimestampProvider times) {
         this.store = store;
@@ -81,11 +79,11 @@ public class StandardLockCleanerRunnable implements Runnable {
             TimestampRid tr = serializer.fromLockColumn(lc.getColumn(), times);
             if (tr.getTimestamp().isBefore(cutoff)) {
                 log.info("Deleting expired lock on {} by rid {} with timestamp {} (before or at cutoff {})",
-                    target, tr.getRid(), tr.getTimestamp(), cutoff);
+                        target, tr.getRid(), tr.getTimestamp(), cutoff);
                 b.add(lc.getColumn());
             } else {
                 log.debug("Ignoring lock on {} by rid {} with timestamp {} (timestamp is after cutoff {})",
-                    target, tr.getRid(), tr.getTimestamp(), cutoff);
+                        target, tr.getRid(), tr.getTimestamp(), cutoff);
             }
         }
 
@@ -117,7 +115,7 @@ public class StandardLockCleanerRunnable implements Runnable {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable other = (org.janusgraph.diskstorage.locking.consistentkey.StandardLockCleanerRunnable) obj;
+        StandardLockCleanerRunnable other = (StandardLockCleanerRunnable) obj;
         if (cutoff == null) {
             if (other.cutoff != null)
                 return false;

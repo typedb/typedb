@@ -29,10 +29,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.BaseKeyColumnValueAdapter;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
@@ -60,7 +56,7 @@ import java.util.NoSuchElementException;
  */
 public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreAdapter.class);
+    private static final Logger log = LoggerFactory.getLogger(OrderedKeyValueStoreAdapter.class);
 
     public static final int variableKeyLength = 0;
 
@@ -94,10 +90,10 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         for (StaticBuffer key : keys) {
             queries.add(convertQuery(new KeySliceQuery(key, query)));
         }
-        Map<KVQuery, RecordIterator<KeyValueEntry>> results = store.getSlices(queries,txh);
+        Map<KVQuery, RecordIterator<KeyValueEntry>> results = store.getSlices(queries, txh);
         Map<StaticBuffer, EntryList> convertedResults = new HashMap<>(keys.size());
         for (int i = 0; i < queries.size(); i++) {
-            convertedResults.put(keys.get(i),convert(results.get(queries.get(i))));
+            convertedResults.put(keys.get(i), convert(results.get(queries.get(i))));
         }
         return convertedResults;
     }
@@ -125,26 +121,25 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         KVQuery query = new KVQuery(
                 concatenatePrefix(adjustToLength(keyQuery.getKeyStart()), keyQuery.getSliceStart()),
                 concatenatePrefix(adjustToLength(keyQuery.getKeyEnd()), keyQuery.getSliceEnd()), keycolumn -> {
-                    StaticBuffer key = getKey(keycolumn);
-                    return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
-                            && columnInRange(keycolumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
-                },
+            StaticBuffer key = getKey(keycolumn);
+            return !(key.compareTo(keyQuery.getKeyStart()) < 0 || key.compareTo(keyQuery.getKeyEnd()) >= 0)
+                    && columnInRange(keycolumn, keyQuery.getSliceStart(), keyQuery.getSliceEnd());
+        },
                 BaseQuery.NO_LIMIT); //limit will be introduced in iterator
 
-        return new KeyIteratorImpl(keyQuery,store.getSlice(query,txh));
+        return new KeyIteratorImpl(keyQuery, store.getSlice(query, txh));
     }
 
     private StaticBuffer adjustToLength(StaticBuffer key) {
-        if (hasFixedKeyLength() && key.length()!=keyLength) {
-            if (key.length()>keyLength) {
-                return key.subrange(0,keyLength);
+        if (hasFixedKeyLength() && key.length() != keyLength) {
+            if (key.length() > keyLength) {
+                return key.subrange(0, keyLength);
             } else { //Append 0s
-                return BufferUtil.padBuffer(key,keyLength);
+                return BufferUtil.padBuffer(key, keyLength);
             }
         }
         return key;
     }
-
 
 
     @Override
@@ -160,16 +155,16 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
     private EntryList convert(RecordIterator<KeyValueEntry> entries) throws BackendException {
         try {
-            return StaticArrayEntryList.ofStaticBuffer(entries,kvEntryGetter);
+            return StaticArrayEntryList.ofStaticBuffer(entries, kvEntryGetter);
         } finally {
             try {
                 entries.close();
             } catch (IOException e) {
-            /*
-             * IOException could be permanent or temporary. Choosing temporary
-             * allows useful retries of transient failures but also allows
-             * futile retries of permanent failures.
-             */
+                /*
+                 * IOException could be permanent or temporary. Choosing temporary
+                 * allows useful retries of transient failures but also allows
+                 * futile retries of permanent failures.
+                 */
                 throw new TemporaryBackendException(e);
             }
         }
@@ -199,7 +194,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     };
 
     private Entry getEntry(KeyValueEntry entry) {
-        return StaticArrayEntry.ofStaticBuffer(entry,kvEntryGetter);
+        return StaticArrayEntry.ofStaticBuffer(entry, kvEntryGetter);
     }
 
     private boolean hasFixedKeyLength() {
@@ -230,7 +225,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         return new KVQuery(
                 concatenatePrefix(query.getKey(), query.getSliceStart()),
                 concatenatePrefix(query.getKey(), query.getSliceEnd()),
-                filter,query.getLimit());
+                filter, query.getLimit());
     }
 
     StaticBuffer concatenate(StaticBuffer front, StaticBuffer end) {
@@ -308,7 +303,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             while (iterator.hasNext()) {
                 current = iterator.next();
                 StaticBuffer key = getKey(current.getKey());
-                if (currentKey == null || !key.equals(currentKey)) {
+                if (!key.equals(currentKey)) {
                     return key;
                 }
             }

@@ -14,8 +14,6 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
-
 /**
  * Counters associated with a {@link ScanJob}.
  * <p>
@@ -25,35 +23,31 @@ import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
  *     <li>the custom store, accessed via methods with {@code custom} in their names</li>
  * </ul>
  * All counters values automatically start at zero.
- *
  */
 public interface ScanMetrics {
 
     /**
      * An enum of standard counters.  A value of this enum is the only parameter
-     * accepted by {@link #get(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}
-     * and {@link #increment(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
+     * accepted by {@link #get(ScanMetrics.Metric)}
+     * and {@link #increment(ScanMetrics.Metric)}.
      */
-    enum Metric { FAILURE, SUCCESS }
+    enum Metric {FAILURE, SUCCESS}
 
     /**
      * Get the value of a custom counter.  Only the effects of prior calls to
      * {@link #incrementCustom(String)} and {@link #incrementCustom(String, long)}
      * should be observable through this method, never the effects of prior calls to
-     * {@link #increment(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
-     *
-     * @param metric
-     * @return
+     * {@link #increment(ScanMetrics.Metric)}.
      */
     long getCustom(String metric);
 
     /**
      * Increment a custom counter by {@code delta}.  The effects of calls
      * to method should only be observable through {@link #getCustom(String)},
-     * never through {@link #get(org.janusgraph.diskstorage.keycolumnvalue.scan.ScanMetrics.Metric)}.
+     * never through {@link #get(ScanMetrics.Metric)}.
      *
      * @param metric the name of the counter
-     * @param delta the amount to add to the counter
+     * @param delta  the amount to add to the counter
      */
     void incrementCustom(String metric, long delta);
 

@@ -34,15 +34,15 @@ public class EntryArrayList extends ArrayList<Entry> implements EntryList {
         super(c);
     }
 
-    public static org.janusgraph.diskstorage.util.EntryArrayList of(Iterable<? extends Entry> i) {
+    public static EntryArrayList of(Iterable<? extends Entry> i) {
         // This is adapted from Guava's Lists.newArrayList implementation
-        org.janusgraph.diskstorage.util.EntryArrayList result;
+        EntryArrayList result;
         if (i instanceof Collection) {
             // Let ArrayList's sizing logic work, if possible
-            result = new org.janusgraph.diskstorage.util.EntryArrayList((Collection)i);
+            result = new EntryArrayList((Collection) i);
         } else {
             // Unknown size
-            result = new org.janusgraph.diskstorage.util.EntryArrayList();
+            result = new EntryArrayList();
             Iterators.addAll(result, i.iterator());
         }
         return result;

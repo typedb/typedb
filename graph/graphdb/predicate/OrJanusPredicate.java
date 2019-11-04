@@ -14,20 +14,15 @@
 
 package grakn.core.graph.graphdb.predicate;
 
-import grakn.core.graph.graphdb.predicate.AndJanusPredicate;
-import grakn.core.graph.graphdb.predicate.ConnectiveJanusPredicate;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 
 import java.util.List;
 
-/**
- * @author David Clement (david.clement90@laposte.net)
- */
 public class OrJanusPredicate extends ConnectiveJanusPredicate {
 
     private static final long serialVersionUID = 8069102813023214045L;
 
-    public OrJanusPredicate(){
+    public OrJanusPredicate() {
         super();
     }
 
@@ -47,6 +42,6 @@ public class OrJanusPredicate extends ConnectiveJanusPredicate {
 
     @Override
     public boolean isQNF() {
-        return ! this.stream().anyMatch(internalCondition -> internalCondition instanceof AndJanusPredicate || !internalCondition.isQNF());
+        return !this.stream().anyMatch(internalCondition -> internalCondition instanceof AndJanusPredicate || !internalCondition.isQNF());
     }
 }

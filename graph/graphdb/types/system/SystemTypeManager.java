@@ -20,10 +20,6 @@ import com.google.common.collect.ImmutableSet;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Token;
 import grakn.core.graph.graphdb.types.TypeUtil;
-import grakn.core.graph.graphdb.types.system.BaseKey;
-import grakn.core.graph.graphdb.types.system.BaseLabel;
-import grakn.core.graph.graphdb.types.system.ImplicitKey;
-import grakn.core.graph.graphdb.types.system.SystemRelationType;
 
 import java.util.Map;
 import java.util.Set;
@@ -36,7 +32,7 @@ public abstract class SystemTypeManager {
     private static final char[] RESERVED_CHARS = {'{', '}', '"', Token.SEPARATOR_CHAR};
 
     static {
-        synchronized (org.janusgraph.graphdb.types.system.SystemTypeManager.class) {
+        synchronized (SystemTypeManager.class) {
             ImmutableMap.Builder<Long, SystemRelationType> idBuilder = ImmutableMap.builder();
             ImmutableMap.Builder<String, SystemRelationType> nameBuilder = ImmutableMap.builder();
             for (SystemRelationType et : new SystemRelationType[]{BaseKey.SchemaCategory, BaseKey.SchemaDefinitionDesc,
@@ -70,7 +66,7 @@ public abstract class SystemTypeManager {
 
     public static void throwIfSystemName(JanusGraphSchemaCategory category, String name) {
         TypeUtil.checkTypeName(category, name);
-        if (org.janusgraph.graphdb.types.system.SystemTypeManager.isSystemType(name.toLowerCase()) || Token.isSystemName(name))
+        if (SystemTypeManager.isSystemType(name.toLowerCase()) || Token.isSystemName(name))
             throw new IllegalArgumentException("Name cannot be in protected namespace: " + name);
         for (char c : RESERVED_CHARS)
             Preconditions.checkArgument(name.indexOf(c) < 0, "Name contains reserved character %s: %s", c, name);

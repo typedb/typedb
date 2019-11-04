@@ -15,7 +15,6 @@
 package grakn.core.graph.diskstorage.keycolumnvalue;
 
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
@@ -121,7 +120,9 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public boolean supportsPersistence() { return supportsPersist; }
+    public boolean supportsPersistence() {
+        return supportsPersist;
+    }
 
     @Override
     public Configuration getKeyConsistentTxConfig() {
@@ -144,8 +145,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public boolean supportsInterruption()
-    {
+    public boolean supportsInterruption() {
         return supportsInterruption;
     }
 
@@ -155,7 +155,7 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     /**
-     * The only way to instantiate {@link org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures}.
+     * The only way to instantiate {@link StandardStoreFeatures}.
      */
     public static class Builder {
 
@@ -184,7 +184,8 @@ public class StandardStoreFeatures implements StoreFeatures {
         /**
          * Construct a Builder with everything disabled/unsupported/false/null.
          */
-        public Builder() { }
+        public Builder() {
+        }
 
         /**
          * Construct a Builder whose default values exactly match the values on
@@ -318,14 +319,13 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
-        public Builder supportsInterruption(boolean i)
-        {
+        public Builder supportsInterruption(boolean i) {
             supportsInterruption = i;
             return this;
         }
 
-        public org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures build() {
-            return new org.janusgraph.diskstorage.keycolumnvalue.StandardStoreFeatures(unorderedScan, orderedScan,
+        public StandardStoreFeatures build() {
+            return new StandardStoreFeatures(unorderedScan, orderedScan,
                     multiQuery, locking, batchMutation, localKeyPartition,
                     keyOrdered, distributed, transactional, keyConsistent,
                     timestamps, preferredTimestamps, cellLevelTTL,

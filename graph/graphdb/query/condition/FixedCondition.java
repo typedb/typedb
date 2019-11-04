@@ -15,13 +15,11 @@
 package grakn.core.graph.graphdb.query.condition;
 
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.condition.Literal;
 
 import java.util.Objects;
 
 /**
  * A fixed valued literal, which always returns either true or false irrespective of the element which is evaluated.
- *
  */
 public class FixedCondition<E extends JanusGraphElement> extends Literal<E> {
 
@@ -43,7 +41,7 @@ public class FixedCondition<E extends JanusGraphElement> extends Literal<E> {
 
     @Override
     public boolean equals(Object other) {
-        return this == other || !(other == null || !getClass().isInstance(other)) && value == ((org.janusgraph.graphdb.query.condition.FixedCondition) other).value;
+        return this == other || !(other == null || !getClass().isInstance(other)) && value == ((FixedCondition) other).value;
 
     }
 

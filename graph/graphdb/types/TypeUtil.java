@@ -15,10 +15,6 @@
 package grakn.core.graph.graphdb.types;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Property;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
@@ -27,14 +23,11 @@ import grakn.core.graph.graphdb.database.management.ModifierType;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
-import grakn.core.graph.graphdb.types.IndexType;
-import grakn.core.graph.graphdb.types.SchemaSource;
-import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Property;
 
-/**
-
- * @author Joshua Shinavier (http://fortytwo.net)
- */
 public class TypeUtil {
 
     public static boolean hasSimpleInternalVertexKeyIndex(JanusGraphRelation rel) {
@@ -53,9 +46,10 @@ public class TypeUtil {
                 if (StringUtils.isBlank(name)) throw Property.Exceptions.propertyKeyCanNotBeEmpty();
                 break;
             case GRAPHINDEX:
-                Preconditions.checkArgument(StringUtils.isNotBlank(name),"Index name cannot be empty: %s",name);
+                Preconditions.checkArgument(StringUtils.isNotBlank(name), "Index name cannot be empty: %s", name);
                 break;
-            default: throw new AssertionError(category);
+            default:
+                throw new AssertionError(category);
         }
     }
 
@@ -64,9 +58,9 @@ public class TypeUtil {
     }
 
     public static boolean hasSimpleInternalVertexKeyIndex(PropertyKey key) {
-        InternalRelationType type = (InternalRelationType)key;
+        InternalRelationType type = (InternalRelationType) key;
         for (IndexType index : type.getKeyIndexes()) {
-            if (index.getElement()== ElementCategory.VERTEX && index.isCompositeIndex()) {
+            if (index.getElement() == ElementCategory.VERTEX && index.isCompositeIndex()) {
                 if (index.indexesKey(key)) return true;
             }
         }
@@ -90,7 +84,6 @@ public class TypeUtil {
         }
         return defaultValue;
     }
-
 
 
     public static ConsistencyModifier getConsistencyModifier(SchemaSource schema) {

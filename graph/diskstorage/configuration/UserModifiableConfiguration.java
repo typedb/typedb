@@ -95,7 +95,7 @@ public class UserModifiableConfiguration implements JanusGraphConfiguration {
 
 
     @Override
-    public org.janusgraph.diskstorage.configuration.UserModifiableConfiguration set(String path, Object value) {
+    public UserModifiableConfiguration set(String path, Object value) {
         ConfigElement.PathIdentifier pp = ConfigElement.parse(config.getRootNamespace(),path);
         Preconditions.checkArgument(pp.element.isOption(),"Need to provide configuration option - not namespace: %s",path);
         ConfigOption option = (ConfigOption)pp.element;

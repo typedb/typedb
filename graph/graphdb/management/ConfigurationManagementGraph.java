@@ -15,12 +15,7 @@
 package grakn.core.graph.graphdb.management;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.configuration.Configuration;
-import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.T;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import grakn.core.graph.core.ConfiguredGraphFactory;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.schema.JanusGraphIndex;
 import grakn.core.graph.core.schema.JanusGraphManagement;
@@ -29,6 +24,12 @@ import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.management.utils.ConfigurationManagementGraphAlreadyInstantiatedException;
 import grakn.core.graph.graphdb.management.utils.ConfigurationManagementGraphNotEnabledException;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.T;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +39,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
-import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
-import static org.janusgraph.core.schema.SchemaAction.REINDEX;
-import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
-import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
+import static grakn.core.graph.core.schema.SchemaAction.ENABLE_INDEX;
+import static grakn.core.graph.core.schema.SchemaAction.REINDEX;
+import static grakn.core.graph.core.schema.SchemaStatus.INSTALLED;
+import static grakn.core.graph.core.schema.SchemaStatus.REGISTERED;
 
 /**
  * This class allows you to create/update/remove configuration objects used to open a graph.
@@ -52,8 +53,8 @@ import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
  */
 public class ConfigurationManagementGraph {
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.graphdb.management.ConfigurationManagementGraph.class);
-    private static org.janusgraph.graphdb.management.ConfigurationManagementGraph instance = null;
+    private static final Logger log = LoggerFactory.getLogger(ConfigurationManagementGraph.class);
+    private static ConfigurationManagementGraph instance = null;
     public static final String PROPERTY_GRAPH_NAME = GraphDatabaseConfiguration.GRAPH_NAME.toStringWithoutRoot();
     public static final String PROPERTY_CREATED_USING_TEMPLATE = "Created_Using_Template";
     private static final String VERTEX_LABEL = "Configuration";
@@ -99,12 +100,12 @@ public class ConfigurationManagementGraph {
      * YAML file supplied at server start, then we return the ConfigurationManagementGraph
      * Singleton-- otherwise we throw a {@link ConfigurationManagementGraphNotEnabledException} exception.
      */
-    public static org.janusgraph.graphdb.management.ConfigurationManagementGraph getInstance() throws ConfigurationManagementGraphNotEnabledException {
+    public static ConfigurationManagementGraph getInstance() throws ConfigurationManagementGraphNotEnabledException {
         if (null == instance) {
             throw new ConfigurationManagementGraphNotEnabledException(
-                "Please add a key named \"ConfigurationManagementGraph\" to the \"graphs\" property " +
-                "in your YAML file and restart the server to be able to use the functionality " +
-                "of the ConfigurationManagementGraph class."
+                    "Please add a key named \"ConfigurationManagementGraph\" to the \"graphs\" property " +
+                            "in your YAML file and restart the server to be able to use the functionality " +
+                            "of the ConfigurationManagementGraph class."
             );
         }
 
@@ -115,13 +116,13 @@ public class ConfigurationManagementGraph {
      * Create a configuration according to the supplied {@link Configuration}; you must include
      * the property "graph.graphname" with a value in the configuration; you can then
      * open your graph using graph.graphname without having to supply the
-     * Configuration or File each time using the {@link org.janusgraph.core.ConfiguredGraphFactory}.
+     * Configuration or File each time using the {@link ConfiguredGraphFactory}.
      */
     public void createConfiguration(Configuration config) {
         Preconditions.checkArgument(config.containsKey(PROPERTY_GRAPH_NAME),
-                                    String.format("Please include the property \"%s\" in your configuration.",
-                                                  PROPERTY_GRAPH_NAME
-                                    ));
+                String.format("Please include the property \"%s\" in your configuration.",
+                        PROPERTY_GRAPH_NAME
+                ));
         final Map<Object, Object> map = ConfigurationConverter.getMap(config);
         final Vertex v = graph.addVertex(T.label, VERTEX_LABEL);
         map.forEach((key, value) -> v.property((String) key, value));
@@ -138,11 +139,11 @@ public class ConfigurationManagementGraph {
      */
     public void createTemplateConfiguration(Configuration config) {
         Preconditions.checkArgument(!config.containsKey(PROPERTY_GRAPH_NAME),
-                                    String.format("Your template configuration may not contain the property \"%s\".",
-                                                  PROPERTY_GRAPH_NAME
-                                    ));
+                String.format("Your template configuration may not contain the property \"%s\".",
+                        PROPERTY_GRAPH_NAME
+                ));
         Preconditions.checkState(null == getTemplateConfiguration(),
-                                "You may only have one template configuration and one exists already.");
+                "You may only have one template configuration and one exists already.");
         final Map<Object, Object> map = ConfigurationConverter.getMap(config);
         final Vertex v = graph.addVertex();
         v.property(PROPERTY_TEMPLATE, true);
@@ -163,35 +164,35 @@ public class ConfigurationManagementGraph {
         if (config.containsKey(PROPERTY_GRAPH_NAME)) {
             final String graphNameOnConfig = (String) map.get(PROPERTY_GRAPH_NAME);
             Preconditions.checkArgument(graphName.equals(graphNameOnConfig),
-                                        String.format("Supplied graphName %s does not match property value supplied on config: %s.",
-                                                      graphName,
-                                                      graphNameOnConfig
-                                        ));
+                    String.format("Supplied graphName %s does not match property value supplied on config: %s.",
+                            graphName,
+                            graphNameOnConfig
+                    ));
         } else {
             map.put(PROPERTY_GRAPH_NAME, graphName);
         }
         log.warn("Configuration {} is only guaranteed to take effect when graph {} has been closed and reopened on all Janus Graph Nodes.",
-            graphName,
-            graphName
+                graphName,
+                graphName
         );
         updateVertexWithProperties(PROPERTY_GRAPH_NAME, graphName, map);
     }
 
     /**
      * Update template configuration by updating supplied existing properties and adding new ones to the
- 		 * {@link Configuration}; your updated Configuration may not contain the property "graph.graphname";
+     * {@link Configuration}; your updated Configuration may not contain the property "graph.graphname";
      * NOTE: Any graph using a configuration that was created using the template configuration must--
      * 1) be closed and reopened on every JanusGraph Node 2) have its corresponding Configuration removed
      * and 3) recreate the graph-- before the update is guaranteed to take effect.
      */
     public void updateTemplateConfiguration(Configuration config) {
         Preconditions.checkArgument(!config.containsKey(PROPERTY_GRAPH_NAME),
-                                    String.format("Your updated template configuration may not contain the property \"%s\".",
-                                                  PROPERTY_GRAPH_NAME
-                                    ));
+                String.format("Your updated template configuration may not contain the property \"%s\".",
+                        PROPERTY_GRAPH_NAME
+                ));
         log.warn("Any graph configuration created using the template configuration are only guaranteed to have their configuration updated " +
-                 "according to this new template configuration when the graph in question has been closed on every Janus Graph Node, its " +
-                 "corresponding Configuration has been removed, and the graph has been recreated.");
+                "according to this new template configuration when the graph in question has been closed on every Janus Graph Node, its " +
+                "corresponding Configuration has been removed, and the graph has been recreated.");
         updateVertexWithProperties(PROPERTY_TEMPLATE, true, ConfigurationConverter.getMap(config));
     }
 
@@ -221,8 +222,8 @@ public class ConfigurationManagementGraph {
         if (graphConfiguration.isEmpty()) return null;
         else if (graphConfiguration.size() > 1) { // this case shouldn't happen because our index has a unique constraint
             log.warn("Your configuration management graph is an a bad state. Please " +
-                     "ensure you have just one configuration per graph. The behavior " +
-                     "of the class' APIs are henceforth unpredictable until this is fixed.");
+                    "ensure you have just one configuration per graph. The behavior " +
+                    "of the class' APIs are henceforth unpredictable until this is fixed.");
         }
         return deserializeVertexProperties(graphConfiguration.get(0));
     }
@@ -249,8 +250,8 @@ public class ConfigurationManagementGraph {
 
         if (templateConfigurations.size() > 1) {
             log.warn("Your configuration management graph is an a bad state. Please " +
-                     "ensure you have just one template configuration. The behavior " +
-                     "of the class' APIs are henceforth unpredictable until this is fixed.");
+                    "ensure you have just one template configuration. The behavior " +
+                    "of the class' APIs are henceforth unpredictable until this is fixed.");
         }
         templateConfigurations.get(0).remove(PROPERTY_TEMPLATE);
         return deserializeVertexProperties(templateConfigurations.get(0));
@@ -265,7 +266,7 @@ public class ConfigurationManagementGraph {
         }
     }
 
-    private void createIndexIfDoesNotExist(String indexName, String propertyKeyName, Class dataType,boolean unique) {
+    private void createIndexIfDoesNotExist(String indexName, String propertyKeyName, Class dataType, boolean unique) {
         graph.tx().rollback();
         JanusGraphManagement management = graph.openManagement();
         if (null == management.getGraphIndex(indexName)) {
@@ -273,13 +274,13 @@ public class ConfigurationManagementGraph {
             boolean propertyKeyAlreadyExisted = false;
             if (null == management.getPropertyKey(propertyKeyName)) {
                 key = management.makePropertyKey(propertyKeyName).dataType(dataType).make();
-            }
-            else {
+            } else {
                 key = management.getPropertyKey(propertyKeyName);
                 propertyKeyAlreadyExisted = true;
             }
             final JanusGraphIndex index;
-            if (unique) index = management.buildIndex(indexName, Vertex.class).addKey(key).unique().buildCompositeIndex();
+            if (unique)
+                index = management.buildIndex(indexName, Vertex.class).addKey(key).unique().buildCompositeIndex();
             else index = management.buildIndex(indexName, Vertex.class).addKey(key).buildCompositeIndex();
             try {
                 if (index.getIndexStatus(key) == INSTALLED) {
@@ -328,8 +329,8 @@ public class ConfigurationManagementGraph {
             if (value instanceof List) {
                 if (((List) value).size() > 1) {
                     log.warn("Your configuration management graph is an a bad state. Please " +
-                             "ensure each vertex property is not supplied a Collection as a value. The behavior " +
-                             "of the class' APIs are henceforth unpredictable until this is fixed.");
+                            "ensure each vertex property is not supplied a Collection as a value. The behavior " +
+                            "of the class' APIs are henceforth unpredictable until this is fixed.");
                 }
                 deserializedProperties.put((String) key, ((List) value).get(0));
             }

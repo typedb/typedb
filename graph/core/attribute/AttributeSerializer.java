@@ -15,9 +15,11 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.schema.PropertyKeyMaker;
+import grakn.core.graph.core.schema.RelationTypeMaker;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
-
 
 /**
  * Allows custom serializer definitions for attribute values.
@@ -29,11 +31,11 @@ import grakn.core.graph.diskstorage.WriteBuffer;
  * the database is initialized. Hence, the serializer must be on the classpath.
  * <br>
  * <p>
- * When a {@link org.janusgraph.core.PropertyKey} is defined using a data type specified via {@link org.janusgraph.core.schema.PropertyKeyMaker} for which a custom serializer
+ * When a {@link PropertyKey} is defined using a data type specified via {@link PropertyKeyMaker} for which a custom serializer
  * is configured, then it will use this custom serializer for persistence operations.
  *
  * @param <V> Type of the attribute associated with the AttributeSerializer
- * @see org.janusgraph.core.schema.RelationTypeMaker
+ * @see RelationTypeMaker
  * @see <a href="https://docs.janusgraph.org/latest/serializer.html">
  *      "Datatype and Attribute Serializer Configuration" manual chapter</a>
  */

@@ -14,12 +14,9 @@
 
 package grakn.core.graph.diskstorage;
 
-import grakn.core.graph.diskstorage.Entry;
-
 import java.util.AbstractList;
 import java.util.Iterator;
 import java.util.List;
-
 
 public interface EntryList extends List<Entry> {
 
@@ -28,24 +25,19 @@ public interface EntryList extends List<Entry> {
      * that it reuses {@link Entry} objects when calling {@link Iterator#next()}.
      * Hence, this method should only be used if references to {@link Entry} objects are only
      * kept and accessed until the next {@link Iterator#next()} call.
-     *
-     * @return
      */
     Iterator<Entry> reuseIterator();
 
 
     /**
      * Returns the total amount of bytes this entry consumes on the heap - including all object headers.
-     *
-     * @return
      */
     int getByteSize();
 
 
-
     EmptyList EMPTY_LIST = new EmptyList();
 
-    class EmptyList extends AbstractList<Entry> implements org.janusgraph.diskstorage.EntryList {
+    class EmptyList extends AbstractList<Entry> implements EntryList {
 
         @Override
         public Entry get(int index) {

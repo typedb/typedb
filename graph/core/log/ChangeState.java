@@ -14,68 +14,46 @@
 
 package grakn.core.graph.core.log;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphRelation;
+import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.RelationType;
-import grakn.core.graph.core.log.Change;
-import grakn.core.graph.core.log.ChangeProcessor;
-import grakn.core.graph.core.log.TransactionId;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.Set;
 
 /**
  * Container interface for a set of changes against the graph caused by a particular transaction. This is passed as an argument to
- * {@link ChangeProcessor#process(org.janusgraph.core.JanusGraphTransaction, TransactionId, org.janusgraph.core.log.ChangeState)}
+ * {@link ChangeProcessor#process(JanusGraphTransaction, TransactionId, ChangeState)}
  * for the user to retrieve changed elements and act upon it.
- *
  */
 public interface ChangeState {
 
     /**
      * Returns all added, removed, or modified vertices when the change argument is {@link Change#ADDED},
      * {@link Change#REMOVED}, or {@link Change#ANY} respectively.
-     *
-     * @param change
-     * @return
      */
     Set<JanusGraphVertex> getVertices(Change change);
 
     /**
      * Returns all relations that match the change state and any of the provided relation types. If no relation types
      * are specified all relations matching the state are returned.
-     *
-     * @param change
-     * @param types
-     * @return
      */
     Iterable<JanusGraphRelation> getRelations(Change change, RelationType... types);
 
     /**
      * Returns all edges incident on the given vertex in the given direction that match the provided change state and edge labels.
-     *
-     * @param vertex
-     * @param change
-     * @param dir
-     * @param labels
-     * @return
      */
     Iterable<JanusGraphEdge> getEdges(Vertex vertex, Change change, Direction dir, String... labels);
 
 
     /**
      * Returns all properties incident for the given vertex that match the provided change state and property keys.
-     *
-     * @param vertex
-     * @param change
-     * @param keys
-     * @return
      */
     Iterable<JanusGraphVertexProperty> getProperties(Vertex vertex, Change change, String... keys);
-
 
 
 }

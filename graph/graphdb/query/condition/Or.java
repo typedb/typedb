@@ -35,8 +35,8 @@ public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
     }
 
     @Override
-    public org.janusgraph.graphdb.query.condition.Or<E> clone() {
-        return new org.janusgraph.graphdb.query.condition.Or<>(this);
+    public Or<E> clone() {
+        return new Or<>(this);
     }
 
     @Override

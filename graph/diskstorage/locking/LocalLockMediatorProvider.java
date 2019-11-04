@@ -14,10 +14,7 @@
 
 package grakn.core.graph.diskstorage.locking;
 
-import grakn.core.graph.diskstorage.locking.LocalLockMediator;
-import grakn.core.graph.diskstorage.locking.LocalLockMediators;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
-
 
 /**
  * Service provider interface for {@link LocalLockMediators}.
@@ -36,10 +33,8 @@ public interface LocalLockMediatorProvider {
      * {@code get(n)} must not equal {@code get(m)}. in other words, each
      * namespace must have a distinct mediator.
      *
-     * @param namespace
-     *            the arbitrary identifier for a local lock mediator
+     * @param namespace the arbitrary identifier for a local lock mediator
      * @return the local lock mediator for {@code namespace}
-     * @author Dan LaRocque (dalaro@hopcount.org)
      * @see LocalLockMediator
      */
     <T> LocalLockMediator<T> get(String namespace, TimestampProvider times);

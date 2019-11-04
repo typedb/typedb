@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 
 public class AttributeUtil {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.database.serialize.AttributeUtil.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeUtil.class);
 
     public static boolean isWholeNumber(Number n) {
         return isWholeNumber(n.getClass());

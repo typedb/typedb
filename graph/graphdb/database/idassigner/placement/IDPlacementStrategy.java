@@ -14,8 +14,6 @@
 
 package grakn.core.graph.graphdb.database.idassigner.placement;
 
-import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
-import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalElement;
 import grakn.core.graph.graphdb.internal.InternalVertex;
@@ -27,9 +25,8 @@ import java.util.Map;
  * Determines how vertices are placed in individual graph partitions.
  * A particular implementation determines the partition id of a (newly created) vertex. The vertex is
  * then assigned to said partition by JanusGraph.
- *
+ * <p>
  * The id placement strategy is configurable.
- *
  */
 public interface IDPlacementStrategy {
 
@@ -37,7 +34,6 @@ public interface IDPlacementStrategy {
      * Individually assigns an id to the given vertex or relation.
      *
      * @param element Vertex or relation to assign id to.
-     * @return
      */
     int getPartition(InternalElement element);
 
@@ -54,19 +50,15 @@ public interface IDPlacementStrategy {
     void getPartitions(Map<InternalVertex, PartitionAssignment> vertices);
 
     /**
-     * After construction, the {@link org.janusgraph.graphdb.idmanagement.IDManager} used by this graph instance
+     * After construction, the {@link IDManager} used by this graph instance
      * is injected into this IDPlacementStrategy so that the id pattern of vertices can be inspected.
      * This method is guaranteed to be called before any partition assignments are made.
-     *
-     * @param idManager
      */
     void injectIDManager(IDManager idManager);
 
     /**
      * Whether this placement strategy supports bulk placement.
      * If not, then {@link #getPartitions(Map)} will throw {@link UnsupportedOperationException}
-     *
-     * @return
      */
     boolean supportsBulkPlacement();
 

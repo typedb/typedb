@@ -17,8 +17,6 @@ package grakn.core.graph.graphdb.olap;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
@@ -28,12 +26,13 @@ import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import grakn.core.graph.graphdb.query.vertex.BaseVertexCentricQuery;
 import grakn.core.graph.graphdb.query.vertex.BasicVertexCentricQueryBuilder;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
 
 public class QueryContainer {
 
@@ -61,10 +60,6 @@ public class QueryContainer {
         return new QueryBuilder();
     }
 
-//    Query getQuery(String name) {
-//        return queries.get(name);
-//    }
-
     Set<Query> getQueries(SliceQuery slice) {
         return inverseQueries.get(slice);
     }
@@ -75,7 +70,7 @@ public class QueryContainer {
 
     public List<SliceQuery> getSliceQueries() {
         List<SliceQuery> slices = new ArrayList<>(queries.size() * 2);
-        for (org.janusgraph.graphdb.olap.QueryContainer.Query q : getQueries()) {
+        for (QueryContainer.Query q : getQueries()) {
             for (SliceQuery slice : q.getSlices()) {
                 if (!slices.contains(slice)) slices.add(slice);
             }
@@ -86,22 +81,16 @@ public class QueryContainer {
     static class Query {
 
         private final List<SliceQuery> slices;
-        //        private final String name;
         private final RelationCategory returnType;
 
         public Query(List<SliceQuery> slices, RelationCategory returnType) {
             this.slices = slices;
-//            this.name = name;
             this.returnType = returnType;
         }
 
         public List<SliceQuery> getSlices() {
             return slices;
         }
-
-//        public String getName() {
-//            return name;
-//        }
 
         public RelationCategory getReturnType() {
             return returnType;
@@ -110,18 +99,11 @@ public class QueryContainer {
 
     public class QueryBuilder extends BasicVertexCentricQueryBuilder<QueryBuilder> {
 
-//        private String name = null;
-
         private QueryBuilder() {
-            super(org.janusgraph.graphdb.olap.QueryContainer.this.tx);
+            super(QueryContainer.this.tx);
         }
 
         private Query relations(RelationCategory returnType) {
-//            if (name==null) {
-//                if (hasSingleType()) name = getSingleType().name();
-//                else if (!requiresName) name = QUERY_NAME_PREFIX + queries.size();
-//                else throw new IllegalStateException("Need to specify an explicit name for this query");
-//            }
 
             BaseVertexCentricQuery vq = super.constructQuery(returnType);
             List<SliceQuery> slices = new ArrayList<>(vq.numSubQueries());
@@ -146,17 +128,6 @@ public class QueryContainer {
         protected QueryBuilder getThis() {
             return this;
         }
-
-//        /**
-//         * Sets the name for this query
-//         * @param name
-//         * @return
-//         */
-//        public QueryBuilder setName(String name) {
-//            Preconditions.checkArgument(StringUtils.isNotBlank(name), "Invalid name provided: %s", name);
-//            this.name=name;
-//            return getThis();
-//        }
 
         public void edges() {
             relations(RelationCategory.EDGE);

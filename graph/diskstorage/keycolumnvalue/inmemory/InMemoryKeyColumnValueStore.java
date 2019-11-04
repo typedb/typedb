@@ -17,7 +17,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue.inmemory;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
@@ -29,6 +28,7 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.RecordIterator;
+import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -41,13 +41,12 @@ import java.util.concurrent.ConcurrentSkipListMap;
  * An in-memory implementation of {@link KeyColumnValueStore}.
  * This implementation is thread-safe. All data is held in memory, which means that the capacity of this store is
  * determined by the available heap space. No data is persisted and all data lost when the jvm terminates or store closed.
- *
  */
 
 public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     private final String name;
-    private final ConcurrentNavigableMap<StaticBuffer, org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore> kcv;
+    private final ConcurrentNavigableMap<StaticBuffer, ColumnValueStore> kcv;
 
     public InMemoryKeyColumnValueStore(String name) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name));
@@ -57,7 +56,7 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
-        org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore cvs = kcv.get(query.getKey());
+        ColumnValueStore cvs = kcv.get(query.getKey());
         if (cvs == null) return EntryList.EMPTY_LIST;
         else return cvs.getSlice(query, txh);
     }
@@ -65,15 +64,15 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         Map<StaticBuffer, EntryList> result = Maps.newHashMap();
-        for (StaticBuffer key : keys) result.put(key,getSlice(new KeySliceQuery(key,query),txh));
+        for (StaticBuffer key : keys) result.put(key, getSlice(new KeySliceQuery(key, query), txh));
         return result;
     }
 
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
-        org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore cvs = kcv.get(key);
+        ColumnValueStore cvs = kcv.get(key);
         if (cvs == null) {
-            kcv.putIfAbsent(key, new org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore());
+            kcv.putIfAbsent(key, new ColumnValueStore());
             cvs = kcv.get(key);
         }
         cvs.mutate(additions, deletions, txh);
@@ -110,15 +109,15 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
 
 
     private static class RowIterator implements KeyIterator {
-        private final Iterator<Map.Entry<StaticBuffer, org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore>> rows;
+        private final Iterator<Map.Entry<StaticBuffer, ColumnValueStore>> rows;
         private final SliceQuery columnSlice;
         private final StoreTransaction transaction;
 
-        private Map.Entry<StaticBuffer, org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore> currentRow;
-        private Map.Entry<StaticBuffer, org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore> nextRow;
+        private Map.Entry<StaticBuffer, ColumnValueStore> currentRow;
+        private Map.Entry<StaticBuffer, ColumnValueStore> nextRow;
         private boolean isClosed;
 
-        public RowIterator(Iterator<Map.Entry<StaticBuffer, org.janusgraph.diskstorage.keycolumnvalue.inmemory.ColumnValueStore>> rows,
+        public RowIterator(Iterator<Map.Entry<StaticBuffer, ColumnValueStore>> rows,
                            @Nullable SliceQuery columns,
                            final StoreTransaction transaction) {
             this.rows = Iterators.filter(rows, entry -> entry != null && !entry.getValue().isEmpty(transaction));

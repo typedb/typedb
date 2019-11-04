@@ -16,6 +16,10 @@ package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
 import com.google.common.primitives.Doubles;
+import grakn.core.graph.diskstorage.ScanBuffer;
+import grakn.core.graph.diskstorage.WriteBuffer;
+import grakn.core.graph.diskstorage.util.ReadArrayBuffer;
+import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.AbstractObjectDeserializer;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONTokens;
@@ -35,12 +39,6 @@ import org.apache.tinkerpop.shaded.kryo.KryoException;
 import org.apache.tinkerpop.shaded.kryo.Serializer;
 import org.apache.tinkerpop.shaded.kryo.io.Input;
 import org.apache.tinkerpop.shaded.kryo.io.Output;
-import grakn.core.graph.core.attribute.AttributeSerializer;
-import grakn.core.graph.core.attribute.JtsGeoshapeHelper;
-import grakn.core.graph.diskstorage.ScanBuffer;
-import grakn.core.graph.diskstorage.WriteBuffer;
-import grakn.core.graph.diskstorage.util.ReadArrayBuffer;
-import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.distance.DistanceUtils;
 import org.locationtech.spatial4j.shape.Circle;
@@ -140,7 +138,7 @@ public class Geoshape {
         if (this == other) return true;
         else if (other == null) return false;
         else if (!getClass().isInstance(other)) return false;
-        org.janusgraph.core.attribute.Geoshape oth = (org.janusgraph.core.attribute.Geoshape) other;
+        Geoshape oth = (Geoshape) other;
         return shape.equals(oth.shape);
     }
 
@@ -209,7 +207,7 @@ public class Geoshape {
         return DistanceUtils.degrees2Dist(radiusInDeg, DistanceUtils.EARTH_MEAN_RADIUS_KM);
     }
 
-    private SpatialRelation getSpatialRelation(org.janusgraph.core.attribute.Geoshape other) {
+    private SpatialRelation getSpatialRelation(Geoshape other) {
         Preconditions.checkNotNull(other);
         return shape.relate(other.shape);
     }
@@ -217,7 +215,7 @@ public class Geoshape {
     /**
      * Whether this geometry has any points in common with the given geometry.
      */
-    public boolean intersect(org.janusgraph.core.attribute.Geoshape other) {
+    public boolean intersect(Geoshape other) {
         SpatialRelation r = getSpatialRelation(other);
         return r == SpatialRelation.INTERSECTS || r == SpatialRelation.CONTAINS || r == SpatialRelation.WITHIN;
     }
@@ -225,21 +223,21 @@ public class Geoshape {
     /**
      * Whether this geometry is within the given geometry.
      */
-    public boolean within(org.janusgraph.core.attribute.Geoshape outer) {
+    public boolean within(Geoshape outer) {
         return getSpatialRelation(outer) == SpatialRelation.WITHIN;
     }
 
     /**
      * Whether this geometry contains the given geometry.
      */
-    public boolean contains(org.janusgraph.core.attribute.Geoshape outer) {
+    public boolean contains(Geoshape outer) {
         return getSpatialRelation(outer) == SpatialRelation.CONTAINS;
     }
 
     /**
      * Whether this geometry has no points in common with the given geometry.
      */
-    public boolean disjoint(org.janusgraph.core.attribute.Geoshape other) {
+    public boolean disjoint(Geoshape other) {
         return getSpatialRelation(other) == SpatialRelation.DISJOINT;
     }
 
@@ -247,28 +245,28 @@ public class Geoshape {
     /**
      * Constructs a point from its latitude and longitude information
      */
-    public static org.janusgraph.core.attribute.Geoshape point(double latitude, double longitude) {
+    public static Geoshape point(double latitude, double longitude) {
         Preconditions.checkArgument(isValidCoordinate(latitude, longitude), "Invalid coordinate provided");
-        return new org.janusgraph.core.attribute.Geoshape(getShapeFactory().pointXY(longitude, latitude));
+        return new Geoshape(getShapeFactory().pointXY(longitude, latitude));
     }
 
     /**
      * Constructs a circle from a given center point and a radius in kilometer
      */
-    public static org.janusgraph.core.attribute.Geoshape circle(double latitude, double longitude, double radiusInKM) {
+    public static Geoshape circle(double latitude, double longitude, double radiusInKM) {
         Preconditions.checkArgument(isValidCoordinate(latitude, longitude), "Invalid coordinate provided");
         Preconditions.checkArgument(radiusInKM > 0, "Invalid radius provided [%s]", radiusInKM);
-        return new org.janusgraph.core.attribute.Geoshape(getShapeFactory().circle(longitude, latitude, DistanceUtils.dist2Degrees(radiusInKM, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
+        return new Geoshape(getShapeFactory().circle(longitude, latitude, DistanceUtils.dist2Degrees(radiusInKM, DistanceUtils.EARTH_MEAN_RADIUS_KM)));
     }
 
     /**
      * Constructs a new box shape which is identified by its south-west and north-east corner points
      */
-    public static org.janusgraph.core.attribute.Geoshape box(double southWestLatitude, double southWestLongitude,
-                                                             final double northEastLatitude, double northEastLongitude) {
+    public static Geoshape box(double southWestLatitude, double southWestLongitude,
+                               final double northEastLatitude, double northEastLongitude) {
         Preconditions.checkArgument(isValidCoordinate(southWestLatitude, southWestLongitude), "Invalid south-west coordinate provided");
         Preconditions.checkArgument(isValidCoordinate(northEastLatitude, northEastLongitude), "Invalid north-east coordinate provided");
-        return new org.janusgraph.core.attribute.Geoshape(getShapeFactory().rect(southWestLongitude, northEastLongitude, southWestLatitude, northEastLatitude));
+        return new Geoshape(getShapeFactory().rect(southWestLongitude, northEastLongitude, southWestLatitude, northEastLatitude));
     }
 
     /**
@@ -276,14 +274,14 @@ public class Geoshape {
      *
      * @param coordinates Coordinate (lon,lat) pairs
      */
-    public static org.janusgraph.core.attribute.Geoshape line(List<double[]> coordinates) {
+    public static Geoshape line(List<double[]> coordinates) {
         Preconditions.checkArgument(coordinates.size() >= 2, "Too few coordinate pairs provided");
         final LineStringBuilder builder = getShapeFactory().lineString();
         for (double[] coordinate : coordinates) {
             Preconditions.checkArgument(isValidCoordinate(coordinate[1], coordinate[0]), "Invalid coordinate provided");
             builder.pointXY(coordinate[0], coordinate[1]);
         }
-        return new org.janusgraph.core.attribute.Geoshape(builder.build());
+        return new Geoshape(builder.build());
     }
 
     /**
@@ -291,22 +289,22 @@ public class Geoshape {
      *
      * @param coordinates Coordinate (lon,lat) pairs
      */
-    public static org.janusgraph.core.attribute.Geoshape polygon(List<double[]> coordinates) {
+    public static Geoshape polygon(List<double[]> coordinates) {
         return HELPER.polygon(coordinates);
     }
 
     /**
      * Constructs a Geoshape from a spatial4j {@link Shape}.
      */
-    public static org.janusgraph.core.attribute.Geoshape geoshape(Shape shape) {
-        return new org.janusgraph.core.attribute.Geoshape(shape);
+    public static Geoshape geoshape(Shape shape) {
+        return new Geoshape(shape);
     }
 
     /**
      * Create Geoshape from WKT representation.
      */
-    public static org.janusgraph.core.attribute.Geoshape fromWkt(String wkt) throws ParseException {
-        return new org.janusgraph.core.attribute.Geoshape(HELPER.getWktReader().parse(wkt));
+    public static Geoshape fromWkt(String wkt) throws ParseException {
+        return new Geoshape(HELPER.getWktReader().parse(wkt));
     }
 
     /**
@@ -377,17 +375,16 @@ public class Geoshape {
 
     /**
      * Geoshape attribute serializer for JanusGraph.
-     *
- */
-    public static class GeoshapeSerializer implements AttributeSerializer<org.janusgraph.core.attribute.Geoshape> {
+     */
+    public static class GeoshapeSerializer implements AttributeSerializer<Geoshape> {
 
         @Override
-        public void verifyAttribute(org.janusgraph.core.attribute.Geoshape value) {
+        public void verifyAttribute(Geoshape value) {
             //All values of Geoshape are valid
         }
 
         @Override
-        public org.janusgraph.core.attribute.Geoshape convert(Object value) {
+        public Geoshape convert(Object value) {
             if (value instanceof Map) {
                 return convertGeoJson(value);
             }
@@ -442,7 +439,7 @@ public class Geoshape {
             return Doubles.toArray(numbers);
         }
 
-        private org.janusgraph.core.attribute.Geoshape convertGeoJson(Object value) {
+        private Geoshape convertGeoJson(Object value) {
             //Note that geoJson is long,lat
             try {
                 Map<String, Object> map = (Map) value;
@@ -458,7 +455,7 @@ public class Geoshape {
             }
         }
 
-        private org.janusgraph.core.attribute.Geoshape convertGeometry(Map<String, Object> geometry) throws IOException, ParseException {
+        private Geoshape convertGeometry(Map<String, Object> geometry) throws IOException, ParseException {
             String type = (String) geometry.get("type");
             List<Object> coordinates = (List) geometry.get(FIELD_COORDINATES);
 
@@ -493,7 +490,7 @@ public class Geoshape {
             }
 
             String json = mapWriter.writeValueAsString(geometry);
-            return new org.janusgraph.core.attribute.Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
+            return new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
         }
 
         private double min(double... numbers) {
@@ -506,7 +503,7 @@ public class Geoshape {
 
 
         @Override
-        public org.janusgraph.core.attribute.Geoshape read(ScanBuffer buffer) {
+        public Geoshape read(ScanBuffer buffer) {
             long l = VariableLong.readPositive(buffer);
             int length = (int) l;
             int position = ((ReadArrayBuffer) buffer).getPosition();
@@ -528,7 +525,7 @@ public class Geoshape {
         }
 
         @Override
-        public void write(WriteBuffer buffer, org.janusgraph.core.attribute.Geoshape attribute) {
+        public void write(WriteBuffer buffer, Geoshape attribute) {
             try {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 GeoshapeBinarySerializer.write(outputStream, attribute);
@@ -544,9 +541,9 @@ public class Geoshape {
     /**
      * Geoshape serializer for TinkerPop's Gryo.
      */
-    public static class GeoShapeGryoSerializer extends Serializer<org.janusgraph.core.attribute.Geoshape> {
+    public static class GeoShapeGryoSerializer extends Serializer<Geoshape> {
         @Override
-        public void write(Kryo kryo, Output output, org.janusgraph.core.attribute.Geoshape geoshape) {
+        public void write(Kryo kryo, Output output, Geoshape geoshape) {
             try {
                 ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
                 GeoshapeBinarySerializer.write(outputStream, geoshape);
@@ -559,7 +556,7 @@ public class Geoshape {
         }
 
         @Override
-        public org.janusgraph.core.attribute.Geoshape read(Kryo kryo, Input input, Class<org.janusgraph.core.attribute.Geoshape> aClass) {
+        public Geoshape read(Kryo kryo, Input input, Class<Geoshape> aClass) {
             long l = input.readLong();
             int length = (int) l;
             try {
@@ -584,14 +581,14 @@ public class Geoshape {
     /**
      * Geoshape serializer for GraphSON 1.0 supporting writing GeoJSON (http://geojson.org/).
      */
-    public static class GeoshapeGsonSerializerV1d0 extends StdSerializer<org.janusgraph.core.attribute.Geoshape> {
+    public static class GeoshapeGsonSerializerV1d0 extends StdSerializer<Geoshape> {
 
         public GeoshapeGsonSerializerV1d0() {
-            super(org.janusgraph.core.attribute.Geoshape.class);
+            super(Geoshape.class);
         }
 
         @Override
-        public void serialize(org.janusgraph.core.attribute.Geoshape value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
+        public void serialize(Geoshape value, JsonGenerator jgen, SerializerProvider provider) throws IOException {
             switch (value.getType()) {
                 case POINT:
                     jgen.writeStartObject();
@@ -611,9 +608,9 @@ public class Geoshape {
         }
 
         @Override
-        public void serializeWithType(org.janusgraph.core.attribute.Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
+        public void serializeWithType(Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
             jgen.writeStartObject();
-            if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.CLASS, org.janusgraph.core.attribute.Geoshape.class.getName());
+            if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.CLASS, Geoshape.class.getName());
             String geojson = toGeoJson(geoshape);
             Map json = mapReader.readValue(geojson);
             if (geoshape.getType() == Type.POINT) {
@@ -625,7 +622,7 @@ public class Geoshape {
             jgen.writeEndObject();
         }
 
-        static String toGeoJson(org.janusgraph.core.attribute.Geoshape geoshape) {
+        static String toGeoJson(Geoshape geoshape) {
             return HELPER.getGeojsonWriter().toString(geoshape.shape);
         }
     }
@@ -633,25 +630,25 @@ public class Geoshape {
     /**
      * Geoshape deserializer for GraphSON 1.0 supporting reading from GeoJSON (http://geojson.org/).
      */
-    public static class GeoshapeGsonDeserializerV1d0 extends StdDeserializer<org.janusgraph.core.attribute.Geoshape> {
+    public static class GeoshapeGsonDeserializerV1d0 extends StdDeserializer<Geoshape> {
 
         public GeoshapeGsonDeserializerV1d0() {
-            super(org.janusgraph.core.attribute.Geoshape.class);
+            super(Geoshape.class);
         }
 
         @Override
-        public org.janusgraph.core.attribute.Geoshape deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
+        public Geoshape deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
             jsonParser.nextToken();
             if (jsonParser.getCurrentName().equals(FIELD_COORDINATES)) {
                 double[] f = jsonParser.readValueAs(double[].class);
                 jsonParser.nextToken();
-                return org.janusgraph.core.attribute.Geoshape.point(f[1], f[0]);
+                return Geoshape.point(f[1], f[0]);
             } else {
                 try {
                     HashMap map = jsonParser.readValueAs(LinkedHashMap.class);
                     jsonParser.nextToken();
                     String json = mapWriter.writeValueAsString(map);
-                    return new org.janusgraph.core.attribute.Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
+                    return new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
                 } catch (ParseException e) {
                     throw new IOException("Unable to read and parse geojson", e);
                 }
@@ -664,7 +661,7 @@ public class Geoshape {
      */
     public static class GeoshapeGsonSerializerV2d0 extends GeoshapeGsonSerializerV1d0 {
 
-        public void serializeWithType(org.janusgraph.core.attribute.Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
+        public void serializeWithType(Geoshape geoshape, JsonGenerator jgen, SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
             jgen.writeStartObject();
             if (typeSerializer != null) jgen.writeStringField(GraphSONTokens.VALUETYPE, "janusgraph:Geoshape");
             jgen.writeFieldName(GraphSONTokens.VALUEPROP);
@@ -680,7 +677,7 @@ public class Geoshape {
             jgen.writeEndObject();
         }
 
-        public static String toGeoJson(org.janusgraph.core.attribute.Geoshape geoshape) {
+        public static String toGeoJson(Geoshape geoshape) {
             return HELPER.getGeojsonWriter().toString(geoshape.shape);
         }
 
@@ -689,23 +686,23 @@ public class Geoshape {
     /**
      * Geoshape deserializer for GraphSON 2.0 supporting reading from GeoJSON (http://geojson.org/).
      */
-    public static class GeoshapeGsonDeserializerV2d0 extends AbstractObjectDeserializer<org.janusgraph.core.attribute.Geoshape> {
+    public static class GeoshapeGsonDeserializerV2d0 extends AbstractObjectDeserializer<Geoshape> {
 
         public GeoshapeGsonDeserializerV2d0() {
-            super(org.janusgraph.core.attribute.Geoshape.class);
+            super(Geoshape.class);
         }
 
         @Override
-        public org.janusgraph.core.attribute.Geoshape createObject(Map<String, Object> data) {
-            org.janusgraph.core.attribute.Geoshape shape;
+        public Geoshape createObject(Map<String, Object> data) {
+            Geoshape shape;
             if (data.containsKey(FIELD_COORDINATES) && data.get(FIELD_COORDINATES) instanceof List) {
                 List<Number> coordinates = (List<Number>) data.get(FIELD_COORDINATES);
                 if (coordinates.size() < 2) throw new RuntimeException("Expecting two coordinates when reading point");
-                shape = org.janusgraph.core.attribute.Geoshape.point(coordinates.get(1).doubleValue(), coordinates.get(0).doubleValue());
+                shape = Geoshape.point(coordinates.get(1).doubleValue(), coordinates.get(0).doubleValue());
             } else {
                 try {
                     final String json = mapWriter.writeValueAsString(data.get("geometry"));
-                    shape = new org.janusgraph.core.attribute.Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
+                    shape = new Geoshape(HELPER.getGeojsonReader().read(new StringReader(json)));
                 } catch (IOException | ParseException e) {
                     throw new RuntimeException("I/O exception reading geoshape", e);
                 }
@@ -721,7 +718,7 @@ public class Geoshape {
         /**
          * Serialize a geoshape.
          */
-        public static void write(OutputStream outputStream, org.janusgraph.core.attribute.Geoshape attribute) throws IOException {
+        public static void write(OutputStream outputStream, Geoshape attribute) throws IOException {
             try (DataOutputStream dataOutput = new DataOutputStream(outputStream)) {
                 HELPER.write(dataOutput, attribute);
                 dataOutput.flush();
@@ -732,9 +729,9 @@ public class Geoshape {
         /**
          * Deserialize a geoshape.
          */
-        public static org.janusgraph.core.attribute.Geoshape read(InputStream inputStream) throws IOException {
+        public static Geoshape read(InputStream inputStream) throws IOException {
             try (DataInputStream dataInput = new DataInputStream(inputStream)) {
-                return new org.janusgraph.core.attribute.Geoshape(HELPER.readShape(dataInput));
+                return new Geoshape(HELPER.readShape(dataInput));
             }
         }
     }

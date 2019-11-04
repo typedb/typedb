@@ -18,9 +18,6 @@ import com.codahale.metrics.Timer;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.graphdb.query.BackendQuery;
-import grakn.core.graph.graphdb.query.ElementQuery;
-import grakn.core.graph.graphdb.query.QueryExecutor;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import grakn.core.graph.util.stats.MetricManager;
 
@@ -28,15 +25,13 @@ import java.util.Iterator;
 
 /**
  * Wraps a {@link QueryExecutor} to gather metrics on the query execution and forward them to METRICS.
- *
- * @author Dan LaRocque (dan@thinkaurelius.com)
  */
-public class MetricsQueryExecutor<Q extends ElementQuery,R extends JanusGraphElement,B extends BackendQuery> implements QueryExecutor<Q,R,B> {
+public class MetricsQueryExecutor<Q extends ElementQuery, R extends JanusGraphElement, B extends BackendQuery> implements QueryExecutor<Q, R, B> {
 
-    private final QueryExecutor<Q,R,B> qe;
+    private final QueryExecutor<Q, R, B> qe;
     private final String metricsPrefix;
     private static final String M_CALLS = "calls";
-    private static final String M_TIME  = "time";
+    private static final String M_TIME = "time";
     private static final String M_EXCEPTIONS = "exceptions";
 
     public MetricsQueryExecutor(String prefix, String name, QueryExecutor<Q, R, B> qe) {
@@ -65,7 +60,7 @@ public class MetricsQueryExecutor<Q extends ElementQuery,R extends JanusGraphEle
         return runWithMetrics("execute", v -> qe.execute(query, subquery, executionInfo, profiler));
     }
 
-    private <T> T runWithMetrics(String opName, Function<Void,T> impl) {
+    private <T> T runWithMetrics(String opName, Function<Void, T> impl) {
 
         Preconditions.checkNotNull(opName);
         Preconditions.checkNotNull(impl);

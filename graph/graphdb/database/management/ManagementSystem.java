@@ -19,11 +19,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Connection;
 import grakn.core.graph.core.EdgeLabel;
@@ -63,19 +58,13 @@ import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.graphdb.database.IndexSerializer;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
-import grakn.core.graph.graphdb.database.management.GraphIndexStatusWatcher;
-import grakn.core.graph.graphdb.database.management.JanusGraphIndexWrapper;
-import grakn.core.graph.graphdb.database.management.ManagementLogger;
-import grakn.core.graph.graphdb.database.management.MgmtLogType;
-import grakn.core.graph.graphdb.database.management.ModifierType;
-import grakn.core.graph.graphdb.database.management.RelationIndexStatusWatcher;
-import grakn.core.graph.graphdb.database.management.RelationTypeIndexWrapper;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.Token;
+import grakn.core.graph.graphdb.management.JanusGraphManager;
 import grakn.core.graph.graphdb.olap.VertexJobConverter;
 import grakn.core.graph.graphdb.olap.job.IndexRemoveJob;
 import grakn.core.graph.graphdb.olap.job.IndexRepairJob;
@@ -102,6 +91,11 @@ import grakn.core.graph.graphdb.types.vertices.EdgeLabelVertex;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import grakn.core.graph.graphdb.types.vertices.PropertyKeyVertex;
 import grakn.core.graph.graphdb.types.vertices.RelationTypeVertex;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Element;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,10 +119,10 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
-import static RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
+import static grakn.core.graph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
 public class ManagementSystem implements JanusGraphManagement {
 
@@ -904,7 +898,7 @@ public class ManagementSystem implements JanusGraphManagement {
     /**
      * Upon the open managementsystem's commit, this graph will be asynchronously evicted from the cache on all JanusGraph nodes in your
      * cluster, once there are no open transactions on this graph on each respective JanusGraph node
-     * and assuming each node is correctly configured to use the {@link org.janusgraph.graphdb.management.JanusGraphManager}.
+     * and assuming each node is correctly configured to use the {@link JanusGraphManager}.
      */
     public void evictGraphFromCache() {
         this.evictGraphFromCache = true;

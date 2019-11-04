@@ -15,8 +15,6 @@
 package grakn.core.graph.diskstorage.locking;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.diskstorage.locking.LocalLockMediator;
-import grakn.core.graph.diskstorage.locking.LocalLockMediatorProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,13 +26,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * instances.
  *
  * @see LocalLockMediatorProvider
- * @author Dan LaRocque (dalaro@hopcount.org)
  */
 public enum LocalLockMediators implements LocalLockMediatorProvider {
     INSTANCE;
 
-    private static final Logger log = LoggerFactory
-            .getLogger(org.janusgraph.diskstorage.locking.LocalLockMediators.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalLockMediators.class);
 
     /**
      * Maps a namespace to the mediator responsible for the namespace.
@@ -50,16 +46,15 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
         Preconditions.checkNotNull(namespace);
 
         @SuppressWarnings("unchecked")
-        LocalLockMediator<T> m = (LocalLockMediator<T>)mediators.get(namespace);
+        LocalLockMediator<T> m = (LocalLockMediator<T>) mediators.get(namespace);
 
         if (null == m) {
             m = new LocalLockMediator<>(namespace, times);
-            @SuppressWarnings("unchecked")
-            final LocalLockMediator<T> old = (LocalLockMediator<T>)mediators.putIfAbsent(namespace, m);
+            @SuppressWarnings("unchecked") final LocalLockMediator<T> old = (LocalLockMediator<T>) mediators.putIfAbsent(namespace, m);
             if (null != old)
                 m = old;
             else
-                log.debug("Local lock mediator instantiated for namespace {}",
+                LOG.debug("Local lock mediator instantiated for namespace {}",
                         namespace);
         }
 
@@ -82,8 +77,6 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
      * <p>
      * This deletes all entries in the global map of namespaces to mediators
      * whose namespace key equals the argument.
-     *
-     * @param namespace
      */
     public void clear(String namespace) {
         mediators.entrySet().removeIf(e -> e.getKey().equals(namespace));

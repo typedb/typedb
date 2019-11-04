@@ -43,9 +43,9 @@ public interface JanusGraphComputer extends GraphComputer {
     }
 
     @Override
-    org.janusgraph.core.JanusGraphComputer workers(int threads);
+    JanusGraphComputer workers(int threads);
 
-    default org.janusgraph.core.JanusGraphComputer resultMode(ResultMode mode) {
+    default JanusGraphComputer resultMode(ResultMode mode) {
         result(mode.toResultGraph());
         persist(mode.toPersist());
         return this;

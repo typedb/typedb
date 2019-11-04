@@ -20,10 +20,9 @@ import java.util.concurrent.Callable;
 
 /**
  * Like {@link Callable}, except the exception type is narrowed from
- * {@link Exception} to {@link org.janusgraph.diskstorage.BackendException}.
- * 
- * @param <T>
- *            call return type
+ * {@link Exception} to {@link BackendException}.
+ *
+ * @param <T> call return type
  */
 public interface StorageCallable<T> extends Callable<T> {
 

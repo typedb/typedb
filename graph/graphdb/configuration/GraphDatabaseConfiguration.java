@@ -700,7 +700,7 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, ConflictAvoidanceMode.class, ConflictAvoidanceMode.NONE);
 
     /**
-     * When JanusGraph allocates IDs with {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}
+     * When JanusGraph allocates IDs with {@link ConflictAvoidanceMode#GLOBAL_AUTO}
      * configured, it picks a random unique ID marker and attempts to allocate IDs
      * from a partition using the marker. The ID markers function as
      * subpartitions with each ID partition. If the attempt fails because that
@@ -711,7 +711,7 @@ public class GraphDatabaseConfiguration {
      * should generally be set to 3 or more.
      * <p>
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is not configured to
-     * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#GLOBAL_AUTO}.
+     * {@link ConflictAvoidanceMode#GLOBAL_AUTO}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_RETRIES = new ConfigOption<>(IDAUTHORITY_NS, "randomized-conflict-avoidance-retries",
             "Number of times the system attempts ID block reservations with random conflict avoidance tags before giving up and throwing an exception",
@@ -726,7 +726,7 @@ public class GraphDatabaseConfiguration {
      * same value. Otherwise, data corruption will occur.
      * <p>
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
-     * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}. However, note that while the
+     * {@link ConflictAvoidanceMode#NONE}. However, note that while the
      * conflict avoidance mode can be changed, this setting cannot ever be changed and must therefore be considered a priori.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_BITS = new ConfigOption<>(IDAUTHORITY_NS, "conflict-avoidance-tag-bits",
@@ -742,7 +742,7 @@ public class GraphDatabaseConfiguration {
      * IMPORTANT: The configured unique id marker must fit within the configured unique id bit width.
      * <p>
      * This setting has no effect when {@link #IDAUTHORITY_CONFLICT_AVOIDANCE} is configured to
-     * {@link org.janusgraph.diskstorage.idmanagement.ConflictAvoidanceMode#NONE}.
+     * {@link ConflictAvoidanceMode#NONE}.
      */
     public static final ConfigOption<Integer> IDAUTHORITY_CAV_TAG = new ConfigOption<>(IDAUTHORITY_NS, "conflict-avoidance-tag",
             "Conflict avoidance tag to be used by this JanusGraph instance when allocating IDs",
@@ -888,7 +888,7 @@ public class GraphDatabaseConfiguration {
      * some kind of configuration object is in scope everywhere it is used, and
      * it could theoretically be stored in and read from that object.
      */
-    public static final String METRICS_PREFIX_DEFAULT = "org.janusgraph";
+    public static final String METRICS_PREFIX_DEFAULT = "grakn.core.graph";
     public static final String METRICS_SYSTEM_PREFIX_DEFAULT = METRICS_PREFIX_DEFAULT + "." + "sys";
     public static final String METRICS_SCHEMA_PREFIX_DEFAULT = METRICS_SYSTEM_PREFIX_DEFAULT + "." + "schema";
 
@@ -1132,9 +1132,6 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS, "gremlin",
             "Gremlin configuration options");
-
-    public static final ConfigOption<String> GREMLIN_GRAPH = new ConfigOption<>(GREMLIN_NS, "graph",
-            "The implementation of graph factory that will be used by gremlin server", ConfigOption.Type.LOCAL, "org.janusgraph.core.JanusGraphFactory");
 
     // ################ Begin Class Definition #######################
     // ###############################################################

@@ -15,10 +15,9 @@
 package grakn.core.graph.graphdb.tinkerpop.profile;
 
 import com.google.common.base.Preconditions;
+import grakn.core.graph.graphdb.query.profile.QueryProfiler;
 import org.apache.tinkerpop.gremlin.process.traversal.util.MutableMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalMetrics;
-import grakn.core.graph.graphdb.query.profile.QueryProfiler;
-
 
 public class TP3ProfileWrapper implements QueryProfiler {
 
@@ -35,9 +34,9 @@ public class TP3ProfileWrapper implements QueryProfiler {
         if (groupName.equals(AND_QUERY) || groupName.equals(OR_QUERY)) return this;
 
         int nextId = (subMetricCounter++);
-        MutableMetrics nested = new MutableMetrics(metrics.getId()+"."+groupName+"_"+nextId,groupName);
+        MutableMetrics nested = new MutableMetrics(metrics.getId() + "." + groupName + "_" + nextId, groupName);
         metrics.addNested(nested);
-        return new org.janusgraph.graphdb.tinkerpop.profile.TP3ProfileWrapper(nested);
+        return new TP3ProfileWrapper(nested);
     }
 
     @Override
@@ -45,7 +44,7 @@ public class TP3ProfileWrapper implements QueryProfiler {
         Preconditions.checkNotNull(key, "Key must be not null");
         Preconditions.checkNotNull(value, "Value must be not null");
         if (!(value instanceof String) && !(value instanceof Number)) value = value.toString();
-        metrics.setAnnotation(key,value);
+        metrics.setAnnotation(key, value);
         return this;
     }
 
@@ -61,6 +60,6 @@ public class TP3ProfileWrapper implements QueryProfiler {
 
     @Override
     public void setResultSize(long size) {
-        metrics.incrementCount(TraversalMetrics.ELEMENT_COUNT_ID,size);
+        metrics.incrementCount(TraversalMetrics.ELEMENT_COUNT_ID, size);
     }
 }

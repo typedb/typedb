@@ -60,16 +60,11 @@ public interface IDAuthority {
 
     /**
      * Returns the lower and upper limits of the key range assigned to this local machine as an array with two entries.
-     *
-     * @return
-     * @throws BackendException
      */
     List<KeyRange> getLocalIDPartition() throws BackendException;
 
     /**
      * Closes the IDAuthority and any underlying storage backend.
-     *
-     * @throws BackendException
      */
     void close() throws BackendException;
 

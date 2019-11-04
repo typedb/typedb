@@ -15,15 +15,12 @@
 package grakn.core.graph.core.attribute;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import grakn.core.graph.core.attribute.Geoshape;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 /**
  * Comparison relations for geographic shapes.
- *
  */
-
 public enum Geo implements JanusGraphPredicate {
 
     /**
@@ -157,15 +154,18 @@ public enum Geo implements JanusGraphPredicate {
     //////////////// statics
 
     public static <V> P<V> geoIntersect(V value) {
-        return new P(org.janusgraph.core.attribute.Geo.INTERSECT, value);
+        return new P(grakn.core.graph.core.attribute.Geo.INTERSECT, value);
     }
+
     public static <V> P<V> geoDisjoint(V value) {
-        return new P(org.janusgraph.core.attribute.Geo.DISJOINT, value);
+        return new P(grakn.core.graph.core.attribute.Geo.DISJOINT, value);
     }
+
     public static <V> P<V> geoWithin(V value) {
-        return new P(org.janusgraph.core.attribute.Geo.WITHIN, value);
+        return new P(grakn.core.graph.core.attribute.Geo.WITHIN, value);
     }
+
     public static <V> P<V> geoContains(V value) {
-        return new P(org.janusgraph.core.attribute.Geo.CONTAINS, value);
+        return new P(grakn.core.graph.core.attribute.Geo.CONTAINS, value);
     }
 }

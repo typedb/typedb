@@ -20,14 +20,11 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-/**
- * @author David Clement (david.clement90@laposte.net)
- */
 public abstract class ConnectiveJanusPredicate extends ArrayList<JanusGraphPredicate> implements JanusGraphPredicate {
 
     private static final long serialVersionUID = 1558788908114391360L;
 
-    public ConnectiveJanusPredicate(){
+    public ConnectiveJanusPredicate() {
         super();
     }
 
@@ -35,14 +32,14 @@ public abstract class ConnectiveJanusPredicate extends ArrayList<JanusGraphPredi
         super(predicates);
     }
 
-    abstract org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate getNewNegateIntance();
+    abstract ConnectiveJanusPredicate getNewNegateIntance();
 
     abstract boolean isOr();
 
     @Override
     @SuppressWarnings("unchecked")
     public boolean isValidCondition(Object condition) {
-        if (!(condition instanceof List) || ((List<?>)condition).size() != this.size()){
+        if (!(condition instanceof List) || ((List<?>) condition).size() != this.size()) {
             return false;
         }
         final Iterator<Object> itConditions = ((List<Object>) condition).iterator();
@@ -61,7 +58,7 @@ public abstract class ConnectiveJanusPredicate extends ArrayList<JanusGraphPredi
 
     @Override
     public JanusGraphPredicate negate() {
-        final org.janusgraph.graphdb.predicate.ConnectiveJanusPredicate toReturn = getNewNegateIntance();
+        ConnectiveJanusPredicate toReturn = getNewNegateIntance();
         this.stream().map(JanusGraphPredicate::negate).forEach(toReturn::add);
         return toReturn;
     }
@@ -69,10 +66,10 @@ public abstract class ConnectiveJanusPredicate extends ArrayList<JanusGraphPredi
     @Override
     @SuppressWarnings("unchecked")
     public boolean test(Object value, Object condition) {
-        if (!(condition instanceof List) || ((List<?>) condition).size() != this.size()){
+        if (!(condition instanceof List) || ((List<?>) condition).size() != this.size()) {
             return false;
         }
-        final Iterator<Object> itConditions = ((List<Object>) condition).iterator();
+        Iterator<Object> itConditions = ((List<Object>) condition).iterator();
         return this.stream().anyMatch(internalCondition -> isOr() == internalCondition.test(value, itConditions.next())) == isOr();
     }
 }

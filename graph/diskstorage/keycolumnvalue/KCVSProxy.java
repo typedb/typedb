@@ -19,20 +19,13 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * Wraps a {@link org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore} as a proxy as a basis for
+ * Wraps a {@link KeyColumnValueStore} as a proxy as a basis for
  * other wrappers
- *
  */
 public class KCVSProxy implements KeyColumnValueStore {
 
@@ -54,7 +47,7 @@ public class KCVSProxy implements KeyColumnValueStore {
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
                             StoreTransaction txh) throws BackendException {
-        store.acquireLock(key,column,expectedValue,unwrapTx(txh));
+        store.acquireLock(key, column, expectedValue, unwrapTx(txh));
     }
 
     @Override

@@ -15,13 +15,13 @@
 package grakn.core.graph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.schema.RelationTypeIndex;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 
 public class RelationTypeIndexWrapper implements RelationTypeIndex {
@@ -87,7 +87,7 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
         if (oth == null) return false;
         else if (oth == this) return true;
         else if (!getClass().isInstance(oth)) return false;
-        return type.equals(((org.janusgraph.graphdb.database.management.RelationTypeIndexWrapper) oth).type);
+        return type.equals(((RelationTypeIndexWrapper) oth).type);
     }
 
     @Override

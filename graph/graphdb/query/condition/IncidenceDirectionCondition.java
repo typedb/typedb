@@ -54,7 +54,7 @@ public class IncidenceDirectionCondition<E extends JanusGraphRelation> extends L
         if (other==null || !getClass().isInstance(other))
             return false;
 
-        org.janusgraph.graphdb.query.condition.IncidenceDirectionCondition oth = (org.janusgraph.graphdb.query.condition.IncidenceDirectionCondition)other;
+        IncidenceDirectionCondition oth = (IncidenceDirectionCondition)other;
         return direction==oth.direction && otherVertex.equals(oth.otherVertex);
     }
 

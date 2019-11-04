@@ -104,21 +104,17 @@ public enum ReflectiveConfigOptionLoader {
          * but the benefit isn't substantial.
          */
         List<String> classnames = ImmutableList.of(
-                "org.janusgraph.diskstorage.hbase.HBaseStoreManager",
-                "org.janusgraph.diskstorage.cassandra.astyanax.AstyanaxStoreManager",
-                "org.janusgraph.diskstorage.cassandra.AbstractCassandraStoreManager",
-                "org.janusgraph.diskstorage.cassandra.thrift.CassandraThriftStoreManager",
-                "org.janusgraph.diskstorage.cql.CQLConfigOptions",
-                "org.janusgraph.diskstorage.es.ElasticSearchIndex",
-                "org.janusgraph.diskstorage.solr.SolrIndex",
-                "org.janusgraph.diskstorage.log.kcvs.KCVSLog",
-                "org.janusgraph.diskstorage.log.kcvs.KCVSLogManager",
-                "org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration",
-                "org.janusgraph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
-                "org.janusgraph.graphdb.database.idassigner.VertexIDAssigner",
-                //"org.janusgraph.graphdb.TestMockIndexProvider",
-                //"org.janusgraph.graphdb.TestMockLog",
-                "org.janusgraph.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+                "grakn.core.graph.diskstorage.cql.CQLConfigOptions",
+                "grakn.core.graph.diskstorage.es.ElasticSearchIndex",
+                "grakn.core.graph.diskstorage.solr.SolrIndex",
+                "grakn.core.graph.diskstorage.log.kcvs.KCVSLog",
+                "grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager",
+                "grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration",
+                "grakn.core.graph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
+                "grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner",
+                //"grakn.core.graph.graphdb.TestMockIndexProvider",
+                //"grakn.core.graph.graphdb.TestMockLog",
+                "grakn.core.graph.diskstorage.berkeleyje.BerkeleyJEStoreManager");
 
         Timer t = new Timer(TimestampProviders.MILLI);
         t.start();

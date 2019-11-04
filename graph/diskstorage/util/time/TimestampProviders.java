@@ -14,9 +14,6 @@
 
 package grakn.core.graph.diskstorage.util.time;
 
-import grakn.core.graph.diskstorage.util.time.Temporals;
-import grakn.core.graph.diskstorage.util.time.Timer;
-import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,7 +111,7 @@ public enum TimestampProviders implements TimestampProvider {
         }
     };
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(org.janusgraph.diskstorage.util.time.TimestampProviders.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TimestampProviders.class);
 
     @Override
     public Instant sleepPast(Instant futureTime) throws InterruptedException {

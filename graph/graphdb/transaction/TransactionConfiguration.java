@@ -14,13 +14,14 @@
 
 package grakn.core.graph.graphdb.transaction;
 
+import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 
 /**
- * Provides configuration options for {@link org.janusgraph.core.JanusGraphTransaction}.
+ * Provides configuration options for {@link JanusGraphTransaction}.
  *
- * @see org.janusgraph.core.JanusGraphTransaction
+ * @see JanusGraphTransaction
  */
 public interface TransactionConfiguration extends BaseTransactionConfig {
 
@@ -39,8 +40,6 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
 
     /**
      * Whether this transaction should be optimized for batch-loading, i.e. ingestion of lots of data.
-     *
-     * @return
      */
     boolean hasEnabledBatchLoading();
 
@@ -133,6 +132,7 @@ public interface TransactionConfiguration extends BaseTransactionConfig {
     /**
      * Whether this transaction should throw an exception when a graph query is issued that cannot be answered
      * with any existing index but instead requires a full graph-scan.
+     *
      * @return
      */
     boolean hasForceIndexUsage();

@@ -14,16 +14,16 @@
 
 package grakn.core.graph.core.schema;
 
-import grakn.core.graph.core.schema.JanusGraphSchemaElement;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.VertexLabel;
 
 /**
  * A JanusGraphSchemaType is a {@link JanusGraphSchemaElement} that represents a label or key
- * used in the graph. As such, a schema type is either a {@link org.janusgraph.core.RelationType}
- * or a {@link org.janusgraph.core.VertexLabel}.
+ * used in the graph. As such, a schema type is either a {@link RelationType}
+ * or a {@link VertexLabel}.
  * <p>
  * JanusGraphSchemaTypes are a special {@link JanusGraphSchemaElement} in that they are referenced from the
  * main graph when creating vertices, edges, and properties.
- *
  */
 public interface JanusGraphSchemaType extends JanusGraphSchemaElement {
 

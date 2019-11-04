@@ -20,14 +20,14 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * Implementation of a lock that has no effect, i.e. does not actually lock anything.
- *
  */
 
 public class NoLock implements Lock {
 
-    public static final Lock INSTANCE = new org.janusgraph.diskstorage.util.NoLock();
+    public static final Lock INSTANCE = new NoLock();
 
-    private NoLock() {}
+    private NoLock() {
+    }
 
     public static Lock getLock() {
         return INSTANCE;

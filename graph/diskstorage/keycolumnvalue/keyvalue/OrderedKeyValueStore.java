@@ -16,10 +16,8 @@ package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStore;
 import grakn.core.graph.diskstorage.util.RecordIterator;
 
 import java.util.List;
@@ -46,11 +44,11 @@ public interface OrderedKeyValueStore extends KeyValueStore {
 
 
     /**
-     * Like {@link #getSlice(KVQuery, org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction)} but executes
+     * Like {@link #getSlice(KVQuery, StoreTransaction)} but executes
      * all of the given queries at once and returns a map of all the result sets of each query.
      * <p>
      * Only supported when the given store implementation supports multi-query, i.e.
-     * {@link org.janusgraph.diskstorage.keycolumnvalue.StoreFeatures#hasMultiQuery()} return true. Otherwise
+     * {@link StoreFeatures#hasMultiQuery()} return true. Otherwise
      * this method may throw a {@link UnsupportedOperationException}.
      */
     Map<KVQuery, RecordIterator<KeyValueEntry>> getSlices(List<KVQuery> queries, StoreTransaction txh) throws BackendException;

@@ -21,9 +21,6 @@ import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
 
 import java.util.UUID;
 
-/**
- *  @author Bryn Cooke (bryn.cooke@datastax.com)
- */
 public class UUIDSerializer implements OrderPreservingSerializer<UUID> {
 
     @Override
@@ -42,7 +39,7 @@ public class UUIDSerializer implements OrderPreservingSerializer<UUID> {
     @Override
     public UUID convert(Object value) {
         Preconditions.checkNotNull(value);
-        if(value instanceof String){
+        if (value instanceof String) {
             return UUID.fromString((String) value);
         }
         return null;

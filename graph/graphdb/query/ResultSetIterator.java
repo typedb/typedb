@@ -22,7 +22,6 @@ import java.util.NoSuchElementException;
 /**
  * Wraps around a result set iterator to return up to the specified limit number of elements
  * and implement the {@link Iterator#remove()} method based on element's remove method.
- *
  */
 public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<R> {
 
@@ -75,8 +74,8 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
             throw new UnsupportedOperationException();
     }
 
-    public static<R extends JanusGraphElement> Iterable<R> wrap(Iterable<R> inner, int limit) {
-        return () -> new org.janusgraph.graphdb.query.ResultSetIterator<>(inner.iterator(),limit);
+    public static <R extends JanusGraphElement> Iterable<R> wrap(Iterable<R> inner, int limit) {
+        return () -> new ResultSetIterator<>(inner.iterator(), limit);
     }
 
 }

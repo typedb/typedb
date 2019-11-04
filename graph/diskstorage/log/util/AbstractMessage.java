@@ -16,16 +16,16 @@ package grakn.core.graph.diskstorage.log.util;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.Message;
 
 import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Abstract implementation of {@link org.janusgraph.diskstorage.log.Message} which exposes the timestamp, sender, and payload
+ * Abstract implementation of {@link Message} which exposes the timestamp, sender, and payload
  * of a message.
- * Particular {@link org.janusgraph.diskstorage.log.Log} implementations can extend this class.
- *
+ * Particular {@link Log} implementations can extend this class.
  */
 public abstract class AbstractMessage implements Message {
 
@@ -36,7 +36,7 @@ public abstract class AbstractMessage implements Message {
     private final String senderId;
 
     protected AbstractMessage(StaticBuffer content, Instant timestamp, String senderId) {
-        Preconditions.checkArgument(content !=null && senderId!=null);
+        Preconditions.checkArgument(content != null && senderId != null);
         this.content = content;
         this.timestamp = timestamp;
         this.senderId = senderId;
@@ -59,7 +59,8 @@ public abstract class AbstractMessage implements Message {
     @Override
     public String toString() {
         String payloadString = content.toString();
-        if (payloadString.length()>MAX_PAYLOAD_STR_LENGTH) payloadString=payloadString.substring(0,MAX_PAYLOAD_STR_LENGTH) + "...";
+        if (payloadString.length() > MAX_PAYLOAD_STR_LENGTH)
+            payloadString = payloadString.substring(0, MAX_PAYLOAD_STR_LENGTH) + "...";
         return "Message@" + timestamp + ":" + senderId + "=" + payloadString;
     }
 
@@ -70,9 +71,9 @@ public abstract class AbstractMessage implements Message {
 
     @Override
     public boolean equals(Object other) {
-        if (this==other) return true;
-        else if (other==null || !getClass().isInstance(other)) return false;
-        org.janusgraph.diskstorage.log.util.AbstractMessage msg = (org.janusgraph.diskstorage.log.util.AbstractMessage)other;
+        if (this == other) return true;
+        else if (!getClass().isInstance(other)) return false;
+        AbstractMessage msg = (AbstractMessage) other;
         return timestamp.equals(msg.timestamp) && senderId.equals(msg.senderId) && content.equals(msg.content);
     }
 }

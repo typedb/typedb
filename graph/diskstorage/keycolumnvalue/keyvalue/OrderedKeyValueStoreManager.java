@@ -16,15 +16,11 @@ package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KVMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 
 import java.util.Map;
 
 /**
  * A {@link KeyValueStoreManager} where the stores maintain keys in their natural order.
- *
  */
 public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
 
@@ -35,8 +31,6 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
      *
      * @param name Name of database
      * @return Database Handle
-     * @throws org.janusgraph.diskstorage.BackendException
-     *
      */
     @Override
     OrderedKeyValueStore openDatabase(String name) throws BackendException;
@@ -45,12 +39,8 @@ public interface OrderedKeyValueStoreManager extends KeyValueStoreManager {
     /**
      * Executes multiple mutations at once. Each store (identified by a string name) in the mutations map is associated
      * with a {@link KVMutation} that contains all the mutations for that particular store.
-     *
+     * <p>
      * This is an optional operation. Check {@link #getFeatures()} if it is supported by a particular implementation.
-     *
-     * @param mutations
-     * @param txh
-     * @throws org.janusgraph.diskstorage.BackendException
      */
     void mutateMany(Map<String, KVMutation> mutations, StoreTransaction txh) throws BackendException;
 

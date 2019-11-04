@@ -25,9 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * @author David Clement (david.clement90@laposte.net)
- */
 public class ConnectiveJanusGraphP extends P<Object> {
 
     private static final long serialVersionUID = 1737489543643777182L;

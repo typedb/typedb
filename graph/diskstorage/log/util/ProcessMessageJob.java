@@ -23,17 +23,16 @@ import org.slf4j.LoggerFactory;
 /**
  * Helper class for processing read messages with the registered message readers.
  * Simple implementation of a {@link Runnable}.
- *
  */
 public class ProcessMessageJob implements Runnable {
 
-    private static final Logger log = LoggerFactory.getLogger(org.janusgraph.diskstorage.log.util.ProcessMessageJob.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ProcessMessageJob.class);
 
     private final Message message;
     private final MessageReader reader;
 
     public ProcessMessageJob(Message message, MessageReader reader) {
-        Preconditions.checkArgument(message!=null && reader!=null);
+        Preconditions.checkArgument(message != null && reader != null);
         this.message = message;
         this.reader = reader;
     }
@@ -41,10 +40,10 @@ public class ProcessMessageJob implements Runnable {
     @Override
     public void run() {
         try {
-            log.debug("Passing {} to {}", message, reader);
+            LOG.debug("Passing {} to {}", message, reader);
             reader.read(message);
         } catch (Throwable e) {
-            log.error("Encountered exception when processing message ["+message+"] by reader ["+reader+"]:",e);
+            LOG.error("Encountered exception when processing message [" + message + "] by reader [" + reader + "]:", e);
         }
     }
 }

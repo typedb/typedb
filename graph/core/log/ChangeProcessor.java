@@ -15,24 +15,16 @@
 package grakn.core.graph.core.log;
 
 import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.log.ChangeState;
-import grakn.core.graph.core.log.LogProcessorBuilder;
-import grakn.core.graph.core.log.TransactionId;
 
 /**
  * Allows the user to define custom behavior to process those transactional changes that are recorded in a transaction LOG.
- * {@link org.janusgraph.core.log.ChangeProcessor}s are registered with a transaction LOG processor in the {@link LogProcessorBuilder}.
- *
+ * {@link ChangeProcessor}s are registered with a transaction LOG processor in the {@link LogProcessorBuilder}.
  */
 public interface ChangeProcessor {
 
     /**
      * Process the changes caused by the transaction identified by {@code txId} within a newly opened transaction {@code tx}.
      * The changes are captured in the {@link ChangeState} data structure.
-     *
-     * @param tx
-     * @param txId
-     * @param changeState
      */
     void process(JanusGraphTransaction tx, TransactionId txId, ChangeState changeState);
 

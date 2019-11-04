@@ -29,9 +29,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.StandardScanMetrics;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
@@ -54,7 +51,7 @@ import java.util.function.Predicate;
 
 class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements JanusGraphManagement.IndexJobFuture, Runnable {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardScannerExecutor.class);
 
     private static final int QUEUE_SIZE = 1000;
     private static final int TIMEOUT_MS = 180000; // 60 seconds
@@ -79,11 +76,11 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
     private DataPuller[] pullThreads;
 
     StandardScannerExecutor(ScanJob job, Consumer<ScanMetrics> finishJob,
-                            final KeyColumnValueStore store, StoreTransaction storeTx,
-                            final StoreFeatures storeFeatures,
-                            final int numProcessors, int workBlockSize,
-                            final Configuration jobConfiguration,
-                            final Configuration graphConfiguration) {
+                            KeyColumnValueStore store, StoreTransaction storeTx,
+                            StoreFeatures storeFeatures,
+                            int numProcessors, int workBlockSize,
+                            Configuration jobConfiguration,
+                            Configuration graphConfiguration) {
         this.job = job;
         this.finishJob = finishJob;
         this.store = store;

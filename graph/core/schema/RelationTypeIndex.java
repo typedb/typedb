@@ -14,60 +14,48 @@
 
 package grakn.core.graph.core.schema;
 
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import grakn.core.graph.core.RelationType;
-import grakn.core.graph.core.schema.Index;
-import grakn.core.graph.core.schema.JanusGraphManagement;
-import grakn.core.graph.core.schema.SchemaStatus;
 
 /**
  * A RelationTypeIndex is an index installed on a {@link RelationType} to speed up vertex-centric indexes for that type.
  * A RelationTypeIndex is created via
- * {@link JanusGraphManagement#buildEdgeIndex(org.janusgraph.core.EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
+ * {@link JanusGraphManagement#buildEdgeIndex(EdgeLabel, String, org.apache.tinkerpop.gremlin.structure.Direction, org.apache.tinkerpop.gremlin.process.traversal.Order, PropertyKey...)}
  * for edge labels and
- * {@link JanusGraphManagement#buildPropertyIndex(org.janusgraph.core.PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, org.janusgraph.core.PropertyKey...)}
+ * {@link JanusGraphManagement#buildPropertyIndex(PropertyKey, String, org.apache.tinkerpop.gremlin.process.traversal.Order, PropertyKey...)}
  * for property keys.
  * <p>
  * This interface allows the inspection of already defined RelationTypeIndex'es. An existing index on a RelationType
- * can be retrieved via {@link JanusGraphManagement#getRelationIndex(org.janusgraph.core.RelationType, String)}.
- *
+ * can be retrieved via {@link JanusGraphManagement#getRelationIndex(RelationType, String)}.
  */
 public interface RelationTypeIndex extends Index {
 
     /**
      * Returns the {@link RelationType} on which this index is installed.
-     *
-     * @return
      */
     RelationType getType();
 
     /**
      * Returns the sort order of this index. Index entries are sorted in this order and queries
      * which use this sort order will be faster.
-     *
-     * @return
      */
     Order getSortOrder();
 
     /**
      * Returns the (composite) sort key for this index. The composite sort key is an ordered list of {@link RelationType}s
-     *
-     * @return
      */
     RelationType[] getSortKey();
 
     /**
      * Returns the direction on which this index is installed. An index may cover only one or both directions.
-     *
-     * @return
      */
     Direction getDirection();
 
     /**
      * Returns the status of this index
-     *
-     * @return
      */
     SchemaStatus getIndexStatus();
 

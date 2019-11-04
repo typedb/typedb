@@ -14,6 +14,8 @@
 
 package grakn.core.graph.graphdb.database.idassigner;
 
+import grakn.core.graph.diskstorage.IDAuthority;
+
 import java.time.Duration;
 
 /**
@@ -24,23 +26,17 @@ import java.time.Duration;
 public interface IDBlockSizer {
 
     /**
-     * The size of the id block to be returned by calls {@link org.janusgraph.diskstorage.IDAuthority#getIDBlock(int, int, Duration)}
+     * The size of the id block to be returned by calls {@link IDAuthority#getIDBlock(int, int, Duration)}
      * for the given id namespace.
      * In other words, for the returned array of the above mentioned call, it must hold that the difference between the second
      * and first value is equal to the block size returned by this method (for the same partition id).
-     *
-     * @param idNamespace
-     * @return
      */
     long getBlockSize(int idNamespace);
 
     /**
-     * Returns the upper bound for any id block returned by {@link org.janusgraph.diskstorage.IDAuthority#getIDBlock(int, int, Duration)}
+     * Returns the upper bound for any id block returned by {@link IDAuthority#getIDBlock(int, int, Duration)}
      * for the given id namespace.
      * In other words, it must hold that the second value of the returned array is smaller than this value for the same partition id.
-     *
-     * @param idNamespace
-     * @return
      */
     long getIdUpperBound(int idNamespace);
 

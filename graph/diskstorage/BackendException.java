@@ -17,7 +17,7 @@ package grakn.core.graph.diskstorage;
 /**
  * Exception thrown in the storage layer of the graph database.
  * <p>
- * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link org.janusgraph.diskstorage.BackendException}.
+ * Such exceptions are typically caused by the underlying storage engine and re-thrown as {@link BackendException}.
  */
 public abstract class BackendException extends Exception {
 
@@ -53,7 +53,7 @@ public abstract class BackendException extends Exception {
      */
     protected BackendException(String message, Throwable cause,
                                boolean enableSuppression,
-                               boolean writableStackTrace){
+                               boolean writableStackTrace) {
         super(message, cause, enableSuppression, writableStackTrace);
     }
 

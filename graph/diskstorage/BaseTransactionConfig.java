@@ -20,10 +20,6 @@ import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 
 import java.time.Instant;
 
-/**
-
- * @author Dan LaRocque (dalaro@hopcount.org)
- */
 public interface BaseTransactionConfig {
 
     /**
@@ -37,15 +33,11 @@ public interface BaseTransactionConfig {
     /**
      * Sets the commit time of this transaction. If a commit time has already been set, this method throws
      * an exception. Use {@link #hasCommitTime()} to check prior to setting.
-     *
-     * @param time
      */
     void setCommitTime(Instant time);
 
     /**
      * Returns true if a commit time has been set on this transaction.
-     *
-     * @return
      */
     boolean hasCommitTime();
 
@@ -78,8 +70,8 @@ public interface BaseTransactionConfig {
     /**
      * Return any transaction-specific options.
      *
-     * @see #getCustomOption(ConfigOption)
      * @return options for this tx
+     * @see #getCustomOption(ConfigOption)
      */
     Configuration getCustomOptions();
 }

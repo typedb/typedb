@@ -15,32 +15,32 @@
 package grakn.core.graph.graphdb.query.graph;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.collections.comparators.ComparableComparator;
 import grakn.core.graph.core.JanusGraphElement;
+import grakn.core.graph.core.JanusGraphQuery;
 import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.OrderList;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.BaseQuery;
 import grakn.core.graph.graphdb.query.ElementQuery;
+import grakn.core.graph.graphdb.query.QueryProcessor;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.query.condition.FixedCondition;
-import grakn.core.graph.graphdb.query.graph.JointIndexQuery;
 import grakn.core.graph.graphdb.query.profile.ProfileObservable;
 import grakn.core.graph.graphdb.query.profile.QueryProfiler;
+import org.apache.commons.collections.comparators.ComparableComparator;
 
 import java.util.Comparator;
 import java.util.Objects;
 
 /**
- * An executable {@link ElementQuery} for {@link org.janusgraph.core.JanusGraphQuery}. This query contains
+ * An executable {@link ElementQuery} for {@link JanusGraphQuery}. This query contains
  * the condition, and only one sub-query {@link JointIndexQuery}.
- * It also maintains the ordering for the query result which is needed by the {@link org.janusgraph.graphdb.query.QueryProcessor}
+ * It also maintains the ordering for the query result which is needed by the {@link QueryProcessor}
  * to correctly order the result.
- *
  */
 public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGraphElement, JointIndexQuery>, ProfileObservable {
 
-    /**
+    /*
      * The condition of this query, the result set is the set of all elements in the graph for which this
      * condition evaluates to true.
      */
@@ -155,9 +155,9 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
 
     @Override
     public void observeWith(QueryProfiler profiler) {
-        profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION,condition);
-        profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION,orders);
-        if (hasLimit()) profiler.setAnnotation(QueryProfiler.LIMIT_ANNOTATION,getLimit());
+        profiler.setAnnotation(QueryProfiler.CONDITION_ANNOTATION, condition);
+        profiler.setAnnotation(QueryProfiler.ORDERS_ANNOTATION, orders);
+        if (hasLimit()) profiler.setAnnotation(QueryProfiler.LIMIT_ANNOTATION, getLimit());
         indexQuery.observeWith(profiler);
     }
 }

@@ -19,12 +19,7 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.locking.PermanentLockingException;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +46,7 @@ public interface KeyColumnValueStore {
      * @param query Query to get results for
      * @param txh   Transaction
      * @return List of entries up to a maximum of "limit" entries
-     * @throws org.janusgraph.diskstorage.BackendException when columnEnd &lt; columnStart
+     * @throws BackendException when columnEnd &lt; columnStart
      * @see KeySliceQuery
      */
     EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException;
@@ -88,10 +83,10 @@ public interface KeyColumnValueStore {
      * @param deletions the list of columns to delete from {@code key}, or null to
      *                  delete no columns
      * @param txh       the transaction to use
-     * @throws org.janusgraph.diskstorage.locking.PermanentLockingException if locking is supported by the implementation and at least
-     *                                                                      one lock acquisition attempted by
-     *                                                                      {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
-     *                                                                      has failed
+     * @throws PermanentLockingException if locking is supported by the implementation and at least
+     *                                   one lock acquisition attempted by
+     *                                   {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
+     *                                   has failed
      */
     void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException;
 
@@ -102,7 +97,7 @@ public interface KeyColumnValueStore {
      * <p>
      * <p>
      * If locking fails, implementations of this method may, but are not
-     * required to, throw {@link org.janusgraph.diskstorage.locking.PermanentLockingException}.
+     * required to, throw {@link PermanentLockingException}.
      * This method is not required
      * to determine whether locking actually succeeded and may return without
      * throwing an exception even when the lock can't be acquired. Lock
@@ -139,8 +134,8 @@ public interface KeyColumnValueStore {
      * @param expectedValue the expected value for the specified key-column pair on which
      *                      to lock (null means the pair must have no value)
      * @param txh           the transaction to use
-     * @throws org.janusgraph.diskstorage.locking.PermanentLockingException the lock could not be acquired due to contention with other
-     *                                                                      transactions or a locking-specific storage problem
+     * @throws PermanentLockingException the lock could not be acquired due to contention with other
+     *                                   transactions or a locking-specific storage problem
      */
     void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 

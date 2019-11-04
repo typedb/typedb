@@ -15,7 +15,6 @@
 package grakn.core.graph.core.util;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang3.StringUtils;
 import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.PropertyKey;
@@ -23,8 +22,10 @@ import grakn.core.graph.core.schema.Index;
 import grakn.core.graph.core.schema.JanusGraphIndex;
 import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.core.schema.RelationTypeIndex;
+import grakn.core.graph.core.schema.SchemaAction;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import org.apache.commons.lang3.StringUtils;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -39,37 +40,37 @@ public class ManagementUtil {
      * This method will wait for the given period of time and throw an exception if the index did not reach a
      * final state within that time. The method simply returns when the index has reached the final state
      * prior to the time period expiring.
-     *
-     * This is a utility method to be invoked between two {@link org.janusgraph.core.schema.JanusGraphManagement#updateIndex(Index, org.janusgraph.core.schema.SchemaAction)} calls
+     * <p>
+     * This is a utility method to be invoked between two {@link JanusGraphManagement#updateIndex(Index, SchemaAction)} calls
      * to ensure that the previous update has successfully persisted.
      */
     public static void awaitGraphIndexUpdate(JanusGraph g, String indexName, long time, TemporalUnit unit) {
-        awaitIndexUpdate(g,indexName,null,time,unit);
+        awaitIndexUpdate(g, indexName, null, time, unit);
     }
 
     public static void awaitVertexIndexUpdate(JanusGraph g, String indexName, String relationTypeName, long time, TemporalUnit unit) {
-        awaitIndexUpdate(g,indexName,relationTypeName,time,unit);
+        awaitIndexUpdate(g, indexName, relationTypeName, time, unit);
     }
 
     private static void awaitIndexUpdate(JanusGraph g, String indexName, String relationTypeName, long time, TemporalUnit unit) {
-        Preconditions.checkArgument(g!=null && g.isOpen(),"Need to provide valid, open graph instance");
-        Preconditions.checkArgument(time>0 && unit!=null,"Need to provide valid time interval");
-        Preconditions.checkArgument(StringUtils.isNotBlank(indexName),"Need to provide an index name");
-        StandardJanusGraph graph = (StandardJanusGraph)g;
+        Preconditions.checkArgument(g != null && g.isOpen(), "Need to provide valid, open graph instance");
+        Preconditions.checkArgument(time > 0 && unit != null, "Need to provide valid time interval");
+        Preconditions.checkArgument(StringUtils.isNotBlank(indexName), "Need to provide an index name");
+        StandardJanusGraph graph = (StandardJanusGraph) g;
         TimestampProvider times = graph.getConfiguration().getTimestampProvider();
-        Instant end = times.getTime().plus(Duration.of(time,unit));
+        Instant end = times.getTime().plus(Duration.of(time, unit));
         boolean isStable = false;
         while (times.getTime().isBefore(end)) {
             JanusGraphManagement management = graph.openManagement();
             try {
                 if (StringUtils.isNotBlank(relationTypeName)) {
                     RelationTypeIndex idx = management.getRelationIndex(management.getRelationType(relationTypeName)
-                            ,indexName);
-                    Preconditions.checkNotNull(idx, "Index could not be found: %s @ %s",indexName,relationTypeName);
+                            , indexName);
+                    Preconditions.checkNotNull(idx, "Index could not be found: %s @ %s", indexName, relationTypeName);
                     isStable = idx.getIndexStatus().isStable();
                 } else {
                     JanusGraphIndex idx = management.getGraphIndex(indexName);
-                    Preconditions.checkNotNull(idx, "Index could not be found: %s",indexName);
+                    Preconditions.checkNotNull(idx, "Index could not be found: %s", indexName);
                     isStable = true;
                     for (PropertyKey key : idx.getFieldKeys()) {
                         if (!idx.getIndexStatus(key).isStable()) isStable = false;
@@ -85,8 +86,9 @@ public class ManagementUtil {
 
             }
         }
-        if (!isStable) throw new JanusGraphException("Index did not stabilize within the given amount of time. For sufficiently long " +
-                "wait periods this is most likely caused by a failed/incorrectly shut down JanusGraph instance or a lingering transaction.");
+        if (!isStable)
+            throw new JanusGraphException("Index did not stabilize within the given amount of time. For sufficiently long " +
+                    "wait periods this is most likely caused by a failed/incorrectly shut down JanusGraph instance or a lingering transaction.");
     }
 
 }

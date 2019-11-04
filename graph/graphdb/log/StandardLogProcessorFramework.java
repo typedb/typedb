@@ -52,7 +52,7 @@ import java.util.Map;
 
 public class StandardLogProcessorFramework implements LogProcessorFramework {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.graphdb.log.StandardLogProcessorFramework.class);
+    private static final Logger LOG = LoggerFactory.getLogger(StandardLogProcessorFramework.class);
 
     private final StandardJanusGraph graph;
     private final Serializer serializer;

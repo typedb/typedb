@@ -18,7 +18,6 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.graphdb.query.condition.Literal;
 
 import java.util.Objects;
 
@@ -50,15 +49,15 @@ public class IncidenceCondition<E extends JanusGraphRelation> extends Literal<E>
         if (this == other)
             return true;
 
-        if (other==null || !getClass().isInstance(other))
+        if (other == null || !getClass().isInstance(other))
             return false;
 
-        org.janusgraph.graphdb.query.condition.IncidenceCondition oth = (org.janusgraph.graphdb.query.condition.IncidenceCondition)other;
+        IncidenceCondition oth = (IncidenceCondition) other;
         return baseVertex.equals(oth.baseVertex) && otherVertex.equals(oth.otherVertex);
     }
 
     @Override
     public String toString() {
-        return "incidence["+ baseVertex + "-" + otherVertex + "]";
+        return "incidence[" + baseVertex + "-" + otherVertex + "]";
     }
 }

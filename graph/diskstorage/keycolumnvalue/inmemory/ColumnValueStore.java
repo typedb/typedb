@@ -20,7 +20,6 @@ import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryKeyColumnValueStore;
 import grakn.core.graph.diskstorage.util.NoLock;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 
@@ -31,7 +30,7 @@ import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
 
 /**
  * Implements a row in the in-memory implementation {@link InMemoryKeyColumnValueStore} which is comprised of

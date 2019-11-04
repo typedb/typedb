@@ -22,10 +22,9 @@ import java.io.File;
 
 /**
  * IO Utility class
- *
  */
 public class IOUtils {
-    private static final Logger LOGGER = LoggerFactory.getLogger(org.janusgraph.util.system.IOUtils.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
 
     static public boolean deleteDirectory(File path, boolean includeDir) {
         boolean success = true;

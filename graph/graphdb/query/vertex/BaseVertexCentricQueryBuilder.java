@@ -16,9 +16,6 @@ package grakn.core.graph.graphdb.query.vertex;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import grakn.core.graph.core.BaseVertexQuery;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
@@ -32,19 +29,20 @@ import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import grakn.core.graph.graphdb.query.Query;
 import grakn.core.graph.graphdb.query.condition.PredicateCondition;
-import grakn.core.graph.graphdb.query.vertex.BaseVertexCentricQuery;
 import grakn.core.graph.graphdb.relations.RelationIdentifier;
 import grakn.core.graph.graphdb.tinkerpop.ElementUtils;
 import grakn.core.graph.graphdb.types.system.ImplicitKey;
 import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Builds a {@link org.janusgraph.core.BaseVertexQuery}, optimizes the query and compiles the result into a {@link BaseVertexCentricQuery} which
+ * Builds a {@link BaseVertexQuery}, optimizes the query and compiles the result into a {@link BaseVertexCentricQuery} which
  * is then executed by one of the extending classes.
- *
  */
 public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>> implements BaseVertexQuery<Q> {
 
@@ -89,8 +87,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     /* ---------------------------------------------------------------
      * Query Construction
-	 * ---------------------------------------------------------------
-	 */
+     * ---------------------------------------------------------------
+     */
 
 
     @Override
@@ -214,8 +212,8 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
 
     /* ---------------------------------------------------------------
      * Inspection Methods
-	 * ---------------------------------------------------------------
-	 */
+     * ---------------------------------------------------------------
+     */
 
     protected final boolean hasTypes() {
         return types.length > 0;
@@ -231,7 +229,7 @@ public abstract class BaseVertexCentricQueryBuilder<Q extends BaseVertexQuery<Q>
     }
 
     /**
-     * Whether this query is asking for the value of an {@link org.janusgraph.graphdb.types.system.ImplicitKey}.
+     * Whether this query is asking for the value of an {@link ImplicitKey}.
      * <p>
      * Handling of implicit keys is completely distinct from "normal" query execution and handled extra
      * for completeness reasons.

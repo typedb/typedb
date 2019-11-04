@@ -27,7 +27,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.locking.LocalLockMediator;
 import grakn.core.graph.diskstorage.locking.Locker;
 import grakn.core.graph.diskstorage.locking.PermanentLockingException;
-import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingStore;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.diskstorage.util.KeyColumn;
@@ -51,7 +50,7 @@ import java.util.concurrent.Callable;
  */
 public class ExpectedValueCheckingTransaction implements StoreTransaction {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.consistentkey.ExpectedValueCheckingTransaction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExpectedValueCheckingTransaction.class);
 
     /**
      * This variable starts false.  It remains false during the
@@ -105,9 +104,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * {@link ExpectedValueCheckingStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}.
      *
      * @return False until
-     *         {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
-     *         is called on this transaction instance. Returns true forever
-     *         after.
+     * {@link ExpectedValueCheckingStore#mutate(StaticBuffer, List, List, StoreTransaction)}
+     * is called on this transaction instance. Returns true forever
+     * after.
      */
     public boolean isMutationStarted() {
         return isMutationStarted;
@@ -134,7 +133,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         Map<KeyColumn, StaticBuffer> m = expectedValuesByStore.get(store);
         if (m.containsKey(lockID)) {
             LOG.debug("Multiple expected values for {}: keeping initial value {} and discarding later value {}",
-                lockID, m.get(lockID), value);
+                    lockID, m.get(lockID), value);
         } else {
             m.put(lockID, value);
             LOG.debug("Store expected value for {}: {}", lockID, value);
@@ -148,7 +147,7 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * If {@link #isMutationStarted()}, this does nothing.
      *
      * @return true if this transaction holds at least one lock, false if the
-     *         transaction holds no locks
+     * transaction holds no locks
      */
     boolean prepareForMutations() throws BackendException {
         if (!isMutationStarted()) {
@@ -163,7 +162,6 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * Check all locks attempted by earlier
      * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * calls using this transaction.
-     *
      */
     private void checkAllLocks() throws BackendException {
         StoreTransaction lt = getConsistentTx();
@@ -180,7 +178,6 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
      * Check that all expected values saved from earlier
      * {@link KeyColumnValueStore#acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
      * calls using this transaction.
-     *
      */
     private void checkAllExpectedValues() throws BackendException {
         for (ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
@@ -217,11 +214,12 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
                 checkSingleExpectedValueUnsafe(kc, ev, store);
                 return true;
             }
+
             @Override
             public String toString() {
                 return "ExpectedValueChecking";
             }
-        },maxReadTime);
+        }, maxReadTime);
     }
 
     private void checkSingleExpectedValueUnsafe(KeyColumn kc, StaticBuffer ev, ExpectedValueCheckingStore store) throws BackendException {

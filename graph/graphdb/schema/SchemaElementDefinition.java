@@ -46,9 +46,9 @@ public class SchemaElementDefinition {
 
     @Override
     public boolean equals(Object oth) {
-        if (this==oth) return true;
-        else if (oth==null || !getClass().isInstance(oth)) return false;
-        return name.equals(((org.janusgraph.graphdb.schema.SchemaElementDefinition)oth).name);
+        if (this == oth) return true;
+        else if (!getClass().isInstance(oth)) return false;
+        return name.equals(((SchemaElementDefinition) oth).name);
     }
 
     @Override

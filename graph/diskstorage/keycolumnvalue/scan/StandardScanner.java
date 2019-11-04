@@ -15,7 +15,6 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.scan;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.configuration.Configuration;
@@ -23,10 +22,9 @@ import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -41,7 +39,7 @@ public class StandardScanner {
 
     private final KeyColumnValueStoreManager manager;
     private final Set<KeyColumnValueStore> openStores;
-    private final ConcurrentMap<Object, org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor> runningJobs;
+    private final ConcurrentMap<Object, StandardScannerExecutor> runningJobs;
     private final AtomicLong jobCounter;
 
     public StandardScanner(KeyColumnValueStoreManager manager) {
@@ -60,16 +58,16 @@ public class StandardScanner {
 
     public void close() throws BackendException {
         //Interrupt running jobs
-        for (org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor exe : runningJobs.values()) {
+        for (StandardScannerExecutor exe : runningJobs.values()) {
             if (exe.isCancelled() || exe.isDone()) continue;
             exe.cancel(true);
         }
         for (KeyColumnValueStore kcvs : openStores) kcvs.close();
     }
 
-    private void addJob(Object jobId, org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor executor) {
-        for (Map.Entry<Object, org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor> jobs : runningJobs.entrySet()) {
-            org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor exe = jobs.getValue();
+    private void addJob(Object jobId, StandardScannerExecutor executor) {
+        for (Map.Entry<Object, StandardScannerExecutor> jobs : runningJobs.entrySet()) {
+            StandardScannerExecutor exe = jobs.getValue();
             if (exe.isDone() || exe.isCancelled()) {
                 runningJobs.remove(jobs.getKey(), exe);
             }
@@ -179,7 +177,7 @@ public class StandardScanner {
 
             openStores.add(kcvs);
             try {
-                org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor executor = new org.janusgraph.diskstorage.keycolumnvalue.scan.StandardScannerExecutor(job, finishJob, kcvs, storeTx,
+                StandardScannerExecutor executor = new StandardScannerExecutor(job, finishJob, kcvs, storeTx,
                         manager.getFeatures(), numProcessingThreads, workBlockSize, jobConfiguration, graphConfiguration);
                 addJob(jobId, executor);
                 new Thread(executor).start();

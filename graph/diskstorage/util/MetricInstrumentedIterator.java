@@ -15,14 +15,12 @@
 package grakn.core.graph.diskstorage.util;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
-import grakn.core.graph.diskstorage.util.IOCallable;
-import grakn.core.graph.diskstorage.util.MetricInstrumentedStore;
-import grakn.core.graph.diskstorage.util.RecordIterator;
-import grakn.core.graph.diskstorage.util.UncheckedCallable;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 
@@ -30,9 +28,7 @@ import java.io.IOException;
  * This class is used by {@code MetricInstrumentedStore} to measure wall clock
  * time, method invocation counts, and exceptions thrown by the methods on
  * {@link RecordIterator} instances returned from
- * {@link MetricInstrumentedStore#getSlice(org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery, org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction)}.
- *
- * @author Dan LaRocque (dalaro@hopcount.org)
+ * {@link MetricInstrumentedStore#getSlice(KeySliceQuery, StoreTransaction)}.
  */
 public class MetricInstrumentedIterator implements KeyIterator {
 
@@ -50,21 +46,18 @@ public class MetricInstrumentedIterator implements KeyIterator {
      * which must be non-null. If the iterator argument is null, then return
      * null.
      *
-     * @param keyIterator
-     *            the iterator to wrap with Metrics measurements
-     * @param prefix
-     *            the Metrics name prefix string
-     *
+     * @param keyIterator the iterator to wrap with Metrics measurements
+     * @param prefix      the Metrics name prefix string
      * @return a wrapper around {@code keyIterator} or null if
-     *         {@code keyIterator} is null
+     * {@code keyIterator} is null
      */
-    public static org.janusgraph.diskstorage.util.MetricInstrumentedIterator of(KeyIterator keyIterator, String... prefix) {
+    public static MetricInstrumentedIterator of(KeyIterator keyIterator, String... prefix) {
         if (keyIterator == null) {
             return null;
         }
 
         Preconditions.checkNotNull(prefix);
-        return new org.janusgraph.diskstorage.util.MetricInstrumentedIterator(keyIterator, StringUtils.join(prefix,"."));
+        return new MetricInstrumentedIterator(keyIterator, StringUtils.join(prefix, "."));
     }
 
     private MetricInstrumentedIterator(KeyIterator i, String p) {
@@ -83,10 +76,10 @@ public class MetricInstrumentedIterator implements KeyIterator {
         return MetricInstrumentedStore.runWithMetrics(p, M_NEXT,
                 (UncheckedCallable<StaticBuffer>) iterator::next);
     }
-    
+
     @Override
     public void close() throws IOException {
-        MetricInstrumentedStore.runWithMetrics(p, org.janusgraph.diskstorage.util.MetricInstrumentedIterator.M_CLOSE, (IOCallable<Void>) () -> {
+        MetricInstrumentedStore.runWithMetrics(p, MetricInstrumentedIterator.M_CLOSE, (IOCallable<Void>) () -> {
             iterator.close();
             return null;
         });

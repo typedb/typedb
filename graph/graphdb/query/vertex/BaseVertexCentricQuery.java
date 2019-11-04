@@ -18,8 +18,10 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.graphdb.internal.OrderList;
+import grakn.core.graph.graphdb.internal.RelationCategory;
 import grakn.core.graph.graphdb.query.BackendQueryHolder;
 import grakn.core.graph.graphdb.query.BaseQuery;
+import grakn.core.graph.graphdb.query.ElementQuery;
 import grakn.core.graph.graphdb.query.QueryUtil;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.query.condition.FixedCondition;
@@ -32,7 +34,7 @@ import java.util.List;
 
 /**
  * The base implementation for {@link VertexCentricQuery} which does not yet contain a reference to the
- * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(org.janusgraph.graphdb.internal.RelationCategory)}
+ * base vertex of the query. This query is constructed by {@link BasicVertexCentricQueryBuilder#constructQuery(RelationCategory)}
  * and then later extended by single or multi-vertex query which add the vertex to the query.
  * <p>
  * This class override many methods in {@link ElementQuery} - check there
@@ -112,8 +114,6 @@ public class BaseVertexCentricQuery extends BaseQuery implements ProfileObservab
     /**
      * A query is considered 'simple' if it is comprised of just one sub-query and that query
      * is fitted (i.e. does not require an in-memory filtering).
-     *
-     * @return
      */
     public boolean isSimple() {
         return queries.size() == 1 && queries.get(0).isFitted() && queries.get(0).isSorted();

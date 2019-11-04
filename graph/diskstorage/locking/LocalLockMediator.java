@@ -16,7 +16,6 @@ package grakn.core.graph.diskstorage.locking;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import grakn.core.graph.diskstorage.locking.LocalLockMediatorProvider;
 import grakn.core.graph.diskstorage.util.KeyColumn;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
@@ -35,12 +34,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * transactions in a single process from concurrently writing the same lock to a
  * distributed key-value store.
  *
- * @author Dan LaRocque (dalaro@hopcount.org)
  */
 
 public class LocalLockMediator<T> {
 
-    private static final Logger LOG = LoggerFactory.getLogger(org.janusgraph.diskstorage.locking.LocalLockMediator.class);
+    private static final Logger LOG = LoggerFactory.getLogger(LocalLockMediator.class);
 
     /**
      * Namespace for which this mediator is responsible

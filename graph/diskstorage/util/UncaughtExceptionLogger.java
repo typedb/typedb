@@ -21,38 +21,37 @@ import java.lang.Thread.UncaughtExceptionHandler;
 
 public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 
-    private static final Logger log =
-            LoggerFactory.getLogger(UncaughtExceptionHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(UncaughtExceptionHandler.class);
 
     /*
      * I don't like duplicating a subset of org.slf4j.Level, but the slf4j API
      * as of 1.7.5 provides no general Logger.LOG(Level, String, Object...)
      * method. I can't seem to meta-program around this.
      */
-    public enum UELevel implements org.janusgraph.diskstorage.util.UELogLevel {
+    public enum UELevel implements UELogLevel {
         TRACE {
             public void dispatch(String message, Throwable t) {
-                log.trace(message, t);
+                LOG.trace(message, t);
             }
         },
         DEBUG {
             public void dispatch(String message, Throwable t) {
-                log.debug(message, t);
+                LOG.debug(message, t);
             }
         },
         INFO {
             public void dispatch(String message, Throwable t) {
-                log.info(message, t);
+                LOG.info(message, t);
             }
         },
         WARN {
             public void dispatch(String message, Throwable t) {
-                log.warn(message, t);
+                LOG.warn(message, t);
             }
         },
         ERROR {
             public void dispatch(String message, Throwable t) {
-                log.error(message, t);
+                LOG.error(message, t);
             }
         }
     }
