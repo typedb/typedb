@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grakn.core.graph.diskstorage.cql
+package grakn.core.graph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
@@ -20,13 +20,13 @@ import com.google.common.collect.AbstractIterator;
 import io.vavr.Tuple;
 import io.vavr.Tuple3;
 import io.vavr.collection.Iterator;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.util.RecordIterator;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.util.RecordIterator;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 
 import java.io.IOException;
 

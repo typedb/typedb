@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grakn.core.graph.diskstorage.cql
+package grakn.core.graph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.cql.BatchableStatement;
@@ -27,7 +27,7 @@ import com.datastax.oss.driver.api.querybuilder.SchemaBuilder;
 import com.datastax.oss.driver.api.querybuilder.relation.Relation;
 import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.api.querybuilder.schema.compaction.CompactionStrategy;
-import com.datastax.oss.driver.shaded.guava.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import io.vavr.Lazy;
 import io.vavr.Tuple;
@@ -35,24 +35,24 @@ import io.vavr.Tuple3;
 import io.vavr.collection.Array;
 import io.vavr.collection.Iterator;
 import io.vavr.control.Try;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.diskstorage.Entry;
-import org.janusgraph.diskstorage.EntryList;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.PermanentBackendException;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.TemporaryBackendException;
-import org.janusgraph.diskstorage.configuration.Configuration;
-import org.janusgraph.diskstorage.keycolumnvalue.KCVMutation;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyIterator;
-import org.janusgraph.diskstorage.keycolumnvalue.KeyRangeQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.KeySliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.SliceQuery;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
-import org.janusgraph.diskstorage.util.StaticArrayBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry;
-import org.janusgraph.diskstorage.util.StaticArrayEntryList;
+import grakn.core.graph.diskstorage.BackendException;
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.EntryList;
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.PermanentBackendException;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyIterator;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyRangeQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import grakn.core.graph.diskstorage.util.StaticArrayEntryList;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -72,15 +72,15 @@ import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
 import static io.vavr.Predicates.instanceOf;
-import static org.janusgraph.diskstorage.Backend.EDGESTORE_NAME;
-import static org.janusgraph.diskstorage.Backend.INDEXSTORE_NAME;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
-import static org.janusgraph.diskstorage.cql.CQLTransaction.getTransaction;
-import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
+import static grakn.core.graph.diskstorage.Backend.EDGESTORE_NAME;
+import static grakn.core.graph.diskstorage.Backend.INDEXSTORE_NAME;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_BLOCK_SIZE;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION_TYPE;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIONS;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
+import static grakn.core.graph.diskstorage.cql.CQLTransaction.getTransaction;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
 
 /**
  * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.

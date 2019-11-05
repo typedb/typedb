@@ -12,17 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grakn.core.graph.diskstorage.cql
+package grakn.core.graph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.ConsistencyLevel;
 import com.datastax.oss.driver.api.core.DefaultConsistencyLevel;
 import com.google.common.base.Preconditions;
-import org.janusgraph.diskstorage.BaseTransactionConfig;
-import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
-import org.janusgraph.diskstorage.keycolumnvalue.StoreTransaction;
+import grakn.core.graph.diskstorage.BaseTransactionConfig;
+import grakn.core.graph.diskstorage.common.AbstractStoreTransaction;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
-import static org.janusgraph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
+import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
+
 
 /**
  * This class manages the translation of read and write consistency configuration values to CQL API {@link ConsistencyLevel} types.

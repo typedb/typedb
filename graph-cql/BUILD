@@ -31,9 +31,11 @@ java_library(
         # External dependencies from @graknlabs
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-query-builder",
         "//dependencies/maven/artifacts/io/vavr:vavr",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph-cql:{pom_version}"],
 

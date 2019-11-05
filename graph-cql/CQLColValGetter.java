@@ -15,11 +15,9 @@
 package grakn.core.graph.diskstorage.cql;
 
 import com.datastax.oss.driver.api.core.cql.Row;
-import org.janusgraph.diskstorage.EntryMetaData;
-import org.janusgraph.diskstorage.StaticBuffer;
-import org.janusgraph.diskstorage.util.StaticArrayEntry.GetColVal;
-
-
+import grakn.core.graph.diskstorage.EntryMetaData;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.util.StaticArrayEntry.GetColVal;
 import io.vavr.Tuple3;
 
 class CQLColValGetter implements GetColVal<Tuple3<StaticBuffer, StaticBuffer, Row>, StaticBuffer> {
@@ -49,9 +47,9 @@ class CQLColValGetter implements GetColVal<Tuple3<StaticBuffer, StaticBuffer, Ro
     public Object getMetaData(Tuple3<StaticBuffer, StaticBuffer, Row> tuple, EntryMetaData metaData) {
         switch (metaData) {
             case TIMESTAMP:
-                return tuple._3.getLong(CQLKeyColumnValueStore.WRITETIME_COLUMN_NAME);
+                return tuple._3.getLong(grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore.WRITETIME_COLUMN_NAME);
             case TTL:
-                return tuple._3.getInt(CQLKeyColumnValueStore.TTL_COLUMN_NAME);
+                return tuple._3.getInt(grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore.TTL_COLUMN_NAME);
             default:
                 throw new UnsupportedOperationException("Unsupported meta data: " + metaData);
         }

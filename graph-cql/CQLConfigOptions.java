@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package grakn.core.graph.diskstorage.cql
+package grakn.core.graph.diskstorage.cql;
 
-import org.janusgraph.diskstorage.configuration.ConfigElement;
-import org.janusgraph.diskstorage.configuration.ConfigNamespace;
-import org.janusgraph.diskstorage.configuration.ConfigOption;
-import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
-import org.janusgraph.graphdb.configuration.PreInitializeConfigOptions;
+import grakn.core.graph.diskstorage.configuration.ConfigElement;
+import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
+import grakn.core.graph.diskstorage.configuration.ConfigOption;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 
 /**
  * Configuration options for the CQL storage backend. These are managed under the 'cql' namespace in the configuration.
