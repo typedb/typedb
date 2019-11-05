@@ -217,6 +217,8 @@ public class GraknTestServer extends ExternalResource {
         janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
         Cluster cluster = Cluster.builder()
+                .withoutJMXReporting()
+                .withoutMetrics()
                 .addContactPoint(serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME))
                 .withPort(serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
                 .build();

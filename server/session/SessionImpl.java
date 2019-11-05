@@ -22,21 +22,21 @@ package grakn.core.server.session;
 import com.google.common.cache.Cache;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.concept.structure.ElementFactory;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionAnalytics;
-import grakn.core.server.cache.CacheProviderImpl;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
+import grakn.core.server.cache.CacheProviderImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
@@ -93,9 +93,9 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                        Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+                       HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
+                       Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -151,7 +151,7 @@ public class SessionImpl implements Session {
         ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
 
         // janus elements
-        JanusGraphTransaction janusGraphTransaction = graph.buildTransaction().threadBound().consistencyChecks(false).start();
+        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
@@ -167,8 +167,6 @@ public class SessionImpl implements Session {
 
     /**
      * This creates the first meta schema in an empty keyspace which has not been initialised yet
-     *
-     * @param tx
      */
     private void initialiseMetaConcepts(TransactionOLTP tx) {
         tx.createMetaConcepts();
@@ -176,8 +174,6 @@ public class SessionImpl implements Session {
 
     /**
      * Copy schema concepts labels to current KeyspaceCache
-     *
-     * @param tx
      */
     private void copySchemaConceptLabelsToKeyspaceCache(Transaction tx) {
         copyToCache(tx.getMetaConcept());

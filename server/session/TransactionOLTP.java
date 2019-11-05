@@ -824,7 +824,6 @@ public class TransactionOLTP implements Transaction {
     }
 
 
-
     /**
      * Get the root of all Types.
      *
@@ -1022,7 +1021,10 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
-            janusTransaction.close();
+            if (janusTransaction.isOpen()) {
+                janusTransaction.rollback();
+                janusTransaction.close();
+            }
         } finally {
             closeTransaction(closeMessage);
         }
@@ -1202,7 +1204,6 @@ public class TransactionOLTP implements Transaction {
     public ConceptManagerImpl factory() {
         return conceptManager;
     }
-
 
 
     @Override

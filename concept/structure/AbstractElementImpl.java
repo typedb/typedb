@@ -112,6 +112,11 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
     }
 
     @Override
+    public void removeProperty(P key) {
+        element().property(key.name()).remove();
+    }
+
+    @Override
     public Boolean propertyBoolean(P key) {
         Boolean value = property(key);
         if (value == null) return false;

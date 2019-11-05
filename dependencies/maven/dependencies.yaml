@@ -126,7 +126,7 @@ dependencies:
 
   io.netty:
     netty-all:
-      version: "4.1.30.Final"
+      version: "4.1.39.Final"
       lang: java
 
   io.zipkin.brave:
