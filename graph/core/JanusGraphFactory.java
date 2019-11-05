@@ -36,29 +36,22 @@ import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.log.StandardLogProcessorFramework;
 import grakn.core.graph.graphdb.log.StandardTransactionLogProcessor;
-import grakn.core.graph.graphdb.management.JanusGraphManager;
 import grakn.core.graph.util.system.ConfigurationUtil;
 import grakn.core.graph.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
-import java.util.Set;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
-import static grakn.core.graph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 
 /**
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
- *
- * @see JanusGraph
  */
-
 public class JanusGraphFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
@@ -136,50 +129,13 @@ public class JanusGraphFactory {
         // When user specifies graphname property is because he wishes to register the graph with the GraphManager
         // The GraphManager though needs to be enabled using the YAML properties file
         String graphName = localBasicConfiguration.has(GRAPH_NAME) ? localBasicConfiguration.get(GRAPH_NAME) : backupName;
-        JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        if (null != graphName) {
-            Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-            return (StandardJanusGraph) jgm.openGraph(graphName, gName -> new StandardJanusGraph(dbConfig, backend));
-        } else {
-            // If the GraphManager is not null, but graphname is, the user probably forgot to set it, that's why the warning.
-            if (jgm != null) {
-                LOG.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
-                        "a graph that has not already been opened at server start, i.e. it was " +
-                        "defined in your YAML file. This will ensure the graph is tracked by the JanusGraphManager, " +
-                        "which will enable autocommit and rollback functionality upon all gremlin script executions. " +
-                        "Note that JanusGraphFactory#open(String === shortcut notation) does not support consuming the property " +
-                        "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
-                        "or by using the ConfiguredGraphFactory.");
-            }
-            return new StandardJanusGraph(dbConfig, backend);
-        }
+        return new StandardJanusGraph(dbConfig, backend);
     }
 
-    /**
-     * Return a Set of graph names stored in the {@link JanusGraphManager}
-     */
-    public static Set<String> getGraphNames() {
-        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-        return jgm.getGraphNames();
-    }
-
-    /**
-     * Removes {@link Graph} from {@link JanusGraphManager} graph reference tracker, if exists
-     * there.
-     */
-    public static void close(Graph graph) throws Exception {
-        JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        if (jgm != null) {
-            jgm.removeGraph(((StandardJanusGraph) graph).getGraphName());
-        }
-        graph.close();
-    }
 
     /**
      * Drop graph database, deleting all data in storage and indexing backends. Graph can be open or closed (will be
-     * closed as part of the drop operation). The graph is also removed from the {@link JanusGraphManager}
-     * graph reference tracker, if there.
+     * closed as part of the drop operation).
      *
      * <p><b>WARNING: This is an irreversible operation that will delete all graph and index data.</b></p>
      *
@@ -189,15 +145,12 @@ public class JanusGraphFactory {
     public static void drop(JanusGraph graph) throws BackendException {
         Preconditions.checkNotNull(graph);
         Preconditions.checkArgument(graph instanceof StandardJanusGraph, "Invalid graph instance detected: %s", graph.getClass());
-        final StandardJanusGraph g = (StandardJanusGraph) graph;
-        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-        if (jgm != null) {
-            jgm.removeGraph(g.getGraphName());
-        }
+        StandardJanusGraph g = (StandardJanusGraph) graph;
+
         if (graph.isOpen()) {
             graph.close();
         }
-        Configuration backendConfiguration = g.getConfiguration().getConfiguration();
+        grakn.core.graph.diskstorage.configuration.Configuration backendConfiguration = g.getConfiguration().getConfiguration();
         KeyColumnValueStoreManager storeManager = getStoreManager(backendConfiguration);
         Backend backend = new Backend(backendConfiguration, storeManager);
         try {

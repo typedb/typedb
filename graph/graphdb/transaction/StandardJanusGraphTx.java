@@ -65,7 +65,6 @@ import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.internal.InternalVertexLabel;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.RelationCategory;
-import grakn.core.graph.graphdb.query.MetricsQueryExecutor;
 import grakn.core.graph.graphdb.query.Query;
 import grakn.core.graph.graphdb.query.QueryExecutor;
 import grakn.core.graph.graphdb.query.QueryUtil;
@@ -280,16 +279,16 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
         this.deletedRelations = EMPTY_DELETED_RELATIONS;
 
-        if (null != config.getGroupName()) {
-            //TODO-reenable
-
-//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
-            elementProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "graph", elementProcessorImpl);
-            edgeProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "vertex", edgeProcessorImpl);
-        } else {
+//        if (null != config.getGroupName()) {
+//            //TODO-reenable
+//
+////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "begin").inc();
+//            elementProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "graph", elementProcessorImpl);
+//            edgeProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "vertex", edgeProcessorImpl);
+//        } else {
             elementProcessor = elementProcessorImpl;
             edgeProcessor = edgeProcessorImpl;
-        }
+//        }
 
         this.backendTransaction = graph.openBackendTransaction(this); // awkward!
     }

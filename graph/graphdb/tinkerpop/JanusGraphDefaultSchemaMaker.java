@@ -16,7 +16,6 @@ package grakn.core.graph.graphdb.tinkerpop;
 
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.attribute.Geoshape;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.core.schema.PropertyKeyMaker;
 
@@ -25,7 +24,6 @@ import java.util.UUID;
 
 /**
  * {@link DefaultSchemaMaker} implementation for Blueprints graphs
- *
  */
 public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
 
@@ -72,8 +70,6 @@ public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
             return Double.class;
         } else if (value instanceof Date) {
             return Date.class;
-        } else if (value instanceof Geoshape) {
-            return Geoshape.class;
         } else if (value instanceof UUID) {
             return UUID.class;
         } else {

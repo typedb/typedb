@@ -3,9 +3,6 @@ java_library(
     exports = [
         "//external:jar/org/apache/commons/commons-compress"
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/org/tukaani:xz"
-    ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
     ]

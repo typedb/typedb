@@ -15,7 +15,6 @@
 package grakn.core.graph.graphdb.database.serialize;
 
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.attribute.Geoshape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,10 +41,6 @@ public class AttributeUtil {
 
     public static boolean isString(Class<?> clazz) {
         return clazz.equals(String.class);
-    }
-
-    public static boolean isGeo(Class<?> clazz) {
-        return clazz.equals(Geoshape.class);
     }
 
     /**

@@ -15,7 +15,6 @@
 package grakn.core.graph.graphdb.database.management;
 
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.JanusGraphManagerUtility;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.diskstorage.ReadBuffer;
@@ -30,7 +29,6 @@ import grakn.core.graph.graphdb.database.cache.SchemaCache;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
-import grakn.core.graph.graphdb.management.JanusGraphManager;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -224,8 +222,7 @@ public class ManagementLogger implements MessageReader {
                         txStillOpen = true;
                     }
                 }
-                JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-                boolean janusGraphManagerIsInBadState = null == jgm && action.equals(EVICT);
+                boolean janusGraphManagerIsInBadState = action.equals(EVICT);
                 if (!txStillOpen && janusGraphManagerIsInBadState) {
                     LOG.error("JanusGraphManager should be instantiated on this server, but it is not. " +
                             "Please restart with proper server settings. " +
@@ -237,10 +234,6 @@ public class ManagementLogger implements MessageReader {
                     out.writeObjectNotNull(MgmtLogType.CACHED_TYPE_EVICTION_ACK);
                     out.writeObjectNotNull(originId);
                     VariableLong.writePositive(out, evictionId);
-                    if (null != jgm && action.equals(EVICT)) {
-                        jgm.removeGraph(graphName);
-                        LOG.debug("Graph {} has been removed from the JanusGraphManager graph cache.", graphName);
-                    }
                     try {
                         sysLog.add(out.getStaticBuffer());
                         LOG.debug("Sent {}: evictionID={} originID={}", MgmtLogType.CACHED_TYPE_EVICTION_ACK, evictionId, originId);

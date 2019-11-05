@@ -111,7 +111,7 @@ public enum TimestampProviders implements TimestampProvider {
         }
     };
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(TimestampProviders.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TimestampProviders.class);
 
     @Override
     public Instant sleepPast(Instant futureTime) throws InterruptedException {
@@ -140,7 +140,7 @@ public enum TimestampProviders implements TimestampProvider {
             if (0L == delta)
                 delta = 1L;
 
-            LOGGER.trace("Sleeping: now={} targettime={} delta={} {}", now, futureTime, delta, unit);
+            LOG.trace("Sleeping: now={} targettime={} delta={} {}", now, futureTime, delta, unit);
 
             Temporals.timeUnit(unit).sleep(delta);
         }

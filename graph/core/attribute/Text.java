@@ -18,7 +18,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -266,7 +265,8 @@ public enum Text implements JanusGraphPredicate {
         } else {
             distance = 2;
         }
-        return LevenshteinDistance.getDefaultInstance().apply(value, term) <= distance;
+//        return LevenshteinDistance.getDefaultInstance().apply(value, term) <= distance;
+        return false; //TODO: this is hard-coded so we can avoid an extra dependency, re-enable line above if we ever decide to actually use this mysterious class
     }
 
     private static final Logger log = LoggerFactory.getLogger(Text.class);

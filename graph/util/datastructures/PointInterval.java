@@ -98,7 +98,6 @@ public class PointInterval<T> implements Interval<T> {
     public Interval<T> intersect(Interval<T> other) {
         Preconditions.checkArgument(other != null);
         if (other instanceof PointInterval) {
-            Sets.newHashSet(points);
             points.retainAll(((PointInterval) other).points);
             return new PointInterval<>(points);
         } else if (other instanceof RangeInterval) {

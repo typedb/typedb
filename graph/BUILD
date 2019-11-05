@@ -30,7 +30,18 @@ java_library(
         "//dependencies/maven/artifacts/io/vavr:vavr",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/org/javatuples:javatuples"
+        "//dependencies/maven/artifacts/org/javatuples:javatuples",
+        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
+        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
+        "//dependencies/maven/artifacts/commons-collections:commons-collections",
+        "//dependencies/maven/artifacts/org/reflections:reflections"
+    ],
+    runtime_deps = [
+            "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+            "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph:{pom_version}"],
 

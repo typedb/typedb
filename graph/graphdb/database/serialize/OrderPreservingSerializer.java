@@ -23,7 +23,6 @@ import grakn.core.graph.diskstorage.WriteBuffer;
  * order of the elements (as given by its {@link Comparable} implementation) corresponds to the natural order of the
  * serialized byte representation representation.
  *
- *
  */
 public interface OrderPreservingSerializer<V> extends AttributeSerializer<V> {
 

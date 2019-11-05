@@ -20,7 +20,6 @@ import com.google.common.collect.HashBiMap;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.attribute.AttributeSerializer;
-import grakn.core.graph.core.attribute.Geoshape;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.core.schema.Mapping;
 import grakn.core.graph.core.schema.Parameter;
@@ -41,7 +40,7 @@ import grakn.core.graph.graphdb.database.serialize.attribute.ByteArraySerializer
 import grakn.core.graph.graphdb.database.serialize.attribute.ByteSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharacterSerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
+//import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DurationSerializer;
@@ -51,7 +50,6 @@ import grakn.core.graph.graphdb.database.serialize.attribute.FloatSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.InstantSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.IntArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.IntegerSerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.JsonSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.LongArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.LongSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.ObjectSerializer;
@@ -75,8 +73,6 @@ import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ArrayNode;
-import org.apache.tinkerpop.shaded.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -117,9 +113,8 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         registerClassInternal(14, Character.class, new CharacterSerializer());
         registerClassInternal(15, Boolean.class, new BooleanSerializer());
-        registerClassInternal(16, Date.class, new DateSerializer());
+//        registerClassInternal(16, Date.class, new DateSerializer());
 
-        registerClassInternal(17, Geoshape.class, new Geoshape.GeoshapeSerializer());
         registerClassInternal(18, String.class, new StringSerializer()); //supports null serialization
         registerClassInternal(19, Float.class, new FloatSerializer());
         registerClassInternal(20, Double.class, new DoubleSerializer());
@@ -166,8 +161,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(67, TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68, HashMap.class, new SerializableSerializer());
         registerClassInternal(69, GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
-        registerClassInternal(70, ObjectNode.class, new JsonSerializer<>(ObjectNode.class));
-        registerClassInternal(71, ArrayNode.class, new JsonSerializer<>(ArrayNode.class));
     }
 
     @Override

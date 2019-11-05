@@ -222,13 +222,13 @@ dependencies:
 
   org.apache.tinkerpop:
     gremlin-core:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
         - "org.slf4j:jcl-over-slf4j"
         - "org.slf4j:slf4j-log4j12"
     hadoop-gremlin:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
         - "com.fasterxml.jackson.core:jackson-core"
@@ -237,14 +237,13 @@ dependencies:
         - "commons-logging:commons-logging"
         - "io.netty:netty"
         - "javax.servlet:javax.servlet-api"
-        - "javax.servlet:javax.servlet-api"
         - "log4j:log4j"
         - "org.mortbay.jetty:jetty-util"
         - "org.slf4j:jcl-over-slf4j"
         - "org.slf4j:slf4j-log4j12"
         - "org.slf4j:slf4j-nop"
     spark-gremlin:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
         - "com.fasterxml.jackson.core:jackson-annotations"
@@ -254,7 +253,7 @@ dependencies:
         - "io.netty:netty"
         - "javax.servlet:javax.servlet-api"
     tinkergraph-gremlin:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
         - "org.slf4j:slf4j-log4j12"
@@ -319,4 +318,10 @@ dependencies:
   org.javatuples:
     javatuples:
       version: "1.2"
+      lang: java
+
+# Remove the following as soon as config are refactored
+  org.reflections:
+    reflections:
+      version: "0.9.11"
       lang: java

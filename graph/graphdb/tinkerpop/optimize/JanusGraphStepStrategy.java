@@ -26,7 +26,7 @@ import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
 import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphStep;
 import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
-
+@SuppressWarnings("ComparableType")
 public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
     private static final JanusGraphStepStrategy INSTANCE = new JanusGraphStepStrategy();
@@ -42,7 +42,7 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
             if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {
                 //Try to optimize for index calls
-                final JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
+                JanusGraphStep<?, ?> janusGraphStep = new JanusGraphStep<>(originalGraphStep);
                 TraversalHelper.replaceStep(originalGraphStep, janusGraphStep, traversal);
                 HasStepFolder.foldInIds(janusGraphStep, traversal);
                 HasStepFolder.foldInHasContainer(janusGraphStep, traversal, traversal);
@@ -50,7 +50,7 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
                 HasStepFolder.foldInRange(janusGraphStep, JanusGraphTraversalUtil.getNextNonIdentityStep(janusGraphStep), traversal, null);
             } else {
                 //Make sure that any provided "start" elements are instantiated in the current transaction
-                final Object[] ids = originalGraphStep.getIds();
+                Object[] ids = originalGraphStep.getIds();
                 ElementUtils.verifyArgsMustBeEitherIdOrElement(ids);
                 if (ids[0] instanceof Element) {
                     //GraphStep constructor ensures that the entire array is elements

@@ -40,6 +40,7 @@ import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import java.util.Collections;
 import java.util.Set;
 
+@SuppressWarnings("ComparableType")
 public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStrategy<TraversalStrategy.ProviderOptimizationStrategy> implements TraversalStrategy.ProviderOptimizationStrategy {
 
     private static final JanusGraphLocalQueryOptimizerStrategy INSTANCE = new JanusGraphLocalQueryOptimizerStrategy();

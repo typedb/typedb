@@ -26,7 +26,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.idmanagement.UniqueInstanceIdRetriever;
 
 import java.time.Duration;
 
@@ -38,7 +37,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG_DEFAULT_TTL;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 /**
  * Builder for {@link GraphDatabaseConfiguration}
@@ -58,8 +56,8 @@ public class MergedConfigurationBuilder {
 
         //Compute unique instance id
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
-        String uniqueGraphId = UniqueInstanceIdRetriever.getInstance().getOrGenerateUniqueInstanceId(combinedConfig);
-        overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
+//        String uniqueGraphId = UniqueInstanceIdRetriever.getInstance().getOrGenerateUniqueInstanceId(combinedConfig);
+//        overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
         // If lock prefix is unspecified, specify it now
         if (!localBasicConfiguration.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
             overwrite.set(LOCK_LOCAL_MEDIATOR_GROUP, storeManager.getName());

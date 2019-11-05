@@ -17,16 +17,14 @@ package grakn.core.graph.graphdb.database.cache;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.cliffc.high_scale_lib.NonBlockingHashMapLong;
 import grakn.core.graph.diskstorage.EntryList;
-import grakn.core.graph.graphdb.database.cache.SchemaCache;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.relations.EdgeDirection;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseLabel;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
 import grakn.core.graph.graphdb.types.system.SystemRelationType;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,8 +75,7 @@ public class StandardSchemaCache implements SchemaCache {
         schemaRelationsBackup = CacheBuilder.newBuilder()
                 .concurrencyLevel(CONCURRENCY_LEVEL).initialCapacity(INITIAL_CACHE_SIZE * CACHE_RELATION_MULTIPLIER)
                 .maximumSize(maxCachedRelations).build();
-//        typeRelations = new ConcurrentHashMap<Long, EntryList>(INITIAL_CAPACITY*CACHE_RELATION_MULTIPLIER,0.75f,CONCURRENCY_LEVEL);
-        schemaRelations = new NonBlockingHashMapLong<>(INITIAL_CAPACITY * CACHE_RELATION_MULTIPLIER); //TODO: Is this data structure safe or should we go with ConcurrentHashMap (line above)?
+        schemaRelations = new ConcurrentHashMap<>(INITIAL_CAPACITY * CACHE_RELATION_MULTIPLIER, 0.75f, CONCURRENCY_LEVEL);
     }
 
 

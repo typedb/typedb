@@ -14,13 +14,14 @@
 
 package grakn.core.graph.core.attribute;
 
-import org.apache.commons.lang3.StringUtils;
-import grakn.core.graph.core.attribute.Text;
 import grakn.core.graph.graphdb.query.JanusGraphPredicate;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Text;
+
 
 /**
  * A {@link JanusGraphPredicate} that just wraps a TinkerPop {@link Text} predicate.
- *
+ * <p>
  * This enables JanusGraph to use TinkerPop {@link Text} predicates in places where it expects a
  * {@link JanusGraphPredicate}.
  */
