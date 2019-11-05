@@ -1123,7 +1123,7 @@ public class RelationAtom extends IsaAtomBase {
         //in case the roles are variable, we wouldn't have enough information if converted to attribute
         if (relationType.isImplicit()) {
             ConceptMap roleSub = getRoleSubstitution();
-            return this.toAttributeAtom().materialise().map(ans -> ConceptUtils.mergeAnswers(ans, roleSub));
+            return this.toAttributeAtom().materialise().map(ans -> ConceptUtils.joinAnswers(ans, roleSub));
         }
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
@@ -1148,14 +1148,14 @@ public class RelationAtom extends IsaAtomBase {
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 
-        ConceptMap relationSub = ConceptUtils.mergeAnswers(
+        ConceptMap relationSub = ConceptUtils.joinAnswers(
                 getRoleSubstitution(),
                 getVarName().isReturned() ?
                         new ConceptMap(ImmutableMap.of(getVarName(), relation)) :
                         new ConceptMap()
         );
 
-        ConceptMap answer = ConceptUtils.mergeAnswers(substitution, relationSub);
+        ConceptMap answer = ConceptUtils.joinAnswers(substitution, relationSub);
         return Stream.of(answer);
     }
 

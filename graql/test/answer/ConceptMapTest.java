@@ -19,31 +19,32 @@
 package grakn.core.graql.answer;
 
 import com.google.common.collect.ImmutableMap;
-import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
+import grakn.core.kb.concept.util.ConceptUtils;
 import graql.lang.statement.Variable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 
 public class ConceptMapTest {
 
-    private final Variable varInAnswer = new Variable("x");
-    private final Concept conceptInAnswer = mock(Concept.class);
-
-    private final ConceptMap answer = new ConceptMap(ImmutableMap.of(varInAnswer, conceptInAnswer));
+    private final Variable someVar = new Variable("x");
+    private final Concept someConcept = mock(Concept.class);
+    private final ConceptMap answer = new ConceptMap(ImmutableMap.of(someVar, someConcept));
 
     @Rule
     public final ExpectedException exception = ExpectedException.none();
 
     @Test
     public void whenGettingAConceptThatIsInTheAnswer_ReturnTheConcept() {
-        assertEquals(conceptInAnswer, answer.get(varInAnswer));
+        assertEquals(someConcept, answer.get(someVar));
     }
 
     @Test
@@ -55,4 +56,13 @@ public class ConceptMapTest {
 
         answer.get(varNotInAnswer);
     }
+
+    @Test
+    public void whenJoiningIncompatibleAnswers_emptyAnswerIsReturned() {
+        Concept anotherConcept = mock(Concept.class);
+        ConceptMap anotherAnswer = new ConceptMap(ImmutableMap.of(someVar, anotherConcept));
+        ConceptMap joinedAnswer = ConceptUtils.joinAnswers(answer, anotherAnswer);
+        assertTrue(joinedAnswer.isEmpty());
+    }
+
 }
