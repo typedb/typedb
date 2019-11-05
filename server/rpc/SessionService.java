@@ -21,8 +21,15 @@ package grakn.core.server.rpc;
 import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
+import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.graql.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -34,11 +41,13 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.exception.TransactionException;
+import grakn.protocol.session.AnswerProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -50,6 +59,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +70,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -70,30 +81,32 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     private static final Logger LOG = LoggerFactory.getLogger(SessionService.class);
     private final OpenRequest requestOpener;
     private final Map<String, Session> openSessions;
-    // The following set keeps track of all active transactions, so that if the user wants to stop the server
-    // we can forcefully close all the connections to clients using active transactions.
-    private Set<TransactionListener> transactionListenerSet;
+    // The following map associates SessionId to a collection of TransactionListeners so that:
+    //     - if the user wants to stop the server, we can forcefully close all the connections to clients using active transactions.
+    //     - if a client abruptly closes a connection (usually because of crashes on client side) we can kill all the threads associated
+    //       to transactions previously opened by the client and that were not properly closed before the abrupt closure (see onError()).
+    private Map<String, Set<TransactionListener>> transactionListeners;
 
     public SessionService(OpenRequest requestOpener) {
         this.requestOpener = requestOpener;
         this.openSessions = new HashMap<>();
-        this.transactionListenerSet = new HashSet<>();
+        this.transactionListeners = new HashMap<>();
     }
 
     /**
      * Close all open transactions, sessions and connections with clients - this is invoked by JVM shutdown hook
      */
     public void shutdown() {
-        transactionListenerSet.forEach(transactionListener -> transactionListener.close(null));
-        transactionListenerSet.clear();
+        transactionListeners.values()
+                .forEach(transactionListenerSet ->
+                        transactionListenerSet.forEach(transactionListener -> transactionListener.close(null)));
+        transactionListeners.clear();
         openSessions.values().forEach(Session::close);
     }
 
     @Override
     public StreamObserver<Transaction.Req> transaction(StreamObserver<Transaction.Res> responseSender) {
-        TransactionListener transactionListener = new TransactionListener(responseSender, openSessions);
-        transactionListenerSet.add(transactionListener);
-        return transactionListener;
+        return new TransactionListener(responseSender, openSessions);
     }
 
     @Override
@@ -103,6 +116,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             Session session = requestOpener.open(request);
             String sessionId = keyspace + UUID.randomUUID().toString();
             openSessions.put(sessionId, session);
+            transactionListeners.put(sessionId, new HashSet<>());
             responseObserver.onNext(SessionProto.Session.Open.Res.newBuilder().setSessionId(sessionId).build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
@@ -114,8 +128,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
     @Override
     public void close(SessionProto.Session.Close.Req request, StreamObserver<SessionProto.Session.Close.Res> responseObserver) {
         try {
-            Session session = openSessions.remove(request.getSessionId());
-            session.close();
+            String sessionId = request.getSessionId();
+            transactionListeners.remove(sessionId).forEach(transactionListener -> transactionListener.close(null));
+            openSessions.remove(sessionId).close();
             responseObserver.onNext(SessionProto.Session.Close.Res.newBuilder().build());
             responseObserver.onCompleted();
         } catch (RuntimeException e) {
@@ -143,8 +158,7 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         TransactionListener(StreamObserver<Transaction.Res> responseSender, Map<String, Session> openSessions) {
             this.responseSender = responseSender;
-
-            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener-%s").build();
+            ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("transaction-listener").build();
             this.threadExecutor = Executors.newSingleThreadExecutor(threadFactory);
             this.openSessions = openSessions;
         }
@@ -176,22 +190,27 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
 
         @Override
         public void onError(Throwable t) {
-            transactionListenerSet.remove(this);
             // This method is invoked when a client abruptly terminates a connection to the server
-            // so we want to make sure to also close and delete the session to which this transaction is associated to.
+            // so we want to make sure to also close and delete the current session and
+            // all the transactions associated to the same client.
+            transactionListeners.remove(sessionId).forEach(transactionListener -> transactionListener.close(t));
             Session session = openSessions.remove(sessionId);
             session.close();
-            close(t);
+
+
+            // TODO: This might create issues if a session is used by other concurrent clients,
+            // the better approach would be to signal a closure intent to the session and the session should be able to
+            // detect whether it's been used by other connections, if not close it completely.
         }
 
         @Override
         public void onCompleted() {
-            transactionListenerSet.remove(this);
+            transactionListeners.get(sessionId).remove(this);
             close(null);
         }
 
         private void handleRequest(Transaction.Req request, Span queueSpan, TraceContext context) {
-            /* this method variant is only called if tracing is active */
+            // this method variant is only called if tracing is active
 
             // close the Span from gRPC thread
             queueSpan.finish(); // time spent in queue
@@ -244,11 +263,14 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case CONCEPTMETHOD_REQ:
                         conceptMethod(request.getConceptMethodReq());
                         break;
+                    case EXPLANATION_REQ:
+                        explanation(request.getExplanationReq());
+                        break;
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
                 }
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
                 close(e);
             }
         }
@@ -293,6 +315,8 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
             }
 
             sessionId = request.getSessionId();
+            transactionListeners.get(sessionId).add(this);
+
             Session session = openSessions.get(sessionId);
 
             Transaction.Type type = request.getType();
@@ -398,6 +422,42 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void conceptMethod(Transaction.ConceptMethod.Req request) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
             Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
+            onNextResponse(response);
+        }
+
+        /**
+         * Reconstruct and return the explanation associated with the ConceptMap provided by the user
+         */
+        private void explanation(AnswerProto.Explanation.Req explanationReq) {
+            // extract and reconstruct query pattern with the required IDs
+            AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
+            Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
+            GraqlGet getQuery = Graql.match(queryPattern).get();
+            ResolvableQuery q = ReasonerQueries.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()), tx);
+
+            Explanation explanation;
+            if (q.isAtomic()) {
+                // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
+                // we then return the answer's explanation
+                // Only atomic queries are retrievable directly from the cache
+                ConceptMap originatingAnswer = (ConceptMap)tx.queryCache().getAnswerStream(q).findFirst().orElse(null);
+                if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
+                explanation = originatingAnswer.explanation();
+            } else {
+                // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
+                // these are the same components used to re-construct the explanation for our original query, which we
+                // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
+                List<ConceptMap> maps = q.selectAtoms()
+                        .map(ReasonerQueries::atomic)
+                        .flatMap(aq -> {
+                            Stream<ConceptMap> answerStream = (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq);
+                            return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
+                        })
+                        .collect(Collectors.toList());
+                explanation = new JoinExplanation(maps);
+            }
+
+            Transaction.Res response = ResponseBuilder.Transaction.explanation(explanation);
             onNextResponse(response);
         }
 

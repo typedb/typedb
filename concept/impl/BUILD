@@ -39,7 +39,6 @@ java_library(
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
     ],

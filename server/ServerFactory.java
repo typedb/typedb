@@ -19,7 +19,8 @@
 
 package grakn.core.server;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
@@ -34,12 +35,22 @@ import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
 import grakn.core.server.util.LockManager;
-import io.grpc.ServerBuilder;
+import io.grpc.netty.NettyServerBuilder;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+
+import java.net.InetSocketAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is a factory class which contains methods for instantiating a Server in different ways.
  */
 public class ServerFactory {
+
+    private static final int GRPC_EXECUTOR_THREADS = Runtime.getRuntime().availableProcessors() * 2; // default Netty way of assigning threads, probably expose in config in future
+    private static final int ELG_THREADS = 4; // this could also be 1, but to avoid risks set it to 4, probably expose in config in future
 
     /**
      * Create a Server configured for Grakn Core.
@@ -55,13 +66,14 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
+        Integer cqlPort = config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT);
+        String storageHostname = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
-        Cluster cluster = Cluster.builder()
-                .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
+        CqlSession cqlSession = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(storageHostname, cqlPort))
                 .build();
 
-        KeyspaceManager keyspaceManager = new grakn.core.server.keyspace.KeyspaceManager(cluster);
+        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
@@ -92,6 +104,31 @@ public class ServerFactory {
         return server;
     }
 
+    /**
+     * Build a GrpcServer using the Netty default builder.
+     * The Netty builder accepts 3 thread executors (threadpools):
+     *  - Boss Event Loop Group  (a.k.a. bossEventLoopGroup() )
+     *  - Worker Event Loop Group ( a.k.a. workerEventLoopGroup() )
+     *  - Application Executor (a.k.a. executor() )
+     *
+     * The Boss group can be the same as the worker group.
+     * It's purpose is to accept calls from the network, and create Netty channels (not gRPC Channels) to handle the socket.
+     *
+     * Once the Netty channel has been created it gets passes to the Worker Event Loop Group.
+     * This is the threadpool dedicating to doing socket read() and write() calls.
+     *
+     * The last thread group is the application executor, also called the "app thread".
+     * This is where the gRPC stubs do their main work.
+     * It is for handling the callbacks that bubble up from the network thread.
+     *
+     * Note from grpc-java developers:
+     * Most people should use either reuse the same boss event loop group as the worker group.
+     * Barring this, the boss eventloop group should be a single thread, since it does very little work.
+     * For the app thread, users should provide a fixed size thread pool, as the default unbounded cached threadpool
+     * is not the most efficient, and can be dangerous in some circumstances.
+     *
+     * More info here: https://groups.google.com/d/msg/grpc-io/LrnAbWFozb0/VYCVarkWBQAJ
+     */
     private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager, JanusGraphFactory janusGraphFactory) {
         int grpcPort = config.getProperty(ConfigKey.GRPC_PORT);
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
@@ -103,7 +140,16 @@ public class ServerFactory {
 
         Runtime.getRuntime().addShutdownHook(new Thread(sessionService::shutdown, "session-service-shutdown"));
 
-        return ServerBuilder.forPort(grpcPort)
+        NioEventLoopGroup eventLoopGroup = new NioEventLoopGroup(ELG_THREADS, new ThreadFactoryBuilder().setNameFormat("grpc-ELG-handler-%d").build());
+
+        ExecutorService grpcExecutorService = Executors.newFixedThreadPool(GRPC_EXECUTOR_THREADS, new ThreadFactoryBuilder().setNameFormat("grpc-request-handler-%d").build());
+
+        return NettyServerBuilder.forPort(grpcPort)
+                .executor(grpcExecutorService)
+                .workerEventLoopGroup(eventLoopGroup)
+                .bossEventLoopGroup(eventLoopGroup)
+                .maxConnectionIdle(1, TimeUnit.HOURS)
+                .channelType(NioServerSocketChannel.class)
                 .addService(sessionService)
                 .addService(new KeyspaceService(requestsHandler))
                 .build();

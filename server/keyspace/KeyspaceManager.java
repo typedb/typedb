@@ -18,7 +18,7 @@
 
 package grakn.core.server.keyspace;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import grakn.core.kb.server.keyspace.Keyspace;
 
 import java.util.Arrays;
@@ -30,16 +30,16 @@ import java.util.stream.Collectors;
  * KeyspaceManager used to store all existing keyspaces inside Grakn system keyspace.
  */
 public class KeyspaceManager {
-    private final Cluster storage;
+    private final CqlSession storage;
     private final Set<String> internals = new HashSet<>(Arrays.asList("system_traces", "system", "system_distributed", "system_schema", "system_auth"));
-    
-    public KeyspaceManager(Cluster storage) {
+
+    public KeyspaceManager(CqlSession storage) {
         this.storage = storage;
     }
 
     public Set<Keyspace> keyspaces() {
-        return storage.connect().getCluster().getMetadata().getKeyspaces().stream()
-                .map(keyspaceMetadata -> new KeyspaceImpl(keyspaceMetadata.getName()))
+        return storage.getMetadata().getKeyspaces().values().stream()
+                .map(keyspaceMetadata -> new KeyspaceImpl(keyspaceMetadata.getName().toString()))
                 .filter(keyspace -> !internals.contains(keyspace.name()))
                 .collect(Collectors.toSet());
     }

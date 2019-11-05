@@ -25,6 +25,8 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.SchemaConcept;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
 import grakn.core.core.Schema;
 
@@ -77,10 +79,10 @@ public class ConceptUtils {
      * @param schemaConcept input type
      * @return set of all non-meta super types of the role
      */
-    public static Set<? extends SchemaConcept> nonMetaSups(SchemaConcept schemaConcept){
+    public static Set<? extends SchemaConcept> nonMetaSups(SchemaConcept schemaConcept) {
         Set<SchemaConcept> superTypes = new HashSet<>();
         SchemaConcept superType = schemaConcept.sup();
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
+        while (superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
             superTypes.add(superType);
             superType = superType.sup();
         }
@@ -89,17 +91,17 @@ public class ConceptUtils {
 
     /**
      * @param parent type
-     * @param child type
+     * @param child  type
      * @param direct flag indicating whether only direct types should be considered
      * @return true if child is a subtype of parent
      */
     private static boolean typesCompatible(SchemaConcept parent, SchemaConcept child, boolean direct) {
-        if (parent == null ) return true;
+        if (parent == null) return true;
         if (child == null) return false;
         if (direct) return parent.equals(child);
         if (Schema.MetaSchema.isMetaLabel(parent.label())) return true;
         SchemaConcept superType = child;
-        while(superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())){
+        while (superType != null && !Schema.MetaSchema.isMetaLabel(superType.label())) {
             if (superType.equals(parent)) return true;
             superType = superType.sup();
         }
@@ -108,19 +110,21 @@ public class ConceptUtils {
 
     /**
      * @param parentTypes set of types defining parent, parent defines type constraints to be fulfilled
-     * @param childTypes set of types defining child
-     * @param direct flag indicating whether only direct types should be considered
+     * @param childTypes  set of types defining child
+     * @param direct      flag indicating whether only direct types should be considered
      * @return true if type sets are disjoint - it's possible to find a disjoint pair among parent and child set
      */
-    public static boolean areDisjointTypeSets(Set<? extends SchemaConcept>  parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
+    public static boolean areDisjointTypeSets(Set<? extends SchemaConcept> parentTypes, Set<? extends SchemaConcept> childTypes, boolean direct) {
         return childTypes.isEmpty() && !parentTypes.isEmpty()
                 || parentTypes.stream().anyMatch(parent -> childTypes.stream()
                 .anyMatch(child -> ConceptUtils.areDisjointTypes(parent, child, direct)));
     }
 
-    /** determines disjointness of parent-child types, parent defines the bound on the child
+    /**
+     * determines disjointness of parent-child types, parent defines the bound on the child
+     *
      * @param parent {@link SchemaConcept}
-     * @param child {@link SchemaConcept}
+     * @param child  {@link SchemaConcept}
      * @param direct flag indicating whether only direct types should be considered
      * @return true if types do not belong to the same type hierarchy, also:
      * - true if parent is null and
@@ -132,17 +136,18 @@ public class ConceptUtils {
 
     /**
      * Computes dependent concepts of a thing - concepts that need to be persisted if we persist the provided thing.
+     *
      * @param topThings things dependants of which we want to retrieve
      * @return stream of things that are dependants of the provided thing - includes non-direct dependants.
      */
-    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings){
+    public static Stream<Thing> getDependentConcepts(Collection<Thing> topThings) {
         Set<Thing> things = new HashSet<>(topThings);
         Set<Thing> visitedThings = new HashSet<>();
         Stack<Thing> thingStack = new Stack<>();
         thingStack.addAll(topThings);
-        while(!thingStack.isEmpty()) {
+        while (!thingStack.isEmpty()) {
             Thing thing = thingStack.pop();
-            if (!visitedThings.contains(thing)){
+            if (!visitedThings.contains(thing)) {
                 thing.getDependentConcepts()
                         .peek(things::add)
                         .filter(t -> !visitedThings.contains(t))
@@ -154,46 +159,50 @@ public class ConceptUtils {
     }
 
     /**
-     * perform an answer merge with optional explanation
-     * NB:assumes answers are compatible (concept corresponding to join vars if any are the same)
+     * Performs a natural join (⋈) between answers with the resultant answer containing the explanation of the left operand.
+     * If the answers have an empty set of common variables, the join corresponds to a trivial entry set union.
+     * NB: Assumes answers are compatible (concepts corresponding to join vars if any are the same or are compatible types)
      *
-     * @return merged answer
+     * @param baseAnswer left operand of answer join
+     * @param toJoin right operand of answer join
+     * @return joined answers
      */
-    public static ConceptMap mergeAnswers(ConceptMap answerA, ConceptMap answerB) {
-        if (answerB.isEmpty()) return answerA;
-        if (answerA.isEmpty()) return answerB;
+    public static ConceptMap joinAnswers(ConceptMap baseAnswer, ConceptMap toJoin) {
+        if (toJoin.isEmpty()) return baseAnswer;
+        if (baseAnswer.isEmpty()) return toJoin;
 
-        Sets.SetView<Variable> varUnion = Sets.union(answerA.vars(), answerB.vars());
-        Set<Variable> varIntersection = Sets.intersection(answerA.vars(), answerB.vars());
-        Map<Variable, Concept> entryMap = Sets.union(
-                answerA.map().entrySet(),
-                answerB.map().entrySet()
-        )
-                .stream()
-                .filter(e -> !varIntersection.contains(e.getKey()))
+        Set<Variable> joinVars = Sets.intersection(baseAnswer.vars(), toJoin.vars());
+        Map<Variable, Concept> entryMap = Stream
+                .concat(baseAnswer.map().entrySet().stream(), toJoin.map().entrySet().stream())
+                .filter(e -> !joinVars.contains(e.getKey()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        varIntersection
-                .forEach(var -> {
-                    Concept concept = answerA.get(var);
-                    Concept otherConcept = answerB.get(var);
-                    if (concept.equals(otherConcept)) entryMap.put(var, concept);
-                    else {
-                        if (concept.isSchemaConcept()
-                                && otherConcept.isSchemaConcept()
-                                && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false)) {
-                            entryMap.put(
-                                    var,
-                                    Iterables.getOnlyElement(ConceptUtils.topOrMeta(
-                                            Sets.newHashSet(
-                                                    concept.asSchemaConcept(),
-                                                    otherConcept.asSchemaConcept())
-                                                             )
-                                    )
-                            );
-                        }
-                    }
-                });
-        if (!entryMap.keySet().equals(varUnion)) return new ConceptMap();
-        return new ConceptMap(entryMap, answerA.explanation());
+        for (Variable var : joinVars) {
+            Concept concept = baseAnswer.get(var);
+            Concept otherConcept = toJoin.get(var);
+            if (concept.equals(otherConcept)) entryMap.put(var, concept);
+            else {
+                boolean typeCompatible = concept.isSchemaConcept() && otherConcept.isSchemaConcept()
+                        && !ConceptUtils.areDisjointTypes(concept.asSchemaConcept(), otherConcept.asSchemaConcept(), false);
+                if (typeCompatible) {
+                    SchemaConcept topType = Iterables.getOnlyElement(ConceptUtils.topOrMeta(
+                            Sets.newHashSet(
+                                    concept.asSchemaConcept(),
+                                    otherConcept.asSchemaConcept())
+                            )
+                    );
+                    entryMap.put(var, topType);
+                }
+                return new ConceptMap();
+            }
+        }
+        Pattern mergedPattern;
+        if (baseAnswer.getPattern() != null && toJoin.getPattern() != null) {
+            mergedPattern = Graql.and(baseAnswer.getPattern(), toJoin.getPattern());
+        } else if (baseAnswer.getPattern() != null) {
+            mergedPattern = baseAnswer.getPattern();
+        } else {
+            mergedPattern = toJoin.getPattern();
+        }
+        return new ConceptMap(entryMap, baseAnswer.explanation(), mergedPattern);
     }
 }

@@ -25,9 +25,9 @@ import org.apache.tinkerpop.gremlin.process.traversal.step.Scoping;
 import org.apache.tinkerpop.gremlin.process.traversal.step.map.FlatMapStep;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.TraverserRequirement;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.core.JanusGraphVertex;
-import org.janusgraph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
 
 import java.util.Collections;
 import java.util.EnumSet;

@@ -35,18 +35,12 @@ public class RuleExplanation extends Explanation {
 
     private final ConceptId ruleId;
 
-    public RuleExplanation(Pattern pattern, ConceptId ruleId){
-        super(pattern);
+    public RuleExplanation(ConceptId ruleId){
         this.ruleId = ruleId;
     }
-    private RuleExplanation(Pattern queryPattern, List<ConceptMap> answers, ConceptId ruleId){
-        super(queryPattern, answers);
+    private RuleExplanation(List<ConceptMap> answers, ConceptId ruleId){
+        super(answers);
         this.ruleId = ruleId;
-    }
-
-    @Override
-    public RuleExplanation setPattern(Pattern pattern){
-        return new RuleExplanation(pattern, getRuleId());
     }
 
     @Override
@@ -58,7 +52,7 @@ public class RuleExplanation extends Explanation {
                         Collections.singletonList(ans) :
                         explanation.getAnswers()
         );
-        return new RuleExplanation(getPattern(), answerList, getRuleId());
+        return new RuleExplanation(answerList, getRuleId());
     }
 
     @Override

@@ -35,43 +35,14 @@ import java.util.stream.Collectors;
  */
 public class Explanation {
 
-    private final Pattern pattern;
     private final List<ConceptMap> answers;
 
-    public Explanation() {
-        this.pattern = null;
-        this.answers = Collections.unmodifiableList(Collections.emptyList());
-    }
-
-    public Explanation(Pattern pattern, List<ConceptMap> ans) {
-        this.pattern = pattern;
+    public Explanation(List<ConceptMap> ans) {
         this.answers = Collections.unmodifiableList(ans);
     }
 
-    public Explanation(Pattern pattern) {
-        this(pattern, new ArrayList<>());
-    }
-
-    public Explanation(List<ConceptMap> ans) {
-        this(null, ans);
-    }
-
-    /**
-     * @return query pattern associated with this explanation
-     */
-    @CheckReturnValue
-    @Nullable
-    public Pattern getPattern() { return pattern;}
-
-    /**
-     * produce a new explanation with provided query set
-     *
-     * @param pattern query this explanation should be associated with
-     * @return explanation with provided query
-     */
-    @CheckReturnValue
-    public Explanation setPattern(Pattern pattern) {
-        return new Explanation(pattern);
+    public Explanation() {
+        this(new ArrayList<>());
     }
 
     /**
@@ -82,7 +53,7 @@ public class Explanation {
      */
     @CheckReturnValue
     public Explanation childOf(ConceptMap ans) {
-        return new Explanation(getPattern(), ans.explanation().getAnswers());
+        return new Explanation(ans.explanation().getAnswers());
     }
 
     /**
@@ -133,6 +104,6 @@ public class Explanation {
     /**
      * @return true if this is an empty explanation (explanation wasn't recorded)
      */
-    public boolean isEmpty() { return !isLookupExplanation() && !isRuleExplanation() && getAnswers().isEmpty();}
+    public boolean isEmpty() { return !isRuleExplanation() && getAnswers().isEmpty();}
 
 }

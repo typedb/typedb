@@ -69,10 +69,13 @@ public class CumulativeState extends AnswerPropagatorState<ReasonerQueryImpl> {
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
         ConceptMap accumulatedAnswer = getSubstitution();
-        ConceptMap toMerge = state.getSubstitution();
+        // we need to pass ID substitutions whenever we set the pattern from raw query
+        ConceptMap toMerge = state.getSubstitution().withPattern(getQuery().withSubstitution(state.getSubstitution()).getPattern());
+        ConceptMap merged = ConceptUtils.joinAnswers(accumulatedAnswer, toMerge);
         ConceptMap answer = new ConceptMap(
-                ConceptUtils.mergeAnswers(accumulatedAnswer, toMerge).map(),
-                mergeExplanations(accumulatedAnswer, toMerge));
+                merged.map(),
+                mergeExplanations(accumulatedAnswer, toMerge),
+                merged.getPattern());
 
         if (answer.isEmpty()) return null;
         if (subQueries.isEmpty()) return new AnswerState(answer, getUnifier(), getParentState());

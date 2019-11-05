@@ -62,6 +62,7 @@ import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.cache.CacheProviderImpl;
@@ -91,7 +92,7 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphTransaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

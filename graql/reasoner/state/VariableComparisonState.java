@@ -61,7 +61,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
         super(ReasonerQueries.create(q, sub), sub, u, parent, subGoals);
 
         this.variablePredicates = getQuery().getAtoms(VariablePredicate.class).collect(Collectors.toSet());
-        this.variablePredicateSub = ConceptUtils.mergeAnswers(getQuery().getSubstitution(), sub)
+        this.variablePredicateSub = ConceptUtils.joinAnswers(getQuery().getSubstitution(), sub)
                 .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
     }
 
@@ -74,7 +74,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap fullAnswer = ConceptUtils.mergeAnswers(state.getSubstitution(), variablePredicateSub);
+        ConceptMap fullAnswer = ConceptUtils.joinAnswers(state.getSubstitution(), variablePredicateSub);
 
         boolean predicatesSatisfied = variablePredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));

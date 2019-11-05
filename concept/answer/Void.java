@@ -19,21 +19,11 @@
 
 package grakn.core.concept.answer;
 
-import javax.annotation.Nullable;
-
 public class Void extends Answer {
-    private final Explanation explanation;
     private final String message;
 
     public Void(String message) {
         this.message = message;
-        explanation = new Explanation();
-    }
-
-    @Nullable
-    @Override
-    public Explanation explanation() {
-        return explanation;
     }
 
     public String message() {

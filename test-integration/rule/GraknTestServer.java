@@ -18,7 +18,7 @@
 
 package grakn.core.rule;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.kb.server.Session;
@@ -37,7 +37,6 @@ import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
@@ -49,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -216,13 +216,14 @@ public class GraknTestServer extends ExternalResource {
         LockManager lockManager = new LockManager();
         janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
-        Cluster cluster = Cluster.builder()
-                .withoutJMXReporting()
-                .withoutMetrics()
-                .addContactPoint(serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
+
+        Integer cqlPort = serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT);
+        String storageHostname = serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME);
+        // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
+        CqlSession cqlSession = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(storageHostname, cqlPort))
                 .build();
-        keyspaceManager = new KeyspaceManager(cluster);
+        keyspaceManager = new KeyspaceManager(cqlSession);
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);

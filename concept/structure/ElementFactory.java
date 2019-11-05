@@ -20,6 +20,7 @@
 package grakn.core.concept.structure;
 
 import grakn.core.core.Schema;
+import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Role;
@@ -35,7 +36,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraphTransaction;
 
 import javax.annotation.Nullable;
 import java.util.Iterator;
@@ -47,7 +47,7 @@ import java.util.stream.Stream;
 
 /**
  * TODO update
- *
+ * <p>
  * Constructs Concepts And Edges
  * This class turns Tinkerpop Vertex and Edge
  * into Grakn Concept and EdgeElement.
@@ -190,7 +190,7 @@ public final class ElementFactory {
     }
 
     public Stream<VertexElement> shortcutNeighbors(String startConceptId, Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
-                                                 boolean ownerToValueOrdering) {
+                                                   boolean ownerToValueOrdering) {
         //NB: need extra check cause it seems valid types can still produce invalid ids
         GraphTraversal<Vertex, Vertex> shortcutTraversal = !(ownerRoleIds.isEmpty() || valueRoleIds.isEmpty()) ?
                 __.inE(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).

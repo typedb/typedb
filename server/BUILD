@@ -55,6 +55,8 @@ java_library(
         "//kb:kb",
         "//core:core",
         "//graql:graql",
+        "//graph",
+        "//graph-cql",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -62,8 +64,6 @@ java_library(
         "@graknlabs_benchmark//lib:server-instrumentation",
 
         # External dependencies from Maven
-        "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core",
-        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
         "//dependencies/maven/artifacts/com/google/guava:guava",
@@ -71,10 +71,11 @@ java_library(
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
+        "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
+        "//dependencies/maven/artifacts/io/netty:netty-all",
         "//dependencies/maven/artifacts/io/zipkin/brave:brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
-        "//dependencies/maven/artifacts/org/apache/thrift:libthrift",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-mapreduce-client-core",
@@ -84,17 +85,14 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:hadoop-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:spark-gremlin",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-cassandra",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-hadoop",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core"
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/io/grpc:grpc-netty",
-        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
+        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",

@@ -26,10 +26,9 @@ import grakn.core.kb.server.Session;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
-import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.util.LockManager;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 import java.util.ArrayList;
 import java.util.HashMap;

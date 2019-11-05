@@ -38,8 +38,8 @@ import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.server.cache.CacheProviderImpl;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 import javax.annotation.CheckReturnValue;
 import java.util.concurrent.locks.ReadWriteLock;

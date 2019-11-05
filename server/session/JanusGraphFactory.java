@@ -21,6 +21,16 @@ package grakn.core.server.session;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.core.Schema;
+import grakn.core.graph.core.EdgeLabel;
+import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.Namifiable;
+import grakn.core.graph.core.PropertyKey;
+import grakn.core.graph.core.RelationType;
+import grakn.core.graph.core.VertexLabel;
+import grakn.core.graph.core.schema.JanusGraphIndex;
+import grakn.core.graph.core.schema.JanusGraphManagement;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.server.session.optimisation.JanusPreviousPropertyStepStrategy;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
@@ -28,16 +38,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.Lazy
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.optimization.PathRetractionStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.EdgeLabel;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.core.Namifiable;
-import org.janusgraph.core.PropertyKey;
-import org.janusgraph.core.RelationType;
-import org.janusgraph.core.VertexLabel;
-import org.janusgraph.core.schema.JanusGraphIndex;
-import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +58,7 @@ final public class JanusGraphFactory {
     private static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
     private static final String STORAGE_BACKEND = ConfigKey.STORAGE_BACKEND.name();
     private static final String STORAGE_FRAME_SIZE = ConfigKey.STORAGE_FRAME_SIZE.name();
-    private static final String THRIFT_BACKEND = "cassandrathrift";
+    private static final String CQL_BACKEND = "cql";
 
     private Config config;
 
@@ -90,7 +90,7 @@ final public class JanusGraphFactory {
         try {
             JanusGraph graph = openGraph(keyspace);
             graph.close();
-            org.janusgraph.core.JanusGraphFactory.drop(graph);
+            grakn.core.graph.core.JanusGraphFactory.drop(graph);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -98,8 +98,8 @@ final public class JanusGraphFactory {
 
 
     private static StandardJanusGraph configureGraph(String keyspace, Config config) {
-        org.janusgraph.core.JanusGraphFactory.Builder builder = org.janusgraph.core.JanusGraphFactory.build()
-                .set(STORAGE_BACKEND, THRIFT_BACKEND)
+        grakn.core.graph.core.JanusGraphFactory.Builder builder = grakn.core.graph.core.JanusGraphFactory.build()
+                .set(STORAGE_BACKEND, CQL_BACKEND)
                 .set(STORAGE_KEYSPACE, keyspace)
                 .set(STORAGE_FRAME_SIZE, 60);
 

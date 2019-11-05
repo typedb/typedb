@@ -37,7 +37,6 @@ import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.ConceptUtils;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
@@ -299,9 +298,8 @@ public class WriteExecutorImpl implements WriteExecutor {
                 .filter(Thing::isInferred)
                 .forEach(t -> {
                     //as we are going to persist the concepts, reset the inferred flag
-                    VertexElement vertex = ConceptVertex.from(t).vertex();
-                    vertex.removeProperty(Schema.VertexProperty.IS_INFERRED);
-                    vertex.property(Schema.VertexProperty.IS_INFERRED, false);
+                    ConceptVertex.from(t).vertex().removeProperty(Schema.VertexProperty.IS_INFERRED);
+                    ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
                     transaction.cache().inferredInstanceToPersist(t);
                 });
     }
