@@ -1,16 +1,20 @@
-// Copyright 2017 JanusGraph Authors
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2019 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
 
 package grakn.core.graph.diskstorage.cql;
 
@@ -29,12 +33,6 @@ import com.datastax.oss.driver.api.querybuilder.schema.CreateTableWithOptions;
 import com.datastax.oss.driver.api.querybuilder.schema.compaction.CompactionStrategy;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import io.vavr.Lazy;
-import io.vavr.Tuple;
-import io.vavr.Tuple3;
-import io.vavr.collection.Array;
-import io.vavr.collection.Iterator;
-import io.vavr.control.Try;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
@@ -53,6 +51,12 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.StaticArrayEntryList;
+import io.vavr.Lazy;
+import io.vavr.Tuple;
+import io.vavr.Tuple3;
+import io.vavr.collection.Array;
+import io.vavr.collection.Iterator;
+import io.vavr.control.Try;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -68,10 +72,6 @@ import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createTable
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.leveledCompactionStrategy;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.timeWindowCompactionStrategy;
 import static com.datastax.oss.driver.api.querybuilder.select.Selector.column;
-import static io.vavr.API.$;
-import static io.vavr.API.Case;
-import static io.vavr.API.Match;
-import static io.vavr.Predicates.instanceOf;
 import static grakn.core.graph.diskstorage.Backend.EDGESTORE_NAME;
 import static grakn.core.graph.diskstorage.Backend.INDEXSTORE_NAME;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.CF_COMPRESSION;
@@ -81,6 +81,10 @@ import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.COMPACTION_OPTIO
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.COMPACTION_STRATEGY;
 import static grakn.core.graph.diskstorage.cql.CQLTransaction.getTransaction;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.PAGE_SIZE;
+import static io.vavr.API.$;
+import static io.vavr.API.Case;
+import static io.vavr.API.Match;
+import static io.vavr.Predicates.instanceOf;
 
 /**
  * An implementation of {@link KeyColumnValueStore} which stores the data in a CQL connected backend.

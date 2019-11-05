@@ -18,6 +18,8 @@
 #
 package(default_visibility = ["//visibility:public"])
 
+load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
+
 java_library(
     name = "graph",
     srcs = glob(
@@ -45,4 +47,12 @@ java_library(
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph:{pom_version}"],
 
+)
+
+
+checkstyle_test(
+    name = "checkstyle",
+    targets = [
+        ":graph"
+    ],
 )
