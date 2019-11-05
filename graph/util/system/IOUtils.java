@@ -48,8 +48,9 @@ public class IOUtils {
 
     public static void closeQuietly(Closeable c) {
         try {
-            if (c != null)
+            if (c != null) {
                 c.close();
+            }
         } catch (Exception e) {
             LOGGER.warn("Failed closing " + c, e);
         }
@@ -58,8 +59,9 @@ public class IOUtils {
     public static void closeQuietly(AutoCloseable c) {
 
         try {
-            if (c != null)
+            if (c != null) {
                 c.close();
+            }
         } catch (Exception e) {
             LOGGER.warn("Failed closing " + c, e);
         }

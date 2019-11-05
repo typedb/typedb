@@ -32,7 +32,6 @@ public abstract class BackgroundThread extends Thread {
     private volatile boolean softInterrupted = false;
 
     /**
-     *
      * NEVER set daemon=true and override the cleanup() method. If this is a daemon thread there is no guarantee that
      * cleanup is called.
      */
@@ -68,14 +67,15 @@ public abstract class BackgroundThread extends Thread {
              * InterruptedException and set the interrupt status instead of just
              * propagating the InterruptedException to us
              */
-            if (interrupted())
+            if (interrupted()) {
                 break;
+            }
 
             interruptible = false;
             try {
                 action();
             } catch (Throwable e) {
-                LOG.error("Exception while executing action on background thread",e);
+                LOG.error("Exception while executing action on background thread", e);
             } finally {
                 /*
                  * This doesn't really need to be in a finally block as long as
@@ -89,7 +89,7 @@ public abstract class BackgroundThread extends Thread {
         try {
             cleanup();
         } catch (Throwable e) {
-            LOG.error("Exception while executing cleanup on background thread",e);
+            LOG.error("Exception while executing cleanup on background thread", e);
         }
 
     }
@@ -97,7 +97,7 @@ public abstract class BackgroundThread extends Thread {
     /**
      * The wait condition for the background thread. This determines what this background thread is waiting for in
      * its execution. This might be elapsing time or availability of resources.
-     *
+     * <p>
      * Since there is a wait involved, this method should throw an InterruptedException
      */
     protected abstract void waitCondition() throws InterruptedException;
@@ -105,7 +105,7 @@ public abstract class BackgroundThread extends Thread {
     /**
      * The action taken by this background thread when the wait condition is met.
      * This action should execute swiftly to ensure that this thread can be closed in a reasonable amount of time.
-     *
+     * <p>
      * This action will not be interrupted by {@link #close(Duration)}.
      */
     protected abstract void action();
@@ -124,12 +124,13 @@ public abstract class BackgroundThread extends Thread {
             return;
         }
 
-        final long maxWaitMs = duration.toMillis();
+        long maxWaitMs = duration.toMillis();
 
         softInterrupted = true;
 
-        if (interruptible)
+        if (interruptible) {
             interrupt();
+        }
 
         try {
             join(maxWaitMs);

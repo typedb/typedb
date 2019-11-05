@@ -55,9 +55,9 @@ public class CacheVertex extends StandardVertex {
 
     @Override
     public EntryList loadRelations(SliceQuery query, Retriever<SliceQuery, EntryList> lookup) {
-        if (isNew())
+        if (isNew()) {
             return EntryList.EMPTY_LIST;
-
+        }
         EntryList result;
         synchronized (queryCache) {
             result = queryCache.get(query);

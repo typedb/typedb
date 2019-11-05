@@ -99,10 +99,8 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         }
     }
 
-	/* ---------------------------------------------------------------
-     * Changing Edges
-	 * ---------------------------------------------------------------
-	 */
+
+    //Changing edges
 
     @Override
     public synchronized void remove() {

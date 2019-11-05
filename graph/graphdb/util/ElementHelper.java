@@ -21,13 +21,13 @@ package grakn.core.graph.graphdb.util;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.T;
 import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.T;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
@@ -53,10 +53,12 @@ public class ElementHelper {
     public static void attachProperties(JanusGraphRelation element, Object... keyValues) {
         if (keyValues == null || keyValues.length == 0) return; //Do nothing
         org.apache.tinkerpop.gremlin.structure.util.ElementHelper.legalPropertyKeyValueArray(keyValues);
-        if (org.apache.tinkerpop.gremlin.structure.util.ElementHelper.getIdValue(keyValues).isPresent())
+        if (org.apache.tinkerpop.gremlin.structure.util.ElementHelper.getIdValue(keyValues).isPresent()) {
             throw Edge.Exceptions.userSuppliedIdsNotSupported();
-        if (org.apache.tinkerpop.gremlin.structure.util.ElementHelper.getLabelValue(keyValues).isPresent())
+        }
+        if (org.apache.tinkerpop.gremlin.structure.util.ElementHelper.getLabelValue(keyValues).isPresent()) {
             throw new IllegalArgumentException("Cannot provide label as argument");
+        }
         org.apache.tinkerpop.gremlin.structure.util.ElementHelper.attachProperties(element, keyValues);
     }
 
@@ -64,12 +66,12 @@ public class ElementHelper {
      * This is essentially an adjusted copy paste from TinkerPop's ElementHelper class.
      * The reason for copying it is so that we can determine the cardinality of a property key based on
      * JanusGraph's schema which is tied to this particular transaction and not the graph.
-     *
      */
     public static void attachProperties(JanusGraphVertex vertex, Object... propertyKeyValues) {
         for (int i = 0; i < propertyKeyValues.length; i = i + 2) {
-            if (!propertyKeyValues[i].equals(T.id) && !propertyKeyValues[i].equals(T.label))
+            if (!propertyKeyValues[i].equals(T.id) && !propertyKeyValues[i].equals(T.label)) {
                 vertex.property((String) propertyKeyValues[i], propertyKeyValues[i + 1]);
+            }
         }
     }
 

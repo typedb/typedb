@@ -117,9 +117,13 @@ public class PointInterval<T> implements Interval<T> {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (other == null) {
+            return false;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         PointInterval oth = (PointInterval) other;
         return points.equals(oth.points);
     }

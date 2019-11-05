@@ -118,10 +118,10 @@ public class RangeInterval<T> implements Interval<T> {
         if (other instanceof PointInterval) {
             return other.intersect(this);
         } else if (other instanceof RangeInterval) {
-            final RangeInterval<T> rint = (RangeInterval) other;
-            final Map.Entry<T, Boolean> newStart = comparePoints(start, startInclusive, rint.start, rint.startInclusive, true);
-            final Map.Entry<T, Boolean> newEnd = comparePoints(end, endInclusive, rint.end, rint.endInclusive, false);
-            final RangeInterval<T> result = new RangeInterval<>(newStart.getKey(), newEnd.getKey());
+            RangeInterval<T> rint = (RangeInterval) other;
+            Map.Entry<T, Boolean> newStart = comparePoints(start, startInclusive, rint.start, rint.startInclusive, true);
+            Map.Entry<T, Boolean> newEnd = comparePoints(end, endInclusive, rint.end, rint.endInclusive, false);
+            RangeInterval<T> result = new RangeInterval<>(newStart.getKey(), newEnd.getKey());
             result.setStartInclusive(newStart.getValue());
             result.setEndInclusive(newEnd.getValue());
             return result;
@@ -164,9 +164,13 @@ public class RangeInterval<T> implements Interval<T> {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (other == null) {
+            return false;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         RangeInterval oth = (RangeInterval) other;
         return Objects.equals(start, oth.start) && Objects.equals(end, oth.end) && end.equals(oth.end) && endInclusive == oth.endInclusive && startInclusive == oth.startInclusive;
     }
