@@ -160,7 +160,7 @@ public class ConceptUtils {
 
     /**
      * Performs a natural join (⋈) between answers with the resultant answer containing the explanation of the left operand.
-     * If the answers have an empty set of common variables, the join corresponds to a Cartesian product.
+     * If the answers have an empty set of common variables, the join corresponds to a trivial entry set union.
      * NB: Assumes answers are compatible (concepts corresponding to join vars if any are the same or are compatible types)
      *
      * @param baseAnswer left operand of answer join
