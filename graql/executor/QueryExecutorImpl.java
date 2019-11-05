@@ -22,8 +22,6 @@ package grakn.core.graql.executor;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
-import grakn.core.concept.answer.Void;
-import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptList;
@@ -31,22 +29,23 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.concept.answer.Void;
 import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.exception.GraknServerException;
-import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.GraknServerException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Disjunction;
@@ -140,7 +139,8 @@ public class QueryExecutorImpl implements QueryExecutor {
                 Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
                         .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
-                        .map(q -> q.resolve());
+                        // we return an answer with the substituted IDs in the pattern
+                        .map(q -> q.resolve().map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 
                 LazyMergingStream<ConceptMap> mergedStreams = new LazyMergingStream<>(answerStreams);
                 return mergedStreams.flatStream();

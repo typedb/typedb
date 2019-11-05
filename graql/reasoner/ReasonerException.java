@@ -27,6 +27,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraqlSemanticException;
+import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
@@ -42,6 +43,10 @@ public class ReasonerException extends GraknException {
 
     public static ReasonerException invalidCast(Class<?> actualClass, Class<?> targetClass) {
         return new ReasonerException(ErrorMessage.INVALID_CAST.getMessage(actualClass, targetClass));
+    }
+
+    public static ReasonerException queryCacheAnswerNotFound(GraqlGet getQuery) {
+        return new ReasonerException(ErrorMessage.QUERY_CACHE_ANSWER_NOT_FOUND.getMessage(getQuery));
     }
 
     public static ReasonerException maxIterationsReached(Class<?> clazz) {

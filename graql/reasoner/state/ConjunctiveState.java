@@ -57,6 +57,7 @@ public class ConjunctiveState extends AnswerPropagatorState<ReasonerQueryImpl> {
 
     @Override
     ConceptMap consumeAnswer(AnswerState state) {
-        return state.getSubstitution();
+        ConceptMap substitution = state.getSubstitution();
+        return new ConceptMap(substitution.map(), substitution.explanation(), getQuery().withSubstitution(substitution).getPattern());
     }
 }

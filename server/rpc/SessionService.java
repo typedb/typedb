@@ -21,8 +21,15 @@ package grakn.core.server.rpc;
 import brave.ScopedSpan;
 import brave.Span;
 import brave.propagation.TraceContext;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.Explanation;
+import grakn.core.graql.reasoner.ReasonerException;
+import grakn.core.graql.reasoner.explanation.JoinExplanation;
+import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ResolvableQuery;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -34,11 +41,13 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.exception.TransactionException;
+import grakn.protocol.session.AnswerProto;
 import grakn.protocol.session.SessionProto;
 import grakn.protocol.session.SessionProto.Transaction;
 import grakn.protocol.session.SessionServiceGrpc;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlQuery;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -50,6 +59,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +70,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
@@ -252,6 +263,9 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
                     case CONCEPTMETHOD_REQ:
                         conceptMethod(request.getConceptMethodReq());
                         break;
+                    case EXPLANATION_REQ:
+                        explanation(request.getExplanationReq());
+                        break;
                     default:
                     case REQ_NOT_SET:
                         throw ResponseBuilder.exception(Status.INVALID_ARGUMENT);
@@ -408,6 +422,42 @@ public class SessionService extends SessionServiceGrpc.SessionServiceImplBase {
         private void conceptMethod(Transaction.ConceptMethod.Req request) {
             Concept concept = nonNull(tx().getConcept(ConceptId.of(request.getId())));
             Transaction.Res response = ConceptMethod.run(concept, request.getMethod(), iterators, tx());
+            onNextResponse(response);
+        }
+
+        /**
+         * Reconstruct and return the explanation associated with the ConceptMap provided by the user
+         */
+        private void explanation(AnswerProto.Explanation.Req explanationReq) {
+            // extract and reconstruct query pattern with the required IDs
+            AnswerProto.ConceptMap explainable = explanationReq.getExplainable();
+            Pattern queryPattern = Graql.parsePattern(explainable.getPattern());
+            GraqlGet getQuery = Graql.match(queryPattern).get();
+            ResolvableQuery q = ReasonerQueries.resolvable(Iterables.getOnlyElement(getQuery.match().getPatterns().getNegationDNF().getPatterns()), tx);
+
+            Explanation explanation;
+            if (q.isAtomic()) {
+                // If the query is atomic, looking up the query in the cache will result in retrieving the answer associated with the query
+                // we then return the answer's explanation
+                // Only atomic queries are retrievable directly from the cache
+                ConceptMap originatingAnswer = (ConceptMap)tx.queryCache().getAnswerStream(q).findFirst().orElse(null);
+                if (originatingAnswer == null) { throw ReasonerException.queryCacheAnswerNotFound(getQuery); }
+                explanation = originatingAnswer.explanation();
+            } else {
+                // If the query is not atomic, we can break it down into sub queries and retrieve each component's answer
+                // these are the same components used to re-construct the explanation for our original query, which we
+                // whenever we set the pattern, we need to provide the correct variable ID substitutions as well
+                List<ConceptMap> maps = q.selectAtoms()
+                        .map(ReasonerQueries::atomic)
+                        .flatMap(aq -> {
+                            Stream<ConceptMap> answerStream = (Stream<ConceptMap>) tx.queryCache().getAnswerStream(aq);
+                            return answerStream.map(conceptMap -> conceptMap.withPattern(aq.withSubstitution(conceptMap).getPattern()));
+                        })
+                        .collect(Collectors.toList());
+                explanation = new JoinExplanation(maps);
+            }
+
+            Transaction.Res response = ResponseBuilder.Transaction.explanation(explanation);
             onNextResponse(response);
         }
 
