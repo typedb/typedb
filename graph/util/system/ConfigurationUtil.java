@@ -48,12 +48,12 @@ public class ConfigurationUtil {
     }
 
     public static <T> T instantiate(String className) {
-        return instantiate(className,new Object[0],new Class[0]);
+        return instantiate(className, new Object[0], new Class[0]);
     }
 
     public static <T> T instantiate(String className, Object[] constructorArgs, Class[] classes) {
-        Preconditions.checkArgument(constructorArgs!=null && classes!=null);
-        Preconditions.checkArgument(constructorArgs.length==classes.length);
+        Preconditions.checkArgument(constructorArgs != null && classes != null);
+        Preconditions.checkArgument(constructorArgs.length == classes.length);
         try {
             Class clazz = Class.forName(className);
             Constructor constructor = clazz.getConstructor(classes);

@@ -14,12 +14,8 @@
 
 package grakn.core.graph.graphdb.configuration;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
-import grakn.core.graph.core.JanusGraphFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -30,12 +26,10 @@ import java.util.stream.Stream;
  */
 public class JanusGraphConstants {
 
-    public static final String JANUSGRAPH_PROPERTIES_FILE = "janusgraph.internal.properties";
-
     /**
      * Runtime version of JanusGraph, as read from a properties file inside the core jar
      */
-    public static final String VERSION;
+    public static final String VERSION = "0.0.1";
 
     /**
      * Name of the ids.store-name used by JanusGraph which is configurable
@@ -45,41 +39,8 @@ public class JanusGraphConstants {
     /**
      * Storage format version currently used by JanusGraph, version 1 is for JanusGraph 0.2.x and below
      */
-    public static final String STORAGE_VERSION;
+    public static final String STORAGE_VERSION = "2";
 
-
-    /**
-     * List of FIXED fields that can be modified when graph.allow-upgrade is set to true
-     */
-    public static final Set<String> UPGRADEABLE_FIXED;
-
-    static {
-
-        /*
-         * Preempt some potential NPEs with Preconditions bearing messages. They
-         * are unlikely to fail outside of some crazy test environment. Still,
-         * if something goes horribly wrong, even a cryptic error message is
-         * better than a message-less NPE.
-         */
-        Package p = JanusGraphConstants.class.getPackage();
-        Preconditions.checkNotNull(p, "Unable to load package containing class " + JanusGraphConstants.class);
-        String packageName = p.getName();
-        Preconditions.checkNotNull(packageName, "Unable to get name of package containing " + JanusGraphConstants.class);
-        String resourceName = packageName.replace('.', '/') + "/" + JANUSGRAPH_PROPERTIES_FILE;
-
-        Properties props = new Properties();
-
-        try (InputStream is = JanusGraphFactory.class.getClassLoader().getResourceAsStream(resourceName)) {
-            Preconditions.checkNotNull(is, "Unable to locate classpath resource " + resourceName + " containing JanusGraph version");
-            props.load(is);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load properties from " + resourceName, e);
-        }
-
-        VERSION = props.getProperty("janusgraph.version");
-        STORAGE_VERSION = props.getProperty("janusgraph.storage-version");
-        UPGRADEABLE_FIXED = getPropertySet(props, "janusgraph.upgradeable-fixed");
-    }
 
     private static Set<String> getPropertySet(Properties props, String key) {
         ImmutableSet.Builder<String> buildSet = ImmutableSet.builder();

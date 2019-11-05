@@ -111,8 +111,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
-import grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore;
-
 /**
  * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).

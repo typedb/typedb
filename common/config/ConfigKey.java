@@ -18,8 +18,6 @@
 
 package grakn.core.common.config;
 
-import grakn.core.common.exception.ErrorMessage;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -60,9 +58,7 @@ public class ConfigKey<T> {
     public static final ConfigKey<Integer> STORAGE_PORT = key("storage.port", INT);
     public static final ConfigKey<Integer> HADOOP_STORAGE_PORT = key("janusgraphmr.ioformat.conf.storage.port", INT);
     public static final ConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
-    public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cassandra.keyspace", STRING);
-    public static final ConfigKey<Integer> STORAGE_REPLICATION_FACTOR = key("storage.cassandra.replication-factor", INT);
-    public static final ConfigKey<Integer> STORAGE_FRAME_SIZE = key("storage.cassandra.frame-size-mb", INT);
+    public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cql.keyspace", STRING);
 
     public static final ConfigKey<Long> TYPE_SHARD_THRESHOLD = key("knowledge-base.type-shard-threshold", LONG);
     public static final ConfigKey<String> DATA_DIR = key("data-dir");

@@ -238,7 +238,7 @@ public class JanusGraphFactory {
                 throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);
         }
 
-        return ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{Configuration.class});
+        return ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{grakn.core.graph.diskstorage.configuration.Configuration.class});
     }
 
     private static ReadConfiguration getLocalConfiguration(String backendShortcut) {

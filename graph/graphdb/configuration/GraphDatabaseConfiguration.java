@@ -1253,7 +1253,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public boolean isUpgradeAllowed(String name) {
-        return configuration.get(ALLOW_UPGRADE) && JanusGraphConstants.UPGRADEABLE_FIXED.contains(name);
+        return configuration.get(ALLOW_UPGRADE);
     }
 
     public String getBackendDescription() {

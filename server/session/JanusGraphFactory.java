@@ -57,7 +57,6 @@ final public class JanusGraphFactory {
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
     private static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
     private static final String STORAGE_BACKEND = ConfigKey.STORAGE_BACKEND.name();
-    private static final String STORAGE_FRAME_SIZE = ConfigKey.STORAGE_FRAME_SIZE.name();
     private static final String CQL_BACKEND = "cql";
 
     private Config config;
@@ -100,8 +99,7 @@ final public class JanusGraphFactory {
     private static StandardJanusGraph configureGraph(String keyspace, Config config) {
         grakn.core.graph.core.JanusGraphFactory.Builder builder = grakn.core.graph.core.JanusGraphFactory.build()
                 .set(STORAGE_BACKEND, CQL_BACKEND)
-                .set(STORAGE_KEYSPACE, keyspace)
-                .set(STORAGE_FRAME_SIZE, 60);
+                .set(STORAGE_KEYSPACE, keyspace);
 
         //Load Passed in properties
         config.properties().forEach((key, value) -> {

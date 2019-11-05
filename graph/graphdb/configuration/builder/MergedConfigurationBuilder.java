@@ -28,6 +28,7 @@ import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.time.Duration;
+import java.util.UUID;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
@@ -37,6 +38,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TRANSACTION_LOG_DEFAULT_TTL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.UNIQUE_INSTANCE_ID;
 
 /**
  * Builder for {@link GraphDatabaseConfiguration}
@@ -56,8 +58,7 @@ public class MergedConfigurationBuilder {
 
         //Compute unique instance id
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
-//        String uniqueGraphId = UniqueInstanceIdRetriever.getInstance().getOrGenerateUniqueInstanceId(combinedConfig);
-//        overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId);
+        overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId());
         // If lock prefix is unspecified, specify it now
         if (!localBasicConfiguration.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
             overwrite.set(LOCK_LOCAL_MEDIATOR_GROUP, storeManager.getName());
@@ -68,6 +69,10 @@ public class MergedConfigurationBuilder {
         checkAndOverwriteSystemManagementLogConfiguration(combinedConfig, overwrite);
 
         return new MergedConfiguration(overwrite, combinedConfig);
+    }
+
+    private static String uniqueGraphId(){
+        return UUID.randomUUID().toString();
     }
 
 

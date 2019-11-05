@@ -71,6 +71,7 @@ public class ServerFactory {
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
         CqlSession cqlSession = CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(storageHostname, cqlPort))
+                .withLocalDatacenter("datacenter1")
                 .build();
 
         KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
