@@ -84,10 +84,12 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     private int require(int position, int size) {
         int base = position + offset;
-        if (position < 0)
+        if (position < 0) {
             throw new ArrayIndexOutOfBoundsException("Position [" + position + "] must be nonnegative");
-        if (base + size > limit)
+        }
+        if (base + size > limit) {
             throw new ArrayIndexOutOfBoundsException("Required size [" + size + "] " + "exceeds actual remaining size [" + (limit - base) + "]");
+        }
         return base;
     }
 
@@ -111,8 +113,9 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     @Override
     public StaticBuffer subrange(int position, int length, boolean invert) {
-        if (position < 0 || length < 0 || (offset + position + length) > limit)
+        if (position < 0 || length < 0 || (offset + position + length) > limit) {
             throw new ArrayIndexOutOfBoundsException("Position [" + position + "] and or length [" + length + "] out of bounds");
+        }
         if (!invert) {
             return new StaticArrayBuffer(array, offset + position, offset + position + length);
         } else {
@@ -141,8 +144,9 @@ public class StaticArrayBuffer implements StaticBuffer {
     }
 
     protected <T> T as(Factory<T> factory, int position, int length) {
-        if (position < 0 || length < 0 || (offset + position + length) > limit)
+        if (position < 0 || length < 0 || (offset + position + length) > limit) {
             throw new ArrayIndexOutOfBoundsException("Position [" + position + "] and or length [" + length + "] out of bounds");
+        }
         return factory.get(array, offset + position, offset + position + length);
     }
 
@@ -358,8 +362,11 @@ public class StaticArrayBuffer implements StaticBuffer {
 
     private static String toFixedWidthString(byte b) {
         String s = toString(b);
-        if (s.length() == 1) s = "  " + s;
-        else if (s.length() == 2) s = " " + s;
+        if (s.length() == 1) {
+            s = "  " + s;
+        } else if (s.length() == 2) {
+            s = " " + s;
+        }
         return s;
     }
 

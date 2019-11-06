@@ -62,7 +62,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Provides functionality to configure a {@link JanusGraph} INSTANCE.
@@ -1311,9 +1310,11 @@ public class GraphDatabaseConfiguration {
         forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
         String autoTypeMakerName = configuration.get(AUTO_TYPE);
-        if (PREREGISTERED_AUTO_TYPE.containsKey(autoTypeMakerName))
+        if (PREREGISTERED_AUTO_TYPE.containsKey(autoTypeMakerName)) {
             defaultSchemaMaker = PREREGISTERED_AUTO_TYPE.get(autoTypeMakerName);
-        else defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
+        } else {
+            defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
+        }
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
         if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
 
@@ -1348,79 +1349,79 @@ public class GraphDatabaseConfiguration {
             Preconditions.checkNotNull(metricsPrefix);
         }
 
-        configureMetricsConsoleReporter();
-        configureMetricsCsvReporter();
-        configureMetricsJmxReporter();
-        configureMetricsSlf4jReporter();
-        configureMetricsGangliaReporter();
-        configureMetricsGraphiteReporter();
+//        configureMetricsConsoleReporter();
+//        configureMetricsCsvReporter();
+//        configureMetricsJmxReporter();
+//        configureMetricsSlf4jReporter();
+////        configureMetricsGangliaReporter();
+//        configureMetricsGraphiteReporter();
     }
 
-    private void configureMetricsConsoleReporter() {
-        if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-//            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
-        }
-    }
+//    private void configureMetricsConsoleReporter() {
+//        if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
+////            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
+//        }
+//    }
+//
+//    private void configureMetricsCsvReporter() {
+//        if (configuration.has(METRICS_CSV_DIR)) {
+////            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
+//        }
+//    }
+//
+//    private void configureMetricsJmxReporter() {
+//        if (configuration.get(METRICS_JMX_ENABLED)) {
+////            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
+//        }
+//    }
+//
+//    private void configureMetricsSlf4jReporter() {
+//        if (configuration.has(METRICS_SLF4J_INTERVAL)) {
+//            //todo-reenable
+//            // null loggerName is allowed -- that means Metrics will use its internal default
+////            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
+////                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
+//        }
+//    }
 
-    private void configureMetricsCsvReporter() {
-        if (configuration.has(METRICS_CSV_DIR)) {
-//            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
-        }
-    }
+//    private void configureMetricsGangliaReporter() {
+////        if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
+////            String host = configuration.get(GANGLIA_HOST_OR_GROUP);
+////            Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
+////            Integer port = configuration.get(GANGLIA_PORT);
+////// todo-reenable
+//////            UDPAddressingMode addressingMode;
+//////            String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
+//////            if (addressingModeString.equalsIgnoreCase("multicast")) {
+//////                addressingMode = UDPAddressingMode.MULTICAST;
+//////            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
+//////                addressingMode = UDPAddressingMode.UNICAST;
+//////            } else throw new AssertionError();
+////
+//////            Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
+//////
+//////            int ttl = configuration.get(GANGLIA_TTL);
+//////
+//////            UUID uuid = configuration.has(GANGLIA_UUID) ? UUID.fromString(configuration.get(GANGLIA_UUID)) : null;
+//////
+//////            String spoof = null;
+//////            if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
+////
+//////            try {
+////////                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
+//////            } catch (IOException e) {
+//////                throw new RuntimeException(e);
+//////            }
+////        }
+//    }
 
-    private void configureMetricsJmxReporter() {
-        if (configuration.get(METRICS_JMX_ENABLED)) {
-//            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
-        }
-    }
-
-    private void configureMetricsSlf4jReporter() {
-        if (configuration.has(METRICS_SLF4J_INTERVAL)) {
-            //todo-reenable
-            // null loggerName is allowed -- that means Metrics will use its internal default
-//            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-//                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
-        }
-    }
-
-    private void configureMetricsGangliaReporter() {
-        if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
-            String host = configuration.get(GANGLIA_HOST_OR_GROUP);
-            Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
-            Integer port = configuration.get(GANGLIA_PORT);
-//todo-reenable
-//            UDPAddressingMode addressingMode;
-//            String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
-//            if (addressingModeString.equalsIgnoreCase("multicast")) {
-//                addressingMode = UDPAddressingMode.MULTICAST;
-//            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
-//                addressingMode = UDPAddressingMode.UNICAST;
-//            } else throw new AssertionError();
-
-            Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
-
-            int ttl = configuration.get(GANGLIA_TTL);
-
-            UUID uuid = configuration.has(GANGLIA_UUID) ? UUID.fromString(configuration.get(GANGLIA_UUID)) : null;
-
-            String spoof = null;
-            if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
-
-//            try {
-////                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
-//            } catch (IOException e) {
-//                throw new RuntimeException(e);
-//            }
-        }
-    }
-
-    private void configureMetricsGraphiteReporter() {
-        if (configuration.has(GRAPHITE_HOST)) {
-//            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
-//                    configuration.get(GRAPHITE_PORT),
-//                    configuration.get(GRAPHITE_PREFIX),
-//                    configuration.get(GRAPHITE_INTERVAL));
-        }
-    }
+//    private void configureMetricsGraphiteReporter() {
+////        if (configuration.has(GRAPHITE_HOST)) {
+//////            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
+//////                    configuration.get(GRAPHITE_PORT),
+//////                    configuration.get(GRAPHITE_PREFIX),
+//////                    configuration.get(GRAPHITE_INTERVAL));
+////        }
+//    }
 
 }

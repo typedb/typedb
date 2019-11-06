@@ -65,7 +65,7 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     public SimpleBulkPlacementStrategy(int concurrentPartitions) {
         Preconditions.checkArgument(concurrentPartitions > 0);
         currentPartitions = new int[concurrentPartitions];
-        exhaustedPartitions = Collections.newSetFromMap(new ConcurrentHashMap<Integer, Boolean>());
+        exhaustedPartitions = Collections.newSetFromMap(new ConcurrentHashMap<>());
     }
 
     public SimpleBulkPlacementStrategy(Configuration config) {
@@ -83,8 +83,9 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
         do {
             attempts++;
             newPartition = localPartitionIdRanges.get(random.nextInt(localPartitionIdRanges.size())).getRandomID();
-            if (attempts > PARTITION_FINDING_ATTEMPTS)
+            if (attempts > PARTITION_FINDING_ATTEMPTS) {
                 throw new IDPoolExhaustedException("Could not find non-exhausted partition");
+            }
         } while (exhaustedPartitions.contains(newPartition));
         currentPartitions[index] = newPartition;
         LOG.debug("Setting partition at index [{}] to: {}", index, newPartition);

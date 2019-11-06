@@ -65,7 +65,7 @@ public class RelationIndexStatusWatcher
         Timer t = new Timer(TimestampProviders.MILLI).start();
         boolean timedOut;
         while (true) {
-            final SchemaStatus actualStatus;
+            SchemaStatus actualStatus;
             JanusGraphManagement management = null;
             try {
                 management = g.openManagement();
@@ -76,8 +76,9 @@ public class RelationIndexStatusWatcher
                     return new RelationIndexStatusReport(true, relationIndexName, relationTypeName, actualStatus, statuses, t.elapsed());
                 }
             } finally {
-                if (null != management)
+                if (null != management) {
                     management.rollback(); // Let an exception here propagate up the stack
+                }
             }
 
             timedOut = null != timeout && 0 < t.elapsed().compareTo(timeout);

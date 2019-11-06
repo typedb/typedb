@@ -654,16 +654,17 @@ public class ManagementSystem implements JanusGraphManagement {
 
         JanusGraphSchemaVertex indexVertex = (JanusGraphSchemaVertex) ((IndexTypeWrapper) indexType).getSchemaBase();
 
-        for (IndexField field : indexType.getFieldKeys())
+        for (IndexField field : indexType.getFieldKeys()) {
             Preconditions.checkArgument(!field.getFieldKey().equals(key), "Key [%s] has already been added to index %s", key.name(), index.name());
-
+        }
         //Assemble parameters
         boolean addMappingParameter = !ParameterType.MAPPED_NAME.hasParameter(parameters);
         Parameter[] extendedParas = new Parameter[parameters.length + 1 + (addMappingParameter ? 1 : 0)];
         System.arraycopy(parameters, 0, extendedParas, 0, parameters.length);
         int arrPosition = parameters.length;
-        if (addMappingParameter) extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(
-                graph.getIndexSerializer().getDefaultFieldName(key, parameters, indexType.getBackingIndexName()));
+        if (addMappingParameter) {
+            extendedParas[arrPosition++] = ParameterType.MAPPED_NAME.getParameter(graph.getIndexSerializer().getDefaultFieldName(key, parameters, indexType.getBackingIndexName()));
+        }
         extendedParas[arrPosition] = ParameterType.STATUS.getParameter(key.isNew() ? SchemaStatus.ENABLED : SchemaStatus.INSTALLED);
 
         addSchemaEdge(indexVertex, key, TypeDefinitionCategory.INDEX_FIELD, extendedParas);
@@ -864,13 +865,17 @@ public class ManagementSystem implements JanusGraphManagement {
             case ENABLE_INDEX:
                 setStatus(schemaVertex, SchemaStatus.ENABLED, keySubset);
                 updatedTypes.add(schemaVertex);
-                if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                if (!keySubset.isEmpty()) {
+                    updatedTypes.addAll(dependentTypes);
+                }
                 future = new EmptyIndexJobFuture();
                 break;
             case DISABLE_INDEX:
                 setStatus(schemaVertex, SchemaStatus.INSTALLED, keySubset);
                 updatedTypes.add(schemaVertex);
-                if (!keySubset.isEmpty()) updatedTypes.addAll(dependentTypes);
+                if (!keySubset.isEmpty()) {
+                    updatedTypes.addAll(dependentTypes);
+                }
                 setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.DISABLED, keySubset));
                 future = new EmptyIndexJobFuture();
                 break;
@@ -879,8 +884,9 @@ public class ManagementSystem implements JanusGraphManagement {
                     builder = graph.getBackend().buildEdgeScanJob();
                 } else {
                     JanusGraphIndex graphIndex = (JanusGraphIndex) index;
-                    if (graphIndex.isMixedIndex())
+                    if (graphIndex.isMixedIndex()) {
                         throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
+                    }
                     builder = graph.getBackend().buildGraphIndexScanJob();
                 }
                 builder.setFinishJob(indexId.getIndexJobFinisher());
@@ -1009,8 +1015,11 @@ public class ManagementSystem implements JanusGraphManagement {
 
         @Override
         public boolean equals(Object oth) {
-            if (this == oth) return true;
-            else if (!getClass().isInstance(oth)) return false;
+            if (this == oth) {
+                return true;
+            } else if (!getClass().isInstance(oth)) {
+                return false;
+            }
             return schemaVertexId == ((UpdateStatusTrigger) oth).schemaVertexId;
         }
 
@@ -1100,8 +1109,11 @@ public class ManagementSystem implements JanusGraphManagement {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) return true;
-            else if (!getClass().isInstance(other)) return false;
+            if (this == other) {
+                return true;
+            } else if (!getClass().isInstance(other)) {
+                return false;
+            }
             IndexIdentifier oth = (IndexIdentifier) other;
             return indexName.equals(oth.indexName) && (relationTypeName == oth.relationTypeName || (relationTypeName != null && relationTypeName.equals(oth.relationTypeName)));
         }
@@ -1236,9 +1248,12 @@ public class ManagementSystem implements JanusGraphManagement {
                     "Cannot apply FORK consistency mode to constraint relation type: %s", rv.name());
         } else if (element instanceof JanusGraphIndex) {
             IndexType index = ((JanusGraphIndexWrapper) element).getBaseIndex();
-            if (index.isMixedIndex())
+            if (index.isMixedIndex()) {
                 throw new IllegalArgumentException("Cannot change consistency on mixed index: " + element);
-        } else throw new IllegalArgumentException("Cannot change consistency of schema element: " + element);
+            }
+        } else {
+            throw new IllegalArgumentException("Cannot change consistency of schema element: " + element);
+        }
         setTypeModifier(element, ModifierType.CONSISTENCY, consistency);
     }
 
@@ -1263,16 +1278,16 @@ public class ManagementSystem implements JanusGraphManagement {
      */
     @Override
     public void setTTL(JanusGraphSchemaType type, Duration duration) {
-        if (!graph.getBackend().getStoreFeatures().hasCellTTL())
+        if (!graph.getBackend().getStoreFeatures().hasCellTTL()) {
             throw new UnsupportedOperationException("The storage engine does not support TTL");
+        }
         if (type instanceof VertexLabelVertex) {
             Preconditions.checkArgument(((VertexLabelVertex) type).isStatic(), "must define vertex label as static to allow setting TTL");
         } else {
             Preconditions.checkArgument(type instanceof EdgeLabelVertex || type instanceof PropertyKeyVertex, "TTL is not supported for type " + type.getClass().getSimpleName());
         }
 
-        Integer ttlSeconds = (duration.isZero()) ?
-                null :
+        Integer ttlSeconds = (duration.isZero()) ? null :
                 (int) duration.getSeconds();
 
         setTypeModifier(type, ModifierType.TTL, ttlSeconds);

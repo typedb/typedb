@@ -431,13 +431,11 @@ public class IDManager {
         return partitionIDBound;
     }
 
-    /* ########################################################
-                   User Relations and Vertices
-       ########################################################  */
 
-    /*		--- JanusGraphElement id bit format ---
-     *  [0 | count | partition | ID padding (if any) ]
-     */
+    // User Relations and Vertices
+
+    //--- JanusGraphElement id bit format ---
+    // [0 | count | partition | ID padding (if any) ]
 
     private long constructId(long count, long partition, VertexIDType type) {
         Preconditions.checkArgument(partition < partitionIDBound && partition >= 0, "Invalid partition: %s", partition);

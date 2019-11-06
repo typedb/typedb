@@ -40,15 +40,17 @@ public class RegisteredAttributeClass<T> {
         this.serializer = Preconditions.checkNotNull(serializer);
     }
 
-
     void registerWith(Serializer s) {
         s.registerClass(position, type, serializer);
     }
 
     @Override
     public boolean equals(Object oth) {
-        if (this == oth) return true;
-        else if (!getClass().isInstance(oth)) return false;
+        if (this == oth) {
+            return true;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         return type.equals(((RegisteredAttributeClass<?>) oth).type);
     }
 

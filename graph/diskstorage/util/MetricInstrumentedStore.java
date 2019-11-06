@@ -64,7 +64,6 @@ import java.util.Map;
  * delegating Metrics object handling to a common helper that takes a Callable
  * closure, but I'm not sure that the extra complexity and potential performance
  * hit is worth it.
- *
  */
 public class MetricInstrumentedStore implements KeyColumnValueStore {
 
@@ -182,8 +181,9 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     private void recordSliceMetrics(StoreTransaction txh, List<Entry> row) {
-        if (!txh.getConfiguration().hasGroupName())
+        if (!txh.getConfiguration().hasGroupName()) {
             return;
+        }
 
         String p = txh.getConfiguration().getGroupName();
         final MetricManager mgr = MetricManager.INSTANCE;

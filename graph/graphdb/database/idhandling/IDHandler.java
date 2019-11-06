@@ -21,12 +21,12 @@ package grakn.core.graph.graphdb.database.idhandling;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
-import grakn.core.graph.diskstorage.util.WriteByteBuffer;
-import grakn.core.graph.graphdb.idmanagement.IDManager;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
+import grakn.core.graph.diskstorage.util.WriteByteBuffer;
+import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.RelationCategory;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import static grakn.core.graph.graphdb.idmanagement.IDManager.VertexIDType.SystemEdgeLabel;
 import static grakn.core.graph.graphdb.idmanagement.IDManager.VertexIDType.SystemPropertyKey;
@@ -133,10 +133,11 @@ public class IDHandler {
         long typeId = countPrefix[0] >>> 1;
         boolean isSystemType = (countPrefix[1] >> 1) == 0;
 
-        if (dirID == DirectionID.PROPERTY_DIR)
+        if (dirID == DirectionID.PROPERTY_DIR) {
             typeId = IDManager.getSchemaId(isSystemType ? SystemPropertyKey : UserPropertyKey, typeId);
-        else
+        } else {
             typeId = IDManager.getSchemaId(isSystemType ? SystemEdgeLabel : UserEdgeLabel, typeId);
+        }
         return new RelationTypeParse(typeId, dirID);
     }
 

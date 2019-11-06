@@ -121,11 +121,17 @@ public class StandardSchemaCache implements SchemaCache {
 
         long typeId = (schemaId >>> SCHEMAID_BACK_SHIFT);
         int systemTypeId;
-        if (type == BaseLabel.SchemaDefinitionEdge) systemTypeId = 0;
-        else if (type == BaseKey.SchemaName) systemTypeId = 1;
-        else if (type == BaseKey.SchemaCategory) systemTypeId = 2;
-        else if (type == BaseKey.SchemaDefinitionProperty) systemTypeId = 3;
-        else throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.name());
+        if (type == BaseLabel.SchemaDefinitionEdge) {
+            systemTypeId = 0;
+        } else if (type == BaseKey.SchemaName) {
+            systemTypeId = 1;
+        } else if (type == BaseKey.SchemaCategory) {
+            systemTypeId = 2;
+        } else if (type == BaseKey.SchemaDefinitionProperty) {
+            systemTypeId = 3;
+        } else {
+            throw new AssertionError("Unexpected SystemType encountered in StandardSchemaCache: " + type.name());
+        }
 
         return (((typeId << 2) + systemTypeId) << 1) + edgeDir;
     }

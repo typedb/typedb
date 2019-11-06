@@ -75,9 +75,13 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public Direction getDirection() {
-        if (type.isUnidirected(Direction.BOTH)) return Direction.BOTH;
-        else if (type.isUnidirected(Direction.OUT)) return Direction.OUT;
-        else if (type.isUnidirected(Direction.IN)) return Direction.IN;
+        if (type.isUnidirected(Direction.BOTH)) {
+            return Direction.BOTH;
+        } else if (type.isUnidirected(Direction.OUT)) {
+            return Direction.OUT;
+        } else if (type.isUnidirected(Direction.IN)) {
+            return Direction.IN;
+        }
         throw new AssertionError();
     }
 
@@ -88,9 +92,13 @@ public class RelationTypeIndexWrapper implements RelationTypeIndex {
 
     @Override
     public boolean equals(Object oth) {
-        if (oth == null) return false;
-        else if (oth == this) return true;
-        else if (!getClass().isInstance(oth)) return false;
+        if (oth == null) {
+            return false;
+        } else if (oth == this) {
+            return true;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         return type.equals(((RelationTypeIndexWrapper) oth).type);
     }
 

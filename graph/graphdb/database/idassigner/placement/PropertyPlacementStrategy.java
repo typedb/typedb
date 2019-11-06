@@ -101,8 +101,9 @@ public class PropertyPlacementStrategy extends SimpleBulkPlacementStrategy {
             int newPid = hashPid;
             do {
                 newPid = (newPid + 1) % partitionBound;
-                if (newPid == hashPid) //We have gone full circle - no more ids to try
+                if (newPid == hashPid) { //We have gone full circle - no more ids to try
                     throw new IDPoolExhaustedException("Could not find non-exhausted partition");
+                }
             } while (isExhaustedPartition(newPid));
             return newPid;
         } else return hashPid;

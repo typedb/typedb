@@ -23,7 +23,6 @@ import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.MetaAnnotatable;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.graphdb.relations.RelationCache;
 
 import java.nio.ByteBuffer;
@@ -49,17 +48,17 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
     }
 
     StaticArrayEntry(Entry entry) {
-        super(entry,entry.getValuePosition());
+        super(entry, entry.getValuePosition());
     }
 
     //########## META DATA ############
 
-    private Map<EntryMetaData,Object> metadata = EntryMetaData.EMPTY_METADATA;
+    private Map<EntryMetaData, Object> metadata = EntryMetaData.EMPTY_METADATA;
 
     @Override
     public synchronized Object setMetaData(EntryMetaData key, Object value) {
-        if (metadata== EntryMetaData.EMPTY_METADATA) metadata = new EntryMetaData.Map();
-        return metadata.put(key,value);
+        if (metadata == EntryMetaData.EMPTY_METADATA) metadata = new EntryMetaData.Map();
+        return metadata.put(key, value);
     }
 
     @Override
@@ -68,7 +67,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
     }
 
     @Override
-    public Map<EntryMetaData,Object> getMetaData() {
+    public Map<EntryMetaData, Object> getMetaData() {
         return metadata;
     }
 
@@ -92,14 +91,14 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
     //########### CONSTRUCTORS AND UTILITIES ###########
 
     public static Entry of(StaticBuffer buffer) {
-        return new StaticArrayEntry(buffer,buffer.length());
+        return new StaticArrayEntry(buffer, buffer.length());
     }
 
-    public static <E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E,byte[]> getter) {
+    public static <E> Entry ofBytes(E element, StaticArrayEntry.GetColVal<E, byte[]> getter) {
         return of(element, getter, ByteArrayHandler.INSTANCE);
     }
 
-    public static <E> Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E,ByteBuffer> getter) {
+    public static <E> Entry ofByteBuffer(E element, StaticArrayEntry.GetColVal<E, ByteBuffer> getter) {
         return of(element, getter, ByteBufferHandler.INSTANCE);
     }
 
@@ -111,26 +110,26 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         return of(column, value, StaticBufferHandler.INSTANCE);
     }
 
-    private static <E,D> Entry of(E element, StaticArrayEntry.GetColVal<E,D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
-        StaticArrayEntry entry = of(getter.getColumn(element),getter.getValue(element),dataHandler);
+    private static <E, D> Entry of(E element, StaticArrayEntry.GetColVal<E, D> getter, StaticArrayEntry.DataHandler<D> dataHandler) {
+        StaticArrayEntry entry = of(getter.getColumn(element), getter.getValue(element), dataHandler);
         //Add meta data if exists
-        if (getter.getMetaSchema(element).length>0) {
+        if (getter.getMetaSchema(element).length > 0) {
             for (EntryMetaData meta : getter.getMetaSchema(element)) {
-                entry.setMetaData(meta,getter.getMetaData(element,meta));
+                entry.setMetaData(meta, getter.getMetaData(element, meta));
             }
         }
         return entry;
     }
 
-    private static <E,D> StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> dataHandler) {
+    private static <E, D> StaticArrayEntry of(D column, D value, StaticArrayEntry.DataHandler<D> dataHandler) {
         int valuePos = dataHandler.getSize(column);
-        byte[] data = new byte[valuePos+dataHandler.getSize(value)];
-        dataHandler.copy(column,data,0);
-        dataHandler.copy(value,data,valuePos);
-        return new StaticArrayEntry(data,valuePos);
+        byte[] data = new byte[valuePos + dataHandler.getSize(value)];
+        dataHandler.copy(column, data, 0);
+        dataHandler.copy(value, data, valuePos);
+        return new StaticArrayEntry(data, valuePos);
     }
 
-    public interface GetColVal<E,D> {
+    public interface GetColVal<E, D> {
 
         D getColumn(E element);
 
@@ -158,7 +157,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         @Override
         public EntryMetaData[] getMetaSchema(Entry element) {
             if (!element.hasMetaData()) return EMPTY_SCHEMA;
-            Map<EntryMetaData,Object> metas = element.getMetaData();
+            Map<EntryMetaData, Object> metas = element.getMetaData();
             return metas.keySet().toArray(new EntryMetaData[metas.size()]);
         }
 
@@ -190,7 +189,7 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
 
         @Override
         public void copy(byte[] data, byte[] dest, int destOffset) {
-            System.arraycopy(data,0,dest,destOffset,data.length);
+            System.arraycopy(data, 0, dest, destOffset, data.length);
         }
     }
 
@@ -206,10 +205,10 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         @Override
         public void copy(ByteBuffer data, byte[] dest, int destOffset) {
             if (data.hasArray()) {
-                System.arraycopy(data.array(),data.arrayOffset()+data.position(),dest,destOffset,data.remaining());
+                System.arraycopy(data.array(), data.arrayOffset() + data.position(), dest, destOffset, data.remaining());
             } else {
                 data.mark();
-                data.get(dest,destOffset,data.remaining());
+                data.get(dest, destOffset, data.remaining());
                 data.reset();
             }
         }
@@ -228,120 +227,9 @@ public class StaticArrayEntry extends BaseStaticArrayEntry implements Entry, Met
         public void copy(StaticBuffer data, byte[] dest, int destOffset) {
             if (data instanceof StaticArrayBuffer) {
                 StaticArrayBuffer buffer = (StaticArrayBuffer) data;
-                buffer.copyTo(dest,destOffset);
+                buffer.copyTo(dest, destOffset);
             } else throw new IllegalArgumentException("Expected StaticArrayBuffer but got: " + data.getClass());
         }
-    }
-
-}
-
-class BaseStaticArrayEntry extends StaticArrayBuffer implements Entry {
-
-    private final int valuePosition;
-
-    public BaseStaticArrayEntry(byte[] array, int offset, int limit, int valuePosition) {
-        super(array,offset,limit);
-        Preconditions.checkArgument(valuePosition>0);
-        Preconditions.checkArgument(valuePosition<=length());
-        this.valuePosition=valuePosition;
-    }
-
-    public BaseStaticArrayEntry(byte[] array, int limit, int valuePosition) {
-        this(array, 0, limit, valuePosition);
-    }
-
-    public BaseStaticArrayEntry(byte[] array, int valuePosition) {
-        this(array, 0, array.length, valuePosition);
-    }
-
-    public BaseStaticArrayEntry(StaticBuffer buffer, int valuePosition) {
-        super(buffer);
-        Preconditions.checkArgument(valuePosition>0);
-        Preconditions.checkArgument(valuePosition<=length());
-        this.valuePosition=valuePosition;
-    }
-
-    @Override
-    public int getValuePosition() {
-        return valuePosition;
-    }
-
-    @Override
-    public boolean hasValue() {
-        return valuePosition<length();
-    }
-
-    @Override
-    public StaticBuffer getColumn() {
-        return getColumnAs(StaticBuffer.STATIC_FACTORY);
-    }
-
-    @Override
-    public <T> T getColumnAs(Factory<T> factory) {
-        return super.as(factory,0,valuePosition);
-    }
-
-    @Override
-    public StaticBuffer getValue() {
-        return getValueAs(StaticBuffer.STATIC_FACTORY);
-    }
-
-    @Override
-    public <T> T getValueAs(Factory<T> factory) {
-        return super.as(factory,valuePosition,super.length()-valuePosition);
-    }
-
-    //Override from StaticArrayBuffer to restrict to column
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null) return false;
-        if (!(o instanceof StaticBuffer)) return false;
-        final Entry b = (Entry) o;
-        return getValuePosition() == b.getValuePosition() && compareTo(getValuePosition(), b, getValuePosition()) == 0;
-    }
-
-    @Override
-    public int hashCode() {
-        return hashCode(getValuePosition());
-    }
-
-    @Override
-    public int compareTo(StaticBuffer other) {
-        int otherLen = (other instanceof Entry)?((Entry) other).getValuePosition():other.length();
-        return compareTo(getValuePosition(),other, otherLen);
-    }
-
-    @Override
-    public String toString() {
-        String s = super.toString();
-        int pos = getValuePosition()*4;
-        return s.substring(0,pos-1) + "->" + (getValuePosition()<length()?s.substring(pos):"");
-    }
-
-    //########## CACHE ############
-
-    @Override
-    public RelationCache getCache() {
-        return null;
-    }
-
-    @Override
-    public void setCache(RelationCache cache) {
-        throw new UnsupportedOperationException();
-    }
-
-    //########## META DATA ############
-
-    @Override
-    public boolean hasMetaData() {
-        return false;
-    }
-
-    @Override
-    public Map<EntryMetaData,Object> getMetaData() {
-        return EntryMetaData.EMPTY_METADATA;
     }
 
 }

@@ -280,8 +280,11 @@ public class IndexSerializer {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) return true;
-            else if (!(other instanceof IndexUpdate)) return false;
+            if (this == other) {
+                return true;
+            } else if (!(other instanceof IndexUpdate)) {
+                return false;
+            }
             IndexUpdate oth = (IndexUpdate) other;
             return index.equals(oth.index) && mutationType == oth.mutationType && key.equals(oth.key) && entry.equals(oth.entry);
         }
@@ -575,10 +578,7 @@ public class IndexSerializer {
         return new IndexQuery(index.getStoreName(), newCondition, newOrders);
     }
 
-
-    /* ################################################
-    	Common code used by executeQuery and executeTotals
-	################################################### */
+    // Common code used by executeQuery and executeTotals
     private String createQueryString(IndexQueryBuilder query, ElementCategory resultType, StandardJanusGraphTx transaction, MixedIndexType index) {
         Preconditions.checkArgument(index.getElement() == resultType, "Index is not configured for the desired result type: %s", resultType);
         String backingIndexName = index.getBackingIndexName();

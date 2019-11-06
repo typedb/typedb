@@ -728,8 +728,9 @@ public class StandardJanusGraph implements JanusGraph {
                 for (InternalRelationType type : baseType.getRelationIndexes()) {
                     if (type.getStatus() == SchemaStatus.DISABLED) continue;
                     for (int pos = 0; pos < edge.getArity(); pos++) {
-                        if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
+                        if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos))) {
                             continue; //Directionality is not covered
+                        }
                         if (edge.getVertex(pos).longId() == vertexId) {
                             StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
                             if (edge.isRemoved()) {
@@ -756,19 +757,21 @@ public class StandardJanusGraph implements JanusGraph {
         for (IndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
             if (indexUpdate.isCompositeIndex()) {
                 IndexSerializer.IndexUpdate<StaticBuffer, Entry> update = indexUpdate;
-                if (update.isAddition())
+                if (update.isAddition()) {
                     mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
-                else
+                } else {
                     mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
+                }
             } else {
                 IndexSerializer.IndexUpdate<String, IndexEntry> update = indexUpdate;
                 has2iMods = true;
                 IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
                 String indexStore = ((MixedIndexType) update.getIndex()).getStoreName();
-                if (update.isAddition())
+                if (update.isAddition()) {
                     itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());
-                else
+                } else {
                     itx.delete(indexStore, update.getKey(), update.getEntry().field, update.getEntry().value, update.getElement().isRemoved());
+                }
             }
         }
         return new ModificationSummary(!mutations.isEmpty(), has2iMods);

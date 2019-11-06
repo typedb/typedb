@@ -302,10 +302,11 @@ public class VertexIDAssigner implements AutoCloseable {
                 for (int i = 0; i < relation.getArity(); i++) {
                     InternalVertex vertex = relation.getVertex(i);
                     if (!vertex.hasId()) {
-                        if (vertex.vertexLabel().isPartitioned())
+                        if (vertex.vertexLabel().isPartitioned()) {
                             assignID(vertex, getVertexIDType(vertex)); //Assign partitioned vertex ids immediately
-                        else
+                        } else {
                             assignments.put(vertex, PartitionAssignment.EMPTY);
+                        }
                     }
                 }
             }
@@ -491,11 +492,17 @@ public class VertexIDAssigner implements AutoCloseable {
         }
 
         public static PoolType getPoolTypeFor(IDManager.VertexIDType idType) {
-            if (idType == IDManager.VertexIDType.NormalVertex) return NORMAL_VERTEX;
-            else if (idType == IDManager.VertexIDType.UnmodifiableVertex) return UNMODIFIABLE_VERTEX;
-            else if (idType == IDManager.VertexIDType.PartitionedVertex) return PARTITIONED_VERTEX;
-            else if (IDManager.VertexIDType.Schema.isSubType(idType)) return SCHEMA;
-            else throw new IllegalArgumentException("Invalid id type: " + idType);
+            if (idType == IDManager.VertexIDType.NormalVertex) {
+                return NORMAL_VERTEX;
+            } else if (idType == IDManager.VertexIDType.UnmodifiableVertex) {
+                return UNMODIFIABLE_VERTEX;
+            } else if (idType == IDManager.VertexIDType.PartitionedVertex) {
+                return PARTITIONED_VERTEX;
+            } else if (IDManager.VertexIDType.Schema.isSubType(idType)) {
+                return SCHEMA;
+            } else {
+                throw new IllegalArgumentException("Invalid id type: " + idType);
+            }
         }
 
         public static PoolType getPoolType(int idNamespace) {

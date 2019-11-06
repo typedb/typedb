@@ -27,51 +27,8 @@ public class UncaughtExceptionLogger implements UncaughtExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(UncaughtExceptionHandler.class);
 
-    /*
-     * I don't like duplicating a subset of org.slf4j.Level, but the slf4j API
-     * as of 1.7.5 provides no general Logger.LOG(Level, String, Object...)
-     * method. I can't seem to meta-program around this.
-     */
-    public enum UELevel implements UELogLevel {
-        TRACE {
-            public void dispatch(String message, Throwable t) {
-                LOG.trace(message, t);
-            }
-        },
-        DEBUG {
-            public void dispatch(String message, Throwable t) {
-                LOG.debug(message, t);
-            }
-        },
-        INFO {
-            public void dispatch(String message, Throwable t) {
-                LOG.info(message, t);
-            }
-        },
-        WARN {
-            public void dispatch(String message, Throwable t) {
-                LOG.warn(message, t);
-            }
-        },
-        ERROR {
-            public void dispatch(String message, Throwable t) {
-                LOG.error(message, t);
-            }
-        }
-    }
-
-    private final UELevel level;
-
-    public UncaughtExceptionLogger(UELevel level) {
-        this.level = level;
-    }
-
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-        level.dispatch(String.format("Uncaught exception in thread " + t), e);
+        LOG.info("Uncaught exception in thread " + t, e);
     }
-}
-
-interface UELogLevel {
-    void dispatch(String message, Throwable t);
 }

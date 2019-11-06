@@ -120,7 +120,6 @@ public class EdgeSerializer implements RelationReader {
                 relationId = VariableLong.readPositive(in);
             } else {
                 in.movePositionTo(data.getValuePosition());
-
                 relationId = VariableLong.readPositiveBackward(in);
                 otherVertexId = VariableLong.readPositiveBackward(in);
                 endKeyPos = in.getPosition();
@@ -198,10 +197,11 @@ public class EdgeSerializer implements RelationReader {
         if (AttributeUtil.hasGenericDataType(key)) {
             return serializer.readClassAndObject(read);
         } else {
-            if (inlineType.writeByteOrdered())
+            if (inlineType.writeByteOrdered()) {
                 return serializer.readObjectByteOrder(read, key.dataType());
-            else
+            } else {
                 return serializer.readObject(read, key.dataType());
+            }
         }
     }
 
@@ -332,8 +332,7 @@ public class EdgeSerializer implements RelationReader {
 
     }
 
-    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx,
-                                  InlineType inlineType) {
+    private void writeInlineTypes(long[] keyIds, InternalRelation relation, DataOutput out, TypeInspector tx, InlineType inlineType) {
         for (long keyId : keyIds) {
             PropertyKey t = tx.getExistingPropertyKey(keyId);
             writeInline(out, t, relation.getValueDirect(t), inlineType);
@@ -381,7 +380,6 @@ public class EdgeSerializer implements RelationReader {
             sliceEnd = BufferUtil.nextBiggerBuffer(sliceEnd);
         } else {
             DirectionID dirID = getDirID(dir, rt);
-
             DataOutput colStart = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
             DataOutput colEnd = serializer.getDataOutput(DEFAULT_COLUMN_CAPACITY);
             IDHandler.writeRelationType(colStart, type.longId(), dirID, type.isInvisibleType());
@@ -411,10 +409,12 @@ public class EdgeSerializer implements RelationReader {
                         writeInline(colEnd, propertyKey, interval.getEnd(), InlineType.KEY);
                     }
                 } else {
-                    if (interval.getStart() != null)
+                    if (interval.getStart() != null) {
                         writeInline(colStart, propertyKey, interval.getStart(), InlineType.KEY);
-                    if (interval.getEnd() != null)
+                    }
+                    if (interval.getEnd() != null) {
                         writeInline(colEnd, propertyKey, interval.getEnd(), InlineType.KEY);
+                    }
 
                     switch (type.getSortOrder()) {
                         case ASC:

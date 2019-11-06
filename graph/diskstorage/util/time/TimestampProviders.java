@@ -134,15 +134,17 @@ public enum TimestampProviders implements TimestampProvider {
          * for it to matter in practice. But it can lead to corruption at
          * millisecond resolution (and does, in testing).
          */
-        if (unit.equals(ChronoUnit.MILLIS))
+        if (unit.equals(ChronoUnit.MILLIS)) {
             futureTime = futureTime.plusMillis(1L);
+        }
 
         while ((now = getTime()).compareTo(futureTime) <= 0) {
 
             long delta = getTime(futureTime) - getTime(now);
 
-            if (0L == delta)
+            if (0L == delta) {
                 delta = 1L;
+            }
 
             LOG.trace("Sleeping: now={} targettime={} delta={} {}", now, futureTime, delta, unit);
 
