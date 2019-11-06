@@ -100,8 +100,9 @@ public class ExpectedValueCheckingStore extends KCVSProxy {
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
         if (locker != null) {
             ExpectedValueCheckingTransaction tx = (ExpectedValueCheckingTransaction) txh;
-            if (tx.isMutationStarted())
+            if (tx.isMutationStarted()) {
                 throw new PermanentLockingException("Attempted to obtain a lock after mutations had been persisted");
+            }
             KeyColumn lockID = new KeyColumn(key, column);
             LOG.debug("Attempting to acquireLock on {} ev={}", lockID, expectedValue);
             locker.writeLock(lockID, tx.getConsistentTx());

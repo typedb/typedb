@@ -21,7 +21,6 @@ package grakn.core.graph.diskstorage.indexing;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.diskstorage.indexing.IndexProvider;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.query.BackendQuery;
 import grakn.core.graph.graphdb.query.BaseQuery;
@@ -36,7 +35,6 @@ import java.util.Objects;
  * <p>
  * A query is comprised of the store identifier against which the query ought to be executed and a query condition
  * which defines which entries match the query.
- *
  */
 
 public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
@@ -102,20 +100,28 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
-        final IndexQuery oth = (IndexQuery) other;
+        if (this == other) {
+            return true;
+        } else if (other == null) {
+            return false;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
+        IndexQuery oth = (IndexQuery) other;
         return store.equals(oth.store) && orders.equals(oth.orders)
                 && condition.equals(oth.condition) && getLimit() == oth.getLimit();
     }
 
     @Override
     public String toString() {
-        final StringBuilder b = new StringBuilder();
+        StringBuilder b = new StringBuilder();
         b.append("[").append(condition.toString()).append("]");
-        if (!orders.isEmpty()) b.append(orders);
-        if (hasLimit()) b.append("(").append(getLimit()).append(")");
+        if (!orders.isEmpty()) {
+            b.append(orders);
+        }
+        if (hasLimit()) {
+            b.append("(").append(getLimit()).append(")");
+        }
         b.append(":").append(store);
         return b.toString();
     }
@@ -154,10 +160,14 @@ public class IndexQuery extends BaseQuery implements BackendQuery<IndexQuery> {
 
         @Override
         public boolean equals(Object oth) {
-            if (this == oth) return true;
-            else if (oth == null) return false;
-            else if (!getClass().isInstance(oth)) return false;
-            final OrderEntry o = (OrderEntry) oth;
+            if (this == oth) {
+                return true;
+            } else if (oth == null) {
+                return false;
+            } else if (!getClass().isInstance(oth)) {
+                return false;
+            }
+            OrderEntry o = (OrderEntry) oth;
             return key.equals(o.key) && order == o.order;
         }
 

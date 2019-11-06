@@ -63,13 +63,12 @@ public class ExpirationKCVSCache extends KCVSCache {
     private final long invalidationGracePeriodMS;
     private final CleanupThread cleanupThread;
 
-
     public ExpirationKCVSCache(KeyColumnValueStore store, String metricsName, long cacheTimeMS, long invalidationGracePeriodMS, long maximumByteSize) {
         super(store, metricsName);
         Preconditions.checkArgument(cacheTimeMS > 0, "Cache expiration must be positive: %s", cacheTimeMS);
         Preconditions.checkArgument(System.currentTimeMillis() + 1000L * 3600 * 24 * 365 * 100 + cacheTimeMS > 0, "Cache expiration time too large, overflow may occur: %s", cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
-        final int concurrencyLevel = Runtime.getRuntime().availableProcessors();
+        int concurrencyLevel = Runtime.getRuntime().availableProcessors();
         Preconditions.checkArgument(invalidationGracePeriodMS >= 0, "Invalid expiration grace period: %s", invalidationGracePeriodMS);
         this.invalidationGracePeriodMS = invalidationGracePeriodMS;
         CacheBuilder<KeySliceQuery, EntryList> cachebuilder = CacheBuilder.newBuilder()
@@ -101,16 +100,20 @@ public class ExpirationKCVSCache extends KCVSCache {
                 return store.getSlice(query, unwrapTx(txh));
             });
         } catch (Exception e) {
-            if (e instanceof JanusGraphException) throw (JanusGraphException) e;
-            else if (e.getCause() instanceof JanusGraphException) throw (JanusGraphException) e.getCause();
-            else throw new JanusGraphException(e);
+            if (e instanceof JanusGraphException) {
+                throw (JanusGraphException) e;
+            } else if (e.getCause() instanceof JanusGraphException) {
+                throw (JanusGraphException) e.getCause();
+            } else {
+                throw new JanusGraphException(e);
+            }
         }
     }
 
     @Override
     public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
-        final Map<StaticBuffer, EntryList> results = new HashMap<>(keys.size());
-        final List<StaticBuffer> remainingKeys = new ArrayList<>(keys.size());
+        Map<StaticBuffer, EntryList> results = new HashMap<>(keys.size());
+        List<StaticBuffer> remainingKeys = new ArrayList<>(keys.size());
         KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
         incActionBy(keys.size(), CacheMetricsAction.RETRIEVAL, txh);
         //Find all cached queries
@@ -197,21 +200,26 @@ public class ExpirationKCVSCache extends KCVSCache {
         @Override
         public void run() {
             while (true) {
-                if (stop) return;
+                if (stop) {
+                    return;
+                }
                 try {
-
                     penaltyCountdown.await();
                 } catch (InterruptedException e) {
-                    if (stop) return;
-                    else throw new RuntimeException("Cleanup thread got interrupted", e);
+                    if (stop) {
+                        return;
+                    } else {
+                        throw new RuntimeException("Cleanup thread got interrupted", e);
+                    }
                 }
                 //Do clean up work by invalidating all entries for expired keys
-                final Map<StaticBuffer, Long> expiredKeysCopy = new HashMap<>(expiredKeys.size());
+                Map<StaticBuffer, Long> expiredKeysCopy = new HashMap<>(expiredKeys.size());
                 for (Map.Entry<StaticBuffer, Long> expKey : expiredKeys.entrySet()) {
-                    if (isBeyondExpirationTime(expKey.getValue()))
+                    if (isBeyondExpirationTime(expKey.getValue())) {
                         expiredKeys.remove(expKey.getKey(), expKey.getValue());
-                    else if (getAge(expKey.getValue()) >= invalidationGracePeriodMS)
+                    } else if (getAge(expKey.getValue()) >= invalidationGracePeriodMS) {
                         expiredKeysCopy.put(expKey.getKey(), expKey.getValue());
+                    }
                 }
                 for (KeySliceQuery ksq : cache.asMap().keySet()) {
                     if (expiredKeysCopy.containsKey(ksq.getKey())) cache.invalidate(ksq);

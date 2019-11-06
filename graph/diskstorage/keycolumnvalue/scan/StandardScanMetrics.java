@@ -29,15 +29,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class StandardScanMetrics implements ScanMetrics {
 
-    private final EnumMap<Metric,AtomicLong> metrics;
-    private final ConcurrentMap<String,AtomicLong> customMetrics;
+    private final EnumMap<Metric, AtomicLong> metrics;
+    private final ConcurrentMap<String, AtomicLong> customMetrics;
 
     private static final Logger LOG = LoggerFactory.getLogger(StandardScanMetrics.class);
 
     public StandardScanMetrics() {
         metrics = new EnumMap<>(ScanMetrics.Metric.class);
         for (Metric m : Metric.values()) {
-            metrics.put(m,new AtomicLong(0));
+            metrics.put(m, new AtomicLong(0));
         }
         customMetrics = new ConcurrentHashMap<>();
     }
@@ -46,14 +46,15 @@ public class StandardScanMetrics implements ScanMetrics {
     public long getCustom(String metric) {
         AtomicLong counter = customMetrics.get(metric);
         if (counter == null) {
-            if (LOG.isDebugEnabled())
-                LOG.debug("[{}:{}] Returning zero by default (was null)",
-                        System.identityHashCode(customMetrics), metric);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[{}:{}] Returning zero by default (was null)", System.identityHashCode(customMetrics), metric);
+            }
             return 0;
         } else {
             long v = counter.get();
-            if (LOG.isDebugEnabled())
+            if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}:{}] Returning {}", System.identityHashCode(customMetrics), metric, v);
+            }
             return v;
         }
     }
@@ -61,18 +62,19 @@ public class StandardScanMetrics implements ScanMetrics {
     @Override
     public void incrementCustom(String metric, long delta) {
         AtomicLong counter = customMetrics.get(metric);
-        if (counter==null) {
-            customMetrics.putIfAbsent(metric,new AtomicLong(0));
+        if (counter == null) {
+            customMetrics.putIfAbsent(metric, new AtomicLong(0));
             counter = customMetrics.get(metric);
         }
         counter.addAndGet(delta);
-        if (LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled()) {
             LOG.debug("[{}:{}] Incremented by {}", System.identityHashCode(customMetrics), metric, delta);
+        }
     }
 
     @Override
     public void incrementCustom(String metric) {
-        incrementCustom(metric,1);
+        incrementCustom(metric, 1);
     }
 
     @Override

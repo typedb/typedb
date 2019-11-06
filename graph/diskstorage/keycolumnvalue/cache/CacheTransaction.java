@@ -109,10 +109,11 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     }
 
     private KCVMutation convert(KCVEntryMutation mutation) {
-        if (!mutation.hasDeletions())
+        if (!mutation.hasDeletions()) {
             return new KCVMutation(mutation.getAdditions(), KeyColumnValueStore.NO_DELETIONS);
-        else
+        } else {
             return new KCVMutation(mutation.getAdditions(), Lists.newArrayList(Iterables.transform(mutation.getDeletions(), KCVEntryMutation.ENTRY2COLUMN_FCT)));
+        }
     }
 
     private void flushInternal() {

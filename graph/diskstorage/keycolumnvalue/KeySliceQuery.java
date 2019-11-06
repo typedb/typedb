@@ -21,7 +21,6 @@ package grakn.core.graph.diskstorage.keycolumnvalue;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 
 /**
  * Extends {@link SliceQuery} by a key that identifies the location of the slice in the key-ring.
@@ -66,9 +65,13 @@ public class KeySliceQuery extends SliceQuery {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (other == null) {
+            return false;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         KeySliceQuery oth = (KeySliceQuery) other;
         return key.equals(oth.key) && super.equals(oth);
     }

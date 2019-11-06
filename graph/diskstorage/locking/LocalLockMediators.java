@@ -54,12 +54,12 @@ public enum LocalLockMediators implements LocalLockMediatorProvider {
 
         if (null == m) {
             m = new LocalLockMediator<>(namespace, times);
-            @SuppressWarnings("unchecked") final LocalLockMediator<T> old = (LocalLockMediator<T>) mediators.putIfAbsent(namespace, m);
-            if (null != old)
+            @SuppressWarnings("unchecked") LocalLockMediator<T> old = (LocalLockMediator<T>) mediators.putIfAbsent(namespace, m);
+            if (null != old) {
                 m = old;
-            else
-                LOG.debug("Local lock mediator instantiated for namespace {}",
-                        namespace);
+            } else {
+                LOG.debug("Local lock mediator instantiated for namespace {}", namespace);
+            }
         }
 
         return m;

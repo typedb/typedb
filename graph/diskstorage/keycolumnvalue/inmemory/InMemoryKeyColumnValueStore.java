@@ -134,10 +134,10 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         public RecordIterator<Entry> getEntries() {
             ensureOpen();
 
-            if (columnSlice == null)
+            if (columnSlice == null) {
                 throw new IllegalStateException("getEntries() requires SliceQuery to be set.");
-
-            final KeySliceQuery keySlice = new KeySliceQuery(currentRow.getKey(), columnSlice);
+            }
+            KeySliceQuery keySlice = new KeySliceQuery(currentRow.getKey(), columnSlice);
             return new RecordIterator<Entry>() {
                 private final Iterator<Entry> items = currentRow.getValue().getSlice(keySlice, transaction).iterator();
 
@@ -169,14 +169,16 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         public boolean hasNext() {
             ensureOpen();
 
-            if (null != nextRow)
+            if (null != nextRow) {
                 return true;
+            }
 
             while (rows.hasNext()) {
                 nextRow = rows.next();
                 List<Entry> entries = nextRow.getValue().getSlice(new KeySliceQuery(nextRow.getKey(), columnSlice), transaction);
-                if (null != entries && 0 < entries.size())
+                if (null != entries && 0 < entries.size()) {
                     break;
+                }
             }
 
             return null != nextRow;
@@ -200,8 +202,9 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
         }
 
         private void ensureOpen() {
-            if (isClosed)
+            if (isClosed) {
                 throw new IllegalStateException("Iterator has been closed.");
+            }
         }
 
         @Override

@@ -186,7 +186,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     public static final StaticBuffer LOCK_COL_START = BufferUtil.zeroBuffer(1);
     public static final StaticBuffer LOCK_COL_END = BufferUtil.oneBuffer(9);
 
-    private static final Logger log = LoggerFactory.getLogger(ConsistentKeyLocker.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConsistentKeyLocker.class);
 
     public static class Builder extends AbstractLocker.Builder<ConsistentKeyLockStatus, Builder> {
         // Required (no default)
@@ -262,7 +262,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         public ConsistentKeyLocker build() {
             preBuild();
 
-            final LockCleanerService cleaner;
+            LockCleanerService cleaner;
 
             switch (cleanerConfig) {
                 case STANDARD:
@@ -305,7 +305,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                                 int lockRetryCount, Duration lockExpire,
                                 LockerState<ConsistentKeyLockStatus> lockState,
                                 LockCleanerService cleanerService) {
-        super(rid, times, serializer, llm, lockState, lockExpire, log);
+        super(rid, times, serializer, llm, lockState, lockExpire, LOG);
         this.store = store;
         this.manager = manager;
         this.lockWait = lockWait;
@@ -373,23 +373,23 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         if (null != error) {
             if (error instanceof TemporaryBackendException) {
                 // Log error and continue the loop
-                log.warn("Temporary exception during lock write", error);
+                LOG.warn("Temporary exception during lock write", error);
             } else {
                 /*
                  * A PermanentStorageException or an unchecked exception. Try to
                  * delete any previous writes and then die. Do not retry even if
                  * we have retries left.
                  */
-                log.error("Fatal exception encountered during attempted lock write", error);
+                LOG.error("Fatal exception encountered during attempted lock write", error);
                 WriteResult dwr = tryDeleteLockOnce(lockKey, wr.getLockCol(), txh);
                 if (!dwr.isSuccessful()) {
-                    log.warn("Failed to delete lock write: abandoning potentially-unreleased lock on {}",
+                    LOG.warn("Failed to delete lock write: abandoning potentially-unreleased lock on {}",
                             lockID, dwr.getThrowable());
                 }
                 throw error;
             }
         } else {
-            log.warn("Lock write succeeded but took too long: duration {} exceeded limit {}",
+            LOG.warn("Lock write succeeded but took too long: duration {} exceeded limit {}",
                     wr.getDuration(), lockWait);
         }
     }
@@ -404,7 +404,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             store.mutate(key, Collections.singletonList(newLockEntry),
                     null == del ? KeyColumnValueStore.NO_DELETIONS : Collections.singletonList(del), newTx);
         } catch (BackendException e) {
-            log.debug("Lock write attempt failed with exception", e);
+            LOG.debug("Lock write attempt failed with exception", e);
             t = e;
         }
         writeTimer.stop();
@@ -427,15 +427,14 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
     }
 
     @Override
-    protected void checkSingleLock(KeyColumn kc, ConsistentKeyLockStatus ls,
-                                   final StoreTransaction tx) throws BackendException, InterruptedException {
-
-        if (ls.isChecked())
+    protected void checkSingleLock(KeyColumn kc, ConsistentKeyLockStatus ls, StoreTransaction tx) throws BackendException, InterruptedException {
+        if (ls.isChecked()) {
             return;
+        }
 
         // Sleep, if necessary
         // We could be smarter about sleeping by iterating oldest -> latest...
-        final Instant now = times.sleepPast(ls.getWriteTimestamp().plus(lockWait));
+        Instant now = times.sleepPast(ls.getWriteTimestamp().plus(lockWait));
 
         // Slice the store
         KeySliceQuery ksq = new KeySliceQuery(serializer.toLockKey(kc.getKey(), kc.getColumn()), LOCK_COL_START,
@@ -443,17 +442,18 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         List<Entry> claimEntries = getSliceWithRetries(ksq, tx);
 
         // Extract timestamp and rid from the column in each returned Entry...
-        final Iterable<TimestampRid> iterable = Iterables.transform(claimEntries,
+        Iterable<TimestampRid> iterable = Iterables.transform(claimEntries,
                 e -> serializer.fromLockColumn(e.getColumnAs(StaticBuffer.STATIC_FACTORY), times));
         // ...and then filter out the TimestampRid objects with expired timestamps
         // (This doesn't use Iterables.filter and Predicate so that we can throw a checked exception if necessary)
-        final List<TimestampRid> unexpiredTRs = new ArrayList<>(Iterables.size(iterable));
+        List<TimestampRid> unexpiredTRs = new ArrayList<>(Iterables.size(iterable));
         for (TimestampRid tr : iterable) {
-            final Instant cutoffTime = now.minus(lockExpire);
+            Instant cutoffTime = now.minus(lockExpire);
             if (tr.getTimestamp().isBefore(cutoffTime)) {
-                log.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
-                if (null != cleanerService)
+                LOG.warn("Discarded expired claim on {} with timestamp {}", kc, tr.getTimestamp());
+                if (null != cleanerService) {
                     cleanerService.clean(kc, cutoffTime, tx);
+                }
                 // Locks that this instance wrote that have now expired should not only LOG
                 // but also throw a descriptive exception
                 if (rid.equals(tr.getRid()) && ls.getWriteTimestamp().equals(tr.getTimestamp())) {
@@ -480,18 +480,17 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             try {
                 return store.getSlice(ksq, tx);
             } catch (PermanentBackendException e) {
-                log.error("Failed to check locks", e);
+                LOG.error("Failed to check locks", e);
                 throw new PermanentLockingException(e);
             } catch (TemporaryBackendException e) {
-                log.warn("Temporary storage failure while checking locks", e);
+                LOG.warn("Temporary storage failure while checking locks", e);
             }
         }
 
         throw new TemporaryBackendException("Maximum retries (" + lockRetryCount + ") exceeded while checking locks");
     }
 
-    private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls,
-                                Iterable<TimestampRid> claimTRs) throws BackendException {
+    private void checkSeniority(KeyColumn target, ConsistentKeyLockStatus ls, Iterable<TimestampRid> claimTRs) throws BackendException {
 
         int trCount = 0;
 
@@ -499,18 +498,18 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
             trCount++;
 
             if (!rid.equals(tr.getRid())) {
-                final String msg = "Lock on " + target + " already held by " + tr.getRid() + " (we are " + rid + ")";
-                log.debug(msg);
+
+                String msg = "Lock on " + target + " already held by " + tr.getRid() + " (we are " + rid + ")";
+                LOG.debug(msg);
                 throw new TemporaryLockingException(msg);
             }
 
             if (tr.getTimestamp().equals(ls.getWriteTimestamp())) {
-//                LOG.debug("Checked lock {} in store {}", target, store.getName());
-                log.debug("Checked lock {}", target);
+                LOG.debug("Checked lock {}", target);
                 return;
             }
 
-            log.warn("Skipping outdated lock on {} with our rid ({}) but mismatched timestamp (actual ts {}, expected ts {})",
+            LOG.warn("Skipping outdated lock on {} with our rid ({}) but mismatched timestamp (actual ts {}, expected ts {})",
                     target, tr.getRid(), tr.getTimestamp(), ls.getWriteTimestamp());
         }
 
@@ -536,7 +535,8 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
         if (0 == trCount) {
             throw new TemporaryLockingException("No lock columns found for " + target);
         } else {
-            final String msg = "Read "
+
+            String msg = "Read "
                     + trCount
                     + " locks with our rid "
                     + rid
@@ -555,10 +555,10 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
                 store.mutate(serializer.toLockKey(kc.getKey(), kc.getColumn()), ImmutableList.of(), deletions, newTx);
                 return;
             } catch (TemporaryBackendException e) {
-                log.warn("Temporary storage exception while deleting lock", e);
+                LOG.warn("Temporary storage exception while deleting lock", e);
                 // don't return -- iterate and retry
             } catch (BackendException e) {
-                log.error("Storage exception while deleting lock", e);
+                LOG.error("Storage exception while deleting lock", e);
                 return; // give up on this lock
             }
         }

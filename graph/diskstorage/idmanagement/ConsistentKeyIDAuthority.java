@@ -293,13 +293,14 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
                             partition, idNamespace, uniquePID, nextStart, blockSize, idBlockUpperBound, uniqueIdBitWidth);
                     if (randomizeUniqueId) {
                         exhaustedUniquePIDs.add(uniquePID);
-                        if (exhaustedUniquePIDs.size() == randomUniqueIDLimit)
+                        if (exhaustedUniquePIDs.size() == randomUniqueIDLimit) {
                             throw new IDPoolExhaustedException(String.format("Exhausted %d uniqueid(s) on partition(%d)-namespace(%d): %s",
                                     exhaustedUniquePIDs.size(), partition, idNamespace, Joiner.on(",").join(exhaustedUniquePIDs)));
-                        else
+                        } else {
                             throw new UniqueIDExhaustedException(
                                     String.format("Exhausted ID partition(%d)-namespace(%d) with uniqueid %d (uniqueid attempt %d/%d)",
                                             partition, idNamespace, uniquePID, exhaustedUniquePIDs.size(), randomUniqueIDLimit));
+                        }
                     }
                     throw new IDPoolExhaustedException("Exhausted id block for partition(" + partition + ")-namespace(" + idNamespace + ") with upper bound: " + idBlockUpperBound);
                 }
@@ -336,11 +337,12 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
                         // Read all id allocation claims on this partition, for the counter value we're claiming
                         List<Entry> blocks = BackendOperation.execute(
                                 (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, slice[0], slice[1]), txh), this, times);
-                        if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
-                        if (blocks.isEmpty())
-                            throw new PermanentBackendException("It seems there is a race-condition in the block application. " +
-                                    "If you have multiple JanusGraph instances running on one physical machine, ensure that they have unique machine idAuthorities");
-
+                        if (blocks == null) {
+                            throw new TemporaryBackendException("Could not read from storage");
+                        }
+                        if (blocks.isEmpty()) {
+                            throw new PermanentBackendException("It seems there is a race-condition in the block application. If you have multiple JanusGraph instances running on one physical machine, ensure that they have unique machine idAuthorities");
+                        }
                         /* If our claim is the lexicographically first one, then our claim
                          * is the most senior one and we own this id block
                          */
@@ -379,8 +381,9 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
                                 break;
                             } catch (BackendException e) {
                                 LOG.warn("Storage exception while deleting old block application - retrying in {}", rollbackWaitTime, e);
-                                if (!rollbackWaitTime.isZero())
+                                if (!rollbackWaitTime.isZero()) {
                                     sleepAndConvertInterrupts(rollbackWaitTime);
+                                }
                             }
                         }
                     }

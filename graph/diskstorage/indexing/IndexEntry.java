@@ -19,10 +19,10 @@
 package grakn.core.graph.diskstorage.indexing;
 
 import com.google.common.base.Preconditions;
-import org.apache.commons.lang.StringUtils;
 import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.MetaAnnotatable;
 import grakn.core.graph.diskstorage.MetaAnnotated;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.Map;
 
@@ -47,24 +47,27 @@ public class IndexEntry implements MetaAnnotated, MetaAnnotatable {
         this.field = field;
         this.value = value;
 
-        if (metadata == null || metadata == EntryMetaData.EMPTY_METADATA)
+        if (metadata == null || metadata == EntryMetaData.EMPTY_METADATA) {
             return;
+        }
 
-        for (Map.Entry<EntryMetaData, Object> e : metadata.entrySet())
+        for (Map.Entry<EntryMetaData, Object> e : metadata.entrySet()) {
             setMetaData(e.getKey(), e.getValue());
+        }
     }
 
     //########## META DATA ############
     //copied from StaticArrayEntry
 
-    private Map<EntryMetaData,Object> metadata = EntryMetaData.EMPTY_METADATA;
+    private Map<EntryMetaData, Object> metadata = EntryMetaData.EMPTY_METADATA;
 
     @Override
     public synchronized Object setMetaData(EntryMetaData key, Object value) {
-        if (metadata == EntryMetaData.EMPTY_METADATA)
+        if (metadata == EntryMetaData.EMPTY_METADATA) {
             metadata = new EntryMetaData.Map();
+        }
 
-        return metadata.put(key,value);
+        return metadata.put(key, value);
     }
 
     @Override
@@ -73,7 +76,7 @@ public class IndexEntry implements MetaAnnotated, MetaAnnotatable {
     }
 
     @Override
-    public Map<EntryMetaData,Object> getMetaData() {
+    public Map<EntryMetaData, Object> getMetaData() {
         return metadata;
     }
 

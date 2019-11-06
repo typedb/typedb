@@ -39,7 +39,7 @@ public interface IndexProvider extends IndexInformation {
      * An obscure unicode character (•) provided as a convenience for implementations of {@link #mapKey2Field}, for
      * instance to replace spaces in property keys. See #777.
      */
-    char REPLACEMENT_CHAR = '\u2022';
+    char REPLACEMENT_CHAR = '•';
 
     static void checkKeyValidity(String key) {
         Preconditions.checkArgument(!StringUtils.containsAny(key, new char[]{IndexProvider.REPLACEMENT_CHAR}),

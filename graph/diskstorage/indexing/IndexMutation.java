@@ -23,9 +23,6 @@ import com.google.common.base.Preconditions;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.Mutation;
-import grakn.core.graph.diskstorage.indexing.IndexEntry;
-import grakn.core.graph.diskstorage.indexing.IndexProvider;
-import grakn.core.graph.diskstorage.indexing.KeyInformation;
 
 import java.util.AbstractMap;
 import java.util.List;
@@ -94,8 +91,9 @@ public class IndexMutation extends Mutation<IndexEntry, IndexEntry> {
     }
 
     private static int determineTTL(List<IndexEntry> additions) {
-        if (additions == null || additions.isEmpty())
+        if (additions == null || additions.isEmpty()) {
             return 0;
+        }
 
         int ttl = -1;
         for (IndexEntry add : additions) {
@@ -105,7 +103,9 @@ public class IndexMutation extends Mutation<IndexEntry, IndexEntry> {
                         "Index only supports TTL meta data. Found: %s", add.getMetaData());
                 ittl = (Integer) add.getMetaData().get(EntryMetaData.TTL);
             }
-            if (ttl < 0) ttl = ittl;
+            if (ttl < 0) {
+                ttl = ittl;
+            }
             Preconditions.checkArgument(ttl == ittl, "Index only supports uniform TTL values across all " +
                     "index fields, but got additions: %s", additions);
         }

@@ -37,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * transaction in a process holds any given lock. This class prevents two
  * transactions in a single process from concurrently writing the same lock to a
  * distributed key-value store.
- *
  */
 
 public class LocalLockMediator<T> {
@@ -225,9 +224,9 @@ public class LocalLockMediator<T> {
          */
         @Override
         public int hashCode() {
-            if (0 == hashCode)
+            if (0 == hashCode) {
                 hashCode = holder.hashCode();
-
+            }
             return hashCode;
         }
 
@@ -237,12 +236,15 @@ public class LocalLockMediator<T> {
          */
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
             /*
              * This warning suppression is harmless because we are only going to
              * call other.holder.equals(...), and since equals(...) is part of

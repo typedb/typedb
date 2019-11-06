@@ -59,7 +59,7 @@ public class ConsistentKeyLockStatus implements LockStatus {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
+        int prime = 31;
         int result = 1;
         result = prime * result + (checked ? 1231 : 1237);
         result = prime * result + ((expire == null) ? 0 : expire.hashCode());
@@ -68,15 +68,19 @@ public class ConsistentKeyLockStatus implements LockStatus {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         ConsistentKeyLockStatus other = (ConsistentKeyLockStatus) obj;
-        if (checked != other.checked)
+        if (checked != other.checked) {
             return false;
+        }
         if (expire == null) {
             return other.expire == null;
         } else {

@@ -279,7 +279,11 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
     private boolean equalKey(StaticBuffer concat, StaticBuffer key) {
         int keyLength = getKeyLength(concat);
-        for (int i = 0; i < keyLength; i++) if (concat.getByte(i) != key.getByte(i)) return false;
+        for (int i = 0; i < keyLength; i++) {
+            if (concat.getByte(i) != key.getByte(i)) {
+                return false;
+            }
+        }
         return true;
     }
 
@@ -330,9 +334,9 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
                 }
                 currentKeyReturned = false;
 
-                if (currentIterator != null)
+                if (currentIterator != null) {
                     currentIterator.close();
-
+                }
                 currentIterator = new EntryIterator();
             }
 
@@ -341,9 +345,9 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
 
         @Override
         public StaticBuffer next() {
-            if (!hasNext())
+            if (!hasNext()) {
                 throw new NoSuchElementException();
-
+            }
             currentKeyReturned = true;
             return currentKey;
         }
@@ -361,8 +365,9 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             public boolean hasNext() {
                 Preconditions.checkState(open);
 
-                if (current == null || count >= query.getLimit())
+                if (current == null || count >= query.getLimit()) {
                     return false;
+                }
 
                 // We need to check what is "current" right now and notify parent iterator
                 // about change of main key otherwise we would be missing portion of the results
@@ -380,9 +385,9 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
             public Entry next() {
                 Preconditions.checkState(open);
 
-                if (!hasNext())
+                if (!hasNext()) {
                     throw new NoSuchElementException();
-
+                }
                 Entry kve = getEntry(current);
                 current = iterator.hasNext() ? iterator.next() : null;
                 count++;

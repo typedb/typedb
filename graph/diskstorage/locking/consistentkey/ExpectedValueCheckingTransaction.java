@@ -172,8 +172,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         for (ExpectedValueCheckingStore store : expectedValuesByStore.keySet()) {
             Locker locker = store.getLocker();
             // Ignore locks on stores without a locker
-            if (null == locker)
+            if (null == locker) {
                 continue;
+            }
             locker.checkLocks(lt);
         }
     }
@@ -232,8 +233,9 @@ public class ExpectedValueCheckingTransaction implements StoreTransaction {
         // Call getSlice on the wrapped store using the quorum+ consistency tx
         Iterable<Entry> actualEntries = store.getBackingStore().getSlice(ksq, strongConsistentTx);
 
-        if (null == actualEntries)
+        if (null == actualEntries) {
             actualEntries = ImmutableList.of();
+        }
 
         /*
          * Discard any columns which do not exactly match kc.getColumn().

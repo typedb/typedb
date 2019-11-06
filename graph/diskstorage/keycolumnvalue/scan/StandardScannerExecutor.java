@@ -166,8 +166,9 @@ class StandardScannerExecutor extends AbstractFuture<ScanMetrics> implements Jan
                             retryCount++;
                             qr = queue.poll(TIME_PER_TRY, TimeUnit.MILLISECONDS);
                         }
-                        if (qr == null && !pullThreads[i].isFinished())
+                        if (qr == null && !pullThreads[i].isFinished()) {
                             throw new TemporaryBackendException("Timed out waiting for next row data - storage error likely");
+                        }
                     }
                     currentResults[i] = qr;
                 }
