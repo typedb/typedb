@@ -61,10 +61,15 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
 
     @Override
     public boolean hasNext() {
-        if (iterator == null) iterator = getNewIterator(currentLimit);
-        if (count < currentLimit)
+        if (iterator == null) {
+            iterator = getNewIterator(currentLimit);
+        }
+        if (count < currentLimit) {
             return iterator.hasNext();
-        if (currentLimit >= maxLimit) return false;
+        }
+        if (currentLimit >= maxLimit) {
+            return false;
+        }
 
         //Get an iterator with an updated limit
         currentLimit = (int) Math.min(maxLimit, Math.round(currentLimit * 2.0));
@@ -74,17 +79,17 @@ public abstract class LimitAdjustingIterator<R> implements Iterator<R> {
         We need to iterate out the iterator to the point where we last left of. This is pretty expensive and hence
         it should be ensured that the initial limit is a good guesstimate.
          */
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < count; i++) {
             iterator.next();
-
+        }
         return hasNext();
     }
 
     @Override
     public R next() {
-        if (!hasNext())
+        if (!hasNext()) {
             throw new NoSuchElementException();
-
+        }
         count++;
         return iterator.next();
     }

@@ -59,8 +59,11 @@ public class StandardTransactionId implements TransactionId {
 
     @Override
     public boolean equals(Object oth) {
-        if (this == oth) return true;
-        else if (!getClass().isInstance(oth)) return false;
+        if (this == oth) {
+            return true;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         StandardTransactionId id = (StandardTransactionId) oth;
         return instanceId.equals(id.instanceId) && transactionId == id.transactionId
                 && transactionTime.equals(id.transactionTime);

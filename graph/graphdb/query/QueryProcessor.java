@@ -66,8 +66,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
     @Override
     public Iterator<R> iterator() {
-        if (query.isEmpty())
+        if (query.isEmpty()) {
             return Collections.emptyIterator();
+        }
 
         return new ResultSetIterator(getUnfoldedIterator(), (query.hasLimit()) ? query.getLimit() : Query.NO_LIMIT);
     }
@@ -150,9 +151,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
             List<R> all = Lists.newArrayList(executor.execute(query,
                     backendQueryHolder.getBackendQuery().updateLimit(MAX_SORT_ITERATION),
                     backendQueryHolder.getExecutionInfo(), backendQueryHolder.getProfiler()));
-            if (all.size() >= MAX_SORT_ITERATION)
-                throw new QueryException("Could not execute query since pre-sorting requires fetching more than " +
-                        MAX_SORT_ITERATION + " elements. Consider rewriting the query to exploit sort orders");
+            if (all.size() >= MAX_SORT_ITERATION) {
+                throw new QueryException("Could not execute query since pre-sorting requires fetching more than " + MAX_SORT_ITERATION + " elements. Consider rewriting the query to exploit sort orders");
+            }
             all.sort(query.getSortOrder());
             iterator = all.iterator();
         }
@@ -195,8 +196,9 @@ public class QueryProcessor<Q extends ElementQuery<R, B>, R extends JanusGraphEl
 
         @Override
         public Iterator<R> getNewIterator(int newLimit) {
-            if (!backendQuery.hasLimit() || newLimit > backendQuery.getLimit())
+            if (!backendQuery.hasLimit() || newLimit > backendQuery.getLimit()) {
                 backendQuery = backendQuery.updateLimit(newLimit);
+            }
             return executor.execute(query, backendQuery, executionInfo, profiler);
         }
 

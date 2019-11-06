@@ -24,9 +24,6 @@ import com.google.common.collect.Lists;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.graphdb.internal.ElementLifeCycle;
 import grakn.core.graph.graphdb.internal.InternalVertex;
-import grakn.core.graph.graphdb.relations.AbstractVertexProperty;
-import grakn.core.graph.graphdb.relations.ReassignableRelation;
-import grakn.core.graph.graphdb.relations.StandardRelation;
 import grakn.core.graph.graphdb.types.system.ImplicitKey;
 
 import java.util.Collections;
@@ -90,9 +87,11 @@ public class StandardVertexProperty extends AbstractVertexProperty implements St
 
     @Override
     public <O> O removePropertyDirect(PropertyKey key) {
-        if (!properties.isEmpty())
+        if (!properties.isEmpty()) {
             return (O) properties.remove(key);
-        else return null;
+        } else {
+            return null;
+        }
     }
 
     @Override

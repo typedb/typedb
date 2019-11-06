@@ -61,8 +61,9 @@ public class CacheVertexProperty extends AbstractVertexProperty {
     private void copyProperties(InternalRelation to) {
         for (Map.Entry<Long, Object> entry : getPropertyMap().properties().entrySet()) {
             PropertyKey type = tx().getExistingPropertyKey(entry.getKey());
-            if (!(type instanceof ImplicitKey))
+            if (!(type instanceof ImplicitKey)) {
                 to.setPropertyDirect(type, entry.getValue());
+            }
         }
     }
 
@@ -110,9 +111,11 @@ public class CacheVertexProperty extends AbstractVertexProperty {
 
     @Override
     public byte getLifeCycle() {
-        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(longId()))
+        if ((getVertex(0).hasRemovedRelations() || getVertex(0).isRemoved()) && tx().isRemovedRelation(longId())) {
             return ElementLifeCycle.Removed;
-        else return ElementLifeCycle.Loaded;
+        } else {
+            return ElementLifeCycle.Loaded;
+        }
     }
 
     @Override

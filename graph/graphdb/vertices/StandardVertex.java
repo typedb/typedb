@@ -69,8 +69,9 @@ public class StandardVertex extends AbstractVertex {
                 addedRelations = new SimpleAddedRelations();
             } else {
                 synchronized (this) {
-                    if (addedRelations == AddedRelationsContainer.EMPTY)
+                    if (addedRelations == AddedRelationsContainer.EMPTY) {
                         addedRelations = new ConcurrentAddedRelations();
+                    }
                 }
             }
         }

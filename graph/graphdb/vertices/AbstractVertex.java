@@ -55,9 +55,9 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public final InternalVertex it() {
-        if (tx.isOpen())
+        if (tx.isOpen()) {
             return this;
-
+        }
         InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(longId());
         if (next == null) throw InvalidElementException.removedException(this);
         else return next;
@@ -116,10 +116,7 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
         }
     }
 
-	/* ---------------------------------------------------------------
-	 * JanusGraphRelation Iteration/Access
-	 * ---------------------------------------------------------------
-	 */
+    // JanusGraphRelation Iteration/Access
 
     @Override
     public String label() {
@@ -127,14 +124,14 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     }
 
     protected Vertex getVertexLabelInternal() {
-        return Iterables.getOnlyElement(tx().query(this).noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(),null);
+        return Iterables.getOnlyElement(tx().query(this).noPartitionRestriction().type(BaseLabel.VertexLabelEdge).direction(Direction.OUT).vertices(), null);
     }
 
     @Override
     public VertexLabel vertexLabel() {
         Vertex label = getVertexLabelInternal();
-        if (label==null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
-        else return (VertexLabelVertex)label;
+        if (label == null) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
+        else return (VertexLabelVertex) label;
     }
 
     @Override
@@ -145,17 +142,15 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public <O> O valueOrNull(PropertyKey key) {
-        return (O)property(key.name()).orElse(null);
+        return (O) property(key.name()).orElse(null);
     }
 
-	/* ---------------------------------------------------------------
-	 * Convenience Methods for JanusGraphElement Creation
-	 * ---------------------------------------------------------------
-	 */
 
-    public<V> JanusGraphVertexProperty<V> property(String key, V value, Object... keyValues) {
+    // Convenience Methods for JanusGraphElement Creation
+
+    public <V> JanusGraphVertexProperty<V> property(String key, V value, Object... keyValues) {
         JanusGraphVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key, value), value);
-        ElementHelper.attachProperties(p,keyValues);
+        ElementHelper.attachProperties(p, keyValues);
         return p;
     }
 
@@ -163,28 +158,28 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
     public <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues) {
         //NOTE that cardinality is ignored as we are enforcing these cheks at Grakn level
         JanusGraphVertexProperty<V> p = tx().addProperty(it(), tx().getOrCreatePropertyKey(key, value), value);
-        ElementHelper.attachProperties(p,keyValues);
+        ElementHelper.attachProperties(p, keyValues);
         return p;
     }
 
     @Override
     public JanusGraphEdge addEdge(String label, Vertex vertex, Object... keyValues) {
-        Preconditions.checkArgument(vertex instanceof JanusGraphVertex,"Invalid vertex provided: %s",vertex);
+        Preconditions.checkArgument(vertex instanceof JanusGraphVertex, "Invalid vertex provided: %s", vertex);
         JanusGraphEdge edge = tx().addEdge(it(), (JanusGraphVertex) vertex, tx().getOrCreateEdgeLabel(label));
-        ElementHelper.attachProperties(edge,keyValues);
+        ElementHelper.attachProperties(edge, keyValues);
         return edge;
     }
 
     public Iterator<Edge> edges(Direction direction, String... labels) {
-        return (Iterator)query().direction(direction).labels(labels).edges().iterator();
+        return (Iterator) query().direction(direction).labels(labels).edges().iterator();
     }
 
     public <V> Iterator<VertexProperty<V>> properties(String... keys) {
-        return (Iterator)query().direction(Direction.OUT).keys(keys).properties().iterator();
+        return (Iterator) query().direction(Direction.OUT).keys(keys).properties().iterator();
     }
 
     public Iterator<Vertex> vertices(Direction direction, String... edgeLabels) {
-        return (Iterator)query().direction(direction).labels(edgeLabels).vertices().iterator();
+        return (Iterator) query().direction(direction).labels(edgeLabels).vertices().iterator();
 
     }
 

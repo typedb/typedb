@@ -30,28 +30,38 @@ public class ElementUtils {
     public static long getVertexId(Object id) {
         if (null == id) throw new IllegalArgumentException("Vertex ID cannot be null");
 
-        if (id instanceof JanusGraphVertex) //allows vertices to be "re-attached" to the current transaction
+        if (id instanceof JanusGraphVertex) { //allows vertices to be "re-attached" to the current transaction
             return ((JanusGraphVertex) id).longId();
-        if (id instanceof Long)
+        }
+        if (id instanceof Long) {
             return (Long) id;
-        if (id instanceof Number)
+        }
+        if (id instanceof Number) {
             return ((Number) id).longValue();
+        }
 
         // handles the case of a user passing a "detached" Vertex (DetachedVertex, StarVertex, etc).
-        if (id instanceof Vertex)
+        if (id instanceof Vertex) {
             return Long.parseLong(((Vertex) id).id().toString());
-        else
+        } else {
             return Long.valueOf(id.toString());
+        }
     }
 
     public static RelationIdentifier getEdgeId(Object id) {
         if (null == id) throw new IllegalArgumentException("Edge ID cannot be null");
 
-        if (id instanceof JanusGraphEdge) return (RelationIdentifier) ((JanusGraphEdge) id).id();
-        else if (id instanceof RelationIdentifier) return (RelationIdentifier) id;
-        else if (id instanceof String) return RelationIdentifier.parse((String) id);
-        else if (id instanceof long[]) return RelationIdentifier.get((long[]) id);
-        else if (id instanceof int[]) return RelationIdentifier.get((int[]) id);
+        if (id instanceof JanusGraphEdge) {
+            return (RelationIdentifier) ((JanusGraphEdge) id).id();
+        } else if (id instanceof RelationIdentifier) {
+            return (RelationIdentifier) id;
+        } else if (id instanceof String) {
+            return RelationIdentifier.parse((String) id);
+        } else if (id instanceof long[]) {
+            return RelationIdentifier.get((long[]) id);
+        } else if (id instanceof int[]) {
+            return RelationIdentifier.get((int[]) id);
+        }
 
         throw new IllegalArgumentException("Edge ID format not recognised.");
     }

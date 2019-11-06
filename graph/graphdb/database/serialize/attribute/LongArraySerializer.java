@@ -39,7 +39,7 @@ public class LongArraySerializer extends ArraySerializer implements AttributeSer
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.setLong(array,pos,((Long)value));
+        Array.setLong(array, pos, ((Long) value));
     }
 
     //############### Serialization ###################
@@ -47,13 +47,17 @@ public class LongArraySerializer extends ArraySerializer implements AttributeSer
     @Override
     public long[] read(ScanBuffer buffer) {
         int length = getLength(buffer);
-        if (length<0) return null;
+        if (length < 0) return null;
         return buffer.getLongs(length);
     }
 
     @Override
     public void write(WriteBuffer buffer, long[] attribute) {
-        writeLength(buffer,attribute);
-        if (attribute!=null) for (long anAttribute : attribute) buffer.putLong(anAttribute);
+        writeLength(buffer, attribute);
+        if (attribute != null) {
+            for (long anAttribute : attribute) {
+                buffer.putLong(anAttribute);
+            }
+        }
     }
 }

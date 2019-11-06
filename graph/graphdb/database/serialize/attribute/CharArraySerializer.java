@@ -40,7 +40,7 @@ public class CharArraySerializer extends ArraySerializer implements AttributeSer
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.setChar(array,pos,((Character)value));
+        Array.setChar(array, pos, ((Character) value));
     }
 
     //############### Serialization ###################
@@ -48,13 +48,17 @@ public class CharArraySerializer extends ArraySerializer implements AttributeSer
     @Override
     public char[] read(ScanBuffer buffer) {
         int length = getLength(buffer);
-        if (length<0) return null;
+        if (length < 0) return null;
         return buffer.getChars(length);
     }
 
     @Override
     public void write(WriteBuffer buffer, char[] attribute) {
-        writeLength(buffer,attribute);
-        if (attribute!=null) for (char anAttribute : attribute) buffer.putChar(anAttribute);
+        writeLength(buffer, attribute);
+        if (attribute != null) {
+            for (char anAttribute : attribute) {
+                buffer.putChar(anAttribute);
+            }
+        }
     }
 }

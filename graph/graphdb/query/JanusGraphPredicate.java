@@ -128,9 +128,10 @@ public interface JanusGraphPredicate extends BiPredicate<Object, Object> {
         }
 
         public static JanusGraphPredicate convert(BiPredicate p) {
-            final JanusGraphPredicate janusgraphPredicate = convertInternal(p);
-            if (janusgraphPredicate == null)
+            JanusGraphPredicate janusgraphPredicate = convertInternal(p);
+            if (janusgraphPredicate == null) {
                 throw new IllegalArgumentException("JanusGraph does not support the given predicate: " + p);
+            }
             return janusgraphPredicate;
         }
 

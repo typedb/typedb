@@ -285,8 +285,11 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) return true;
-            else if (!getClass().isInstance(other)) return false;
+            if (this == other) {
+                return true;
+            } else if (!getClass().isInstance(other)) {
+                return false;
+            }
             IndexRestore r = (IndexRestore) other;
             return r.elementId.equals(elementId) && indexId == r.indexId;
         }

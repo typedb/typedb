@@ -85,21 +85,25 @@ public final class RelationIdentifier implements Serializable {
     }
 
     public static RelationIdentifier get(long[] ids) {
-        if (ids.length != 3 && ids.length != 4)
+        if (ids.length != 3 && ids.length != 4) {
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
+        }
         for (int i = 0; i < 3; i++) {
-            if (ids[i] < 0)
+            if (ids[i] < 0) {
                 throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
+            }
         }
         return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
     }
 
     public static RelationIdentifier get(int[] ids) {
-        if (ids.length != 3 && ids.length != 4)
+        if (ids.length != 3 && ids.length != 4) {
             throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
+        }
         for (int i = 0; i < 3; i++) {
-            if (ids[i] < 0)
+            if (ids[i] < 0) {
                 throw new IllegalArgumentException("Not a valid relation identifier: " + Arrays.toString(ids));
+            }
         }
         return new RelationIdentifier(ids[1], ids[2], ids[0], ids.length == 4 ? ids[3] : 0);
     }
@@ -120,8 +124,11 @@ public final class RelationIdentifier implements Serializable {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         RelationIdentifier oth = (RelationIdentifier) other;
         return relationId == oth.relationId && typeId == oth.typeId;
     }
@@ -131,14 +138,17 @@ public final class RelationIdentifier implements Serializable {
         StringBuilder s = new StringBuilder();
         s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(outVertexId))
                 .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
-        if (inVertexId != 0) s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(inVertexId));
+        if (inVertexId != 0) {
+            s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(inVertexId));
+        }
         return s.toString();
     }
 
     public static RelationIdentifier parse(String id) {
         String[] elements = id.split(TOSTRING_DELIMITER);
-        if (elements.length != 3 && elements.length != 4)
+        if (elements.length != 3 && elements.length != 4) {
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
+        }
         try {
             return new RelationIdentifier(LongEncoding.decode(elements[1]),
                     LongEncoding.decode(elements[2]),
@@ -150,19 +160,25 @@ public final class RelationIdentifier implements Serializable {
     }
 
     JanusGraphRelation findRelation(JanusGraphTransaction tx) {
-        JanusGraphVertex v = ((StandardJanusGraphTx)tx).getInternalVertex(outVertexId);
-        if (v == null || v.isRemoved()) return null;
+        JanusGraphVertex v = ((StandardJanusGraphTx) tx).getInternalVertex(outVertexId);
+        if (v == null || v.isRemoved()) {
+            return null;
+        }
         JanusGraphVertex typeVertex = tx.getVertex(typeId);
-        if (typeVertex == null) return null;
-        if (!(typeVertex instanceof RelationType))
+        if (typeVertex == null) {
+            return null;
+        }
+        if (!(typeVertex instanceof RelationType)) {
             throw new IllegalArgumentException("Invalid RelationIdentifier: typeID does not reference a type");
-
+        }
         RelationType type = (RelationType) typeVertex;
         Iterable<? extends JanusGraphRelation> relations;
         if (((RelationType) typeVertex).isEdgeLabel()) {
             Direction dir = Direction.OUT;
-            JanusGraphVertex other = ((StandardJanusGraphTx)tx).getInternalVertex(inVertexId);
-            if (other==null || other.isRemoved()) return null;
+            JanusGraphVertex other = ((StandardJanusGraphTx) tx).getInternalVertex(inVertexId);
+            if (other == null || other.isRemoved()) {
+                return null;
+            }
             if (((StandardJanusGraphTx) tx).isPartitionedVertex(v) && !((StandardJanusGraphTx) tx).isPartitionedVertex(other)) { //Swap for likely better performance
                 JanusGraphVertex tmp = other;
                 other = v;
@@ -176,24 +192,33 @@ public final class RelationIdentifier implements Serializable {
 
         for (JanusGraphRelation r : relations) {
             //Find current or previous relation
-            if (r.longId() == relationId ||
-                    ((r instanceof StandardRelation) && ((StandardRelation) r).getPreviousID() == relationId)) return r;
+            if (r.longId() == relationId || ((r instanceof StandardRelation) && ((StandardRelation) r).getPreviousID() == relationId)) {
+                return r;
+            }
         }
         return null;
     }
 
     public JanusGraphEdge findEdge(JanusGraphTransaction tx) {
         JanusGraphRelation r = findRelation(tx);
-        if (r == null) return null;
-        else if (r instanceof JanusGraphEdge) return (JanusGraphEdge) r;
-        else throw new UnsupportedOperationException("Referenced relation is a property not an edge");
+        if (r == null) {
+            return null;
+        } else if (r instanceof JanusGraphEdge) {
+            return (JanusGraphEdge) r;
+        } else {
+            throw new UnsupportedOperationException("Referenced relation is a property not an edge");
+        }
     }
 
     public JanusGraphVertexProperty findProperty(JanusGraphTransaction tx) {
         JanusGraphRelation r = findRelation(tx);
-        if (r == null) return null;
-        else if (r instanceof JanusGraphVertexProperty) return (JanusGraphVertexProperty) r;
-        else throw new UnsupportedOperationException("Referenced relation is a edge not a property");
+        if (r == null) {
+            return null;
+        } else if (r instanceof JanusGraphVertexProperty) {
+            return (JanusGraphVertexProperty) r;
+        } else {
+            throw new UnsupportedOperationException("Referenced relation is a edge not a property");
+        }
     }
 
 

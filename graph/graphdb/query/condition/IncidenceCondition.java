@@ -50,11 +50,13 @@ public class IncidenceCondition<E extends JanusGraphRelation> extends Literal<E>
 
     @Override
     public boolean equals(Object other) {
-        if (this == other)
+        if (this == other) {
             return true;
+        }
 
-        if (other == null || !getClass().isInstance(other))
+        if (other == null || !getClass().isInstance(other)) {
             return false;
+        }
 
         IncidenceCondition oth = (IncidenceCondition) other;
         return baseVertex.equals(oth.baseVertex) && otherVertex.equals(oth.otherVertex);

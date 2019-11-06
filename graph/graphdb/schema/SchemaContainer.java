@@ -47,12 +47,12 @@ public class SchemaContainer implements SchemaProvider {
         try {
             for (VertexLabel vl : management.getVertexLabels()) {
                 VertexLabelDefinition vld = new VertexLabelDefinition(vl);
-                vertexLabels.put(vld.getName(),vld);
+                vertexLabels.put(vld.getName(), vld);
             }
 
             for (EdgeLabel el : management.getRelationTypes(EdgeLabel.class)) {
                 EdgeLabelDefinition eld = new EdgeLabelDefinition(el);
-                relationTypes.put(eld.getName(),eld);
+                relationTypes.put(eld.getName(), eld);
             }
             for (PropertyKey pk : management.getRelationTypes(PropertyKey.class)) {
                 PropertyKeyDefinition pkd = new PropertyKeyDefinition(pk);
@@ -74,7 +74,7 @@ public class SchemaContainer implements SchemaProvider {
     }
 
     public boolean containsVertexLabel(String name) {
-        return getVertexLabel(name)!=null;
+        return getVertexLabel(name) != null;
     }
 
     public Iterable<PropertyKeyDefinition> getPropertyKeys() {
@@ -91,23 +91,25 @@ public class SchemaContainer implements SchemaProvider {
     }
 
     public boolean containsRelationType(String name) {
-        return getRelationType(name)!=null;
+        return getRelationType(name) != null;
     }
 
     @Override
     public EdgeLabelDefinition getEdgeLabel(String name) {
         RelationTypeDefinition def = getRelationType(name);
-        if (def!=null && !(def instanceof EdgeLabelDefinition))
+        if (def != null && !(def instanceof EdgeLabelDefinition)) {
             throw new IllegalArgumentException("Not an edge label but property key: " + name);
-        return (EdgeLabelDefinition)def;
+        }
+        return (EdgeLabelDefinition) def;
     }
 
     @Override
     public PropertyKeyDefinition getPropertyKey(String name) {
         RelationTypeDefinition def = getRelationType(name);
-        if (def!=null && !(def instanceof PropertyKeyDefinition))
+        if (def != null && !(def instanceof PropertyKeyDefinition)) {
             throw new IllegalArgumentException("Not a property key but edge label: " + name);
-        return (PropertyKeyDefinition)def;
+        }
+        return (PropertyKeyDefinition) def;
     }
 
 }

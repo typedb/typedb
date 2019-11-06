@@ -39,7 +39,7 @@ public class DoubleArraySerializer extends ArraySerializer implements AttributeS
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.setDouble(array,pos,((Double)value));
+        Array.setDouble(array, pos, ((Double) value));
     }
 
     //############### Serialization ###################
@@ -47,13 +47,17 @@ public class DoubleArraySerializer extends ArraySerializer implements AttributeS
     @Override
     public double[] read(ScanBuffer buffer) {
         int length = getLength(buffer);
-        if (length<0) return null;
+        if (length < 0) return null;
         return buffer.getDoubles(length);
     }
 
     @Override
     public void write(WriteBuffer buffer, double[] attribute) {
-        writeLength(buffer,attribute);
-        if (attribute!=null) for (double anAttribute : attribute) buffer.putDouble(anAttribute);
+        writeLength(buffer, attribute);
+        if (attribute != null) {
+            for (double anAttribute : attribute) {
+                buffer.putDouble(anAttribute);
+            }
+        }
     }
 }

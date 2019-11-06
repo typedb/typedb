@@ -50,12 +50,14 @@ public class Or<E extends JanusGraphElement> extends MultiCondition<E> {
 
     @Override
     public boolean evaluate(E element) {
-        if (!hasChildren())
+        if (!hasChildren()) {
             return true;
+        }
 
         for (Condition<E> condition : this) {
-            if (condition.evaluate(element))
+            if (condition.evaluate(element)) {
                 return true;
+            }
         }
 
         return false;

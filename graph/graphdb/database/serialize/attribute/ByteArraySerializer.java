@@ -39,7 +39,7 @@ public class ByteArraySerializer extends ArraySerializer implements AttributeSer
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.setByte(array,pos,((Byte)value));
+        Array.setByte(array, pos, ((Byte) value));
     }
 
     //############### Serialization ###################
@@ -47,13 +47,17 @@ public class ByteArraySerializer extends ArraySerializer implements AttributeSer
     @Override
     public byte[] read(ScanBuffer buffer) {
         int length = getLength(buffer);
-        if (length<0) return null;
+        if (length < 0) return null;
         return buffer.getBytes(length);
     }
 
     @Override
     public void write(WriteBuffer buffer, byte[] attribute) {
-        writeLength(buffer,attribute);
-        if (attribute!=null) for (byte anAttribute : attribute) buffer.putByte(anAttribute);
+        writeLength(buffer, attribute);
+        if (attribute != null) {
+            for (byte anAttribute : attribute) {
+                buffer.putByte(anAttribute);
+            }
+        }
     }
 }

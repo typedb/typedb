@@ -122,10 +122,15 @@ public enum ElementCategory {
 
     public static ElementCategory getByClazz(Class<? extends Element> clazz) {
         Preconditions.checkArgument(clazz != null, "Need to provide a element class argument");
-        if (Vertex.class.isAssignableFrom(clazz)) return VERTEX;
-        else if (Edge.class.isAssignableFrom(clazz)) return EDGE;
-        else if (JanusGraphVertexProperty.class.isAssignableFrom(clazz)) return PROPERTY;
-        else throw new IllegalArgumentException("Invalid clazz provided: " + clazz);
+        if (Vertex.class.isAssignableFrom(clazz)) {
+            return VERTEX;
+        } else if (Edge.class.isAssignableFrom(clazz)) {
+            return EDGE;
+        } else if (JanusGraphVertexProperty.class.isAssignableFrom(clazz)) {
+            return PROPERTY;
+        } else {
+            throw new IllegalArgumentException("Invalid clazz provided: " + clazz);
+        }
     }
 
     public static ElementCategory getByName(String name) {

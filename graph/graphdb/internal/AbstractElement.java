@@ -55,15 +55,17 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
 
     @Override
     public boolean equals(Object other) {
-        if (other == null)
+        if (other == null) {
             return false;
-
-        if (this == other)
+        }
+        if (this == other) {
             return true;
+        }
         if (!((this instanceof Vertex && other instanceof Vertex) ||
                 (this instanceof Edge && other instanceof Edge) ||
-                (this instanceof VertexProperty && other instanceof VertexProperty)))
+                (this instanceof VertexProperty && other instanceof VertexProperty))) {
             return false;
+        }
         //Same type => they are the same if they have identical ids.
         if (other instanceof AbstractElement) {
             return getCompareId() == ((AbstractElement) other).getCompareId();
@@ -71,9 +73,11 @@ public abstract class AbstractElement implements InternalElement, Comparable<Jan
             return ((JanusGraphElement) other).hasId() && getCompareId() == ((JanusGraphElement) other).longId();
         } else {
             Object otherId = ((Element) other).id();
-            if (otherId instanceof RelationIdentifier)
+            if (otherId instanceof RelationIdentifier) {
                 return ((RelationIdentifier) otherId).getRelationId() == getCompareId();
-            else return otherId.equals(getCompareId());
+            } else {
+                return otherId.equals(getCompareId());
+            }
         }
     }
 

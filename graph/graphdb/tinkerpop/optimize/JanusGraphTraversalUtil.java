@@ -19,6 +19,10 @@
 package grakn.core.graph.graphdb.tinkerpop.optimize;
 
 import com.google.common.collect.Lists;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.core.JanusGraphVertex;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traverser;
@@ -38,11 +42,6 @@ import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.wrapped.WrappedVertex;
-import grakn.core.graph.core.JanusGraphTransaction;
-import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
-import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -92,17 +91,21 @@ public class JanusGraphTraversalUtil {
         JanusGraphTransaction tx;
         Optional<Graph> optGraph = TraversalHelper.getRootTraversal(traversal.asAdmin()).getGraph();
 
-
         if (!optGraph.isPresent()) {
             throw new IllegalArgumentException("Traversal is not bound to a graph: " + traversal);
         }
         Graph graph = optGraph.get();
-        if (graph instanceof JanusGraphTransaction) tx = (JanusGraphTransaction) graph;
-        else if (graph instanceof StandardJanusGraph) tx = ((StandardJanusGraph) graph).getCurrentThreadTx();
-        else throw new IllegalArgumentException("Traversal is not bound to a JanusGraph Graph, but: " + graph);
+        if (graph instanceof JanusGraphTransaction) {
+            tx = (JanusGraphTransaction) graph;
+        } else if (graph instanceof StandardJanusGraph) {
+            tx = ((StandardJanusGraph) graph).getCurrentThreadTx();
+        } else {
+            throw new IllegalArgumentException("Traversal is not bound to a JanusGraph Graph, but: " + graph);
+        }
 
-        if (tx == null)
+        if (tx == null) {
             throw new IllegalArgumentException("Not a valid start step for a JanusGraph traversal: " + traversal);
+        }
         if (tx.isOpen()) return tx;
         else return ((StandardJanusGraphTx) tx).getNextTx();
     }
@@ -127,7 +130,7 @@ public class JanusGraphTraversalUtil {
                     RepeatStep repeatStep = (RepeatStep) parentStep;
                     List<RepeatEndStep> repeatEndSteps = TraversalHelper.getStepsOfClass(RepeatEndStep.class, repeatStep.getRepeatTraversal());
                     if (repeatEndSteps.size() == 1) {
-                        // Want the RepeatEndStep so the start of one iteration can feed into the next 
+                        // Want the RepeatEndStep so the start of one iteration can feed into the next
                         multiQueryCompatibleSteps.remove(parentStep);
                         multiQueryCompatibleSteps.add(repeatEndSteps.get(0));
                     }

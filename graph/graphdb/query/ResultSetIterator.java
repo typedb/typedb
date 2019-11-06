@@ -61,8 +61,9 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
 
     @Override
     public R next() {
-        if (!hasNext())
+        if (!hasNext()) {
             throw new NoSuchElementException();
+        }
 
         current = next;
         count++;
@@ -72,10 +73,11 @@ public class ResultSetIterator<R extends JanusGraphElement> implements Iterator<
 
     @Override
     public void remove() {
-        if (current != null)
+        if (current != null) {
             current.remove();
-        else
+        } else {
             throw new UnsupportedOperationException();
+        }
     }
 
     public static <R extends JanusGraphElement> Iterable<R> wrap(Iterable<R> inner, int limit) {

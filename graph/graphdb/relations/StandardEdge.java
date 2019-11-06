@@ -91,9 +91,11 @@ public class StandardEdge extends AbstractEdge implements StandardRelation, Reas
 
     @Override
     public <O> O removePropertyDirect(PropertyKey key) {
-        if (!properties.isEmpty())
+        if (!properties.isEmpty()) {
             return (O) properties.remove(key);
-        else return null;
+        } else {
+            return null;
+        }
     }
 
     @Override

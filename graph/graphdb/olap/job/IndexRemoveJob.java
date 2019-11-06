@@ -99,9 +99,10 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
         }
         if (index instanceof JanusGraphIndex) {
             JanusGraphIndex graphIndex = (JanusGraphIndex) index;
-            if (graphIndex.isMixedIndex())
+            if (graphIndex.isMixedIndex()) {
                 throw new UnsupportedOperationException("Cannot remove mixed indexes through JanusGraph. This can " +
                         "only be accomplished in the indexing system directly.");
+            }
             CompositeIndexType indexType = (CompositeIndexType) managementSystem.getSchemaVertex(index).asIndexType();
             graphIndexId = indexType.getID();
         }
@@ -147,9 +148,13 @@ public class IndexRemoveJob extends IndexUpdateJob implements ScanJob {
             RelationTypeIndexWrapper wrapper = (RelationTypeIndexWrapper) index;
             InternalRelationType wrappedType = wrapper.getWrappedType();
             Direction direction = null;
-            for (Direction dir : Direction.values()) if (wrappedType.isUnidirected(dir)) direction = dir;
+            for (Direction dir : Direction.values()) {
+                if (wrappedType.isUnidirected(dir)) {
+                    direction = dir;
+                }
+            }
 
-            StandardJanusGraphTx tx = (StandardJanusGraphTx) graph.get().buildTransaction().readOnly().start();
+            StandardJanusGraphTx tx = graph.get().buildTransaction().readOnly().start();
             try {
                 QueryContainer qc = new QueryContainer(tx);
                 qc.addQuery().type(wrappedType).direction(direction).relations();

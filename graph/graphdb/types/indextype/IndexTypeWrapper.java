@@ -58,8 +58,11 @@ public abstract class IndexTypeWrapper implements IndexType {
 
     @Override
     public boolean equals(Object oth) {
-        if (this == oth) return true;
-        else if (!getClass().isInstance(oth)) return false;
+        if (this == oth) {
+            return true;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         IndexTypeWrapper other = (IndexTypeWrapper) oth;
         return base.equals(other.base);
     }

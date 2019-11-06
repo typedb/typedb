@@ -205,8 +205,9 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     @Override
     public TransactionBuilder customOption(String k, Object v) {
-        if (null == writableCustomOptions)
+        if (null == writableCustomOptions) {
             throw new IllegalStateException("This builder was not constructed with setCustomOption support");
+        }
         writableCustomOptions.set((ConfigOption<Object>) ConfigElement.parse(ROOT_NS, k).element, v);
         return this;
     }

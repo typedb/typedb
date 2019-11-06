@@ -33,7 +33,6 @@ import grakn.core.graph.core.attribute.Contain;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.predicate.AndJanusPredicate;
 import grakn.core.graph.graphdb.predicate.OrJanusPredicate;
-import grakn.core.graph.graphdb.query.JanusGraphPredicate;
 import grakn.core.graph.graphdb.query.condition.And;
 import grakn.core.graph.graphdb.query.condition.Condition;
 import grakn.core.graph.graphdb.query.condition.MultiCondition;
@@ -60,8 +59,9 @@ public class QueryUtil {
             limit = limit * Math.min(maxMultiplier, (int) Math.pow(2, uncoveredAndConditions)); //(limit*3)/2+1;
         }
 
-        if (tx.hasModifications())
+        if (tx.hasModifications()) {
             limit += Math.min(Integer.MAX_VALUE - limit, 5);
+        }
 
         return limit;
     }
@@ -165,9 +165,9 @@ public class QueryUtil {
             JanusGraphPredicate predicate = atom.getPredicate();
 
             if (type == null) {
-                if (predicate == Cmp.EQUAL && atom.getValue() == null || (predicate == Cmp.NOT_EQUAL && atom.getValue() != null))
+                if (predicate == Cmp.EQUAL && atom.getValue() == null || (predicate == Cmp.NOT_EQUAL && atom.getValue() != null)) {
                     continue; //Ignore condition, its trivially satisfied
-
+                }
                 return null;
             }
 
@@ -188,8 +188,9 @@ public class QueryUtil {
                 Collection values = (Collection) value;
                 if (predicate == Contain.NOT_IN) {
                     if (values.isEmpty()) continue; //Simply ignore since trivially satisfied
-                    for (Object inValue : values)
+                    for (Object inValue : values) {
                         addConstraint(type, Cmp.NOT_EQUAL, inValue, conditions, tx);
+                    }
                 } else {
                     Preconditions.checkArgument(predicate == Contain.IN);
                     if (values.isEmpty()) {
@@ -199,8 +200,9 @@ public class QueryUtil {
                         addConstraint(type, Cmp.EQUAL, values.iterator().next(), conditions, tx);
                     } else {
                         Or<E> nested = new Or<>(values.size());
-                        for (Object invalue : values)
+                        for (Object invalue : values) {
                             addConstraint(type, Cmp.EQUAL, invalue, nested, tx);
+                        }
                         conditions.add(nested);
                     }
                 }
@@ -267,8 +269,9 @@ public class QueryUtil {
     private static <E extends JanusGraphElement> void addConstraint(RelationType type, JanusGraphPredicate predicate,
                                                                     Object value, MultiCondition<E> conditions, StandardJanusGraphTx tx) {
         if (type.isPropertyKey()) {
-            if (value != null)
+            if (value != null) {
                 value = tx.verifyAttribute((PropertyKey) type, value);
+            }
         } else { //t.isEdgeLabel()
             Preconditions.checkArgument(value instanceof JanusGraphVertex);
         }
@@ -281,17 +284,28 @@ public class QueryUtil {
         RelationType masterType = null;
         List<Object> values = new ArrayList<>();
         for (Condition c : condition.getChildren()) {
-            if (!(c instanceof PredicateCondition)) return null;
+            if (!(c instanceof PredicateCondition)) {
+                return null;
+            }
             PredicateCondition<RelationType, JanusGraphRelation> atom = (PredicateCondition) c;
-            if (atom.getPredicate() != Cmp.EQUAL) return null;
+            if (atom.getPredicate() != Cmp.EQUAL) {
+                return null;
+            }
             Object value = atom.getValue();
-            if (value == null) return null;
+            if (value == null) {
+                return null;
+            }
             RelationType type = atom.getKey();
-            if (masterType == null) masterType = type;
-            else if (!masterType.equals(type)) return null;
+            if (masterType == null) {
+                masterType = type;
+            } else if (!masterType.equals(type)) {
+                return null;
+            }
             values.add(value);
         }
-        if (masterType == null) return null;
+        if (masterType == null) {
+            return null;
+        }
         return new AbstractMap.SimpleImmutableEntry(masterType, values);
     }
 

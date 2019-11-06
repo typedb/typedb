@@ -50,8 +50,11 @@ public class SchemaElementDefinition {
 
     @Override
     public boolean equals(Object oth) {
-        if (this == oth) return true;
-        else if (!getClass().isInstance(oth)) return false;
+        if (this == oth) {
+            return true;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         return name.equals(((SchemaElementDefinition) oth).name);
     }
 

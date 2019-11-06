@@ -41,7 +41,6 @@ import java.util.zip.GZIPOutputStream;
  * 1) ASCII encoding (one byte per char)
  * 2) Full UTF encoding (for non-ASCII strings)
  * 3) Using compression algorithms for long strings
- *
  */
 public class StringSerializer implements OrderPreservingSerializer<String>, SupportsNullSerializer {
 
@@ -94,9 +93,13 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
     @Override
     public String convert(Object value) {
         Preconditions.checkNotNull(value);
-        if (value instanceof String) return (String) value;
-        else if (value instanceof Namifiable) return ((Namifiable) value).name();
-        else return value.toString();
+        if (value instanceof String) {
+            return (String) value;
+        } else if (value instanceof Namifiable) {
+            return ((Namifiable) value).name();
+        } else {
+            return value.toString();
+        }
     }
 
 
@@ -246,8 +249,9 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     byte[] bytes = new byte[8192];
                     int len;
-                    while ((len = in.read(bytes)) > 0)
+                    while ((len = in.read(bytes)) > 0) {
                         baos.write(bytes, 0, len);
+                    }
                     return new String(baos.toByteArray(), StandardCharsets.UTF_8);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -265,7 +269,11 @@ public class StringSerializer implements OrderPreservingSerializer<String>, Supp
         }
 
         public static CompressionType getFromId(int id) {
-            for (CompressionType ct : values()) if (ct.getId() == id) return ct;
+            for (CompressionType ct : values()) {
+                if (ct.getId() == id) {
+                    return ct;
+                }
+            }
             throw new IllegalArgumentException("Unknown compressor type for id: " + id);
         }
 

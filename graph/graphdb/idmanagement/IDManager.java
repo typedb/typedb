@@ -28,7 +28,6 @@ import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 /**
  * Handles the allocation of ids based on the type of element
  * Responsible for the bit-wise pattern of JanusGraph's internal id scheme.
- *
  */
 public class IDManager {
 
@@ -437,7 +436,7 @@ public class IDManager {
        ########################################################  */
 
     /*		--- JanusGraphElement id bit format ---
-     *  [ 0 | count | partition | ID padding (if any) ]
+     *  [0 | count | partition | ID padding (if any) ]
      */
 
     private long constructId(long count, long partition, VertexIDType type) {
@@ -453,9 +452,13 @@ public class IDManager {
 
     private static VertexIDType getUserVertexIDType(long vertexId) {
         VertexIDType type = null;
-        if (VertexIDType.NormalVertex.is(vertexId)) type = VertexIDType.NormalVertex;
-        else if (VertexIDType.PartitionedVertex.is(vertexId)) type = VertexIDType.PartitionedVertex;
-        else if (VertexIDType.UnmodifiableVertex.is(vertexId)) type = VertexIDType.UnmodifiableVertex;
+        if (VertexIDType.NormalVertex.is(vertexId)) {
+            type = VertexIDType.NormalVertex;
+        } else if (VertexIDType.PartitionedVertex.is(vertexId)) {
+            type = VertexIDType.PartitionedVertex;
+        } else if (VertexIDType.UnmodifiableVertex.is(vertexId)) {
+            type = VertexIDType.UnmodifiableVertex;
+        }
         if (null == type) {
             throw new JanusGraphException("Vertex ID " + vertexId + " has unrecognized type");
         }

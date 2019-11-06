@@ -125,8 +125,9 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
                 result.put(v, resultConstructor.getResult(v, bq));
             }
         } else {
-            for (JanusGraphVertex v : vertices)
+            for (JanusGraphVertex v : vertices) {
                 result.put(v, resultConstructor.emptyResult());
+            }
         }
         return result;
     }

@@ -121,10 +121,12 @@ public abstract class IndexUpdateJob {
             txb.commitTime(jobStartTime);
             writeTx = txb.start();
         } catch (Exception e) {
-            if (null != managementSystem && managementSystem.isOpen())
+            if (null != managementSystem && managementSystem.isOpen()) {
                 managementSystem.rollback();
-            if (writeTx != null && writeTx.isOpen())
+            }
+            if (writeTx != null && writeTx.isOpen()) {
                 writeTx.rollback();
+            }
             metrics.incrementCustom(FAILED_TX);
             throw new JanusGraphException(e.getMessage(), e);
         }
@@ -132,10 +134,12 @@ public abstract class IndexUpdateJob {
 
     public void workerIterationEnd(ScanMetrics metrics) {
         try {
-            if (null != managementSystem && managementSystem.isOpen())
+            if (null != managementSystem && managementSystem.isOpen()) {
                 managementSystem.commit();
-            if (writeTx != null && writeTx.isOpen())
+            }
+            if (writeTx != null && writeTx.isOpen()) {
                 writeTx.commit();
+            }
             metrics.incrementCustom(SUCCESS_TX);
         } catch (RuntimeException e) {
             LOG.error("Transaction commit threw runtime exception:", e);

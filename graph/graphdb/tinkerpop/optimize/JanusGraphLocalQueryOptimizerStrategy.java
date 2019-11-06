@@ -18,6 +18,9 @@
 
 package grakn.core.graph.graphdb.tinkerpop.optimize;
 
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.graphdb.query.QueryUtil;
+import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import org.apache.tinkerpop.gremlin.process.traversal.Step;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
 import org.apache.tinkerpop.gremlin.process.traversal.Traversal.Admin;
@@ -31,15 +34,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.strategy.AbstractTraversal
 import org.apache.tinkerpop.gremlin.process.traversal.util.TraversalHelper;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.graphdb.query.QueryUtil;
-import grakn.core.graph.graphdb.tinkerpop.optimize.AdjacentVertexFilterOptimizerStrategy;
-import grakn.core.graph.graphdb.tinkerpop.optimize.HasStepFolder;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphPropertiesStep;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphTraversalUtil;
-import grakn.core.graph.graphdb.tinkerpop.optimize.JanusGraphVertexStep;
-import grakn.core.graph.graphdb.tinkerpop.optimize.MultiQueriable;
-import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 
 import java.util.Collections;
 import java.util.Set;
@@ -54,8 +48,9 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if (!traversal.getGraph().isPresent())
+        if (!traversal.getGraph().isPresent()) {
             return;
+        }
 
         Graph graph = traversal.getGraph().get();
 

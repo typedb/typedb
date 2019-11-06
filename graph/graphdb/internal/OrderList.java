@@ -58,7 +58,11 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     }
 
     public boolean containsKey(PropertyKey key) {
-        for (int i = 0; i < list.size(); i++) if (getKey(i).equals(key)) return true;
+        for (int i = 0; i < list.size(); i++) {
+            if (getKey(i).equals(key)) {
+                return true;
+            }
+        }
         return false;
     }
 
@@ -76,8 +80,11 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
     public boolean hasCommonOrder() {
         Order lastOrder = null;
         for (OrderEntry oe : list) {
-            if (lastOrder == null) lastOrder = oe.order;
-            else if (lastOrder != oe.order) return false;
+            if (lastOrder == null) {
+                lastOrder = oe.order;
+            } else if (lastOrder != oe.order) {
+                return false;
+            }
         }
         return true;
     }
@@ -104,9 +111,13 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
     @Override
     public boolean equals(Object oth) {
-        if (this == oth) return true;
-        else if (oth == null) return false;
-        else if (!getClass().isInstance(oth)) return false;
+        if (this == oth) {
+            return true;
+        } else if (oth == null) {
+            return false;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         return list.equals(((OrderList) oth).list);
     }
 
@@ -150,9 +161,13 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
             Object v1 = o1.valueOrNull(key);
             Object v2 = o2.valueOrNull(key);
             if (v1 == null || v2 == null) {
-                if (v1 == null && v2 == null) return 0;
-                else if (v1 == null) return 1;
-                else return -1; //v2==null
+                if (v1 == null && v2 == null) {
+                    return 0;
+                } else if (v1 == null) {
+                    return 1;
+                } else {
+                    return -1;
+                } //v2==null
             } else {
                 return order.modulateNaturalOrder(((Comparable) v1).compareTo(v2));
             }
@@ -160,9 +175,13 @@ public class OrderList implements Comparator<JanusGraphElement>, Iterable<OrderL
 
         @Override
         public boolean equals(Object oth) {
-            if (this == oth) return true;
-            else if (oth == null) return false;
-            else if (!getClass().isInstance(oth)) return false;
+            if (this == oth) {
+                return true;
+            } else if (oth == null) {
+                return false;
+            } else if (!getClass().isInstance(oth)) {
+                return false;
+            }
             OrderEntry o = (OrderEntry) oth;
             return key.equals(o.key) && order == o.order;
         }

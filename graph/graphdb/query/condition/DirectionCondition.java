@@ -62,11 +62,13 @@ public class DirectionCondition<E extends JanusGraphRelation> extends Literal<E>
 
     @Override
     public boolean equals(Object other) {
-        if (this == other)
+        if (this == other) {
             return true;
+        }
 
-        if (!getClass().isInstance(other))
+        if (!getClass().isInstance(other)) {
             return false;
+        }
 
         DirectionCondition oth = (DirectionCondition) other;
         return direction == oth.direction && baseVertex.equals(oth.baseVertex);

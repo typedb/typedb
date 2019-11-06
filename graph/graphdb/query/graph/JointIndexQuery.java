@@ -88,9 +88,13 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (other == null) {
+            return false;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         JointIndexQuery oth = (JointIndexQuery) other;
         return oth.queries.equals(queries);
     }
@@ -122,8 +126,9 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
             this.profiler = prof.addNested(QueryProfiler.AND_QUERY);
             profiler.setAnnotation(QueryProfiler.QUERY_ANNOTATION, query);
             profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION, index.getName());
-            if (index.isMixedIndex())
+            if (index.isMixedIndex()) {
                 profiler.setAnnotation(QueryProfiler.INDEX_ANNOTATION + "_impl", index.getBackingIndexName());
+            }
         }
 
         public QueryProfiler getProfiler() {
@@ -151,9 +156,13 @@ public class JointIndexQuery extends BaseQuery implements BackendQuery<JointInde
 
         @Override
         public boolean equals(Object other) {
-            if (this == other) return true;
-            else if (other == null) return false;
-            else if (!getClass().isInstance(other)) return false;
+            if (this == other) {
+                return true;
+            } else if (other == null) {
+                return false;
+            } else if (!getClass().isInstance(other)) {
+                return false;
+            }
             Subquery oth = (Subquery) other;
             return index.equals(oth.index) && query.equals(oth.query);
         }

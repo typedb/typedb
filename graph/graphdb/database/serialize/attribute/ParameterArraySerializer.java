@@ -54,24 +54,27 @@ public class ParameterArraySerializer extends ArraySerializer implements Attribu
     @Override
     public Parameter[] read(ScanBuffer buffer) {
         int length = getLength(buffer);
-        if (length<0) return null;
+        if (length < 0) return null;
         Parameter[] result = new Parameter[length];
         for (int i = 0; i < length; i++) {
-            result[i]=serializer.readObjectNotNull(buffer, Parameter.class);
+            result[i] = serializer.readObjectNotNull(buffer, Parameter.class);
         }
         return result;
     }
 
     @Override
     public void write(WriteBuffer buffer, Parameter[] attribute) {
-        writeLength(buffer,attribute);
-        if (attribute!=null)
-            for (Parameter anAttribute : attribute) ((DataOutput) buffer).writeObjectNotNull(anAttribute);
+        writeLength(buffer, attribute);
+        if (attribute != null) {
+            for (Parameter anAttribute : attribute) {
+                ((DataOutput) buffer).writeObjectNotNull(anAttribute);
+            }
+        }
     }
 
 
     @Override
     public void setSerializer(Serializer serializer) {
-        this.serializer=serializer;
+        this.serializer = serializer;
     }
 }

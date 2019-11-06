@@ -173,7 +173,6 @@ import java.util.stream.Collectors;
 public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspector, SchemaInspector {
 
     private static final Logger LOG = LoggerFactory.getLogger(StandardJanusGraphTx.class);
-
     private static final Map<Long, InternalRelation> EMPTY_DELETED_RELATIONS = ImmutableMap.of();
 
     /**
@@ -182,7 +181,6 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
      * a single vertex in a single transaction.
      */
     private static final long MIN_VERTEX_CACHE_SIZE = 100L;
-
 
     private final StandardJanusGraph graph;
     private final TransactionConfiguration config;
@@ -290,8 +288,8 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 //            elementProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "graph", elementProcessorImpl);
 //            edgeProcessor = new MetricsQueryExecutor<>(config.getGroupName(), "vertex", edgeProcessorImpl);
 //        } else {
-            elementProcessor = elementProcessorImpl;
-            edgeProcessor = edgeProcessorImpl;
+        elementProcessor = elementProcessorImpl;
+        edgeProcessor = edgeProcessorImpl;
 //        }
 
         this.backendTransaction = graph.openBackendTransaction(this); // awkward!
@@ -584,10 +582,10 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     @Override
     public JanusGraphVertex getVertex(long vertexId) {
         verifyOpen();
-        if (null != config.getGroupName()) {
-            //TODO-reenable
-//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
-        }
+//        if (null != config.getGroupName()) {
+//            //TODO-reenable
+////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVertexByID").inc();
+//        }
         if (!isValidVertexId(vertexId)) return null;
         //Make canonical partitioned vertex id
         if (idManager.isPartitionedVertex(vertexId)) vertexId = idManager.getCanonicalVertexId(vertexId);
@@ -601,11 +599,11 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         verifyOpen();
         if (ids == null || ids.length == 0) return (Iterable) getInternalVertices();
 
-        if (null != config.getGroupName()) {
-            //TODO-reenable
-
-//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
-        }
+//        if (null != config.getGroupName()) {
+//            //TODO-reenable
+//
+////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getVerticesByID").inc();
+//        }
         List<JanusGraphVertex> result = new ArrayList<>(ids.length);
         List<Long> vertexIds = new ArrayList<>(ids.length);
 
@@ -670,8 +668,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             byte lifecycle = ElementLifeCycle.Loaded;
             long canonicalVertexId = idManager.isPartitionedVertex(vertexId) ? idManager.getCanonicalVertexId(vertexId) : vertexId;
             if (verifyExistence) {
-                if (graph.edgeQuery(canonicalVertexId, graph.vertexExistenceQuery, backendTransaction).isEmpty())
+                if (graph.edgeQuery(canonicalVertexId, graph.vertexExistenceQuery, backendTransaction).isEmpty()) {
                     lifecycle = ElementLifeCycle.Removed;
+                }
             }
             if (canonicalVertexId != vertexId) {
                 //Take lifecycle from canonical representative
@@ -798,8 +797,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         //Update transaction data structures
         if (relation.isNew()) {
             addedRelations.remove(relation);
-            if (TypeUtil.hasSimpleInternalVertexKeyIndex(relation))
+            if (TypeUtil.hasSimpleInternalVertexKeyIndex(relation)) {
                 newVertexIndexEntries.remove((JanusGraphVertexProperty) relation);
+            }
         } else {
             Preconditions.checkArgument(relation.isLoaded());
             Map<Long, InternalRelation> result = deletedRelations;
@@ -809,8 +809,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                 } else {
                     synchronized (this) {
                         result = deletedRelations;
-                        if (result == EMPTY_DELETED_RELATIONS)
+                        if (result == EMPTY_DELETED_RELATIONS) {
                             deletedRelations = result = new ConcurrentHashMap<>();
+                        }
                     }
                 }
             }
@@ -867,10 +868,10 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             return new VertexCentricEdgeIterable(getInternalVertices(), RelationCategory.EDGE);
         }
 
-        if (null != config.getGroupName()) {
-            //TODO-reenable
-//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();
-        }
+//        if (null != config.getGroupName()) {
+//            //TODO-reenable
+////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "db", "getEdgesByID").inc();
+//        }
         List<JanusGraphEdge> result = new ArrayList<>(ids.length);
         for (RelationIdentifier id : ids) {
             if (id == null) continue;
@@ -970,7 +971,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
     public JanusGraphSchemaVertex getSchemaVertex(String schemaName) {
         Long schemaId = newTypeCache.get(schemaName);
-        if (schemaId == null) schemaId = graph.getSchemaCache().getSchemaId(schemaName);
+        if (schemaId == null) {
+            schemaId = graph.getSchemaCache().getSchemaId(schemaName);
+        }
         if (schemaId != null) {
             InternalVertex typeVertex = vertexCache.get(schemaId, existingVertexRetriever);
             return (JanusGraphSchemaVertex) typeVertex;
@@ -1028,8 +1031,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name), value);
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
-        } else
+        } else {
             throw new IllegalArgumentException("The type of given name is not a key: " + name);
+        }
     }
 
     @Override
@@ -1039,8 +1043,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             return config.getAutoSchemaMaker().makePropertyKey(makePropertyKey(name));
         } else if (et.isPropertyKey()) {
             return (PropertyKey) et;
-        } else
+        } else {
             throw new IllegalArgumentException("The type of given name is not a key: " + name);
+        }
     }
 
     @Override
@@ -1057,8 +1062,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             return config.getAutoSchemaMaker().makeEdgeLabel(makeEdgeLabel(name));
         } else if (et.isEdgeLabel()) {
             return (EdgeLabel) et;
-        } else
+        } else {
             throw new IllegalArgumentException("The type of given name is not a label: " + name);
+        }
     }
 
     @Override
@@ -1088,7 +1094,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     @Override
     public VertexLabel getVertexLabel(String name) {
         verifyOpen();
-        if (BaseVertexLabel.DEFAULT_VERTEXLABEL.name().equals(name)) return BaseVertexLabel.DEFAULT_VERTEXLABEL;
+        if (BaseVertexLabel.DEFAULT_VERTEXLABEL.name().equals(name)) {
+            return BaseVertexLabel.DEFAULT_VERTEXLABEL;
+        }
         return (VertexLabel) getSchemaVertex(JanusGraphSchemaCategory.VERTEXLABEL.getSchemaName(name));
     }
 
@@ -1118,15 +1126,18 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     @Override
     public JanusGraphMultiVertexQuery multiQuery(JanusGraphVertex... vertices) {
         MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
-        for (JanusGraphVertex v : vertices) builder.addVertex(v);
+        for (JanusGraphVertex v : vertices) {
+            builder.addVertex(v);
+        }
         return builder;
     }
 
     public void executeMultiQuery(Collection<InternalVertex> vertices, SliceQuery sq, QueryProfiler profiler) {
         List<Long> vertexIds = new ArrayList<>(vertices.size());
         for (InternalVertex v : vertices) {
-            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq))
+            if (!v.isNew() && v.hasId() && (v instanceof CacheVertex) && !v.hasLoadedRelations(sq)) {
                 vertexIds.add(v.longId());
+            }
         }
 
         if (!vertexIds.isEmpty()) {
@@ -1158,8 +1169,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                     public boolean apply(InternalRelation relation) {
                         if ((relation instanceof JanusGraphEdge) && relation.isLoop()
                                 && query.getDirection() != Direction.BOTH) {
-                            if (relation.equals(previous))
+                            if (relation.equals(previous)) {
                                 return false;
+                            }
 
                             previous = relation;
                         }
@@ -1231,8 +1243,9 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         @Override
         public Iterator<JanusGraphElement> getNew(GraphCentricQuery query) {
             //If the query is unconstrained then we don't need to add new elements, so will be picked up by getVertices()/getEdges() below
-            if (query.numSubQueries() == 1 && query.getSubQuery(0).getBackendQuery().isEmpty())
+            if (query.numSubQueries() == 1 && query.getSubQuery(0).getBackendQuery().isEmpty()) {
                 return Collections.emptyIterator();
+            }
             Preconditions.checkArgument(query.getCondition().hasChildren(), "If the query is non-empty it needs to have a condition");
 
             if (query.getResultType() == ElementCategory.VERTEX && hasModifications()) {
@@ -1390,11 +1403,11 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     public synchronized void commit() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getGroupName()) {
-            //TODO-reenable
-
-//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
-        }
+//        if (null != config.getGroupName()) {
+//            //TODO-reenable
+//
+////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
+//        }
         try {
             if (hasModifications()) {
                 graph.commit(addedRelations.getAll(), deletedRelations.values(), this);
@@ -1411,11 +1424,11 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             throw new JanusGraphException("Could not commit transaction due to exception during persistence", e);
         } finally {
             releaseTransaction();
-            if (null != config.getGroupName() && !success) {
-                //TODO-reenable
-
-//                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
-            }
+//            if (null != config.getGroupName() && !success) {
+//                //TODO-reenable
+//
+////                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
+//            }
         }
     }
 
@@ -1423,10 +1436,10 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
         boolean success = false;
-        if (null != config.getGroupName()) {
-            //TODO-reenable
-//            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
-        }
+//        if (null != config.getGroupName()) {
+//            //TODO-reenable
+////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
+//        }
         try {
             backendTransaction.rollback();
             success = true;
@@ -1434,11 +1447,11 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             throw new JanusGraphException("Could not rollback transaction due to exception", e);
         } finally {
             releaseTransaction();
-            if (null != config.getGroupName() && !success) {
-                //TODO-reenable
-
-//                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
-            }
+//            if (null != config.getGroupName() && !success) {
+//                //TODO-reenable
+//
+////                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
+//            }
         }
     }
 

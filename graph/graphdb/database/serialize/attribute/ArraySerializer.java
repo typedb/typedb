@@ -44,8 +44,9 @@ public abstract class ArraySerializer implements SupportsNullSerializer {
             //Iterable of the right (boxed) type and no null values
             Object array = getArray(size);
             int pos = 0;
-            for (Object element : (Iterable) value)
+            for (Object element : (Iterable) value) {
                 setArray(array, pos++, element);
+            }
             return (T) array;
         } else if ((size = isArrayOf(value, boxedClass)) >= 0) {
             //array of the right (boxed) type and no null values
@@ -70,8 +71,9 @@ public abstract class ArraySerializer implements SupportsNullSerializer {
     }
 
     private int isArrayOf(Object value, Class boxedClass) {
-        if (!value.getClass().isArray() ||
-                !value.getClass().getComponentType().equals(boxedClass)) return -1;
+        if (!value.getClass().isArray() || !value.getClass().getComponentType().equals(boxedClass)) {
+            return -1;
+        }
         for (int i = 0; i < Array.getLength(value); i++) {
             if (Array.get(value, i) == null) return -1;
         }

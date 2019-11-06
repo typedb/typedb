@@ -39,7 +39,7 @@ public class ShortArraySerializer extends ArraySerializer implements AttributeSe
 
     @Override
     protected void setArray(Object array, int pos, Object value) {
-        Array.setShort(array,pos,(Short)value);
+        Array.setShort(array, pos, (Short) value);
     }
 
     //############### Serialization ###################
@@ -47,13 +47,17 @@ public class ShortArraySerializer extends ArraySerializer implements AttributeSe
     @Override
     public short[] read(ScanBuffer buffer) {
         int length = getLength(buffer);
-        if (length<0) return null;
+        if (length < 0) return null;
         return buffer.getShorts(length);
     }
 
     @Override
     public void write(WriteBuffer buffer, short[] attribute) {
-        writeLength(buffer,attribute);
-        if (attribute!=null) for (short anAttribute : attribute) buffer.putShort(anAttribute);
+        writeLength(buffer, attribute);
+        if (attribute != null) {
+            for (short anAttribute : attribute) {
+                buffer.putShort(anAttribute);
+            }
+        }
     }
 }

@@ -51,8 +51,9 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
         RelationType type;
         if (key instanceof String) {
             type = ((InternalElement) element).tx().getRelationType((String) key);
-            if (type == null)
+            if (type == null) {
                 return satisfiesCondition(null);
+            }
         } else {
             type = (RelationType) key;
         }
@@ -63,8 +64,9 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
             Iterator<Object> iterator = ElementHelper.getValues(element, (PropertyKey) type).iterator();
             if (iterator.hasNext()) {
                 while (iterator.hasNext()) {
-                    if (satisfiesCondition(iterator.next()))
+                    if (satisfiesCondition(iterator.next())) {
                         return true;
+                    }
                 }
                 return false;
             }
@@ -93,11 +95,13 @@ public class PredicateCondition<K, E extends JanusGraphElement> extends Literal<
 
     @Override
     public boolean equals(Object other) {
-        if (this == other)
+        if (this == other) {
             return true;
+        }
 
-        if (!getClass().isInstance(other))
+        if (!getClass().isInstance(other)) {
             return false;
+        }
 
         PredicateCondition oth = (PredicateCondition) other;
         return key.equals(oth.key) && predicate.equals(oth.predicate) && value.equals(oth.value);

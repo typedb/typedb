@@ -31,7 +31,6 @@ import java.util.Objects;
  *
  * @see And
  * @see Or
-
  */
 public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayList<Condition<E>> implements Condition<E> {
 
@@ -83,15 +82,18 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
 
     @Override
     public boolean equals(Object other) {
-        if (this == other)
+        if (this == other) {
             return true;
+        }
 
-        if (!getClass().isInstance(other))
+        if (!getClass().isInstance(other)) {
             return false;
+        }
 
-        MultiCondition oth = (MultiCondition)other;
-        if (getType() != oth.getType() || size() != oth.size())
+        MultiCondition oth = (MultiCondition) other;
+        if (getType() != oth.getType() || size() != oth.size()) {
             return false;
+        }
 
         for (int i = 0; i < size(); i++) {
             boolean foundEqual = false;
@@ -102,8 +104,9 @@ public abstract class MultiCondition<E extends JanusGraphElement> extends ArrayL
                 }
             }
 
-            if (!foundEqual)
+            if (!foundEqual) {
                 return false;
+            }
         }
 
         return true;

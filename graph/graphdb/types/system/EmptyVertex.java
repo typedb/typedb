@@ -47,10 +47,7 @@ public class EmptyVertex implements InternalVertex {
 
     private static final String errorName = "Empty vertex";
 
-	/* ---------------------------------------------------------------
-     * JanusGraphRelation Iteration/Access
-	 * ---------------------------------------------------------------
-	 */
+    // JanusGraphRelation Iteration/Access
 
     @Override
     public VertexCentricQueryBuilder query() {
@@ -106,10 +103,7 @@ public class EmptyVertex implements InternalVertex {
         return val;
     }
 
-	/* ---------------------------------------------------------------
-	 * Convenience Methods for JanusGraphElement Creation
-	 * ---------------------------------------------------------------
-	 */
+    // Convenience Methods for JanusGraphElement Creation
 
     @Override
     public <V> JanusGraphVertexProperty<V> property(String key, V value, Object...
@@ -148,10 +142,8 @@ public class EmptyVertex implements InternalVertex {
         throw new UnsupportedOperationException(errorName + " do not support incident edges");
     }
 
-	/* ---------------------------------------------------------------
-	 * In Memory JanusGraphElement
-	 * ---------------------------------------------------------------
-	 */
+
+    // In Memory JanusGraphElement
 
     @Override
     public long longId() {

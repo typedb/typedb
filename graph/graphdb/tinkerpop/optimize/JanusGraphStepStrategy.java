@@ -40,8 +40,9 @@ public class JanusGraphStepStrategy extends AbstractTraversalStrategy<TraversalS
 
     @Override
     public void apply(Traversal.Admin<?, ?> traversal) {
-        if (TraversalHelper.onGraphComputer(traversal))
+        if (TraversalHelper.onGraphComputer(traversal)) {
             return;
+        }
 
         TraversalHelper.getStepsOfClass(GraphStep.class, traversal).forEach(originalGraphStep -> {
             if (originalGraphStep.getIds() == null || originalGraphStep.getIds().length == 0) {

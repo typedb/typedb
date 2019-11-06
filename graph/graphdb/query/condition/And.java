@@ -24,7 +24,6 @@ import grakn.core.graph.graphdb.query.condition.MultiCondition;
 
 /**
  * Combines multiple conditions under semantic AND, i.e. all conditions must be true for this combination to be true
- *
  */
 public class And<E extends JanusGraphElement> extends MultiCondition<E> {
 
@@ -57,8 +56,9 @@ public class And<E extends JanusGraphElement> extends MultiCondition<E> {
     @Override
     public boolean evaluate(E element) {
         for (Condition<E> condition : this) {
-            if (!condition.evaluate(element))
+            if (!condition.evaluate(element)) {
                 return false;
+            }
         }
 
         return true;

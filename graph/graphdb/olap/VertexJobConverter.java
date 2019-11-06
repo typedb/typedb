@@ -107,8 +107,9 @@ public class VertexJobConverter implements ScanJob {
     }
 
     protected void close() {
-        if (null != tx && tx.isOpen())
+        if (null != tx && tx.isOpen()) {
             tx.rollback();
+        }
         graph.close();
     }
 

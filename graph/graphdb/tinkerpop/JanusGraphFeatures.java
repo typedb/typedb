@@ -161,8 +161,9 @@ public class JanusGraphFeatures implements Graph.Features {
         public VertexProperty.Cardinality getCardinality(String key) {
             StandardJanusGraphTx tx = (StandardJanusGraphTx) JanusGraphFeatures.this.graph.newTransaction();
             try {
-                if (!tx.containsPropertyKey(key))
+                if (!tx.containsPropertyKey(key)) {
                     return tx.getConfiguration().getAutoSchemaMaker().defaultPropertyCardinality(key).convert();
+                }
                 return tx.getPropertyKey(key).cardinality().convert();
             } finally {
                 tx.rollback();

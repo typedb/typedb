@@ -77,7 +77,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
 
     static boolean validJanusGraphHas(HasContainer has) {
         if (has.getPredicate() instanceof ConnectiveP) {
-            final List<? extends P<?>> predicates = ((ConnectiveP<?>) has.getPredicate()).getPredicates();
+            List<? extends P<?>> predicates = ((ConnectiveP<?>) has.getPredicate()).getPredicates();
             return predicates.stream().allMatch(p -> validJanusGraphHas(new HasContainer(has.getKey(), p)));
         } else {
             return JanusGraphPredicate.Converter.supports(has.getBiPredicate());
@@ -143,10 +143,10 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 if (hasContainerHolder.getHasContainers().isEmpty()) {
                     traversal.removeStep(currentStep);
                 }
-            } else if (currentStep instanceof IdentityStep) {
-                // do nothing, has no impact
-            } else if (currentStep instanceof NoOpBarrierStep) {
-                // do nothing, has no impact
+//            } else if (currentStep instanceof IdentityStep) {
+//                // do nothing, has no impact
+//            } else if (currentStep instanceof NoOpBarrierStep) {
+//                // do nothing, has no impact
             } else {
                 break;
             }
@@ -154,8 +154,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void foldInHasContainer(HasStepFolder janusgraphStep, Traversal.Admin<?, ?> traversal,
-                                   Traversal<?, ?> rootTraversal) {
+    static void foldInHasContainer(HasStepFolder janusgraphStep, Traversal.Admin<?, ?> traversal, Traversal<?, ?> rootTraversal) {
         Step<?, ?> currentStep = janusgraphStep.getNextStep();
         while (true) {
             if (currentStep instanceof OrStep && janusgraphStep instanceof JanusGraphStep) {
@@ -180,8 +179,7 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
         }
     }
 
-    static void localFoldInHasContainer(HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal,
-                                        Traversal<?, ?> rootTraversal) {
+    static void localFoldInHasContainer(HasStepFolder janusgraphStep, Step<?, ?> tinkerpopStep, Traversal.Admin<?, ?> traversal, Traversal<?, ?> rootTraversal) {
         Step<?, ?> currentStep = tinkerpopStep;
         while (true) {
             if (currentStep instanceof HasContainerHolder) {
@@ -263,8 +261,9 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
                 for (P<?> predicate : ((AndP<?>) hasContainer.getPredicate()).getPredicates()) {
                     hasContainers.add(new HasContainer(hasContainer.getKey(), predicate));
                 }
-            } else
+            } else {
                 hasContainers.add(hasContainer);
+            }
         });
         return hasContainers;
     }

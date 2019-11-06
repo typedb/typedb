@@ -111,9 +111,13 @@ public class GraphCentricQuery extends BaseQuery implements ElementQuery<JanusGr
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (other == null) return false;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (other == null) {
+            return false;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         GraphCentricQuery oth = (GraphCentricQuery) other;
         return resultType == oth.resultType && condition.equals(oth.condition) &&
                 orders.equals(oth.getOrder()) && getLimit() == oth.getLimit();

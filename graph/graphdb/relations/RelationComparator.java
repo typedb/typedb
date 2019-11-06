@@ -38,7 +38,6 @@ import java.util.Comparator;
 /**
  * A {@link Comparator} for {@link JanusGraphRelation} that uses a defined order to compare the relations with
  * or otherwise uses the natural order of relations.
- *
  */
 public class RelationComparator implements Comparator<InternalRelation> {
 
@@ -79,16 +78,18 @@ public class RelationComparator implements Comparator<InternalRelation> {
 
         //4) Direction
         Direction dir1 = null, dir2 = null;
-        for (int i = 0; i < r1.getLen(); i++)
+        for (int i = 0; i < r1.getLen(); i++) {
             if (r1.getVertex(i).equals(vertex)) {
                 dir1 = EdgeDirection.fromPosition(i);
                 break;
             }
-        for (int i = 0; i < r2.getLen(); i++)
+        }
+        for (int i = 0; i < r2.getLen(); i++) {
             if (r2.getVertex(i).equals(vertex)) {
                 dir2 = EdgeDirection.fromPosition(i);
                 break;
             }
+        }
         // ("Either relation is not incident on vertex [%s]", vertex);
         int dirCompare = EdgeDirection.position(dir1) - EdgeDirection.position(dir2);
         if (dirCompare != 0) return dirCompare;
@@ -134,9 +135,13 @@ public class RelationComparator implements Comparator<InternalRelation> {
 
     private static int compareValues(Object v1, Object v2) {
         if (v1 == null || v2 == null) {
-            if (v1 != null) return -1;
-            else if (v2 != null) return 1;
-            else return 0;
+            if (v1 != null) {
+                return -1;
+            } else if (v2 != null) {
+                return 1;
+            } else {
+                return 0;
+            }
         } else {
             Preconditions.checkArgument(v1 instanceof Comparable && v2 instanceof Comparable, "Encountered invalid values");
             return ((Comparable) v1).compareTo(v2);

@@ -73,8 +73,9 @@ public class CacheEdge extends AbstractEdge {
     private void copyProperties(InternalRelation to) {
         for (Map.Entry<Long, Object> entry : getPropertyMap().properties().entrySet()) {
             PropertyKey type = tx().getExistingPropertyKey(entry.getKey());
-            if (!(type instanceof ImplicitKey))
+            if (!(type instanceof ImplicitKey)) {
                 to.setPropertyDirect(type, entry.getValue());
+            }
         }
     }
 
