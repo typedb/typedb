@@ -56,7 +56,6 @@ java_library(
         "//core:core",
         "//graql:graql",
         "//graph",
-        "//graph-cql",
 
         # External dependencies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -92,7 +91,8 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
         "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api", # PREVIOUSLY UNDECLARED
+        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
+        "//graph-cql"
     ],
     resources = ["LICENSE"] + glob(["resources/*"]),
     resource_strip_prefix = "server",
