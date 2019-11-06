@@ -258,10 +258,9 @@ public class BenchmarkBigIT {
      */
     @Test
     public void testRandomSetLinearTransitivity() {
-        final int N = 200;
+        final int N = 1000;
         final int limit = 100;
-        System.out.println(new Object() {
-        }.getClass().getEnclosingMethod().getName());
+        System.out.println(new Object() {}.getClass().getEnclosingMethod().getName());
         loadTransitivityData(N);
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri()).session(keyspace)) {
@@ -343,9 +342,8 @@ public class BenchmarkBigIT {
      */
     @Test
     public void testJoinRuleChain() {
-        final int N = 20; // TODO: Increase this number again to > 100, once we fix issue #4545
-        System.out.println(new Object() {
-        }.getClass().getEnclosingMethod().getName());
+        final int N = 200;
+        System.out.println(new Object() {}.getClass().getEnclosingMethod().getName());
         loadRuleChainData(N);
 
         try (GraknClient.Session session = new GraknClient(server.grpcUri()).session(keyspace)) {
