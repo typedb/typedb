@@ -86,8 +86,9 @@ public enum ReflectiveConfigOptionLoader {
 
         LoaderConfiguration cfg = this.cfg;
 
-        if (!cfg.enabled || cfg.allInit)
+        if (!cfg.enabled || cfg.allInit) {
             return;
+        }
 
         load(cfg, caller);
 
@@ -98,8 +99,9 @@ public enum ReflectiveConfigOptionLoader {
 
         LoaderConfiguration cfg = this.cfg;
 
-        if (!cfg.enabled || cfg.standardInit || cfg.allInit)
+        if (!cfg.enabled || cfg.standardInit || cfg.allInit) {
             return;
+        }
 
         /*
          * Aside from the classes in janusgraph-core, we can't guarantee the presence
@@ -115,10 +117,10 @@ public enum ReflectiveConfigOptionLoader {
                 "grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager",
                 "grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration",
                 "grakn.core.graph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
-                "grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner",
+                "grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner"
                 //"grakn.core.graph.graphdb.TestMockIndexProvider",
-                //"grakn.core.graph.graphdb.TestMockLog",
-                "grakn.core.graph.diskstorage.berkeleyje.BerkeleyJEStoreManager");
+                //"grakn.core.graph.graphdb.TestMockLog"
+        );
 
         Timer t = new Timer(TimestampProviders.MILLI);
         t.start();
@@ -164,13 +166,12 @@ public enum ReflectiveConfigOptionLoader {
     }
 
     private List<ClassLoader> getClassLoaders(LoaderConfiguration cfg, Class<?> caller) {
-
-        final ImmutableList.Builder<ClassLoader> builder = ImmutableList.builder();
+        ImmutableList.Builder<ClassLoader> builder = ImmutableList.builder();
 
         builder.addAll(cfg.preferredLoaders);
-        for (ClassLoader c : cfg.preferredLoaders)
+        for (ClassLoader c : cfg.preferredLoaders) {
             LOG.debug("Added preferred classloader to config option loader chain: {}", c);
-
+        }
         if (cfg.useThreadContextLoader) {
             ClassLoader c = Thread.currentThread().getContextClassLoader();
             builder.add(c);
@@ -254,7 +255,7 @@ public enum ReflectiveConfigOptionLoader {
      */
     private Set<URL> forClassLoaders(List<ClassLoader> loaders) {
 
-        final Set<URL> result = Sets.newHashSet();
+        Set<URL> result = Sets.newHashSet();
 
         for (ClassLoader classLoader : loaders) {
             while (classLoader != null) {
@@ -277,9 +278,9 @@ public enum ReflectiveConfigOptionLoader {
         LOG.trace("Looking for ConfigOption public static fields on class {}", c);
 
         for (Field f : c.getDeclaredFields()) {
-            final boolean pub = Modifier.isPublic(f.getModifiers());
-            final boolean stat = Modifier.isStatic(f.getModifiers());
-            final boolean typeMatch = ConfigOption.class.isAssignableFrom(f.getType());
+            boolean pub = Modifier.isPublic(f.getModifiers());
+            boolean stat = Modifier.isStatic(f.getModifiers());
+            boolean typeMatch = ConfigOption.class.isAssignableFrom(f.getType());
 
             LOG.trace("Properties for field \"{}\": public={} static={} assignable={}", f, pub, stat, typeMatch);
             if (pub && stat && typeMatch) {
@@ -324,8 +325,7 @@ public enum ReflectiveConfigOptionLoader {
         }
 
         private boolean getEnabledByDefault() {
-            List<String> sources =
-                    Arrays.asList(System.getProperty(SYS_PROP_NAME), System.getenv(ENV_VAR_NAME));
+            List<String> sources = Arrays.asList(System.getProperty(SYS_PROP_NAME), System.getenv(ENV_VAR_NAME));
 
             for (String setting : sources) {
                 if (null != setting) {

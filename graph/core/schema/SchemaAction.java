@@ -89,8 +89,9 @@ public enum SchemaAction {
     }
 
     public boolean isApplicableStatus(SchemaStatus status) {
-        if (getFailureStatus().contains(status))
+        if (getFailureStatus().contains(status)) {
             throw new IllegalArgumentException(String.format("Update action [%s] cannot be invoked for index with status [%s]", this, status));
+        }
         return getApplicableStatus().contains(status);
     }
 

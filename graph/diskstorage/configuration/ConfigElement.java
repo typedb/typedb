@@ -28,7 +28,6 @@ import java.util.Objects;
 public abstract class ConfigElement {
 
     public static final char SEPARATOR = '.';
-
     public static final char[] ILLEGAL_CHARS = new char[]{SEPARATOR, ' ', '\t', '#', '@', '<', '>', '?', '/', ';', '"', '\'', ':', '+', '(', ')', '*', '^', '`', '~', '$', '%', '|', '\\', '{', '[', ']', '}'};
 
     private final ConfigNamespace namespace;
@@ -90,8 +89,11 @@ public abstract class ConfigElement {
 
     @Override
     public boolean equals(Object oth) {
-        if (this == oth) return true;
-        else if (!getClass().isInstance(oth)) return false;
+        if (this == oth) {
+            return true;
+        } else if (!getClass().isInstance(oth)) {
+            return false;
+        }
         ConfigElement c = (ConfigElement) oth;
         return name.equals(c.name) && namespace == c.namespace;
     }
@@ -104,8 +106,9 @@ public abstract class ConfigElement {
         String result = element.getName();
         if (element.isNamespace()) {
             result = "+ " + result;
-            if (((ConfigNamespace) element).isUmbrella())
+            if (((ConfigNamespace) element).isUmbrella()) {
                 result += " [*]";
+            }
         } else {
             result = "- " + result;
             ConfigOption option = (ConfigOption) element;

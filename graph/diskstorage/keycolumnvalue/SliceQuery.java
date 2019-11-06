@@ -79,11 +79,13 @@ public class SliceQuery extends BaseQuery implements BackendQuery<SliceQuery> {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other)
+        if (this == other) {
             return true;
+        }
 
-        if (other == null && !getClass().isInstance(other))
+        if (other == null && !getClass().isInstance(other)) {
             return false;
+        }
 
         SliceQuery oth = (SliceQuery) other;
         return sliceStart.equals(oth.sliceStart)

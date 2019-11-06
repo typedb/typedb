@@ -22,13 +22,6 @@ package grakn.core.graph.core;
 
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import grakn.core.graph.core.JanusGraph;
-import grakn.core.graph.core.JanusGraphEdge;
-import grakn.core.graph.core.JanusGraphElement;
-import grakn.core.graph.core.JanusGraphRelation;
-import grakn.core.graph.core.JanusGraphVertexProperty;
-import grakn.core.graph.core.JanusGraphVertexQuery;
-import grakn.core.graph.core.VertexLabel;
 
 /**
  * JanusGraphVertex is the basic unit of a {@link JanusGraph}.
@@ -38,14 +31,13 @@ import grakn.core.graph.core.VertexLabel;
  * pairs to this vertex to define it.
  * <p>
  * Like {@link JanusGraphRelation} a vertex has a vertex label.
- *
  */
 public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
     /* ---------------------------------------------------------------
-      * Creation and modification methods
-      * ---------------------------------------------------------------
-      */
+     * Creation and modification methods
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Creates a new edge incident on this vertex.
@@ -72,13 +64,13 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * Automatically creates the property key if it does not exist and automatic creation of types is enabled. Otherwise,
      * this method with throw an {@link IllegalArgumentException}.
      *
-     * @param key       key of the property to be created
+     * @param key   key of the property to be created
      * @param value value of the property to be created
      * @return New property
      * @throws IllegalArgumentException if the value does not match the data type of the property key.
      */
     @Override
-    default<V> JanusGraphVertexProperty<V> property(String key, V value) {
+    default <V> JanusGraphVertexProperty<V> property(String key, V value) {
         return this.property(key, value, EMPTY_ARGS);
     }
 
@@ -89,15 +81,13 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
     @Override
     <V> JanusGraphVertexProperty<V> property(VertexProperty.Cardinality cardinality, String key, V value, Object... keyValues);
 
-     /* ---------------------------------------------------------------
-      * Vertex Label
-      * ---------------------------------------------------------------
-      */
+    /* ---------------------------------------------------------------
+     * Vertex Label
+     * ---------------------------------------------------------------
+     */
 
     /**
      * Returns the name of the vertex label for this vertex.
-     *
-     * @return
      */
     @Override
     default String label() {
@@ -106,15 +96,10 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
 
     /**
      * Returns the vertex label of this vertex.
-     *
-     * @return
      */
     VertexLabel vertexLabel();
 
-	/* ---------------------------------------------------------------
-     * Incident JanusGraphRelation Access methods
-	 * ---------------------------------------------------------------
-	 */
+    // Incident JanusGraphRelation Access methods
 
     /**
      * Starts a new {@link JanusGraphVertexQuery} for this vertex.
@@ -132,6 +117,5 @@ public interface JanusGraphVertex extends JanusGraphElement, Vertex {
      * @return True, has been loaded and modified, else false.
      */
     boolean isModified();
-
 
 }

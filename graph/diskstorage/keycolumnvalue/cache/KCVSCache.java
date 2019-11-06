@@ -52,10 +52,10 @@ public abstract class KCVSCache extends KCVSProxy {
     }
 
     protected void incActionBy(int by, CacheMetricsAction action, StoreTransaction txh) {
-        if (metricsName != null && txh.getConfiguration().hasGroupName()) {
+//        if (metricsName != null && txh.getConfiguration().hasGroupName()) {
             //TODO-reenable
 //            MetricManager.INSTANCE.getCounter(txh.getConfiguration().getGroupName(), metricsName, action.getName()).inc(by);
-        }
+//        }
     }
 
     public abstract void clearCache();

@@ -86,9 +86,11 @@ public class CommonsConfiguration implements WriteConfiguration {
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
 
             String enumString = config.getProperty(key).toString();
-            for (Enum ec : constants)
-                if (ec.toString().equals(enumString))
+            for (Enum ec : constants) {
+                if (ec.toString().equals(enumString)) {
                     return (O) ec;
+                }
+            }
             throw new IllegalArgumentException("No match for string \"" + enumString + "\" in enum " + dataType);
         } else if (dataType == Object.class) {
             return (O) config.getProperty(key);

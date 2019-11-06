@@ -27,7 +27,6 @@ import java.util.Set;
 /**
  * Read-only configuration which provides a logical union of two Configuration objects
  */
-
 public class MergedConfiguration implements Configuration {
 
     private final Configuration first;
@@ -45,18 +44,19 @@ public class MergedConfiguration implements Configuration {
 
     @Override
     public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
-        if (first.has(option, umbrellaElements))
+        if (first.has(option, umbrellaElements)) {
             return first.get(option, umbrellaElements);
+        }
 
-        if (second.has(option, umbrellaElements))
+        if (second.has(option, umbrellaElements)) {
             return second.get(option, umbrellaElements);
+        }
 
         return option.getDefaultValue();
     }
 
     @Override
-    public Set<String> getContainedNamespaces(ConfigNamespace umbrella,
-                                              String... umbrellaElements) {
+    public Set<String> getContainedNamespaces(ConfigNamespace umbrella, String... umbrellaElements) {
         ImmutableSet.Builder<String> b = ImmutableSet.builder();
         b.addAll(first.getContainedNamespaces(umbrella, umbrellaElements));
         b.addAll(second.getContainedNamespaces(umbrella, umbrellaElements));

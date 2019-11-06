@@ -135,8 +135,9 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
             public Boolean call(StoreTransaction txh) throws BackendException {
-                if (checkExpectedValue)
+                if (checkExpectedValue) {
                     store.acquireLock(rowKey, column, expectedValueBuffer, txh);
+                }
                 store.mutate(rowKey, additions, deletions, txh);
                 return true;
             }
@@ -220,7 +221,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     }
 
 
-
     private StaticBuffer string2StaticBuffer(String s) {
         ByteBuffer out = ByteBuffer.wrap(s.getBytes(StandardCharsets.UTF_8));
         return StaticArrayBuffer.of(out);
@@ -231,9 +231,12 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
     }
 
     private <O> StaticBuffer object2StaticBuffer(O value) {
-        if (value == null) throw Graph.Variables.Exceptions.variableValueCanNotBeNull();
-        if (!serializer.validDataType(value.getClass()))
+        if (value == null) {
+            throw Graph.Variables.Exceptions.variableValueCanNotBeNull();
+        }
+        if (!serializer.validDataType(value.getClass())) {
             throw Graph.Variables.Exceptions.dataTypeOfVariableValueNotSupported(value);
+        }
         DataOutput out = serializer.getDataOutput(128);
         out.writeClassAndObject(value);
         return out.getStaticBuffer();

@@ -35,6 +35,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.TemporalUnit;
 
+/**
+ * This class is only used in tests!!!!!!!!
+ */
 
 public class ManagementUtil {
 
@@ -83,16 +86,19 @@ public class ManagementUtil {
             } finally {
                 management.rollback();
             }
-            if (isStable) break;
+            if (isStable) {
+                break;
+            }
             try {
                 times.sleepFor(Duration.ofMillis(500));
-            } catch (InterruptedException ignored) {
-
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
-        if (!isStable)
+        if (!isStable) {
             throw new JanusGraphException("Index did not stabilize within the given amount of time. For sufficiently long " +
                     "wait periods this is most likely caused by a failed/incorrectly shut down JanusGraph instance or a lingering transaction.");
+        }
     }
 
 }

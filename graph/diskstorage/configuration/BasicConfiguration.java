@@ -186,18 +186,20 @@ public class BasicConfiguration implements Configuration {
 
             @Override
             public boolean has(ConfigOption option, String... umbrellaElements) {
-                if (option.getNamespace().hasUmbrella())
+                if (option.getNamespace().hasUmbrella()) {
                     return config.has(option, concat(umbrellaElements));
-                else
+                } else {
                     return config.has(option);
+                }
             }
 
             @Override
             public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
-                if (option.getNamespace().hasUmbrella())
+                if (option.getNamespace().hasUmbrella()) {
                     return config.get(option, concat(umbrellaElements));
-                else
+                } else {
                     return config.get(option);
+                }
             }
 
             @Override
