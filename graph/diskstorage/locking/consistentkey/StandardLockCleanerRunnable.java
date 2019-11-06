@@ -113,33 +113,49 @@ public class StandardLockCleanerRunnable implements Runnable {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         StandardLockCleanerRunnable other = (StandardLockCleanerRunnable) obj;
+
         if (cutoff == null) {
-            if (other.cutoff != null)
+            if (other.cutoff != null) {
                 return false;
-        } else if (!cutoff.equals(other.cutoff))
+            }
+        } else if (!cutoff.equals(other.cutoff)) {
             return false;
+        }
+
         if (serializer == null) {
-            if (other.serializer != null)
+            if (other.serializer != null) {
                 return false;
-        } else if (!serializer.equals(other.serializer))
+            }
+        } else if (!serializer.equals(other.serializer)) {
             return false;
+        }
+
         if (store == null) {
-            if (other.store != null)
+            if (other.store != null) {
                 return false;
-        } else if (!store.equals(other.store))
+            }
+        } else if (!store.equals(other.store)) {
             return false;
+        }
+
         if (target == null) {
-            if (other.target != null)
+            if (other.target != null) {
                 return false;
-        } else if (!target.equals(other.target))
+            }
+        } else if (!target.equals(other.target)) {
             return false;
+        }
+
         if (tx == null) {
             return other.tx == null;
         } else {

@@ -63,8 +63,9 @@ public abstract class AbstractMessage implements Message {
     @Override
     public String toString() {
         String payloadString = content.toString();
-        if (payloadString.length() > MAX_PAYLOAD_STR_LENGTH)
+        if (payloadString.length() > MAX_PAYLOAD_STR_LENGTH) {
             payloadString = payloadString.substring(0, MAX_PAYLOAD_STR_LENGTH) + "...";
+        }
         return "Message@" + timestamp + ":" + senderId + "=" + payloadString;
     }
 
@@ -75,8 +76,11 @@ public abstract class AbstractMessage implements Message {
 
     @Override
     public boolean equals(Object other) {
-        if (this == other) return true;
-        else if (!getClass().isInstance(other)) return false;
+        if (this == other) {
+            return true;
+        } else if (!getClass().isInstance(other)) {
+            return false;
+        }
         AbstractMessage msg = (AbstractMessage) other;
         return timestamp.equals(msg.timestamp) && senderId.equals(msg.senderId) && content.equals(msg.content);
     }

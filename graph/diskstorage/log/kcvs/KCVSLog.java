@@ -362,8 +362,9 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     private int getTimeSlice(Instant timestamp) {
         long value = times.getTime(timestamp) / TIMESLICE_INTERVAL;
-        if (value > Integer.MAX_VALUE || value < 0)
+        if (value > Integer.MAX_VALUE || value < 0) {
             throw new IllegalArgumentException("Timestamp overflow detected: " + timestamp);
+        }
         return (int) value;
     }
 
@@ -523,11 +524,13 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
             }, this, times, maxWriteTime);
             Preconditions.checkState(success);
             LOG.debug("Wrote {} messages to backend", msgEnvelopes.size());
-            for (MessageEnvelope msgEnvelope : msgEnvelopes)
+            for (MessageEnvelope msgEnvelope : msgEnvelopes) {
                 msgEnvelope.message.delivered();
+            }
         } catch (JanusGraphException e) {
-            for (MessageEnvelope msgEnvelope : msgEnvelopes)
+            for (MessageEnvelope msgEnvelope : msgEnvelopes) {
                 msgEnvelope.message.failed(e);
+            }
             throw e;
         }
     }

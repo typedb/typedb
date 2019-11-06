@@ -829,8 +829,9 @@ public class ManagementSystem implements JanusGraphManagement {
                 MixedIndexType mixedIndexType = (MixedIndexType) indexType;
                 Set<SchemaStatus> applicableStatus = updateAction.getApplicableStatus();
                 for (ParameterIndexField field : mixedIndexType.getFieldKeys()) {
-                    if (applicableStatus.contains(field.getStatus()))
+                    if (applicableStatus.contains(field.getStatus())) {
                         keySubset.add((PropertyKeyVertex) field.getFieldKey());
+                    }
                 }
                 if (keySubset.isEmpty()) {
                     return null;

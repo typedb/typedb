@@ -138,8 +138,9 @@ public class StandardIDPool implements IDPool {
                     // Attempt to clean one dead element out of closeBlockers every time we append to it
                     if (!closeBlockers.isEmpty()) {
                         Future<?> f = closeBlockers.peek();
-                        if (null != f && f.isDone())
+                        if (null != f && f.isDone()) {
                             closeBlockers.remove();
+                        }
                     }
                     closeBlockers.add(idBlockFuture);
                 }

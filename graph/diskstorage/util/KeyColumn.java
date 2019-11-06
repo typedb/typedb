@@ -46,10 +46,11 @@ public class KeyColumn {
     @Override
     public int hashCode() {
         // if the hashcode is needed frequently, we should store it
-        if (0 != cachedHashCode)
+        if (0 != cachedHashCode) {
             return cachedHashCode;
+        }
 
-        final int prime = 31;
+        int prime = 31;
         int result = 1;
         result = prime * result + col.hashCode();
         result = prime * result + key.hashCode();
@@ -62,12 +63,15 @@ public class KeyColumn {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         KeyColumn other = (KeyColumn) obj;
         return other.key.equals(key) && other.col.equals(col);
     }

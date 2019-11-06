@@ -111,11 +111,9 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys,
-                                                 final SliceQuery query,
-                                                 final StoreTransaction txh) throws BackendException {
+    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_SLICE, () -> {
-            final Map<StaticBuffer, EntryList> results = backend.getSlice(keys, query, txh);
+            Map<StaticBuffer, EntryList> results = backend.getSlice(keys, query, txh);
 
             for (EntryList result : results.values()) {
                 recordSliceMetrics(txh, result);
@@ -125,10 +123,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(StaticBuffer key,
-                       final List<Entry> additions,
-                       final List<StaticBuffer> deletions,
-                       final StoreTransaction txh) throws BackendException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         runWithMetrics(txh, metricsStoreName, M_MUTATE, (StorageCallable<Void>) () -> {
             backend.mutate(key, additions, deletions, txh);
             return null;
@@ -137,9 +132,9 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
 
     @Override
     public void acquireLock(StaticBuffer key,
-                            final StaticBuffer column,
-                            final StaticBuffer expectedValue,
-                            final StoreTransaction txh) throws BackendException {
+                            StaticBuffer column,
+                            StaticBuffer expectedValue,
+                            StoreTransaction txh) throws BackendException {
         runWithMetrics(txh, metricsStoreName, M_ACQUIRE_LOCK, (StorageCallable<Void>) () -> {
             backend.acquireLock(key, column, expectedValue, txh);
             return null;
@@ -149,7 +144,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
-            final KeyIterator ki = backend.getKeys(query, txh);
+            KeyIterator ki = backend.getKeys(query, txh);
 //            if (txh.getConfiguration().hasGroupName()) {
 //                return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
 //            } else {
@@ -161,7 +156,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
     @Override
     public KeyIterator getKeys(SliceQuery query, StoreTransaction txh) throws BackendException {
         return runWithMetrics(txh, metricsStoreName, M_GET_KEYS, () -> {
-            final KeyIterator ki = backend.getKeys(query, txh);
+            KeyIterator ki = backend.getKeys(query, txh);
 //            if (txh.getConfiguration().hasGroupName()) {
 //                return MetricInstrumentedIterator.of(ki, txh.getConfiguration().getGroupName(), metricsStoreName, M_GET_KEYS, M_ITERATOR);
 //            } else {
@@ -186,7 +181,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         }
 
         String p = txh.getConfiguration().getGroupName();
-        final MetricManager mgr = MetricManager.INSTANCE;
+        MetricManager mgr = MetricManager.INSTANCE;
 //        mgr.getCounter(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_COUNT).inc(row.size());
 //        mgr.getHistogram(p, metricsStoreName, M_GET_SLICE, M_ENTRIES_HISTO).update(row.size());
     }
@@ -200,9 +195,9 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
 
-        final MetricManager mgr = MetricManager.INSTANCE;
+        MetricManager mgr = MetricManager.INSTANCE;
 //        mgr.getCounter(prefix, storeName, name, M_CALLS).inc();
-//        final Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
+//        Timer.Context tc = mgr.getTimer(prefix, storeName, name, M_TIME).time();
 
 //        try {
         return impl.call();
@@ -224,7 +219,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
 
-        final MetricManager mgr = MetricManager.INSTANCE;
+        MetricManager mgr = MetricManager.INSTANCE;
 //        mgr.getCounter(prefix, null, MetricInstrumentedIterator.M_CLOSE, M_CALLS).inc();
 //        final Timer.Context tc = mgr.getTimer(prefix, null, MetricInstrumentedIterator.M_CLOSE, M_TIME).time();
 
@@ -247,7 +242,7 @@ public class MetricInstrumentedStore implements KeyColumnValueStore {
         Preconditions.checkNotNull(name);
         Preconditions.checkNotNull(impl);
 
-        final MetricManager mgr = MetricManager.INSTANCE;
+        MetricManager mgr = MetricManager.INSTANCE;
 
 //        mgr.getCounter(prefix, null, name, M_CALLS).inc();
 //

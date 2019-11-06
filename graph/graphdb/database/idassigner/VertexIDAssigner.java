@@ -332,8 +332,9 @@ public class VertexIDAssigner implements AutoCloseable {
                 }
                 assignments = leftOvers;
             }
-            if (assignments != null && !assignments.isEmpty())
+            if (assignments != null && !assignments.isEmpty()) {
                 throw new IDPoolExhaustedException("Could not find non-exhausted partition ID Pool after " + MAX_PARTITION_RENEW_ATTEMPTS + " attempts");
+            }
             //3) assign ids to relations
             for (InternalRelation relation : addedRelations) {
                 assignID(relation);

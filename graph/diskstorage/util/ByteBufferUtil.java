@@ -25,8 +25,6 @@ import java.nio.ByteBuffer;
 /**
  * Utility methods for dealing with ByteBuffers in concurrent access
  * environments, i.e. these methods only use static access to the buffer.
- *
- *
  */
 public class ByteBufferUtil {
 
@@ -62,7 +60,7 @@ public class ByteBufferUtil {
      * @return true if the first ByteBuffer is smaller than the second
      */
     public static boolean isSmallerThan(ByteBuffer a, ByteBuffer b) {
-        return compare(a, b)<0;
+        return compare(a, b) < 0;
     }
 
     /**
@@ -73,30 +71,35 @@ public class ByteBufferUtil {
      * @return true if the first ByteBuffer is smaller than or equal to the second
      */
     public static boolean isSmallerOrEqualThan(ByteBuffer a, ByteBuffer b) {
-        return compare(a, b)<=0;
+        return compare(a, b) <= 0;
     }
 
     /**
      * Compares two {@link ByteBuffer}s according to their byte order (and not the byte value).
      * <p>
      *
-     * @param b1             First ByteBuffer
-     * @param b2             Second ByteBuffer
+     * @param b1 First ByteBuffer
+     * @param b2 Second ByteBuffer
      * @return a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
      */
     public static int compare(ByteBuffer b1, ByteBuffer b2) {
         if (b1 == b2) {
             return 0;
         }
-        int p1=b1.position(), p2 = b2.position();
-        while (p1<b1.limit() || p2<b2.limit()) {
-            if (p1>=b1.limit()) return -1;
-            else if (p2>=b2.limit()) return 1;
-            else {
+        int p1 = b1.position(), p2 = b2.position();
+        while (p1 < b1.limit() || p2 < b2.limit()) {
+            if (p1 >= b1.limit()) {
+                return -1;
+            } else if (p2 >= b2.limit()) {
+                return 1;
+            } else {
                 int cmp = compare(b1.get(p1), b2.get(p2));
-                if (cmp!=0) return cmp;
+                if (cmp != 0) {
+                    return cmp;
+                }
             }
-            p1++; p2++;
+            p1++;
+            p2++;
         }
         return 0; //Must be equal
     }
@@ -123,11 +126,11 @@ public class ByteBufferUtil {
 
     public static String toString(ByteBuffer b, String separator) {
         StringBuilder s = new StringBuilder();
-        for (int i=b.position();i<b.limit();i++) {
-            if (i>b.position()) s.append(separator);
+        for (int i = b.position(); i < b.limit(); i++) {
+            if (i > b.position()) s.append(separator);
             byte c = b.get(i);
-            if (c>=0) s.append(c);
-            else s.append(256+c);
+            if (c >= 0) s.append(c);
+            else s.append(256 + c);
         }
         return s.toString();
     }
