@@ -138,7 +138,7 @@ public class AttributeUniquenessIT {
         tx.execute(Graql.parse("insert $x \"Marco\" isa name;").asInsert());
         tx.commit();
 
-        //Try to insert 2 persons with same name, both txs should fail
+        //Try to insert 2 persons with same name, one tx should fail
         GraqlInsert keyQuery = Graql.parse("insert $x isa person, has name \"Marco\";").asInsert();
         expectedException.expect(InvalidKBException.class);
         List<Future> queryFutures = createQueryFutures(Collections.list(keyQuery, keyQuery));
