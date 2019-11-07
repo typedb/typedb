@@ -173,7 +173,7 @@ public class TransactionOLTP implements Transaction {
     private void commitInternal() throws InvalidKBException {
         if (!cache().getNewAttributes().isEmpty()) {
             mergeAttributesAndCommit();
-        } else if (!cache().getRemovedAttributes().isEmpty()) {
+        } else if (!cache().getRemovedAttributes().isEmpty() || cache().modifiedKeyRelations()) {
             // In this case we need to lock, so that other concurrent Transactions
             // that are trying to create new attributes will read an updated version of attributesCache
             // Not locking here might lead to concurrent transactions reading the attributesCache that still
@@ -190,7 +190,6 @@ public class TransactionOLTP implements Transaction {
             createNewTypeShardsWhenThresholdReached();
             persistInternal();
         }
-
     }
 
     private void persistInternal() throws InvalidKBException {
