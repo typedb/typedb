@@ -22,6 +22,7 @@ package grakn.core.kb.graql.reasoner.cache;
 import com.google.common.annotations.VisibleForTesting;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.Transaction;
 
 import java.util.Set;
@@ -33,6 +34,7 @@ import java.util.stream.Stream;
  */
 public interface RuleCache {
     void setTx(Transaction tx);
+    void setConceptManager(ConceptManager conceptManager);
 
     /**
      * @return set of inference rules contained in the graph

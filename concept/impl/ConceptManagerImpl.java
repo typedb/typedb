@@ -431,7 +431,6 @@ public class ConceptManagerImpl implements ConceptManager {
         }
     }
 
-
     // TODO why are there three separate access methods here!
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
@@ -455,23 +454,32 @@ public class ConceptManagerImpl implements ConceptManager {
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
 
-    AttributeType getMetaAttributeType() {
+    public AttributeType getMetaAttributeType() {
         return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
     }
 
-    private RelationType getMetaRelationType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.toString()));
+    public EntityType getMetaEntityType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ENTITY.name()));
     }
 
-
-    private Type getMetaConcept() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
+    public RelationType getMetaRelationType() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.name()));
     }
 
-    private Role getMetaRole() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.toString()));
+    public Type getMetaConcept() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.THING.name()));
     }
 
+    public Role getMetaRole() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.name()));
+    }
+
+    @Override
+    public Rule getMetaRule() {
+        return getSchemaConcept(Label.of(Graql.Token.Type.RULE.name()));
+    }
+
+    @Override
     public <T extends Type> T getType(Label label) {
         return getSchemaConcept(label, Schema.BaseType.TYPE);
     }

@@ -824,8 +824,6 @@ public class TransactionOLTP implements Transaction {
         return conceptManager.getConcept(id);
     }
 
-
-
     /**
      * Get the root of all Types.
      *
@@ -834,7 +832,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     @CheckReturnValue
     public grakn.core.kb.concept.api.Type getMetaConcept() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.THING.toString()));
+        checkGraphIsOpen();
+        return conceptManager.getMetaConcept();
     }
 
     /**
@@ -845,7 +844,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     @CheckReturnValue
     public RelationType getMetaRelationType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.toString()));
+        checkGraphIsOpen();
+        return conceptManager.getMetaRelationType();
     }
 
     /**
@@ -856,7 +856,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     @CheckReturnValue
     public Role getMetaRole() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.toString()));
+        checkGraphIsOpen();
+        return conceptManager.getMetaRole();
     }
 
     /**
@@ -867,7 +868,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     @CheckReturnValue
     public AttributeType getMetaAttributeType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
+        checkGraphIsOpen();
+        return conceptManager.getMetaAttributeType();
     }
 
     /**
@@ -878,7 +880,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     @CheckReturnValue
     public EntityType getMetaEntityType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ENTITY.toString()));
+        checkGraphIsOpen();
+        return conceptManager.getMetaEntityType();
     }
 
     /**
@@ -889,7 +892,8 @@ public class TransactionOLTP implements Transaction {
     @Override
     @CheckReturnValue
     public Rule getMetaRule() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.RULE.toString()));
+        checkGraphIsOpen();
+        return conceptManager.getMetaRule();
     }
 
 
@@ -932,12 +936,7 @@ public class TransactionOLTP implements Transaction {
     @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         checkGraphIsOpen();
-        Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
-        if (meta != null) {
-            return conceptManager.getSchemaConcept(meta.getId());
-        } else {
-            return conceptManager.getSchemaConcept(label, Schema.BaseType.SCHEMA_CONCEPT);
-        }
+        return conceptManager.getSchemaConcept(label);
     }
 
     /**

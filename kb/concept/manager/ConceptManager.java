@@ -20,20 +20,25 @@
 package grakn.core.kb.concept.manager;
 
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 public interface ConceptManager {
-    <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
 
     <T extends Concept> T buildConcept(Vertex vertex);
     <T extends Concept> T buildConcept(VertexElement vertex);
 
-    public Role getRole(String label);
+    <T extends Type> T getType(Label label);
+    <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
+    Rule getMetaRule();
 
-    public RelationType getRelationType(String label);
+    Role getRole(String label);
+    RelationType getRelationType(String label);
 }

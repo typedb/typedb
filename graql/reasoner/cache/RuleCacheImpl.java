@@ -21,13 +21,16 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.HashMultimap;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
+import graql.lang.Graql;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,6 +48,7 @@ public class RuleCacheImpl implements RuleCache {
     private final HashMultimap<Type, Rule> ruleMap = HashMultimap.create();
     private final Map<Rule, InferenceRule> ruleConversionMap = new HashMap<>();
     private Transaction tx;
+    private ConceptManager conceptManager;
 
     //TODO: these should be eventually stored together with statistics
     private Set<Type> absentTypes = new HashSet<>();
@@ -57,12 +61,17 @@ public class RuleCacheImpl implements RuleCache {
         this.tx = tx;
     }
 
+    @Override
+    public void setConceptManager(ConceptManager conceptManager) {
+        this.conceptManager = conceptManager;
+    }
+
     /**
      * @return set of inference rules contained in the graph
      */
     @Override
     public Stream<Rule> getRules() {
-        Rule metaRule = tx.getMetaRule();
+        Rule metaRule = conceptManager.getMetaRule();
         return metaRule.subs().filter(sub -> !sub.equals(metaRule));
     }
 
@@ -91,7 +100,7 @@ public class RuleCacheImpl implements RuleCache {
         Stream<? extends Type> baseStream = direct ? Stream.of(type) : type.subs();
         if (type.isImplicit()) {
             return baseStream
-                    .flatMap(t -> Stream.of(t, tx.getType(Schema.ImplicitType.explicitLabel(t.label()))))
+                    .flatMap(t -> Stream.of(t, conceptManager.getType(Schema.ImplicitType.explicitLabel(t.label()))))
                     .filter(Objects::nonNull);
         }
         return baseStream;
