@@ -15,13 +15,11 @@
 package grakn.core.graph.hadoop.config;
 
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.conf.Configuration;
 import grakn.core.graph.diskstorage.configuration.ConfigElement;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
 import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.hadoop.config.HadoopConfiguration;
-import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
+import org.apache.hadoop.conf.Configuration;
 
 public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
 
@@ -41,7 +39,7 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
                                                      ModifiableHadoopConfiguration mc) {
         HadoopConfiguration prefixConf = new HadoopConfiguration(mc.getHadoopConfiguration(),
                 ConfigElement.getPath(prefixRoot, true) + ".");
-        return new ModifiableConfiguration(newRoot, prefixConf,  Restriction.NONE);
+        return new ModifiableConfiguration(newRoot, prefixConf, Restriction.NONE);
     }
 
     public Configuration getHadoopConfiguration() {

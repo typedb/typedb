@@ -777,7 +777,7 @@ public class GraknClientIT {
 
 
     @Test
-    public void testExecutingComputeQueryies_ResultsAreCorrect() {
+    public void testExecutingComputeQueries_ResultsAreCorrect() {
         grakn.core.kb.concept.api.ConceptId idCoco, idMike, idCocoAndMike;
         try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.kb.concept.api.Role pet = tx.putRole("pet");

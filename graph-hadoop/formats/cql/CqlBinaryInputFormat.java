@@ -14,6 +14,13 @@
 
 package grakn.core.graph.hadoop.formats.cql;
 
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
+import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
+import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
+import grakn.core.graph.hadoop.formats.util.AbstractBinaryInputFormat;
+import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
 import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
@@ -24,15 +31,6 @@ import org.apache.hadoop.mapreduce.InputSplit;
 import org.apache.hadoop.mapreduce.JobContext;
 import org.apache.hadoop.mapreduce.RecordReader;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
-import grakn.core.graph.diskstorage.Entry;
-import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.graph.hadoop.formats.util.AbstractBinaryInputFormat;
-import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
-import grakn.core.graph.hadoop.formats.cql.CqlBinaryRecordReader;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +77,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
         ConfigHelper.setInputColumnFamily(config, janusgraphConf.get(CQLConfigOptions.KEYSPACE),
-            mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
+                mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
         log.debug("Set keyspace: {}", janusgraphConf.get(CQLConfigOptions.KEYSPACE));
 
         // Set the column slice bounds via Faunus' vertex query filter

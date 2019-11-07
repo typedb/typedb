@@ -52,9 +52,9 @@ public class JanusGraphHadoopConfiguration {
     public static final ConfigOption<Boolean> FILTER_PARTITIONED_VERTICES =
             new ConfigOption<>(IOFORMAT_NS, "filter-partitioned-vertices",
                     "True to drop partitioned vertices and relations incident on partitioned vertices when reading " +
-                    "from JanusGraph.  This currently must be true when partitioned vertices are present in the " +
-                    "input; if it is false when a partitioned vertex is encountered, then an exception is thrown.  " +
-                    "This limitation may be lifted in a later version of JanusGraph-Hadoop.",
+                            "from JanusGraph.  This currently must be true when partitioned vertices are present in the " +
+                            "input; if it is false when a partitioned vertex is encountered, then an exception is thrown.  " +
+                            "This limitation may be lifted in a later version of JanusGraph-Hadoop.",
                     ConfigOption.Type.LOCAL, false);
 
     public static final ConfigOption<String> COLUMN_FAMILY_NAME =
@@ -73,9 +73,9 @@ public class JanusGraphHadoopConfiguration {
     public static final ConfigOption<Boolean> BULKLOAD_SCHEMA_CHECK =
             new ConfigOption<>(BULKLOAD_NS, "filter-partitioned-vertices",
                     "Whether to enforce best-effort checks on edge multiplicity and property cardinality.  " +
-                    "These checks do not read the existing properties and edges in JanusGraph.  They only consider " +
-                    "those elements visible from a single MapReduce worker.  Hence, these checks do not " +
-                    "guarantee that invalid input data will be detected and rejected.",
+                            "These checks do not read the existing properties and edges in JanusGraph.  They only consider " +
+                            "those elements visible from a single MapReduce worker.  Hence, these checks do not " +
+                            "guarantee that invalid input data will be detected and rejected.",
                     ConfigOption.Type.LOCAL, false);
 
 }
