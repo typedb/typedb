@@ -125,7 +125,7 @@ public class AttributeUniquenessIT {
     }
 
     @Test
-    public void whenAttemptingToConcurrentlyInsertExistingKey_txsFail(){
+    public void whenAttemptingToConcurrentlyAttachExistingKey_onlyOneIsAccepted(){
         Transaction tx = session.writeTransaction();
         tx.execute(Graql.parse("define \n" +
                 "name sub attribute, \n" +
@@ -135,11 +135,11 @@ public class AttributeUniquenessIT {
         tx.commit();
 
         tx = session.writeTransaction();
-        GraqlInsert keyQuery = Graql.parse("insert $x isa person, has name \"Marco\";").asInsert();
+        GraqlInsert keyQuery = Graql.parse("insert $x \"Marco\" isa name;").asInsert();
         tx.execute(keyQuery);
         tx.commit();
 
-        //Try to insert 2 persons with same name, both txs should throw exception
+        //Try to insert 2 persons with same name, both txs should fail
         expectedException.expect(InvalidKBException.class);
         List<Future> queryFutures = createQueryFutures(Collections.list(keyQuery, keyQuery));
         for (Future future : queryFutures) {
@@ -441,7 +441,7 @@ public class AttributeUniquenessIT {
         }
     }
 
-    private void insertConcurrently(GraqlInsert query, int repetitions) throws InvalidKBException{
+    private void insertConcurrently(GraqlInsert query, int repetitions){
         List<GraqlInsert> queries = new ArrayList<>();
         for (int i = 0; i < repetitions; i++) {
             queries.add(query);
