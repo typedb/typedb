@@ -50,14 +50,19 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public void ackCommit(String txId) {
-
+        lockCandidates.remove(txId);
     }
 
     @Override
     public boolean requiresLock(String txId) {
+        return !lockCandidates.isEmpty();
+        /*
         boolean contains = lockCandidates.contains(txId);
+        System.out.println(txId + ": " + lockCandidates);
         if (!contains) System.out.println("doesnt need a lock!!!!");
         return contains;
+
+         */
     }
 
     @Override

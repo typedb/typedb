@@ -198,6 +198,7 @@ public class TransactionOLTP implements Transaction {
     private void persistInternal() {
         session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
         janusTransaction.commit();
+        session.attributeManager().ackCommit(this.janusTransaction.toString());
         cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second()));
     }
 
