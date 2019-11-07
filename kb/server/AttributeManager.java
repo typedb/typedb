@@ -11,7 +11,7 @@ public interface AttributeManager {
     void ackAttributeDelete(String index);
     void ackCommit(String txId);
 
-    boolean needsLock(String txId);
+    boolean requiresLock(String txId);
 
     void printEphemeralCache();
 

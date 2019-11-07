@@ -62,7 +62,6 @@ import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.cache.CacheProviderImpl;
@@ -205,8 +204,8 @@ public class TransactionOLTP implements Transaction {
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
     private void mergeAttributesAndCommit() {
-        boolean needLock = session.attributeManager().needsLock(this.janusTransaction.toString());
-        if (needLock) session.graphLock().writeLock().lock();
+        boolean lockRequired = session.attributeManager().requiresLock(this.janusTransaction.toString());
+        if (lockRequired) session.graphLock().writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
             cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
@@ -226,7 +225,7 @@ public class TransactionOLTP implements Transaction {
             }));
             persistInternal();
         } finally {
-            if (needLock) session.graphLock().writeLock().unlock();
+            if (lockRequired) session.graphLock().writeLock().unlock();
         }
     }
 

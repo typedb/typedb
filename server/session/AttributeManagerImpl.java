@@ -54,8 +54,7 @@ public class AttributeManagerImpl implements AttributeManager {
     }
 
     @Override
-    public boolean needsLock(String txId) {
-        //System.out.println(Thread.currentThread() + ":" + txId + " " + lockCandidates);
+    public boolean requiresLock(String txId) {
         boolean contains = lockCandidates.contains(txId);
         if (!contains) System.out.println("doesnt need a lock!!!!");
         return contains;
