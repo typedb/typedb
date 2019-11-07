@@ -120,7 +120,7 @@ public class ConceptObserver {
 
         //acknowledge key relation modification if the thing is one
         if (thingType.isImplicit() && Schema.ImplicitType.isKey(thingType.label())){
-            transactionCache.modifiedKeyRelation();
+            transactionCache.ackModifiedKeyRelation();
         }
     }
 

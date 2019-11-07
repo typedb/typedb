@@ -293,7 +293,7 @@ public class TransactionCache {
         newAttributes.put(new Pair<>(label, index), conceptId);
     }
 
-    public void modifiedKeyRelation(){
+    public void ackModifiedKeyRelation(){
         modifiedKeyRelations = true;
     }
 
