@@ -16,7 +16,7 @@ public class AttributeManagerImpl implements AttributeManager {
     private final ConcurrentHashMap<String, Integer> ephemeralAttributeCache;
     private final ConcurrentHashSet<String> lockCandidates;
 
-    AttributeManagerImpl(){
+    public AttributeManagerImpl(){
         this.attributesCache = CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
