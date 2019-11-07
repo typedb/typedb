@@ -31,6 +31,7 @@ import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
@@ -244,26 +245,19 @@ public class ValidateGlobalRules {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
         while (type != null) {
-
             Map<Role, Boolean> rolesAreRequired = type.directPlays();
             for (Map.Entry<Role, Boolean> roleIsRequired : rolesAreRequired.entrySet()) {
                 if (roleIsRequired.getValue()) {
                     Role role = roleIsRequired.getKey();
-                    Label attributeType = Schema.ImplicitType.explicitLabel(role.label());
+                    Label attributeLabel = Schema.ImplicitType.explicitLabel(role.label());
 
                     // Assert there is a relation for this type
                     if (!Streams.containsOnly(thing.relations(role), 1)) {
-                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeType));
+                        return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeLabel));
                     }
 
-                    Relation keyRelation = thing.relations(role).findFirst().get();
-                    final TypeImpl<?, ?> ownerType = type;
-                    final Role keyValueRole = tx.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeType).getValue());
-                    final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
-                    if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
-                        Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
-                        return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(type.label(), keyValue.value(), resourceTypeLabel));
-                    }
+                    Optional<String> uniquenessViolation = validateKeyUniqueness(tx, thing, role, type, attributeLabel);
+                    if (uniquenessViolation.isPresent()) return uniquenessViolation;
                 }
             }
             type = (TypeImpl) type.sup();
@@ -271,13 +265,25 @@ public class ValidateGlobalRules {
         return Optional.empty();
     }
 
+    public static Optional<String> validateKeyUniqueness(Transaction tx, Thing thing, Role role, Type ownerType, Label attributeLabel){
+        //validate key uniqueness
+        Relation keyRelation = thing.relations(role).findFirst().get();
+        final Role keyValueRole = tx.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeLabel).getValue());
+        final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
+        if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
+            Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
+            return Optional.of(VALIDATION_MORE_THAN_ONE_USE_OF_KEY.getMessage(ownerType.label(), keyValue.value(), resourceTypeLabel));
+        }
+        return Optional.empty();
+    }
+
     /**
-     * @param graph graph used to ensure rules are stratifiable
+     * @param tx context in which rules need to be stratifiable
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */
-    public static Set<String> validateRuleStratifiability(Transaction graph){
+    public static Set<String> validateRuleStratifiability(Transaction tx){
         Set<String> errors = new HashSet<>();
-        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(graph);
+        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(tx);
         if (!negativeCycles.isEmpty()){
             errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
         }
