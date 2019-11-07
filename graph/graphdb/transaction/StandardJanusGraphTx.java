@@ -1402,19 +1402,13 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     @Override
     public synchronized void commit() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
-        boolean success = false;
-//        if (null != config.getGroupName()) {
-//            //TODO-reenable
-//
-////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit").inc();
-//        }
+
         try {
             if (hasModifications()) {
                 graph.commit(addedRelations.getAll(), deletedRelations.values(), this);
             } else {
                 backendTransaction.commit();
             }
-            success = true;
         } catch (Exception e) {
             try {
                 backendTransaction.rollback();
@@ -1424,34 +1418,18 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
             throw new JanusGraphException("Could not commit transaction due to exception during persistence", e);
         } finally {
             releaseTransaction();
-//            if (null != config.getGroupName() && !success) {
-//                //TODO-reenable
-//
-////                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "commit.exceptions").inc();
-//            }
         }
     }
 
     @Override
     public synchronized void rollback() {
         Preconditions.checkArgument(isOpen(), "The transaction has already been closed");
-        boolean success = false;
-//        if (null != config.getGroupName()) {
-//            //TODO-reenable
-////            MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback").inc();
-//        }
         try {
             backendTransaction.rollback();
-            success = true;
         } catch (Exception e) {
             throw new JanusGraphException("Could not rollback transaction due to exception", e);
         } finally {
             releaseTransaction();
-//            if (null != config.getGroupName() && !success) {
-//                //TODO-reenable
-//
-////                MetricManager.INSTANCE.getCounter(config.getGroupName(), "tx", "rollback.exceptions").inc();
-//            }
         }
     }
 

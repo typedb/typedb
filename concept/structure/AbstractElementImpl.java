@@ -82,24 +82,21 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
     }
 
     /**
+     * Sets a property on an Element.
+     * If the Element already has such property, its value will be overridden.
+     *
      * @param key   The key of the property to mutate
      * @param value The value to commit into the property
      */
     @Override
     public void property(P key, Object value) {
-        if (value == null) {
-            element().property(key.name()).remove();
-        } else {
-            Property<Object> foundProperty = element().property(key.name());
-            if (!foundProperty.isPresent() || !foundProperty.value().equals(value)) {
-                element().property(key.name(), value);
-            }
-        }
+        element().property(key.name()).remove();
+        element().property(key.name(), value);
     }
 
     /**
      * @param key The key of the non-unique property to retrieve
-     * @return The value stored in the property
+     * @return The value stored in the property or null if property does not exist
      */
     @Override
     @Nullable
@@ -109,11 +106,6 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
             return property.value();
         }
         return null;
-    }
-
-    @Override
-    public void removeProperty(P key) {
-        element().property(key.name()).remove();
     }
 
     @Override

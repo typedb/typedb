@@ -184,7 +184,6 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
         Shard shard = vertex().shard();
 
         //store current shard id as a property of the type
-        vertex().removeProperty(Schema.VertexProperty.CURRENT_SHARD);
         vertex().property(Schema.VertexProperty.CURRENT_SHARD, shard.id());
         currentShard.set(shard);
 

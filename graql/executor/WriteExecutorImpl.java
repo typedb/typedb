@@ -298,7 +298,6 @@ public class WriteExecutorImpl implements WriteExecutor {
                 .filter(Thing::isInferred)
                 .forEach(t -> {
                     //as we are going to persist the concepts, reset the inferred flag
-                    ConceptVertex.from(t).vertex().removeProperty(Schema.VertexProperty.IS_INFERRED);
                     ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
                     transaction.cache().inferredInstanceToPersist(t);
                 });

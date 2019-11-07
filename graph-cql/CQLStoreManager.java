@@ -374,7 +374,7 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
         if (this.storageConfig.get(DROP_ON_CLEAR)) {
             this.session.execute(dropKeyspace(this.keyspace).build());
         } else if (this.exists()) {
-            final Future<Seq<AsyncResultSet>> result = Future.sequence(
+            Future<Seq<AsyncResultSet>> result = Future.sequence(
                     Iterator.ofAll(this.session.getMetadata().getKeyspace(this.keyspace).get().getTables().values())
                             .map(table -> Future.fromJavaFuture(this.session.executeAsync(truncate(this.keyspace, table.getName().toString()).build())
                                     .toCompletableFuture())));

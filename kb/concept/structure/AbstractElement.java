@@ -43,8 +43,6 @@ public interface AbstractElement<E extends Element, P> {
 
     void propertyUnique(P key, String value);
 
-    void removeProperty(P key);
-
     /**
      * Sets a property which cannot be mutated
      *
