@@ -184,45 +184,49 @@ public class TransactionOLTP implements Transaction {
             session.graphLock().writeLock().lock();
             try {
                 createNewTypeShardsWhenThresholdReached();
-                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-                janusTransaction.commit();
-                cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
+                persistInternal();
+                cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
             } finally {
                 session.graphLock().writeLock().unlock();
             }
         } else {
             createNewTypeShardsWhenThresholdReached();
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            janusTransaction.commit();
+            persistInternal();
         }
         LOG.trace("Graph committed.");
+    }
+
+    private void persistInternal() {
+        session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+        janusTransaction.commit();
+        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second()));
     }
 
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
     private void mergeAttributesAndCommit() {
-        session.graphLock().writeLock().lock();
+        boolean needLock = session.attributeManager().needsLock(this.janusTransaction.toString());
+        if (needLock) session.graphLock().writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
-            cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
+            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
             cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
                 // If the same index is contained in attributesCache, it means
                 // another concurrent transaction inserted the same attribute, time to merge!
                 // NOTE: we still need to rely on attributesCache instead of checking in the graph
                 // if the index exists, because apparently JanusGraph does not make indexes available
                 // in a Read Committed fashion
-                ConceptId targetId = session.attributesCache().getIfPresent(labelIndexPair.second());
+                ConceptId targetId = session.attributeManager().attributesCache().getIfPresent(labelIndexPair.second());
                 if (targetId != null) {
                     merge(getTinkerTraversal(), conceptId, targetId);
                     statisticsDelta().decrementAttribute(labelIndexPair.first());
                 } else {
-                    session.attributesCache().put(labelIndexPair.second(), conceptId);
+                    session.attributeManager().attributesCache().put(labelIndexPair.second(), conceptId);
                 }
             }));
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            janusTransaction.commit();
+            persistInternal();
         } finally {
-            session.graphLock().writeLock().unlock();
+            if (needLock) session.graphLock().writeLock().unlock();
         }
     }
 

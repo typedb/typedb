@@ -34,6 +34,7 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.cache.CacheProvider;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -51,16 +52,20 @@ import java.util.function.Supplier;
  */
 public class ConceptObserver {
 
-    private TransactionCache transactionCache;
-    private QueryCache queryCache;
-    private RuleCache ruleCache;
-    private UncomittedStatisticsDelta statistics;
+    private final TransactionCache transactionCache;
+    private final QueryCache queryCache;
+    private final RuleCache ruleCache;
+    private final UncomittedStatisticsDelta statistics;
+    private final AttributeManager attributeManager;
+    private final String txId;
 
-    public ConceptObserver(CacheProvider cacheProvider, UncomittedStatisticsDelta statistics) {
+    public ConceptObserver(CacheProvider cacheProvider, UncomittedStatisticsDelta statistics, AttributeManager attributeManager, String txId) {
         this.transactionCache = cacheProvider.getTransactionCache();
         this.queryCache = cacheProvider.getQueryCache();
         this.ruleCache = cacheProvider.getRuleCache();
         this.statistics = statistics;
+        this.attributeManager = attributeManager;
+        this.txId = txId;
     }
 
     private void conceptDeleted(Concept concept) {
@@ -72,6 +77,7 @@ public class ConceptObserver {
         statistics.decrement(type);
         queryCache.ackDeletion(type);
         conceptDeleted(thing);
+        if(thing.isAttribute()) attributeDeleted(thing.asAttribute());
     }
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
@@ -125,6 +131,14 @@ public class ConceptObserver {
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
         transactionCache.addNewAttribute(type.label(), index, attribute.id());
         thingCreated(attribute, isInferred);
+        attributeManager.ackAttributeInsert(index, txId);
+    }
+
+    private <D> void attributeDeleted(Attribute<D> attribute) {
+        Type type = attribute.type();
+        //Track the attribute by index
+        String index = Schema.generateAttributeIndex(type.label(), attribute.value().toString());
+        attributeManager.ackAttributeDelete(index);
     }
 
     void relationCreated(Relation relation, boolean isInferred) {

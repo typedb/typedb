@@ -60,5 +60,5 @@ public interface Session extends AutoCloseable {
 
     KeyspaceStatistics keyspaceStatistics();
 
-    Cache<String, ConceptId> attributesCache();
+    AttributeManager attributeManager();
 }

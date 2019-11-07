@@ -18,29 +18,40 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.kb.concept.api.Concept;
+
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Attribute;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import junit.framework.TestCase;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.util.List;
-
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"CheckReturnValue", "Duplicates"})
@@ -48,6 +59,74 @@ public class BenchmarkSmallIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
+
+    @Test
+    public void concurrentInsertionOfDuplicateAttributes_doesNotCreateGhostVertices() throws ExecutionException, InterruptedException {
+        String[] names = new String[]{"Marco", "James", "Ganesh", "Haikal", "Kasper", "Tomas", "Joshua", "Max", "Syed", "Soroush"};
+        String[] surnames = new String[]{"Surname1", "Surname2", "Surname3", "Surname4", "Surname5", "Surname6", "Surname7", "Surname8", "Surname9", "Surname10"};
+        int[] ages = new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+
+        Session session = server.sessionWithNewKeyspace();
+        Transaction tx = session.writeTransaction();
+        tx.execute(Graql.parse("define " +
+                "person sub entity, has name, has surname, has age; " +
+                "name sub attribute, datatype string;" +
+                "surname sub attribute, datatype string;" +
+                "age sub attribute, datatype long;").asDefine());
+
+        tx.commit();
+        ExecutorService executorService = Executors.newFixedThreadPool(36);
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        // We need a good amount of parallelism to have a good chance to spot possible issues. Don't use smaller values.
+        int numberOfConcurrentTransactions = 52;
+        int batchSize = 50;
+        Random random = new Random();
+        for (int i = 0; i < numberOfConcurrentTransactions; i++) {
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                Transaction threadTx = session.writeTransaction();
+                for (int j = 0; j < batchSize; j++) {
+                    threadTx.execute(Graql.parse("insert $x isa person, has name \"" + names[random.nextInt(10)] + "\"," +
+                            "has surname \"" + surnames[random.nextInt(10)] + "\"," +
+                            "has age " + ages[random.nextInt(10)] + ";").asInsert());
+                }
+                threadTx.commit();
+
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+
+        // Retrieve all the attribute values to make sure we don't have any person linked to a broken vertex.
+        // This step is needed because it's only when retrieving attributes that we would be able to spot a
+        // ghost vertex (which is might be introduced while merging 2 attribute nodes)
+        tx = session.writeTransaction();
+        List<ConceptMap> conceptMaps = tx.execute(Graql.parse("match $x isa person; get;").asGet());
+        conceptMaps.forEach(map -> {
+            Collection<Concept> concepts = map.map().values();
+            concepts.forEach(concept -> {
+                Set<Attribute<?>> collect = (Set<Attribute<?>>) concept.asThing().attributes().collect(toSet());
+                collect.forEach(attribute -> {
+                    String value = attribute.value().toString();
+                });
+            });
+        });
+        tx.close();
+
+
+        tx = session.writeTransaction();
+        int numOfNames = tx.execute(Graql.parse("match $x isa name; get; count;").asGetAggregate()).get(0).number().intValue();
+        int numOfSurnames = tx.execute(Graql.parse("match $x isa surname; get; count;").asGetAggregate()).get(0).number().intValue();
+        int numOfAges = tx.execute(Graql.parse("match $x isa age; get; count;").asGetAggregate()).get(0).number().intValue();
+        tx.close();
+
+        TestCase.assertEquals(10, numOfNames);
+        TestCase.assertEquals(10, numOfSurnames);
+        TestCase.assertEquals(10, numOfAges);
+        session.close();
+    }
 
 
     /**
