@@ -17,8 +17,7 @@ package grakn.core.graph.hadoop.formats.util;
 import com.google.common.base.Preconditions;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.util.system.ConfigurationUtil;
-import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetup;
+import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.NullWritable;
@@ -30,13 +29,10 @@ import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.GraphFilterAware;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.VertexWritable;
 import org.apache.tinkerpop.gremlin.process.computer.GraphFilter;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Function;
-
-import static grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_CLASS_NAME;
-import static grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon.SETUP_PACKAGE_PREFIX;
-import grakn.core.graph.hadoop.formats.util.JanusGraphVertexDeserializer;
 
 
 public abstract class HadoopInputFormat extends InputFormat<NullWritable, VertexWritable> implements Configurable, GraphFilterAware {
@@ -45,15 +41,7 @@ public abstract class HadoopInputFormat extends InputFormat<NullWritable, Vertex
     private static final RefCountedCloseable<JanusGraphVertexDeserializer> refCounter;
 
     static {
-        refCounter = new RefCountedCloseable<>((conf) -> {
-            final String janusgraphVersion = "current";
-
-            String className = SETUP_PACKAGE_PREFIX + janusgraphVersion + SETUP_CLASS_NAME;
-
-            JanusGraphHadoopSetup ts = ConfigurationUtil.instantiate(className, new Object[]{ conf }, new Class[]{ Configuration.class });
-
-            return new JanusGraphVertexDeserializer(ts);
-        });
+        refCounter = new RefCountedCloseable<>((conf) -> new JanusGraphVertexDeserializer(new JanusGraphHadoopSetupImpl(conf)));
     }
 
     public HadoopInputFormat(InputFormat<StaticBuffer, Iterable<Entry>> inputFormat) {
@@ -73,14 +61,14 @@ public abstract class HadoopInputFormat extends InputFormat<NullWritable, Vertex
 
     @Override
     public void setConf(Configuration conf) {
-        ((Configurable)inputFormat).setConf(conf);
+        ((Configurable) inputFormat).setConf(conf);
 
         refCounter.setBuilderConfiguration(conf);
     }
 
     @Override
     public Configuration getConf() {
-        return ((Configurable)inputFormat).getConf();
+        return ((Configurable) inputFormat).getConf();
     }
 
     @Override

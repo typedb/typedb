@@ -30,15 +30,6 @@ public interface JanusGraphHadoopSetup {
 
     IDManager getIDManager();
 
-    /**
-     * Return an input slice across the entire row.
-     *
-     * TODO This would ideally slice only columns inside the row needed by the query.
-     * The slice must include the hidden vertex state property (to filter removed vertices).
-     *
-     */
-    SliceQuery inputSlice();
-
     void close();
 
     boolean getFilterPartitionedVertices();

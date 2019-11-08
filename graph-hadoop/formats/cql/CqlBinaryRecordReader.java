@@ -15,15 +15,14 @@
 package grakn.core.graph.hadoop.formats.cql;
 
 import com.datastax.driver.core.Row;
-import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore;
 import grakn.core.graph.diskstorage.util.StaticArrayBuffer;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.mapreduce.RecordReader;
+import org.apache.hadoop.mapreduce.TaskAttemptContext;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,9 +31,9 @@ public class CqlBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<E
     private KV currentKV;
     private KV incompleteKV;
 
-    private final CqlRecordReader reader;
+    private final GraknCqlRecordReader reader;
 
-    public CqlBinaryRecordReader(CqlRecordReader reader) {
+    public CqlBinaryRecordReader(GraknCqlRecordReader reader) {
         this.reader = reader;
     }
 

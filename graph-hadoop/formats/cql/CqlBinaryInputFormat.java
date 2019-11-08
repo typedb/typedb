@@ -20,9 +20,8 @@ import grakn.core.graph.diskstorage.cql.CQLConfigOptions;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
 import grakn.core.graph.hadoop.formats.util.AbstractBinaryInputFormat;
-import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupCommon;
+import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.cassandra.hadoop.cql3.CqlInputFormat;
 import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
@@ -39,13 +38,13 @@ import java.util.List;
 
 public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
 
-    private static final Logger log = LoggerFactory.getLogger(CqlBinaryInputFormat.class);
+    private static final Logger LOG = LoggerFactory.getLogger(CqlBinaryInputFormat.class);
 
     // Copied these private constants from Cassandra's ConfigHelper circa 2.0.9
     private static final String INPUT_WIDEROWS_CONFIG = "cassandra.input.widerows";
     private static final String RANGE_BATCH_SIZE_CONFIG = "cassandra.range.batch.size";
 
-    private final CqlInputFormat cqlInputFormat = new CqlInputFormat();
+    private final GraknInputFormat cqlInputFormat = new GraknInputFormat();
 
     @Override
     public List<InputSplit> getSplits(JobContext jobContext) throws IOException {
@@ -54,7 +53,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
 
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
-        CqlRecordReader recordReader = (CqlRecordReader) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
+        GraknCqlRecordReader recordReader = (GraknCqlRecordReader) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
         CqlBinaryRecordReader reader = new CqlBinaryRecordReader(recordReader);
 
         return reader;
@@ -78,7 +77,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false
         ConfigHelper.setInputColumnFamily(config, janusgraphConf.get(CQLConfigOptions.KEYSPACE),
                 mrConf.get(JanusGraphHadoopConfiguration.COLUMN_FAMILY_NAME), wideRows);
-        log.debug("Set keyspace: {}", janusgraphConf.get(CQLConfigOptions.KEYSPACE));
+        LOG.debug("Set keyspace: {}", janusgraphConf.get(CQLConfigOptions.KEYSPACE));
 
         // Set the column slice bounds via Faunus' vertex query filter
         SlicePredicate predicate = new SlicePredicate();
@@ -89,9 +88,9 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
 
     private SliceRange getSliceRange(int limit) {
         SliceRange sliceRange = new SliceRange();
-        sliceRange.setStart(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
-        sliceRange.setFinish(JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
-        sliceRange.setCount(Math.min(limit, JanusGraphHadoopSetupCommon.DEFAULT_SLICE_QUERY.getLimit()));
+        sliceRange.setStart(JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getSliceStart().asByteBuffer());
+        sliceRange.setFinish(JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getSliceEnd().asByteBuffer());
+        sliceRange.setCount(Math.min(limit, JanusGraphHadoopSetupImpl.DEFAULT_SLICE_QUERY.getLimit()));
         return sliceRange;
     }
 }
