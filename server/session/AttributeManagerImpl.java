@@ -24,6 +24,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.server.AttributeManager;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.spark_project.jetty.util.ConcurrentHashSet;
@@ -34,8 +35,8 @@ public class AttributeManagerImpl implements AttributeManager {
 
     private final Cache<String, ConceptId> attributesCache;
     //we track txs that insert an attribute with given index
-    private final ConcurrentHashMap<String, ConcurrentHashSet<String>> ephemeralAttributeCache;
-    private final ConcurrentHashSet<String> lockCandidates;
+    private final ConcurrentHashMap<String, Set<String>> ephemeralAttributeCache;
+    private final Set<String> lockCandidates;
 
     public AttributeManagerImpl(){
         this.attributesCache = CacheBuilder.newBuilder()
@@ -44,7 +45,7 @@ public class AttributeManagerImpl implements AttributeManager {
                 .build();
 
         this.ephemeralAttributeCache = new ConcurrentHashMap<>();
-        this.lockCandidates = new ConcurrentHashSet<>();
+        this.lockCandidates = ConcurrentHashMap.newKeySet();
     }
 
     @Override
@@ -56,7 +57,7 @@ public class AttributeManagerImpl implements AttributeManager {
     public void ackAttributeInsert(String index, String txId) {
         ephemeralAttributeCache.compute(index, (ind, entry) -> {
             if (entry == null) {
-                ConcurrentHashSet<String> txSet = new ConcurrentHashSet<>();
+                Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
                 return txSet;
             }
