@@ -62,44 +62,11 @@ java_test(
     ],
 )
 
-java_test(
-    name = "server-benchmark-it",
-    size = "large",
-    srcs = [
-        "ServerBenchmarkIT.java",
-        "element/Attribute.java",
-        "element/Element.java",
-        "element/Record.java",
-    ],
-    classpath_resources = ["//test-integration/resources:logback-test"],
-    resources = [
-        "//test-integration/graql/reasoner/resources:generic-schema",
-        "//test-integration/graql/reasoner/resources:unification-with-types",
-    ],
-    test_class = "grakn.core.graql.reasoner.benchmark.ServerBenchmarkIT",
-    deps = [
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//kb",
-        "//kb/concept/api",
-        "//test-integration/graql/reasoner/graph:diagonal-graph",
-        "//test-integration/graql/reasoner/graph:linear-transitivity-matrix-graph",
-        "//test-integration/graql/reasoner/graph:path-tree-graph",
-        "//test-integration/graql/reasoner/graph:transitivity-chain-graph",
-        "//test-integration/graql/reasoner/graph:transitivity-matrix-graph",
-        "//test-integration/rule:grakn-test-server",
-        "@graknlabs_client_java//:client-java",
-        "@graknlabs_common//:common",
-        "@graknlabs_graql//java:graql",
-        "@org-apache-commons-commons-lang3//jar",
-    ],
-)
-
 checkstyle_test(
     name = "checkstyle",
     targets = [
         ":rule-scaling-it",
         ":benchmark-big-it",
         ":benchmark-small-it",
-        ":server-benchmark-it",
     ],
 )
