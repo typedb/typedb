@@ -117,7 +117,7 @@ public class GraknClientIT {
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        graknClient = new GraknClient(server.grpcUri().toString());
+        graknClient = new GraknClient(server.grpcUri());
         remoteSession = graknClient.session(localSession.keyspace().name());
     }
 
