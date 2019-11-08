@@ -21,7 +21,6 @@ package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Answer;
@@ -62,7 +61,6 @@ import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.cache.CacheProviderImpl;
@@ -172,11 +170,10 @@ public class TransactionOLTP implements Transaction {
      * - use a lock to serialise commits that are removing attributes, so concurrent txs don't use outdated attribute IDs from attributesCache
      * - don't lock when added or removed attributes are not involved
      */
-    private void commitInternal() {
-        LOG.trace("Graph is valid. Committing graph...");
+    private void commitInternal() throws InvalidKBException {
         if (!cache().getNewAttributes().isEmpty()) {
             mergeAttributesAndCommit();
-        } else if (!cache().getRemovedAttributes().isEmpty()) {
+        } else if (!cache().getRemovedAttributes().isEmpty() || cache().modifiedKeyRelations()) {
             // In this case we need to lock, so that other concurrent Transactions
             // that are trying to create new attributes will read an updated version of attributesCache
             // Not locking here might lead to concurrent transactions reading the attributesCache that still
@@ -184,17 +181,22 @@ public class TransactionOLTP implements Transaction {
             session.graphLock().writeLock().lock();
             try {
                 createNewTypeShardsWhenThresholdReached();
-                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-                janusTransaction.commit();
+                persistInternal();
                 cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             } finally {
                 session.graphLock().writeLock().unlock();
             }
         } else {
             createNewTypeShardsWhenThresholdReached();
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            janusTransaction.commit();
+            persistInternal();
         }
+    }
+
+    private void persistInternal() throws InvalidKBException {
+        validateGraph();
+        session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+        LOG.trace("Graph is valid. Committing graph...");
+        janusTransaction.commit();
         LOG.trace("Graph committed.");
     }
 
@@ -219,8 +221,7 @@ public class TransactionOLTP implements Transaction {
                     session.attributesCache().put(labelIndexPair.second(), conceptId);
                 }
             }));
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
-            janusTransaction.commit();
+            persistInternal();
         } finally {
             session.graphLock().writeLock().unlock();
         }
@@ -1040,23 +1041,13 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
-            /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
-            int validateSpanId = ServerTracing.startScopedChildSpan("commit validate");
-
             checkMutationAllowed();
             removeInferredConcepts();
-            validateGraph();
-
-            ServerTracing.closeScopedChildSpan(validateSpanId);
-
-            int commitSpanId = ServerTracing.startScopedChildSpan("commit");
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
             commitInternal();
             transactionCache.flushSchemaLabelIdsToCache();
-
-            ServerTracing.closeScopedChildSpan(commitSpanId);
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
