@@ -119,9 +119,14 @@ public class ConceptObserver {
 
         transactionCache.cacheConcept(thing);
 
-        //This Thing gets tracked for validation only if it has keys which need to be checked.
+        //This Thing gets tracked for validation only if it has keys which need to be checked
         if (thingType.keys().findAny().isPresent()) {
             transactionCache.trackForValidation(thing);
+        }
+
+        //acknowledge key relation modification if the thing is one
+        if (thingType.isImplicit() && Schema.ImplicitType.isKey(thingType.label())){
+            transactionCache.ackModifiedKeyRelation();
         }
     }
 

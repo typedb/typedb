@@ -25,14 +25,10 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -43,6 +39,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
@@ -90,6 +91,69 @@ public class AttributeUniquenessIT {
             List<ConceptMap> conceptMaps = tx.execute(Graql.match(var(testAttributeLabel).isa(testAttributeLabel).val(testAttributeValue)).get());
             assertThat(conceptMaps, hasSize(1));
         }
+    }
+
+    @org.junit.Rule
+    public final ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void whenInsertingKeyConcurrently_onlyOneIsAccepted(){
+        Transaction tx = session.writeTransaction();
+        tx.execute(Graql.parse("define \n" +
+                "name sub attribute, \n" +
+                "    datatype string;\n" +
+                "person sub entity, \n" +
+                "    key name;").asDefine());
+        tx.commit();
+
+        //Try to insert 2 persons with same name in two transactions, one transaction should throw
+        GraqlInsert keyQuery = Graql.parse("insert $x isa person, has name \"Marco\";").asInsert();
+        expectedException.expect(InvalidKBException.class);
+        List<Future> queryFutures = createQueryFutures(Collections.list(keyQuery, keyQuery));
+        for (Future future : queryFutures) {
+            try{
+                future.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (e.getCause() instanceof InvalidKBException) throw (InvalidKBException) e.getCause();
+            }
+        }
+
+        tx = session.readTransaction();
+        List<ConceptMap> result = tx.execute(Graql.parse("match $x isa person, has name \"Marco\"; get;").asGet());
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    public void whenAttemptingToConcurrentlyAttachExistingKey_onlyOneIsAccepted(){
+        Transaction tx = session.writeTransaction();
+        tx.execute(Graql.parse("define \n" +
+                "name sub attribute, \n" +
+                "    datatype string;\n" +
+                "person sub entity, \n" +
+                "    key name;").asDefine());
+        tx.commit();
+
+        tx = session.writeTransaction();
+        tx.execute(Graql.parse("insert $x \"Marco\" isa name;").asInsert());
+        tx.commit();
+
+        //Try to insert 2 persons with same name, one tx should fail
+        GraqlInsert keyQuery = Graql.parse("insert $x isa person, has name \"Marco\";").asInsert();
+        expectedException.expect(InvalidKBException.class);
+        List<Future> queryFutures = createQueryFutures(Collections.list(keyQuery, keyQuery));
+        for (Future future : queryFutures) {
+            try{
+                future.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+                if (e.getCause() instanceof InvalidKBException) throw (InvalidKBException) e.getCause();
+            }
+        }
+
+        tx = session.readTransaction();
+        List<ConceptMap> result = tx.execute(Graql.parse("match $x isa person, has name \"Marco\"; get;").asGet());
+        assertEquals(1, result.size());
     }
 
     @Test
@@ -377,7 +441,7 @@ public class AttributeUniquenessIT {
         }
     }
 
-    private void insertConcurrently(GraqlInsert query, int repetitions) {
+    private void insertConcurrently(GraqlInsert query, int repetitions){
         List<GraqlInsert> queries = new ArrayList<>();
         for (int i = 0; i < repetitions; i++) {
             queries.add(query);
@@ -385,7 +449,7 @@ public class AttributeUniquenessIT {
         insertConcurrently(queries);
     }
 
-    private void insertConcurrently(Collection<GraqlInsert> queries) {
+    private List<Future> createQueryFutures(Collection<GraqlInsert> queries) {
         // use latch to make sure all threads will insert a new attribute instance
         CountDownLatch commitLatch = new CountDownLatch(queries.size());
         ExecutorService executorService = Executors.newFixedThreadPool(queries.size());
@@ -403,7 +467,12 @@ public class AttributeUniquenessIT {
                 tx.commit();
             }));
         });
-        for (Future future : futures) {
+        return futures;
+    }
+
+    private void insertConcurrently(Collection<GraqlInsert> queries) {
+        List<Future> queryFutures = createQueryFutures(queries);
+        for (Future future : queryFutures) {
             try {
                 future.get();
             } catch (InterruptedException e) {

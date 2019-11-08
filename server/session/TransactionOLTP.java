@@ -21,7 +21,6 @@ package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Answer;
@@ -171,11 +170,10 @@ public class TransactionOLTP implements Transaction {
      * - use a lock to serialise commits that are removing attributes, so concurrent txs don't use outdated attribute IDs from attributesCache
      * - don't lock when added or removed attributes are not involved
      */
-    private void commitInternal() {
-        LOG.trace("Graph is valid. Committing graph...");
+    private void commitInternal() throws InvalidKBException {
         if (!cache().getNewAttributes().isEmpty()) {
             mergeAttributesAndCommit();
-        } else if (!cache().getRemovedAttributes().isEmpty()) {
+        } else if (!cache().getRemovedAttributes().isEmpty() || cache().modifiedKeyRelations()) {
             // In this case we need to lock, so that other concurrent Transactions
             // that are trying to create new attributes will read an updated version of attributesCache
             // Not locking here might lead to concurrent transactions reading the attributesCache that still
@@ -192,14 +190,16 @@ public class TransactionOLTP implements Transaction {
             createNewTypeShardsWhenThresholdReached();
             persistInternal();
         }
-        LOG.trace("Graph committed.");
     }
 
-    private void persistInternal() {
+    private void persistInternal() throws InvalidKBException {
+        validateGraph();
         session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+        LOG.trace("Graph is valid. Committing graph...");
         janusTransaction.commit();
         session.attributeManager().ackCommit(this.janusTransaction.toString());
         cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second(), this.janusTransaction.toString()));
+        LOG.trace("Graph committed.");
     }
 
     // When there are new attributes in the current transaction that is about to be committed
@@ -1044,23 +1044,13 @@ public class TransactionOLTP implements Transaction {
             return;
         }
         try {
-            /* This method has permanent tracing because commits can take varying lengths of time depending on operations */
-            int validateSpanId = ServerTracing.startScopedChildSpan("commit validate");
-
             checkMutationAllowed();
             removeInferredConcepts();
-            validateGraph();
-
-            ServerTracing.closeScopedChildSpan(validateSpanId);
-
-            int commitSpanId = ServerTracing.startScopedChildSpan("commit");
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync
             commitInternal();
             transactionCache.flushSchemaLabelIdsToCache();
-
-            ServerTracing.closeScopedChildSpan(commitSpanId);
         } finally {
             String closeMessage = ErrorMessage.TX_CLOSED_ON_ACTION.getMessage("committed", keyspace());
             closeTransaction(closeMessage);
