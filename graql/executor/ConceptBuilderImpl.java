@@ -23,7 +23,9 @@ import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -31,6 +33,7 @@ import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ConceptBuilder;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.GraqlQueryException;
 import grakn.core.kb.server.exception.InvalidKBException;
@@ -39,6 +42,7 @@ import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import grakn.core.core.Schema;
+import org.janusgraph.diskstorage.ResourceUnavailableException;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;
@@ -47,6 +51,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -72,6 +77,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class ConceptBuilderImpl implements ConceptBuilder {
 
     private final ConceptManager conceptManager;
+    private final WriteExecutor writeExecutor;
 
     private final Variable var;
 
@@ -158,8 +164,8 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         return set(THEN, then);
     }
 
-    static ConceptBuilder of(ConceptManager conceptManager, Variable var) {
-        return new ConceptBuilderImpl(conceptManager, var);
+    static ConceptBuilder of(ConceptManager conceptManager, WriteExecutor writeExecutor, Variable var) {
+        return new ConceptBuilderImpl(conceptManager, writeExecutor, var);
     }
     /**
      * Build the Concept and return it, using the properties given.
@@ -215,7 +221,17 @@ public class ConceptBuilderImpl implements ConceptBuilder {
             use(IS_ROLE);
 
             Label label = use(LABEL);
-            Role role = conceptManager.putRole(label);
+            SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
+            Role role;
+            if (schemaConcept != null && !schemaConcept.isRole()) {
+                // is already assigned to a different type
+                // TODO better exception
+                throw new RuntimeException();
+            } else if (schemaConcept == null) {
+                role = conceptManager.createRole(label, conceptManager.getMetaRole());
+            } else {
+                role = schemaConcept.asRole();
+            }
 
             if (has(SUPER_CONCEPT)) {
                 setSuper(role, use(SUPER_CONCEPT));
@@ -225,10 +241,13 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         } else if (has(IS_RULE)) {
             use(IS_RULE);
 
+            // PUT behavior on rule
             Label label = use(LABEL);
             Pattern when = use(WHEN);
             Pattern then = use(THEN);
-            Rule rule = executor.tx().putRule(label, when, then);
+            Rule rule = putSchemaConcept(label, () -> conceptManager.createRule(label, when, then, conceptManager.getMetaRule()), Rule.class);
+
+            // TODO we may have to update the rule cache here
 
             if (has(SUPER_CONCEPT)) {
                 setSuper(rule, use(SUPER_CONCEPT));
@@ -240,7 +259,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         } else if (has(TYPE)) {
             concept = putInstance();
         } else {
-            throw GraqlSemanticException.insertUndefinedVariable(executor.printableRepresentation(var));
+            throw GraqlSemanticException.insertUndefinedVariable(writeExecutor.printableRepresentation(var));
         }
 
         // Check for any unexpected parameters
@@ -264,8 +283,9 @@ public class ConceptBuilderImpl implements ConceptBuilder {
     private static final BuilderParam<Unit> IS_ROLE = BuilderParam.of("role"); // TODO: replace this with a value registered in an enum
     private static final BuilderParam<Unit> IS_RULE = BuilderParam.of("rule"); // TODO: replace this with a value registered in an enum
 
-    private ConceptBuilderImpl(ConceptManager conceptManager, Variable var) {
+    private ConceptBuilderImpl(ConceptManager conceptManager, WriteExecutor writeExecutor, Variable var) {
         this.conceptManager = conceptManager;
+        this.writeExecutor = writeExecutor;
         this.var = var;
     }
 
@@ -279,7 +299,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         if (value == null) value = defaultValue;
 
         if (value == null) {
-            Statement owner = executor.printableRepresentation(var);
+            Statement owner = writeExecutor.printableRepresentation(var);
             throw GraqlSemanticException.insertNoExpectedProperty(param.name(), owner);
         }
 
@@ -303,7 +323,7 @@ public class ConceptBuilderImpl implements ConceptBuilder {
 
     private <T> ConceptBuilder set(BuilderParam<T> param, T value) {
         if (preProvidedParams.containsKey(param) && !preProvidedParams.get(param).equals(value)) {
-            Statement varPattern = executor.printableRepresentation(var);
+            Statement varPattern = writeExecutor.printableRepresentation(var);
             Object otherValue = preProvidedParams.get(param);
             throw GraqlSemanticException.insertMultipleProperties(varPattern, param.name(), value, otherValue);
         }
@@ -369,17 +389,17 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         SchemaConcept concept;
 
         if (superConcept.isEntityType()) {
-            concept = executor.tx().putEntityType(label);
+            concept = putSchemaConcept(label, () -> conceptManager.createEntityType(label, superConcept.asEntityType()), EntityType.class);
         } else if (superConcept.isRelationType()) {
-            concept = executor.tx().putRelationType(label);
+            concept = putSchemaConcept(label, () -> conceptManager.createRelationType(label, superConcept.asRelationType()), RelationType.class);
         } else if (superConcept.isRole()) {
-            concept = executor.tx().putRole(label);
+            concept = putSchemaConcept(label, () -> conceptManager.createRole(label, superConcept.asRole()), Role.class);
         } else if (superConcept.isAttributeType()) {
             AttributeType attributeType = superConcept.asAttributeType();
             AttributeType.DataType<?> dataType = useOrDefault(DATA_TYPE, attributeType.dataType());
-            concept = executor.tx().putAttributeType(label, dataType);
+            concept = putSchemaConcept(label, () -> conceptManager.createAttributeType(label, superConcept.asAttributeType(), dataType), AttributeType.class);
         } else if (superConcept.isRule()) {
-            concept = executor.tx().putRule(label, use(WHEN), use(THEN));
+            concept = putSchemaConcept(label, () -> conceptManager.createRule(label, use(WHEN), use(THEN), superConcept.asRule()), Rule.class);
         } else {
             throw InvalidKBException.insertMetaType(label, superConcept);
         }
@@ -389,6 +409,18 @@ public class ConceptBuilderImpl implements ConceptBuilder {
         return concept;
     }
 
+    private <T extends SchemaConcept> T putSchemaConcept(Label label, Supplier<T> create, Class<T> expectedClass) {
+        SchemaConcept schemaConcept = conceptManager.getSchemaConcept(label);
+        if (schemaConcept != null && !expectedClass.isInstance(schemaConcept)) {
+            // TODO better exception
+            throw new RuntimeException();
+        } else if (schemaConcept == null) {
+            return create.get();
+        } else {
+            return expectedClass.cast(schemaConcept);
+        }
+    }
+
     @Override
     public String toString() {
         return "ConceptBuilder{" +
@@ -396,6 +428,28 @@ public class ConceptBuilderImpl implements ConceptBuilder {
                 ", preProvidedParams=" + preProvidedParams +
                 ", usedParams=" + usedParams +
                 '}';
+    }
+
+
+    /**
+     * Make the second argument the super of the first argument
+     *
+     * @throws GraqlSemanticException if the types are different, or setting the super to be a meta-type
+     */
+    static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
+        if (superConcept.isEntityType()) {
+            subConcept.asEntityType().sup(superConcept.asEntityType());
+        } else if (superConcept.isRelationType()) {
+            subConcept.asRelationType().sup(superConcept.asRelationType());
+        } else if (superConcept.isRole()) {
+            subConcept.asRole().sup(superConcept.asRole());
+        } else if (superConcept.isAttributeType()) {
+            subConcept.asAttributeType().sup(superConcept.asAttributeType());
+        } else if (superConcept.isRule()) {
+            subConcept.asRule().sup(superConcept.asRule());
+        } else {
+            throw InvalidKBException.insertMetaType(subConcept.label(), superConcept);
+        }
     }
 
     /**

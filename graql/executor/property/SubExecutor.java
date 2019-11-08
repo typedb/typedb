@@ -31,6 +31,7 @@ import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.binary.SubAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.server.exception.InvalidKBException;
 import graql.lang.property.SubProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -107,7 +108,20 @@ public class SubExecutor  implements PropertyExecutor.Definable {
             if (builder.isPresent()) {
                 builder.get().sub(superConcept);
             } else {
-                ConceptBuilder.setSuper(executor.getConcept(var).asSchemaConcept(), superConcept);
+                SchemaConcept schemaConcept = executor.getConcept(var).asSchemaConcept();
+                if (superConcept.isEntityType()) {
+                    schemaConcept.asEntityType().sup(superConcept.asEntityType());
+                } else if (superConcept.isRelationType()) {
+                    schemaConcept.asRelationType().sup(superConcept.asRelationType());
+                } else if (superConcept.isRole()) {
+                    schemaConcept.asRole().sup(superConcept.asRole());
+                } else if (superConcept.isAttributeType()) {
+                    schemaConcept.asAttributeType().sup(superConcept.asAttributeType());
+                } else if (superConcept.isRule()) {
+                    schemaConcept.asRule().sup(superConcept.asRule());
+                } else {
+                    throw InvalidKBException.insertMetaType(schemaConcept.label(), superConcept);
+                }
             }
         }
     }

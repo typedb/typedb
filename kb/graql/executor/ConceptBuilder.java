@@ -34,27 +34,6 @@ import graql.lang.statement.Variable;
 public interface ConceptBuilder {
 
 
-    /**
-     * Make the second argument the super of the first argument
-     *
-     * @throws GraqlSemanticException if the types are different, or setting the super to be a meta-type
-     */
-    static void setSuper(SchemaConcept subConcept, SchemaConcept superConcept) {
-        if (superConcept.isEntityType()) {
-            subConcept.asEntityType().sup(superConcept.asEntityType());
-        } else if (superConcept.isRelationType()) {
-            subConcept.asRelationType().sup(superConcept.asRelationType());
-        } else if (superConcept.isRole()) {
-            subConcept.asRole().sup(superConcept.asRole());
-        } else if (superConcept.isAttributeType()) {
-            subConcept.asAttributeType().sup(superConcept.asAttributeType());
-        } else if (superConcept.isRule()) {
-            subConcept.asRule().sup(superConcept.asRule());
-        } else {
-            throw InvalidKBException.insertMetaType(subConcept.label(), superConcept);
-        }
-    }
-
     ConceptBuilder isa(Type type);
 
     ConceptBuilder sub(SchemaConcept superConcept);
