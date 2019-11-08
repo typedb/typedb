@@ -199,7 +199,7 @@ public class TransactionOLTP implements Transaction {
         session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
         janusTransaction.commit();
         session.attributeManager().ackCommit(this.janusTransaction.toString());
-        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second()));
+        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second(), this.janusTransaction.toString()));
     }
 
     // When there are new attributes in the current transaction that is about to be committed

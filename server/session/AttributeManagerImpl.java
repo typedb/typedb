@@ -33,7 +33,8 @@ public class AttributeManagerImpl implements AttributeManager {
     private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
     private final Cache<String, ConceptId> attributesCache;
-    private final ConcurrentHashMap<String, Integer> ephemeralAttributeCache;
+    //we track txs that insert an attribute with given index
+    private final ConcurrentHashMap<String, ConcurrentHashSet<String>> ephemeralAttributeCache;
     private final ConcurrentHashSet<String> lockCandidates;
 
     public AttributeManagerImpl(){
@@ -54,17 +55,26 @@ public class AttributeManagerImpl implements AttributeManager {
     @Override
     public void ackAttributeInsert(String index, String txId) {
         ephemeralAttributeCache.compute(index, (ind, entry) -> {
-            if (entry == null) return 1;
+            if (entry == null) {
+                ConcurrentHashSet<String> txSet = new ConcurrentHashSet<>();
+                txSet.add(txId);
+                return txSet;
+            }
             else{
-                lockCandidates.add(txId);
-                return entry +1;
+                entry.add(txId);
+                lockCandidates.addAll(entry);
+                return entry;
             }
         });
     }
 
     @Override
-    public void ackAttributeDelete(String index) {
-        ephemeralAttributeCache.merge(index, 0, (existingValue, zero) -> existingValue == 0? null : existingValue - 1);
+    public void ackAttributeDelete(String index, String txId) {
+        ephemeralAttributeCache.merge(index, new ConcurrentHashSet<>(), (existingValue, zero) -> {
+            if (existingValue.isEmpty()) return null;
+            existingValue.remove(txId);
+            return existingValue;
+        });
     }
 
     @Override
@@ -74,8 +84,9 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public boolean requiresLock(String txId) {
-        boolean needLock = !lockCandidates.isEmpty();
+        boolean needLock = lockCandidates.contains(txId);
         if (!needLock) System.out.println(txId + " doesnt need a lock!!!!");
+        else System.out.println(txId + " NEEDS a lock!!!!");
         return needLock;
     }
 

@@ -28,7 +28,7 @@ public interface AttributeManager {
     Cache<String, ConceptId> attributesCache();
 
     void ackAttributeInsert(String index, String txId);
-    void ackAttributeDelete(String index);
+    void ackAttributeDelete(String index, String txId);
     void ackCommit(String txId);
 
     boolean requiresLock(String txId);

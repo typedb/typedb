@@ -138,7 +138,7 @@ public class ConceptObserver {
         Type type = attribute.type();
         //Track the attribute by index
         String index = Schema.generateAttributeIndex(type.label(), attribute.value().toString());
-        attributeManager.ackAttributeDelete(index);
+        attributeManager.ackAttributeDelete(index, txId);
     }
 
     void relationCreated(Relation relation, boolean isInferred) {
