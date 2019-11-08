@@ -455,28 +455,28 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     public AttributeType getMetaAttributeType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ATTRIBUTE.toString()));
+        return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
     public EntityType getMetaEntityType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ENTITY.name()));
+        return getSchemaConcept(Schema.MetaSchema.ENTITY.getId());
     }
 
     public RelationType getMetaRelationType() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.RELATION.name()));
+        return getSchemaConcept(Schema.MetaSchema.RELATION.getId());
     }
 
     public Type getMetaConcept() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.THING.name()));
+        return getSchemaConcept(Schema.MetaSchema.THING.getId());
     }
 
     public Role getMetaRole() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.ROLE.name()));
+        return getSchemaConcept(Schema.MetaSchema.ROLE.getId());
     }
 
     @Override
     public Rule getMetaRule() {
-        return getSchemaConcept(Label.of(Graql.Token.Type.RULE.name()));
+        return getSchemaConcept(Schema.MetaSchema.RULE.getId());
     }
 
     @Override
