@@ -255,7 +255,7 @@ public class SessionImpl implements Session {
         }
 
         isClosed = true;
-        attributeManager.printEphemeralCache();
+        //attributeManager.printEphemeralCache();
     }
 
     @Override

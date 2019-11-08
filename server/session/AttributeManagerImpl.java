@@ -1,3 +1,23 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2019 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ */
+
+
 package grakn.core.server.session;
 
 import com.google.common.cache.Cache;
@@ -47,7 +67,6 @@ public class AttributeManagerImpl implements AttributeManager {
         ephemeralAttributeCache.merge(index, 0, (existingValue, zero) -> existingValue == 0? null : existingValue - 1);
     }
 
-
     @Override
     public void ackCommit(String txId) {
         lockCandidates.remove(txId);
@@ -55,14 +74,9 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public boolean requiresLock(String txId) {
-        return !lockCandidates.isEmpty();
-        /*
-        boolean contains = lockCandidates.contains(txId);
-        System.out.println(txId + ": " + lockCandidates);
-        if (!contains) System.out.println("doesnt need a lock!!!!");
-        return contains;
-
-         */
+        boolean needLock = !lockCandidates.isEmpty();
+        if (!needLock) System.out.println(txId + " doesnt need a lock!!!!");
+        return needLock;
     }
 
     @Override
