@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.server.session.computer;
+package grakn.core.graql.executor.computer;
 
 import org.apache.spark.Accumulator;
 import org.apache.spark.api.java.JavaSparkContext;

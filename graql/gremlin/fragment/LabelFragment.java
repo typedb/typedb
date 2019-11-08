@@ -111,7 +111,7 @@ public class LabelFragment extends FragmentImpl {
         // estimate the total number of things that might be connected by ISA to this label as a heuristic
         long instances = labels().stream()
                 .map(label -> {
-                    long baseCount = tx.session().keyspaceStatistics().count(tx, label);
+                    long baseCount = tx.session().keyspaceStatistics().count(tx.conceptManager(), label);
                     //TODO add a reasonably light estimate for inferred concepts
                     return baseCount;
                 })

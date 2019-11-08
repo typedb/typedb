@@ -25,6 +25,7 @@ import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.concept.structure.EdgeElementImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.core.Schema;
+import grakn.core.graql.executor.ExecutorFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
@@ -39,7 +40,7 @@ import grakn.core.server.cache.CacheProviderImpl;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.TransactionImpl;
 import grakn.core.util.ConceptDowncasting;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.janusgraph.core.JanusGraphTransaction;
@@ -98,8 +99,9 @@ public class EdgeIT {
 
         // Grakn elements
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
+        ExecutorFactory executorFactory = new ExecutorFactory(conceptManager, null, new KeyspaceStatistics());
 
-        tx = new TransactionOLTP(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
+        tx = new TransactionImpl(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta, executorFactory);
         tx.open(Transaction.Type.WRITE);
 
         // Create Edge

@@ -64,12 +64,4 @@ public interface QueryExecutor {
     Stream<AnswerGroup<ConceptMap>> get(GraqlGet.Group query);
 
     Stream<AnswerGroup<Numeric>> get(GraqlGet.Group.Aggregate query);
-
-    Stream<Numeric> compute(GraqlCompute.Statistics query);
-
-    Stream<ConceptList> compute(GraqlCompute.Path query);
-
-    Stream<ConceptSetMeasure> compute(GraqlCompute.Centrality query);
-
-    Stream<ConceptSet> compute(GraqlCompute.Cluster query);
 }

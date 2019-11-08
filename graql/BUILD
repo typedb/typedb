@@ -31,6 +31,7 @@ java_library(
         "//common:common",
         "//kb/concept/api",
         "//kb/concept/util",
+        "//kb/concept/manager",
         "//concept/answer",
         "//concept/impl:impl",
         "//kb",

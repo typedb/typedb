@@ -49,6 +49,7 @@ java_library(
         "//kb/concept/api:api",
         "//kb/concept/util:util",
         "//kb/concept/structure:structure",
+        "//kb/concept/manager:manager",
         "//concept/structure:structureimpl",
         "//concept/impl:impl",
         "//concept/answer:answer",

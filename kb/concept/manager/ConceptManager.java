@@ -19,7 +19,10 @@
 
 package grakn.core.kb.concept.manager;
 
+import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
@@ -35,10 +38,21 @@ public interface ConceptManager {
     <T extends Concept> T buildConcept(Vertex vertex);
     <T extends Concept> T buildConcept(VertexElement vertex);
 
+    <T extends Concept> T getConcept(ConceptId conceptId);
+
     <T extends Type> T getType(Label label);
+    <T extends SchemaConcept> T getSchemaConcept(Label label);
     <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
     Rule getMetaRule();
 
     Role getRole(String label);
     RelationType getRelationType(String label);
+
+    Type getMetaConcept();
+    EntityType getMetaEntityType();
+    RelationType getMetaRelationType();
+    AttributeType getMetaAttributeType();
+
+    // TODO Ideally we don't have this here?
+    LabelId convertToId(Label label);
 }

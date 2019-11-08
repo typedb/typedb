@@ -22,6 +22,7 @@ package grakn.core.kb.server.statistics;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.Transaction;
 
 import java.util.HashMap;
@@ -51,13 +52,13 @@ public class KeyspaceStatistics {
         instanceCountsCache = new ConcurrentHashMap<>();
     }
 
-    public long count(Transaction tx, Label label) {
+    public long count(ConceptManager conceptManager, Label label) {
         // return count if cached, else cache miss and retrieve from Janus
-        instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(tx, l));
+        instanceCountsCache.computeIfAbsent(label, l -> retrieveCountFromVertex(conceptManager, l));
         return instanceCountsCache.get(label);
     }
 
-    public void commit(Transaction tx, UncomittedStatisticsDelta statisticsDelta) {
+    public void commit(ConceptManager conceptManager, UncomittedStatisticsDelta statisticsDelta) {
         HashMap<Label, Long> deltaMap = statisticsDelta.instanceDeltas();
 
         // merge each delta into the cache, then flush the cache to Janus
@@ -71,15 +72,15 @@ public class KeyspaceStatistics {
                     // atomic update
                     instanceCountsCache.compute(label, (k, prior) ->
                         prior == null?
-                                retrieveCountFromVertex(tx, label) + delta:
+                                retrieveCountFromVertex(conceptManager, label) + delta:
                                 prior + delta
             );
         });
 
-        persist(tx, labelsToPersist);
+        persist(conceptManager, labelsToPersist);
     }
 
-    private void persist(Transaction tx, Set<Label> labelsToPersist) {
+    private void persist(ConceptManager conceptManager, Set<Label> labelsToPersist) {
         // TODO - there's an possible removal from instanceCountsCache here
         // when the schemaConcept is null - ie it's been removed. However making this
         // thread safe with competing action of creating a schema concept of the same name again
@@ -88,7 +89,7 @@ public class KeyspaceStatistics {
         for (Label label : labelsToPersist) {
             // don't change the value, just use `.compute()` for atomic and locking vertex write
             instanceCountsCache.compute(label, (lab, count) -> {
-                Concept schemaConcept = tx.getSchemaConcept(lab);
+                Concept schemaConcept = conceptManager.getSchemaConcept(lab);
                 if (schemaConcept != null && schemaConcept.isType()) {
                     Type conceptAsType = schemaConcept.asType();
                     conceptAsType.writeCount(count);
@@ -102,8 +103,8 @@ public class KeyspaceStatistics {
      * Effectively a cache miss - retrieves the value from the janus vertex
      * Note that the count property doesn't exist on a label until a commit places a non-zero count on the vertex
      */
-    private long retrieveCountFromVertex(Transaction tx, Label label) {
-        Concept schemaConcept = tx.getSchemaConcept(label);
+    private long retrieveCountFromVertex(ConceptManager conceptManager, Label label) {
+        Concept schemaConcept = conceptManager.getSchemaConcept(label);
         if (schemaConcept != null && schemaConcept.isType()) {
             Type conceptAsType = schemaConcept.asType();
             return conceptAsType.getCount();

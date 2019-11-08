@@ -59,13 +59,14 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.builder.Computable;
+import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
 import org.apache.tinkerpop.gremlin.process.computer.Memory;
@@ -102,16 +103,22 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A Graql Compute query executor
  */
-class ComputeExecutor {
+public class ComputeExecutor {
 
     private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
-    private final Transaction tx;
+    private ConceptManager conceptManager;
+    private ExecutorFactory executorFactory;
+    private HadoopGraph hadoopGraph;
+    private KeyspaceStatistics keyspaceStatistics;
 
-    ComputeExecutor(Transaction tx) {
-        this.tx = tx;
+    ComputeExecutor(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
+        this.conceptManager = conceptManager;
+        this.executorFactory = executorFactory;
+        this.hadoopGraph = hadoopGraph;
+        this.keyspaceStatistics = keyspaceStatistics;
     }
 
-    Stream<Numeric> stream(GraqlCompute.Statistics query) {
+    public Stream<Numeric> stream(GraqlCompute.Statistics query) {
         Graql.Token.Compute.Method method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
             return runComputeMinMaxMedianOrSum(query.asValue());
@@ -126,15 +133,15 @@ class ComputeExecutor {
         }
     }
 
-    Stream<ConceptList> stream(GraqlCompute.Path query) {
+    public Stream<ConceptList> stream(GraqlCompute.Path query) {
         return runComputePath(query);
     }
 
-    Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
+    public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
         return runComputeCentrality(query);
     }
 
-    Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
+    public Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
         return runComputeCluster(query);
     }
 
@@ -143,14 +150,14 @@ class ComputeExecutor {
                                         @Nullable Set<LabelId> scope,
                                         Boolean includesRolePlayerEdges) {
 
-        return tx.session().transactionOLAP().compute(program, mapReduce, scope, includesRolePlayerEdges);
+        return new OLAP(hadoopGraph).compute(program, mapReduce, scope, includesRolePlayerEdges);
     }
 
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
                                         @Nullable Set<LabelId> scope) {
 
-        return tx.session().transactionOLAP().compute(program, mapReduce, scope);
+        return new OLAP(hadoopGraph).compute(program, mapReduce, scope);
     }
 
     /**
@@ -331,38 +338,37 @@ class ComputeExecutor {
      */
 
     private Stream<Numeric> retrieveCachedCount(GraqlCompute.Statistics.Count query) {
-        KeyspaceStatistics keyspaceStats = tx.session().keyspaceStatistics();
 
         // enforce that query has attributes set true
         query.attributes(true);
 
         // retrieve all types that must be counted
         Set<Type> types = scopeTypes(query).collect(toSet());
-        if (types.contains(tx.getMetaConcept())) {
-            types = types.stream().filter(type -> type.equals(tx.getMetaConcept())).collect(toSet());
+        if (types.contains(conceptManager.getMetaConcept())) {
+            types = types.stream().filter(type -> type.equals(conceptManager.getMetaConcept())).collect(toSet());
         }
-        if (types.contains(tx.getMetaEntityType())) {
+        if (types.contains(conceptManager.getMetaEntityType())) {
             types = types.stream()
                     // discard all entity types except the meta entity type
-                    .filter(type -> !type.isEntityType() || type.equals(tx.getMetaEntityType()))
+                    .filter(type -> !type.isEntityType() || type.equals(conceptManager.getMetaEntityType()))
                     .collect(toSet());
         }
-        if (types.contains(tx.getMetaRelationType())) {
+        if (types.contains(conceptManager.getMetaRelationType())) {
             types = types.stream()
                     // discard all relation types except the meta relation type
-                    .filter(type -> !type.isRelationType() || type.equals(tx.getMetaRelationType()))
+                    .filter(type -> !type.isRelationType() || type.equals(conceptManager.getMetaRelationType()))
                     .collect(toSet());
         }
 
-        if (types.contains(tx.getMetaAttributeType())) {
+        if (types.contains(conceptManager.getMetaAttributeType())) {
             types = types.stream()
                     // discard all attribute types except the meta attribute type
-                    .filter(type -> !type.isAttributeType() || type.equals(tx.getMetaAttributeType()))
+                    .filter(type -> !type.isAttributeType() || type.equals(conceptManager.getMetaAttributeType()))
                     .collect(toSet());
         }
 
         // the final set of types should only include the types for whom we should perform counts
-        long totalCount = types.stream().mapToLong(type -> keyspaceStats.count(tx, type.label())).sum();
+        long totalCount = types.stream().mapToLong(type -> keyspaceStatistics.count(conceptManager, type.label())).sum();
         return Stream.of(new Numeric(totalCount));
     }
 
@@ -428,7 +434,7 @@ class ComputeExecutor {
             targetTypeLabels = query.of().stream()
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
-                        Type type = tx.getSchemaConcept(typeLabel);
+                        Type type = conceptManager.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
                         return type.subs();
                     })
@@ -474,7 +480,7 @@ class ComputeExecutor {
             targetTypeLabels = query.of().stream()
                     .flatMap(t -> {
                         Label typeLabel = Label.of(t);
-                        Type type = tx.getSchemaConcept(typeLabel);
+                        Type type = conceptManager.getSchemaConcept(typeLabel);
                         if (type == null) throw GraqlSemanticException.labelNotFound(typeLabel);
                         if (type.isRelationType()) throw GraqlSemanticException.kCoreOnRelationType(typeLabel);
                         return type.subs();
@@ -626,7 +632,7 @@ class ComputeExecutor {
     private List<List<ConceptId>> getComputePathResultListIncludingImplicitRelations(List<List<ConceptId>> allPaths) {
         List<List<ConceptId>> extendedPaths = new ArrayList<>();
         for (List<ConceptId> currentPath : allPaths) {
-            boolean hasAttribute = currentPath.stream().anyMatch(conceptID -> tx.getConcept(conceptID).isAttribute());
+            boolean hasAttribute = currentPath.stream().anyMatch(conceptID -> conceptManager.getConcept(conceptID).isAttribute());
             if (!hasAttribute) {
                 extendedPaths.add(currentPath);
             }
@@ -640,7 +646,7 @@ class ComputeExecutor {
             int numExtension = 0; // record the number of extensions needed for the current path
             for (int j = 0; j < currentPath.size() - 1; j++) {
                 extendedPath.add(currentPath.get(j));
-                ConceptId resourceRelationId = Utility.getResourceEdgeId(tx, currentPath.get(j), currentPath.get(j + 1));
+                ConceptId resourceRelationId = Utility.getResourceEdgeId(conceptManager, executorFactory, currentPath.get(j), currentPath.get(j + 1));
                 if (resourceRelationId != null) {
                     numExtension++;
                     if (numExtension > numExtensionAllowed) break;
@@ -704,7 +710,7 @@ class ComputeExecutor {
         return query.of().stream()
                 .map(t -> {
                     Label label = Label.of(t);
-                    Type type = tx.getSchemaConcept(label);
+                    Type type = conceptManager.getSchemaConcept(label);
                     if (type == null) throw GraqlSemanticException.labelNotFound(label);
                     if (!type.isAttributeType()) throw GraqlSemanticException.mustBeAttributeType(type.label());
                     return type;
@@ -741,7 +747,7 @@ class ComputeExecutor {
                         scopeLabels.stream()
                                 .map(type -> patternFunction.apply(attributeType, type))
                                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                                .flatMap(pattern -> tx.executor().traverse(pattern))
+                                .flatMap(pattern -> executorFactory.read().traverse(pattern))
                 ).findFirst().isPresent();
     }
 
@@ -772,10 +778,10 @@ class ComputeExecutor {
             if (scopeIncludesAttributes(query)) {
                 // this implies that Attributes and Implicit relations are included
                 // always set with compute count and statistics
-                tx.getMetaConcept().subs().forEach(typeBuilder::add);
+                conceptManager.getMetaConcept().subs().forEach(typeBuilder::add);
             } else {
-                tx.getMetaEntityType().subs().forEach(typeBuilder::add);
-                tx.getMetaRelationType().subs()
+                conceptManager.getMetaEntityType().subs().forEach(typeBuilder::add);
+                conceptManager.getMetaRelationType().subs()
                         .filter(relationType -> !relationType.isImplicit()).forEach(typeBuilder::add);
             }
 
@@ -783,7 +789,7 @@ class ComputeExecutor {
         } else {
             Stream<Type> subTypes = query.in().stream().map(t -> {
                 Label label = Label.of(t);
-                Type type = tx.getType(label);
+                Type type = conceptManager.getType(label);
                 if (type == null) throw GraqlSemanticException.labelNotFound(label);
                 return type;
             }).flatMap(Type::subs);
@@ -818,7 +824,7 @@ class ComputeExecutor {
                 .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
                 .map(Pattern.class::cast)
                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                .flatMap(pattern -> tx.executor().traverse(pattern))
+                .flatMap(pattern -> executorFactory.read().traverse(pattern))
                 .findFirst().isPresent();
     }
 
@@ -830,7 +836,7 @@ class ComputeExecutor {
      */
     private boolean scopeContainsInstances(GraqlCompute query, ConceptId... ids) {
         for (ConceptId id : ids) {
-            Thing thing = tx.getConcept(id);
+            Thing thing = conceptManager.getConcept(id);
             if (thing == null || !scopeTypeLabels(query).contains(thing.type().label())) return false;
         }
         return true;
@@ -854,7 +860,7 @@ class ComputeExecutor {
         if (query.in().isEmpty()) return false;
         return query.in().stream().anyMatch(t -> {
             Label label = Label.of(t);
-            SchemaConcept type = tx.getSchemaConcept(label);
+            SchemaConcept type = conceptManager.getSchemaConcept(label);
             return (type != null && (type.isAttributeType() || type.isImplicit()));
         });
     }
@@ -867,7 +873,7 @@ class ComputeExecutor {
      */
     private Set<LabelId> convertLabelsToIds(Set<Label> labelSet) {
         return labelSet.stream()
-                .map(tx::convertToId)
+                .map(conceptManager::convertToId)
                 .filter(LabelId::isValid)
                 .collect(toSet());
     }

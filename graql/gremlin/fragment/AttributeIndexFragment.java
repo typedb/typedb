@@ -101,10 +101,10 @@ public class AttributeIndexFragment extends FragmentImpl {
         if (implicitAttributeRelationType != null) {
             RelationType implicitRelationType = implicitAttributeRelationType.asRelationType();
             Stream<RelationType> implicitSubs = implicitRelationType.subs();
-            totalImplicitRels = implicitSubs.mapToLong(t -> statistics.count(tx, t.label())).sum();
+            totalImplicitRels = implicitSubs.mapToLong(t -> statistics.count(tx.conceptManager(), t.label())).sum();
         }
 
-        double totalAttributes = attributeSubs.mapToLong(t -> statistics.count(tx, t.label())).sum();
+        double totalAttributes = attributeSubs.mapToLong(t -> statistics.count(tx.conceptManager(), t.label())).sum();
         if (totalAttributes == 0) {
             // check against division by 0 and
             // short circuit can be done quickly if starting here

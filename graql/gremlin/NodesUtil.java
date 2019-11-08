@@ -237,9 +237,9 @@ public class NodesUtil {
             Set<Type> dependants = type.thenRules()
                     .map(rule ->
                             rule.whenTypes()
-                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx, t2.label()))))
+                                    .map(t -> t.subs().max(Comparator.comparing(t2 -> tx.session().keyspaceStatistics().count(tx.conceptManager(), t2.label()))))
                                     .flatMap(Streams::optionalToStream)
-                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx, t.label())))
+                                    .min(Comparator.comparing(t -> tx.session().keyspaceStatistics().count(tx.conceptManager(), t.label())))
                     )
                     .flatMap(Streams::optionalToStream)
                     .collect(toSet());
@@ -254,7 +254,7 @@ public class NodesUtil {
                 //if type is a leaf - update counts
                 Set<? extends SchemaConcept> subs = type.subs().collect(toSet());
                 for (SchemaConcept sub : subs) {
-                    long labelCount = tx.session().keyspaceStatistics().count(tx, sub.label());
+                    long labelCount = tx.session().keyspaceStatistics().count(tx.conceptManager(), sub.label());
                     inferredEstimate += labelCount;
                 }
             }

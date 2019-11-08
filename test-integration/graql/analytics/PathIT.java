@@ -19,6 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Lists;
+import grakn.core.graql.executor.ExecutorFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptList;
@@ -485,12 +486,13 @@ public class PathIT {
         }
 
         try (Transaction tx = session.readTransaction()) {
+            ExecutorFactory executorFactory = new ExecutorFactory(tx.conceptManager(), null, null);
             List<ConceptList> allPaths;
 
             // Path from power3 to power3
             pathPerson3Power3.add(idPerson3);
-            if (null != getResourceEdgeId(tx, idPower3, idPerson3)) {
-                pathPerson3Power3.add(getResourceEdgeId(tx, idPower3, idPerson3));
+            if (null != getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3)) {
+                pathPerson3Power3.add(getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3));
             }
             pathPerson3Power3.add(idPower3);
             allPaths = tx.execute(Graql.compute().path().from(idPerson3.getValue()).to(idPower3.getValue()).attributes(true));
@@ -501,8 +503,8 @@ public class PathIT {
             pathPerson2Power1.add(idPerson2);
             pathPerson2Power1.add(idRelationPerson2Power2);
             pathPerson2Power1.add(idPower2);
-            if (null != getResourceEdgeId(tx, idPerson1, idPower2)) {
-                pathPerson2Power1.add(getResourceEdgeId(tx, idPerson1, idPower2));
+            if (null != getResourceEdgeId(tx.conceptManager(), executorFactory, idPerson1, idPower2)) {
+                pathPerson2Power1.add(getResourceEdgeId(tx.conceptManager(), executorFactory, idPerson1, idPower2));
             }
             pathPerson2Power1.add(idPerson1);
             pathPerson2Power1.add(idRelationPerson1Power1);
@@ -514,8 +516,8 @@ public class PathIT {
 
             // Path from power3 to power1
             pathPower3Power1.add(idPower3);
-            if (null != getResourceEdgeId(tx, idPower3, idPerson3)) {
-                pathPower3Power1.add(getResourceEdgeId(tx, idPower3, idPerson3));
+            if (null != getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3)) {
+                pathPower3Power1.add(getResourceEdgeId(tx.conceptManager(), executorFactory, idPower3, idPerson3));
             }
             pathPower3Power1.add(idPerson3);
             pathPower3Power1.add(idRelationPerson1Person3);

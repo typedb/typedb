@@ -25,7 +25,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.server.session.TransactionImpl;
 import graql.lang.statement.Variable;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +50,7 @@ public class RolePlayerFragmentSetTest {
 
     @Before
     public void setUp(){
-        tx = mock(TransactionOLTP.class);
+        tx = mock(TransactionImpl.class);
     }
 
     @Test

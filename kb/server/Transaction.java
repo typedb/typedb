@@ -378,7 +378,7 @@ public interface Transaction extends AutoCloseable{
     LabelId convertToId(Label label);
 
     @VisibleForTesting
-    ConceptManager factory();
+    ConceptManager conceptManager();
 
 
     // TODO remove this

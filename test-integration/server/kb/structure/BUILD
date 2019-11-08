@@ -35,6 +35,7 @@ java_test(
         "//kb/concept/api",
         "//kb/concept/structure",
         "//server",
+        "//graql",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:concept-downcasting",
     ],

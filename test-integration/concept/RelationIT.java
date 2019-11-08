@@ -24,7 +24,6 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Void;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.concept.answer.ConceptSet;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.GraknConceptException;
@@ -36,7 +35,6 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.InvalidKBException;
-import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.core.Schema;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -179,7 +177,7 @@ public class RelationIT {
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();
 
-        return vertices.stream().map(vertex -> tx.factory().buildConcept(vertex).asThing()).collect(Collectors.toSet());
+        return vertices.stream().map(vertex -> tx.conceptManager().buildConcept(vertex).asThing()).collect(Collectors.toSet());
     }
 
     @Test

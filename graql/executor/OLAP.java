@@ -17,12 +17,11 @@
  *
  */
 
-package grakn.core.server.session;
+package grakn.core.graql.executor;
 
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.core.Schema;
-import grakn.core.server.session.computer.GraknSparkComputer;
-import grakn.core.kb.server.TransactionAnalytics;
+import grakn.core.kb.concept.api.LabelId;
+import grakn.core.graql.executor.computer.GraknSparkComputer;
 import org.apache.tinkerpop.gremlin.process.computer.ComputerResult;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.computer.MapReduce;
@@ -51,18 +50,17 @@ import java.util.stream.Collectors;
  * {@link MapReduce} processed the vertices in a parallel manner by aggregating values emitted by vertices.
  * MapReduce can be executed alone or used to collect the results after executing a VertexProgram.
  */
-public class TransactionOLAP implements TransactionAnalytics {
+public class OLAP {
     private final Graph graph;
     private final Class<? extends GraphComputer> graphComputerClass;
     private GraphComputer graphComputer = null;
     private boolean filterAllEdges = false;
 
-    public TransactionOLAP(Graph graph) {
+    public OLAP(Graph graph) {
         this.graph = graph;
         this.graphComputerClass = GraknSparkComputer.class;
     }
 
-    @Override
     @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types, Boolean includesRolePlayerEdges) {
@@ -84,14 +82,12 @@ public class TransactionOLAP implements TransactionAnalytics {
         }
     }
 
-    @Override
     @CheckReturnValue
     public ComputerResult compute(@Nullable VertexProgram program, @Nullable MapReduce mapReduce,
                                   @Nullable Set<LabelId> types) {
         return compute(program, mapReduce, types, true);
     }
 
-    @Override
     public void killJobs() {
         if (graphComputer != null && graphComputerClass.equals(GraknSparkComputer.class)) {
             ((GraknSparkComputer) graphComputer).cancelJobs();

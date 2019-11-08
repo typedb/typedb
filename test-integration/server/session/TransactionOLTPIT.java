@@ -183,7 +183,7 @@ public class TransactionOLTPIT {
     @Test
     public void whenBuildingAConceptFromAVertex_ReturnConcept() {
         EntityType et = tx.putEntityType("Sample Entity Type");
-        assertEquals(et, tx.factory().buildConcept(ConceptDowncasting.concept(et).vertex()));
+        assertEquals(et, tx.conceptManager().buildConcept(ConceptDowncasting.concept(et).vertex()));
     }
 
     @Test

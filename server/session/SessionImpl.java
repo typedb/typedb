@@ -22,6 +22,7 @@ package grakn.core.server.session;
 import com.google.common.cache.Cache;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.graql.executor.ExecutorFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.concept.impl.ConceptManagerImpl;
@@ -29,7 +30,6 @@ import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.kb.server.TransactionAnalytics;
 import grakn.core.server.cache.CacheProviderImpl;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
@@ -41,7 +41,6 @@ import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import org.janusgraph.core.JanusGraphTransaction;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 
-import javax.annotation.CheckReturnValue;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
@@ -107,7 +106,7 @@ public class SessionImpl implements Session {
         this.attributesCache = attributesCache;
         this.graphLock = graphLock;
 
-        TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
+        TransactionImpl tx = this.transaction(Transaction.Type.WRITE);
 
         if (!keyspaceHasBeenInitialised(tx)) {
             initialiseMetaConcepts(tx);
@@ -134,7 +133,7 @@ public class SessionImpl implements Session {
         return transaction(Transaction.Type.WRITE);
     }
 
-    TransactionOLTP transaction(Transaction.Type type) {
+    TransactionImpl transaction(Transaction.Type type) {
 
         // If graph is closed it means the session was already closed
         if (graph.isClosed()) {
@@ -158,8 +157,9 @@ public class SessionImpl implements Session {
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
         cacheProvider.getRuleCache().setConceptManager(conceptManager);
 
+        ExecutorFactory executorFactory = new ExecutorFactory(conceptManager, hadoopGraph, keyspaceStatistics);
 
-        TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
+        TransactionImpl tx = new TransactionImpl(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta, executorFactory);
 
         tx.open(type);
         localOLTPTransactionContainer.set(tx);
@@ -172,7 +172,7 @@ public class SessionImpl implements Session {
      *
      * @param tx
      */
-    private void initialiseMetaConcepts(TransactionOLTP tx) {
+    private void initialiseMetaConcepts(TransactionImpl tx) {
         tx.createMetaConcepts();
     }
 
@@ -196,19 +196,6 @@ public class SessionImpl implements Session {
 
     private boolean keyspaceHasBeenInitialised(Transaction tx) {
         return tx.getMetaConcept() != null;
-    }
-
-
-    /**
-     * Get a new or existing TransactionOLAP.
-     *
-     * @return A new or existing Grakn graph computer
-     * @see TransactionOLAP
-     */
-    @Override
-    @CheckReturnValue
-    public TransactionAnalytics transactionOLAP() {
-        return new TransactionOLAP(hadoopGraph);
     }
 
 

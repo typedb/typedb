@@ -36,6 +36,8 @@ import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
+import grakn.core.graql.executor.ExecutorFactory;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.core.Schema;
@@ -62,7 +64,6 @@ import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.cache.CacheProviderImpl;
@@ -73,7 +74,6 @@ import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.server.Validator;
-import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -111,13 +111,14 @@ import java.util.stream.Stream;
 /**
  * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
  */
-public class TransactionOLTP implements Transaction {
-    private final static Logger LOG = LoggerFactory.getLogger(TransactionOLTP.class);
+public class TransactionImpl implements Transaction {
+    private final static Logger LOG = LoggerFactory.getLogger(TransactionImpl.class);
     private final long typeShardThreshold;
 
     // Shared Variables
     private final SessionImpl session;
     private final ConceptManagerImpl conceptManager;
+    private final ExecutorFactory executorFactory;
 
     // Caches
     private final MultilevelSemanticCache queryCache;
@@ -137,8 +138,8 @@ public class TransactionOLTP implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionOLTP(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManagerImpl conceptManager,
-                           CacheProviderImpl cacheProvider, UncomittedStatisticsDelta statisticsDelta) {
+    public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManagerImpl conceptManager,
+                           CacheProviderImpl cacheProvider, UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -146,6 +147,7 @@ public class TransactionOLTP implements Transaction {
         this.janusTransaction = janusTransaction;
 
         this.conceptManager = conceptManager;
+        this.executorFactory = executorFactory;
 
         this.transactionCache = cacheProvider.getTransactionCache();
         this.queryCache = cacheProvider.getQueryCache();
@@ -184,7 +186,7 @@ public class TransactionOLTP implements Transaction {
             session.graphLock().writeLock().lock();
             try {
                 createNewTypeShardsWhenThresholdReached();
-                session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+                session.keyspaceStatistics().commit(conceptManager, uncomittedStatisticsDelta);
                 janusTransaction.commit();
                 cache().getRemovedAttributes().forEach(index -> session.attributesCache().invalidate(index));
             } finally {
@@ -192,7 +194,7 @@ public class TransactionOLTP implements Transaction {
             }
         } else {
             createNewTypeShardsWhenThresholdReached();
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+            session.keyspaceStatistics().commit(conceptManager, uncomittedStatisticsDelta);
             janusTransaction.commit();
         }
         LOG.trace("Graph committed.");
@@ -219,7 +221,7 @@ public class TransactionOLTP implements Transaction {
                     session.attributesCache().put(labelIndexPair.second(), conceptId);
                 }
             }));
-            session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
+            session.keyspaceStatistics().commit(conceptManager, uncomittedStatisticsDelta);
             janusTransaction.commit();
         } finally {
             session.graphLock().writeLock().unlock();
@@ -228,7 +230,7 @@ public class TransactionOLTP implements Transaction {
 
     private void createNewTypeShardsWhenThresholdReached() {
         uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
-            long instancesCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
+            long instancesCount = session.keyspaceStatistics().count(conceptManager, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instancesCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
                 LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
@@ -467,7 +469,8 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<Numeric> stream(GraqlCompute.Statistics query) {
-        return executor(false).compute(query);
+        if (query.getException().isPresent()) throw query.getException().get();
+        return executorFactory.compute().stream(query);
     }
 
     @Override
@@ -477,7 +480,8 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<ConceptList> stream(GraqlCompute.Path query) {
-        return executor(false).compute(query);
+        if (query.getException().isPresent()) throw query.getException().get();
+        return executorFactory.compute().stream(query);
     }
 
     @Override
@@ -487,7 +491,8 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
-        return executor(false).compute(query);
+        if (query.getException().isPresent()) throw query.getException().get();
+        return executorFactory.compute().stream(query);
     }
 
     @Override
@@ -497,7 +502,8 @@ public class TransactionOLTP implements Transaction {
 
     @Override
     public Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
-        return executor(false).compute(query);
+        if (query.getException().isPresent()) throw query.getException().get();
+        return executorFactory.compute().stream(query);
     }
 
     // Generic queries
@@ -1198,11 +1204,11 @@ public class TransactionOLTP implements Transaction {
     }
 
     @Override
+    // TODO undo accesses that aren't for testing
     @VisibleForTesting
-    public ConceptManagerImpl factory() {
+    public ConceptManager conceptManager() {
         return conceptManager;
     }
-
 
 
     @Override
