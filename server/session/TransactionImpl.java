@@ -32,10 +32,10 @@ import grakn.core.concept.answer.ConceptSet;
 import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.executor.ExecutorFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.GraknElementException;
@@ -58,7 +58,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
@@ -117,7 +117,7 @@ public class TransactionImpl implements Transaction {
 
     // Shared Variables
     private final SessionImpl session;
-    private final ConceptManagerImpl conceptManager;
+    private final ConceptManager conceptManager;
     private final ExecutorFactory executorFactory;
 
     // Caches
@@ -138,7 +138,7 @@ public class TransactionImpl implements Transaction {
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
 
-    public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManagerImpl conceptManager,
+    public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            CacheProviderImpl cacheProvider, UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory) {
         createdInCurrentThread.set(true);
 
@@ -656,13 +656,7 @@ public class TransactionImpl implements Transaction {
         return createdInCurrentThread.get();
     }
 
-    private void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
-        // extra validation to ensure schema integrity -- is this needed?
-        // throws if label is already taken for a different type
-        if (!expectedBaseType.equals(schemaConcept.baseType())) {
-            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
-        }
-    }
+
 
     /**
      * @param label A unique label for the EntityType
@@ -678,7 +672,7 @@ public class TransactionImpl implements Transaction {
             return conceptManager.createEntityType(label, getMetaEntityType());
         }
 
-        validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
+        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ENTITY_TYPE);
 
         return (EntityType) schemaConcept;
     }
@@ -703,7 +697,7 @@ public class TransactionImpl implements Transaction {
             return conceptManager.createRelationType(label, getMetaRelationType());
         }
 
-        validateBaseType(schemaConcept, Schema.BaseType.RELATION_TYPE);
+        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.RELATION_TYPE);
 
         return (RelationType) schemaConcept;
     }
@@ -727,7 +721,7 @@ public class TransactionImpl implements Transaction {
             return conceptManager.createRole(label, getMetaRole());
         }
 
-        validateBaseType(schemaConcept, Schema.BaseType.ROLE);
+        ConceptUtils.validateBaseType(schemaConcept, Schema.BaseType.ROLE);
 
         return (Role) schemaConcept;
     }
@@ -757,7 +751,7 @@ public class TransactionImpl implements Transaction {
         if (attributeType == null) {
             attributeType = conceptManager.createAttributeType(label, getMetaAttributeType(), dataType);
         } else {
-            validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.ATTRIBUTE_TYPE);
+            ConceptUtils.validateBaseType(SchemaConceptImpl.from(attributeType), Schema.BaseType.ATTRIBUTE_TYPE);
             //These checks is needed here because caching will return a type by label without checking the datatype
 
             if (Schema.MetaSchema.isMetaLabel(label)) {
@@ -792,7 +786,7 @@ public class TransactionImpl implements Transaction {
             rule = conceptManager.createRule(label, when, then, getMetaRule());
         } else {
             rule = retrievedRule;
-            validateBaseType(SchemaConceptImpl.from(rule), Schema.BaseType.RULE);
+            ConceptUtils.validateBaseType(SchemaConceptImpl.from(rule), Schema.BaseType.RULE);
         }
 
         //NB: thenTypes() will be empty as type edges added on commit

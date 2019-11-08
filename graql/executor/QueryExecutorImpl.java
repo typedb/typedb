@@ -27,7 +27,6 @@ import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
@@ -35,6 +34,7 @@ import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
@@ -90,14 +90,14 @@ import static java.util.stream.Collectors.toList;
  */
 public class QueryExecutorImpl implements QueryExecutor {
 
-    private ConceptManagerImpl conceptManager;
+    private ConceptManager conceptManager;
     private final boolean infer;
     private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    public QueryExecutorImpl(Transaction transaction, ConceptManagerImpl conceptManager, boolean infer) {
+    public QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, boolean infer) {
         this.conceptManager = conceptManager;
         this.infer = infer;
         this.transaction = transaction;

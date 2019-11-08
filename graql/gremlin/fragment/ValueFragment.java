@@ -20,8 +20,8 @@ package grakn.core.graql.gremlin.fragment;
 
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.graql.executor.property.value.ValueComparison;
-import grakn.core.kb.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.executor.property.value.ValueComparison;
+import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.core.Schema;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;

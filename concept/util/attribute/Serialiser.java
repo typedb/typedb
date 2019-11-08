@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.concept.util;
+package grakn.core.concept.util.attribute;
 
 import grakn.core.kb.concept.api.AttributeType;
 

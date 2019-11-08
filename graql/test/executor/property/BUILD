@@ -31,7 +31,7 @@ java_test(
     srcs = ["ValueExecutorTest.java"],
     deps = [
         "@graknlabs_graql//java:graql",
-        "//kb:kb",
+        "//graql",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
     ],
     size = "small"

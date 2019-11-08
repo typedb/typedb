@@ -61,7 +61,7 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -94,8 +94,8 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static grakn.core.kb.concept.util.ConceptUtils.bottom;
-import static grakn.core.kb.concept.util.ConceptUtils.top;
+import static grakn.core.concept.util.ConceptUtils.bottom;
+import static grakn.core.concept.util.ConceptUtils.top;
 import static graql.lang.Graql.var;
 
 /**

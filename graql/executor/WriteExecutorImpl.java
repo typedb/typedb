@@ -31,15 +31,15 @@ import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.ConceptBuilder;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
 import grakn.core.common.util.Partition;
-import grakn.core.kb.concept.util.ConceptUtils;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.kb.server.Transaction;
 import grakn.core.core.Schema;
@@ -403,7 +403,7 @@ public class WriteExecutorImpl implements WriteExecutor {
             return Optional.of(builder);
         }
 
-        builder = ConceptBuilder.of(this, var);
+        builder = ConceptBuilderImpl.of(this, var);
         conceptBuilders.put(var, builder);
         return Optional.of(builder);
     }

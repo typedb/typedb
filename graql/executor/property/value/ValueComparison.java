@@ -17,10 +17,10 @@
  *
  */
 
-package grakn.core.kb.graql.executor.property.value;
+package grakn.core.graql.executor.property.value;
 
 import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.concept.util.attribute.Serialiser;
 import graql.lang.Graql;
 import grakn.core.core.Schema;
 import graql.lang.property.ValueProperty;

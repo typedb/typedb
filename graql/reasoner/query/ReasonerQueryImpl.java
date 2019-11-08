@@ -35,7 +35,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
-import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.server.Transaction;
 import grakn.core.graql.reasoner.ReasonerException;

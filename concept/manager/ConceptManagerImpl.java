@@ -17,8 +17,19 @@
  *
  */
 
-package grakn.core.concept.impl;
+package grakn.core.concept.manager;
 
+import grakn.core.concept.impl.AttributeImpl;
+import grakn.core.concept.impl.AttributeTypeImpl;
+import grakn.core.concept.impl.EntityImpl;
+import grakn.core.concept.impl.EntityTypeImpl;
+import grakn.core.concept.impl.RelationEdge;
+import grakn.core.concept.impl.RelationImpl;
+import grakn.core.concept.impl.RelationReified;
+import grakn.core.concept.impl.RelationTypeImpl;
+import grakn.core.concept.impl.RoleImpl;
+import grakn.core.concept.impl.RuleImpl;
+import grakn.core.concept.impl.TypeImpl;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -27,6 +38,7 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.LabelId;
+import grakn.core.kb.concept.api.RelationStructure;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -36,16 +48,15 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
-import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import grakn.core.concept.structure.ElementFactory;
-import grakn.core.kb.concept.util.ValueConverter;
+import grakn.core.concept.util.attribute.ValueConverter;
 
 import javax.annotation.Nullable;
 import java.util.HashSet;
@@ -81,10 +92,10 @@ public class ConceptManagerImpl implements ConceptManager {
 
     private ElementFactory elementFactory;
     private TransactionCache transactionCache;
-    private ConceptObserver conceptObserver;
+    private ConceptObserverImpl conceptObserver;
     private ReadWriteLock graphLock;
 
-    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, ReadWriteLock graphLock) {
+    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserverImpl conceptObserver, ReadWriteLock graphLock) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptObserver = conceptObserver;
@@ -133,13 +144,15 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     // users cannot create implicit relation types themselves, this is internal behavior
-    RelationType createImplicitRelationType(Label implicitRelationLabel) {
+    @Override
+    public RelationType createImplicitRelationType(Label implicitRelationLabel) {
         VertexElement vertex = createSchemaVertex(implicitRelationLabel, RELATION_TYPE, true);
         return createRelationType(vertex, getMetaRelationType());
     }
 
 
-    public <V> AttributeType createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
+    @Override
+    public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
         VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
         vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
         AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptObserver);
@@ -155,7 +168,8 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     // users cannot create implicit roles themselves, this is internal behavior
-    Role createImplicitRole(Label implicitRoleLabel) {
+    @Override
+    public Role createImplicitRole(Label implicitRoleLabel) {
         VertexElement vertexElement = createSchemaVertex(implicitRoleLabel, ROLE, true);
         return createRole(vertexElement, getMetaRole());
     }
@@ -242,7 +256,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * @param <V> - attribute type
      * @return - new Attribute Concept
      */
-    <V> AttributeImpl<V> createAttribute(AttributeType<V> type, V value, boolean isInferred) {
+    @Override
+    public <V> AttributeImpl<V> createAttribute(AttributeType<V> type, V value, boolean isInferred) {
         preCheckForInstanceCreation(type);
 
         VertexElement vertex = createInstanceVertex(ATTRIBUTE, isInferred);
@@ -276,7 +291,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * Create a new Relation instance from an edge
      * Skip checking caches because this should be a brand new edge and concept
      */
-    RelationImpl createHasAttributeRelation(EdgeElement edge, RelationType relationType, Role owner, Role value, boolean isInferred) {
+    @Override
+    public RelationImpl createHasAttributeRelation(EdgeElement edge, RelationType relationType, Role owner, Role value, boolean isInferred) {
         preCheckForInstanceCreation(relationType);
 
         edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_OWNER_LABEL_ID, owner, null, o -> o.labelId().getValue());
@@ -296,7 +312,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * NOTE The passed in vertex is already prepared outside of the ConceptManager
      * @return ReifiedRelation
      */
-    RelationReified createRelationReified(VertexElement vertex, RelationType type) {
+    @Override
+    public RelationStructure createRelationReified(VertexElement vertex, RelationType type) {
         preCheckForInstanceCreation(type);
         RelationReified relationReified = new RelationReified(vertex, this, conceptObserver);
         relationReified.type(TypeImpl.from(type));
@@ -307,10 +324,13 @@ public class ConceptManagerImpl implements ConceptManager {
      * Create a new Relation instance from a vertex
      * Skip checking caches because this should be a brand new vertex and concept
      */
-    RelationImpl createRelation(RelationType type, boolean isInferred) {
+    @Override
+    public RelationImpl createRelation(RelationType type, boolean isInferred) {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(RELATION, isInferred);
-        RelationReified relationReified = createRelationReified(vertex, type);
+
+        // safe downcast from interface to implementation type
+        RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
 
         RelationImpl newRelation = new RelationImpl(relationReified);
         conceptObserver.relationCreated(newRelation, isInferred);
@@ -322,7 +342,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * Create a new Entity instance from a vertex
      * Skip checking caches because this should be a brand new vertex and concept
      */
-    EntityImpl createEntity(EntityType type, boolean isInferred) {
+    @Override
+    public EntityImpl createEntity(EntityType type, boolean isInferred) {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(ENTITY, isInferred);
         EntityImpl newEntity = new EntityImpl(vertex, this, conceptObserver);
@@ -368,8 +389,9 @@ public class ConceptManagerImpl implements ConceptManager {
      * Check the transaction cache to see if we have the attribute already by index
      * return NULL if attribtue does not exist in cache
      */
+    @Override
     @Nullable
-    Attribute getCachedAttribute(String index) {
+    public Attribute getCachedAttribute(String index) {
         Attribute concept = transactionCache.getAttributeCache().get(index);
         return concept;
     }
@@ -378,7 +400,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * This is only used when checking if attribute exists before trying to create a new one.
      * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
-    Attribute getAttributeWithLock(String index) {
+    @Override
+    public Attribute getAttributeWithLock(String index) {
         Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
@@ -390,6 +413,7 @@ public class ConceptManagerImpl implements ConceptManager {
         }
     }
 
+    @Override
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
         VertexElement vertex = elementFactory.getVertexWithProperty(key, value);
         if (vertex != null) {
@@ -405,6 +429,7 @@ public class ConceptManagerImpl implements ConceptManager {
         return concepts;
     }
 
+    @Override
     public <T extends Concept> T getConcept(ConceptId conceptId) {
         if (transactionCache.isConceptCached(conceptId)) {
             return transactionCache.getCachedConcept(conceptId);
@@ -432,6 +457,7 @@ public class ConceptManagerImpl implements ConceptManager {
     }
 
     // TODO why are there three separate access methods here!
+    @Override
     public <T extends SchemaConcept> T getSchemaConcept(Label label) {
         Schema.MetaSchema meta = Schema.MetaSchema.valueOf(label);
         if (meta != null) return getSchemaConcept(meta.getId());
@@ -454,18 +480,22 @@ public class ConceptManagerImpl implements ConceptManager {
         return getConcept(Schema.VertexProperty.LABEL_ID, id.getValue());
     }
 
+    @Override
     public AttributeType getMetaAttributeType() {
         return getSchemaConcept(Schema.MetaSchema.ATTRIBUTE.getId());
     }
 
+    @Override
     public EntityType getMetaEntityType() {
         return getSchemaConcept(Schema.MetaSchema.ENTITY.getId());
     }
 
+    @Override
     public RelationType getMetaRelationType() {
         return getSchemaConcept(Schema.MetaSchema.RELATION.getId());
     }
 
+    @Override
     public Type getMetaConcept() {
         return getSchemaConcept(Schema.MetaSchema.THING.getId());
     }
@@ -488,14 +518,17 @@ public class ConceptManagerImpl implements ConceptManager {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ENTITY_TYPE);
     }
 
+    @Override
     public RelationType getRelationType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.RELATION_TYPE);
     }
 
+    @Override
     public <V> AttributeType<V> getAttributeType(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ATTRIBUTE_TYPE);
     }
 
+    @Override
     public Role getRole(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
     }
@@ -512,6 +545,7 @@ public class ConceptManagerImpl implements ConceptManager {
      * @param label The label to be converted to the id
      * @return The matching type id
      */
+    @Override
     public LabelId convertToId(Label label) {
         if (transactionCache.isLabelCached(label)) {
             return transactionCache.convertLabelToId(label);
@@ -605,11 +639,12 @@ public class ConceptManagerImpl implements ConceptManager {
      * @param edge A Edge of an unknown type
      * @return A concept built to the correct type
      */
+    @Override
     public <X extends Concept> X buildConcept(Edge edge) {
         return buildConcept(elementFactory.buildEdgeElement(edge));
     }
 
-    public <X extends Concept> X buildConcept(EdgeElement edgeElement) {
+    private <X extends Concept> X buildConcept(EdgeElement edgeElement) {
         Schema.EdgeLabel label = Schema.EdgeLabel.valueOf(edgeElement.label().toUpperCase(Locale.getDefault()));
 
         ConceptId conceptId = Schema.conceptId(edgeElement.element());
@@ -632,7 +667,8 @@ public class ConceptManagerImpl implements ConceptManager {
      * Used by RelationEdge to build a RelationImpl object out of a provided Edge
      * Build a concept around an prexisting edge that we may have cached
      */
-    RelationImpl buildRelation(EdgeElement edge) {
+    @Override
+    public RelationImpl buildRelation(EdgeElement edge) {
         ConceptId conceptId = Schema.conceptId(edge.element());
         if (!transactionCache.isConceptCached(conceptId)) {
             RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptObserver));

@@ -25,7 +25,8 @@ java_test(
     test_class = "grakn.core.server.kb.structure.EdgeIT",
     deps = [
         "//concept/impl:impl",
-        "//concept/structure:structureimpl",
+        "//concept/structure",
+        "//concept/manager",
         "//core",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
@@ -34,6 +35,7 @@ java_test(
         "//kb",
         "//kb/concept/api",
         "//kb/concept/structure",
+        "//kb/concept/manager",
         "//server",
         "//graql",
         "//test-integration/rule:grakn-test-server",

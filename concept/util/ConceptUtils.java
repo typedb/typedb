@@ -17,14 +17,16 @@
  *
  */
 
-package grakn.core.kb.concept.util;
+package grakn.core.concept.util;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
+import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
@@ -204,5 +206,12 @@ public class ConceptUtils {
             mergedPattern = toJoin.getPattern();
         }
         return new ConceptMap(entryMap, baseAnswer.explanation(), mergedPattern);
+    }
+
+    public static void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
+        // throws if label is already taken for a different type
+        if (!expectedBaseType.equals(schemaConcept.baseType())) {
+            throw PropertyNotUniqueException.cannotCreateProperty(schemaConcept, Schema.VertexProperty.SCHEMA_LABEL, schemaConcept.label());
+        }
     }
 }

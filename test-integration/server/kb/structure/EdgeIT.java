@@ -20,8 +20,9 @@ package grakn.core.server.kb.structure;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
-import grakn.core.concept.impl.ConceptManagerImpl;
-import grakn.core.concept.impl.ConceptObserver;
+import grakn.core.concept.manager.ConceptManagerImpl;
+import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.concept.manager.ConceptObserverImpl;
 import grakn.core.concept.structure.EdgeElementImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.core.Schema;
@@ -91,7 +92,7 @@ public class EdgeIT {
         // create the transaction
         CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
+        ConceptObserverImpl conceptObserver = new ConceptObserverImpl(cacheProvider, statisticsDelta);
 
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();

@@ -22,6 +22,8 @@ package grakn.core.concept.impl;
 import grakn.core.concept.cache.ConceptCache;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptObserver;
 import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.concept.structure.ElementUtils;
 import grakn.core.kb.concept.structure.Shard;
@@ -39,7 +41,7 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
-    final ConceptManagerImpl conceptManager;
+    final ConceptManager conceptManager;
     final ConceptObserver conceptObserver;
 
 
@@ -48,7 +50,7 @@ public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final ConceptCache<Long> shardCount = new ConceptCache<>(() -> shards().count());
     private final ConceptCache<ConceptId> conceptId = new ConceptCache<>(() -> Schema.conceptId(vertex().element()));
 
-    ConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
+    ConceptImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
         this.vertexElement = vertexElement;
         this.conceptManager = conceptManager;
         this.conceptObserver = conceptObserver;

@@ -41,7 +41,7 @@ import grakn.core.graql.reasoner.state.RuleState;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.kb.concept.util.ConceptUtils;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;

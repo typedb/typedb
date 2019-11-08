@@ -21,17 +21,18 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "impl",
+    name = "manager",
     srcs = glob(["**/*.java"]),
     deps = [
+        "//kb/concept/structure",
+        "//kb/concept/api",
         "//kb",
         "//core",
         "//kb/concept/manager",
-        "//kb/concept/structure",
-        "//kb/concept/api",
-        "//concept/structure",
-        "//concept/cache:conceptcache",
+        "//concept/util",
+        "//concept/impl",
         "//concept/util/attribute",
+        "//concept/structure",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
@@ -50,6 +51,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":impl",
+        ":manager",
     ],
 )

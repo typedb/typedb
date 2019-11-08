@@ -22,16 +22,17 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
     name = "util",
-    srcs = glob(["*.java"]),
+    srcs = ["ConceptUtils.java"],
     deps = [
         "//kb/concept/api:api",
-        "//concept/answer:answer",
+        "//kb/concept/structure",
+        "//concept/impl",
+        "//concept/answer",
 
         "//core:core",
 
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
-        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",

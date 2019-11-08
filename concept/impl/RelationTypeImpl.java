@@ -23,6 +23,8 @@ import grakn.core.concept.cache.ConceptCache;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptObserver;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
@@ -42,7 +44,7 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final ConceptCache<Set<Role>> cachedRelates = new ConceptCache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    RelationTypeImpl(VertexElement vertexElement, ConceptManagerImpl conceptBuilder, ConceptObserver conceptObserver) {
+    public RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptObserver conceptObserver) {
         super(vertexElement, conceptBuilder, conceptObserver);
     }
 
@@ -149,7 +151,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
                     Stream<EdgeElement> edgeRelationsConnectedToTypeInstances = ConceptVertex.from(type).vertex()
                             .edgeRelationsConnectedToInstancesOfType(labelId());
 
-                    return edgeRelationsConnectedToTypeInstances.map(edgeElement ->  conceptManager.buildConcept(edgeElement));
+                    return edgeRelationsConnectedToTypeInstances.map(conceptManager::buildRelation);
                 });
     }
 }

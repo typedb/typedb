@@ -17,12 +17,12 @@
  *
  */
 
-package grakn.core.kb.graql.executor.property.value;
+package grakn.core.graql.executor.property.value;
 
 import com.google.common.collect.Iterables;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.core.Schema;
-import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.concept.util.attribute.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import java.util.ArrayList;

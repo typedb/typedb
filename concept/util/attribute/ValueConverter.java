@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.concept.util;
+package grakn.core.concept.util.attribute;
 
 import com.google.common.collect.ImmutableMap;
 import grakn.core.kb.concept.api.AttributeType;

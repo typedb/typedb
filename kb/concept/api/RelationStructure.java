@@ -17,13 +17,7 @@
  *
  */
 
-package grakn.core.concept.impl;
-
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.Rule;
-import grakn.core.kb.concept.api.Thing;
+package grakn.core.kb.concept.api;
 
 import java.util.Map;
 import java.util.Set;
@@ -44,9 +38,10 @@ public interface RelationStructure {
     ConceptId id();
 
     /**
+     * NOTE: Can be safely downcast to `RelationReified`
      * @return The relation structure which has been reified
      */
-    RelationReified reify();
+    RelationStructure reify();
 
     /**
      * @return true if the Relation has been reified meaning it can support n-ary relations

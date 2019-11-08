@@ -21,35 +21,28 @@ package(default_visibility = ["//visibility:public"])
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_library(
-    name = "impl",
-    srcs = glob(["**/*.java"]),
+    name = "attribute",
+    srcs = glob(["*.java"]),
     deps = [
-        "//kb",
-        "//core",
-        "//kb/concept/manager",
-        "//kb/concept/structure",
-        "//kb/concept/api",
-        "//concept/structure",
-        "//concept/cache:conceptcache",
-        "//concept/util/attribute",
+        "//kb/concept/api:api",
 
-        # External dependenicies from @graknlabs
-        "@graknlabs_graql//java:graql",
+        # External Graknlabs dependencies
+        "@graknlabs_common//:common",
 
         # External dependencies from Maven
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava",
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
-        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
-        "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
+        "//dependencies/maven/artifacts/com/google/guava:guava",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core"
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-concept:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-kb-util:{pom_version}"],
 
 )
+
+
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":impl",
+        ":attribute"
     ],
 )

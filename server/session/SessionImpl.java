@@ -22,11 +22,12 @@ package grakn.core.server.session;
 import com.google.common.cache.Cache;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.manager.ConceptManagerImpl;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.graql.executor.ExecutorFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.concept.impl.ConceptManagerImpl;
-import grakn.core.concept.impl.ConceptObserver;
+import grakn.core.concept.manager.ConceptObserverImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -147,14 +148,14 @@ public class SessionImpl implements Session {
         // caches
         CacheProviderImpl cacheProvider = new CacheProviderImpl(keyspaceSchemaCache);
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
+        ConceptObserverImpl conceptObserver = new ConceptObserverImpl(cacheProvider, statisticsDelta);
 
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.buildTransaction().threadBound().consistencyChecks(false).start();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
-        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
+        ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
         cacheProvider.getRuleCache().setConceptManager(conceptManager);
 
         ExecutorFactory executorFactory = new ExecutorFactory(conceptManager, hadoopGraph, keyspaceStatistics);
