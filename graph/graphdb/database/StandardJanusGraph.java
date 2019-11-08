@@ -165,7 +165,6 @@ public class StandardJanusGraph implements JanusGraph {
     private final Set<StandardJanusGraphTx> openTransactions;
 
     private final String name;
-    private final Thread shutdownThread;
 
     private final AutomaticLocalTinkerTransaction tinkerTransaction = new AutomaticLocalTinkerTransaction();
 
@@ -215,9 +214,6 @@ public class StandardJanusGraph implements JanusGraph {
             }
         }
         globalConfig.set(REGISTRATION_TIME, timestampProvider.getTime(), uniqueInstanceId);
-
-        shutdownThread = new Thread(this::closeInternal, "StandardJanusGraph-shutdown");
-        Runtime.getRuntime().addShutdownHook(shutdownThread);
     }
 
     // Get JanusTransaction which is wrapped inside the TinkerTransaction
@@ -387,7 +383,6 @@ public class StandardJanusGraph implements JanusGraph {
 
     @Override
     public synchronized void close() throws JanusGraphException {
-        Runtime.getRuntime().removeShutdownHook(shutdownThread);
         closeInternal();
     }
 
