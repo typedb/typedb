@@ -43,6 +43,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,7 +53,6 @@ import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DI
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
-import static grakn.core.distribution.DistributionE2EConstants.generateRecords;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -155,19 +155,6 @@ public class ConcurrencyE2E {
         assertEquals(10, numOfAges);
     }
 
-    public void setup(GraknClient.Session session, int noOfAttributes){
-        try(GraknClient.Transaction tx = session.transaction().write()){
-            tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
-            EntityType someEntity = tx.putEntityType("someEntity");
-            someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
-            someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
-            for(int j = 2; j < noOfAttributes ; j++){
-                someEntity.has(tx.putAttributeType("attribute" + j, AttributeType.DataType.STRING));
-            }
-            tx.commit();
-        }
-    }
-
     private <T extends Element> void insertElements(GraknClient.Session session, List<T> elements,
                                                     int threads, int elementsPerQuery, int insertsPerCommit) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
@@ -215,12 +202,42 @@ public class ConcurrencyE2E {
         executorService.shutdown();
     }
 
+    private static String generateString(int length) {
+        final boolean useLetters = true;
+        final boolean useNumbers = true;
+        return RandomStringUtils.random(length, useLetters, useNumbers);
+    }
+
+    private static List<Record> generateRecords(int size, int noOfAttributes){
+        List<Record> records = new ArrayList<>();
+        for(int i = 0 ; i < size ; i++){
+            List<AttributeElement> attributes = new ArrayList<>();
+            attributes.add(new AttributeElement("attribute0", i));
+            attributes.add(new AttributeElement("attribute1", i % 2 ==0? "even" : "odd"));
+            for(int j = 2; j < noOfAttributes ; j++){
+                attributes.add(new AttributeElement("attribute" + j, generateString(j+5)));
+            }
+            records.add(new Record("someEntity", attributes));
+        }
+        return records;
+    }
+
     @Test
     public void concurrentInsertionOfMixedAttributeLoad_doesNotCreateGhostVertices() throws ExecutionException, InterruptedException {
         GraknClient graknClient = new GraknClient("localhost:48555");
         GraknClient.Session session = graknClient.session("mixed_attribute_load");
         final int noOfAttributes = 10;
-        setup(session, noOfAttributes);
+
+        try(GraknClient.Transaction tx = session.transaction().write()){
+            tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
+            EntityType someEntity = tx.putEntityType("someEntity");
+            someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
+            someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
+            for(int j = 2; j < noOfAttributes ; j++){
+                someEntity.has(tx.putAttributeType("attribute" + j, AttributeType.DataType.STRING));
+            }
+            tx.commit();
+        }
 
         final int elementsPerQuery = 5;
         final int insertsPerCommit = 1000;
