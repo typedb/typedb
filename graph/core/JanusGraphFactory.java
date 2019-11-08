@@ -44,8 +44,6 @@ import grakn.core.graph.util.system.ConfigurationUtil;
 import grakn.core.graph.util.system.IOUtils;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.Instant;
 
@@ -57,29 +55,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
  */
 public class JanusGraphFactory {
-
-    private static final Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
-
-    /**
-     * Opens a {@link JanusGraph} database.
-     * <p>
-     * The string argument is a shortcut to identify which type of Backend system should be used.
-     */
-    public static StandardJanusGraph open(String backendShortcut) {
-        return open(getLocalConfiguration(backendShortcut));
-    }
-
-    /**
-     * Opens a {@link JanusGraph} database configured according to the provided configuration.
-     *
-     * @param configuration Configuration for the graph database
-     * @return JanusGraph graph database
-     * @see <a href="https://docs.janusgraph.org/latest/configuration.html">"Configuration" manual chapter</a>
-     * @see <a href="https://docs.janusgraph.org/latest/config-ref.html">Configuration Reference</a>
-     */
-    public static StandardJanusGraph open(Configuration configuration) {
-        return open(new CommonsConfiguration(configuration));
-    }
 
     /**
      * Opens a {@link JanusGraph} database configured according to the provided configuration.

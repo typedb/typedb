@@ -104,6 +104,7 @@ import static grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_
 import static grakn.core.graph.diskstorage.cql.CQLTransaction.getTransaction;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_PASSWORD;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
@@ -115,6 +116,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
+
 /**
  * This class creates see {@link CQLKeyColumnValueStore CQLKeyColumnValueStores} and handles Cassandra-backed allocation of vertex IDs for JanusGraph (when so
  * configured).
@@ -148,7 +150,6 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
         this.times = configuration.get(TIMESTAMP_PROVIDER);
         this.semaphore = new Semaphore(configuration.get(MAX_REQUESTS_PER_CONNECTION));
-
         this.session = initialiseSession();
 
         initialiseKeyspace();
@@ -210,12 +211,14 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
             throw new PermanentBackendException("Error initialising cluster contact points", e);
         }
 
-        final CqlSessionBuilder builder = CqlSession.builder()
+        CqlSessionBuilder builder = CqlSession.builder()
                 .addContactPoints(contactPoints)
                 .withLocalDatacenter(configuration.get(LOCAL_DATACENTER));
 
         ProgrammaticDriverConfigLoaderBuilder configLoaderBuilder = DriverConfigLoader.programmaticBuilder();
+
         configLoaderBuilder.withString(DefaultDriverOption.SESSION_NAME, configuration.get(SESSION_NAME));
+        configLoaderBuilder.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, configuration.get(CONNECTION_TIMEOUT));
 
         if (configuration.get(PROTOCOL_VERSION) != 0) {
             configLoaderBuilder.withInt(DefaultDriverOption.PROTOCOL_VERSION, configuration.get(PROTOCOL_VERSION));
