@@ -21,17 +21,18 @@ package grakn.core.distribution;
 import grakn.client.GraknClient;
 import grakn.client.answer.ConceptMap;
 import grakn.client.concept.Attribute;
+import grakn.client.concept.AttributeType;
 import grakn.client.concept.Concept;
+import grakn.client.concept.EntityType;
+import grakn.core.distribution.element.AttributeElement;
+import grakn.core.distribution.element.Element;
+import grakn.core.distribution.element.Record;
 import graql.lang.Graql;
-import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.zeroturnaround.exec.ProcessExecutor;
-
+import graql.lang.statement.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -40,11 +41,18 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.zeroturnaround.exec.ProcessExecutor;
 
 import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
 import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
+import static grakn.core.distribution.DistributionE2EConstants.generateRecords;
 import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
@@ -145,5 +153,92 @@ public class ConcurrencyE2E {
         assertEquals(10, numOfNames);
         assertEquals(10, numOfSurnames);
         assertEquals(10, numOfAges);
+    }
+
+    public void setup(GraknClient.Session session, int noOfAttributes){
+        try(GraknClient.Transaction tx = session.transaction().write()){
+            tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
+            EntityType someEntity = tx.putEntityType("someEntity");
+            someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
+            someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
+            for(int j = 2; j < noOfAttributes ; j++){
+                someEntity.has(tx.putAttributeType("attribute" + j, AttributeType.DataType.STRING));
+            }
+            tx.commit();
+        }
+    }
+
+    private <T extends Element> void insertElements(GraknClient.Session session, List<T> elements,
+                                                    int threads, int elementsPerQuery, int insertsPerCommit) throws ExecutionException, InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        int listSize = elements.size();
+        int listChunk = listSize / threads + 1;
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        for (int threadNo = 0; threadNo < threads; threadNo++) {
+            boolean lastChunk = threadNo == threads - 1;
+            final int startIndex = threadNo * listChunk;
+            int endIndex = (threadNo + 1) * listChunk;
+            if (endIndex > listSize && lastChunk) endIndex = listSize;
+
+            List<T> subList = elements.subList(startIndex, endIndex);
+            System.out.println("indices: " + startIndex + "-" + endIndex + " , size: " + subList.size());
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                long start2 = System.currentTimeMillis();
+                GraknClient.Transaction tx = session.transaction().write();
+                //NB: we batch inserts together to minimise roundtrips
+                int inserted = 0;
+                List<Statement> statements = new ArrayList<>();
+                for(int elementId = 0 ; elementId < subList.size(); elementId++){
+                    T element = subList.get(elementId);
+
+                    statements.addAll(element.patternise().statements());
+                    if (elementId % elementsPerQuery == 0) {
+                        tx.execute(Graql.insert(statements));
+                        if (inserted % insertsPerCommit == 0) {
+                            tx.commit();
+                            inserted = 0;
+                            tx = session.transaction().write();
+                        }
+                        inserted++;
+                        statements.clear();
+                    }
+                }
+                if (!statements.isEmpty()) tx.execute(Graql.insert(statements));;
+                tx.commit();
+                System.out.println("Thread: " + Thread.currentThread().getId() + " elements: " + subList.size() + " time: " + (System.currentTimeMillis() - start2));
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+        executorService.shutdown();
+    }
+
+    @Test
+    public void concurrentInsertionOfMixedAttributeLoad_doesNotCreateGhostVertices() throws ExecutionException, InterruptedException {
+        GraknClient graknClient = new GraknClient("localhost:48555");
+        GraknClient.Session session = graknClient.session("mixed_attribute_load");
+        final int noOfAttributes = 10;
+        setup(session, noOfAttributes);
+
+        final int elementsPerQuery = 5;
+        final int insertsPerCommit = 1000;
+        final int noOfRecords = 80000;
+        final int threads = 16;
+        List<Record> records = generateRecords(noOfRecords, noOfAttributes);
+        List<AttributeElement> attributes = records.stream().flatMap(r -> r.getAttributes().stream()).collect(Collectors.toList());
+
+        final long start = System.currentTimeMillis();
+        insertElements(session, attributes, threads, elementsPerQuery, insertsPerCommit);
+
+        GraknClient.Transaction tx = session.transaction().write();
+        final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
+        final long insertedAttributes = tx.execute(Graql.parse("compute count in attribute;").asComputeStatistics()).get(0).number().longValue();
+        tx.close();
+        final long totalTime = System.currentTimeMillis() - start;
+        System.out.println("Concepts: " + noOfConcepts + " totalTime: " + totalTime + " throughput: " + noOfConcepts*1000*60/(totalTime));
+        assertEquals(new HashSet<>(attributes).size(), insertedAttributes);
+        session.close();
     }
 }

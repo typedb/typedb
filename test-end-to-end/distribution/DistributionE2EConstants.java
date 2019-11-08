@@ -20,6 +20,11 @@ package grakn.core.distribution;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
+import grakn.core.distribution.element.AttributeElement;
+import grakn.core.distribution.element.Record;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
 import org.zeroturnaround.exec.ProcessExecutor;
 
@@ -74,5 +79,25 @@ public class DistributionE2EConstants {
         } catch (IOException e) {
             return false;
         }
+    }
+
+    public static String generateString(int length) {
+        final boolean useLetters = true;
+        final boolean useNumbers = true;
+        return RandomStringUtils.random(length, useLetters, useNumbers);
+    }
+
+    public static List<Record> generateRecords(int size, int noOfAttributes){
+        List<Record> records = new ArrayList<>();
+        for(int i = 0 ; i < size ; i++){
+            List<AttributeElement> attributes = new ArrayList<>();
+            attributes.add(new AttributeElement("attribute0", i));
+            attributes.add(new AttributeElement("attribute1", i % 2 ==0? "even" : "odd"));
+            for(int j = 2; j < noOfAttributes ; j++){
+                attributes.add(new AttributeElement("attribute" + j, generateString(j+5)));
+            }
+            records.add(new Record("someEntity", attributes));
+        }
+        return records;
     }
 }
