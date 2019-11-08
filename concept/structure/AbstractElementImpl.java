@@ -85,13 +85,17 @@ public abstract class AbstractElementImpl<E extends Element, P extends Enum> imp
      * Sets a property on an Element.
      * If the Element already has such property, its value will be overridden.
      *
+     * If value is null the property will be deleted from the Element.
+     *
      * @param key   The key of the property to mutate
      * @param value The value to commit into the property
      */
     @Override
     public void property(P key, Object value) {
         element().property(key.name()).remove();
-        element().property(key.name(), value);
+        if (value != null) {
+            element().property(key.name(), value);
+        }
     }
 
     /**
