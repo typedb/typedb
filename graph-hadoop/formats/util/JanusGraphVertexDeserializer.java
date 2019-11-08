@@ -210,8 +210,9 @@ public class JanusGraphVertexDeserializer implements AutoCloseable {
 
     private VertexProperty.Cardinality getPropertyKeyCardinality(String name) {
         RelationType rt = typeManager.getRelationType(name);
-        if (null == rt || !rt.isPropertyKey())
+        if (null == rt || !rt.isPropertyKey()) {
             return VertexProperty.Cardinality.single;
+        }
         PropertyKey pk = typeManager.getExistingPropertyKey(rt.longId());
         switch (pk.cardinality()) {
             case SINGLE:

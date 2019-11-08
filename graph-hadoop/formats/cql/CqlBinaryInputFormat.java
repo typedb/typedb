@@ -26,7 +26,6 @@ import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
 import grakn.core.graph.hadoop.formats.util.AbstractBinaryInputFormat;
 import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
@@ -69,13 +68,15 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
 
         // Copy some JanusGraph configuration keys to the Hadoop Configuration keys used by Cassandra's ColumnFamilyInputFormat
         ConfigHelper.setInputInitialAddress(config, janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_HOSTS)[0]);
-        if (janusgraphConf.has(GraphDatabaseConfiguration.STORAGE_PORT))
+        if (janusgraphConf.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             ConfigHelper.setInputRpcPort(config, String.valueOf(janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
-        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME))
+        }
+        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME)) {
             ConfigHelper.setInputKeyspaceUserName(config, janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
-        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD))
+        }
+        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
             ConfigHelper.setInputKeyspacePassword(config, janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
-
+        }
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);
         // Use the setInputColumnFamily overload that includes a widerows argument; using the overload without this argument forces it false

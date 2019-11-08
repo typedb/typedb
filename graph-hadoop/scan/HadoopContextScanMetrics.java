@@ -18,8 +18,8 @@
 
 package grakn.core.graph.hadoop.scan;
 
-import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
+import org.apache.hadoop.mapreduce.TaskInputOutputContext;
 
 public class HadoopContextScanMetrics implements ScanMetrics {
 

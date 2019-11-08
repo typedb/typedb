@@ -1,20 +1,32 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2019 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.graph.hadoop.formats.cql;
 
-import com.datastax.driver.core.AuthProvider;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.PoolingOptions;
 import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.ProtocolVersion;
-import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.SSLOptions;
 import com.datastax.driver.core.Session;
-import com.datastax.driver.core.SocketOptions;
 import com.datastax.driver.core.TokenRange;
-import com.datastax.driver.core.policies.LoadBalancingPolicy;
 import com.google.common.base.Optional;
 import org.apache.cassandra.config.SchemaConstants;
 import org.apache.cassandra.db.SystemKeyspace;
@@ -27,7 +39,6 @@ import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.HadoopCompat;
 import org.apache.cassandra.hadoop.ReporterWrapper;
-import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
 import org.apache.cassandra.thrift.KeyRange;
 import org.apache.hadoop.conf.Configuration;
@@ -115,10 +126,12 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         if (ConfigHelper.getInputKeyspace(conf) == null || ConfigHelper.getInputColumnFamily(conf) == null) {
             throw new UnsupportedOperationException("you must set the keyspace and table with setInputColumnFamily()");
         }
-        if (ConfigHelper.getInputInitialAddress(conf) == null)
+        if (ConfigHelper.getInputInitialAddress(conf) == null) {
             throw new UnsupportedOperationException("You must set the initial output address to a Cassandra node with setInputInitialAddress");
-        if (ConfigHelper.getInputPartitioner(conf) == null)
+        }
+        if (ConfigHelper.getInputPartitioner(conf) == null) {
             throw new UnsupportedOperationException("You must set the Cassandra partitioner class with setInputPartitioner");
+        }
     }
 
     public List<org.apache.hadoop.mapreduce.InputSplit> getSplits(JobContext context) throws IOException {
@@ -142,12 +155,15 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
             Range<Token> jobRange = null;
             if (jobKeyRange != null) {
                 if (jobKeyRange.start_key != null) {
-                    if (!partitioner.preservesOrder())
+                    if (!partitioner.preservesOrder()) {
                         throw new UnsupportedOperationException("KeyRange based on keys can only be used with a order preserving partitioner");
-                    if (jobKeyRange.start_token != null)
+                    }
+                    if (jobKeyRange.start_token != null) {
                         throw new IllegalArgumentException("only start_key supported");
-                    if (jobKeyRange.end_token != null)
+                    }
+                    if (jobKeyRange.end_token != null) {
                         throw new IllegalArgumentException("only start_key supported");
+                    }
                     jobRange = new Range<>(partitioner.getToken(jobKeyRange.start_key),
                             partitioner.getToken(jobKeyRange.end_key));
                 } else if (jobKeyRange.start_token != null) {
@@ -251,9 +267,9 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
 
         List<TokenRange> splitRanges = tokenRange.splitEvenly(splitCount);
         Map<TokenRange, Long> rangesWithLength = new HashMap<>();
-        for (TokenRange range : splitRanges)
+        for (TokenRange range : splitRanges) {
             rangesWithLength.put(range, partitionCount / splitCount);
-
+        }
         return rangesWithLength;
     }
 
@@ -262,27 +278,23 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         TaskAttemptContext tac = HadoopCompat.newTaskAttemptContext(jobConf, new TaskAttemptID());
         List<org.apache.hadoop.mapreduce.InputSplit> newInputSplits = this.getSplits(tac);
         InputSplit[] oldInputSplits = new InputSplit[newInputSplits.size()];
-        for (int i = 0; i < newInputSplits.size(); i++)
+        for (int i = 0; i < newInputSplits.size(); i++) {
             oldInputSplits[i] = (ColumnFamilySplit) newInputSplits.get(i);
+        }
         return oldInputSplits;
     }
 
-    public static Cluster getInputCluster(String[] hosts, Configuration conf)
-    {
+    public static Cluster getInputCluster(String[] hosts, Configuration conf) {
         int port = getInputNativePort(conf);
         return getCluster(hosts, conf, port);
     }
 
-    private static int getInputNativePort(Configuration conf)
-    {
+    private static int getInputNativePort(Configuration conf) {
         return Integer.parseInt(conf.get(INPUT_NATIVE_PORT, "9042"));
     }
 
-    private static Cluster getCluster(String[] hosts, Configuration conf, int port)
-    {
-//        Optional<AuthProvider> authProvider = getAuthProvider(conf);
+    private static Cluster getCluster(String[] hosts, Configuration conf, int port) {
         Optional<SSLOptions> sslOptions = getSSLOptions(conf);
-
 
         Cluster.Builder builder = Cluster.builder()
                 .withoutMetrics()
@@ -290,12 +302,9 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 .addContactPoints(hosts)
                 .withPort(port)
                 .withCompression(ProtocolOptions.Compression.NONE);
-
-//        if (authProvider.isPresent())
-//            builder.withAuthProvider(authProvider.get());
-        if (sslOptions.isPresent())
+        if (sslOptions.isPresent()) {
             builder.withSSL(sslOptions.get());
-
+        }
         return builder.build();
     }
 
@@ -326,9 +335,9 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
 
             // hadoop needs hostname, not ip
             int endpointIndex = 0;
-            for (Host endpoint : hosts)
+            for (Host endpoint : hosts) {
                 endpoints[endpointIndex++] = endpoint.getAddress().getHostName();
-
+            }
             boolean partitionerIsOpp = partitioner instanceof OrderPreservingPartitioner || partitioner instanceof ByteOrderedPartitioner;
 
             for (Map.Entry<TokenRange, Long> subSplitEntry : subSplits.entrySet()) {

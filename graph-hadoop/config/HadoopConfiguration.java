@@ -72,9 +72,11 @@ public class HadoopConfiguration implements WriteConfiguration {
             O[] constants = dataType.getEnumConstants();
             Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
             String estr = config.get(internalKey);
-            for (O c : constants)
-                if (c.toString().equals(estr))
+            for (O c : constants) {
+                if (c.toString().equals(estr)) {
                     return c;
+                }
+            }
             throw new IllegalArgumentException("No match for string \"" + estr + "\" in enum " + dataType);
         } else if (dataType == Object.class) {
             // Return String when an Object is requested
