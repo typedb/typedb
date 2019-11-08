@@ -529,7 +529,7 @@ snapshot_before_compaction: false
 # or dropping of column families. The STRONGLY advised default of true 
 # should be used to provide data safety. If you set this flag to false, you will
 # lose data on truncation or drop.
-auto_snapshot: true
+auto_snapshot: false
 
 # When executing a scan, within or across a partition, we need to keep the
 # tombstones seen in memory so we can return them to the coordinator, which
