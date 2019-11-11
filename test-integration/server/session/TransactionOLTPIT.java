@@ -51,7 +51,7 @@ import graql.lang.query.GraqlInsert;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.core.IsInstanceOf;
-import org.janusgraph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

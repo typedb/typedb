@@ -142,7 +142,6 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex, Schema.Vertex
 
     /**
      * Create a new vertex that is a shard and connect it to the owning vertex (this vertex)
-     * @return
      */
     public Shard shard() {
         VertexElement shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
@@ -166,7 +165,7 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex, Schema.Vertex
     }
 
     public Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
-                                                                                       boolean ownerToValueOrdering) {
+                                                      boolean ownerToValueOrdering) {
         return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
     }
 

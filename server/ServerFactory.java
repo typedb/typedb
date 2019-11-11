@@ -19,7 +19,7 @@
 
 package grakn.core.server;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
@@ -39,6 +39,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -65,13 +66,15 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
+        Integer cqlPort = config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT);
+        String storageHostname = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
-        Cluster cluster = Cluster.builder()
-                .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
+        CqlSession cqlSession = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(storageHostname, cqlPort))
+                .withLocalDatacenter("datacenter1")
                 .build();
 
-        KeyspaceManager keyspaceManager = new grakn.core.server.keyspace.KeyspaceManager(cluster);
+        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory

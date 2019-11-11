@@ -5,11 +5,10 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/dom4j:dom4j",
         "//dependencies/maven/artifacts/org/javassist:javassist"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 
