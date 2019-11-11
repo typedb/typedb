@@ -52,10 +52,10 @@ dependencies:
 
   com.fasterxml.jackson.core:
     jackson-core:
-      version: "2.9.9"
+      version: "2.9.10"
       lang: java
     jackson-databind:
-      version: "2.9.9.1"
+      version: "2.9.10.1"
       lang: java
 
   com.fasterxml.jackson.dataformat:
