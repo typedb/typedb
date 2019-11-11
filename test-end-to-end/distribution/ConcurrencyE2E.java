@@ -29,7 +29,6 @@ import grakn.core.distribution.element.Element;
 import grakn.core.distribution.element.Record;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
-import graql.lang.statement.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -157,7 +156,7 @@ public class ConcurrencyE2E {
     }
 
     private <T extends Element> void insertElements(GraknClient.Session session, List<T> elements,
-                                                    int threads, int elementsPerQuery, int insertsPerCommit) throws ExecutionException, InterruptedException {
+                                                    int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
         int listSize = elements.size();
         int listChunk = listSize / threads + 1;
@@ -176,29 +175,16 @@ public class ConcurrencyE2E {
                 GraknClient.Transaction tx = session.transaction().write();
                 //NB: we batch inserts together to minimise roundtrips
                 int inserted = 0;
-                List<Statement> statements = new ArrayList<>();
-                for(int elementId = 0 ; elementId < subList.size(); elementId++){
-                    T element = subList.get(elementId);
-
-                    statements.addAll(element.patternise().statements());
-                    if (elementId % elementsPerQuery == 0) {
-                        long distinctVars = statements.stream().map(Statement::var).distinct().count();
-                        if (distinctVars < statements.size()){
-                            throw new IllegalArgumentException("Variable clash");
-                        }
-                        GraqlInsert insert = Graql.insert(statements);
-                        System.out.println(insert);
-                        tx.execute(insert);
-                        if (inserted % insertsPerCommit == 0) {
-                            tx.commit();
-                            inserted = 0;
-                            tx = session.transaction().write();
-                        }
-                        inserted++;
-                        statements.clear();
+                for (T element : subList) {
+                    GraqlInsert insert = Graql.insert(element.patternise().statements());
+                    tx.execute(insert);
+                    if (inserted % insertsPerCommit == 0) {
+                        tx.commit();
+                        inserted = 0;
+                        tx = session.transaction().write();
                     }
+                    inserted++;
                 }
-                if (!statements.isEmpty()) tx.execute(Graql.insert(statements));;
                 tx.commit();
                 System.out.println("Thread: " + Thread.currentThread().getId() + " elements: " + subList.size() + " time: " + (System.currentTimeMillis() - start2));
                 return null;
@@ -246,15 +232,14 @@ public class ConcurrencyE2E {
             tx.commit();
         }
 
-        final int elementsPerQuery = 5;
-        final int insertsPerCommit = 1000;
+        final int insertsPerCommit = 5000;
         final int noOfRecords = 40000;
         final int threads = 16;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
         List<AttributeElement> attributes = records.stream().flatMap(r -> r.getAttributes().stream()).collect(Collectors.toList());
 
         final long start = System.currentTimeMillis();
-        insertElements(session, attributes, threads, elementsPerQuery, insertsPerCommit);
+        insertElements(session, attributes, threads, insertsPerCommit);
 
         GraknClient.Transaction tx = session.transaction().write();
         final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
