@@ -28,7 +28,7 @@ java_library(
     deps = [
         # Internal dependencies
         "//graph",
-        "//graph-cql",
+#        "//graph-cql",
         # External dependencies from @graknlabs
 
         # External dependencies from Maven

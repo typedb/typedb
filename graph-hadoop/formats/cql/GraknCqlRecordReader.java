@@ -117,8 +117,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         this.split = (ColumnFamilySplit) split;
         Configuration conf = HadoopCompat.getConfiguration(context);
         totalRowCount = (this.split.getLength() < Long.MAX_VALUE)
-                ? (int) this.split.getLength()
-                : ConfigHelper.getInputSplitSize(conf);
+                ? (int) this.split.getLength() : ConfigHelper.getInputSplitSize(conf);
         cfName = ConfigHelper.getInputColumnFamily(conf);
         keyspace = ConfigHelper.getInputKeyspace(conf);
         partitioner = ConfigHelper.getInputPartitioner(conf);
@@ -151,8 +150,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         cqlQuery = CqlConfigHelper.getInputCql(conf);
         // validate that the user hasn't tried to give us a custom query along with input columns
         // and where clauses
-        if (StringUtils.isNotEmpty(cqlQuery) && (StringUtils.isNotEmpty(inputColumns) ||
-                StringUtils.isNotEmpty(userDefinedWhereClauses))) {
+        if (StringUtils.isNotEmpty(cqlQuery) && (StringUtils.isNotEmpty(inputColumns) || StringUtils.isNotEmpty(userDefinedWhereClauses))) {
             throw new AssertionError("Cannot define a custom query with input columns and / or where clauses");
         }
 

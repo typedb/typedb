@@ -95,8 +95,8 @@ import static org.apache.cassandra.hadoop.cql3.CqlConfigHelper.getSSLOptions;
 public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row> {
     public static final String MAPRED_TASK_ID = "mapred.task.id";
     private static final String INPUT_NATIVE_PORT = "cassandra.input.native.port";
+    private static final Logger LOG = LoggerFactory.getLogger(CqlInputFormat.class);
 
-    private static final Logger logger = LoggerFactory.getLogger(CqlInputFormat.class);
     private String keyspace;
     private String cfName;
     private IPartitioner partitioner;
@@ -142,7 +142,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         keyspace = ConfigHelper.getInputKeyspace(conf);
         cfName = ConfigHelper.getInputColumnFamily(conf);
         partitioner = ConfigHelper.getInputPartitioner(conf);
-        logger.trace("partitioner is {}", partitioner);
+        LOG.trace("partitioner is {}", partitioner);
 
         // canonical ranges, split into pieces, fetching the splits in parallel
         ExecutorService executor = new ThreadPoolExecutor(0, 128, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
@@ -170,7 +170,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                     jobRange = new Range<>(partitioner.getTokenFactory().fromString(jobKeyRange.start_token),
                             partitioner.getTokenFactory().fromString(jobKeyRange.end_token));
                 } else {
-                    logger.warn("ignoring jobKeyRange specified without start_key or start_token");
+                    LOG.warn("ignoring jobKeyRange specified without start_key or start_token");
                 }
             }
 
@@ -206,7 +206,6 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
             executor.shutdownNow();
         }
 
-        assert splits.size() > 0;
         Collections.shuffle(splits, new Random(System.nanoTime()));
         return splits;
     }
@@ -227,8 +226,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
     }
 
     private Map<TokenRange, Set<Host>> getRangeMap(String keyspace, Metadata metadata) {
-        return metadata.getTokenRanges()
-                .stream()
+        return metadata.getTokenRanges().stream()
                 .collect(toMap(p -> p, p -> metadata.getReplicas('"' + keyspace + '"', p)));
     }
 
@@ -345,14 +343,12 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 for (TokenRange subrange : ranges) {
                     ColumnFamilySplit split =
                             new ColumnFamilySplit(
-                                    partitionerIsOpp ?
-                                            subrange.getStart().toString().substring(2) : subrange.getStart().toString(),
-                                    partitionerIsOpp ?
-                                            subrange.getEnd().toString().substring(2) : subrange.getEnd().toString(),
+                                    partitionerIsOpp ? subrange.getStart().toString().substring(2) : subrange.getStart().toString(),
+                                    partitionerIsOpp ? subrange.getEnd().toString().substring(2) : subrange.getEnd().toString(),
                                     subSplitEntry.getValue(),
                                     endpoints);
 
-                    logger.trace("adding {}", split);
+                    LOG.trace("adding {}", split);
                     splits.add(split);
                 }
             }
