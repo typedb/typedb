@@ -31,6 +31,8 @@ java_library(
         "//external:jar/org/ow2/asm/asm-commons"
     ],
     runtime_deps = [
+        ":asm",
+        ":asm-analysis",
         ":asm-tree"
     ],
     visibility = [
@@ -61,6 +63,8 @@ java_library(
         "//external:jar/org/ow2/asm/asm-util"
     ],
     runtime_deps = [
+        ":asm",
+        ":asm-analysis",
         ":asm-tree"
     ],
     visibility = [

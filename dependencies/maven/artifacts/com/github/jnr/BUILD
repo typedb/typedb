@@ -23,6 +23,18 @@ java_library(
 
 
 java_library(
+    name = "jnr-a64asm",
+    exports = [
+        "//external:jar/com/github/jnr/jnr-a64asm"
+    ],
+    visibility = [
+        "//dependencies/maven/artifacts:__subpackages__"
+    ]
+)
+
+
+
+java_library(
     name = "jnr-constants",
     exports = [
         "//external:jar/com/github/jnr/jnr-constants"
@@ -47,6 +59,7 @@ java_library(
         "//dependencies/maven/artifacts/org/ow2/asm:asm-util",
         ":jffi",
         ":jffi-jar-native",
+        ":jnr-a64asm",
         ":jnr-x86asm"
     ],
     visibility = [

@@ -18,7 +18,7 @@
 
 package grakn.core.server.keyspace;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import grakn.core.kb.server.keyspace.Keyspace;
 
 import java.util.Arrays;
@@ -27,19 +27,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * KeyspaceManager used to store all existing keyspaces inside Grakn system keyspace.
+ * KeyspaceManager used to retrieve all available keyspaces in Cassandra Storage.
  */
 public class KeyspaceManager {
-    private final Cluster storage;
+    private final CqlSession cqlSession;
     private final Set<String> internals = new HashSet<>(Arrays.asList("system_traces", "system", "system_distributed", "system_schema", "system_auth"));
-    
-    public KeyspaceManager(Cluster storage) {
-        this.storage = storage;
+
+    public KeyspaceManager(CqlSession cqlSession) {
+        this.cqlSession = cqlSession;
     }
 
     public Set<Keyspace> keyspaces() {
-        return storage.connect().getCluster().getMetadata().getKeyspaces().stream()
-                .map(keyspaceMetadata -> new KeyspaceImpl(keyspaceMetadata.getName()))
+        return cqlSession.refreshSchema().getKeyspaces().values().stream()
+                .map(keyspaceMetadata -> new KeyspaceImpl(keyspaceMetadata.getName().toString()))
                 .filter(keyspace -> !internals.contains(keyspace.name()))
                 .collect(Collectors.toSet());
     }

@@ -40,8 +40,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 import javax.annotation.CheckReturnValue;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 /**
  * This class represents a Grakn Session.
@@ -145,7 +145,7 @@ public class SessionImpl implements Session {
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
         // janus elements
-        JanusGraphTransaction janusGraphTransaction = graph.buildTransaction().threadBound().consistencyChecks(false).start();
+        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // caches
@@ -166,8 +166,6 @@ public class SessionImpl implements Session {
 
     /**
      * This creates the first meta schema in an empty keyspace which has not been initialised yet
-     *
-     * @param tx
      */
     private void initialiseMetaConcepts(TransactionOLTP tx) {
         tx.createMetaConcepts();
@@ -175,8 +173,6 @@ public class SessionImpl implements Session {
 
     /**
      * Copy schema concepts labels to current KeyspaceCache
-     *
-     * @param tx
      */
     private void copySchemaConceptLabelsToKeyspaceCache(Transaction tx) {
         copyToCache(tx.getMetaConcept());
@@ -255,7 +251,6 @@ public class SessionImpl implements Session {
         }
 
         isClosed = true;
-        //attributeManager.printEphemeralCache();
     }
 
     @Override

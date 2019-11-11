@@ -28,6 +28,7 @@ import grakn.core.distribution.element.AttributeElement;
 import grakn.core.distribution.element.Element;
 import grakn.core.distribution.element.Record;
 import graql.lang.Graql;
+import graql.lang.query.GraqlInsert;
 import graql.lang.statement.Statement;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -181,7 +182,13 @@ public class ConcurrencyE2E {
 
                     statements.addAll(element.patternise().statements());
                     if (elementId % elementsPerQuery == 0) {
-                        tx.execute(Graql.insert(statements));
+                        long distinctVars = statements.stream().map(Statement::var).distinct().count();
+                        if (distinctVars < statements.size()){
+                            throw new IllegalArgumentException("Variable clash");
+                        }
+                        GraqlInsert insert = Graql.insert(statements);
+                        System.out.println(insert);
+                        tx.execute(insert);
                         if (inserted % insertsPerCommit == 0) {
                             tx.commit();
                             inserted = 0;
@@ -241,7 +248,7 @@ public class ConcurrencyE2E {
 
         final int elementsPerQuery = 5;
         final int insertsPerCommit = 1000;
-        final int noOfRecords = 80000;
+        final int noOfRecords = 40000;
         final int threads = 16;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
         List<AttributeElement> attributes = records.stream().flatMap(r -> r.getAttributes().stream()).collect(Collectors.toList());

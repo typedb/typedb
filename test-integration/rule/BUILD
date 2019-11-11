@@ -28,7 +28,7 @@ java_library(
         "//dependencies/maven/artifacts/junit:junit",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
-        "//dependencies/maven/artifacts/com/datastax/cassandra:cassandra-driver-core",
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
         "//dependencies/maven/artifacts/commons-io:commons-io",
         "//dependencies/maven/artifacts/commons-lang:commons-lang",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",

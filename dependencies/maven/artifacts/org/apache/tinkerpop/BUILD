@@ -10,6 +10,7 @@ java_library(
         "//dependencies/maven/artifacts/commons-collections:commons-collections",
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
         "//dependencies/maven/artifacts/net/objecthunter:exp4j",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/javatuples:javatuples",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
         "//dependencies/maven/artifacts/org/yaml:snakeyaml",
@@ -65,6 +66,8 @@ java_library(
     runtime_deps = [
         "//dependencies/maven/artifacts/com/google/guava:guava",
         "//dependencies/maven/artifacts/commons-codec:commons-codec",
+        "//dependencies/maven/artifacts/commons-io:commons-io",
+        "//dependencies/maven/artifacts/org/apache/commons:commons-compress",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-client",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-core-asl",
         "//dependencies/maven/artifacts/org/codehaus/jackson:jackson-mapper-asl",

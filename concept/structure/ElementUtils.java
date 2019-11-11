@@ -19,8 +19,8 @@
 
 package grakn.core.concept.structure;
 
+import grakn.core.graph.core.JanusGraphElement;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.janusgraph.core.JanusGraphElement;
 
 /**
  * Helper methods for Janus Element operations

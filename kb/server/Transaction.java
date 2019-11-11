@@ -45,7 +45,6 @@ import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -66,7 +65,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
-public interface Transaction extends AutoCloseable{
+public interface Transaction extends AutoCloseable {
     void open(Type type);
 
     Session session();
@@ -388,8 +387,10 @@ public interface Transaction extends AutoCloseable{
 
     // TODO determine if this should be exposed via Tx or in other ways
     TraversalPlanFactory traversalPlanFactory();
+
     // TODO we may not want to expose both Executor and PlanFactory
     QueryExecutor executor();
+
     QueryExecutor executor(boolean infer);
 
     PropertyExecutorFactory propertyExecutorFactory();

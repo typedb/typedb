@@ -518,7 +518,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
         );
     }
 
-    private static final String PLACEHOLDER_ID = "placeholder_id";
+    private static final String PLACEHOLDER_ID = "000000";
 
     /**
      * @return true if this query has complete entries in the cache
