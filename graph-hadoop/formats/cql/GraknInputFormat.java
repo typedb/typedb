@@ -18,16 +18,13 @@
 
 package grakn.core.graph.hadoop.formats.cql;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.Host;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ProtocolOptions;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.SSLOptions;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TokenRange;
-import com.google.common.base.Optional;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.metadata.Metadata;
+import com.datastax.oss.driver.api.core.metadata.Node;
+import com.datastax.oss.driver.api.core.metadata.TokenMap;
+import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
 import org.apache.cassandra.config.SchemaConstants;
 import org.apache.cassandra.db.SystemKeyspace;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
@@ -53,7 +50,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -66,9 +65,9 @@ import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
-import static org.apache.cassandra.hadoop.cql3.CqlConfigHelper.getSSLOptions;
 
 /**
  * Hadoop InputFormat allowing map/reduce against Cassandra rows within one ColumnFamily.
@@ -148,8 +147,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         ExecutorService executor = new ThreadPoolExecutor(0, 128, 60L, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
         List<org.apache.hadoop.mapreduce.InputSplit> splits = new ArrayList<>();
 
-        try (Cluster cluster = getInputCluster(ConfigHelper.getInputInitialAddress(conf).split(","), conf);
-             Session session = cluster.connect()) {
+        try (CqlSession session = getInputSession(ConfigHelper.getInputInitialAddress(conf).split(","), conf)) {
             List<Future<List<org.apache.hadoop.mapreduce.InputSplit>>> splitfutures = new ArrayList<>();
             KeyRange jobKeyRange = ConfigHelper.getInputKeyRange(conf);
             Range<Token> jobRange = null;
@@ -174,10 +172,10 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 }
             }
 
-            Metadata metadata = cluster.getMetadata();
+            Metadata metadata = session.getMetadata();
 
             // canonical ranges and nodes holding replicas
-            Map<TokenRange, Set<Host>> masterRangeNodes = getRangeMap(keyspace, metadata);
+            Map<TokenRange, Set<Node>> masterRangeNodes = getRangeMap(keyspace, metadata);
 
             for (TokenRange range : masterRangeNodes.keySet()) {
                 if (jobRange == null) {
@@ -211,11 +209,12 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
     }
 
     private TokenRange rangeToTokenRange(Metadata metadata, Range<Token> range) {
-        return metadata.newTokenRange(metadata.newToken(partitioner.getTokenFactory().toString(range.left)),
-                metadata.newToken(partitioner.getTokenFactory().toString(range.right)));
+        TokenMap tokenMap = metadata.getTokenMap().get();
+        return tokenMap.newTokenRange(tokenMap.newToken(partitioner.getTokenFactory().toString(range.left)),
+                tokenMap.newToken(partitioner.getTokenFactory().toString(range.right)));
     }
 
-    private Map<TokenRange, Long> getSubSplits(String keyspace, String cfName, TokenRange range, Configuration conf, Session session) {
+    private Map<TokenRange, Long> getSubSplits(String keyspace, String cfName, TokenRange range, Configuration conf, CqlSession session) {
         int splitSize = ConfigHelper.getInputSplitSize(conf);
         int splitSizeMb = ConfigHelper.getInputSplitSizeInMb(conf);
         try {
@@ -225,12 +224,12 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         }
     }
 
-    private Map<TokenRange, Set<Host>> getRangeMap(String keyspace, Metadata metadata) {
-        return metadata.getTokenRanges().stream()
-                .collect(toMap(p -> p, p -> metadata.getReplicas('"' + keyspace + '"', p)));
+    private Map<TokenRange, Set<Node>> getRangeMap(String keyspace, Metadata metadata) {
+        return metadata.getTokenMap().get().getTokenRanges().stream()
+                .collect(toMap(p -> p, p -> metadata.getTokenMap().get().getReplicas('"' + keyspace + '"', p)));
     }
 
-    private Map<TokenRange, Long> describeSplits(String keyspace, String table, TokenRange tokenRange, int splitSize, int splitSizeMb, Session session) {
+    private Map<TokenRange, Long> describeSplits(String keyspace, String table, TokenRange tokenRange, int splitSize, int splitSizeMb, CqlSession session) {
         String query = String.format("SELECT mean_partition_size, partitions_count " +
                         "FROM %s.%s " +
                         "WHERE keyspace_name = ? AND table_name = ? AND range_start = ? AND range_end = ?",
@@ -282,28 +281,24 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
         return oldInputSplits;
     }
 
-    public static Cluster getInputCluster(String[] hosts, Configuration conf) {
+    public static CqlSession getInputSession(String[] hosts, Configuration conf) {
         int port = getInputNativePort(conf);
-        return getCluster(hosts, conf, port);
+        return getSession(hosts, conf, port);
     }
 
     private static int getInputNativePort(Configuration conf) {
         return Integer.parseInt(conf.get(INPUT_NATIVE_PORT, "9042"));
     }
 
-    private static Cluster getCluster(String[] hosts, Configuration conf, int port) {
-        Optional<SSLOptions> sslOptions = getSSLOptions(conf);
 
-        Cluster.Builder builder = Cluster.builder()
-                .withoutMetrics()
-                .withoutJMXReporting()
-                .addContactPoints(hosts)
-                .withPort(port)
-                .withCompression(ProtocolOptions.Compression.NONE);
-        if (sslOptions.isPresent()) {
-            builder.withSSL(sslOptions.get());
-        }
-        return builder.build();
+    // BIG TODO: add support for SSL stuff and friends
+    private static CqlSession getSession(String[] hosts, Configuration conf, int port) {
+        return CqlSession.builder()
+                .addContactPoints(
+                        Arrays.stream(hosts)
+                                .map(s -> new InetSocketAddress(s, port))
+                                .collect(Collectors.toList())
+                ).build();
     }
 
     /**
@@ -313,11 +308,11 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
     class SplitCallable implements Callable<List<org.apache.hadoop.mapreduce.InputSplit>> {
 
         private final TokenRange tokenRange;
-        private final Set<Host> hosts;
+        private final Set<Node> hosts;
         private final Configuration conf;
-        private final Session session;
+        private final CqlSession session;
 
-        public SplitCallable(TokenRange tr, Set<Host> hosts, Configuration conf, Session session) {
+        public SplitCallable(TokenRange tr, Set<Node> hosts, Configuration conf, CqlSession session) {
             this.tokenRange = tr;
             this.hosts = hosts;
             this.conf = conf;
@@ -333,9 +328,10 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
 
             // hadoop needs hostname, not ip
             int endpointIndex = 0;
-            for (Host endpoint : hosts) {
-                endpoints[endpointIndex++] = endpoint.getAddress().getHostName();
+            for (Node endpoint : hosts) {
+                endpoints[endpointIndex++] = endpoint.getListenAddress().get().getHostName();
             }
+
             boolean partitionerIsOpp = partitioner instanceof OrderPreservingPartitioner || partitioner instanceof ByteOrderedPartitioner;
 
             for (Map.Entry<TokenRange, Long> subSplitEntry : subSplits.entrySet()) {
