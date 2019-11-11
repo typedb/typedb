@@ -173,10 +173,10 @@ public class ConcurrencyE2E {
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 long start2 = System.currentTimeMillis();
                 GraknClient.Transaction tx = session.transaction().write();
-                //NB: we batch inserts together to minimise roundtrips
                 int inserted = 0;
-                for (T element : subList) {
-                    GraqlInsert insert = Graql.insert(element.patternise().statements());
+                for (int elementId = 0; elementId < subList.size(); elementId++) {
+                    T element = subList.get(elementId);
+                    GraqlInsert insert = Graql.insert(element.patternise(Graql.var("x" + elementId).var()).statements());
                     tx.execute(insert);
                     if (inserted % insertsPerCommit == 0) {
                         tx.commit();
@@ -207,8 +207,8 @@ public class ConcurrencyE2E {
             List<AttributeElement> attributes = new ArrayList<>();
             attributes.add(new AttributeElement("attribute0", i));
             attributes.add(new AttributeElement("attribute1", i % 2 ==0? "even" : "odd"));
-            for(int j = 2; j < noOfAttributes ; j++){
-                attributes.add(new AttributeElement("attribute" + j, generateString(j+5)));
+            for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
+                attributes.add(new AttributeElement("attribute" + attributeNo, generateString(attributeNo+5)));
             }
             records.add(new Record("someEntity", attributes));
         }
@@ -226,13 +226,13 @@ public class ConcurrencyE2E {
             EntityType someEntity = tx.putEntityType("someEntity");
             someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
             someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
-            for(int j = 2; j < noOfAttributes ; j++){
-                someEntity.has(tx.putAttributeType("attribute" + j, AttributeType.DataType.STRING));
+            for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
+                someEntity.has(tx.putAttributeType("attribute" + attributeNo, AttributeType.DataType.STRING));
             }
             tx.commit();
         }
 
-        final int insertsPerCommit = 5000;
+        final int insertsPerCommit = 2500;
         final int noOfRecords = 40000;
         final int threads = 16;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
