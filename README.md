@@ -54,15 +54,15 @@ You can visit the [Setup Guide](https://dev.grakn.ai/docs/running-grakn/install-
 ```
 $ bazel build //:assemble-linux-targz
 ```
-Outputs to: `bazel-genfiles/grakn-core-all-linux.tar.gz`
+Outputs to: `bazel-bin/grakn-core-all-linux.tar.gz`
 ```
 $ bazel build //:assemble-mac-zip
 ```
-Outputs to: `bazel-genfiles/grakn-core-all-mac.zip`
+Outputs to: `bazel-bin/grakn-core-all-mac.zip`
 ```
 $ bazel build //:assemble-windows-zip
 ```
-Outputs to: `bazel-genfiles/grakn-core-all-windows.zip`
+Outputs to: `bazel-bin/grakn-core-all-windows.zip`
 
 ## Contributions
 
