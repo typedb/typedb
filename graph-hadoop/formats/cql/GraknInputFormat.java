@@ -99,7 +99,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
     private String cfName;
     private IPartitioner partitioner;
 
-    public RecordReader<Long, Row> getRecordReader(InputSplit split, JobConf jobConf, final Reporter reporter) throws IOException {
+    public RecordReader<Long, Row> getRecordReader(InputSplit split, JobConf jobConf, Reporter reporter) throws IOException {
         TaskAttemptContext tac = HadoopCompat.newMapContext(
                 jobConf,
                 TaskAttemptID.forName(jobConf.get(MAPRED_TASK_ID)),
@@ -297,7 +297,9 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                         Arrays.stream(hosts)
                                 .map(s -> new InetSocketAddress(s, port))
                                 .collect(Collectors.toList())
-                ).build();
+                )
+                .withLocalDatacenter("datacenter1")
+                .build();
     }
 
     /**
