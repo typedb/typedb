@@ -7,7 +7,7 @@
 
 # The name of the cluster. This is mainly used to prevent machines in
 # one logical cluster from joining another.
-cluster_name: 'Janus Cassandra Cluster'
+cluster_name: 'Test Grakn Cluster'
 
 # This defines the number of tokens randomly assigned to this node on the ring
 # The more tokens, relative to other nodes, the larger the proportion of data
@@ -337,7 +337,7 @@ start_native_transport: true
 # native_transport_max_frame_size_in_mb: 256
 
 # Whether to start the thrift rpc server.
-start_rpc: false
+start_rpc: true
 
 # The address to bind the Thrift RPC service and native transport
 # server -- clients factory here.
