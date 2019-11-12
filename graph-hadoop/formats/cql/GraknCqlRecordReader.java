@@ -18,7 +18,6 @@
 
 package grakn.core.graph.hadoop.formats.cql;
 
-import com.datastax.driver.core.Metadata;
 import com.datastax.oss.driver.api.core.CqlIdentifier;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.ProtocolVersion;
@@ -233,11 +232,11 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         private long keyId = 0L;
         protected int totalRead = 0; // total number of cf rows read
         protected Iterator<Row> rows;
-        private Map<String, ByteBuffer> previousRowKey = new HashMap<String, ByteBuffer>(); // previous CF row key
+        private Map<String, ByteBuffer> previousRowKey = new HashMap<>(); // previous CF row key
 
         public RowIterator() {
             AbstractType type = partitioner.getTokenValidator();
-            ResultSet rs = session.execute(cqlQuery, type.compose(type.fromString(split.getStartToken())), type.compose(type.fromString(split.getEndToken())));
+            ResultSet rs = session.execute(session.prepare(cqlQuery).bind(type.compose(type.fromString(split.getStartToken())), type.compose(type.fromString(split.getEndToken()))));
             for (ColumnMetadata meta : session.getMetadata().getKeyspace(quote(keyspace)).get().getTable(quote(cfName)).get().getPartitionKey()) {
                 partitionBoundColumns.put(meta.getName().toString(), Boolean.TRUE);
             }
@@ -396,8 +395,8 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         // get CF meta data
         TableMetadata tableMetadata = session
                 .getMetadata()
-                .getKeyspace(Metadata.quote(keyspace)).get()
-                .getTable(Metadata.quote(cfName))
+                .getKeyspace(keyspace).get()
+                .getTable(cfName)
                 .orElseThrow(() -> new RuntimeException("No table metadata found for " + keyspace + "." + cfName));
 
         //Here we assume that tableMetadata.getPartitionKey() always

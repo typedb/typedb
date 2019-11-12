@@ -36,7 +36,6 @@ import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.HadoopCompat;
 import org.apache.cassandra.hadoop.ReporterWrapper;
-import org.apache.cassandra.hadoop.cql3.CqlRecordReader;
 import org.apache.cassandra.thrift.KeyRange;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapred.InputSplit;
@@ -111,7 +110,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 null);
 
 
-        CqlRecordReader recordReader = new CqlRecordReader();
+        GraknCqlRecordReader recordReader = new GraknCqlRecordReader();
         recordReader.initialize((org.apache.hadoop.mapreduce.InputSplit) split, tac);
         return recordReader;
     }
@@ -210,8 +209,8 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
 
     private TokenRange rangeToTokenRange(Metadata metadata, Range<Token> range) {
         TokenMap tokenMap = metadata.getTokenMap().get();
-        return tokenMap.newTokenRange(tokenMap.newToken(partitioner.getTokenFactory().toString(range.left)),
-                tokenMap.newToken(partitioner.getTokenFactory().toString(range.right)));
+        return tokenMap.newTokenRange(tokenMap.parse(partitioner.getTokenFactory().toString(range.left)),
+                tokenMap.parse(partitioner.getTokenFactory().toString(range.right)));
     }
 
     private Map<TokenRange, Long> getSubSplits(String keyspace, String cfName, TokenRange range, Configuration conf, CqlSession session) {
@@ -236,7 +235,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
                 SchemaConstants.SYSTEM_KEYSPACE_NAME,
                 SystemKeyspace.SIZE_ESTIMATES);
 
-        ResultSet resultSet = session.execute(query, keyspace, table, tokenRange.getStart().toString(), tokenRange.getEnd().toString());
+        ResultSet resultSet = session.execute(session.prepare(query).bind(keyspace, table, tokenRange.getStart().toString(), tokenRange.getEnd().toString()));
 
         Row row = resultSet.one();
 

@@ -44,7 +44,10 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
-#        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-query-builder",
+
+#        The following 2 dependencies should be removed once GraknInputFormat and CqlBinaryInputFormat stop depending on old Thrift trickery
+        "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
+        "//dependencies/maven/artifacts/org/apache/thrift:libthrift"
     ],
     tags = ["maven_coordinates=io.grakn.core:grakn-graph-cql:{pom_version}"],
 

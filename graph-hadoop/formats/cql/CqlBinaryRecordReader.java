@@ -18,7 +18,7 @@
 
 package grakn.core.graph.hadoop.formats.cql;
 
-import com.datastax.driver.core.Row;
+import com.datastax.oss.driver.api.core.cql.Row;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore;
