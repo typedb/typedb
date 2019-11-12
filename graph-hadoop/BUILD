@@ -49,7 +49,7 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-thrift",
         "//dependencies/maven/artifacts/org/apache/thrift:libthrift"
     ],
-    tags = ["maven_coordinates=io.grakn.core:grakn-graph-cql:{pom_version}"],
+    tags = ["maven_coordinates=io.grakn.core:grakn-graph-hadoop:{pom_version}"],
 
 )
 
