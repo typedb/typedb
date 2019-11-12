@@ -22,7 +22,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import grakn.core.common.exception.ErrorMessage;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.util.attribute.ValueConverter;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasonerException;
@@ -48,8 +50,6 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.concept.util.ConceptUtils;
-import grakn.core.concept.util.attribute.ValueConverter;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -512,7 +512,7 @@ public class AttributeAtom extends Binary{
             Relation relation = putImplicitRelation(answer, owner, attribute);
 
             if (getRelationVariable().isReturned()){
-                answer = ConceptUtils.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
+                answer = AnswerUtil.joinAnswers(answer, new ConceptMap(ImmutableMap.of(getRelationVariable(), relation)));
             }
             return Stream.of(answer);
         }

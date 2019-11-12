@@ -22,6 +22,9 @@ package grakn.core.graql.executor;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.WriteExecutor;
+import grakn.core.kb.graql.executor.WriteExecutorFactory;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
+import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
@@ -45,7 +48,7 @@ public class ExecutorFactory {
         return null;
     }
 
-    public WriteExecutor write() {
-        return null;
+    public WriteExecutorFactory write(Transaction transaction, PropertyExecutorFactory propertyExecutorFactory) {
+        return new WriteExecutorFactoryImpl(transaction, conceptManager, propertyExecutorFactory);
     }
 }

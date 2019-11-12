@@ -21,16 +21,16 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.Concept;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.executor.property.value.ValueOperation;
+import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.graql.executor.property.value.ValueOperation;
-import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
-import grakn.core.concept.util.ConceptUtils;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
@@ -146,7 +146,7 @@ public class SemanticDifference {
         ConceptMap unified = unifier.apply(answer);
         if (unified.isEmpty()) return unified;
         Set<Variable> varsToRetain = Sets.difference(unified.vars(), childSub.vars());
-        return ConceptUtils.joinAnswers(unified.project(varsToRetain), childSub).project(childVars);
+        return AnswerUtil.joinAnswers(unified.project(varsToRetain), childSub).project(childVars);
     }
 
     boolean isEmpty() { return definition.stream().allMatch(VariableDefinition::isTrivial);}

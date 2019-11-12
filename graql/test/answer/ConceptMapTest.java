@@ -19,10 +19,10 @@
 package grakn.core.graql.answer;
 
 import com.google.common.collect.ImmutableMap;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.GraknConceptException;
-import grakn.core.concept.util.ConceptUtils;
 import graql.lang.statement.Variable;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,7 +61,7 @@ public class ConceptMapTest {
     public void whenJoiningIncompatibleAnswers_emptyAnswerIsReturned() {
         Concept anotherConcept = mock(Concept.class);
         ConceptMap anotherAnswer = new ConceptMap(ImmutableMap.of(someVar, anotherConcept));
-        ConceptMap joinedAnswer = ConceptUtils.joinAnswers(answer, anotherAnswer);
+        ConceptMap joinedAnswer = AnswerUtil.joinAnswers(answer, anotherAnswer);
         assertTrue(joinedAnswer.isEmpty());
     }
 

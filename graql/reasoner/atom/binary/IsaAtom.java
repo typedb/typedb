@@ -22,6 +22,7 @@ package grakn.core.graql.reasoner.atom.binary;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
@@ -219,7 +220,7 @@ public class IsaAtom extends IsaAtomBase {
 
         Concept concept = entityType.addEntityInferred();
         return Stream.of(
-                ConceptUtils.joinAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
+                AnswerUtil.joinAnswers(substitution, new ConceptMap(ImmutableMap.of(getVarName(), concept))
         ));
     }
 

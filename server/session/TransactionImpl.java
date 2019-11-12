@@ -312,7 +312,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(GraqlDefine query) {
-        return Stream.of(executor().define(query));
+        return executorFactory.write(this, ).define().stream();
     }
 
     // Undefine Query
@@ -324,7 +324,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(GraqlUndefine query) {
-        return Stream.of(executor().undefine(query));
+        return executorFactory.write(this, ).undefine().stream();
     }
 
     // Insert query

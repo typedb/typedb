@@ -20,7 +20,9 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.HashMultimap;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.cache.IndexedAnswerSet;
@@ -30,7 +32,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.concept.util.ConceptUtils;
 import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
@@ -88,7 +89,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         InferenceRule rule = state.getRule();
         Unifier unifier = state.getUnifier();
         if (rule == null) {
-            answer = ConceptUtils.joinAnswers(baseAnswer, query.getSubstitution())
+            answer = AnswerUtil.joinAnswers(baseAnswer, query.getSubstitution())
                     .project(query.getVarNames());
         } else {
             answer = rule.requiresMaterialisation(query.getAtom()) ?
@@ -123,12 +124,12 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
 
     private ConceptMap ruleAnswer(ConceptMap baseAnswer, InferenceRule rule, Unifier unifier) {
         ReasonerAtomicQuery query = getQuery();
-        ConceptMap answer = unifier.apply(ConceptUtils.joinAnswers(
+        ConceptMap answer = unifier.apply(AnswerUtil.joinAnswers(
                 baseAnswer, rule.getHead().getRoleSubstitution())
         );
         if (answer.isEmpty()) return answer;
 
-        return ConceptUtils.joinAnswers(answer, query.getSubstitution())
+        return AnswerUtil.joinAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
                 .explain(new RuleExplanation(rule.getRule().id()), query.getPattern());
     }
@@ -164,8 +165,7 @@ public class AtomicState extends AnswerPropagatorState<ReasonerAtomicQuery> {
         }
         if (answer.isEmpty()) return answer;
 
-        return ConceptUtils
-                .joinAnswers(answer, query.getSubstitution())
+        return AnswerUtil.joinAnswers(answer, query.getSubstitution())
                 .project(query.getVarNames())
                 .explain(new RuleExplanation(rule.getRule().id()), query.getPattern());
     }

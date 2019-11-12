@@ -25,6 +25,7 @@ import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
@@ -50,13 +51,10 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.NeqProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
-import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import graql.lang.query.builder.Filterable;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -260,37 +258,6 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
-    public ConceptMap define(GraqlDefine query) {
-        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
-        List<Statement> statements = query.statements().stream()
-                .flatMap(statement -> statement.innerStatements().stream())
-                .collect(Collectors.toList());
-
-        for (Statement statement : statements) {
-            for (VarProperty property : statement.properties()) {
-                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).defineExecutors());
-            }
-        }
-
-        return WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap());
-    }
-
-    @Override
-    public ConceptMap undefine(GraqlUndefine query) {
-        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
-        List<Statement> statements = query.statements().stream()
-                .flatMap(statement -> statement.innerStatements().stream())
-                .collect(Collectors.toList());
-
-        for (Statement statement : statements) {
-            for (VarProperty property : statement.properties()) {
-                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
-            }
-        }
-        return WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap());
-    }
-
-    @Override
     public Stream<ConceptMap> insert(GraqlInsert query) {
         int createExecSpanId = ServerTracing.startScopedChildSpan("QueryExecutor.insert create executors");
 
@@ -320,10 +287,10 @@ public class QueryExecutorImpl implements QueryExecutor {
 
             Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
             answerStream = answers
-                    .map(answer -> WriteExecutorImpl.create(transaction, executors.build()).write(answer))
+                    .map(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            answerStream = Stream.of(WriteExecutorImpl.create(transaction, executors.build()).write(new ConceptMap()));
+            answerStream = Stream.of(WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write(new ConceptMap()));
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);
@@ -331,32 +298,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         return answerStream;
     }
 
-    @SuppressWarnings("unchecked") // All attribute values are comparable data types
-    private Stream<ConceptMap> filter(Filterable query, Stream<ConceptMap> answers) {
-        if (query.sort().isPresent()) {
-            Variable var = query.sort().get().var();
-            Comparator<ConceptMap> comparator = (map1, map2) -> {
-                Object val1 = map1.get(var).asAttribute().value();
-                Object val2 = map2.get(var).asAttribute().value();
 
-                if (val1 instanceof String) {
-                    return ((String) val1).compareToIgnoreCase((String) val2);
-                } else {
-                    return ((Comparable<? super Comparable>) val1).compareTo((Comparable<? super Comparable>) val2);
-                }
-            };
-            comparator = (query.sort().get().order() == Graql.Token.Order.DESC) ? comparator.reversed() : comparator;
-            answers = answers.sorted(comparator);
-        }
-        if (query.offset().isPresent()) {
-            answers = answers.skip(query.offset().get());
-        }
-        if (query.limit().isPresent()) {
-            answers = answers.limit(query.limit().get());
-        }
-
-        return answers;
-    }
 
     @Override
     public Void delete(GraqlDelete query) {
@@ -364,7 +306,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 .map(result -> result.project(query.vars()))
                 .distinct();
 
-        answers = filter(query, answers);
+        answers = AnswerUtil.filter(query, answers);
 
         // TODO: We should not need to collect toSet, once we fix ConceptId.id() to not use cache.
         List<Concept> conceptsToDelete = answers

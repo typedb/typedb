@@ -19,6 +19,7 @@
 
 package grakn.core.graql.executor;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -34,15 +35,13 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.GraqlQueryException;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.exception.InvalidKBException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.core.Schema;
-import org.janusgraph.diskstorage.ResourceUnavailableException;
 
 import javax.annotation.Nullable;
 import java.util.HashMap;

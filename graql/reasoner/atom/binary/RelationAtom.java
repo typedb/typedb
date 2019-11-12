@@ -30,7 +30,9 @@ import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.util.Streams;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.util.ConceptUtils;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
@@ -61,7 +63,6 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.concept.util.ConceptUtils;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -1123,7 +1124,7 @@ public class RelationAtom extends IsaAtomBase {
         //in case the roles are variable, we wouldn't have enough information if converted to attribute
         if (relationType.isImplicit()) {
             ConceptMap roleSub = getRoleSubstitution();
-            return this.toAttributeAtom().materialise().map(ans -> ConceptUtils.joinAnswers(ans, roleSub));
+            return this.toAttributeAtom().materialise().map(ans -> AnswerUtil.joinAnswers(ans, roleSub));
         }
         Multimap<Role, Variable> roleVarMap = getRoleVarMap();
         ConceptMap substitution = getParentQuery().getSubstitution();
@@ -1148,14 +1149,14 @@ public class RelationAtom extends IsaAtomBase {
         roleVarMap.asMap()
                 .forEach((key, value) -> value.forEach(var -> relation.assign(key, substitution.get(var).asThing())));
 
-        ConceptMap relationSub = ConceptUtils.joinAnswers(
+        ConceptMap relationSub = AnswerUtil.joinAnswers(
                 getRoleSubstitution(),
                 getVarName().isReturned() ?
                         new ConceptMap(ImmutableMap.of(getVarName(), relation)) :
                         new ConceptMap()
         );
 
-        ConceptMap answer = ConceptUtils.joinAnswers(substitution, relationSub);
+        ConceptMap answer = AnswerUtil.joinAnswers(substitution, relationSub);
         return Stream.of(answer);
     }
 

@@ -35,7 +35,10 @@ import grakn.core.concept.util.ConceptUtils;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ConceptBuilder;
+import grakn.core.kb.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
@@ -44,8 +47,11 @@ import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.kb.server.Transaction;
 import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
+import graql.lang.query.GraqlDefine;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +67,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 
@@ -73,6 +80,7 @@ public class WriteExecutorImpl implements WriteExecutor {
     protected final Logger LOG = LoggerFactory.getLogger(WriteExecutor.class);
 
     private final Transaction transaction;
+    private ConceptManager conceptManager;
 
     // A mutable map associating each `Var` to the `Concept` in the graph it refers to.
     private final Map<Variable, Concept> concepts = new HashMap<>();
@@ -93,11 +101,13 @@ public class WriteExecutorImpl implements WriteExecutor {
     private final ImmutableMultimap<Writer, Writer> dependencies;
 
     private WriteExecutorImpl(Transaction transaction,
+                              ConceptManager conceptManager,
                               Set<Writer> writers,
                               Partition<Variable> equivalentVars,
                               Multimap<Writer, Writer> executorDependency
     ) {
         this.transaction = transaction;
+        this.conceptManager = conceptManager;
         this.writers = ImmutableSet.copyOf(writers);
         this.equivalentVars = equivalentVars;
         this.dependencies = ImmutableMultimap.copyOf(executorDependency);
@@ -107,7 +117,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         return transaction;
     }
 
-    static WriteExecutor create(Transaction transaction, ImmutableSet<Writer> writers) {
+    static WriteExecutor create(Transaction transaction, ConceptManager conceptManager, ImmutableSet<Writer> writers) {
         transaction.checkMutationAllowed();
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
@@ -197,7 +207,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         Multimap<Writer, Writer> writerDependencies =
                 writerDependencies(executorToRequiredVars, varToProducingWriter);
 
-        return new WriteExecutorImpl(transaction, writers, equivalentVars, writerDependencies);
+        return new WriteExecutorImpl(transaction, conceptManager, writers, equivalentVars, writerDependencies);
     }
 
     private static Multimap<VarProperty, Variable> propertyToEquivalentVars(Set<Writer> executors) {
@@ -234,7 +244,11 @@ public class WriteExecutorImpl implements WriteExecutor {
         return dependency;
     }
 
-    public ConceptMap write(ConceptMap preExisting) {
+    public Stream<ConceptMap> stream() {
+        return stream(new ConceptMap());
+    }
+
+    public Stream<ConceptMap> stream(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
         // time to execute writers for properties
@@ -285,7 +299,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         ServerTracing.closeScopedChildSpan(answerAndPersistId);
 
 
-        return new ConceptMap(namedConcepts);
+        return Stream.of(new ConceptMap(namedConcepts));
     }
 
     private void markConceptsForPersistence(Collection<Concept> concepts){
@@ -403,7 +417,7 @@ public class WriteExecutorImpl implements WriteExecutor {
             return Optional.of(builder);
         }
 
-        builder = ConceptBuilderImpl.of(this, var);
+        builder = ConceptBuilderImpl.of(conceptManager, this, var);
         conceptBuilders.put(var, builder);
         return Optional.of(builder);
     }

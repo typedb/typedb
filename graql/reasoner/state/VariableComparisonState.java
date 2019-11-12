@@ -20,13 +20,13 @@
 package grakn.core.graql.reasoner.state;
 
 import com.google.common.collect.Iterators;
+import grakn.core.concept.answer.AnswerUtil;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.VariablePredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.concept.util.ConceptUtils;
 
 import java.util.Iterator;
 import java.util.Set;
@@ -61,7 +61,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
         super(ReasonerQueries.create(q, sub), sub, u, parent, subGoals);
 
         this.variablePredicates = getQuery().getAtoms(VariablePredicate.class).collect(Collectors.toSet());
-        this.variablePredicateSub = ConceptUtils.joinAnswers(getQuery().getSubstitution(), sub)
+        this.variablePredicateSub = AnswerUtil.joinAnswers(getQuery().getSubstitution(), sub)
                 .project(this.variablePredicates.stream().flatMap(p -> p.getVarNames().stream()).collect(Collectors.toSet()));
     }
 
@@ -74,7 +74,7 @@ public class VariableComparisonState extends AnswerPropagatorState<ReasonerQuery
 
     @Override
     public ResolutionState propagateAnswer(AnswerState state) {
-        ConceptMap fullAnswer = ConceptUtils.joinAnswers(state.getSubstitution(), variablePredicateSub);
+        ConceptMap fullAnswer = AnswerUtil.joinAnswers(state.getSubstitution(), variablePredicateSub);
 
         boolean predicatesSatisfied = variablePredicates.stream()
                 .allMatch(p -> p.isSatisfied(fullAnswer));
