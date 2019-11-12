@@ -43,13 +43,6 @@ dependencies:
       version: "1.2.3"
       lang: java
 
-  com.datastax.cassandra:
-    cassandra-driver-core:
-      version: "3.7.1"
-      lang: java
-      exclude:
-        - "io.netty:netty-handler"
-
   com.fasterxml.jackson.core:
     jackson-core:
       version: "2.9.10"
@@ -63,7 +56,6 @@ dependencies:
       version: "2.9.9"
       lang: java
 
-  # TODO: Remove once com.fasterxml.jackson.core is removed
   com.fasterxml.jackson.module:
     jackson-module-scala_2.11:
       version: "2.9.9"
