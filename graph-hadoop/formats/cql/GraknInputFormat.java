@@ -25,6 +25,8 @@ import com.datastax.oss.driver.api.core.metadata.Metadata;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.metadata.TokenMap;
 import com.datastax.oss.driver.api.core.metadata.token.TokenRange;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3Token;
+import com.datastax.oss.driver.internal.core.metadata.token.Murmur3TokenRange;
 import org.apache.cassandra.config.SchemaConstants;
 import org.apache.cassandra.db.SystemKeyspace;
 import org.apache.cassandra.dht.ByteOrderedPartitioner;
@@ -338,12 +340,23 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
             for (Map.Entry<TokenRange, Long> subSplitEntry : subSplits.entrySet()) {
                 List<TokenRange> ranges = subSplitEntry.getKey().unwrap();
                 for (TokenRange subrange : ranges) {
-                    ColumnFamilySplit split =
-                            new ColumnFamilySplit(
-                                    partitionerIsOpp ? subrange.getStart().toString().substring(2) : subrange.getStart().toString(),
-                                    partitionerIsOpp ? subrange.getEnd().toString().substring(2) : subrange.getEnd().toString(),
-                                    subSplitEntry.getValue(),
-                                    endpoints);
+                    ColumnFamilySplit split;
+                    if (subrange instanceof Murmur3TokenRange) {
+                        Murmur3Token startToken = (Murmur3Token) subrange.getStart();
+                        Murmur3Token endToken = (Murmur3Token) subrange.getEnd();
+                        split = new ColumnFamilySplit(
+                                Long.toString(startToken.getValue()),
+                                Long.toString(endToken.getValue()),
+                                subSplitEntry.getValue(),
+                                endpoints);
+                    } else {
+                        split = new ColumnFamilySplit(
+                                partitionerIsOpp ? subrange.getStart().toString().substring(2) : subrange.getStart().toString(),
+                                partitionerIsOpp ? subrange.getEnd().toString().substring(2) : subrange.getEnd().toString(),
+                                subSplitEntry.getValue(),
+                                endpoints);
+                    }
+
 
                     LOG.trace("adding {}", split);
                     splits.add(split);
