@@ -39,7 +39,6 @@ import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.HadoopCompat;
-import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.utils.AbstractIterator;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.Pair;
@@ -111,8 +110,8 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         cfName = ConfigHelper.getInputColumnFamily(conf);
         keyspace = ConfigHelper.getInputKeyspace(conf);
         partitioner = ConfigHelper.getInputPartitioner(conf);
-        inputColumns = CqlConfigHelper.getInputcolumns(conf);
-        userDefinedWhereClauses = CqlConfigHelper.getInputWhereClauses(conf);
+        inputColumns = GraknCqlConfigHelper.getInputcolumns(conf);
+        userDefinedWhereClauses = GraknCqlConfigHelper.getInputWhereClauses(conf);
 
         try {
 
@@ -130,7 +129,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         // otherwise we will fall back to building a query using the:
         //   inputColumns
         //   whereClauses
-        cqlQuery = CqlConfigHelper.getInputCql(conf);
+        cqlQuery = GraknCqlConfigHelper.getInputCql(conf);
         // validate that the user hasn't tried to give us a custom query along with input columns
         // and where clauses
         if (StringUtils.isNotEmpty(cqlQuery) && (StringUtils.isNotEmpty(inputColumns) || StringUtils.isNotEmpty(userDefinedWhereClauses))) {

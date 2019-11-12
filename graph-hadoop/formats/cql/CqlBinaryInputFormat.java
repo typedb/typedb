@@ -26,7 +26,6 @@ import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
 import grakn.core.graph.hadoop.formats.util.AbstractBinaryInputFormat;
 import grakn.core.graph.hadoop.formats.util.input.JanusGraphHadoopSetupImpl;
 import org.apache.cassandra.hadoop.ConfigHelper;
-import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.thrift.SlicePredicate;
 import org.apache.cassandra.thrift.SliceRange;
 import org.apache.hadoop.conf.Configuration;
@@ -73,7 +72,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
             ConfigHelper.setInputRpcPort(config, String.valueOf(janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         }
         if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME) && janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
-            CqlConfigHelper.setUserNameAndPassword(config,
+            GraknCqlConfigHelper.setUserNameAndPassword(config,
                     janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD),
                     janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
         }
