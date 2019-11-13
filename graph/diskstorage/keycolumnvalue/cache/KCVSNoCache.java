@@ -16,18 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.diskstorage.util;
+package grakn.core.graph.diskstorage.keycolumnvalue.cache;
+
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+
+import java.util.List;
 
 
-public enum CacheMetricsAction {
+public class KCVSNoCache extends KCVSCache {
 
-    RETRIEVAL("retrievals"), MISS("misses"), EXPIRE("expire");
-
-    private final String name;
-
-    CacheMetricsAction(String name) {
-        this.name = name;
+    public KCVSNoCache(KeyColumnValueStore store) {
+        super(store);
     }
 
-    public String getName() { return name; }
+    @Override
+    public void clearCache() {
+    }
+
+    @Override
+    protected void invalidate(StaticBuffer key, List<StaticBuffer> entries) {
+    }
+
 }

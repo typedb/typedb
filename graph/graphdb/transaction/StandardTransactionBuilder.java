@@ -72,8 +72,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private Instant userCommitTime = null;
 
-    private String groupName;
-
     private final boolean forceIndexUsage;
 
     private final ModifiableConfiguration writableCustomOptions;
@@ -93,7 +91,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
-        this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.writableCustomOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
@@ -110,7 +107,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
-        this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
         this.writableCustomOptions = null;
@@ -183,12 +179,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder groupName(String p) {
-        this.groupName = p;
-        return this;
-    }
-
-    @Override
     public StandardTransactionBuilder logIdentifier(String logName) {
         this.logIdentifier = logName;
         return this;
@@ -217,7 +207,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                 verifyInternalVertexExistence,
                 propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
-                logIdentifier, restrictedPartitions, groupName,
+                logIdentifier, restrictedPartitions,
                 defaultSchemaMaker, customOptions);
         return graph.newTransaction(immutable);
     }
@@ -307,16 +297,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public String getGroupName() {
-        return groupName;
-    }
-
-    @Override
-    public boolean hasGroupName() {
-        return null != groupName;
-    }
-
-    @Override
     public Instant getCommitTime() {
         return userCommitTime;
     }
@@ -371,7 +351,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                        boolean isThreadBound, TimestampProvider times, Instant commitTime,
                        long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                        int[] restrictedPartitions,
-                       String groupName,
                        DefaultSchemaMaker defaultSchemaMaker,
                        Configuration customOptions) {
             this.isReadOnly = isReadOnly;
@@ -392,7 +371,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
-                    .groupName(groupName)
                     .customOptions(customOptions).build();
         }
 
@@ -489,16 +467,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean hasCommitTime() {
             return handleConfig.hasCommitTime();
-        }
-
-        @Override
-        public String getGroupName() {
-            return handleConfig.getGroupName();
-        }
-
-        @Override
-        public boolean hasGroupName() {
-            return handleConfig.hasGroupName();
         }
 
         @Override

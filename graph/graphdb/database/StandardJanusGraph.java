@@ -523,8 +523,9 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(
+                        new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions)
+                );
                 consistentTx.getBackendTransaction().disableCache();
                 JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
                 return v != null ? v.longId() : null;
@@ -545,7 +546,7 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions));
                 consistentTx.getBackendTransaction().disableCache();
                 return edgeQuery(schemaId, query, consistentTx.getBackendTransaction());
             } finally {

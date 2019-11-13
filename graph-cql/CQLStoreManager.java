@@ -106,8 +106,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
@@ -155,13 +153,11 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
 
         Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
-                .set(WRITE_CONSISTENCY, CONSISTENCY_QUORUM)
-                .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
+                .set(WRITE_CONSISTENCY, CONSISTENCY_QUORUM);
 
         Configuration local = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
-                .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
-                .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
+                .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM);
 
         Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
 

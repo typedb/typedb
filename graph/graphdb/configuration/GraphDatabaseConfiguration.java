@@ -36,13 +36,11 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.configuration.converter.RegisteredAttributeClassesConverter;
-import grakn.core.graph.graphdb.database.cache.MetricInstrumentedSchemaCache;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
 import grakn.core.graph.graphdb.database.cache.StandardSchemaCache;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
-import grakn.core.graph.graphdb.transaction.StandardTransactionBuilder;
 import grakn.core.graph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import grakn.core.graph.util.stats.NumberUtil;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -784,124 +782,6 @@ public class GraphDatabaseConfiguration {
             "Class of the custom attribute serializer to be registered",
             ConfigOption.Type.GLOBAL_OFFLINE, String.class);
 
-    // ################ Metrics #######################
-    // ################################################
-
-    /**
-     * Configuration key prefix for Metrics.
-     */
-    public static final ConfigNamespace METRICS_NS = new ConfigNamespace(ROOT_NS, "metrics", "Configuration options for metrics reporting");
-
-    /**
-     * Whether to enable basic timing and operation count monitoring on backend
-     * methods using the {@code com.codahale.metrics} package.
-     */
-    public static final ConfigOption<Boolean> BASIC_METRICS = new ConfigOption<>(METRICS_NS, "enabled",
-            "Whether to enable basic timing and operation count monitoring on backend",
-            ConfigOption.Type.MASKABLE, false);
-
-    /**
-     * This is the prefix used outside of a graph database configuration, or for
-     * operations where a system-internal transaction is necessary as an
-     * implementation detail. It currently can't be modified, though there is no
-     * substantial technical obstacle preventing it from being configured --
-     * some kind of configuration object is in scope everywhere it is used, and
-     * it could theoretically be stored in and read from that object.
-     */
-    public static final String METRICS_PREFIX_DEFAULT = "grakn.core.graph";
-    public static final String METRICS_SYSTEM_PREFIX_DEFAULT = METRICS_PREFIX_DEFAULT + "." + "sys";
-    public static final String METRICS_SCHEMA_PREFIX_DEFAULT = METRICS_SYSTEM_PREFIX_DEFAULT + "." + "schema";
-
-    /**
-     * The default name prefix for Metrics reported by JanusGraph. All metric names
-     * will begin with this string and a period. This value can be overridden on
-     * a transaction-specific basis through
-     * {@link StandardTransactionBuilder#groupName(String)}.
-     * <p>
-     * Default = {@literal #METRICS_PREFIX_DEFAULT}
-     */
-    public static final ConfigOption<String> METRICS_PREFIX = new ConfigOption<>(METRICS_NS, "prefix",
-            "The default name prefix for Metrics reported by JanusGraph.",
-            ConfigOption.Type.MASKABLE, METRICS_PREFIX_DEFAULT);
-
-    /**
-     * Whether to aggregate measurements for the edge store, vertex index, edge
-     * index, and ID store.
-     * <p>
-     * If true, then metrics for each of these backends will use the same metric
-     * name ("stores"). All of their measurements will be combined. This setting
-     * measures the sum of JanusGraph's backend activity without distinguishing
-     * between contributions of its various internal stores.
-     * <p>
-     * If false, then metrics for each of these backends will use a unique
-     * metric name ("idStore", "edgeStore", "vertexIndex", and "edgeIndex").
-     * This setting exposes the activity associated with each backend component,
-     * but it also multiplies the number of measurements involved by four.
-     * <p>
-     * This option has no effect when {@link #BASIC_METRICS} is false.
-     */
-    public static final ConfigOption<Boolean> METRICS_MERGE_STORES = new ConfigOption<>(METRICS_NS, "merge-stores",
-            "Whether to aggregate measurements for the edge store, vertex index, edge index, and ID store",
-            ConfigOption.Type.MASKABLE, true);
-
-    public static final ConfigNamespace METRICS_CONSOLE_NS = new ConfigNamespace(METRICS_NS, "console", "Configuration options for metrics reporting to console");
-
-
-    public static final ConfigNamespace METRICS_JMX_NS = new ConfigNamespace(METRICS_NS, "jmx", "Configuration options for metrics reporting through JMX");
-
-    /**
-     * The JMX domain in which to report Metrics. If null, then Metrics applies
-     * its default value.
-     */
-    public static final ConfigOption<String> METRICS_JMX_DOMAIN = new ConfigOption<>(METRICS_JMX_NS, "domain",
-            "The JMX domain in which to report Metrics",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The configuration namespace within {@link #METRICS_NS} for
-     * Graphite.
-     */
-    public static final ConfigNamespace METRICS_GRAPHITE_NS = new ConfigNamespace(METRICS_NS, "graphite", "Configuration options for metrics reporting through Graphite");
-
-    /**
-     * The hostname to receive Graphite plaintext protocol metric data. Setting
-     * this config key has no effect unless {@link #GRAPHITE_INTERVAL} is also
-     * set.
-     */
-    public static final ConfigOption<String> GRAPHITE_HOST = new ConfigOption<>(METRICS_GRAPHITE_NS, "hostname",
-            "The hostname to receive Graphite plaintext protocol metric data",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The number of milliseconds to wait between sending Metrics data to the
-     * host specified {@link #GRAPHITE_HOST}. This has no effect unless
-     * {@link #GRAPHITE_HOST} is also set.
-     */
-    public static final ConfigOption<Duration> GRAPHITE_INTERVAL = new ConfigOption<>(METRICS_GRAPHITE_NS, "interval",
-            "The number of milliseconds to wait between sending Metrics data",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    /**
-     * The port to which Graphite data are sent.
-     * <p>
-     */
-    public static final ConfigOption<Integer> GRAPHITE_PORT = new ConfigOption<>(METRICS_GRAPHITE_NS, "port",
-            "The port to which Graphite data are sent",
-            ConfigOption.Type.MASKABLE, 2003);
-
-    /**
-     * A Graphite-specific prefix for reported metrics. If non-null, Metrics
-     * prepends this and a "." to all metric names before reporting them to
-     * Graphite.
-     * <p>
-     */
-    public static final ConfigOption<String> GRAPHITE_PREFIX = new ConfigOption<>(METRICS_GRAPHITE_NS, "prefix",
-            "A Graphite-specific prefix for reported metrics",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS, "gremlin",
-            "Gremlin configuration options");
-
     // ################ Begin Class Definition #######################
     // ###############################################################
 
@@ -924,7 +804,6 @@ public class GraphDatabaseConfiguration {
     private Boolean useMultiQuery;
     private Boolean batchPropertyPrefetching;
     private boolean logTransactions;
-    private String metricsPrefix;
     private String unknownIndexKeyName;
 
 
@@ -964,10 +843,6 @@ public class GraphDatabaseConfiguration {
 
     public String getUniqueGraphId() {
         return uniqueGraphId;
-    }
-
-    public String getMetricsPrefix() {
-        return metricsPrefix;
     }
 
     public DefaultSchemaMaker getDefaultSchemaMaker() {
@@ -1051,8 +926,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {
-        if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedSchemaCache(retriever);
-        else return new StandardSchemaCache(retriever);
+        return new StandardSchemaCache(retriever);
     }
 
     public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {

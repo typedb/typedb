@@ -51,19 +51,6 @@ public interface BaseTransactionConfig {
     TimestampProvider getTimestampProvider();
 
     /**
-     * Returns the (possibly null) group name for this transaction.
-     * Transactions are grouped under this name for reporting and error tracking purposes.
-     *
-     * @return group name prefix string or null
-     */
-    String getGroupName();
-
-    /**
-     * True when {@link #getGroupName()} is non-null, false when null.
-     */
-    boolean hasGroupName();
-
-    /**
      * Get an arbitrary transaction-specific option.
      *
      * @param opt option for which to return a value
