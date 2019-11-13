@@ -94,7 +94,7 @@ public class ManagementLogger implements MessageReader {
                 }
                 GraphCacheEvictionAction action = serializer.readObjectNotNull(in, GraphCacheEvictionAction.class);
                 Preconditions.checkNotNull(action);
-                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName()));
+                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action));
                 ack.setDaemon(true);
                 ack.start();
                 break;
@@ -203,14 +203,12 @@ public class ManagementLogger implements MessageReader {
         private final Set<? extends JanusGraphTransaction> openTx;
         private final String originId;
         private final GraphCacheEvictionAction action;
-        private final String graphName;
 
-        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx, GraphCacheEvictionAction action, String graphName) {
+        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx, GraphCacheEvictionAction action) {
             this.evictionId = evictionId;
             this.openTx = openTx;
             this.originId = originId;
             this.action = action;
-            this.graphName = graphName;
         }
 
         @Override
@@ -230,7 +228,7 @@ public class ManagementLogger implements MessageReader {
                 if (!txStillOpen && janusGraphManagerIsInBadState) {
                     LOG.error("JanusGraphManager should be instantiated on this server, but it is not. " +
                             "Please restart with proper server settings. " +
-                            "As a result, we could not evict graph {} from the cache.", graphName);
+                            "As a result, we could not evict graph from the cache.");
                     break;
                 } else if (!txStillOpen) {
                     //Send ack and finish up

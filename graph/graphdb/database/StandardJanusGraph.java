@@ -164,14 +164,11 @@ public class StandardJanusGraph implements JanusGraph {
 
     private final Set<StandardJanusGraphTx> openTransactions;
 
-    private final String name;
-
     private final AutomaticLocalTinkerTransaction tinkerTransaction = new AutomaticLocalTinkerTransaction();
 
     public StandardJanusGraph(GraphDatabaseConfiguration configuration, Backend backend) {
 
         this.config = configuration;
-        this.name = configuration.getGraphName();
         this.isOpen = true;
         this.txCounter = new AtomicLong(0);
         this.openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
@@ -365,10 +362,6 @@ public class StandardJanusGraph implements JanusGraph {
             Preconditions.checkArgument(transactionConsumer instanceof CLOSE_BEHAVIOR, "Only CLOSE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
             return super.onClose(transactionConsumer);
         }
-    }
-
-    public String getGraphName() {
-        return this.name;
     }
 
     @Override

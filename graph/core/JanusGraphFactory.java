@@ -42,12 +42,10 @@ import grakn.core.graph.graphdb.log.StandardLogProcessorFramework;
 import grakn.core.graph.graphdb.log.StandardTransactionLogProcessor;
 import grakn.core.graph.util.system.ConfigurationUtil;
 import grakn.core.graph.util.system.IOUtils;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 
 import java.time.Instant;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
 
@@ -68,24 +66,13 @@ public class JanusGraphFactory {
 
     /**
      * Opens a {@link JanusGraph} database configured according to the provided configuration.
-     *
-     * @param configuration Configuration for the graph database
-     * @return JanusGraph graph database
-     */
-    public static StandardJanusGraph open(ReadConfiguration configuration) {
-        return open(configuration, null);
-    }
-
-    /**
-     * Opens a {@link JanusGraph} database configured according to the provided configuration.
      * This method shouldn't be called by end users; it is used by internal server processes to
      * open graphs defined at server start that do not include the graphname property.
      *
      * @param configuration Configuration for the graph database
-     * @param backupName    Backup name for graph
      * @return JanusGraph graph database
      */
-    private static StandardJanusGraph open(ReadConfiguration configuration, String backupName) {
+    private static StandardJanusGraph open(ReadConfiguration configuration) {
         // Create BasicConfiguration out of ReadConfiguration for local configuration
         BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration, BasicConfiguration.Restriction.NONE);
 
@@ -104,10 +91,6 @@ public class JanusGraphFactory {
         Backend backend = new Backend(mergedConfig, storeManager);
         GraphDatabaseConfiguration dbConfig = new GraphDatabaseConfiguration(configuration, mergedConfig, storeManager.getFeatures());
 
-
-        // When user specifies graphname property is because he wishes to register the graph with the GraphManager
-        // The GraphManager though needs to be enabled using the YAML properties file
-        String graphName = localBasicConfiguration.has(GRAPH_NAME) ? localBasicConfiguration.get(GRAPH_NAME) : backupName;
         return new StandardJanusGraph(dbConfig, backend);
     }
 
@@ -149,7 +132,6 @@ public class JanusGraphFactory {
         return new Builder();
     }
 
-    //--------------------- BUILDER -------------------------------------------
 
     public static class Builder {
 
@@ -193,10 +175,6 @@ public class JanusGraphFactory {
         return new StandardTransactionLogProcessor((StandardJanusGraph) graph, start);
     }
 
-    //###################################
-    //          HELPER METHODS
-    //###################################
-
 
     @VisibleForTesting
     public static KeyColumnValueStoreManager getStoreManager(grakn.core.graph.diskstorage.configuration.Configuration configuration) {
@@ -218,13 +196,6 @@ public class JanusGraphFactory {
         }
 
         return ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{grakn.core.graph.diskstorage.configuration.Configuration.class});
-    }
-
-    private static ReadConfiguration getLocalConfiguration(String backendShortcut) {
-        BaseConfiguration config = new BaseConfiguration();
-        ModifiableConfiguration writeConfig = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(config), BasicConfiguration.Restriction.NONE);
-        writeConfig.set(STORAGE_BACKEND, backendShortcut);
-        return new CommonsConfiguration(config);
     }
 
 }

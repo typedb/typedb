@@ -83,12 +83,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace GRAPH_NS = new ConfigNamespace(ROOT_NS, "graph",
             "General configuration options");
 
-    public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<>(GRAPH_NS, "graphname",
-            "This config option is an optional configuration setting that you may supply when opening a graph. " +
-                    "The String value you provide will be the name of your graph. If you use the ConfigurationManagement APIs, " +
-                    "then you will be able to access your graph by this String representation using the ConfiguredGraphFactory APIs.",
-            ConfigOption.Type.LOCAL, String.class);
-
     public static final ConfigOption<TimestampProviders> TIMESTAMP_PROVIDER = new ConfigOption<>(GRAPH_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices. Sets the time granularity for the " +
                     "entire graph cluster. To avoid potential inaccuracies, the configured time resolution should match " +
@@ -1270,10 +1264,6 @@ public class GraphDatabaseConfiguration {
 
     public Configuration getConfiguration() {
         return configuration;
-    }
-
-    public String getGraphName() {
-        return getConfigurationAtOpen().getString(GRAPH_NAME.toStringWithoutRoot());
     }
 
     public StoreFeatures getStoreFeatures() {
