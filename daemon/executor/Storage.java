@@ -266,7 +266,7 @@ public class Storage {
                 "java", "-cp", classpath,
                 "-Dlogback.configurationFile=" + logback,
                 NodeTool.class.getCanonicalName(),
-                "statusthrift"
+                "statusbinary"
         );
     }
 
