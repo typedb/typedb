@@ -68,6 +68,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static grakn.core.common.config.ConfigKey.STORAGE_PORT;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -94,7 +95,6 @@ import static java.util.stream.Collectors.toMap;
 
 public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Long, Row> implements org.apache.hadoop.mapred.InputFormat<Long, Row> {
     public static final String MAPRED_TASK_ID = "mapred.task.id";
-    private static final String INPUT_NATIVE_PORT = "cassandra.input.native.port";
     private static final Logger LOG = LoggerFactory.getLogger(CqlInputFormat.class);
 
     private String keyspace;
@@ -288,7 +288,7 @@ public class GraknInputFormat extends org.apache.hadoop.mapreduce.InputFormat<Lo
     }
 
     private static int getInputNativePort(Configuration conf) {
-        return Integer.parseInt(conf.get(INPUT_NATIVE_PORT, "9042"));
+        return Integer.parseInt(conf.get(STORAGE_PORT.name(), "9042"));
     }
 
 
