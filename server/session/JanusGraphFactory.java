@@ -55,18 +55,12 @@ import static java.util.Arrays.stream;
 final public class JanusGraphFactory {
     private final static Logger LOG = LoggerFactory.getLogger(JanusGraphFactory.class);
     private static final AtomicBoolean strategiesApplied = new AtomicBoolean(false);
-    private static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
-    private static final String STORAGE_BACKEND = ConfigKey.STORAGE_BACKEND.name();
     private static final String CQL_BACKEND = "cql";
 
     private Config config;
 
     public JanusGraphFactory(Config config) {
         this.config = config;
-    }
-
-    public Config config() {
-        return config;
     }
 
     public synchronized StandardJanusGraph openGraph(String keyspace) {
@@ -95,11 +89,10 @@ final public class JanusGraphFactory {
         }
     }
 
-
     private static StandardJanusGraph configureGraph(String keyspace, Config config) {
         grakn.core.graph.core.JanusGraphFactory.Builder builder = grakn.core.graph.core.JanusGraphFactory.build()
-                .set(STORAGE_BACKEND, CQL_BACKEND)
-                .set(STORAGE_KEYSPACE, keyspace);
+                .set(ConfigKey.STORAGE_BACKEND.name(), CQL_BACKEND)
+                .set(ConfigKey.STORAGE_KEYSPACE.name(), keyspace);
 
         //Load Passed in properties
         config.properties().forEach((key, value) -> {
