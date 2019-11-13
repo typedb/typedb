@@ -51,11 +51,11 @@ public class JanusGraphHadoopSetupImpl implements JanusGraphHadoopSetup {
     private final StandardJanusGraph graph;
     private final StandardJanusGraphTx tx;
 
-    public JanusGraphHadoopSetupImpl(final Configuration config) {
+    public JanusGraphHadoopSetupImpl(Configuration config) {
         scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
         BasicConfiguration bc = scanConf.getJanusGraphConf();
-        graph = (StandardJanusGraph) JanusGraphFactory.open(bc);
-        tx = (StandardJanusGraphTx)graph.buildTransaction().readOnly().vertexCacheSize(200).start();
+        graph = JanusGraphFactory.open(bc);
+        tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();
     }
 
     @Override
