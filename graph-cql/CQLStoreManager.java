@@ -106,9 +106,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.GRAPH_NAME;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_PREFIX;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
@@ -145,7 +142,7 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
      */
     public CQLStoreManager(Configuration configuration) throws PermanentBackendException {
         super(configuration);
-        this.keyspace = determineKeyspaceName(configuration);
+        this.keyspace = configuration.get(KEYSPACE);
         this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
         this.times = configuration.get(TIMESTAMP_PROVIDER);
@@ -156,13 +153,11 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
 
         Configuration global = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_QUORUM)
-                .set(WRITE_CONSISTENCY, CONSISTENCY_QUORUM)
-                .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
+                .set(WRITE_CONSISTENCY, CONSISTENCY_QUORUM);
 
         Configuration local = buildGraphConfiguration()
                 .set(READ_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
-                .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
-                .set(METRICS_PREFIX, METRICS_SYSTEM_PREFIX_DEFAULT);
+                .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM);
 
         Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
 
@@ -262,7 +257,7 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
         return builder.build();
     }
 
-    void initialiseKeyspace() {
+    private void initialiseKeyspace() {
         // if the keyspace already exists, just return
         if (this.session.getMetadata().getKeyspace(this.keyspace).isPresent()) {
             return;
@@ -486,11 +481,6 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
             throw EXCEPTION_MAPPER.apply(e);
         }
         sleepAfterWrite(commitTime);
-    }
-
-    private String determineKeyspaceName(Configuration config) {
-        if ((!config.has(KEYSPACE) && (config.has(GRAPH_NAME)))) return config.get(GRAPH_NAME);
-        return config.get(KEYSPACE);
     }
 
     /**

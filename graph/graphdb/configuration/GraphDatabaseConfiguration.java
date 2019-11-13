@@ -19,9 +19,6 @@
 package grakn.core.graph.graphdb.configuration;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
 import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.StandardIndexProvider;
@@ -39,29 +36,20 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.configuration.converter.RegisteredAttributeClassesConverter;
-import grakn.core.graph.graphdb.database.cache.MetricInstrumentedSchemaCache;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
 import grakn.core.graph.graphdb.database.cache.StandardSchemaCache;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
-import grakn.core.graph.graphdb.tinkerpop.Tp3DefaultSchemaMaker;
-import grakn.core.graph.graphdb.transaction.StandardTransactionBuilder;
 import grakn.core.graph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import grakn.core.graph.util.stats.NumberUtil;
-import grakn.core.graph.util.system.ConfigurationUtil;
 import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.lang3.ClassUtils;
-import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import javax.management.MBeanServerFactory;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Provides functionality to configure a {@link JanusGraph} INSTANCE.
@@ -82,12 +70,6 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace GRAPH_NS = new ConfigNamespace(ROOT_NS, "graph",
             "General configuration options");
-
-    public static final ConfigOption<String> GRAPH_NAME = new ConfigOption<>(GRAPH_NS, "graphname",
-            "This config option is an optional configuration setting that you may supply when opening a graph. " +
-                    "The String value you provide will be the name of your graph. If you use the ConfigurationManagement APIs, " +
-                    "then you will be able to access your graph by this String representation using the ConfiguredGraphFactory APIs.",
-            ConfigOption.Type.LOCAL, String.class);
 
     public static final ConfigOption<TimestampProviders> TIMESTAMP_PROVIDER = new ConfigOption<>(GRAPH_NS, "timestamps",
             "The timestamp resolution to use when writing to storage and indices. Sets the time granularity for the " +
@@ -239,34 +221,6 @@ public class GraphDatabaseConfiguration {
                     "lead to significant performance improvement if there are many edges to adjacent vertices and there is a non-trivial latency to the backend.",
             ConfigOption.Type.MASKABLE, false);
 
-    // ################ SCHEMA #######################
-    // ################################################
-
-    public static final ConfigNamespace SCHEMA_NS = new ConfigNamespace(ROOT_NS, "schema",
-            "Schema related configuration options");
-
-    public static final ConfigOption<String> AUTO_TYPE = new ConfigOption<>(SCHEMA_NS, "default",
-            "Configures the DefaultSchemaMaker to be used by this graph. If set to 'none', automatic schema creation is disabled. " +
-                    "Defaults to a blueprints compatible schema maker with MULTI edge labels and SINGLE property keys",
-            ConfigOption.Type.MASKABLE, "default", new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable String s) {
-            if (s == null) return false;
-            if (PREREGISTERED_AUTO_TYPE.containsKey(s)) return true;
-            try {
-                Class<?> clazz = ClassUtils.getClass(s);
-                return DefaultSchemaMaker.class.isAssignableFrom(clazz);
-            } catch (ClassNotFoundException e) {
-                return false;
-            }
-        }
-    });
-
-    private static final Map<String, DefaultSchemaMaker> PREREGISTERED_AUTO_TYPE =
-            ImmutableMap.of("none", DisableDefaultSchemaMaker.INSTANCE,
-                    "default", JanusGraphDefaultSchemaMaker.INSTANCE,
-                    "tp3", Tp3DefaultSchemaMaker.INSTANCE);
-
     // ################ CACHE #######################
     // ################################################
 
@@ -393,16 +347,9 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<String> STORAGE_BACKEND = new ConfigOption<>(STORAGE_NS, "backend",
             "The primary persistence provider used by JanusGraph.  This is required.  It should be set one of " +
                     "JanusGraph's built-in shorthand names for its standard storage backends " +
-                    "(shorthands: inmemory, cql, foundationdb) " +
+                    "(shorthands: inmemory, cql) " +
                     "or to the full package and classname of a custom/third-party StoreManager implementation.",
             ConfigOption.Type.LOCAL, String.class);
-
-    /**
-     * Specifies whether this database is read-only, i.e. write operations are not supported
-     */
-    public static final ConfigOption<Boolean> STORAGE_READONLY = new ConfigOption<>(STORAGE_NS, "read-only",
-            "Read-only database",
-            ConfigOption.Type.LOCAL, false);
 
     /**
      * Enables batch loading which improves write performance but assumes that only one thread is interacting with
@@ -426,26 +373,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Integer> BUFFER_SIZE = new ConfigOption<>(STORAGE_NS, "buffer-size",
             "Size of the batch in which mutations are persisted",
             ConfigOption.Type.MASKABLE, 1024, ConfigOption.positiveInt());
-
-    /*
-     * Number of times the database attempts to persist the transactional state to the storage layer.
-     * Persisting the state of a committed transaction might fail for various reasons, some of which are
-     * temporary such as network failures. For temporary failures, JanusGraph will re-attempt to persist the
-     * state up to the number of times specified.
-     */
-//    public static final ConfigOption<Integer> WRITE_ATTEMPTS = new ConfigOption<>(STORAGE_NS,"write-attempts",
-//            "Number of attempts for write operations that might experience temporary failures",
-//            ConfigOption.Type.MASKABLE, 5, ConfigOption.positiveInt());
-
-    /*
-     * Number of times the database attempts to execute a read operation against the storage layer in the current transaction.
-     * A read operation might fail for various reasons, some of which are
-     * temporary such as network failures. For temporary failures, JanusGraph will re-attempt to read the
-     * state up to the number of times specified before failing the transaction
-     */
-//    public static final ConfigOption<Integer> READ_ATTEMPTS = new ConfigOption<>(STORAGE_NS,"read-attempts",
-//            "Number of attempts for read operations that might experience temporary failures",
-//            ConfigOption.Type.MASKABLE, 3, ConfigOption.positiveInt());
 
     public static final ConfigOption<Duration> STORAGE_WRITE_WAITTIME = new ConfigOption<>(STORAGE_NS, "write-time",
             "Maximum time (in ms) to wait for a backend write operation to complete successfully. If a backend write operation" +
@@ -604,19 +531,6 @@ public class GraphDatabaseConfiguration {
     // ################################################
 
     public static final ConfigNamespace CLUSTER_NS = new ConfigNamespace(ROOT_NS, "cluster", "Configuration options for multi-machine deployments");
-
-    /*
-     * Whether the id space should be partitioned for equal distribution of keys. If the keyspace is ordered, this needs to be
-     * enabled to ensure an even distribution of data. If the keyspace is random/hashed, then enabling this only has the benefit
-     * of de-congesting a single id pool in the database.
-     */
-//    public static final ConfigOption<Boolean> CLUSTER_PARTITION = new ConfigOption<Boolean>(CLUSTER_NS,"partition",
-//            "Whether the graph's element should be randomly distributed across the cluster " +
-//            "(true) or explicitly allocated to individual partition blocks based on the configured graph partitioner (false). " +
-//            "Unless explicitly set, this defaults false for stores that hash keys and defaults true for stores that preserve key order " +
-//            "(such as HBase and Cassandra with ByteOrderedPartitioner).",
-//            ConfigOption.Type.FIXED, false);
-
 
     public static final ConfigOption<Integer> CLUSTER_MAX_PARTITIONS = new ConfigOption<>(CLUSTER_NS, "max-partitions",
             "The number of virtual partition blocks created in the partitioned graph. This should be larger than the maximum expected number of nodes" +
@@ -868,288 +782,17 @@ public class GraphDatabaseConfiguration {
             "Class of the custom attribute serializer to be registered",
             ConfigOption.Type.GLOBAL_OFFLINE, String.class);
 
-    // ################ Metrics #######################
-    // ################################################
-
-    /**
-     * Configuration key prefix for Metrics.
-     */
-    public static final ConfigNamespace METRICS_NS = new ConfigNamespace(ROOT_NS, "metrics", "Configuration options for metrics reporting");
-
-    /**
-     * Whether to enable basic timing and operation count monitoring on backend
-     * methods using the {@code com.codahale.metrics} package.
-     */
-    public static final ConfigOption<Boolean> BASIC_METRICS = new ConfigOption<>(METRICS_NS, "enabled",
-            "Whether to enable basic timing and operation count monitoring on backend",
-            ConfigOption.Type.MASKABLE, false);
-
-    /**
-     * This is the prefix used outside of a graph database configuration, or for
-     * operations where a system-internal transaction is necessary as an
-     * implementation detail. It currently can't be modified, though there is no
-     * substantial technical obstacle preventing it from being configured --
-     * some kind of configuration object is in scope everywhere it is used, and
-     * it could theoretically be stored in and read from that object.
-     */
-    public static final String METRICS_PREFIX_DEFAULT = "grakn.core.graph";
-    public static final String METRICS_SYSTEM_PREFIX_DEFAULT = METRICS_PREFIX_DEFAULT + "." + "sys";
-    public static final String METRICS_SCHEMA_PREFIX_DEFAULT = METRICS_SYSTEM_PREFIX_DEFAULT + "." + "schema";
-
-    /**
-     * The default name prefix for Metrics reported by JanusGraph. All metric names
-     * will begin with this string and a period. This value can be overridden on
-     * a transaction-specific basis through
-     * {@link StandardTransactionBuilder#groupName(String)}.
-     * <p>
-     * Default = {@literal #METRICS_PREFIX_DEFAULT}
-     */
-    public static final ConfigOption<String> METRICS_PREFIX = new ConfigOption<>(METRICS_NS, "prefix",
-            "The default name prefix for Metrics reported by JanusGraph.",
-            ConfigOption.Type.MASKABLE, METRICS_PREFIX_DEFAULT);
-
-    /**
-     * Whether to aggregate measurements for the edge store, vertex index, edge
-     * index, and ID store.
-     * <p>
-     * If true, then metrics for each of these backends will use the same metric
-     * name ("stores"). All of their measurements will be combined. This setting
-     * measures the sum of JanusGraph's backend activity without distinguishing
-     * between contributions of its various internal stores.
-     * <p>
-     * If false, then metrics for each of these backends will use a unique
-     * metric name ("idStore", "edgeStore", "vertexIndex", and "edgeIndex").
-     * This setting exposes the activity associated with each backend component,
-     * but it also multiplies the number of measurements involved by four.
-     * <p>
-     * This option has no effect when {@link #BASIC_METRICS} is false.
-     */
-    public static final ConfigOption<Boolean> METRICS_MERGE_STORES = new ConfigOption<>(METRICS_NS, "merge-stores",
-            "Whether to aggregate measurements for the edge store, vertex index, edge index, and ID store",
-            ConfigOption.Type.MASKABLE, true);
-
-    public static final ConfigNamespace METRICS_CONSOLE_NS = new ConfigNamespace(METRICS_NS, "console", "Configuration options for metrics reporting to console");
-
-
-    /**
-     * Metrics console reporter interval in milliseconds. Leaving this
-     * configuration key absent or null disables the console reporter.
-     */
-    public static final ConfigOption<Duration> METRICS_CONSOLE_INTERVAL = new ConfigOption<>(METRICS_CONSOLE_NS, "interval",
-            "Time between Metrics reports printing to the console, in milliseconds",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    public static final ConfigNamespace METRICS_CSV_NS = new ConfigNamespace(METRICS_NS, "csv", "Configuration options for metrics reporting to CSV file");
-
-    /**
-     * Metrics CSV reporter interval in milliseconds. Leaving this configuration
-     * key absent or null disables the CSV reporter.
-     */
-    public static final ConfigOption<Duration> METRICS_CSV_INTERVAL = new ConfigOption<>(METRICS_CSV_NS, "interval",
-            "Time between dumps of CSV files containing Metrics data, in milliseconds",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    /**
-     * Metrics CSV output directory. It will be created if it doesn't already
-     * exist. This option must be non-null if {@link #METRICS_CSV_INTERVAL} is
-     * non-null. This option has no effect if {@code #METRICS_CSV_INTERVAL} is
-     * null.
-     */
-    public static final ConfigOption<String> METRICS_CSV_DIR = new ConfigOption<>(METRICS_CSV_NS, "directory",
-            "Metrics CSV output directory",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    public static final ConfigNamespace METRICS_JMX_NS = new ConfigNamespace(METRICS_NS, "jmx", "Configuration options for metrics reporting through JMX");
-
-    /**
-     * Whether to report Metrics through a JMX MBean.
-     */
-    public static final ConfigOption<Boolean> METRICS_JMX_ENABLED = new ConfigOption<>(METRICS_JMX_NS, "enabled",
-            "Whether to report Metrics through a JMX MBean",
-            ConfigOption.Type.MASKABLE, false);
-
-    /**
-     * The JMX domain in which to report Metrics. If null, then Metrics applies
-     * its default value.
-     */
-    public static final ConfigOption<String> METRICS_JMX_DOMAIN = new ConfigOption<>(METRICS_JMX_NS, "domain",
-            "The JMX domain in which to report Metrics",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The JMX agentId through which to report Metrics. Calling
-     * {@link MBeanServerFactory#findMBeanServer(String)} on this value must
-     * return exactly one {@code MBeanServer} at runtime. If null, then Metrics
-     * applies its default value.
-     */
-    public static final ConfigOption<String> METRICS_JMX_AGENTID = new ConfigOption<>(METRICS_JMX_NS, "agentid",
-            "The JMX agentId used by Metrics",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    public static final ConfigNamespace METRICS_SLF4J_NS = new ConfigNamespace(METRICS_NS, "slf4j", "Configuration options for metrics reporting through slf4j");
-
-    /**
-     * Metrics Slf4j reporter interval in milliseconds. Leaving this
-     * configuration key absent or null disables the Slf4j reporter.
-     */
-    public static final ConfigOption<Duration> METRICS_SLF4J_INTERVAL = new ConfigOption<>(METRICS_SLF4J_NS, "interval",
-            "Time between slf4j logging reports of Metrics data, in milliseconds",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    /**
-     * The complete name of the Logger through which Metrics will report via
-     * Slf4j. If non-null, then Metrics will be dumped on
-     * {@link LoggerFactory#getLogger(String)} with the configured value as the
-     * argument. If null, then Metrics will use its default Slf4j logger.
-     */
-    public static final ConfigOption<String> METRICS_SLF4J_LOGGER = new ConfigOption<>(METRICS_SLF4J_NS, "logger",
-            "The complete name of the Logger through which Metrics will report via Slf4j",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The configuration namespace within {@link #METRICS_NS} for Ganglia.
-     */
-    public static final ConfigNamespace METRICS_GANGLIA_NS = new ConfigNamespace(METRICS_NS, "ganglia", "Configuration options for metrics reporting through Ganglia");
-
-    /**
-     * The unicast host or multicast group name to which Metrics will send
-     * Ganglia data. Setting this config key has no effect unless
-     * {@link #GANGLIA_INTERVAL} is also set.
-     */
-    public static final ConfigOption<String> GANGLIA_HOST_OR_GROUP = new ConfigOption<>(METRICS_GANGLIA_NS, "hostname",
-            "The unicast host or multicast group name to which Metrics will send Ganglia data",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The number of milliseconds to wait between sending Metrics data to the
-     * host or group specified by {@link #GANGLIA_HOST_OR_GROUP}. This has no
-     * effect unless {@link #GANGLIA_HOST_OR_GROUP} is also set.
-     */
-    public static final ConfigOption<Duration> GANGLIA_INTERVAL = new ConfigOption<>(METRICS_GANGLIA_NS, "interval",
-            "The number of milliseconds to wait between sending Metrics data to Ganglia",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    /**
-     * The port to which Ganglia data are sent.
-     * <p>
-     */
-    public static final ConfigOption<Integer> GANGLIA_PORT = new ConfigOption<>(METRICS_GANGLIA_NS, "port",
-            "The port to which Ganglia data are sent",
-            ConfigOption.Type.MASKABLE, 8649);
-
-    /**
-     * Whether to interpret {@link #GANGLIA_HOST_OR_GROUP} as a unicast or
-     * multicast address. If present, it must be either the string "multicast"
-     * or the string "unicast".
-     * <p>
-     */
-    public static final ConfigOption<String> GANGLIA_ADDRESSING_MODE = new ConfigOption<>(METRICS_GANGLIA_NS, "addressing-mode",
-            "Whether to communicate to Ganglia via uni- or multicast",
-            ConfigOption.Type.MASKABLE, "unicast", s -> s != null && s.equalsIgnoreCase("unicast") || s.equalsIgnoreCase("multicast"));
-
-    /**
-     * The multicast TTL to set on outgoing Ganglia datagrams. This has no
-     * effect when {@link #GANGLIA_ADDRESSING_MODE} is set to "multicast".
-     * <p>
-     * This is a TTL in the multicast protocol sense (number of routed hops),
-     * not a timestamp sense.
-     */
-    public static final ConfigOption<Integer> GANGLIA_TTL = new ConfigOption<>(METRICS_GANGLIA_NS, "ttl",
-            "The multicast TTL to set on outgoing Ganglia datagrams",
-            ConfigOption.Type.MASKABLE, 1);
-
-    /**
-     * Whether to send data to Ganglia in the 3.1 protocol format (true) or the
-     * 3.0 protocol format (false).
-     * <p>
-     */
-    public static final ConfigOption<Boolean> GANGLIA_USE_PROTOCOL_31 = new ConfigOption<>(METRICS_GANGLIA_NS, "protocol-31",
-            "Whether to send data to Ganglia in the 3.1 protocol format",
-            ConfigOption.Type.MASKABLE, true);
-
-    /**
-     * The host UUID to set on outgoing Ganglia datagrams. If null, no UUID is
-     * set on outgoing data.
-     * <p>
-     * See https://github.com/ganglia/monitor-core/wiki/UUIDSources
-     * <p>
-     */
-    public static final ConfigOption<String> GANGLIA_UUID = new ConfigOption<>(METRICS_GANGLIA_NS, "uuid",
-            "The host UUID to set on outgoing Ganglia datagrams. " +
-                    "See https://github.com/ganglia/monitor-core/wiki/UUIDSources for information about this setting.",
-            ConfigOption.Type.LOCAL, String.class);
-
-    /**
-     * If non-null, it must be a valid Gmetric spoof string formatted as an
-     * IP:hostname pair. If null, Ganglia will automatically determine the IP
-     * and hostname to set on outgoing datagrams.
-     * <p>
-     * See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing
-     * <p>
-     */
-    public static final ConfigOption<String> GANGLIA_SPOOF = new ConfigOption<String>(METRICS_GANGLIA_NS, "spoof",
-            "If non-null, it must be a valid Gmetric spoof string formatted as an IP:hostname pair. " +
-                    "See https://github.com/ganglia/monitor-core/wiki/Gmetric-Spoofing for information about this setting.",
-            ConfigOption.Type.MASKABLE, String.class, s -> s != null && 0 < s.indexOf(':'));
-
-    /**
-     * The configuration namespace within {@link #METRICS_NS} for
-     * Graphite.
-     */
-    public static final ConfigNamespace METRICS_GRAPHITE_NS = new ConfigNamespace(METRICS_NS, "graphite", "Configuration options for metrics reporting through Graphite");
-
-    /**
-     * The hostname to receive Graphite plaintext protocol metric data. Setting
-     * this config key has no effect unless {@link #GRAPHITE_INTERVAL} is also
-     * set.
-     */
-    public static final ConfigOption<String> GRAPHITE_HOST = new ConfigOption<>(METRICS_GRAPHITE_NS, "hostname",
-            "The hostname to receive Graphite plaintext protocol metric data",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    /**
-     * The number of milliseconds to wait between sending Metrics data to the
-     * host specified {@link #GRAPHITE_HOST}. This has no effect unless
-     * {@link #GRAPHITE_HOST} is also set.
-     */
-    public static final ConfigOption<Duration> GRAPHITE_INTERVAL = new ConfigOption<>(METRICS_GRAPHITE_NS, "interval",
-            "The number of milliseconds to wait between sending Metrics data",
-            ConfigOption.Type.MASKABLE, Duration.class);
-
-    /**
-     * The port to which Graphite data are sent.
-     * <p>
-     */
-    public static final ConfigOption<Integer> GRAPHITE_PORT = new ConfigOption<>(METRICS_GRAPHITE_NS, "port",
-            "The port to which Graphite data are sent",
-            ConfigOption.Type.MASKABLE, 2003);
-
-    /**
-     * A Graphite-specific prefix for reported metrics. If non-null, Metrics
-     * prepends this and a "." to all metric names before reporting them to
-     * Graphite.
-     * <p>
-     */
-    public static final ConfigOption<String> GRAPHITE_PREFIX = new ConfigOption<>(METRICS_GRAPHITE_NS, "prefix",
-            "A Graphite-specific prefix for reported metrics",
-            ConfigOption.Type.MASKABLE, String.class);
-
-    public static final ConfigNamespace GREMLIN_NS = new ConfigNamespace(ROOT_NS, "gremlin",
-            "Gremlin configuration options");
-
     // ################ Begin Class Definition #######################
     // ###############################################################
 
     public static final String SYSTEM_PROPERTIES_STORE_NAME = "system_properties";
     public static final String SYSTEM_CONFIGURATION_IDENTIFIER = "configuration";
-    public static final String USER_CONFIGURATION_IDENTIFIER = "userconfig";
 
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
     private final String uniqueGraphId;
     private final StoreFeatures storeFeatures;
 
-    private boolean readOnly;
     private boolean flushIDs;
     private boolean forceIndexUsage;
     private boolean batchLoading;
@@ -1161,7 +804,6 @@ public class GraphDatabaseConfiguration {
     private Boolean useMultiQuery;
     private Boolean batchPropertyPrefetching;
     private boolean logTransactions;
-    private String metricsPrefix;
     private String unknownIndexKeyName;
 
 
@@ -1177,10 +819,6 @@ public class GraphDatabaseConfiguration {
         return new ModifiableConfiguration(ROOT_NS,
                 new CommonsConfiguration(new BaseConfiguration()),
                 BasicConfiguration.Restriction.NONE);
-    }
-
-    public boolean isReadOnly() {
-        return readOnly;
     }
 
     public boolean hasFlushIDs() {
@@ -1205,10 +843,6 @@ public class GraphDatabaseConfiguration {
 
     public String getUniqueGraphId() {
         return uniqueGraphId;
-    }
-
-    public String getMetricsPrefix() {
-        return metricsPrefix;
     }
 
     public DefaultSchemaMaker getDefaultSchemaMaker() {
@@ -1272,10 +906,6 @@ public class GraphDatabaseConfiguration {
         return configuration;
     }
 
-    public String getGraphName() {
-        return getConfigurationAtOpen().getString(GRAPH_NAME.toStringWithoutRoot());
-    }
-
     public StoreFeatures getStoreFeatures() {
         return storeFeatures;
     }
@@ -1296,8 +926,7 @@ public class GraphDatabaseConfiguration {
     }
 
     public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {
-        if (configuration.get(BASIC_METRICS)) return new MetricInstrumentedSchemaCache(retriever);
-        else return new StandardSchemaCache(retriever);
+        return new StandardSchemaCache(retriever);
     }
 
     public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {
@@ -1305,18 +934,16 @@ public class GraphDatabaseConfiguration {
     }
 
     private void preLoadConfiguration() {
-        readOnly = configuration.get(STORAGE_READONLY);
         flushIDs = configuration.get(IDS_FLUSH);
         forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         batchLoading = configuration.get(STORAGE_BATCH);
-        String autoTypeMakerName = configuration.get(AUTO_TYPE);
-        if (PREREGISTERED_AUTO_TYPE.containsKey(autoTypeMakerName)) {
-            defaultSchemaMaker = PREREGISTERED_AUTO_TYPE.get(autoTypeMakerName);
-        } else {
-            defaultSchemaMaker = ConfigurationUtil.instantiate(autoTypeMakerName);
-        }
+
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) defaultSchemaMaker = DisableDefaultSchemaMaker.INSTANCE;
+        if (batchLoading) {
+            defaultSchemaMaker = new DisableDefaultSchemaMaker();
+        } else {
+            defaultSchemaMaker = new JanusGraphDefaultSchemaMaker();
+        }
 
         txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
         //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
@@ -1334,94 +961,5 @@ public class GraphDatabaseConfiguration {
         logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
 
         unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
-
-        configureMetrics();
     }
-
-    private void configureMetrics() {
-        Preconditions.checkNotNull(configuration);
-
-        metricsPrefix = configuration.get(METRICS_PREFIX);
-
-        if (!configuration.get(BASIC_METRICS)) {
-            metricsPrefix = null;
-        } else {
-            Preconditions.checkNotNull(metricsPrefix);
-        }
-
-//        configureMetricsConsoleReporter();
-//        configureMetricsCsvReporter();
-//        configureMetricsJmxReporter();
-//        configureMetricsSlf4jReporter();
-////        configureMetricsGangliaReporter();
-//        configureMetricsGraphiteReporter();
-    }
-
-//    private void configureMetricsConsoleReporter() {
-//        if (configuration.has(METRICS_CONSOLE_INTERVAL)) {
-////            MetricManager.INSTANCE.addConsoleReporter(configuration.get(METRICS_CONSOLE_INTERVAL));
-//        }
-//    }
-//
-//    private void configureMetricsCsvReporter() {
-//        if (configuration.has(METRICS_CSV_DIR)) {
-////            MetricManager.INSTANCE.addCsvReporter(configuration.get(METRICS_CSV_INTERVAL), configuration.get(METRICS_CSV_DIR));
-//        }
-//    }
-//
-//    private void configureMetricsJmxReporter() {
-//        if (configuration.get(METRICS_JMX_ENABLED)) {
-////            MetricManager.INSTANCE.addJmxReporter(configuration.get(METRICS_JMX_DOMAIN), configuration.get(METRICS_JMX_AGENTID));
-//        }
-//    }
-//
-//    private void configureMetricsSlf4jReporter() {
-//        if (configuration.has(METRICS_SLF4J_INTERVAL)) {
-//            //todo-reenable
-//            // null loggerName is allowed -- that means Metrics will use its internal default
-////            MetricManager.INSTANCE.addSlf4jReporter(configuration.get(METRICS_SLF4J_INTERVAL),
-////                    configuration.has(METRICS_SLF4J_LOGGER) ? configuration.get(METRICS_SLF4J_LOGGER) : null);
-//        }
-//    }
-
-//    private void configureMetricsGangliaReporter() {
-////        if (configuration.has(GANGLIA_HOST_OR_GROUP)) {
-////            String host = configuration.get(GANGLIA_HOST_OR_GROUP);
-////            Duration intervalDuration = configuration.get(GANGLIA_INTERVAL);
-////            Integer port = configuration.get(GANGLIA_PORT);
-////// todo-reenable
-//////            UDPAddressingMode addressingMode;
-//////            String addressingModeString = configuration.get(GANGLIA_ADDRESSING_MODE);
-//////            if (addressingModeString.equalsIgnoreCase("multicast")) {
-//////                addressingMode = UDPAddressingMode.MULTICAST;
-//////            } else if (addressingModeString.equalsIgnoreCase("unicast")) {
-//////                addressingMode = UDPAddressingMode.UNICAST;
-//////            } else throw new AssertionError();
-////
-//////            Boolean proto31 = configuration.get(GANGLIA_USE_PROTOCOL_31);
-//////
-//////            int ttl = configuration.get(GANGLIA_TTL);
-//////
-//////            UUID uuid = configuration.has(GANGLIA_UUID) ? UUID.fromString(configuration.get(GANGLIA_UUID)) : null;
-//////
-//////            String spoof = null;
-//////            if (configuration.has(GANGLIA_SPOOF)) spoof = configuration.get(GANGLIA_SPOOF);
-////
-//////            try {
-////////                MetricManager.INSTANCE.addGangliaReporter(host, port, addressingMode, ttl, proto31, uuid, spoof, intervalDuration);
-//////            } catch (IOException e) {
-//////                throw new RuntimeException(e);
-//////            }
-////        }
-//    }
-
-//    private void configureMetricsGraphiteReporter() {
-////        if (configuration.has(GRAPHITE_HOST)) {
-//////            MetricManager.INSTANCE.addGraphiteReporter(configuration.get(GRAPHITE_HOST),
-//////                    configuration.get(GRAPHITE_PORT),
-//////                    configuration.get(GRAPHITE_PREFIX),
-//////                    configuration.get(GRAPHITE_INTERVAL));
-////        }
-//    }
-
 }

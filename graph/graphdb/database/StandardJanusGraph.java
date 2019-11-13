@@ -164,14 +164,11 @@ public class StandardJanusGraph implements JanusGraph {
 
     private final Set<StandardJanusGraphTx> openTransactions;
 
-    private final String name;
-
     private final AutomaticLocalTinkerTransaction tinkerTransaction = new AutomaticLocalTinkerTransaction();
 
     public StandardJanusGraph(GraphDatabaseConfiguration configuration, Backend backend) {
 
         this.config = configuration;
-        this.name = configuration.getGraphName();
         this.isOpen = true;
         this.txCounter = new AtomicLong(0);
         this.openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
@@ -367,10 +364,6 @@ public class StandardJanusGraph implements JanusGraph {
         }
     }
 
-    public String getGraphName() {
-        return this.name;
-    }
-
     @Override
     public boolean isOpen() {
         return isOpen;
@@ -530,8 +523,9 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(
+                        new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions)
+                );
                 consistentTx.getBackendTransaction().disableCache();
                 JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
                 return v != null ? v.longId() : null;
@@ -552,7 +546,7 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions));
                 consistentTx.getBackendTransaction().disableCache();
                 return edgeQuery(schemaId, query, consistentTx.getBackendTransaction());
             } finally {

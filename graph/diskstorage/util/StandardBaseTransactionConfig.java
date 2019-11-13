@@ -31,16 +31,13 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
     private volatile Instant commitTime;
     private final TimestampProvider times;
-    private final String groupName;
     private final Configuration customOptions;
 
-    private StandardBaseTransactionConfig(String groupName,
-                                          TimestampProvider times,
+    private StandardBaseTransactionConfig(TimestampProvider times,
                                           Instant commitTime,
                                           Configuration customOptions) {
         Preconditions.checkArgument(customOptions!=null);
         Preconditions.checkArgument(null != times || null != commitTime);
-        this.groupName = groupName;
         this.times = times;
         this.commitTime = commitTime;
         this.customOptions = customOptions;
@@ -72,16 +69,6 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
     }
 
     @Override
-    public boolean hasGroupName() {
-        return groupName !=null;
-    }
-
-    @Override
-    public String getGroupName() {
-        return groupName;
-    }
-
-    @Override
     public <V> V getCustomOption(ConfigOption<V> opt) {
         return customOptions.get(opt);
     }
@@ -95,7 +82,6 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
         private Instant commitTime = null;
         private TimestampProvider times;
-        private String groupName = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
         private Configuration customOptions = Configuration.EMPTY;
 
         public Builder() { }
@@ -110,13 +96,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
          */
         public Builder(BaseTransactionConfig template) {
             customOptions(template.getCustomOptions());
-            groupName(template.getGroupName());
             timestampProvider(template.getTimestampProvider());
-        }
-
-        public Builder groupName(String group) {
-            groupName = group;
-            return this;
         }
 
         public Builder commitTime(Instant commit) {
@@ -136,7 +116,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
         }
 
         public StandardBaseTransactionConfig build() {
-            return new StandardBaseTransactionConfig(groupName, times, commitTime, customOptions);
+            return new StandardBaseTransactionConfig(times, commitTime, customOptions);
         }
     }
 

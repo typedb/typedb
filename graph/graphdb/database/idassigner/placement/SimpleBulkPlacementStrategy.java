@@ -92,10 +92,6 @@ public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
     }
 
     @Override
-    public void injectIDManager(IDManager idManager) {
-    } //We don't need the IDManager here
-
-    @Override
     public int getPartition(InternalElement element) {
         return nextPartitionID();
     }

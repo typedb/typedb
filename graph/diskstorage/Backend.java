@@ -41,9 +41,9 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.CacheTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.cache.ExpirationKCVSCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
-import grakn.core.graph.diskstorage.keycolumnvalue.cache.NoKCVSCache;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSExpirationCache;
+import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSNoCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import grakn.core.graph.diskstorage.locking.Locker;
 import grakn.core.graph.diskstorage.locking.LockerProvider;
@@ -54,17 +54,17 @@ import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
 import grakn.core.graph.diskstorage.util.BackendOperation;
-import grakn.core.graph.diskstorage.util.MetricInstrumentedStoreManager;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
-import grakn.core.graph.util.system.ConfigurationUtil;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +72,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.BASIC_METRICS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.BUFFER_SIZE;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_CLEAN_WAIT;
@@ -83,7 +82,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.JOB_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.JOB_START_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.METRICS_MERGE_STORES;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_READ_WAITTIME;
@@ -117,10 +115,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     public static final String EDGESTORE_NAME = "edgestore";
     public static final String INDEXSTORE_NAME = "graphindex";
 
-    public static final String METRICS_STOREMANAGER_NAME = "storeManager";
-    private static final String METRICS_MERGED_STORE = "stores";
-    private static final String METRICS_MERGED_CACHE = "caches";
-    public static final String METRICS_CACHE_SUFFIX = ".cache";
     public static final String LOCK_STORE_SUFFIX = "_lock_";
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
@@ -163,8 +157,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public Backend(Configuration configuration, KeyColumnValueStoreManager manager) {
         this.configuration = configuration;
 
-        storeManager = configuration.get(BASIC_METRICS) ? new MetricInstrumentedStoreManager(manager, METRICS_STOREMANAGER_NAME, configuration.get(METRICS_MERGE_STORES), METRICS_MERGED_STORE) : manager;
-
+        storeManager = manager;
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
 
@@ -178,7 +171,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         Preconditions.checkArgument(bufferSizeTmp > 0, "Buffer size must be positive");
         if (!storeFeatures.hasBatchMutation()) {
             bufferSize = Integer.MAX_VALUE;
-        } else bufferSize = bufferSizeTmp;
+        } else {
+            bufferSize = bufferSizeTmp;
+        }
 
         maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
         maxReadTime = configuration.get(STORAGE_READ_WAITTIME);
@@ -222,7 +217,7 @@ public class Backend implements LockerProvider, AutoCloseable {
             KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
             KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
 
-            //Configure caches
+            //If DB cache is enabled initialise caches and use KCVStore with inner cache
             if (cacheEnabled) {
                 long expirationTime = configuration.get(DB_CACHE_TIME);
                 Preconditions.checkArgument(expirationTime >= 0, "Invalid cache expiration time: %s", expirationTime);
@@ -245,17 +240,17 @@ public class Backend implements LockerProvider, AutoCloseable {
                 long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
                 long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
 
-                edgeStore = new ExpirationKCVSCache(edgeStoreRaw, getMetricsCacheName(EDGESTORE_NAME), expirationTime, cleanWaitTime, edgeStoreCacheSize);
-                indexStore = new ExpirationKCVSCache(indexStoreRaw, getMetricsCacheName(INDEXSTORE_NAME), expirationTime, cleanWaitTime, indexStoreCacheSize);
+                edgeStore = new KCVSExpirationCache(edgeStoreRaw, expirationTime, cleanWaitTime, edgeStoreCacheSize);
+                indexStore = new KCVSExpirationCache(indexStoreRaw, expirationTime, cleanWaitTime, indexStoreCacheSize);
             } else {
-                edgeStore = new NoKCVSCache(edgeStoreRaw);
-                indexStore = new NoKCVSCache(indexStoreRaw);
+                edgeStore = new KCVSNoCache(edgeStoreRaw);
+                indexStore = new KCVSNoCache(indexStoreRaw);
             }
 
             //Just open them so that they are cached
             txLogManager.openLog(SYSTEM_TX_LOG_NAME);
             managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
-            txLogStore = new NoKCVSCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
+            txLogStore = new KCVSNoCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
 
             //Open global configuration
             KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
@@ -340,17 +335,12 @@ public class Backend implements LockerProvider, AutoCloseable {
         return systemConfig;
     }
 
-    private String getMetricsCacheName(String storeName) {
-        if (!configuration.get(BASIC_METRICS)) return null;
-        return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
-    }
-
-    private static Map<String, IndexProvider> getIndexes(Configuration config) {
+    private Map<String, IndexProvider> getIndexes(Configuration config) {
         ImmutableMap.Builder<String, IndexProvider> builder = ImmutableMap.builder();
         for (String index : config.getContainedNamespaces(INDEX_NS)) {
             Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);
             LOG.debug("Configuring index [{}]", index);
-            IndexProvider provider = getImplementationClass(config.restrictTo(index), config.get(INDEX_BACKEND, index),
+            IndexProvider provider = getIndexProviderClass(config.restrictTo(index), config.get(INDEX_BACKEND, index),
                     StandardIndexProvider.getAllProviderClasses());
             Preconditions.checkNotNull(provider);
             builder.put(index, provider);
@@ -358,12 +348,22 @@ public class Backend implements LockerProvider, AutoCloseable {
         return builder.build();
     }
 
-    public static <T> T getImplementationClass(Configuration config, String className, Map<String, String> registeredImplementations) {
+    private IndexProvider getIndexProviderClass(Configuration config, String className, Map<String, String> registeredImplementations) {
         if (registeredImplementations.containsKey(className.toLowerCase())) {
             className = registeredImplementations.get(className.toLowerCase());
         }
 
-        return ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});
+        try {
+            Class clazz = Class.forName(className);
+            Constructor constructor = clazz.getConstructor(Configuration.class);
+            return (IndexProvider) constructor.newInstance(new Object[]{config});
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Could not find IndexProvider class: " + className, e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("IndexProvider class does not have required constructor: " + className, e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | ClassCastException e) {
+            throw new IllegalArgumentException("Could not instantiate IndexProvider: " + className, e);
+        }
     }
 
     public StoreFeatures getStoreFeatures() {

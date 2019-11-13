@@ -158,8 +158,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
         uniqueIdBitWidth = config.get(IDAUTHORITY_CAV_BITS);
         Preconditions.checkArgument(uniqueIdBitWidth <= 16 && uniqueIdBitWidth >= 0);
         uniqueIDUpperBound = 1 << uniqueIdBitWidth;
-        String metricsPrefix = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
-        storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
+        storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().timestampProvider(times);
 
         ConflictAvoidanceMode conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
 
