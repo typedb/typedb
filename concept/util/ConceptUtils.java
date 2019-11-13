@@ -19,26 +19,18 @@
 
 package grakn.core.concept.util;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import grakn.core.concept.impl.SchemaConceptImpl;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.Thing;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
-import graql.lang.Graql;
-import graql.lang.pattern.Pattern;
-import graql.lang.statement.Variable;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
@@ -159,7 +151,6 @@ public class ConceptUtils {
         }
         return things.stream();
     }
-}
 
     public static void validateBaseType(SchemaConceptImpl schemaConcept, Schema.BaseType expectedBaseType) {
         // throws if label is already taken for a different type

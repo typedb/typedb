@@ -27,7 +27,6 @@ java_library(
         "//kb/concept/api:api",
         "//kb/concept/structure",
         "//concept/impl",
-        "//concept/answer",
 
         "//core:core",
 

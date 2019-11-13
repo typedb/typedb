@@ -49,6 +49,10 @@ public interface QueryExecutor {
      */
     Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal);
 
+    Stream<ConceptMap> define(GraqlDefine query);
+
+    Stream<ConceptMap> undefine(GraqlUndefine query);
+
     Stream<ConceptMap> insert(GraqlInsert query);
 
     Void delete(GraqlDelete query);

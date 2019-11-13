@@ -64,8 +64,8 @@ public interface WriteExecutor {
      */
     Concept getConcept(Variable var);
 
-    Stream<? extends Answer> stream(ConceptMap preExisting);
-    Stream<? extends Answer> stream();
+    Stream<ConceptMap> stream(ConceptMap preExisting);
+    Stream<ConceptMap> stream();
 
     Transaction tx();
 

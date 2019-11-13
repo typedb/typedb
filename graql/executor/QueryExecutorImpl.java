@@ -37,6 +37,7 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.GraqlTraversal;
@@ -51,9 +52,11 @@ import graql.lang.pattern.Pattern;
 import graql.lang.property.NeqProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
+import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -89,14 +92,16 @@ import static java.util.stream.Collectors.toList;
 public class QueryExecutorImpl implements QueryExecutor {
 
     private ConceptManager conceptManager;
+    private ExecutorFactory executorFactory;
     private final boolean infer;
     private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    public QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, boolean infer) {
+    public QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer) {
         this.conceptManager = conceptManager;
+        this.executorFactory = executorFactory;
         this.infer = infer;
         this.transaction = transaction;
 
@@ -285,19 +290,18 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = transaction.stream(match.get(projectedVars), infer);
+            Stream<ConceptMap> answers = executorFactory..stream(match.get(projectedVars), infer);
             answerStream = answers
-                    .map(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write(answer))
+                    .flatMap(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream(answer))
                     .collect(toList()).stream();
         } else {
-            answerStream = Stream.of(WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write(new ConceptMap()));
+            answerStream = WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream();
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);
 
         return answerStream;
     }
-
 
 
     @Override
@@ -346,11 +350,43 @@ public class QueryExecutorImpl implements QueryExecutor {
     }
 
     @Override
+    public Stream<ConceptMap> define(GraqlDefine query) {
+        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
+        List<Statement> statements = query.statements().stream()
+                .flatMap(statement -> statement.innerStatements().stream())
+                .collect(Collectors.toList());
+
+        for (Statement statement : statements) {
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).defineExecutors());
+            }
+        }
+
+        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream();
+    }
+
+    @Override
+    public Stream<ConceptMap> undefine(GraqlUndefine query) {
+        ImmutableSet.Builder<PropertyExecutor.Writer> executors = ImmutableSet.builder();
+        List<Statement> statements = query.statements().stream()
+                .flatMap(statement -> statement.innerStatements().stream())
+                .collect(Collectors.toList());
+
+        for (Statement statement : statements) {
+            for (VarProperty property : statement.properties()) {
+                executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
+            }
+        }
+        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream();
+    }
+
+
+    @Override
     public Stream<ConceptMap> get(GraqlGet query) {
         //NB: we need distinct as projection can produce duplicates
         Stream<ConceptMap> answers = match(query.match()).map(ans -> ans.project(query.vars())).distinct();
 
-        answers = filter(query, answers);
+        answers = AnswerUtil.filter(query, answers);
 
         return answers;
     }
