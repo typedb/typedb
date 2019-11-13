@@ -50,11 +50,11 @@ public enum StandardIndexProvider {
     private static final ImmutableList<String> ALL_SHORTHANDS;
     private static final ImmutableMap<String, String> ALL_MANAGER_CLASSES;
 
-    public List<String> getShorthands() {
+    private List<String> getShorthands() {
         return shorthands;
     }
 
-    public String getProviderName() {
+    private String getProviderName() {
         return providerName;
     }
 

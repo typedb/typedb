@@ -33,17 +33,15 @@ import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import grakn.core.graph.diskstorage.configuration.builder.ReadConfigurationBuilder;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStoreManagerAdapter;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graph.graphdb.log.StandardLogProcessorFramework;
 import grakn.core.graph.graphdb.log.StandardTransactionLogProcessor;
-import grakn.core.graph.util.system.ConfigurationUtil;
 import grakn.core.graph.util.system.IOUtils;
-import org.apache.commons.configuration.Configuration;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
@@ -187,15 +185,22 @@ public class JanusGraphFactory {
             case "inmemory":
                 className = "grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager";
                 break;
-            case "foundationdb":
-                className = "io.grakn.janusgraph.diskstorage.foundationdb.FoundationDBStoreManager";
-                OrderedKeyValueStoreManager foundationManager = ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{Configuration.class});
-                return new OrderedKeyValueStoreManagerAdapter(foundationManager);
             default:
                 throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);
         }
 
-        return ConfigurationUtil.instantiate(className, new Object[]{configuration}, new Class[]{grakn.core.graph.diskstorage.configuration.Configuration.class});
+        try {
+            Class clazz = Class.forName(className);
+            Constructor constructor = clazz.getConstructor(grakn.core.graph.diskstorage.configuration.Configuration.class);
+            return (KeyColumnValueStoreManager) constructor.newInstance(new Object[]{configuration});
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Could instantiate StoreManager class: " + className, e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("StoreManager class does not have required constructor: " + className, e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | ClassCastException e) {
+            throw new IllegalArgumentException("Could not instantiate StoreManager class: " + className, e);
+        }
+
     }
 
 }

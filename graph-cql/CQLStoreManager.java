@@ -261,7 +261,7 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
         return builder.build();
     }
 
-    void initialiseKeyspace() {
+    private void initialiseKeyspace() {
         // if the keyspace already exists, just return
         if (this.session.getMetadata().getKeyspace(this.keyspace).isPresent()) {
             return;

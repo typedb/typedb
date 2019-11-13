@@ -58,13 +58,14 @@ import grakn.core.graph.diskstorage.util.MetricInstrumentedStoreManager;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
-import grakn.core.graph.util.system.ConfigurationUtil;
 import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -345,12 +346,12 @@ public class Backend implements LockerProvider, AutoCloseable {
         return configuration.get(METRICS_MERGE_STORES) ? METRICS_MERGED_CACHE : storeName + METRICS_CACHE_SUFFIX;
     }
 
-    private static Map<String, IndexProvider> getIndexes(Configuration config) {
+    private Map<String, IndexProvider> getIndexes(Configuration config) {
         ImmutableMap.Builder<String, IndexProvider> builder = ImmutableMap.builder();
         for (String index : config.getContainedNamespaces(INDEX_NS)) {
             Preconditions.checkArgument(StringUtils.isNotBlank(index), "Invalid index name [%s]", index);
             LOG.debug("Configuring index [{}]", index);
-            IndexProvider provider = getImplementationClass(config.restrictTo(index), config.get(INDEX_BACKEND, index),
+            IndexProvider provider = getIndexProviderClass(config.restrictTo(index), config.get(INDEX_BACKEND, index),
                     StandardIndexProvider.getAllProviderClasses());
             Preconditions.checkNotNull(provider);
             builder.put(index, provider);
@@ -358,12 +359,22 @@ public class Backend implements LockerProvider, AutoCloseable {
         return builder.build();
     }
 
-    public static <T> T getImplementationClass(Configuration config, String className, Map<String, String> registeredImplementations) {
+    private IndexProvider getIndexProviderClass(Configuration config, String className, Map<String, String> registeredImplementations) {
         if (registeredImplementations.containsKey(className.toLowerCase())) {
             className = registeredImplementations.get(className.toLowerCase());
         }
 
-        return ConfigurationUtil.instantiate(className, new Object[]{config}, new Class[]{Configuration.class});
+        try {
+            Class clazz = Class.forName(className);
+            Constructor constructor = clazz.getConstructor(Configuration.class);
+            return (IndexProvider) constructor.newInstance(new Object[]{config});
+        } catch (ClassNotFoundException e) {
+            throw new IllegalArgumentException("Could not find IndexProvider class: " + className, e);
+        } catch (NoSuchMethodException e) {
+            throw new IllegalArgumentException("IndexProvider class does not have required constructor: " + className, e);
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | ClassCastException e) {
+            throw new IllegalArgumentException("Could not instantiate IndexProvider: " + className, e);
+        }
     }
 
     public StoreFeatures getStoreFeatures() {

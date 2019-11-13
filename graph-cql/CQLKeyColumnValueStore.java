@@ -143,7 +143,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
         this.tableName = tableName;
         this.closer = closer;
         this.session = this.storeManager.getSession();
-        // NOTE: storeManager now only has access to localConfig (check JanusGraphFactory,
+        // NOTE: storeManager now only has access to localConfig (check JanusGraphFactory),
         // it gets initialised before reading globalConfig, so getMetaDataSchema will probably fail as it need to read configs from `system_properties`)
         // This is a temporary tradeoff so that we dont have to init StoreManager twice!!
         this.getter = new CQLColValGetter(storeManager.getMetaDataSchema(this.tableName)); // NOTE: this is reading only local config (not reading global configs from system_properties as originally designed)
@@ -236,6 +236,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .withSpeculativeRetry("NONE");
 
 
+        // The following caching settings are copied from old Janus - need to verify if they actually provide any performance gain
         if (tableName.startsWith(EDGESTORE_NAME)) {
             createTable = createTable.withCaching(true, SchemaBuilder.RowsPerPartition.NONE);
         }
