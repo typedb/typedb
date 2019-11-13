@@ -27,24 +27,6 @@ public class JanusGraphHadoopConfiguration {
     public static final ConfigNamespace MAPRED_NS =
             new ConfigNamespace(null, "janusgraphmr", "JanusGraph MapReduce configuration root");
 
-    // ScanJob configuration
-
-    public static final ConfigNamespace SCAN_NS =
-            new ConfigNamespace(MAPRED_NS, "scanjob", "ScanJob configuration");
-
-    public static final ConfigOption<String> SCAN_JOB_CONFIG_ROOT =
-            new ConfigOption<>(SCAN_NS, "conf-root",
-                    "A string in the form \"PACKAGE.CLASS#STATICFIELD\" representing the config namespace root to use for the ScanJob",
-                    ConfigOption.Type.LOCAL, String.class);
-
-    public static final ConfigNamespace SCAN_JOB_CONFIG_KEYS =
-            new ConfigNamespace(SCAN_NS, "conf", "ScanJob configuration");
-
-    public static final ConfigOption<String> SCAN_JOB_CLASS =
-            new ConfigOption<>(SCAN_NS, "class",
-                    "A string in the form \"PACKAGE.CLASS\" representing the ScanJob to use.  Must have a no-arg constructor.",
-                    ConfigOption.Type.LOCAL, String.class);
-
     // JanusGraph Hadoop I/O format configuration
 
     public static final ConfigNamespace IOFORMAT_NS =

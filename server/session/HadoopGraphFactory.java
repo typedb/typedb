@@ -47,6 +47,13 @@ public class HadoopGraphFactory {
     private static final String STORAGE_HOSTNAME = ConfigKey.STORAGE_HOSTNAME.name();
     // Keep visibility to protected as this is used by KGMS
     protected static final String STORAGE_KEYSPACE = ConfigKey.STORAGE_KEYSPACE.name();
+
+    //NOTE: In JanusGraphHadoopConfiguration class there is the definition of this prefix (MAPRED_NS)
+    // which is used to prefix all the properties that will be passed to OLAP operations
+    // The prefix is there so that one can connect to different backends for OLTP and OLAP operations
+    // using different authentication methods and so on. This might be too generic for Grakn usecase,
+    // in the future might be worth to just remove this prefix and let all the configs be the same.
+
     // Keep visibility to protected as this is used by KGMS
     protected static final String JANUSGRAPHMR_IOFORMAT_CONF = "janusgraphmr.ioformat.conf.";
 

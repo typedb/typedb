@@ -29,6 +29,7 @@ java_library(
         # Internal dependencies
         "//graph",
         "//graph-cql",
+        "//common",
         # External dependencies from @graknlabs
 
         # External dependencies from Maven
