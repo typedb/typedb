@@ -50,6 +50,10 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final StoreTransaction tx;
     private final KeyColumnValueStoreManager manager;
     private final boolean batchLoading;
+
+    /**
+     * Buffers graph mutations locally up to the specified number before persisting them against the storage backend.
+     */
     private final int persistChunkSize;
     private final Duration maxWriteTime;
 
@@ -57,7 +61,6 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     private final Map<KCVSCache, Map<StaticBuffer, KCVEntryMutation>> mutations;
 
     public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int persistChunkSize, Duration maxWriteTime, boolean batchLoading) {
-        Preconditions.checkArgument(tx != null && manager != null && persistChunkSize > 0);
         this.tx = tx;
         this.manager = manager;
         this.batchLoading = batchLoading;

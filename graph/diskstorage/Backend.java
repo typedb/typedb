@@ -118,6 +118,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
     private static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
 
+    // The sum of the following 2 fields should be 1
     private static final double EDGESTORE_CACHE_PERCENT = 0.8;
     private static final double INDEXSTORE_CACHE_PERCENT = 0.2;
 
@@ -128,29 +129,25 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final KeyColumnValueStoreManager storeManager;
     private final KeyColumnValueStoreManager storeManagerLocking;
     private final StoreFeatures storeFeatures;
-
-    private KCVSCache edgeStore;
-    private KCVSCache indexStore;
-    private KCVSCache txLogStore;
-    private KCVSConfiguration systemConfig;
-    private boolean hasAttemptedClose;
-
+    private final KCVSCache edgeStore;
+    private final KCVSCache indexStore;
+    private final KCVSCache txLogStore;
+    private final KCVSConfiguration systemConfig;
     private final StandardScanner scanner;
-
     private final KCVSLogManager managementLogManager;
     private final KCVSLogManager txLogManager;
     private final LogManager userLogManager;
 
     private final Map<String, IndexProvider> indexes;
-
     private final int bufferSize;
     private final Duration maxWriteTime;
     private final Duration maxReadTime;
-    private final boolean cacheEnabled;
     private final ExecutorService threadPool;
 
     private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<>();
     private final Configuration configuration;
+
+    private boolean hasAttemptedClose;
 
     public Backend(Configuration configuration, KeyColumnValueStoreManager manager) {
         this.configuration = configuration;
@@ -162,16 +159,9 @@ public class Backend implements LockerProvider, AutoCloseable {
         managementLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(MANAGEMENT_LOG));
         txLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(TRANSACTION_LOG));
         userLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(USER_LOG));
+        bufferSize = configuration.get(BUFFER_SIZE);
 
-        cacheEnabled = !configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE);
-
-        int bufferSizeTmp = configuration.get(BUFFER_SIZE);
-        Preconditions.checkArgument(bufferSizeTmp > 0, "Buffer size must be positive");
-        if (!storeFeatures.hasBatchMutation()) {
-            bufferSize = Integer.MAX_VALUE;
-        } else {
-            bufferSize = bufferSizeTmp;
-        }
+        Preconditions.checkArgument(bufferSize > 0, "Buffer size must be positive");
 
         maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
         maxReadTime = configuration.get(STORAGE_READ_WAITTIME);
@@ -183,6 +173,7 @@ public class Backend implements LockerProvider, AutoCloseable {
             storeManagerLocking = storeManager;
         }
 
+        //Potentially useless threadpool: investigate!
         if (configuration.get(PARALLEL_BACKEND_OPS)) {
             int poolSize = Runtime.getRuntime().availableProcessors() * THREAD_POOL_SIZE_SCALE_FACTOR;
             threadPool = Executors.newFixedThreadPool(poolSize);
@@ -190,9 +181,43 @@ public class Backend implements LockerProvider, AutoCloseable {
         } else {
             threadPool = null;
         }
-
         scanner = new StandardScanner(storeManager);
-        initialize();
+
+        try {
+            KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
+            KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
+
+            //If DB cache is enabled (and not batch loading) initialise caches and use KCVStore with inner cache
+            if (!configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE)) {
+                long expirationTime = configuration.get(DB_CACHE_TIME);
+                if (expirationTime == 0) expirationTime = ETERNAL_CACHE_EXPIRATION;
+
+                long cleanWaitTime = configuration.get(DB_CACHE_CLEAN_WAIT);
+                long cacheSizeBytes = computeCacheSizeBytes();
+                long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
+                long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
+
+                edgeStore = new KCVSExpirationCache(edgeStoreRaw, expirationTime, cleanWaitTime, edgeStoreCacheSize);
+                indexStore = new KCVSExpirationCache(indexStoreRaw, expirationTime, cleanWaitTime, indexStoreCacheSize);
+            } else {
+                edgeStore = new KCVSNoCache(edgeStoreRaw);
+                indexStore = new KCVSNoCache(indexStoreRaw);
+            }
+
+            //Just open them so that they are cached
+            txLogManager.openLog(SYSTEM_TX_LOG_NAME);
+            managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
+            txLogStore = new KCVSNoCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
+
+            //Open global configuration
+            KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
+            StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
+            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, txConfig);
+            systemConfig = new KCVSConfigurationBuilder().buildGlobalConfiguration(txProvider, systemConfigStore, configuration);
+
+        } catch (BackendException e) {
+            throw new JanusGraphException("Could not initialize backend", e);
+        }
     }
 
     //Method invoked by ExpectedValueCheckingStoreManager, which is only used when Backend does not support native locking.
@@ -211,55 +236,22 @@ public class Backend implements LockerProvider, AutoCloseable {
      * Initializes this backend with the given configuration.
      */
     private void initialize() {
-        try {
-            KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
-            KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
 
-            //If DB cache is enabled initialise caches and use KCVStore with inner cache
-            if (cacheEnabled) {
-                long expirationTime = configuration.get(DB_CACHE_TIME);
-                Preconditions.checkArgument(expirationTime >= 0, "Invalid cache expiration time: %s", expirationTime);
-                if (expirationTime == 0) expirationTime = ETERNAL_CACHE_EXPIRATION;
+    }
 
-                long cacheSizeBytes;
-                double cacheSize = configuration.get(DB_CACHE_SIZE);
-                Preconditions.checkArgument(cacheSize > 0.0, "Invalid cache size specified: %s", cacheSize);
-                if (cacheSize < 1.0) {
-                    //Its a percentage
-                    Runtime runtime = Runtime.getRuntime();
-                    cacheSizeBytes = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * cacheSize);
-                } else {
-                    Preconditions.checkArgument(cacheSize > 1000, "Cache size is too small: %s", cacheSize);
-                    cacheSizeBytes = (long) cacheSize;
-                }
-                LOG.debug("Configuring total store cache size: {}", cacheSizeBytes);
-                long cleanWaitTime = configuration.get(DB_CACHE_CLEAN_WAIT);
-                Preconditions.checkArgument(EDGESTORE_CACHE_PERCENT + INDEXSTORE_CACHE_PERCENT == 1.0, "Cache percentages don't add up!");
-                long edgeStoreCacheSize = Math.round(cacheSizeBytes * EDGESTORE_CACHE_PERCENT);
-                long indexStoreCacheSize = Math.round(cacheSizeBytes * INDEXSTORE_CACHE_PERCENT);
-
-                edgeStore = new KCVSExpirationCache(edgeStoreRaw, expirationTime, cleanWaitTime, edgeStoreCacheSize);
-                indexStore = new KCVSExpirationCache(indexStoreRaw, expirationTime, cleanWaitTime, indexStoreCacheSize);
-            } else {
-                edgeStore = new KCVSNoCache(edgeStoreRaw);
-                indexStore = new KCVSNoCache(indexStoreRaw);
-            }
-
-            //Just open them so that they are cached
-            txLogManager.openLog(SYSTEM_TX_LOG_NAME);
-            managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
-            txLogStore = new KCVSNoCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
-
-            //Open global configuration
-            KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
-            KCVSConfigurationBuilder kcvsConfigurationBuilder = new KCVSConfigurationBuilder();
-            StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
-            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, txConfig);
-            systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(txProvider, systemConfigStore, configuration);
-
-        } catch (BackendException e) {
-            throw new JanusGraphException("Could not initialize backend", e);
+    private long computeCacheSizeBytes() {
+        long cacheSizeBytes;
+        double cacheSize = configuration.get(DB_CACHE_SIZE);
+        Preconditions.checkArgument(cacheSize > 0.0, "Invalid cache size specified: %s", cacheSize);
+        if (cacheSize < 1.0) {
+            //Its a percentage
+            Runtime runtime = Runtime.getRuntime();
+            cacheSizeBytes = (long) ((runtime.maxMemory() - (runtime.totalMemory() - runtime.freeMemory())) * cacheSize);
+        } else {
+            Preconditions.checkArgument(cacheSize > 1000, "Cache size is too small: %s", cacheSize);
+            cacheSizeBytes = (long) cacheSize;
         }
+        return cacheSizeBytes;
     }
 
     /**

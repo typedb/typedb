@@ -64,7 +64,6 @@ public class KCVSExpirationCache extends KCVSCache {
 
     public KCVSExpirationCache(KeyColumnValueStore store, long cacheTimeMS, long invalidationGracePeriodMS, long maximumByteSize) {
         super(store);
-        Preconditions.checkArgument(cacheTimeMS > 0, "Cache expiration must be positive: %s", cacheTimeMS);
         Preconditions.checkArgument(System.currentTimeMillis() + 1000L * 3600 * 24 * 365 * 100 + cacheTimeMS > 0, "Cache expiration time too large, overflow may occur: %s", cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
         int concurrencyLevel = Runtime.getRuntime().availableProcessors();
