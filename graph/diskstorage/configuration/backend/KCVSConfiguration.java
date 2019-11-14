@@ -21,13 +21,10 @@ package grakn.core.graph.diskstorage.configuration.backend;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.configuration.ConcurrentWriteConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -41,6 +38,8 @@ import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.util.system.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -51,7 +50,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 
-public class KCVSConfiguration implements ConcurrentWriteConfiguration {
+public class KCVSConfiguration implements WriteConfiguration {
 
     private final BackendOperation.TransactionalProvider txProvider;
     private final TimestampProvider times;

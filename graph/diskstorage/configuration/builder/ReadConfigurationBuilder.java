@@ -18,7 +18,6 @@
 
 package grakn.core.graph.diskstorage.configuration.builder;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
@@ -37,15 +36,12 @@ import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.JanusGraphConstants;
 import grakn.core.graph.util.system.LoggerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
@@ -89,8 +85,6 @@ public class ReadConfigurationBuilder {
                 //Copy over global configurations
                 globalWrite.setAll(getGlobalSubset(localBasicConfiguration.getAll()));
 
-                setupJanusGraphVersion(globalWrite);
-                setupStorageVersion(globalWrite);
                 setupTimestampProvider(globalWrite, localBasicConfiguration, storeManager);
 
                 globalWrite.freezeConfiguration();
@@ -100,16 +94,6 @@ public class ReadConfigurationBuilder {
         }
     }
 
-
-    private static void setupJanusGraphVersion(ModifiableConfiguration globalWrite) {
-        Preconditions.checkArgument(!globalWrite.has(INITIAL_JANUSGRAPH_VERSION), "Database has already been initialized but not frozen");
-        globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
-    }
-
-    private static void setupStorageVersion(ModifiableConfiguration globalWrite) {
-        Preconditions.checkArgument(!globalWrite.has(INITIAL_STORAGE_VERSION), "Database has already been initialized but not frozen");
-        globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
-    }
 
     private static void setupTimestampProvider(ModifiableConfiguration globalWrite, BasicConfiguration localBasicConfiguration, KeyColumnValueStoreManager storeManager) {
         /* If the configuration does not explicitly set a timestamp provider and

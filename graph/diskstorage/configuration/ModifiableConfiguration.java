@@ -25,7 +25,6 @@ import java.util.Map;
 /**
  * This configuration extends BasicConfiguration, adding 'set' and 'remove' capabilities to it.
  * It is also possible to Freeze this Configuration, in order to make it read-only again.
- *
  */
 public class ModifiableConfiguration extends BasicConfiguration {
 

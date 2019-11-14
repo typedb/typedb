@@ -20,8 +20,7 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Iterables;
-import grakn.core.graph.diskstorage.configuration.ConcurrentWriteConfiguration;
-import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
+import grakn.core.graph.diskstorage.configuration.backend.KCVSConfiguration;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 
@@ -78,8 +77,8 @@ public class TransactionalConfiguration implements WriteConfiguration {
 
     public void commit() {
         for (Map.Entry<String, Object> entry : writtenValues.entrySet()) {
-            if (config instanceof ConcurrentWriteConfiguration && readValues.containsKey(entry.getKey())) {
-                ((ConcurrentWriteConfiguration) config).set(entry.getKey(), entry.getValue(), readValues.get(entry.getKey()));
+            if (config instanceof KCVSConfiguration && readValues.containsKey(entry.getKey())) {
+                ((KCVSConfiguration) config).set(entry.getKey(), entry.getValue(), readValues.get(entry.getKey()));
             } else {
                 config.set(entry.getKey(), entry.getValue());
             }

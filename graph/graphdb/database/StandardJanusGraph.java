@@ -236,7 +236,7 @@ public class StandardJanusGraph implements JanusGraph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, getConfiguration().getBackendDescription());
+        return StringFactory.graphString(this, backend.getStoreManager().getName());
     }
 
     @Override

@@ -18,31 +18,12 @@
 
 package grakn.core.graph.diskstorage.configuration;
 
-import com.google.common.collect.ImmutableList;
-
 import java.io.Closeable;
 
 /**
  * Read-Only configuration which does not handle namespacing (umbrellaElementes and roots)
  */
 public interface ReadConfiguration extends Closeable {
-
-    ReadConfiguration EMPTY = new ReadConfiguration() {
-        @Override
-        public <O> O get(String key, Class<O> datatype) {
-            return null;
-        }
-
-        @Override
-        public Iterable<String> getKeys(String prefix) {
-            return ImmutableList.of();
-        }
-
-        @Override
-        public void close() {
-            //Nothing
-        }
-    };
 
     <O> O get(String key, Class<O> datatype);
 
