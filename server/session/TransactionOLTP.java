@@ -174,7 +174,7 @@ public class TransactionOLTP implements Transaction {
         computeShardCandidates();
         String txId = this.janusTransaction.toString();
         //TODO: asks for a lock manager
-        final boolean lockRequired = session.attributeManager().requiresLock(txId)
+        boolean lockRequired = session.attributeManager().requiresLock(txId)
                 || session.shardManager().requiresLock(txId)
         // In this case we need to lock, so that other concurrent Transactions
         // that are trying to create new attributes will read an updated version of attributesCache
@@ -202,7 +202,7 @@ public class TransactionOLTP implements Transaction {
         session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
         LOG.trace("Graph is valid. Committing graph...");
         janusTransaction.commit();
-        final String txId = this.janusTransaction.toString();
+        String txId = this.janusTransaction.toString();
         session.attributeManager().ackCommit(txId);
         session.shardManager().ackCommit(txId);
         cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second(), txId));
