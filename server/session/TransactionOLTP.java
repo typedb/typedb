@@ -191,7 +191,9 @@ public class TransactionOLTP implements Transaction {
             createNewTypeShardsWhenThresholdReached();
             if (!cache().getNewAttributes().isEmpty()) mergeAttributes();
             persistInternal();
-            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
+            if (cache().getNewAttributes().isEmpty() || cache().modifiedKeyRelations()){
+                cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
+            }
         } finally {
             if (lockRequired) session.graphLock().writeLock().unlock();
         }

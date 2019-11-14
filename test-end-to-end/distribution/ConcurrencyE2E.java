@@ -237,8 +237,8 @@ public class ConcurrencyE2E {
         }
 
         final int insertsPerCommit = 5000;
-        final int noOfRecords = 200000;
-        final int threads = 12;
+        final int noOfRecords = 100000;
+        final int threads = 16;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
         List<AttributeElement> attributes = records.stream().flatMap(r -> r.getAttributes().stream()).collect(Collectors.toList());
         List<Statement> statements = attributes.stream().flatMap(attr -> attr.patternise().statements().stream()).collect(Collectors.toList());
