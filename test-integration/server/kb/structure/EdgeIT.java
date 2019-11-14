@@ -27,6 +27,7 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.server.AttributeManager;
+import grakn.core.kb.server.ShardManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -38,6 +39,7 @@ import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.server.session.AttributeManagerImpl;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionImpl;
+import grakn.core.server.session.ShardManagerImpl;
 import grakn.core.server.session.TransactionOLTP;
 import grakn.core.util.ConceptDowncasting;
 import java.util.UUID;
@@ -77,7 +79,7 @@ public class EdgeIT {
         AttributeManager attributeManager = new AttributeManagerImpl();
 
         session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
-                new KeyspaceStatistics(), attributeManager, new ReentrantReadWriteLock());
+                new KeyspaceStatistics(), attributeManager, new ShardManagerImpl(), new ReentrantReadWriteLock());
 
         // create the transaction
         CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
