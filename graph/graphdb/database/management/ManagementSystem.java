@@ -134,7 +134,6 @@ public class ManagementSystem implements JanusGraphManagement {
     private final ManagementLogger managementLogger;
 
     private final TransactionalConfiguration transactionalConfig;
-    private final ModifiableConfiguration modifyConfig;
     private final SchemaCache schemaCache;
 
     private final StandardJanusGraphTx transaction;
@@ -143,7 +142,6 @@ public class ManagementSystem implements JanusGraphManagement {
     private boolean evictGraphFromCache;
     private final List<Callable<Boolean>> updatedTypeTriggers;
 
-    private final Instant txStartTime;
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
@@ -157,7 +155,6 @@ public class ManagementSystem implements JanusGraphManagement {
         this.managementLogger = managementLogger;
         this.schemaCache = schemaCache;
         this.transactionalConfig = new TransactionalConfiguration(config);
-        this.modifyConfig = new ModifiableConfiguration(ROOT_NS, transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
 
         this.updatedTypes = new HashSet<>();
         this.evictGraphFromCache = false;
@@ -165,35 +162,7 @@ public class ManagementSystem implements JanusGraphManagement {
         this.graphShutdownRequired = false;
 
         this.transaction = graph.buildTransaction().disableBatchLoading().start();
-        this.txStartTime = graph.getConfiguration().getTimestampProvider().getTime();
         this.isOpen = true;
-    }
-
-    public Set<String> getOpenInstancesInternal() {
-        Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
-        LOG.debug("Open instances: {}", openInstances);
-        return openInstances;
-    }
-
-    @Override
-    public Set<String> getOpenInstances() {
-        Set<String> openInstances = getOpenInstancesInternal();
-        String uid = graph.getConfiguration().getUniqueGraphId();
-        Preconditions.checkArgument(openInstances.contains(uid), "Current instance [%s] not listed as an open instance: %s", uid, openInstances);
-        openInstances.remove(uid);
-        openInstances.add(uid + CURRENT_INSTANCE_SUFFIX);
-        return openInstances;
-    }
-
-    @Override
-    public void forceCloseInstance(String instanceId) {
-        Preconditions.checkArgument(!graph.getConfiguration().getUniqueGraphId().equals(instanceId),
-                "Cannot force close this current instance [%s]. Properly shut down the graph instead.", instanceId);
-        Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME, instanceId), "Instance [%s] is not currently open", instanceId);
-        Instant registrationTime = modifyConfig.get(REGISTRATION_TIME, instanceId);
-        Preconditions.checkArgument(registrationTime.compareTo(txStartTime) < 0, "The to-be-closed instance [%s] was started after this transaction" +
-                "which indicates a successful restart and can hence not be closed: %s vs %s", instanceId, registrationTime, txStartTime);
-        modifyConfig.remove(REGISTRATION_TIME, instanceId);
     }
 
     private void ensureOpen() {
@@ -217,7 +186,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         //Communicate schema changes
         if (!updatedTypes.isEmpty() || evictGraphFromCache) {
-            managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers, getOpenInstancesInternal());
+            managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers);
             for (JanusGraphSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
             }
@@ -880,22 +849,6 @@ public class ManagementSystem implements JanusGraphManagement {
                 throw new UnsupportedOperationException("Update action not supported: " + updateAction);
         }
         return future;
-    }
-
-
-    private static class GraphCacheEvictionCompleteTrigger implements Callable<Boolean> {
-        private static final Logger LOG = LoggerFactory.getLogger(GraphCacheEvictionCompleteTrigger.class);
-        private final String graphName;
-
-        private GraphCacheEvictionCompleteTrigger(String graphName) {
-            this.graphName = graphName;
-        }
-
-        @Override
-        public Boolean call() {
-            LOG.info("Graph {} has been removed from the graph cache on every JanusGraph node in the cluster.", graphName);
-            return true;
-        }
     }
 
     private static class EmptyIndexJobFuture implements IndexJobFuture {

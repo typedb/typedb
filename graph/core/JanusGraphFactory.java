@@ -73,7 +73,7 @@ public class JanusGraphFactory {
      */
     private static StandardJanusGraph open(ReadConfiguration configuration) {
         // Create BasicConfiguration out of ReadConfiguration for local configuration
-        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration, BasicConfiguration.Restriction.NONE);
+        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration);
 
         // Initialise Store Manager used to connect to 'system_properties' to read global configuration
         KeyColumnValueStoreManager storeManager = getStoreManager(localBasicConfiguration);
@@ -82,7 +82,7 @@ public class JanusGraphFactory {
         ReadConfiguration globalConfig = ReadConfigurationBuilder.buildGlobalConfiguration(localBasicConfiguration, storeManager, new KCVSConfigurationBuilder());
 
         // Create BasicConfiguration out of ReadConfiguration for global configuration
-        BasicConfiguration globalBasicConfig = new BasicConfiguration(ROOT_NS, globalConfig, BasicConfiguration.Restriction.NONE);
+        BasicConfiguration globalBasicConfig = new BasicConfiguration(ROOT_NS, globalConfig);
 
         // Merge and sanitise local and global configuration to get Merged configuration which incorporates all necessary configs.
         MergedConfiguration mergedConfig = MergedConfigurationBuilder.build(localBasicConfiguration, globalBasicConfig, storeManager);
@@ -154,7 +154,7 @@ public class JanusGraphFactory {
          */
         public StandardJanusGraph open() {
             ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                    writeConfiguration.copy(), BasicConfiguration.Restriction.NONE);
+                    writeConfiguration.copy());
             return JanusGraphFactory.open(mc);
         }
     }

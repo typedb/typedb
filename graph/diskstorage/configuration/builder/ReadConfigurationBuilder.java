@@ -31,7 +31,6 @@ import grakn.core.graph.diskstorage.configuration.backend.builder.KCVSConfigurat
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
@@ -56,8 +55,8 @@ public class ReadConfigurationBuilder {
                                                              KeyColumnValueStoreManager storeManager,
                                                              KCVSConfigurationBuilder kcvsConfigurationBuilder) {
 
-
-        BackendOperation.TransactionalProvider transactionalProvider = BackendOperation.buildTxProvider(storeManager, localBasicConfiguration.get(TIMESTAMP_PROVIDER), storeManager.getFeatures().getKeyConsistentTxConfig());
+        StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(localBasicConfiguration.get(TIMESTAMP_PROVIDER), storeManager.getFeatures().getKeyConsistentTxConfig());
+        BackendOperation.TransactionalProvider transactionalProvider = BackendOperation.buildTxProvider(storeManager, txConfig);
         KeyColumnValueStore systemPropertiesStore;
         try {
             systemPropertiesStore = storeManager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
@@ -69,7 +68,7 @@ public class ReadConfigurationBuilder {
         try (KCVSConfiguration keyColumnValueStoreConfiguration = kcvsConfigurationBuilder.buildGlobalConfiguration(transactionalProvider, systemPropertiesStore, localBasicConfiguration)) {
 
             //Freeze global configuration if not already frozen!
-            ModifiableConfiguration globalWrite = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, keyColumnValueStoreConfiguration, BasicConfiguration.Restriction.GLOBAL);
+            ModifiableConfiguration globalWrite = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, keyColumnValueStoreConfiguration);
 
             if (!globalWrite.isFrozen()) {
                 //Copy over global configurations
@@ -92,7 +91,7 @@ public class ReadConfigurationBuilder {
          */
         if (!localBasicConfiguration.has(TIMESTAMP_PROVIDER)) {
             StoreFeatures f = storeManager.getFeatures();
-            final TimestampProviders backendPreference;
+            TimestampProviders backendPreference;
             if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
                 globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
                 LOG.debug("Set timestamps to {} according to storage backend preference",

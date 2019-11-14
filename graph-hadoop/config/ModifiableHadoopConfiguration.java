@@ -30,7 +30,7 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
     private final Configuration conf;
 
     private ModifiableHadoopConfiguration(ConfigNamespace root, Configuration c) {
-        super(root, new HadoopConfiguration(c), Restriction.NONE);
+        super(root, new HadoopConfiguration(c));
         this.conf = c;
     }
 
@@ -39,18 +39,17 @@ public class ModifiableHadoopConfiguration extends ModifiableConfiguration {
         return new ModifiableHadoopConfiguration(root, c);
     }
 
-    public static ModifiableConfiguration prefixView(ConfigNamespace newRoot, ConfigNamespace prefixRoot,
-                                                     ModifiableHadoopConfiguration mc) {
+    private static ModifiableConfiguration prefixView(ModifiableHadoopConfiguration mc) {
         HadoopConfiguration prefixConf = new HadoopConfiguration(mc.getHadoopConfiguration(),
-                ConfigElement.getPath(prefixRoot, true) + ".");
-        return new ModifiableConfiguration(newRoot, prefixConf, Restriction.NONE);
+                ConfigElement.getPath(JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, true) + ".");
+        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, prefixConf);
     }
 
-    public Configuration getHadoopConfiguration() {
+    private Configuration getHadoopConfiguration() {
         return conf;
     }
 
     public ModifiableConfiguration getJanusGraphConf() {
-        return prefixView(GraphDatabaseConfiguration.ROOT_NS, JanusGraphHadoopConfiguration.GRAPH_CONFIG_KEYS, this);
+        return prefixView(this);
     }
 }

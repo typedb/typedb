@@ -750,8 +750,7 @@ public class GraphDatabaseConfiguration {
 
     public static ModifiableConfiguration buildGraphConfiguration() {
         return new ModifiableConfiguration(ROOT_NS,
-                new CommonsConfiguration(new BaseConfiguration()),
-                BasicConfiguration.Restriction.NONE);
+                new CommonsConfiguration(new BaseConfiguration()));
     }
 
     public boolean hasFlushIDs() {

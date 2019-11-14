@@ -118,9 +118,6 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
-
 public class StandardJanusGraph implements JanusGraph {
 
     private static final Logger LOG = LoggerFactory.getLogger(StandardJanusGraph.class);
@@ -196,21 +193,6 @@ public class StandardJanusGraph implements JanusGraph {
         Log managementLog = backend.getSystemMgmtLog();
         this.managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.timestampProvider);
         managementLog.registerReader(ReadMarker.fromNow(), this.managementLogger);
-
-
-        //Register instance and ensure uniqueness
-        String uniqueInstanceId = configuration.getUniqueGraphId();
-        ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
-        boolean instanceExists = globalConfig.has(REGISTRATION_TIME, uniqueInstanceId);
-        boolean replaceExistingInstance = configuration.getConfiguration().get(REPLACE_INSTANCE_IF_EXISTS);
-        if (instanceExists) {
-            if (!replaceExistingInstance) {
-                throw new JanusGraphException(String.format("A JanusGraph graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
-            } else {
-                LOG.debug(String.format("Instance [%s] already exists. Opening the graph per " + REPLACE_INSTANCE_IF_EXISTS.getName() + " configuration.", uniqueInstanceId));
-            }
-        }
-        globalConfig.set(REGISTRATION_TIME, timestampProvider.getTime(), uniqueInstanceId);
     }
 
     // Get JanusTransaction which is wrapped inside the TinkerTransaction
@@ -386,16 +368,6 @@ public class StandardJanusGraph implements JanusGraph {
         Map<JanusGraphTransaction, RuntimeException> txCloseExceptions = new HashMap<>();
 
         try {
-            //Unregister instance
-            String uniqueId = null;
-            try {
-                uniqueId = config.getUniqueGraphId();
-                ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
-                globalConfig.remove(REGISTRATION_TIME, uniqueId);
-            } catch (Exception e) {
-                LOG.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
-            }
-
             /* Assuming a couple of properties about openTransactions:
              * 1. no concurrent modifications during graph shutdown
              * 2. all contained localJanusTransaction are open
@@ -608,10 +580,6 @@ public class StandardJanusGraph implements JanusGraph {
         List<EntryList> resultList = new ArrayList<>(result.size());
         for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
         return resultList;
-    }
-
-    private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
-        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
     }
 
     // ################### WRITE #########################

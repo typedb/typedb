@@ -231,7 +231,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
     }
 
     private long getCurrentID(StaticBuffer partitionKey) throws BackendException {
-        final List<Entry> blocks = BackendOperation.execute(
+        List<Entry> blocks = BackendOperation.execute(
                 (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh), this, times);
 
         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
@@ -363,21 +363,11 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
                         for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
                             try {
                                 StaticBuffer finalTarget = target; // copy for the inner class
-                                manager
-
+                                BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(manager, storeTxConfigBuilder.build());//Use normal consistency level for these non-critical delete operations
                                 BackendOperation.execute(txh -> {
                                     idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
                                     return true;
-                                }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
-                                    @Override
-                                    public StoreTransaction openTx() throws BackendException {
-                                        return manager.beginTransaction(storeTxConfigBuilder.build());
-                                    }
-
-                                    @Override
-                                    public void close() {
-                                    }
-                                }, times);
+                                }, txProvider, times);
 
                                 break;
                             } catch (BackendException e) {

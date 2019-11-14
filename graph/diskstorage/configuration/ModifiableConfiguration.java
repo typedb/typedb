@@ -33,14 +33,13 @@ public class ModifiableConfiguration extends BasicConfiguration {
     private Boolean isFrozen;
 
 
-    public ModifiableConfiguration(ConfigNamespace root, WriteConfiguration config, Restriction restriction) {
-        super(root, config, restriction);
+    public ModifiableConfiguration(ConfigNamespace root, WriteConfiguration config) {
+        super(root, config);
         Preconditions.checkNotNull(config);
         this.config = config;
     }
 
     public <O> ModifiableConfiguration set(ConfigOption<O> option, O value, String... umbrellaElements) {
-        verifyOption(option);
         String key = super.getPath(option, umbrellaElements);
         value = option.verify(value);
         config.set(key, value);
@@ -55,7 +54,6 @@ public class ModifiableConfiguration extends BasicConfiguration {
     }
 
     public <O> void remove(ConfigOption<O> option, String... umbrellaElements) {
-        verifyOption(option);
         Preconditions.checkArgument(!option.isFixed() || !isFrozen(), "Cannot change configuration option: %s", option);
         String key = super.getPath(option, umbrellaElements);
         config.remove(key);

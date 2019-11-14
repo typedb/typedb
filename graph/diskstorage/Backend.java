@@ -254,7 +254,8 @@ public class Backend implements LockerProvider, AutoCloseable {
             //Open global configuration
             KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
             KCVSConfigurationBuilder kcvsConfigurationBuilder = new KCVSConfigurationBuilder();
-            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
+            StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
+            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, txConfig);
             systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(txProvider, systemConfigStore, configuration);
 
         } catch (BackendException e) {
