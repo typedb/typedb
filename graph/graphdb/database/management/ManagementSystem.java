@@ -49,8 +49,6 @@ import grakn.core.graph.core.schema.SchemaAction;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.core.schema.VertexLabelMaker;
 import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.TransactionalConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.KCVSConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
@@ -101,7 +99,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -119,9 +116,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
 public class ManagementSystem implements JanusGraphManagement {

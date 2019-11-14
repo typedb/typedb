@@ -22,7 +22,6 @@ import com.google.common.base.Joiner;
 import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.StandardIndexProvider;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
@@ -47,7 +46,6 @@ import org.apache.commons.configuration.BaseConfiguration;
 
 import java.net.InetAddress;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -86,23 +84,6 @@ public class GraphDatabaseConfiguration {
                     "concatenating the hostname, process id, and a static (process-wide) counter. " +
                     "Leaving it unset is recommended.",
             ConfigOption.Type.LOCAL, String.class);
-
-    public static final ConfigOption<Boolean> REPLACE_INSTANCE_IF_EXISTS = new ConfigOption<Boolean>(GRAPH_NS, "replace-instance-if-exists",
-            "If a JanusGraph instance with the same instance identifier already exists, the usage of this " +
-                    "configuration option results in the opening of this graph anwyay.",
-            ConfigOption.Type.LOCAL, Boolean.class, false);
-
-
-    // ################ INSTANCE REGISTRATION (system) #######################
-    // ##############################################################
-
-    public static final ConfigNamespace REGISTRATION_NS = new ConfigNamespace(ROOT_NS, "system-registration",
-            "This is used internally to keep track of open instances.", true);
-
-    // This is only used to detect whether a Graph instance is already up and running
-    public static final ConfigOption<Instant> REGISTRATION_TIME = new ConfigOption<>(REGISTRATION_NS, "startup-time",
-            "Timestamp when this instance was started.  Automatically set.", ConfigOption.Type.GLOBAL, Instant.class).hide();
-
 
     // ########## OLAP Style Processing ##########
     // ################################################
