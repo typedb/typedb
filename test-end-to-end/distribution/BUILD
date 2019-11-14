@@ -38,7 +38,7 @@ java_test(
 
 java_test(
     name = "concurrency-e2e",
-    size = "enourmous",
+    size = "enormous",
     srcs = [
         "ConcurrencyE2E.java",
         "DistributionE2EConstants.java",
