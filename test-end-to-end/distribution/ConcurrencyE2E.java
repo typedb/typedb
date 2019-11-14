@@ -27,6 +27,7 @@ import grakn.client.concept.EntityType;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.distribution.element.AttributeElement;
+import grakn.core.distribution.element.Element;
 import grakn.core.distribution.element.Record;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
@@ -160,10 +161,10 @@ public class ConcurrencyE2E {
         assertEquals(10, numOfAges);
     }
 
-    private void insertStatements(GraknClient.Session session, List<Statement> statements,
-                                  int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
+    private <T extends Element> void insertElements(GraknClient.Session session, List<T> elements,
+                                                    int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
-        int listSize = statements.size();
+        int listSize = elements.size();
         int listChunk = listSize / threads + 1;
 
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
@@ -173,14 +174,15 @@ public class ConcurrencyE2E {
             int endIndex = (threadNo + 1) * listChunk;
             if (endIndex > listSize && lastChunk) endIndex = listSize;
 
-            List<Statement> subList = statements.subList(startIndex, endIndex);
+            List<T> subList = elements.subList(startIndex, endIndex);
             System.out.println("indices: " + startIndex + "-" + endIndex + " , size: " + subList.size());
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 long start2 = System.currentTimeMillis();
                 GraknClient.Transaction tx = session.transaction().write();
                 int inserted = 0;
-                for (Statement statement : subList) {
-                    GraqlInsert insert = Graql.insert(statement);
+                for (int elementId = 0; elementId < subList.size(); elementId++) {
+                    T element = subList.get(elementId);
+                    GraqlInsert insert = Graql.insert(element.patternise(Graql.var("x" + elementId).var()).statements());
                     tx.execute(insert);
                     if (inserted % insertsPerCommit == 0) {
                         tx.commit();
@@ -205,14 +207,14 @@ public class ConcurrencyE2E {
         return RandomStringUtils.random(length, useLetters, useNumbers);
     }
 
-    private static List<Record> generateRecords(int size, int noOfAttributes) {
+    private static List<Record> generateRecords(int size, int noOfAttributes){
         List<Record> records = new ArrayList<>();
-        for (int i = 0; i < size; i++) {
+        for(int i = 0 ; i < size ; i++){
             List<AttributeElement> attributes = new ArrayList<>();
             attributes.add(new AttributeElement("attribute0", i));
-            attributes.add(new AttributeElement("attribute1", i % 2 == 0 ? "even" : "odd"));
-            for (int attributeNo = 2; attributeNo < noOfAttributes; attributeNo++) {
-                attributes.add(new AttributeElement("attribute" + attributeNo, generateString(attributeNo + 5)));
+            attributes.add(new AttributeElement("attribute1", i % 2 ==0? "even" : "odd"));
+            for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
+                attributes.add(new AttributeElement("attribute" + attributeNo, generateString(attributeNo+5)));
             }
             records.add(new Record("someEntity", attributes));
         }
@@ -225,33 +227,33 @@ public class ConcurrencyE2E {
         GraknClient.Session session = graknClient.session("mixed_attribute_load");
         final int noOfAttributes = 10;
 
-        try (GraknClient.Transaction tx = session.transaction().write()) {
+        try(GraknClient.Transaction tx = session.transaction().write()){
             tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
             EntityType someEntity = tx.putEntityType("someEntity");
             someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
             someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
-            for (int attributeNo = 2; attributeNo < noOfAttributes; attributeNo++) {
+            for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
                 someEntity.has(tx.putAttributeType("attribute" + attributeNo, AttributeType.DataType.STRING));
             }
             tx.commit();
         }
 
         final int insertsPerCommit = 2000;
-        final int noOfRecords = 100000;
-        final int threads = 16;
+        final int noOfRecords = 32000;
+        final int threads = 8;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
         List<AttributeElement> attributes = records.stream().flatMap(r -> r.getAttributes().stream()).collect(Collectors.toList());
-        List<Statement> statements = attributes.stream().flatMap(attr -> attr.patternise().statements().stream()).collect(Collectors.toList());
+        System.out.println("total attributes: " + attributes.size());
 
         final long start = System.currentTimeMillis();
-        insertStatements(session, statements, threads, insertsPerCommit);
+        insertElements(session, attributes, threads, insertsPerCommit);
 
         GraknClient.Transaction tx = session.transaction().write();
         final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
         final long insertedAttributes = tx.execute(Graql.parse("compute count in attribute;").asComputeStatistics()).get(0).number().longValue();
         tx.close();
         final long totalTime = System.currentTimeMillis() - start;
-        System.out.println("Concepts: " + noOfConcepts + " totalTime: " + totalTime + " throughput: " + noOfConcepts * 1000 * 60 / (totalTime));
+        System.out.println("Concepts: " + noOfConcepts + " totalTime: " + totalTime + " throughput: " + noOfConcepts*1000*60/(totalTime));
         assertEquals(new HashSet<>(attributes).size(), insertedAttributes);
         session.close();
     }
