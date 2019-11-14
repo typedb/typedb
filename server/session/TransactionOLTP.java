@@ -171,24 +171,29 @@ public class TransactionOLTP implements Transaction {
      * - don't lock when added or removed attributes are not involved
      */
     private void commitInternal() throws InvalidKBException {
-        if (!cache().getNewAttributes().isEmpty()) {
-            mergeAttributesAndCommit();
-        } else if (!cache().getRemovedAttributes().isEmpty() || cache().modifiedKeyRelations()) {
-            // In this case we need to lock, so that other concurrent Transactions
-            // that are trying to create new attributes will read an updated version of attributesCache
-            // Not locking here might lead to concurrent transactions reading the attributesCache that still
-            // contains attributes that we are removing in this transaction.
-            session.graphLock().writeLock().lock();
-            try {
-                createNewTypeShardsWhenThresholdReached();
-                persistInternal();
-                cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
-            } finally {
-                session.graphLock().writeLock().unlock();
-            }
-        } else {
+        computeShardCandidates();
+        String txId = this.janusTransaction.toString();
+        //TODO: asks for a lock manager
+        final boolean lockRequired = session.attributeManager().requiresLock(txId)
+                || session.shardManager().requiresLock(txId)
+        // In this case we need to lock, so that other concurrent Transactions
+        // that are trying to create new attributes will read an updated version of attributesCache
+        // Not locking here might lead to concurrent transactions reading the attributesCache that still
+        // contains attributes that we are removing in this transaction.
+                || !cache().getRemovedAttributes().isEmpty()
+                || cache().modifiedKeyRelations();
+
+        if (!lockRequired) System.out.println(txId + " doesnt need a lock!!!!");
+        else System.out.println(txId + " NEEDS a lock!!!!");
+
+        if (lockRequired) session.graphLock().writeLock().lock();
+        try {
             createNewTypeShardsWhenThresholdReached();
+            if (!cache().getNewAttributes().isEmpty()) mergeAttributesAndCommit();
             persistInternal();
+            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
+        } finally {
+            if (lockRequired) session.graphLock().writeLock().unlock();
         }
     }
 
@@ -197,49 +202,57 @@ public class TransactionOLTP implements Transaction {
         session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
         LOG.trace("Graph is valid. Committing graph...");
         janusTransaction.commit();
-        session.attributeManager().ackCommit(this.janusTransaction.toString());
-        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second(), this.janusTransaction.toString()));
+        final String txId = this.janusTransaction.toString();
+        session.attributeManager().ackCommit(txId);
+        session.shardManager().ackCommit(txId);
+        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second(), txId));
         LOG.trace("Graph committed.");
     }
 
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
     private void mergeAttributesAndCommit() {
-        boolean lockRequired = session.attributeManager().requiresLock(this.janusTransaction.toString());
-        if (lockRequired) session.graphLock().writeLock().lock();
-        try {
-            createNewTypeShardsWhenThresholdReached();
-            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
-            cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
-                // If the same index is contained in attributesCache, it means
-                // another concurrent transaction inserted the same attribute, time to merge!
-                // NOTE: we still need to rely on attributesCache instead of checking in the graph
-                // if the index exists, because apparently JanusGraph does not make indexes available
-                // in a Read Committed fashion
-                ConceptId targetId = session.attributeManager().attributesCache().getIfPresent(labelIndexPair.second());
-                if (targetId != null) {
-                    merge(getTinkerTraversal(), conceptId, targetId);
-                    statisticsDelta().decrementAttribute(labelIndexPair.first());
-                } else {
-                    session.attributeManager().attributesCache().put(labelIndexPair.second(), conceptId);
-                }
-            }));
-            persistInternal();
-        } finally {
-            if (lockRequired) session.graphLock().writeLock().unlock();
-        }
+        cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
+        cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
+            // If the same index is contained in attributesCache, it means
+            // another concurrent transaction inserted the same attribute, time to merge!
+            // NOTE: we still need to rely on attributesCache instead of checking in the graph
+            // if the index exists, because apparently JanusGraph does not make indexes available
+            // in a Read Committed fashion
+            ConceptId targetId = session.attributeManager().attributesCache().getIfPresent(labelIndexPair.second());
+            if (targetId != null) {
+                merge(getTinkerTraversal(), conceptId, targetId);
+                statisticsDelta().decrementAttribute(labelIndexPair.first());
+            } else {
+                session.attributeManager().attributesCache().put(labelIndexPair.second(), conceptId);
+            }
+        }));
+    }
+
+    private void computeShardCandidates() {
+        uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
+            long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
+            long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
+            if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
+                session().shardManager().ackShardRequirement(label, janusTransaction.toString());
+            }
+        });
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
         uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
-            long instancesCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
+            long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
-            if (instancesCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
-                LOG.trace(label + " has a count of " + instancesCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
-                shard(getType(label).id());
-                setShardCheckpoint(label, instancesCount);
+            if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
+                LOG.trace(label + " has a count of " + instanceCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
+                createTypeShard(label, instanceCount);
             }
         });
+    }
+
+    private void createTypeShard(Label label, long instanceCount){
+        shard(getType(label).id());
+        setShardCheckpoint(label, instanceCount);
     }
 
     private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {

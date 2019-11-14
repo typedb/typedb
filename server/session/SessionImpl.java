@@ -27,6 +27,7 @@ import grakn.core.concept.structure.ElementFactory;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.ShardManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionAnalytics;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
@@ -67,6 +68,7 @@ public class SessionImpl implements Session {
     private final KeyspaceSchemaCache keyspaceSchemaCache;
     private final KeyspaceStatistics keyspaceStatistics;
     private final AttributeManager attributeManager;
+    private final ShardManager shardManager;
     private final ReadWriteLock graphLock;
     private Consumer<Session> onClose;
 
@@ -80,8 +82,8 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics,
-                       AttributeManager attributeManager, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributeManager, graphLock);
+                       AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributeManager, shardManager, graphLock);
     }
 
     /**
@@ -94,7 +96,7 @@ public class SessionImpl implements Session {
     // NOTE: this method is used by Grakn KGMS and should be kept public
      public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
                         HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                        AttributeManager attributeManager, ReadWriteLock graphLock) {
+                        AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -104,6 +106,7 @@ public class SessionImpl implements Session {
         this.keyspaceSchemaCache = keyspaceSchemaCache;
         this.keyspaceStatistics = keyspaceStatistics;
         this.attributeManager = attributeManager;
+        this.shardManager = shardManager;
         this.graphLock = graphLock;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
@@ -275,5 +278,10 @@ public class SessionImpl implements Session {
     @Override
     public AttributeManager attributeManager() {
         return attributeManager;
+    }
+
+    @Override
+    public ShardManager shardManager() {
+        return shardManager;
     }
 }

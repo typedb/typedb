@@ -85,10 +85,7 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public boolean requiresLock(String txId) {
-        boolean needLock = lockCandidates.contains(txId);
-        if (!needLock) System.out.println(txId + " doesnt need a lock!!!!");
-        else System.out.println(txId + " NEEDS a lock!!!!");
-        return needLock;
+        return lockCandidates.contains(txId);
     }
 
     @Override

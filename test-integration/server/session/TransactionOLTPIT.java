@@ -182,7 +182,13 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
-        assertEquals(250000L, tx.shardingThreshold());
+        final long threshold = 333333L;
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, threshold);
+        try(Session session = server.sessionWithNewKeyspace()) {
+            try (Transaction tx = session.readTransaction()) {
+                assertEquals(threshold, tx.shardingThreshold());
+            }
+        }
     }
 
     @Test

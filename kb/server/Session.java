@@ -58,4 +58,6 @@ public interface Session extends AutoCloseable {
     KeyspaceStatistics keyspaceStatistics();
 
     AttributeManager attributeManager();
+
+    ShardManager shardManager();
 }

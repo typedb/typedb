@@ -122,7 +122,7 @@ public class ConcurrencyE2E {
                             "$x isa person, has name \"" + names[random.nextInt(10)] + "\"," +
                             "has surname \"" + surnames[random.nextInt(10)] + "\"," +
                             "has age " + ages[random.nextInt(10)] + ";").asInsert());
-                    }
+                }
                 threadTx.commit();
 
                 return null;
@@ -161,7 +161,7 @@ public class ConcurrencyE2E {
     }
 
     private void insertStatements(GraknClient.Session session, List<Statement> statements,
-                                                    int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
+                                  int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
         int listSize = statements.size();
         int listChunk = listSize / threads + 1;
@@ -205,14 +205,14 @@ public class ConcurrencyE2E {
         return RandomStringUtils.random(length, useLetters, useNumbers);
     }
 
-    private static List<Record> generateRecords(int size, int noOfAttributes){
+    private static List<Record> generateRecords(int size, int noOfAttributes) {
         List<Record> records = new ArrayList<>();
-        for(int i = 0 ; i < size ; i++){
+        for (int i = 0; i < size; i++) {
             List<AttributeElement> attributes = new ArrayList<>();
             attributes.add(new AttributeElement("attribute0", i));
-            attributes.add(new AttributeElement("attribute1", i % 2 ==0? "even" : "odd"));
-            for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
-                attributes.add(new AttributeElement("attribute" + attributeNo, generateString(attributeNo+5)));
+            attributes.add(new AttributeElement("attribute1", i % 2 == 0 ? "even" : "odd"));
+            for (int attributeNo = 2; attributeNo < noOfAttributes; attributeNo++) {
+                attributes.add(new AttributeElement("attribute" + attributeNo, generateString(attributeNo + 5)));
             }
             records.add(new Record("someEntity", attributes));
         }
@@ -225,12 +225,12 @@ public class ConcurrencyE2E {
         GraknClient.Session session = graknClient.session("mixed_attribute_load");
         final int noOfAttributes = 10;
 
-        try(GraknClient.Transaction tx = session.transaction().write()){
+        try (GraknClient.Transaction tx = session.transaction().write()) {
             tx.stream(Graql.parse("match $x isa thing;get;").asGet()).forEach(ans -> ans.get("x").delete());
             EntityType someEntity = tx.putEntityType("someEntity");
             someEntity.has(tx.putAttributeType("attribute0", AttributeType.DataType.INTEGER));
             someEntity.has(tx.putAttributeType("attribute1", AttributeType.DataType.STRING));
-            for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
+            for (int attributeNo = 2; attributeNo < noOfAttributes; attributeNo++) {
                 someEntity.has(tx.putAttributeType("attribute" + attributeNo, AttributeType.DataType.STRING));
             }
             tx.commit();
@@ -251,35 +251,8 @@ public class ConcurrencyE2E {
         final long insertedAttributes = tx.execute(Graql.parse("compute count in attribute;").asComputeStatistics()).get(0).number().longValue();
         tx.close();
         final long totalTime = System.currentTimeMillis() - start;
-        System.out.println("Concepts: " + noOfConcepts + " totalTime: " + totalTime + " throughput: " + noOfConcepts*1000*60/(totalTime));
+        System.out.println("Concepts: " + noOfConcepts + " totalTime: " + totalTime + " throughput: " + noOfConcepts * 1000 * 60 / (totalTime));
         assertEquals(new HashSet<>(attributes).size(), insertedAttributes);
-        session.close();
-    }
-
-    @Test
-    public void concurrentInsertionOfEntities_shardsAreCreatedCorrectly() throws ExecutionException, InterruptedException {
-        GraknClient graknClient = new GraknClient("localhost:48555");
-        GraknClient.Session session = graknClient.session("maximised_sharding_load");
-
-        try(GraknClient.Transaction tx = session.transaction().write()){
-            tx.putEntityType("someEntity");
-            tx.commit();
-        }
-
-        final int insertsPerCommit = 1000;
-        final int noOfEntities = 200000;
-        final int threads = 8;
-
-        List<Statement> statements = new ArrayList<>();
-        for (int i = 0 ; i < noOfEntities ; i++){
-            statements.add(Graql.var().isa("someEntity"));
-        }
-
-        insertStatements(session, statements, threads, insertsPerCommit);
-
-        GraknClient.Transaction tx = session.transaction().write();
-        final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
-        assertEquals(statements.size(), noOfConcepts);
         session.close();
     }
 }
