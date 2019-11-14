@@ -245,14 +245,10 @@ public class TransactionOLTP implements Transaction {
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
                 LOG.trace(label + " has a count of " + instanceCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
-                createTypeShard(label, instanceCount);
+                shard(getType(label).id());
+                setShardCheckpoint(label, instanceCount);
             }
         });
-    }
-
-    private void createTypeShard(Label label, long instanceCount){
-        shard(getType(label).id());
-        setShardCheckpoint(label, instanceCount);
     }
 
     private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
