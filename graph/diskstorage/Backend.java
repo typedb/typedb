@@ -254,17 +254,8 @@ public class Backend implements LockerProvider, AutoCloseable {
             //Open global configuration
             KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
             KCVSConfigurationBuilder kcvsConfigurationBuilder = new KCVSConfigurationBuilder();
-            systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(new BackendOperation.TransactionalProvider() {
-                @Override
-                public StoreTransaction openTx() throws BackendException {
-                    return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig()));
-                }
-
-                @Override
-                public void close() {
-                    //Do nothing, storeManager is closed explicitly by Backend
-                }
-            }, systemConfigStore, configuration);
+            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
+            systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(txProvider, systemConfigStore, configuration);
 
         } catch (BackendException e) {
             throw new JanusGraphException("Could not initialize backend", e);

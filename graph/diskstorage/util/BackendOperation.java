@@ -22,6 +22,8 @@ import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.PermanentBackendException;
 import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
@@ -144,4 +146,17 @@ public class BackendOperation {
 
     }
 
+    public static TransactionalProvider buildTxProvider(KeyColumnValueStoreManager storeManager, TimestampProvider timestampProvider, Configuration keyConsistentTxConfig){
+        return new TransactionalProvider() {
+            @Override
+            public StoreTransaction openTx() throws BackendException {
+                return storeManager.beginTransaction(StandardBaseTransactionConfig.of(timestampProvider, keyConsistentTxConfig));
+            }
+
+            @Override
+            public void close() {
+                //Do nothing, storeManager is closed explicitly by Backend
+            }
+        };
+    }
 }

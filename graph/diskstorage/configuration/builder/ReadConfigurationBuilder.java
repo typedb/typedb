@@ -57,17 +57,7 @@ public class ReadConfigurationBuilder {
                                                              KCVSConfigurationBuilder kcvsConfigurationBuilder) {
 
 
-        BackendOperation.TransactionalProvider transactionalProvider = new BackendOperation.TransactionalProvider() {
-            @Override
-            public StoreTransaction openTx() throws BackendException {
-                return storeManager.beginTransaction(StandardBaseTransactionConfig.of(localBasicConfiguration.get(TIMESTAMP_PROVIDER), storeManager.getFeatures().getKeyConsistentTxConfig()));
-            }
-
-            @Override
-            public void close() {
-                // do nothing
-            }
-        };
+        BackendOperation.TransactionalProvider transactionalProvider = BackendOperation.buildTxProvider(storeManager, localBasicConfiguration.get(TIMESTAMP_PROVIDER), storeManager.getFeatures().getKeyConsistentTxConfig());
         KeyColumnValueStore systemPropertiesStore;
         try {
             systemPropertiesStore = storeManager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);

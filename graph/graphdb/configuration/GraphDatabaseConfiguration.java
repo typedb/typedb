@@ -87,10 +87,6 @@ public class GraphDatabaseConfiguration {
                     "Leaving it unset is recommended.",
             ConfigOption.Type.LOCAL, String.class);
 
-    public static ConfigOption<Boolean> ALLOW_UPGRADE = new ConfigOption<>(GRAPH_NS, "allow-upgrade",
-            "Setting this to true will allow certain fixed values to be updated such as storage-version. This should only be used for upgrading.",
-            ConfigOption.Type.MASKABLE, Boolean.class, false);
-
     public static final ConfigOption<Boolean> REPLACE_INSTANCE_IF_EXISTS = new ConfigOption<Boolean>(GRAPH_NS, "replace-instance-if-exists",
             "If a JanusGraph instance with the same instance identifier already exists, the usage of this " +
                     "configuration option results in the opening of this graph anwyay.",
@@ -824,10 +820,6 @@ public class GraphDatabaseConfiguration {
 
     public TimestampProvider getTimestampProvider() {
         return configuration.get(TIMESTAMP_PROVIDER);
-    }
-
-    public boolean isUpgradeAllowed() {
-        return configuration.get(ALLOW_UPGRADE);
     }
 
     public Configuration getConfiguration() {

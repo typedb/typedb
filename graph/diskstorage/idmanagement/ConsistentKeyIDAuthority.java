@@ -363,6 +363,8 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
                         for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
                             try {
                                 StaticBuffer finalTarget = target; // copy for the inner class
+                                manager
+
                                 BackendOperation.execute(txh -> {
                                     idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
                                     return true;

@@ -25,6 +25,7 @@ import grakn.core.graph.core.log.TransactionRecovery;
 import grakn.core.graph.diskstorage.Backend;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
+import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
 import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
@@ -79,6 +80,7 @@ public class JanusGraphFactory {
 
         // Configurations read from system_properties
         ReadConfiguration globalConfig = ReadConfigurationBuilder.buildGlobalConfiguration(localBasicConfiguration, storeManager, new KCVSConfigurationBuilder());
+
         // Create BasicConfiguration out of ReadConfiguration for global configuration
         BasicConfiguration globalBasicConfig = new BasicConfiguration(ROOT_NS, globalConfig, BasicConfiguration.Restriction.NONE);
 
@@ -110,7 +112,7 @@ public class JanusGraphFactory {
         if (graph.isOpen()) {
             graph.close();
         }
-        grakn.core.graph.diskstorage.configuration.Configuration backendConfiguration = g.getConfiguration().getConfiguration();
+        Configuration backendConfiguration = g.getConfiguration().getConfiguration();
         KeyColumnValueStoreManager storeManager = getStoreManager(backendConfiguration);
         Backend backend = new Backend(backendConfiguration, storeManager);
         try {
@@ -175,7 +177,7 @@ public class JanusGraphFactory {
 
 
     @VisibleForTesting
-    public static KeyColumnValueStoreManager getStoreManager(grakn.core.graph.diskstorage.configuration.Configuration configuration) {
+    public static KeyColumnValueStoreManager getStoreManager(Configuration configuration) {
         String className;
         String backendName = configuration.get(STORAGE_BACKEND);
         switch (backendName) {
@@ -191,7 +193,7 @@ public class JanusGraphFactory {
 
         try {
             Class clazz = Class.forName(className);
-            Constructor constructor = clazz.getConstructor(grakn.core.graph.diskstorage.configuration.Configuration.class);
+            Constructor constructor = clazz.getConstructor(Configuration.class);
             return (KeyColumnValueStoreManager) constructor.newInstance(new Object[]{configuration});
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could instantiate StoreManager class: " + className, e);
