@@ -236,7 +236,7 @@ public class ConcurrencyE2E {
             tx.commit();
         }
 
-        final int insertsPerCommit = 5000;
+        final int insertsPerCommit = 2000;
         final int noOfRecords = 100000;
         final int threads = 16;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
