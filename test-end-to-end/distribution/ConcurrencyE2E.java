@@ -29,6 +29,7 @@ import grakn.core.distribution.element.Element;
 import grakn.core.distribution.element.Record;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -39,12 +40,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
+import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
+import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 
@@ -56,7 +65,6 @@ public class ConcurrencyE2E {
             .redirectError(System.err)
             .readOutput(true);
 
-    /*
     @BeforeClass
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
         assertZipExists();
@@ -72,8 +80,6 @@ public class ConcurrencyE2E {
         assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
-
-     */
 
     /**
      * This is testing insertion of attributes which have values that repeat in different concurrent transactions.
