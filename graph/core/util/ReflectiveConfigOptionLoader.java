@@ -118,8 +118,6 @@ public enum ReflectiveConfigOptionLoader {
                 "grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration",
                 "grakn.core.graph.graphdb.database.idassigner.placement.SimpleBulkPlacementStrategy",
                 "grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner"
-                //"grakn.core.graph.graphdb.TestMockIndexProvider",
-                //"grakn.core.graph.graphdb.TestMockLog"
         );
 
         Timer t = new Timer(TimestampProviders.MILLI);

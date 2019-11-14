@@ -77,7 +77,6 @@ public interface StoreManager {
      * Examples:
      * <ul>
      * <li>Cassandra keyspace</li>
-     * <li>HBase tablename</li>
      * <li>InMemoryStore heap address (i.e. default toString()).</li>
      * </ul>
      *

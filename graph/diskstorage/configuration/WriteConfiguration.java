@@ -20,6 +20,14 @@ package grakn.core.graph.diskstorage.configuration;
 
 public interface WriteConfiguration extends ReadConfiguration {
 
+    <O> O get(String key, Class<O> datatype);
+
+    Iterable<String> getKeys(String prefix);
+
+    @Override
+    void close();
+
+
     <O> void set(String key, O value);
 
     void remove(String key);

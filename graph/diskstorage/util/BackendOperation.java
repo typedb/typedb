@@ -22,6 +22,7 @@ import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.PermanentBackendException;
 import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
@@ -86,7 +87,7 @@ public class BackendOperation {
                     throw new PermanentBackendException("Interrupted while waiting to retry failed backend operation", r);
                 }
             } else {
-                break; // TODO: super lol to while(true) and else break;, refactor this beauty at some point
+                break;
             }
             waitTime = pertubTime(waitTime.multipliedBy(2));
         }
@@ -144,4 +145,17 @@ public class BackendOperation {
 
     }
 
+    public static TransactionalProvider buildTxProvider(StoreManager storeManager, StandardBaseTransactionConfig txConfig) {
+        return new TransactionalProvider() {
+            @Override
+            public StoreTransaction openTx() throws BackendException {
+                return storeManager.beginTransaction(txConfig);
+            }
+
+            @Override
+            public void close() {
+                //Do nothing, storeManager is closed explicitly by Backend
+            }
+        };
+    }
 }

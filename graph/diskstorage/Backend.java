@@ -22,10 +22,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import grakn.core.graph.core.JanusGraphConfigurationException;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.schema.JanusGraphManagement;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -255,17 +253,9 @@ public class Backend implements LockerProvider, AutoCloseable {
             //Open global configuration
             KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
             KCVSConfigurationBuilder kcvsConfigurationBuilder = new KCVSConfigurationBuilder();
-            systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(new BackendOperation.TransactionalProvider() {
-                @Override
-                public StoreTransaction openTx() throws BackendException {
-                    return storeManagerLocking.beginTransaction(StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig()));
-                }
-
-                @Override
-                public void close() {
-                    //Do nothing, storeManager is closed explicitly by Backend
-                }
-            }, systemConfigStore, configuration);
+            StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
+            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, txConfig);
+            systemConfig = kcvsConfigurationBuilder.buildGlobalConfiguration(txProvider, systemConfigStore, configuration);
 
         } catch (BackendException e) {
             throw new JanusGraphException("Could not initialize backend", e);
@@ -464,8 +454,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     }
 
     private ModifiableConfiguration buildJobConfiguration() {
-        return new ModifiableConfiguration(JOB_NS, new CommonsConfiguration(new BaseConfiguration()),
-                BasicConfiguration.Restriction.NONE);
+        return new ModifiableConfiguration(JOB_NS, new CommonsConfiguration(new BaseConfiguration()));
     }
 
     private Locker createLocker(String lockerName) {
@@ -473,7 +462,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         try {
             lockerStore = storeManager.openDatabase(lockerName);
         } catch (BackendException e) {
-            throw new JanusGraphConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
+            throw new JanusGraphException("Could not retrieve store named " + lockerName + " for locker configuration", e);
         }
         return new ConsistentKeyLocker.Builder(lockerStore, storeManager).fromConfig(configuration).build();
     }

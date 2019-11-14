@@ -51,7 +51,7 @@ import java.util.concurrent.Future;
  * <li>Consistency Management: Set the consistency level of individual schema elements</li>
  * </ul>
  */
-public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaManager {
+public interface JanusGraphManagement extends SchemaManager {
 
     /*
     ##################### RELATION TYPE INDEX ##########################
@@ -281,27 +281,6 @@ public interface JanusGraphManagement extends JanusGraphConfiguration, SchemaMan
     /*
     ##################### CLUSTER MANAGEMENT ##########################
      */
-
-    /**
-     * Returns a set of unique instance ids for all JanusGraph instances that are currently
-     * part of this graph cluster.
-     */
-    Set<String> getOpenInstances();
-
-    /**
-     * Forcefully removes a JanusGraph instance from this graph cluster as identified by its name.
-     * <p>
-     * This method should be used with great care and only in cases where a JanusGraph instance
-     * has been abnormally terminated (i.e. killed instead of properly shut-down). If this happens, the instance
-     * will continue to be listed as an open instance which means that 1) a new instance with the same id cannot
-     * be started and 2) schema updates will fail because the killed instance cannot acknowledge the schema update.
-     * <p>
-     * <p>
-     * Throws an exception if the instance is not part of this cluster or if the instance has
-     * been started after the start of this management transaction which is indicative of the instance
-     * having been restarted successfully.
-     */
-    void forceCloseInstance(String instanceId);
 
     /**
      * Returns an iterable over all defined types that have the given clazz (either {@link EdgeLabel} which returns all labels,

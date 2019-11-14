@@ -18,10 +18,6 @@
 
 package grakn.core.graph.diskstorage.util.time;
 
-
-
-import grakn.core.graph.diskstorage.util.time.Timer;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -35,14 +31,11 @@ public interface TimestampProvider {
      * Returns the current time based on this timestamp provider
      * as a {@link Instant}.
      *
-     * @return
      */
     Instant getTime();
 
     /**
      * Returns the given time as a {@link Instant} based off of this timestamp providers units
-     * @param sinceEpoch
-     * @return
      */
     Instant getTime(long sinceEpoch);
 
@@ -69,24 +62,17 @@ public interface TimestampProvider {
 
     /**
      * Sleep for the given duration of time.
-     *
-     * @param duration
-     * @throws InterruptedException
      */
     void sleepFor(Duration duration) throws InterruptedException;
 
     /**
      * Returns a {@link Timer} based on this timestamp provider
-     *
-     * @return
      */
     Timer getTimer();
 
 
     /**
      * Returns the scalar value for this instant given the configured time unit
-     * @param timestamp
-     * @return
      */
     long getTime(Instant timestamp);
 }

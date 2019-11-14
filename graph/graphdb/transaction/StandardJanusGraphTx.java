@@ -39,7 +39,6 @@ import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.ReadOnlyTransactionException;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.SchemaViolationException;
 import grakn.core.graph.core.VertexLabel;
@@ -470,7 +469,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
     private void verifyWriteAccess(JanusGraphVertex... vertices) {
         if (config.isReadOnly()) {
-            throw new ReadOnlyTransactionException("Cannot create new entities in read-only transaction");
+            throw new JanusGraphException("Cannot create new entities in read-only transaction");
         }
         for (JanusGraphVertex v : vertices) {
             if (v.hasId() && idManager.isUnmodifiableVertex(v.longId()) && !v.isNew()) {

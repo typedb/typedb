@@ -23,7 +23,6 @@ import grakn.core.graph.diskstorage.BaseTransactionConfig;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.time.Instant;
 
@@ -33,11 +32,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
     private final TimestampProvider times;
     private final Configuration customOptions;
 
-    private StandardBaseTransactionConfig(TimestampProvider times,
-                                          Instant commitTime,
-                                          Configuration customOptions) {
-        Preconditions.checkArgument(customOptions!=null);
-        Preconditions.checkArgument(null != times || null != commitTime);
+    private StandardBaseTransactionConfig(TimestampProvider times, Instant commitTime, Configuration customOptions) {
         this.times = times;
         this.commitTime = commitTime;
         this.customOptions = customOptions;
@@ -45,7 +40,7 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
     @Override
     public synchronized Instant getCommitTime() {
-        if (commitTime==null) {
+        if (commitTime == null) {
             //set commit time to current time
             commitTime = times.getTime();
         }
@@ -54,13 +49,13 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
 
     @Override
     public synchronized void setCommitTime(Instant time) {
-        Preconditions.checkArgument(commitTime==null,"A commit time has already been set");
-        this.commitTime=time;
+        Preconditions.checkArgument(commitTime == null, "A commit time has already been set");
+        this.commitTime = time;
     }
 
     @Override
     public boolean hasCommitTime() {
-        return commitTime!=null;
+        return commitTime != null;
     }
 
     @Override
@@ -84,15 +79,15 @@ public class StandardBaseTransactionConfig implements BaseTransactionConfig {
         private TimestampProvider times;
         private Configuration customOptions = Configuration.EMPTY;
 
-        public Builder() { }
+        public Builder() {
+        }
 
         /**
          * Copies everything from {@code template} to this builder except for
          * the {@code commitTime}.
          *
-         * @param template
-         *            an existing transaction from which this builder will take
-         *            its values
+         * @param template an existing transaction from which this builder will take
+         *                 its values
          */
         public Builder(BaseTransactionConfig template) {
             customOptions(template.getCustomOptions());

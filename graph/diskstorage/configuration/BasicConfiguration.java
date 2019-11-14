@@ -29,52 +29,30 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Read-only configuration that can be optionally restricted to only accept LOCAL or GLOBAL options.
+ * Read-only configuration that can access configurations using namespace
  */
 public class BasicConfiguration implements Configuration {
 
     private final ConfigNamespace root;
     private static final Logger LOG = LoggerFactory.getLogger(BasicConfiguration.class);
-
-    public enum Restriction {LOCAL, GLOBAL, NONE}
-
     private final ReadConfiguration config;
-    private final Restriction restriction;
 
-    public BasicConfiguration(ConfigNamespace root, ReadConfiguration config, Restriction restriction) {
+    public BasicConfiguration(ConfigNamespace root, ReadConfiguration config) {
         Preconditions.checkNotNull(root);
         Preconditions.checkArgument(!root.isUmbrella(), "Root cannot be an umbrella namespace");
         Preconditions.checkNotNull(config);
-        Preconditions.checkNotNull(restriction);
 
         this.root = root;
         this.config = config;
-        this.restriction = restriction;
-    }
-
-    ConfigNamespace getRootNamespace() {
-        return root;
-    }
-
-    void verifyOption(ConfigOption option) {
-        Preconditions.checkNotNull(option);
-        verifyElement(option);
-        if (restriction == Restriction.GLOBAL) {
-            Preconditions.checkArgument(option.isGlobal(), "Can only accept global options: %s", option);
-        } else if (restriction == Restriction.LOCAL) {
-            Preconditions.checkArgument(option.isLocal(), "Can only accept local options: %s", option);
-        }
     }
 
     @Override
     public boolean has(ConfigOption option, String... umbrellaElements) {
-        verifyOption(option);
         return config.get(getPath(option, umbrellaElements), option.getDatatype()) != null;
     }
 
     @Override
     public <O> O get(ConfigOption<O> option, String... umbrellaElements) {
-        verifyOption(option);
         O result = config.get(getPath(option, umbrellaElements), option.getDatatype());
         return option.get(result);
     }
@@ -100,7 +78,7 @@ public class BasicConfiguration implements Configuration {
         for (String key : config.getKeys("")) {
             Preconditions.checkArgument(StringUtils.isNotBlank(key));
             try {
-                final ConfigElement.PathIdentifier pid = ConfigElement.parse(getRootNamespace(), key);
+                ConfigElement.PathIdentifier pid = ConfigElement.parse(root, key);
                 Preconditions.checkArgument(pid.element.isOption() && !pid.lastIsUmbrella);
                 result.put(pid, get((ConfigOption) pid.element, pid.umbrellaElements));
             } catch (IllegalArgumentException e) {

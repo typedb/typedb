@@ -20,7 +20,6 @@ package grakn.core.graph.diskstorage.configuration.backend;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.util.time.Durations;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -37,7 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * {@link ReadConfiguration} wrapper for Apache Configuration
+ * {@link WriteConfiguration} wrapper for Apache Configuration
  */
 public class CommonsConfiguration implements WriteConfiguration {
 
@@ -53,9 +52,6 @@ public class CommonsConfiguration implements WriteConfiguration {
         this.config = Preconditions.checkNotNull(config);
     }
 
-    public Configuration getCommonConfiguration() {
-        return config;
-    }
 
     @Override
     public <O> O get(String key, Class<O> dataType) {

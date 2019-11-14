@@ -21,7 +21,7 @@ package grakn.core.graph.diskstorage.locking.consistentkey;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import grakn.core.graph.core.JanusGraphConfigurationException;
+import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.PermanentBackendException;
@@ -292,7 +292,7 @@ public class ConsistentKeyLocker extends AbstractLocker<ConsistentKeyLockStatus>
 
         @Override
         protected LocalLockMediator<StoreTransaction> getDefaultMediator() {
-            throw new JanusGraphConfigurationException("Local lock mediator prefix must not be empty or null");
+            throw new JanusGraphException("Local lock mediator prefix must not be empty or null");
         }
     }
 

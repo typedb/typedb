@@ -23,19 +23,14 @@ import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.TransactionBuilder;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
-import grakn.core.graph.diskstorage.configuration.ConfigElement;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 import java.time.Instant;
-
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 /**
  * Used to configure a {@link JanusGraphTransaction}.
@@ -74,8 +69,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private final boolean forceIndexUsage;
 
-    private final ModifiableConfiguration writableCustomOptions;
-
     private final Configuration customOptions;
 
     private final StandardJanusGraph graph;
@@ -93,8 +86,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.writableCustomOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
-        this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
+        this.customOptions = graphConfig.getConfiguration();
         vertexCacheSize(graphConfig.getTxVertexCacheSize());
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
@@ -109,7 +101,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.writableCustomOptions = null;
         this.customOptions = customOptions;
         vertexCacheSize(graphConfig.getTxVertexCacheSize());
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
@@ -188,15 +179,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public TransactionBuilder restrictedPartitions(int[] partitions) {
         Preconditions.checkNotNull(partitions);
         this.restrictedPartitions = partitions;
-        return this;
-    }
-
-    @Override
-    public TransactionBuilder customOption(String k, Object v) {
-        if (null == writableCustomOptions) {
-            throw new IllegalStateException("This builder was not constructed with setCustomOption support");
-        }
-        writableCustomOptions.set((ConfigOption<Object>) ConfigElement.parse(ROOT_NS, k).element, v);
         return this;
     }
 

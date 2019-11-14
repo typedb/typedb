@@ -18,7 +18,6 @@
 
 package grakn.core.graph.diskstorage.configuration.builder;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
@@ -32,20 +31,16 @@ import grakn.core.graph.diskstorage.configuration.backend.builder.KCVSConfigurat
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.JanusGraphConstants;
 import grakn.core.graph.util.system.LoggerUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_JANUSGRAPH_VERSION;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INITIAL_STORAGE_VERSION;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.SYSTEM_PROPERTIES_STORE_NAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
 
@@ -60,18 +55,8 @@ public class ReadConfigurationBuilder {
                                                              KeyColumnValueStoreManager storeManager,
                                                              KCVSConfigurationBuilder kcvsConfigurationBuilder) {
 
-
-        BackendOperation.TransactionalProvider transactionalProvider = new BackendOperation.TransactionalProvider() {
-            @Override
-            public StoreTransaction openTx() throws BackendException {
-                return storeManager.beginTransaction(StandardBaseTransactionConfig.of(localBasicConfiguration.get(TIMESTAMP_PROVIDER), storeManager.getFeatures().getKeyConsistentTxConfig()));
-            }
-
-            @Override
-            public void close() {
-                // do nothing
-            }
-        };
+        StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(localBasicConfiguration.get(TIMESTAMP_PROVIDER), storeManager.getFeatures().getKeyConsistentTxConfig());
+        BackendOperation.TransactionalProvider transactionalProvider = BackendOperation.buildTxProvider(storeManager, txConfig);
         KeyColumnValueStore systemPropertiesStore;
         try {
             systemPropertiesStore = storeManager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
@@ -83,14 +68,12 @@ public class ReadConfigurationBuilder {
         try (KCVSConfiguration keyColumnValueStoreConfiguration = kcvsConfigurationBuilder.buildGlobalConfiguration(transactionalProvider, systemPropertiesStore, localBasicConfiguration)) {
 
             //Freeze global configuration if not already frozen!
-            ModifiableConfiguration globalWrite = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, keyColumnValueStoreConfiguration, BasicConfiguration.Restriction.GLOBAL);
+            ModifiableConfiguration globalWrite = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, keyColumnValueStoreConfiguration);
 
             if (!globalWrite.isFrozen()) {
                 //Copy over global configurations
                 globalWrite.setAll(getGlobalSubset(localBasicConfiguration.getAll()));
 
-                setupJanusGraphVersion(globalWrite);
-                setupStorageVersion(globalWrite);
                 setupTimestampProvider(globalWrite, localBasicConfiguration, storeManager);
 
                 globalWrite.freezeConfiguration();
@@ -101,16 +84,6 @@ public class ReadConfigurationBuilder {
     }
 
 
-    private static void setupJanusGraphVersion(ModifiableConfiguration globalWrite) {
-        Preconditions.checkArgument(!globalWrite.has(INITIAL_JANUSGRAPH_VERSION), "Database has already been initialized but not frozen");
-        globalWrite.set(INITIAL_JANUSGRAPH_VERSION, JanusGraphConstants.VERSION);
-    }
-
-    private static void setupStorageVersion(ModifiableConfiguration globalWrite) {
-        Preconditions.checkArgument(!globalWrite.has(INITIAL_STORAGE_VERSION), "Database has already been initialized but not frozen");
-        globalWrite.set(INITIAL_STORAGE_VERSION, JanusGraphConstants.STORAGE_VERSION);
-    }
-
     private static void setupTimestampProvider(ModifiableConfiguration globalWrite, BasicConfiguration localBasicConfiguration, KeyColumnValueStoreManager storeManager) {
         /* If the configuration does not explicitly set a timestamp provider and
          * the storage backend both supports timestamps and has a preference for
@@ -118,7 +91,7 @@ public class ReadConfigurationBuilder {
          */
         if (!localBasicConfiguration.has(TIMESTAMP_PROVIDER)) {
             StoreFeatures f = storeManager.getFeatures();
-            final TimestampProviders backendPreference;
+            TimestampProviders backendPreference;
             if (f.hasTimestamps() && null != (backendPreference = f.getPreferredTimestamps())) {
                 globalWrite.set(TIMESTAMP_PROVIDER, backendPreference);
                 LOG.debug("Set timestamps to {} according to storage backend preference",

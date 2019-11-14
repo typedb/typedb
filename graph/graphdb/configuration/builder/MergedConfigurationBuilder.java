@@ -61,7 +61,7 @@ public class MergedConfigurationBuilder {
         Configuration combinedConfig = new MergedConfiguration(localBasicConfiguration, globalBasicConfig);
 
         //Compute unique instance id
-        ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration(), BasicConfiguration.Restriction.NONE);
+        ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration());
         overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId());
         // If lock prefix is unspecified, specify it now
         if (!localBasicConfiguration.has(LOCK_LOCAL_MEDIATOR_GROUP)) {

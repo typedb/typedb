@@ -25,6 +25,7 @@ import grakn.core.graph.core.log.TransactionRecovery;
 import grakn.core.graph.diskstorage.Backend;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
+import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
 import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
@@ -72,15 +73,16 @@ public class JanusGraphFactory {
      */
     private static StandardJanusGraph open(ReadConfiguration configuration) {
         // Create BasicConfiguration out of ReadConfiguration for local configuration
-        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration, BasicConfiguration.Restriction.NONE);
+        BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration);
 
         // Initialise Store Manager used to connect to 'system_properties' to read global configuration
         KeyColumnValueStoreManager storeManager = getStoreManager(localBasicConfiguration);
 
         // Configurations read from system_properties
         ReadConfiguration globalConfig = ReadConfigurationBuilder.buildGlobalConfiguration(localBasicConfiguration, storeManager, new KCVSConfigurationBuilder());
+
         // Create BasicConfiguration out of ReadConfiguration for global configuration
-        BasicConfiguration globalBasicConfig = new BasicConfiguration(ROOT_NS, globalConfig, BasicConfiguration.Restriction.NONE);
+        BasicConfiguration globalBasicConfig = new BasicConfiguration(ROOT_NS, globalConfig);
 
         // Merge and sanitise local and global configuration to get Merged configuration which incorporates all necessary configs.
         MergedConfiguration mergedConfig = MergedConfigurationBuilder.build(localBasicConfiguration, globalBasicConfig, storeManager);
@@ -110,7 +112,7 @@ public class JanusGraphFactory {
         if (graph.isOpen()) {
             graph.close();
         }
-        grakn.core.graph.diskstorage.configuration.Configuration backendConfiguration = g.getConfiguration().getConfiguration();
+        Configuration backendConfiguration = g.getConfiguration().getConfiguration();
         KeyColumnValueStoreManager storeManager = getStoreManager(backendConfiguration);
         Backend backend = new Backend(backendConfiguration, storeManager);
         try {
@@ -152,7 +154,7 @@ public class JanusGraphFactory {
          */
         public StandardJanusGraph open() {
             ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                    writeConfiguration.copy(), BasicConfiguration.Restriction.NONE);
+                    writeConfiguration.copy());
             return JanusGraphFactory.open(mc);
         }
     }
@@ -175,7 +177,7 @@ public class JanusGraphFactory {
 
 
     @VisibleForTesting
-    public static KeyColumnValueStoreManager getStoreManager(grakn.core.graph.diskstorage.configuration.Configuration configuration) {
+    public static KeyColumnValueStoreManager getStoreManager(Configuration configuration) {
         String className;
         String backendName = configuration.get(STORAGE_BACKEND);
         switch (backendName) {
@@ -191,7 +193,7 @@ public class JanusGraphFactory {
 
         try {
             Class clazz = Class.forName(className);
-            Constructor constructor = clazz.getConstructor(grakn.core.graph.diskstorage.configuration.Configuration.class);
+            Constructor constructor = clazz.getConstructor(Configuration.class);
             return (KeyColumnValueStoreManager) constructor.newInstance(new Object[]{configuration});
         } catch (ClassNotFoundException e) {
             throw new IllegalArgumentException("Could instantiate StoreManager class: " + className, e);
