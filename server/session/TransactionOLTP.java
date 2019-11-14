@@ -189,7 +189,7 @@ public class TransactionOLTP implements Transaction {
         if (lockRequired) session.graphLock().writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
-            if (!cache().getNewAttributes().isEmpty()) mergeAttributesAndCommit();
+            if (!cache().getNewAttributes().isEmpty()) mergeAttributes();
             persistInternal();
             cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
         } finally {
@@ -211,7 +211,7 @@ public class TransactionOLTP implements Transaction {
 
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
-    private void mergeAttributesAndCommit() {
+    private void mergeAttributes() {
         cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
         cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
             // If the same index is contained in attributesCache, it means
