@@ -24,7 +24,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.schema.JanusGraphManagement;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -455,8 +454,7 @@ public class Backend implements LockerProvider, AutoCloseable {
     }
 
     private ModifiableConfiguration buildJobConfiguration() {
-        return new ModifiableConfiguration(JOB_NS, new CommonsConfiguration(new BaseConfiguration()),
-                BasicConfiguration.Restriction.NONE);
+        return new ModifiableConfiguration(JOB_NS, new CommonsConfiguration(new BaseConfiguration()));
     }
 
     private Locker createLocker(String lockerName) {
