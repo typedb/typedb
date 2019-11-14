@@ -44,10 +44,15 @@ import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.util.LockManager;
 import grakn.core.util.ConceptDowncasting;
+import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import graql.lang.statement.Statement;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+import junit.framework.TestCase;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.core.IsInstanceOf;
@@ -435,6 +440,31 @@ public class TransactionOLTPIT {
             Set<Vertex> companyTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet();
             assertEquals(2, companyTypeShards.size());
         }
+    }
+
+    @Test
+    public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSync() throws ExecutionException, InterruptedException {
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 500L);
+        Session session = server.sessionWithNewKeyspace();
+
+        try(Transaction tx = session.writeTransaction()){
+            tx.putEntityType("someEntity");
+            tx.commit();
+        }
+        final int insertsPerCommit = 500;
+        final int noOfEntities = 100000;
+        final int threads = 8;
+
+        List<Statement> statements = new ArrayList<>();
+        for (int i = 0 ; i < noOfEntities ; i++){
+            statements.add(Graql.var().isa("someEntity"));
+        }
+        GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
+
+        Transaction tx = session.writeTransaction();
+        final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
+        TestCase.assertEquals(statements.size(), noOfConcepts);
+        session.close();
     }
 
     @Test
