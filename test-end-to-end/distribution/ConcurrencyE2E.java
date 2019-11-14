@@ -24,17 +24,11 @@ import grakn.client.concept.Attribute;
 import grakn.client.concept.AttributeType;
 import grakn.client.concept.Concept;
 import grakn.client.concept.EntityType;
-import grakn.core.common.config.Config;
-import grakn.core.common.config.ConfigKey;
 import grakn.core.distribution.element.AttributeElement;
 import grakn.core.distribution.element.Element;
 import grakn.core.distribution.element.Record;
 import graql.lang.Graql;
 import graql.lang.query.GraqlInsert;
-import graql.lang.statement.Statement;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -45,20 +39,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.zeroturnaround.exec.ProcessExecutor;
 
 import static grakn.core.distribution.DistributionE2EConstants.GRAKN_UNZIPPED_DIRECTORY;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsNotRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertGraknIsRunning;
-import static grakn.core.distribution.DistributionE2EConstants.assertZipExists;
-import static grakn.core.distribution.DistributionE2EConstants.unzipGrakn;
 import static java.util.stream.Collectors.toSet;
 import static junit.framework.TestCase.assertEquals;
 
@@ -70,6 +56,7 @@ public class ConcurrencyE2E {
             .redirectError(System.err)
             .readOutput(true);
 
+    /*
     @BeforeClass
     public static void setup_prepareDistribution() throws IOException, InterruptedException, TimeoutException {
         assertZipExists();
@@ -85,6 +72,8 @@ public class ConcurrencyE2E {
         assertGraknIsNotRunning();
         FileUtils.deleteDirectory(GRAKN_UNZIPPED_DIRECTORY.toFile());
     }
+
+     */
 
     /**
      * This is testing insertion of attributes which have values that repeat in different concurrent transactions.
@@ -238,8 +227,8 @@ public class ConcurrencyE2E {
             tx.commit();
         }
 
-        final int insertsPerCommit = 2000;
-        final int noOfRecords = 32000;
+        final int insertsPerCommit = 5000;
+        final int noOfRecords = 80000;
         final int threads = 8;
         List<Record> records = generateRecords(noOfRecords, noOfAttributes);
         List<AttributeElement> attributes = records.stream().flatMap(r -> r.getAttributes().stream()).collect(Collectors.toList());

@@ -51,6 +51,15 @@ public class ShardManagerImpl implements ShardManager {
     }
 
     @Override
+    public void ackShardCreation(Label type, String txId) {
+        ephemeralShardCache.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
+            if (existingValue.isEmpty()) return null;
+            existingValue.remove(txId);
+            return existingValue;
+        });
+    }
+
+    @Override
     public void ackCommit(String txId) {
         lockCandidates.remove(txId);
     }

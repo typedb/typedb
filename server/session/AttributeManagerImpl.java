@@ -27,7 +27,6 @@ import grakn.core.kb.server.AttributeManager;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.spark_project.jetty.util.ConcurrentHashSet;
 
 public class AttributeManagerImpl implements AttributeManager {
     private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
@@ -71,7 +70,7 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public void ackAttributeDelete(String index, String txId) {
-        ephemeralAttributeCache.merge(index, new ConcurrentHashSet<>(), (existingValue, zero) -> {
+        ephemeralAttributeCache.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
             if (existingValue.isEmpty()) return null;
             existingValue.remove(txId);
             return existingValue;

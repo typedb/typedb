@@ -183,10 +183,10 @@ public class TransactionOLTP implements Transaction {
                 || !cache().getRemovedAttributes().isEmpty()
                 || cache().modifiedKeyRelations();
 
-        if (!lockRequired) System.out.println(txId + " doesnt need a lock!!!!");
-        else System.out.println(txId + " NEEDS a lock!!!!");
-
-        if (lockRequired) session.graphLock().writeLock().lock();
+        if (lockRequired){
+            LOG.warn(txId + " is about to acquire a graphlock.");
+            session.graphLock().writeLock().lock();
+        }
         try {
             createNewTypeShardsWhenThresholdReached();
             if (!cache().getNewAttributes().isEmpty()) mergeAttributes();
@@ -236,7 +236,7 @@ public class TransactionOLTP implements Transaction {
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
-                session().shardManager().ackShardRequirement(label, janusTransaction.toString());
+                session().shardManager().ackShardRequirement(label, this.janusTransaction.toString());
             }
         });
     }
@@ -248,6 +248,7 @@ public class TransactionOLTP implements Transaction {
             if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
                 LOG.trace(label + " has a count of " + instanceCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
+                session().shardManager().ackShardCreation(label, this.janusTransaction.toString());
                 setShardCheckpoint(label, instanceCount);
             }
         });
