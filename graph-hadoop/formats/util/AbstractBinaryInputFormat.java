@@ -18,20 +18,20 @@
 
 package grakn.core.graph.hadoop.formats.util;
 
+import grakn.core.graph.diskstorage.Entry;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
+import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
+import grakn.core.graph.hadoop.config.ModifiableHadoopConfiguration;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.mapreduce.InputFormat;
 import org.apache.tinkerpop.gremlin.hadoop.structure.io.HadoopPoolsConfigurable;
-import grakn.core.graph.diskstorage.Entry;
-import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
-import grakn.core.graph.hadoop.config.JanusGraphHadoopConfiguration;
-import grakn.core.graph.hadoop.config.ModifiableHadoopConfiguration;
 
 public abstract class AbstractBinaryInputFormat extends InputFormat<StaticBuffer, Iterable<Entry>> implements HadoopPoolsConfigurable {
 
     protected Configuration hadoopConf;
     protected ModifiableHadoopConfiguration mrConf;
-    protected ModifiableConfiguration janusgraphConf;
+    protected BasicConfiguration janusgraphConf;
 
     @Override
     public void setConf( Configuration config) {

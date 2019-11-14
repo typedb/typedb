@@ -126,14 +126,6 @@ public interface TransactionBuilder {
      */
     TransactionBuilder restrictedPartitions(int[] partitions);
 
-    /**
-     * Configures a custom option on this transaction which will be passed through to the storage and indexing backends.
-     *
-     * @param k Name of the configuration element.
-     * @param v Object containing the custom options to be applied.
-     * @return Object containing the properties in param v
-     */
-    TransactionBuilder customOption(String k, Object v);
 
     /**
      * Starts and returns the transaction build by this builder

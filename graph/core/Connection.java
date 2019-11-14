@@ -18,9 +18,6 @@
 
 package grakn.core.graph.core;
 
-import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.JanusGraphEdge;
-import grakn.core.graph.core.VertexLabel;
 import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 

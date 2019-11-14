@@ -22,7 +22,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import grakn.core.graph.core.JanusGraphConfigurationException;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
@@ -473,7 +472,7 @@ public class Backend implements LockerProvider, AutoCloseable {
         try {
             lockerStore = storeManager.openDatabase(lockerName);
         } catch (BackendException e) {
-            throw new JanusGraphConfigurationException("Could not retrieve store named " + lockerName + " for locker configuration", e);
+            throw new JanusGraphException("Could not retrieve store named " + lockerName + " for locker configuration", e);
         }
         return new ConsistentKeyLocker.Builder(lockerStore, storeManager).fromConfig(configuration).build();
     }

@@ -18,21 +18,20 @@
 
 package grakn.core.graph.diskstorage.configuration;
 
-import java.io.Closeable;
-
-public interface WriteConfiguration extends Closeable {
+public interface WriteConfiguration extends ReadConfiguration {
 
     <O> O get(String key, Class<O> datatype);
 
     Iterable<String> getKeys(String prefix);
+
+    @Override
+    void close();
+
 
     <O> void set(String key, O value);
 
     void remove(String key);
 
     WriteConfiguration copy();
-
-    @Override
-    void close();
 
 }
