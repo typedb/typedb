@@ -40,10 +40,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSExpirationCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSNoCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.StandardScanner;
-import grakn.core.graph.diskstorage.locking.Locker;
-import grakn.core.graph.diskstorage.locking.LockerProvider;
-import grakn.core.graph.diskstorage.locking.consistentkey.ConsistentKeyLocker;
-import grakn.core.graph.diskstorage.locking.consistentkey.ExpectedValueCheckingStoreManager;
 import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
@@ -56,12 +52,12 @@ import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -89,7 +85,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * Orchestrates and configures all backend systems:
  * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
  */
-public class Backend implements LockerProvider, AutoCloseable {
+public class Backend implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(Backend.class);
     /**
@@ -116,7 +112,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     private static final long ETERNAL_CACHE_EXPIRATION = 1000L * 3600 * 24 * 365 * 200; //200 years
 
     private final KeyColumnValueStoreManager storeManager;
-    private final KeyColumnValueStoreManager storeManagerLocking;
     private final StoreFeatures storeFeatures;
     private final KCVSCache edgeStore;
     private final KCVSCache indexStore;
@@ -131,8 +126,6 @@ public class Backend implements LockerProvider, AutoCloseable {
     private final Duration maxWriteTime;
     private final Duration maxReadTime;
     private final ExecutorService threadPool;
-
-    private final ConcurrentHashMap<String, Locker> lockers = new ConcurrentHashMap<>();
     private final Configuration config;
 
     private boolean hasAttemptedClose;
@@ -149,13 +142,6 @@ public class Backend implements LockerProvider, AutoCloseable {
         maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
         maxReadTime = configuration.get(STORAGE_READ_WAITTIME);
 
-        if (!storeFeatures.hasLocking()) {
-            Preconditions.checkArgument(storeFeatures.isKeyConsistent(), "Store needs to support some form of locking");
-            storeManagerLocking = new ExpectedValueCheckingStoreManager(storeManager, LOCK_STORE_SUFFIX, this, maxReadTime);
-        } else {
-            storeManagerLocking = storeManager;
-        }
-
         //Potentially useless threadpool: investigate!
         if (configuration.get(PARALLEL_BACKEND_OPS)) {
             int poolSize = Runtime.getRuntime().availableProcessors() * 2;
@@ -166,8 +152,8 @@ public class Backend implements LockerProvider, AutoCloseable {
         scanner = new StandardScanner(storeManager);
 
         try {
-            KeyColumnValueStore edgeStoreRaw = storeManagerLocking.openDatabase(EDGESTORE_NAME);
-            KeyColumnValueStore indexStoreRaw = storeManagerLocking.openDatabase(INDEXSTORE_NAME);
+            KeyColumnValueStore edgeStoreRaw = storeManager.openDatabase(EDGESTORE_NAME);
+            KeyColumnValueStore indexStoreRaw = storeManager.openDatabase(INDEXSTORE_NAME);
 
             //If DB cache is enabled (and we are not batch loading) initialise caches and use KCVStore with inner cache
             if (!configuration.get(STORAGE_BATCH) && configuration.get(DB_CACHE)) {
@@ -192,26 +178,14 @@ public class Backend implements LockerProvider, AutoCloseable {
             txLogStore = new KCVSNoCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
 
             //Open global configuration
-            KeyColumnValueStore systemConfigStore = storeManagerLocking.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
+            KeyColumnValueStore systemConfigStore = storeManager.openDatabase(SYSTEM_PROPERTIES_STORE_NAME);
             StandardBaseTransactionConfig txConfig = StandardBaseTransactionConfig.of(configuration.get(TIMESTAMP_PROVIDER), storeFeatures.getKeyConsistentTxConfig());
-            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManagerLocking, txConfig);
+            BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(storeManager, txConfig);
             systemConfig = new KCVSConfigurationBuilder().buildGlobalConfiguration(txProvider, systemConfigStore, configuration);
 
         } catch (BackendException e) {
             throw new JanusGraphException("Could not initialize backend", e);
         }
-    }
-
-    //Method invoked by ExpectedValueCheckingStoreManager, which is only used when Backend does not support native locking.
-    @Override
-    public Locker getLocker(String lockerName) {
-        Locker l = lockers.get(lockerName);
-        if (null == l) {
-            Locker locker = createLocker(lockerName);
-            lockers.put(lockerName, locker);
-            return locker;
-        }
-        return l;
     }
 
     private long computeCacheSizeBytes() {
@@ -254,10 +228,10 @@ public class Backend implements LockerProvider, AutoCloseable {
         }
     }
 
-    public KeyColumnValueStore getIDsStore(){
-        try{
-          return storeManager.openDatabase(IDSTORE_NAME);
-        } catch(BackendException e){
+    public KeyColumnValueStore getIDsStore() {
+        try {
+            return storeManager.openDatabase(IDSTORE_NAME);
+        } catch (BackendException e) {
             throw new JanusGraphException("Could not open IDs Store", e);
         }
     }
@@ -343,9 +317,8 @@ public class Backend implements LockerProvider, AutoCloseable {
      * Opens a new transaction against all registered backend system wrapped in one {@link BackendTransaction}.
      */
     public BackendTransaction beginTransaction(TransactionConfiguration configuration, KeyInformation.Retriever indexKeyRetriever) throws BackendException {
-
-        StoreTransaction tx = storeManagerLocking.beginTransaction(configuration);
-        CacheTransaction cacheTx = new CacheTransaction(tx, storeManagerLocking, bufferSize, maxWriteTime, configuration.hasEnabledBatchLoading());
+        StoreTransaction tx = storeManager.beginTransaction(configuration);
+        CacheTransaction cacheTx = new CacheTransaction(tx, storeManager, bufferSize, maxWriteTime, configuration.hasEnabledBatchLoading());
 
         // Index transactions
         Map<String, IndexTransaction> indexTx = new HashMap<>(indexes.size());
@@ -408,15 +381,5 @@ public class Backend implements LockerProvider, AutoCloseable {
 
     private ModifiableConfiguration buildJobConfiguration() {
         return new ModifiableConfiguration(JOB_NS, new CommonsConfiguration(new BaseConfiguration()));
-    }
-
-    private Locker createLocker(String lockerName) {
-        KeyColumnValueStore lockerStore;
-        try {
-            lockerStore = storeManager.openDatabase(lockerName);
-        } catch (BackendException e) {
-            throw new JanusGraphException("Could not retrieve store named " + lockerName + " for locker configuration", e);
-        }
-        return new ConsistentKeyLocker.Builder(lockerStore, storeManager).fromConfig(config).build();
     }
 }

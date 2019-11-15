@@ -362,14 +362,6 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
-        boolean hasLocking = this.storeManager.getFeatures().hasLocking();
-        if (!hasLocking) {
-            throw new UnsupportedOperationException(String.format("%s doesn't support locking", getClass()));
-        }
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
         if (!this.storeManager.getFeatures().hasOrderedScan()) {
             throw new PermanentBackendException("This operation is only allowed when the byteorderedpartitioner is used.");

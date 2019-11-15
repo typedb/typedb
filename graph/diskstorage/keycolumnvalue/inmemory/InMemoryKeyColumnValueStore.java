@@ -83,11 +83,6 @@ public class InMemoryKeyColumnValueStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction txh) throws BackendException {
         return new RowIterator(kcv.subMap(query.getKeyStart(), query.getKeyEnd()).entrySet().iterator(), query, txh);
     }

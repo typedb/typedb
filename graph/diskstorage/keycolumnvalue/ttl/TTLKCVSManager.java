@@ -33,7 +33,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StandardStoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVS;
 
 import java.util.Collection;
 import java.util.Map;
@@ -80,11 +79,6 @@ public class TTLKCVSManager extends KCVSManagerProxy {
     @Override
     public StoreFeatures getFeatures() {
         return features;
-    }
-
-    @Override
-    public KeyColumnValueStore openDatabase(String name) throws BackendException {
-        return openDatabase(name, StoreMetaData.EMPTY);
     }
 
     @Override

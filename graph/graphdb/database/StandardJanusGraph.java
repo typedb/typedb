@@ -183,7 +183,8 @@ public class StandardJanusGraph implements JanusGraph {
         this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer, this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
 
-        // The follow
+        // The following query is used by VertexConstructors to check whether a vertex associated to a specific ID actually exists in the DB (and it's not a ghost)
+        // Full explanation on why this query is used: https://github.com/thinkaurelius/titan/issues/214
         this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
 
         // Collaborators (Caches)

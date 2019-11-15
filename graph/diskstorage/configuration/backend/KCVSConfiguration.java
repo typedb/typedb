@@ -96,10 +96,6 @@ public class KCVSConfiguration implements WriteConfiguration {
         return staticBuffer2Object(result, dataType);
     }
 
-    public <O> void set(String key, O value, O expectedValue) {
-        set(key, value, expectedValue, true);
-    }
-
     /**
      * Sets a configuration property for this StoreManager.
      *
@@ -108,10 +104,6 @@ public class KCVSConfiguration implements WriteConfiguration {
      */
     @Override
     public <O> void set(String key, O value) {
-        set(key, value, null, false);
-    }
-
-    public <O> void set(String key, O value, O expectedValue, boolean checkExpectedValue) {
         StaticBuffer column = string2StaticBuffer(key);
         List<Entry> additions;
         List<StaticBuffer> deletions;
@@ -124,19 +116,10 @@ public class KCVSConfiguration implements WriteConfiguration {
             additions = KeyColumnValueStore.NO_ADDITIONS;
             deletions = Lists.newArrayList(column);
         }
-        StaticBuffer expectedValueBuffer;
-        if (checkExpectedValue && expectedValue != null) {
-            expectedValueBuffer = object2StaticBuffer(expectedValue);
-        } else {
-            expectedValueBuffer = null;
-        }
 
         BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
             public Boolean call(StoreTransaction txh) throws BackendException {
-                if (checkExpectedValue) {
-                    store.acquireLock(rowKey, column, expectedValueBuffer, txh);
-                }
                 store.mutate(rowKey, additions, deletions, txh);
                 return true;
             }

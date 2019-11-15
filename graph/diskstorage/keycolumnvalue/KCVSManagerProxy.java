@@ -23,18 +23,12 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.StoreMetaData;
-import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 
 import java.util.List;
 import java.util.Map;
 
-
-public class KCVSManagerProxy implements KeyColumnValueStoreManager {
+// This is extended by
+abstract public class KCVSManagerProxy implements KeyColumnValueStoreManager {
 
     protected final KeyColumnValueStoreManager manager;
 
@@ -83,8 +77,6 @@ public class KCVSManagerProxy implements KeyColumnValueStoreManager {
     }
 
     @Override
-    public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
-        manager.mutateMany(mutations,txh);
-    }
+    abstract public void mutateMany(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException;
 
 }
