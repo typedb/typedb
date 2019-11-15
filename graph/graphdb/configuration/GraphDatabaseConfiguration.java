@@ -470,16 +470,6 @@ public class GraphDatabaseConfiguration {
             ConfigOption.Type.GLOBAL_OFFLINE, 10000);
 
     /**
-     * The name of the ID store. Currently this defaults to janusgraph_ids. You can override the ID store to
-     * facilitate migration from JanusGraph's predecessor, Titan. Previously, this KCVStore was named titan_ids.
-     */
-    public static final ConfigOption<String> IDS_STORE_NAME = new ConfigOption<>(IDS_NS, "store-name",
-            "The name of the ID KCVStore. IDS_STORE_NAME is meant to be used only for backward compatibility with Titan, " +
-                    "and should not be used explicitly in normal operations or in new graphs.",
-            ConfigOption.Type.GLOBAL_OFFLINE, JanusGraphConstants.JANUSGRAPH_ID_STORE_NAME);
-
-
-    /**
      * If flush ids is enabled, vertices and edges are assigned ids immediately upon creation. If not, then ids are only
      * assigned when the transaction is committed.
      */

@@ -27,7 +27,6 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
@@ -52,7 +51,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
  */
 public class JanusGraphFactory {
-
     /**
      * Opens a {@link JanusGraph} database configured according to the provided configuration.
      *
@@ -153,9 +151,7 @@ public class JanusGraphFactory {
          * Opens a JanusGraph graph with the previously configured options.
          */
         public StandardJanusGraph open() {
-            ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                    writeConfiguration.copy());
-            return JanusGraphFactory.open(mc);
+            return JanusGraphFactory.open(writeConfiguration);
         }
     }
 
@@ -183,9 +179,6 @@ public class JanusGraphFactory {
         switch (backendName) {
             case "cql":
                 className = "grakn.core.graph.diskstorage.cql.CQLStoreManager";
-                break;
-            case "inmemory":
-                className = "grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager";
                 break;
             default:
                 throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);

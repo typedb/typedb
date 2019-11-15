@@ -98,7 +98,6 @@ import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.SESSION_NAME;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.SSL_ENABLED;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_LOCATION;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.SSL_TRUSTSTORE_PASSWORD;
-import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.USE_EXTERNAL_LOCKING;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.WRITE_CONSISTENCY;
 import static grakn.core.graph.diskstorage.cql.CQLKeyColumnValueStore.EXCEPTION_MAPPER;
 import static grakn.core.graph.diskstorage.cql.CQLTransaction.getTransaction;
@@ -161,14 +160,12 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
 
         Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
 
-        Boolean useExternalLocking = configuration.get(USE_EXTERNAL_LOCKING);
-
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
 
         fb.batchMutation(true).distributed(true);
         fb.timestamps(true).cellTTL(true);
         fb.keyConsistent((onlyUseLocalConsistency ? local : global), local);
-        fb.locking(useExternalLocking);
+        fb.locking(false);
         fb.optimisticLocking(true);
         fb.multiQuery(false);
 

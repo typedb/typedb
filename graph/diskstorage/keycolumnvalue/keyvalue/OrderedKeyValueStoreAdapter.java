@@ -151,12 +151,6 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
         throw new UnsupportedOperationException("This store has ordered keys, use getKeys(KeyRangeQuery, StoreTransaction) instead");
     }
 
-    @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
-                            StoreTransaction txh) throws BackendException {
-        store.acquireLock(concatenate(key, column), expectedValue, txh);
-    }
-
     private EntryList convert(RecordIterator<KeyValueEntry> entries) throws BackendException {
         try {
             return StaticArrayEntryList.ofStaticBuffer(entries, kvEntryGetter);

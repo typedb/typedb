@@ -77,11 +77,7 @@ public class TransactionalConfiguration implements WriteConfiguration {
 
     public void commit() {
         for (Map.Entry<String, Object> entry : writtenValues.entrySet()) {
-            if (config instanceof KCVSConfiguration && readValues.containsKey(entry.getKey())) {
-                ((KCVSConfiguration) config).set(entry.getKey(), entry.getValue(), readValues.get(entry.getKey()));
-            } else {
-                config.set(entry.getKey(), entry.getValue());
-            }
+            config.set(entry.getKey(), entry.getValue());
         }
         rollback();
     }

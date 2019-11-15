@@ -107,7 +107,7 @@ public class StandardTransactionLogProcessor implements TransactionRecovery {
         this.graph = graph;
         this.serializer = graph.getDataSerializer();
         this.times = graph.getConfiguration().getTimestampProvider();
-        final Log txLog = graph.getBackend().getSystemTxLog();
+        Log txLog = graph.getBackend().getSystemTxLog();
         this.persistenceTime = graph.getConfiguration().getMaxWriteTime();
         this.verboseLogging = graph.getConfiguration().getConfiguration().get(GraphDatabaseConfiguration.VERBOSE_TX_RECOVERY);
         this.txCache = CacheBuilder.newBuilder()
