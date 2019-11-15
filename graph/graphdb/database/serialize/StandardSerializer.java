@@ -44,7 +44,6 @@ import grakn.core.graph.graphdb.database.serialize.attribute.ByteArraySerializer
 import grakn.core.graph.graphdb.database.serialize.attribute.ByteSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharacterSerializer;
-//import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DurationSerializer;
@@ -62,7 +61,6 @@ import grakn.core.graph.graphdb.database.serialize.attribute.ParameterSerializer
 import grakn.core.graph.graphdb.database.serialize.attribute.SerializableSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.ShortArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.ShortSerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.StandardTransactionIdSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.StringArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.StringSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.TypeDefinitionDescriptionSerializer;
@@ -71,7 +69,6 @@ import grakn.core.graph.graphdb.internal.ElementCategory;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.RelationCategory;
-import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.types.ParameterType;
 import grakn.core.graph.graphdb.types.TypeDefinitionCategory;
 import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
@@ -81,11 +78,12 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+//import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
 
 
 public class StandardSerializer implements AttributeHandler, Serializer {
@@ -161,7 +159,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         //Needed for configuration and transaction logging
         registerClassInternal(64, Duration.class, new DurationSerializer());
         registerClassInternal(65, Instant.class, new InstantSerializer());
-        registerClassInternal(66, StandardTransactionId.class, new StandardTransactionIdSerializer());
         registerClassInternal(67, TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68, HashMap.class, new SerializableSerializer());
         registerClassInternal(69, GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));

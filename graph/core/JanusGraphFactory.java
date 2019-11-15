@@ -20,8 +20,6 @@ package grakn.core.graph.core;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import grakn.core.graph.core.log.LogProcessorFramework;
-import grakn.core.graph.core.log.TransactionRecovery;
 import grakn.core.graph.diskstorage.Backend;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
@@ -36,13 +34,10 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.graphdb.log.StandardLogProcessorFramework;
-import grakn.core.graph.graphdb.log.StandardTransactionLogProcessor;
 import grakn.core.graph.util.system.IOUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.time.Instant;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BACKEND;
@@ -51,25 +46,14 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * JanusGraphFactory is used to open or instantiate a JanusGraph graph database.
  */
 public class JanusGraphFactory {
-    /**
-     * Opens a {@link JanusGraph} database configured according to the provided configuration.
-     *
-     * @param configuration Configuration for the graph database
-     * @return JanusGraph graph database
-     */
-    public static StandardJanusGraph open(BasicConfiguration configuration) {
-        return open(configuration.getConfiguration());
-    }
 
     /**
      * Opens a {@link JanusGraph} database configured according to the provided configuration.
-     * This method shouldn't be called by end users; it is used by internal server processes to
-     * open graphs defined at server start that do not include the graphname property.
      *
      * @param configuration Configuration for the graph database
      * @return JanusGraph graph database
      */
-    private static StandardJanusGraph open(ReadConfiguration configuration) {
+    public static StandardJanusGraph open(ReadConfiguration configuration) {
         // Create BasicConfiguration out of ReadConfiguration for local configuration
         BasicConfiguration localBasicConfiguration = new BasicConfiguration(ROOT_NS, configuration);
 
@@ -153,22 +137,6 @@ public class JanusGraphFactory {
         public StandardJanusGraph open() {
             return JanusGraphFactory.open(writeConfiguration);
         }
-    }
-
-    /**
-     * Returns a {@link LogProcessorFramework} for processing transaction LOG entries
-     * against the provided graph instance.
-     */
-    public static LogProcessorFramework openTransactionLog(JanusGraph graph) {
-        return new StandardLogProcessorFramework((StandardJanusGraph) graph);
-    }
-
-    /**
-     * Returns a {@link TransactionRecovery} process for recovering partially failed transactions. The recovery process
-     * will start processing the write-ahead transaction LOG at the specified transaction time.
-     */
-    public static TransactionRecovery startTransactionRecovery(JanusGraph graph, Instant start) {
-        return new StandardTransactionLogProcessor((StandardJanusGraph) graph, start);
     }
 
 
