@@ -20,7 +20,6 @@ package grakn.core.graph.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.TransactionBuilder;
-import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
 
 
@@ -41,23 +40,6 @@ public enum LogTxMeta {
         @Override
         public Class dataType() {
             return String.class;
-        }
-    },
-
-    SOURCE_TRANSACTION {
-        @Override
-        public Object getValue(TransactionConfiguration txConfig) {
-            return null;
-        }
-
-        @Override
-        public void setValue(TransactionBuilder builder, Object value) {
-            //Do nothing
-        }
-
-        @Override
-        public Class dataType() {
-            return StandardTransactionId.class;
         }
     };
 

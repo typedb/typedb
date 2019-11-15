@@ -31,7 +31,6 @@ import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.internal.InternalRelation;
-import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
 
@@ -85,18 +84,6 @@ public class TransactionLogHeader {
             grakn.core.graph.diskstorage.Entry entry = tx.getEdgeSerializer().writeRelation(rel, 0, tx);
             BufferUtil.writeEntry(out, entry);
         }
-    }
-
-    public StaticBuffer serializeUserLog(Serializer serializer, Entry sourceTxEntry, StandardTransactionId sourceTxId) {
-        Preconditions.checkArgument(sourceTxEntry != null && sourceTxEntry.status == LogTxStatus.PRECOMMIT
-                && sourceTxEntry.header.transactionId == sourceTxId.getTransactionId());
-        StaticBuffer sourceContent = sourceTxEntry.content;
-        Preconditions.checkArgument(sourceContent != null && sourceContent.length() > 0);
-        EnumMap<LogTxMeta, Object> meta = new EnumMap<>(LogTxMeta.class);
-        meta.put(LogTxMeta.SOURCE_TRANSACTION, sourceTxId);
-        DataOutput out = serializeHeader(serializer, 50 + sourceContent.length(), LogTxStatus.USER_LOG, meta);
-        out.putBytes(sourceContent);
-        return out.getStaticBuffer();
     }
 
     public StaticBuffer serializePrimary(Serializer serializer, LogTxStatus status) {
