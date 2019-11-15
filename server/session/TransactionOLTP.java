@@ -269,10 +269,11 @@ public class TransactionOLTP implements Transaction {
                 if (shardCheckpoint == null || instanceCount - shardCheckpoint >= typeShardThreshold){
                     shard(getType(label).id());
                     LOG.warn("Shard: " + label + " : " + instanceCount + " created");
-                    cache().getNewShards().put(label, instanceCount);
                     session.shardManager().shardCache().put(label, instanceCount);
                     setShardCheckpoint(label, instanceCount);
                 }
+                //update cache to signal fulfillment of shard request later at commit
+                cache().getNewShards().put(label, instanceCount);
             }
         });
     }

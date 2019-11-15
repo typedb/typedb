@@ -71,7 +71,7 @@ public class AttributeManagerImpl implements AttributeManager {
     @Override
     public void ackAttributeDelete(String index, String txId) {
         ephemeralAttributeCache.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
-            if (existingValue.isEmpty()) return null;
+            if (existingValue.size() == 1) return null;
             existingValue.remove(txId);
             return existingValue;
         });
@@ -93,8 +93,12 @@ public class AttributeManagerImpl implements AttributeManager {
     }
 
     @Override
-    public void printEphemeralCache() {
-        ephemeralAttributeCache.entrySet().forEach(System.out::println);
+    public boolean lockCandidatesPresent() {
+        return !lockCandidates.isEmpty();
     }
 
+    @Override
+    public boolean shardRequestsPresent() {
+        return !ephemeralAttributeCache.values().isEmpty();
+    }
 }

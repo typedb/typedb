@@ -56,7 +56,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -448,7 +450,8 @@ public class TransactionOLTPIT {
     }
 
     @Test
-    public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSync() throws ExecutionException, InterruptedException {
+    public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        Long oldThreshold = server.serverConfig().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
         long shardingThreshold = 200L;
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
         Session session = server.sessionWithNewKeyspace();
@@ -473,6 +476,44 @@ public class TransactionOLTPIT {
             //NB the not exact value is a consequence of the fact that the shard is not always created when the instanceCount diff is equal exactly to shard threshold
             assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 5);
         }
+
+        assertFalse(session.shardManager().lockCandidatesPresent());
+        assertFalse(session.shardManager().shardRequestsPresent());
+        session.close();
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, oldThreshold);
+    }
+
+    @Test
+    public void whenMultipleTxsInsertAttributes_noGhostVerticesAreCreatedAndAttributeManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        Session session = server.sessionWithNewKeyspace();
+
+        String entityLabel = "someEntity";
+        String attributeLabel = "someAttribute";
+        try(Transaction tx = session.writeTransaction()){
+            AttributeType<Long> someAtttribute = tx.putAttributeType(attributeLabel, AttributeType.DataType.LONG);
+            tx.putEntityType(entityLabel).has(someAtttribute);
+            tx.commit();
+        }
+        final int insertsPerCommit = 200;
+        final int noOfEntities = 100000;
+        final int threads = 8;
+
+        List<Statement> statements = new ArrayList<>();
+        Random rand = new Random();
+        Set<Integer> values = new HashSet<>();
+        for (int i = 0 ; i < noOfEntities ; i++){
+            int value = rand.nextInt(10);
+            values.add(value);
+            statements.add(Graql.var("x" + i).isa(attributeLabel).val(value));
+        }
+        GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
+        try(Transaction tx = session.writeTransaction()) {
+            final long noOfAttributes = tx.execute(Graql.parse("compute count in someAttribute;").asComputeStatistics()).get(0).number().longValue();
+            TestCase.assertEquals(values.size(), noOfAttributes);
+        }
+
+        assertFalse(session.attributeManager().lockCandidatesPresent());
+        assertFalse(session.attributeManager().shardRequestsPresent());
         session.close();
     }
 

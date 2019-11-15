@@ -23,6 +23,9 @@ package grakn.core.kb.server;
 import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.ConceptId;
 
+/**
+ * TODO
+ */
 public interface AttributeManager {
 
     Cache<String, ConceptId> attributesCache();
@@ -33,7 +36,6 @@ public interface AttributeManager {
     void ackCommit(String txId);
 
     boolean requiresLock(String txId);
-
-    void printEphemeralCache();
-
+    boolean lockCandidatesPresent();
+    boolean shardRequestsPresent();
 }

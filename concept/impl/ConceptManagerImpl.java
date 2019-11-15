@@ -372,8 +372,7 @@ public class ConceptManagerImpl implements ConceptManager {
      */
     @Nullable
     Attribute getCachedAttribute(String index) {
-        Attribute concept = transactionCache.getAttributeCache().get(index);
-        return concept;
+        return transactionCache.getAttributeCache().get(index);
     }
 
     /**

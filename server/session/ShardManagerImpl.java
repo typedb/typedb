@@ -23,6 +23,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.ShardManager;
+import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -67,8 +68,8 @@ public class ShardManagerImpl implements ShardManager {
 
     @Override
     public void ackShardCommit(Label type, String txId) {
-        shardRequests.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
-            if (existingValue.isEmpty()) return null;
+        shardRequests.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, newValue) -> {
+            if (existingValue.size() == 1) return null;
             existingValue.remove(txId);
             return existingValue;
         });
@@ -83,4 +84,15 @@ public class ShardManagerImpl implements ShardManager {
     public boolean requiresLock(String txId) {
         return lockCandidates.contains(txId);
     }
+
+    @Override
+    public boolean lockCandidatesPresent(){
+        return !lockCandidates.isEmpty();
+    }
+
+    @Override
+    public boolean shardRequestsPresent() {
+        return !shardRequests.values().isEmpty();
+    }
+
 }
