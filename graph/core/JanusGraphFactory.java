@@ -184,9 +184,6 @@ public class JanusGraphFactory {
             case "cql":
                 className = "grakn.core.graph.diskstorage.cql.CQLStoreManager";
                 break;
-            case "inmemory":
-                className = "grakn.core.graph.diskstorage.keycolumnvalue.inmemory.InMemoryStoreManager";
-                break;
             default:
                 throw new IllegalArgumentException("Could not find implementation class for backend: " + backendName);
         }
