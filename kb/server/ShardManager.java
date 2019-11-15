@@ -19,6 +19,7 @@
 
 package grakn.core.kb.server;
 
+import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.Label;
 
 public interface ShardManager {
@@ -27,4 +28,5 @@ public interface ShardManager {
     void ackShardCommit(Label type, String txId);
     void ackCommit(String txId);
     boolean requiresLock(String txId);
+    Cache<Label, Long> shardCache();
 }

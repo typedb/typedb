@@ -173,8 +173,9 @@ public class TransactionOLTP implements Transaction {
         computeShardCandidates();
         String txId = this.janusTransaction.toString();
         //TODO: asks for a lock manager
+        boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
-        boolean lockRequired = session.attributeManager().requiresLock(txId)
+        boolean lockRequired = attributeLockRequired
                 || shardLockRequired
         // In this case we need to lock, so that other concurrent Transactions
         // that are trying to create new attributes will read an updated version of attributesCache
@@ -184,7 +185,10 @@ public class TransactionOLTP implements Transaction {
                 || cache().modifiedKeyRelations();
 
         if (lockRequired){
-            LOG.warn(txId + " is about to acquire a " + (shardLockRequired? "shard" : "") + " graphlock.");
+            LOG.warn(txId + " is about to acquire a " +
+                    (shardLockRequired? "shard/" : "") +
+                    (attributeLockRequired? "attribute" : "")
+                    + " graphlock.");
             session.graphLock().writeLock().lock();
         } else {
             LOG.warn(txId + " doesn't require a graphlock.");
@@ -258,12 +262,17 @@ public class TransactionOLTP implements Transaction {
             Label label = e.getKey();
             Long uncommittedCount = e.getValue();
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
-            long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
-            if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
-                shard(getType(label).id());
-                cache().getNewShards().put(label, instanceCount);
-                LOG.warn("Shard: " + label + " : " + instanceCount + " created");
-                setShardCheckpoint(label, instanceCount);
+            long lastShardCheckpoint = getShardCheckpoint(label);
+            if (instanceCount - lastShardCheckpoint >= typeShardThreshold) {
+
+                Long shardCheckpoint = session.shardManager().shardCache().getIfPresent(label);
+                if (shardCheckpoint == null || instanceCount - shardCheckpoint >= typeShardThreshold){
+                    shard(getType(label).id());
+                    LOG.warn("Shard: " + label + " : " + instanceCount + " created");
+                    cache().getNewShards().put(label, instanceCount);
+                    session.shardManager().shardCache().put(label, instanceCount);
+                    setShardCheckpoint(label, instanceCount);
+                }
             }
         });
     }

@@ -31,6 +31,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -450,11 +451,13 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSync() throws ExecutionException, InterruptedException {
-        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 250L);
+        long shardingThreshold = 250L;
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
         Session session = server.sessionWithNewKeyspace();
 
+        String entityLabel = "someEntity";
         try(Transaction tx = session.writeTransaction()){
-            tx.putEntityType("someEntity");
+            tx.putEntityType(entityLabel);
             tx.commit();
         }
         final int insertsPerCommit = 250;
@@ -467,9 +470,11 @@ public class TransactionOLTPIT {
         }
         GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
 
-        Transaction tx = session.writeTransaction();
-        final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
-        TestCase.assertEquals(statements.size(), noOfConcepts);
+        try(Transaction tx = session.writeTransaction()) {
+            final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
+            TestCase.assertEquals(noOfEntities, noOfConcepts);
+            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))));
+        }
         session.close();
     }
 
