@@ -62,7 +62,6 @@ import grakn.core.graph.graphdb.database.serialize.attribute.ParameterSerializer
 import grakn.core.graph.graphdb.database.serialize.attribute.SerializableSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.ShortArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.ShortSerializer;
-import grakn.core.graph.graphdb.database.serialize.attribute.StandardTransactionIdSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.StringArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.StringSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.TypeDefinitionDescriptionSerializer;
@@ -161,7 +160,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         //Needed for configuration and transaction logging
         registerClassInternal(64, Duration.class, new DurationSerializer());
         registerClassInternal(65, Instant.class, new InstantSerializer());
-        registerClassInternal(66, StandardTransactionId.class, new StandardTransactionIdSerializer());
         registerClassInternal(67, TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68, HashMap.class, new SerializableSerializer());
         registerClassInternal(69, GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));

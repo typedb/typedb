@@ -54,7 +54,7 @@ public class JanusGraphHadoopSetupImpl implements JanusGraphHadoopSetup {
     public JanusGraphHadoopSetupImpl(Configuration config) {
         scanConf = ModifiableHadoopConfiguration.of(JanusGraphHadoopConfiguration.MAPRED_NS, config);
         BasicConfiguration bc = scanConf.getJanusGraphConf();
-        graph = JanusGraphFactory.open(bc);
+        graph = JanusGraphFactory.open(bc.getConfiguration());
         tx = graph.buildTransaction().readOnly().vertexCacheSize(200).start();
     }
 
@@ -63,8 +63,7 @@ public class JanusGraphHadoopSetupImpl implements JanusGraphHadoopSetup {
         //Pre-load schema
         for (JanusGraphSchemaCategory sc : JanusGraphSchemaCategory.values()) {
             for (JanusGraphVertex k : QueryUtil.getVertices(tx, BaseKey.SchemaCategory, sc)) {
-                assert k instanceof JanusGraphSchemaVertex;
-                JanusGraphSchemaVertex s = (JanusGraphSchemaVertex)k;
+                JanusGraphSchemaVertex s = (JanusGraphSchemaVertex) k;
                 if (sc.hasName()) {
                     String name = s.name();
                     Preconditions.checkNotNull(name);
