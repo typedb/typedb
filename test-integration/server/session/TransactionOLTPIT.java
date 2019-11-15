@@ -474,7 +474,7 @@ public class TransactionOLTPIT {
             final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
             //NB the not exact value is a consequence of the fact that the shard is not always created when the instanceCount diff is equal exactly to shard threshold
-            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 5);
+            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 25);
         }
 
         assertFalse(session.shardManager().lockCandidatesPresent());
