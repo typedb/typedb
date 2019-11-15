@@ -24,6 +24,7 @@ import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
@@ -33,7 +34,7 @@ public interface ConceptManager {
     <T extends Concept> T buildConcept(Vertex vertex);
     <T extends Concept> T buildConcept(VertexElement vertex);
 
-    public Role getRole(String label);
+    Role getRole(String label);
 
-    public RelationType getRelationType(String label);
+    RelationType getRelationType(String label);
 }

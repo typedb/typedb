@@ -103,7 +103,7 @@ public final class ElementFactory {
         return new ShardImpl(shardOwner, newShardVertex);
     }
 
-    Shard getShard(Vertex vertex) {
+    public Shard getShard(Vertex vertex) {
         return new ShardImpl(buildVertexElement(vertex));
     }
 

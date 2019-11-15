@@ -25,6 +25,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.core.Schema;
+import grakn.core.graph.core.JanusGraph;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -51,29 +52,26 @@ import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
 import graql.lang.statement.Statement;
-import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
-import junit.framework.TestCase;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.hamcrest.core.IsInstanceOf;
-import grakn.core.graph.core.JanusGraph;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import junit.framework.TestCase;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.hamcrest.core.IsInstanceOf;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static graql.lang.Graql.define;
@@ -470,10 +468,10 @@ public class TransactionOLTPIT {
         }
         GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
         try(Transaction tx = session.writeTransaction()) {
-            final long noOfConcepts = tx.stream(Graql.parse("match $x isa someEntity;get;").asGet()).count();
+            final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
             //NB the not exact value is a consequence of the fact that the shard is not always created when the instanceCount diff is equal exactly to shard threshold
-            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 1);
+            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 5);
         }
         session.close();
     }
@@ -481,7 +479,6 @@ public class TransactionOLTPIT {
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
         Session localSession = server.sessionWithNewKeyspace();
-
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {

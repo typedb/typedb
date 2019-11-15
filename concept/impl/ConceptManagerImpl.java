@@ -35,6 +35,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -55,6 +56,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE;
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE_TYPE;
@@ -490,6 +492,18 @@ public class ConceptManagerImpl implements ConceptManager {
 
     public Role getRole(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
+    }
+
+    Shard getShardWithLock(String typeId) {
+        graphLock.readLock().lock();
+        Vertex shardVertex;
+        try {
+            Object currentShardId = elementFactory.getVertexWithId(typeId).property(Schema.VertexProperty.CURRENT_SHARD.name()).value();
+            shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
+        } finally {
+            graphLock.readLock().unlock();
+        }
+        return elementFactory.getShard(shardVertex);
     }
 
     public Rule getRule(String label) {
