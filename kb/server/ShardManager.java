@@ -23,7 +23,17 @@ import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.Label;
 
 /**
- * TODO
+ * When loading concurrently, we want to minimise the amount of locking needed for correctness and consistency.
+ * To be able to lock more effectively, we need to lock selectively based on the creation of shards of the same type.
+ *
+ * The idea is that if two transactions are about to insert a shard for the same type, we require them to acquire graph locks when committing.
+ * To do so we introduce the ShardManager. The ShardManager is a session-wide object used to resolve shard creation contention.
+ * Just before committing, all transactions are required to signal their need to create a new shard vertex to the ShardManager.
+ * The ShardManager then tracks the transaction shard requirements for specific types. This way it can find and resolve possible contention.
+ *
+ * When a transaction is about to commit, it polls the ShardManager if it needs to use a lock during commit.
+ * If the ShardManager finds at least two transactions with a shared shard vertex request, it will advise
+ * the competing transaction to use a lock when committing.
  */
 public interface ShardManager {
 

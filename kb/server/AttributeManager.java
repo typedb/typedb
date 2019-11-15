@@ -24,7 +24,18 @@ import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.ConceptId;
 
 /**
- * TODO
+ * When loading concurrently, we want to minimise the amount of locking needed for correctness and consistency.
+ * To be able to lock more effectively, we need to lock selectively based on the creation of identical attributes among different transaction.
+ *
+ * The idea is that if two transactions insert the same attribute, we require them to acquire graph locks when committing.
+ * To be able to recognise this situation taking place, we introduce the AttributeManager. The AttributeManager is a session-wide
+ * object used to manage attribute mutations. All transactions must report their attribute insertions, deletions and commits to the AttributeManager.
+ * The AttributeManager then tracks the attribute mutations as well as txs in which the mutations took place. By logging this information the AttributeManager can then
+ * find and recognise possible contention. The contention resolution happens in the following way:
+ *
+ * When about to commit, each transaction polls the AttributeManager if it needs to use a lock during commit.
+ * If the AttributeManager finds at least two transactions with a shared attribute, it will advise the competing transactions
+ * to use a lock when committing.
  */
 public interface AttributeManager {
 
