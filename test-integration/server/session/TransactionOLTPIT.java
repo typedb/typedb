@@ -451,7 +451,7 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSync() throws ExecutionException, InterruptedException {
-        long shardingThreshold = 250L;
+        long shardingThreshold = 200L;
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
         Session session = server.sessionWithNewKeyspace();
 
@@ -460,20 +460,20 @@ public class TransactionOLTPIT {
             tx.putEntityType(entityLabel);
             tx.commit();
         }
-        final int insertsPerCommit = 250;
+        final int insertsPerCommit = 200;
         final int noOfEntities = 100000;
         final int threads = 8;
 
         List<Statement> statements = new ArrayList<>();
         for (int i = 0 ; i < noOfEntities ; i++){
-            statements.add(Graql.var().isa("someEntity"));
+            statements.add(Graql.var().isa(entityLabel));
         }
         GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
-
         try(Transaction tx = session.writeTransaction()) {
-            final long noOfConcepts = tx.execute(Graql.parse("compute count in thing;").asComputeStatistics()).get(0).number().longValue();
+            final long noOfConcepts = tx.stream(Graql.parse("match $x isa someEntity;get;").asGet()).count();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
-            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))));
+            //NB the not exact value is a consequence of the fact that the shard is not always created when the instanceCount diff is equal exactly to shard threshold
+            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 1);
         }
         session.close();
     }
