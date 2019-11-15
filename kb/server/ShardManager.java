@@ -23,8 +23,8 @@ import grakn.core.kb.concept.api.Label;
 
 public interface ShardManager {
 
-    void ackShardRequirement(Label type, String txId);
-    void ackShardCreation(Label type, String txId);
+    void ackShardRequest(Label type, String txId);
+    void ackShardCommit(Label type, String txId);
     void ackCommit(String txId);
     boolean requiresLock(String txId);
 }

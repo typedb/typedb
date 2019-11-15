@@ -72,6 +72,8 @@ public class TransactionCache {
     private final Set<Thing> inferredConcepts = new HashSet<>();
     private final Set<Thing> inferredConceptsToPersist = new HashSet<>();
 
+    private Map<Label, Long> newShards = new HashMap<>();
+
     //New attributes are tracked so that we can merge any duplicate attributes at commit time.
     // The label, index and id are directly cached to prevent unneeded reads
     private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
@@ -299,6 +301,10 @@ public class TransactionCache {
 
     public Map<Pair<Label, String>, ConceptId> getNewAttributes() {
         return newAttributes;
+    }
+
+    public Map<Label, Long> getNewShards() {
+        return newShards;
     }
 
     //--------------------------------------- Concepts Needed For Validation -------------------------------------------

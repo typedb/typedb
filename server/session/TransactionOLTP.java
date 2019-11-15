@@ -35,12 +35,12 @@ import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
-import grakn.core.kb.concept.structure.GraknElementException;
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.core.Schema;
+import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graql.executor.QueryExecutorImpl;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -54,23 +54,24 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.server.cache.CacheProviderImpl;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.server.Validator;
+import grakn.core.server.cache.CacheProviderImpl;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlCompute;
@@ -81,21 +82,6 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import grakn.core.graph.core.JanusGraphTransaction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -105,6 +91,19 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A TransactionOLTP that wraps a Tinkerpop OLTP transaction, using JanusGraph as a vendor backend.
@@ -174,8 +173,9 @@ public class TransactionOLTP implements Transaction {
         computeShardCandidates();
         String txId = this.janusTransaction.toString();
         //TODO: asks for a lock manager
+        boolean shardLockRequired = session.shardManager().requiresLock(txId);
         boolean lockRequired = session.attributeManager().requiresLock(txId)
-                || session.shardManager().requiresLock(txId)
+                || shardLockRequired
         // In this case we need to lock, so that other concurrent Transactions
         // that are trying to create new attributes will read an updated version of attributesCache
         // Not locking here might lead to concurrent transactions reading the attributesCache that still
@@ -184,8 +184,10 @@ public class TransactionOLTP implements Transaction {
                 || cache().modifiedKeyRelations();
 
         if (lockRequired){
-            LOG.warn(txId + " is about to acquire a graphlock.");
+            LOG.warn(txId + " is about to acquire a " + (shardLockRequired? "shard" : "") + " graphlock.");
             session.graphLock().writeLock().lock();
+        } else {
+            LOG.warn(txId + " doesn't require a graphlock.");
         }
         try {
             createNewTypeShardsWhenThresholdReached();
@@ -205,9 +207,13 @@ public class TransactionOLTP implements Transaction {
         LOG.trace("Graph is valid. Committing graph...");
         janusTransaction.commit();
         String txId = this.janusTransaction.toString();
-        session.attributeManager().ackCommit(txId);
+
         session.shardManager().ackCommit(txId);
-        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeDelete(p.second(), txId));
+        cache().getNewShards().keySet().forEach(s -> session.shardManager().ackShardCommit(s, txId));
+
+        session.attributeManager().ackCommit(txId);
+        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeCommit(p.second(), txId));
+
         LOG.trace("Graph committed.");
     }
 
@@ -232,23 +238,31 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void computeShardCandidates() {
-        uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
+        uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
+                .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))
+                .forEach(e -> {
+            Label label = e.getKey();
+            Long uncommittedCount = e.getValue();
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
-                session().shardManager().ackShardRequirement(label, this.janusTransaction.toString());
+                session().shardManager().ackShardRequest(label, this.janusTransaction.toString());
             }
         });
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
-        uncomittedStatisticsDelta.instanceDeltas().forEach((label, uncommittedCount) -> {
+        uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
+                .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))
+                .forEach(e -> {
+            Label label = e.getKey();
+            Long uncommittedCount = e.getValue();
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.instanceDeltas().get(label) + uncommittedCount;
             long lastShardCheckpointForThisInstance = getShardCheckpoint(label);
             if (instanceCount - lastShardCheckpointForThisInstance >= typeShardThreshold) {
-                LOG.trace(label + " has a count of " + instanceCount + ". last sharding happens at " + lastShardCheckpointForThisInstance + ". Will create a new shard.");
                 shard(getType(label).id());
-                session().shardManager().ackShardCreation(label, this.janusTransaction.toString());
+                cache().getNewShards().put(label, instanceCount);
+                LOG.warn("Shard: " + label + " : " + instanceCount + " created");
                 setShardCheckpoint(label, instanceCount);
             }
         });

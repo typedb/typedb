@@ -26,17 +26,17 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ShardManagerImpl implements ShardManager {
 
-    private final ConcurrentHashMap<Label, Set<String>> ephemeralShardCache;
+    private final ConcurrentHashMap<Label, Set<String>> shardRequests;
     private final Set<String> lockCandidates;
 
     public ShardManagerImpl(){
-        this.ephemeralShardCache = new ConcurrentHashMap<>();
+        this.shardRequests = new ConcurrentHashMap<>();
         this.lockCandidates = ConcurrentHashMap.newKeySet();
     }
 
     @Override
-    public void ackShardRequirement(Label type, String txId) {
-        ephemeralShardCache.compute(type, (lab, entry) -> {
+    public void ackShardRequest(Label type, String txId) {
+        shardRequests.compute(type, (ind, entry) -> {
             if (entry == null) {
                 Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
@@ -44,15 +44,15 @@ public class ShardManagerImpl implements ShardManager {
             }
             else{
                 entry.add(txId);
-                lockCandidates.addAll(entry);
+                if (entry.size() > 1) lockCandidates.addAll(entry);
                 return entry;
             }
         });
     }
 
     @Override
-    public void ackShardCreation(Label type, String txId) {
-        ephemeralShardCache.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
+    public void ackShardCommit(Label type, String txId) {
+        shardRequests.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
             if (existingValue.isEmpty()) return null;
             existingValue.remove(txId);
             return existingValue;

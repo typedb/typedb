@@ -29,6 +29,7 @@ public interface AttributeManager {
 
     void ackAttributeInsert(String index, String txId);
     void ackAttributeDelete(String index, String txId);
+    void ackAttributeCommit(String index, String txId);
     void ackCommit(String txId);
 
     boolean requiresLock(String txId);

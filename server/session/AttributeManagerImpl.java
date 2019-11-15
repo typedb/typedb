@@ -62,7 +62,7 @@ public class AttributeManagerImpl implements AttributeManager {
             }
             else{
                 entry.add(txId);
-                lockCandidates.addAll(entry);
+                if (entry.size() > 1) lockCandidates.addAll(entry);
                 return entry;
             }
         });
@@ -75,6 +75,11 @@ public class AttributeManagerImpl implements AttributeManager {
             existingValue.remove(txId);
             return existingValue;
         });
+    }
+
+    @Override
+    public void ackAttributeCommit(String index, String txId) {
+        ackAttributeDelete(index, txId);
     }
 
     @Override

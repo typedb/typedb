@@ -450,14 +450,14 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSync() throws ExecutionException, InterruptedException {
-        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 500L);
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, 250L);
         Session session = server.sessionWithNewKeyspace();
 
         try(Transaction tx = session.writeTransaction()){
             tx.putEntityType("someEntity");
             tx.commit();
         }
-        final int insertsPerCommit = 500;
+        final int insertsPerCommit = 250;
         final int noOfEntities = 100000;
         final int threads = 8;
 
