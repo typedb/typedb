@@ -19,9 +19,7 @@
 package grakn.core.graph.core;
 
 import grakn.core.graph.core.schema.JanusGraphManagement;
-import grakn.core.graph.graphdb.configuration.JanusGraphConstants;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.util.Gremlin;
 
 /**
  * JanusGraph graph database implementation of the Blueprint's interface.
@@ -153,15 +151,4 @@ public interface JanusGraph extends Graph {
      */
     @Override
     void close() throws JanusGraphException;
-
-    /**
-     * The version of this JanusGraph graph database
-     */
-    static String version() {
-        return JanusGraphConstants.VERSION;
-    }
-
-    static void main(String[] args) {
-        System.out.println("JanusGraph " + JanusGraph.version() + ", Apache TinkerPop " + Gremlin.version());
-    }
 }

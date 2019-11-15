@@ -30,8 +30,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVEntryMutation;
-import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
@@ -54,18 +52,19 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
     /**
      * Buffers graph mutations locally up to the specified number before persisting them against the storage backend.
      */
-    private final int persistChunkSize;
+    private final int bufferSize;
     private final Duration maxWriteTime;
 
     private int numMutations;
     private final Map<KCVSCache, Map<StaticBuffer, KCVEntryMutation>> mutations;
 
-    public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int persistChunkSize, Duration maxWriteTime, boolean batchLoading) {
+    public CacheTransaction(StoreTransaction tx, KeyColumnValueStoreManager manager, int bufferSize, Duration maxWriteTime, boolean batchLoading) {
+        Preconditions.checkArgument(bufferSize > 0, "Buffer size must be positive");
         this.tx = tx;
         this.manager = manager;
         this.batchLoading = batchLoading;
         this.numMutations = 0;
-        this.persistChunkSize = persistChunkSize;
+        this.bufferSize = bufferSize;
         this.maxWriteTime = maxWriteTime;
         this.mutations = new HashMap<>(2);
     }
@@ -89,7 +88,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
 
         numMutations += m.getTotalMutations();
 
-        if (batchLoading && numMutations >= persistChunkSize) {
+        if (batchLoading && numMutations >= bufferSize) {
             flushInternal();
         }
     }
@@ -136,7 +135,7 @@ public class CacheTransaction implements StoreTransaction, LoggableTransaction {
                     if (mutationsForKey.getValue().isEmpty()) continue;
                     sub.put(mutationsForKey.getKey(), convert(mutationsForKey.getValue()));
                     numSubMutations += mutationsForKey.getValue().getTotalMutations();
-                    if (numSubMutations >= persistChunkSize) {
+                    if (numSubMutations >= bufferSize) {
                         numSubMutations = persist(subMutations);
                         sub.clear();
                         subMutations.put(storeMutations.getKey().getName(), sub);

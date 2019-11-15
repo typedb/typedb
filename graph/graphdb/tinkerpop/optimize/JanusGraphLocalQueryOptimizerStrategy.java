@@ -85,7 +85,7 @@ public class JanusGraphLocalQueryOptimizerStrategy extends AbstractTraversalStra
 
             Step nextStep = JanusGraphTraversalUtil.getNextNonIdentityStep(vertexStep);
             if (nextStep instanceof RangeGlobalStep) {
-                final int limit = QueryUtil.convertLimit(((RangeGlobalStep) nextStep).getHighRange());
+                int limit = QueryUtil.convertLimit(((RangeGlobalStep) nextStep).getHighRange());
                 vertexStep.setLimit(0, QueryUtil.mergeHighLimits(limit, vertexStep.getHighLimit()));
             }
 
