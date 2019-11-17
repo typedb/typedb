@@ -462,7 +462,7 @@ public class TransactionOLTPIT {
             tx.commit();
         }
         final int insertsPerCommit = 200;
-        final int noOfEntities = 100000;
+        final int noOfEntities = 80000;
         final int threads = 8;
 
         List<Statement> statements = new ArrayList<>();
@@ -473,8 +473,8 @@ public class TransactionOLTPIT {
         try(Transaction tx = session.writeTransaction()) {
             final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
-            //NB the not exact value is a consequence of the fact that the shard is not always created when the instanceCount diff is equal exactly to shard threshold
-            assertEquals(noOfEntities/shardingThreshold, tx.getShardCount(tx.getType(Label.of(entityLabel))), 25);
+            //NB one extra shard comes from the fact that if we have <shardThreshold> number of instances we will have 2 shards (instance count equal to thresh triggers sharding)
+            assertEquals(noOfEntities/shardingThreshold + 1, tx.getShardCount(tx.getType(Label.of(entityLabel))));
         }
 
         assertFalse(session.shardManager().lockCandidatesPresent());

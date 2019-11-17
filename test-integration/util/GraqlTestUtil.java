@@ -128,7 +128,7 @@ public class GraqlTestUtil {
                                   int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
         int listSize = statements.size();
-        int listChunk = listSize / threads + 1;
+        int listChunk = listSize / threads;
 
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         for (int threadNo = 0; threadNo < threads; threadNo++) {
@@ -146,14 +146,14 @@ public class GraqlTestUtil {
                 for (Statement statement : subList) {
                     GraqlInsert insert = Graql.insert(statement);
                     tx.execute(insert);
+                    inserted++;
                     if (inserted % insertsPerCommit == 0) {
                         tx.commit();
                         inserted = 0;
                         tx = session.writeTransaction();
                     }
-                    inserted++;
                 }
-                tx.commit();
+                if (inserted != 0) tx.commit();
                 System.out.println("Thread: " + Thread.currentThread().getId() + " elements: " + subList.size() + " time: " + (System.currentTimeMillis() - start2));
                 return null;
             }, executorService);

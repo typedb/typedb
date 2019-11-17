@@ -25,7 +25,7 @@ import grakn.core.kb.concept.api.ConceptId;
 
 /**
  * When loading concurrently, we want to minimise the amount of locking needed for correctness and consistency.
- * To be able to lock more effectively, we need to lock selectively based on the creation of identical attributes among different transaction.
+ * To be able to lock more effectively, we need to lock selectively based on the creation of identical attributes among different transactions.
  *
  * The idea is that if two transactions insert the same attribute, we require them to acquire graph locks when committing.
  * To be able to recognise this situation taking place, we introduce the AttributeManager. The AttributeManager is a session-wide
