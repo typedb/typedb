@@ -107,7 +107,7 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     }
 
     private GraphTraversal<Element, Vertex> reifiedRelationTraversal(Transaction tx, Collection<Variable> vars) {
-        GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.identity());
+        GraphTraversal<Element, Vertex> traversal = Fragments.isVertex(__.start());
 
         GraphTraversal<Element, Edge> edgeTraversal = traversal.outE(ROLE_PLAYER.getLabel()).as(edge().symbol());
 
@@ -123,7 +123,7 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
             Transaction tx, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
 
-        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
+        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.start());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), tx);

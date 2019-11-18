@@ -199,7 +199,7 @@ public class Fragments {
      * This avoids issues with unchecked varargs.
      */
     static <S, E> GraphTraversal<S, E> union(Iterable<GraphTraversal<? super S, ? extends E>> traversals) {
-        return union(__.identity(), traversals);
+        return union(__.start(), traversals);
     }
 
     /**
