@@ -162,35 +162,39 @@ public class TransactionOLTP implements Transaction {
         this.transactionCache.updateSchemaCacheFromKeyspaceCache();
     }
 
-
     /**
-     * This method handles 3 committing scenarios:
-     * - use a lock to serialise all commits that are trying to create new attributes, so that we can merge real-time
-     * - use a lock to serialise commits that are removing attributes, so concurrent txs don't use outdated attribute IDs from attributesCache
-     * - don't lock when added or removed attributes are not involved
+     * This method handles the following committing scenarios:
+     * - use a lock to serialise commits if two given txs try to insert the same attribute
+     * - use a lock to serialise commits if two given txs try to insert a shard for the same type that
+     * - use a lock if there is a tx that deletes attributes
+     * - use a lock if there is a tx that mutates key implicit relations
+     * - otherwise do not lock
+     * @return true if graph lock need to be acquired for commit
      */
-    private void commitInternal() throws InvalidKBException {
-        computeShardCandidates();
+    private boolean commitLockRequired(){
         String txId = this.janusTransaction.toString();
-        //TODO: asks for a lock manager
         boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
         boolean lockRequired = attributeLockRequired
                 || shardLockRequired
-        // In this case we need to lock, so that other concurrent Transactions
-        // that are trying to create new attributes will read an updated version of attributesCache
-        // Not locking here might lead to concurrent transactions reading the attributesCache that still
-        // contains attributes that we are removing in this transaction.
+                // In this case we need to lock, so that other concurrent Transactions
+                // that are trying to create new attributes will read an updated version of attributesCache
+                // Not locking here might lead to concurrent transactions reading the attributesCache that still
+                // contains attributes that we are removing in this transaction.
                 || !cache().getRemovedAttributes().isEmpty()
                 || cache().modifiedKeyRelations();
-
-        if (lockRequired){
-            LOG.warn(txId + " is about to acquire a " + (shardLockRequired? "shard/" : "") +
-                    (attributeLockRequired? "attribute" : "") + " graphlock.");
-            session.graphLock().writeLock().lock();
+        if (lockRequired) {
+            LOG.warn(txId + " is about to acquire a " + (shardLockRequired ? "shard/" : "") +
+                    (attributeLockRequired ? "attribute" : "") + " graphlock.");
         } else {
             LOG.warn(txId + " doesn't require a graphlock.");
         }
+        return lockRequired;
+    }
+
+    private void commitInternal() throws InvalidKBException {
+        boolean lockRequired = commitLockRequired();
+        if (lockRequired) session.graphLock().writeLock().lock();
         try {
             createNewTypeShardsWhenThresholdReached();
             if (!cache().getNewAttributes().isEmpty()) mergeAttributes();
@@ -210,10 +214,7 @@ public class TransactionOLTP implements Transaction {
         janusTransaction.commit();
         String txId = this.janusTransaction.toString();
 
-        cache().getNewShards().forEach((label, count) -> {
-            session.shardManager().ackShardCommit(label, txId);
-            session.shardManager().shardCache().put(label, count);
-        });
+        cache().getNewShards().forEach((label, count) -> session.shardManager().ackShardCommit(label, txId));
         session.shardManager().ackCommit(txId);
 
         session.attributeManager().ackCommit(txId);
@@ -243,38 +244,37 @@ public class TransactionOLTP implements Transaction {
     }
 
     private void computeShardCandidates() {
+        String txId = this.janusTransaction.toString();
         uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))
                 .forEach(e -> {
             Label label = e.getKey();
             Long uncommittedCount = e.getValue();
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncommittedCount;
-            long lastShardCheckpoint = getShardCheckpoint(label);
-            if (instanceCount - lastShardCheckpoint >= typeShardThreshold) {
-                session().shardManager().ackShardRequest(label, this.janusTransaction.toString());
+            long hardCheckpoint = getShardCheckpoint(label);
+            if (instanceCount - hardCheckpoint >= typeShardThreshold) {
+                LOG.warn(txId + " requests a shard for type: " + label + ", instance count: " + instanceCount);
+                session().shardManager().ackShardRequest(label, txId);
+                //update cache to signal fulfillment of shard request later at commit time
+                cache().getNewShards().put(label, instanceCount);
             }
         });
     }
 
     private void createNewTypeShardsWhenThresholdReached() {
-        uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
-                .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))
-                .forEach(e -> {
-            Label label = e.getKey();
-            Long uncommittedCount = e.getValue();
-            long instanceCount = session.keyspaceStatistics().count(this, label) + uncommittedCount;
-            long lastShardCheckpoint = getShardCheckpoint(label);
-            if (instanceCount - lastShardCheckpoint >= typeShardThreshold) {
-                String txId = this.janusTransaction.toString();
-                Long shardCheckpoint = session.shardManager().shardCache().getIfPresent(label);
-                if (shardCheckpoint == null || instanceCount - shardCheckpoint >= typeShardThreshold){
-                    LOG.warn(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount);
-                    shard(getType(label).id());
-                    setShardCheckpoint(label, instanceCount);
-                }
-                //update cache to signal fulfillment of shard request later at commit
-                cache().getNewShards().put(label, instanceCount);
-            }
+        String txId = this.janusTransaction.toString();
+        cache().getNewShards()
+                .forEach((label, count) -> {
+                    Long softCheckPoint = session.shardManager().shardCache().getIfPresent(label);
+                    long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.delta(label);
+                    if (softCheckPoint == null || instanceCount - softCheckPoint >= typeShardThreshold) {
+                        session.shardManager().shardCache().put(label, instanceCount);
+                        LOG.warn(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount + " ,");
+                        shard(getType(label).id());
+                        setShardCheckpoint(label, instanceCount);
+                    } else {
+                        LOG.warn(txId + " omits shard creation for type: " + label + ", instance count: " + instanceCount);
+                    }
         });
     }
 
@@ -1084,6 +1084,7 @@ public class TransactionOLTP implements Transaction {
         try {
             checkMutationAllowed();
             removeInferredConcepts();
+            computeShardCandidates();
 
             // lock on the keyspace cache shared between concurrent tx's to the same keyspace
             // force serialized updates, keeping Janus and our KeyspaceCache in sync

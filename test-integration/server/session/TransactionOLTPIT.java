@@ -449,7 +449,7 @@ public class TransactionOLTPIT {
         }
     }
 
-    private void loadEntitiesConcurrentlyWithSpecificShardingThreshold(long shardingThreshold, int insertsPerCommit, long noOfEntities, int threads) throws ExecutionException, InterruptedException {
+    private void loadEntitiesConcurrentlyWithSpecificShardingThreshold(long shardingThreshold, int insertsPerCommit, long noOfEntities, int threads, double tol) throws ExecutionException, InterruptedException {
         Long oldThreshold = server.serverConfig().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
         Session session = server.sessionWithNewKeyspace();
@@ -468,7 +468,11 @@ public class TransactionOLTPIT {
             final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
             //NB one extra shard comes from the fact that if we have <shardThreshold> number of instances we will have 2 shards (instance count equal to thresh triggers sharding)
-            assertEquals(noOfEntities/shardingThreshold + 1, tx.getShardCount(tx.getType(Label.of(entityLabel))));
+            long expectedShards = noOfEntities/shardingThreshold + 1;
+            long createdShards = tx.getShardCount(tx.getType(Label.of(entityLabel)));
+            System.out.println("expected shards: " + expectedShards);
+            System.out.println("created shards: " + createdShards);
+            assertEquals(expectedShards, createdShards, tol*expectedShards);
         }
         assertFalse(session.shardManager().lockCandidatesPresent());
         assertFalse(session.shardManager().shardRequestsPresent());
@@ -478,17 +482,27 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenMultipleTXsCreateShards_shardingThresholdEqualToInsertSize_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
-        loadEntitiesConcurrentlyWithSpecificShardingThreshold(100L,100, 96000, 16);
+        //NB: in this configuration each tx should be creating a shard on commit provided it no other tx creates a shard at the same time
+        int threads = 16;
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(200L,200, 80000, 16, 1.0/threads);
     }
 
     @Test
     public void whenMultipleTXsCreateShards_shardingThresholdMultipleOfInsertSize_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
-        loadEntitiesConcurrentlyWithSpecificShardingThreshold(200L,50, 96000, 16);
+        //NB: in this configuration each thread creates a shard every 4 txs provided it no other tx creates a shard at the same time
+        int threads = 16;
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(400L,100, 80000, threads, 1.0/threads);
     }
 
     @Test
     public void whenMultipleTXsCreateShards_insertSizeMultipleOfShardingThreshold_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
-        loadEntitiesConcurrentlyWithSpecificShardingThreshold(50L,200, 96000, 16);
+        int threads = 16;
+        //NB: here within a single tx, we exceed the sharding threshold multiple times. In such scenario we don't create multiple shards - we create a single one.
+        //Hence the final number of shards will be ~<shardingThreshold>/<insertsPerCommit> * <noOfEntities>/<shardingThreshold>
+        long threshold = 100L;
+        int insertsPerCommit = 400;
+        double tol = 1.0 - (double )threshold/insertsPerCommit + 1.0/threads;
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(100L, 400, 80000, threads, tol);
     }
 
     @Test
