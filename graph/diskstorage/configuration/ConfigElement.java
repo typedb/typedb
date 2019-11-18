@@ -174,7 +174,6 @@ public abstract class ConfigElement {
     }
 
     public static PathIdentifier parse(ConfigNamespace root, String path) {
-        Preconditions.checkNotNull(root);
         if (StringUtils.isBlank(path)) return new PathIdentifier(root, new String[]{}, false);
         String[] components = getComponents(path);
         Preconditions.checkArgument(components.length > 0, "Empty path provided: %s", path);
@@ -188,7 +187,6 @@ public abstract class ConfigElement {
                 lastIsUmbrella = true;
             } else {
                 last = parent.getChild(components[i]);
-                Preconditions.checkArgument(last != null, "Unknown configuration element in namespace [%s]: %s", parent.toString(), components[i]);
                 if (i + 1 < components.length) {
                     Preconditions.checkArgument(last instanceof ConfigNamespace, "Expected namespace at position [%s] of [%s] but got: %s", i, path, last);
                     parent = (ConfigNamespace) last;
@@ -212,11 +210,6 @@ public abstract class ConfigElement {
             this.element = element;
             this.umbrellaElements = umbrellaElements;
         }
-
-        public boolean hasUmbrellaElements() {
-            return umbrellaElements.length > 0;
-        }
-
     }
 
 

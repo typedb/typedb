@@ -606,6 +606,36 @@ public class GraphDatabaseConfiguration {
                     "that the LOG implementation supports TTL.",
             ConfigOption.Type.GLOBAL, Duration.class, sd -> null != sd && !sd.isZero());
 
+
+    //########## KCVSLog Configuration Options #############
+
+    public static final ConfigOption<Duration> LOG_MAX_WRITE_TIME = new ConfigOption<>(LOG_NS, "max-write-time",
+            "Maximum time in ms to try persisting LOG messages against the backend before failing.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(10000L));
+
+    public static final ConfigOption<Duration> LOG_MAX_READ_TIME = new ConfigOption<>(LOG_NS, "max-read-time",
+            "Maximum time in ms to try reading LOG messages from the backend before failing.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(4000L));
+
+    public static final ConfigOption<Duration> LOG_READ_LAG_TIME = new ConfigOption<>(LOG_NS, "read-lag-time",
+            "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become" +
+                    "visible in the storage backend in this amount of time, a LOG reader might miss the message.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(500L));
+
+    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<>(LOG_NS, "key-consistent",
+            "Whether to require consistency for LOG reading and writing messages to the storage backend",
+            ConfigOption.Type.MASKABLE, false);
+
+    // KCVSLogManager
+    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<>(LOG_NS, "fixed-partition",
+            "Whether all LOG entries are written to one fixed partition even if the backend store is partitioned." +
+                    "This can cause imbalanced loads and should only be used on low volume logs",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS, "max-partitions",
+            "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0 and a power of 2.",
+            ConfigOption.Type.FIXED, Integer.class, integer -> integer != null && integer > 0 && NumberUtil.isPowerOf2(integer));
+
     // ################ Begin Class Definition #######################
     // ###############################################################
 

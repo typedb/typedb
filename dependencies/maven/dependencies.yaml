@@ -311,9 +311,3 @@ dependencies:
     javatuples:
       version: "1.2"
       lang: java
-
-# Remove the following as soon as config are refactored
-  org.reflections:
-    reflections:
-      version: "0.9.11"
-      lang: java

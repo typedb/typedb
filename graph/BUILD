@@ -39,7 +39,6 @@ java_library(
         "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/commons-collections:commons-collections",
-        "//dependencies/maven/artifacts/org/reflections:reflections",
         "//dependencies/maven/artifacts/com/fasterxml/jackson/core:jackson-databind"
     ],
     runtime_deps = [

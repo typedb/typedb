@@ -27,14 +27,14 @@ import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
-import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
-import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 
 import java.time.Duration;
-import java.util.UUID;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_FIXED_PARTITION;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_KEY_CONSISTENT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
@@ -47,6 +47,9 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * Builder for {@link GraphDatabaseConfiguration}
  */
 public class MergedConfigurationBuilder {
+
+    private final static AtomicLong instanceCounter = new AtomicLong(0);
+
 
     /**
      * This methods merges the 3 configurations into 1 and provides a wrapper configuration: GraphDatabase config
@@ -70,8 +73,9 @@ public class MergedConfigurationBuilder {
         return new MergedConfiguration(overwrite, combinedConfig);
     }
 
+    // This used to be way more fancy in the original Janus, but for Grakn usecase it doesnt need to be fancy for now
     private static String uniqueGraphId(){
-        return UUID.randomUUID().toString();
+        return String.valueOf(instanceCounter.incrementAndGet());
     }
 
 
@@ -97,12 +101,12 @@ public class MergedConfigurationBuilder {
         Preconditions.checkArgument(!combinedConfig.has(LOG_SEND_DELAY, MANAGEMENT_LOG) ||
                 combinedConfig.get(LOG_SEND_DELAY, MANAGEMENT_LOG).isZero(), "Send delay must be 0 for system LOG.");
         overwrite.set(LOG_SEND_DELAY, Duration.ZERO, MANAGEMENT_LOG);
-        Preconditions.checkArgument(!combinedConfig.has(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG) ||
-                combinedConfig.get(KCVSLog.LOG_KEY_CONSISTENT, MANAGEMENT_LOG), "Management LOG must be configured to be key-consistent");
-        overwrite.set(KCVSLog.LOG_KEY_CONSISTENT, true, MANAGEMENT_LOG);
-        Preconditions.checkArgument(!combinedConfig.has(KCVSLogManager.LOG_FIXED_PARTITION, MANAGEMENT_LOG)
-                || combinedConfig.get(KCVSLogManager.LOG_FIXED_PARTITION, MANAGEMENT_LOG), "Fixed partitions must be enabled for management LOG");
-        overwrite.set(KCVSLogManager.LOG_FIXED_PARTITION, true, MANAGEMENT_LOG);
+        Preconditions.checkArgument(!combinedConfig.has(LOG_KEY_CONSISTENT, MANAGEMENT_LOG) ||
+                combinedConfig.get(LOG_KEY_CONSISTENT, MANAGEMENT_LOG), "Management LOG must be configured to be key-consistent");
+        overwrite.set(LOG_KEY_CONSISTENT, true, MANAGEMENT_LOG);
+        Preconditions.checkArgument(!combinedConfig.has(LOG_FIXED_PARTITION, MANAGEMENT_LOG)
+                || combinedConfig.get(LOG_FIXED_PARTITION, MANAGEMENT_LOG), "Fixed partitions must be enabled for management LOG");
+        overwrite.set(LOG_FIXED_PARTITION, true, MANAGEMENT_LOG);
     }
 
 }
