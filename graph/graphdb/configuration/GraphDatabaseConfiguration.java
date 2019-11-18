@@ -430,6 +430,10 @@ public class GraphDatabaseConfiguration {
                     "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
 
+    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<>(
+            GraphDatabaseConfiguration.IDS_NS, "num-partitions",
+            "Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE, 10);
+
     // ################ IDAUTHORITY ###################
     // ################################################
 

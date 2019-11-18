@@ -38,13 +38,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static grakn.core.graph.util.datastructures.ByteSize.GUAVA_CACHE_ENTRY_SIZE;
-import static grakn.core.graph.util.datastructures.ByteSize.OBJECT_HEADER;
-import static grakn.core.graph.util.datastructures.ByteSize.OBJECT_REFERENCE;
-import static grakn.core.graph.util.datastructures.ByteSize.STATICARRAYBUFFER_RAW_SIZE;
-
-
 public class KCVSExpirationCache extends KCVSCache {
+
+    private static final int GUAVA_CACHE_ENTRY_SIZE = 104;
+    private static final int OBJECT_HEADER = 12;
+    private static final int OBJECT_REFERENCE = 8;
+    private static final int STATICARRAYBUFFER_RAW_SIZE = OBJECT_HEADER + 2*4 + 6 + (OBJECT_REFERENCE + OBJECT_HEADER + 8); // 6 = overhead & padding, (byte[] array)
 
     //Weight estimation
     private static final int STATIC_ARRAY_BUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length

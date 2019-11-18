@@ -35,7 +35,6 @@ import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.util.stats.NumberUtil;
-import grakn.core.graph.util.system.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -244,8 +243,6 @@ public class KCVSLogManager implements LogManager {
          * LOG.close() -> manager.closedLog(LOG) -> openLogs.remove(LOG.getName()).
          */
         for (KCVSLog log : ImmutableMap.copyOf(openLogs).values()) log.close();
-
-        IOUtils.closeQuietly(serializer);
     }
 
 }
