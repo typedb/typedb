@@ -290,7 +290,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = executorFactory..stream(match.get(projectedVars), infer);
+            Stream<ConceptMap> answers = executorFactory.transactional(transaction, infer).match(match);
             answerStream = answers
                     .flatMap(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream(answer))
                     .collect(toList()).stream();
@@ -306,7 +306,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Void delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = transaction.stream(query.match(), infer)
+        Stream<ConceptMap> answers = executorFactory.transactional(transaction, infer).match(query.match())
                 .map(result -> result.project(query.vars()))
                 .distinct();
 
