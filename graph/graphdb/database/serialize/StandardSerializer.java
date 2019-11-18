@@ -44,6 +44,7 @@ import grakn.core.graph.graphdb.database.serialize.attribute.ByteArraySerializer
 import grakn.core.graph.graphdb.database.serialize.attribute.ByteSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharacterSerializer;
+import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DurationSerializer;
@@ -78,13 +79,11 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-//import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
-
 
 public class StandardSerializer implements AttributeHandler, Serializer {
 
@@ -115,7 +114,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         registerClassInternal(14, Character.class, new CharacterSerializer());
         registerClassInternal(15, Boolean.class, new BooleanSerializer());
-//        registerClassInternal(16, Date.class, new DateSerializer());
+        registerClassInternal(16, Date.class, new DateSerializer());
 
         registerClassInternal(18, String.class, new StringSerializer()); //supports null serialization
         registerClassInternal(19, Float.class, new FloatSerializer());
