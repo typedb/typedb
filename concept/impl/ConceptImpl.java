@@ -39,18 +39,21 @@ import java.util.stream.Stream;
  */
 public abstract class ConceptImpl implements Concept, ConceptVertex {
     private final VertexElement vertexElement;
-    ConceptManagerImpl conceptManager;
+    final ConceptManagerImpl conceptManager;
     final ConceptObserver conceptObserver;
 
     //WARNING: DO not flush the current shard into the central cache. It is not safe to do so in a concurrent environment
-    private final ConceptCache<Shard> currentShard = new ConceptCache<>(() -> conceptManager.getShardWithLock(vertex().element().id().toString()));
-    private final ConceptCache<Long> shardCount = new ConceptCache<>(() -> shards().count());
-    private final ConceptCache<ConceptId> conceptId = new ConceptCache<>(() -> Schema.conceptId(vertex().element()));
+    private final ConceptCache<Shard> currentShard;
+    private final ConceptCache<Long> shardCount;
+    private final ConceptCache<ConceptId> conceptId;
 
     ConceptImpl(VertexElement vertexElement, ConceptManagerImpl conceptManager, ConceptObserver conceptObserver) {
         this.vertexElement = vertexElement;
         this.conceptManager = conceptManager;
         this.conceptObserver = conceptObserver;
+        this.currentShard = new ConceptCache<>(() -> conceptManager.getShardWithLock(vertex().element().id().toString()));
+        this.shardCount = new ConceptCache<>(() -> shards().count());
+        this.conceptId = new ConceptCache<>(() -> Schema.conceptId(vertex().element()));
     }
 
     @Override
