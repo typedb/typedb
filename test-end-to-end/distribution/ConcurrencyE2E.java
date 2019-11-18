@@ -196,12 +196,6 @@ public class ConcurrencyE2E {
         executorService.shutdown();
     }
 
-    private static String generateString(int length) {
-        final boolean useLetters = true;
-        final boolean useNumbers = true;
-        return RandomStringUtils.random(length, useLetters, useNumbers);
-    }
-
     private static List<Record> generateRecords(int size, int noOfAttributes){
         List<Record> records = new ArrayList<>();
         for(int i = 0 ; i < size ; i++){
@@ -209,7 +203,7 @@ public class ConcurrencyE2E {
             attributes.add(new AttributeElement("attribute0", i));
             attributes.add(new AttributeElement("attribute1", i % 2 ==0? "even" : "odd"));
             for(int attributeNo = 2; attributeNo < noOfAttributes ; attributeNo++){
-                attributes.add(new AttributeElement("attribute" + attributeNo, generateString(attributeNo+5)));
+                attributes.add(new AttributeElement("attribute" + attributeNo, RandomStringUtils.random(attributeNo+5, true, true)));
             }
             records.add(new Record("someEntity", attributes));
         }

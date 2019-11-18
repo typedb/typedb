@@ -249,8 +249,8 @@ public class TransactionOLTP implements Transaction {
             Label label = e.getKey();
             Long uncommittedCount = e.getValue();
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncommittedCount;
-            long lasShardCheckpoint = getShardCheckpoint(label);
-            if (instanceCount - lasShardCheckpoint >= typeShardThreshold) {
+            long lastShardCheckpoint = getShardCheckpoint(label);
+            if (instanceCount - lastShardCheckpoint >= typeShardThreshold) {
                 session().shardManager().ackShardRequest(label, this.janusTransaction.toString());
             }
         });
