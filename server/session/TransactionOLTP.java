@@ -210,8 +210,11 @@ public class TransactionOLTP implements Transaction {
         janusTransaction.commit();
         String txId = this.janusTransaction.toString();
 
+        cache().getNewShards().forEach((label, count) -> {
+            session.shardManager().ackShardCommit(label, txId);
+            session.shardManager().shardCache().put(label, count);
+        });
         session.shardManager().ackCommit(txId);
-        cache().getNewShards().keySet().forEach(s -> session.shardManager().ackShardCommit(s, txId));
 
         session.attributeManager().ackCommit(txId);
         cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeCommit(p.second(), txId));
@@ -265,9 +268,8 @@ public class TransactionOLTP implements Transaction {
                 String txId = this.janusTransaction.toString();
                 Long shardCheckpoint = session.shardManager().shardCache().getIfPresent(label);
                 if (shardCheckpoint == null || instanceCount - shardCheckpoint >= typeShardThreshold){
-                    shard(getType(label).id());
                     LOG.warn(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount);
-                    session.shardManager().shardCache().put(label, instanceCount);
+                    shard(getType(label).id());
                     setShardCheckpoint(label, instanceCount);
                 }
                 //update cache to signal fulfillment of shard request later at commit

@@ -462,9 +462,8 @@ public class TransactionOLTPIT {
             tx.commit();
         }
         final int insertsPerCommit = 200;
-        final int noOfEntities = 80000;
-        final int threads = 8;
-
+        final int noOfEntities = 96000;
+        final int threads = 16;
         List<Statement> statements = new ArrayList<>();
         for (int i = 0 ; i < noOfEntities ; i++){
             statements.add(Graql.var().isa(entityLabel));
