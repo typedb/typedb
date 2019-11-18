@@ -22,12 +22,14 @@ import com.fasterxml.jackson.databind.util.StdDateFormat;
 import grakn.core.graph.diskstorage.ScanBuffer;
 import grakn.core.graph.diskstorage.WriteBuffer;
 import grakn.core.graph.graphdb.database.serialize.OrderPreservingSerializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
 import java.util.Date;
 
 public class DateSerializer implements OrderPreservingSerializer<Date> {
-
+    private static final Logger LOG = LoggerFactory.getLogger(DateSerializer.class);
     private final LongSerializer ls = LongSerializer.INSTANCE;
     private final StdDateFormat dateFormat = StdDateFormat.instance;
 
@@ -50,17 +52,18 @@ public class DateSerializer implements OrderPreservingSerializer<Date> {
 
     @Override
     public void writeByteOrder(WriteBuffer buffer, Date attribute) {
-        write(buffer,attribute);
+        write(buffer, attribute);
     }
 
     @Override
     public Date convert(Object value) {
         if (value instanceof Number && !(value instanceof Float) && !(value instanceof Double)) {
-            return new Date(((Number)value).longValue());
+            return new Date(((Number) value).longValue());
         } else if (value instanceof String) {
             try {
                 return dateFormat.parse((String) value);
-            } catch (ParseException ignored) {
+            } catch (ParseException p) {
+                LOG.warn("Parse exception trying to parse date.", p);
             }
         }
         return null;
