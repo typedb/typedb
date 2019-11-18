@@ -449,10 +449,8 @@ public class TransactionOLTPIT {
         }
     }
 
-    @Test
-    public void whenMultipleTXsCreateShards_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+    private void loadEntitiesConcurrentlyWithSpecificShardingThreshold(long shardingThreshold, int insertsPerCommit, long noOfEntities, int threads) throws ExecutionException, InterruptedException {
         Long oldThreshold = server.serverConfig().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
-        long shardingThreshold = 200L;
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
         Session session = server.sessionWithNewKeyspace();
 
@@ -461,9 +459,6 @@ public class TransactionOLTPIT {
             tx.putEntityType(entityLabel);
             tx.commit();
         }
-        final int insertsPerCommit = 200;
-        final int noOfEntities = 96000;
-        final int threads = 16;
         List<Statement> statements = new ArrayList<>();
         for (int i = 0 ; i < noOfEntities ; i++){
             statements.add(Graql.var().isa(entityLabel));
@@ -475,11 +470,20 @@ public class TransactionOLTPIT {
             //NB one extra shard comes from the fact that if we have <shardThreshold> number of instances we will have 2 shards (instance count equal to thresh triggers sharding)
             assertEquals(noOfEntities/shardingThreshold + 1, tx.getShardCount(tx.getType(Label.of(entityLabel))));
         }
-
         assertFalse(session.shardManager().lockCandidatesPresent());
         assertFalse(session.shardManager().shardRequestsPresent());
         session.close();
         server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, oldThreshold);
+    }
+
+    @Test
+    public void whenMultipleTXsCreateShards_shardingThresholdEqualToInsertSize_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(100L,100, 96000, 16);
+    }
+
+    @Test
+    public void whenMultipleTXsCreateShards_shardingThresholdMultipleOfInsertSize_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(200L,50, 96000, 16);
     }
 
     @Test
