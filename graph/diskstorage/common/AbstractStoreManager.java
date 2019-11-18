@@ -28,8 +28,6 @@ import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 
 import java.util.List;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_TRANSACTIONAL;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TIMESTAMPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_TTL;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORE_META_VISIBILITY;
@@ -41,17 +39,9 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 
 public abstract class AbstractStoreManager implements StoreManager {
 
-    protected final boolean transactional;
-    protected final boolean batchLoading;
     protected final Configuration storageConfig;
 
     public AbstractStoreManager(Configuration storageConfig) {
-        batchLoading = storageConfig.get(STORAGE_BATCH); // read from local config
-        boolean transactional = storageConfig.get(STORAGE_TRANSACTIONAL); // check both in global and local
-        if (batchLoading) {
-            transactional = false;
-        }
-        this.transactional = transactional;
         this.storageConfig = storageConfig;
     }
 

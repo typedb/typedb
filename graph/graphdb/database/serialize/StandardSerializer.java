@@ -76,7 +76,6 @@ import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Date;
@@ -180,7 +179,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(CLASS_REGISTRATION_OFFSET + registrationNo, datatype, serializer);
     }
 
-    public synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {
+    private synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {
         Preconditions.checkArgument(registrationNo > 0); //must be bigger than 0 since 0 is used to indicate null values
         Preconditions.checkNotNull(datatype);
         Preconditions.checkArgument(!handlers.containsKey(datatype), "DataType has already been registered: %s", datatype);
@@ -304,11 +303,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     @Override
     public DataOutput getDataOutput(int initialCapacity) {
         return new StandardDataOutput(initialCapacity);
-    }
-
-    @Override
-    public void close() throws IOException {
-        //Nothing to close
     }
 
     private class StandardDataOutput extends WriteByteBuffer implements DataOutput {

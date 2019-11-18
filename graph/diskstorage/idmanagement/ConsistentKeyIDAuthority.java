@@ -109,9 +109,6 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
     private final StandardBaseTransactionConfig.Builder storeTxConfigBuilder;
-    /**
-     * This belongs in JanusGraphConfig.
-     */
     private final TimestampProvider times;
 
     private final Duration rollbackWaitTime = Duration.ofMillis(200L);
@@ -128,7 +125,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
 
     private final Duration idApplicationWaitMS;
 
-    protected final String uid;
+    private final String uid;
     private final byte[] uidBytes;
 
     private final IDBlockSizer blockSizer;

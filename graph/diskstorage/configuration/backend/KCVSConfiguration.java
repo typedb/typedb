@@ -37,7 +37,6 @@ import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
-import grakn.core.graph.util.system.IOUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 
@@ -49,6 +48,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * This class provides READ and WRITE access to Configuration persisted into a KCVStore,
+ */
 
 public class KCVSConfiguration implements WriteConfiguration {
 
@@ -173,7 +175,6 @@ public class KCVSConfiguration implements WriteConfiguration {
         try {
             store.close();
             txProvider.close();
-            IOUtils.closeQuietly(serializer);
         } catch (BackendException e) {
             throw new JanusGraphException("Could not close configuration store", e);
         }

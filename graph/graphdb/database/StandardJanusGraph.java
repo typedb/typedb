@@ -67,6 +67,7 @@ import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
 import grakn.core.graph.graphdb.database.management.ManagementLogger;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalRelation;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
@@ -178,7 +179,7 @@ public class StandardJanusGraph implements JanusGraph {
 
 
         // Collaborators (Serializers)
-        this.serializer = config.getSerializer();
+        this.serializer = new StandardSerializer();
         StoreFeatures storeFeatures = backend.getStoreFeatures();
         this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer, this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
@@ -390,7 +391,6 @@ public class StandardJanusGraph implements JanusGraph {
 
             IOUtils.closeQuietly(idAssigner);
             IOUtils.closeQuietly(backend);
-            IOUtils.closeQuietly(serializer);
         } finally {
             isOpen = false;
         }
@@ -785,7 +785,7 @@ public class StandardJanusGraph implements JanusGraph {
 
                 try {
                     //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
-                    commitSummary = prepareCommit(addedRelations, deletedRelations, SCHEMA_FILTER, schemaMutator, tx);
+                    prepareCommit(addedRelations, deletedRelations, SCHEMA_FILTER, schemaMutator, tx);
                 } catch (Throwable e) {
                     //Roll back schema tx and escalate exception
                     schemaMutator.rollback();
@@ -844,7 +844,7 @@ public class StandardJanusGraph implements JanusGraph {
                         if (logTxIdentifier != null) {
                             try {
                                 userlogSuccess = false;
-                                final Log userLog = backend.getUserLog(logTxIdentifier);
+                                Log userLog = backend.getUserLog(logTxIdentifier);
                                 Future<Message> env = userLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {
                                     try {

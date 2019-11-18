@@ -34,7 +34,6 @@ import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import java.time.Duration;
 import java.util.UUID;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOCK_LOCAL_MEDIATOR_GROUP;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_BACKEND;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
@@ -63,10 +62,6 @@ public class MergedConfigurationBuilder {
         //Compute unique instance id
         ModifiableConfiguration overwrite = new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration());
         overwrite.set(UNIQUE_INSTANCE_ID, uniqueGraphId());
-        // If lock prefix is unspecified, specify it now
-        if (!localBasicConfiguration.has(LOCK_LOCAL_MEDIATOR_GROUP)) {
-            overwrite.set(LOCK_LOCAL_MEDIATOR_GROUP, storeManager.getName());
-        }
 
         StoreFeatures storeFeatures = storeManager.getFeatures();
         checkAndOverwriteTransactionLogConfiguration(combinedConfig, overwrite, storeFeatures);

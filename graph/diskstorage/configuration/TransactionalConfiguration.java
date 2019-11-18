@@ -27,7 +27,6 @@ import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class TransactionalConfiguration implements WriteConfiguration {
 
     private final WriteConfiguration config;
@@ -36,7 +35,6 @@ public class TransactionalConfiguration implements WriteConfiguration {
     private final Map<String, Object> writtenValues;
 
     public TransactionalConfiguration(WriteConfiguration config) {
-        Preconditions.checkNotNull(config);
         this.config = config;
         this.readValues = new HashMap<>();
         this.writtenValues = new HashMap<>();
