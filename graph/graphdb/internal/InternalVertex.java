@@ -18,7 +18,6 @@
 
 package grakn.core.graph.graphdb.internal;
 
-import com.google.common.base.Predicate;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
@@ -26,6 +25,7 @@ import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * Internal Vertex interface adding methods that should only be used by JanusGraph

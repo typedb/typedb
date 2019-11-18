@@ -39,9 +39,7 @@ import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.indexing.IndexEntry;
 import grakn.core.graph.diskstorage.indexing.IndexTransaction;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -87,7 +85,6 @@ import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import grakn.core.graph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -388,9 +385,8 @@ public class StandardJanusGraph implements JanusGraph {
                 }
             }
             tinkerTransaction.close();
-
-            IOUtils.closeQuietly(idAssigner);
-            IOUtils.closeQuietly(backend);
+            idAssigner.close();
+            backend.close();
         } finally {
             isOpen = false;
         }
