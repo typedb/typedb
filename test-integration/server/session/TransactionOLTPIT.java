@@ -487,6 +487,11 @@ public class TransactionOLTPIT {
     }
 
     @Test
+    public void whenMultipleTXsCreateShards_insertSizeMultipleOfShardingThreshold_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(50L,200, 96000, 16);
+    }
+
+    @Test
     public void whenMultipleTxsInsertAttributes_noGhostVerticesAreCreatedAndAttributeManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
         Session session = server.sessionWithNewKeyspace();
 
