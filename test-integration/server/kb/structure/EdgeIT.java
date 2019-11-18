@@ -84,13 +84,13 @@ public class EdgeIT {
         // create the transaction
         CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager, graph.toString());
 
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
+        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager, janusGraphTransaction.toString());
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
 
         tx = new TransactionOLTP(session, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
