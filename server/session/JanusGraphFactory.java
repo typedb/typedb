@@ -63,7 +63,7 @@ final public class JanusGraphFactory {
         this.config = config;
     }
 
-    public synchronized StandardJanusGraph openGraph(String keyspace) {
+    public StandardJanusGraph openGraph(String keyspace) {
         StandardJanusGraph janusGraph = configureGraph(keyspace, config);
         buildJanusIndexes(janusGraph);
         if (!strategiesApplied.getAndSet(true)) {
