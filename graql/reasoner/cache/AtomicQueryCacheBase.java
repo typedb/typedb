@@ -22,6 +22,8 @@ package grakn.core.graql.reasoner.cache;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -50,6 +52,10 @@ public abstract class AtomicQueryCacheBase<
 
     final private Set<ReasonerAtomicQuery> completeQueries = new HashSet<>();
     final private Set<QE> completeEntries = new HashSet<>();
+
+    AtomicQueryCacheBase(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(executorFactory, traversalPlanFactory);
+    }
 
     public boolean isDBComplete(ReasonerAtomicQuery query){
         return dbCompleteEntries.contains(queryToKey(query))

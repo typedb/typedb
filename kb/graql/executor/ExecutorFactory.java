@@ -17,20 +17,12 @@
  *
  */
 
-package grakn.core.kb.server.cache;
+package grakn.core.kb.graql.executor;
 
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
+import grakn.core.kb.server.Transaction;
 
-/**
- * Implemented CacheProvider as a provider to have a idempotent `get()` methods.
- * This ensures that if the provider is shared, everyone receives the same instances of the Caches
- */
-public interface CacheProvider {
+public interface ExecutorFactory {
+    ComputeExecutor compute();
 
-    RuleCache getRuleCache();
-
-    QueryCache getQueryCache();
-
-    TransactionCache getTransactionCache();
+    QueryExecutor transactional(Transaction transaction, boolean infer);
 }

@@ -23,7 +23,7 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.VertexElement;
 
 import java.util.stream.Stream;
@@ -35,8 +35,8 @@ import java.util.stream.Stream;
  * other entities via Relation
  */
 public class EntityImpl extends ThingImpl<Entity, EntityType> implements Entity {
-    public EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    public EntityImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public static EntityImpl from(Entity entity) {

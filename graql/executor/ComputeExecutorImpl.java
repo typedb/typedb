@@ -60,6 +60,8 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ComputeExecutor;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.Graql;
@@ -103,21 +105,22 @@ import static java.util.stream.Collectors.toSet;
 /**
  * A Graql Compute query executor
  */
-public class ComputeExecutor {
+public class ComputeExecutorImpl implements ComputeExecutor {
 
-    private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ComputeExecutorImpl.class);
     private ConceptManager conceptManager;
     private ExecutorFactory executorFactory;
     private HadoopGraph hadoopGraph;
     private KeyspaceStatistics keyspaceStatistics;
 
-    ComputeExecutor(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
+    ComputeExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
     }
 
+    @Override
     public Stream<Numeric> stream(GraqlCompute.Statistics query) {
         Graql.Token.Compute.Method method = query.method();
         if (method.equals(MIN) || method.equals(MAX) || method.equals(MEDIAN) || method.equals(SUM)) {
@@ -133,18 +136,22 @@ public class ComputeExecutor {
         }
     }
 
+    @Override
     public Stream<ConceptList> stream(GraqlCompute.Path query) {
         return runComputePath(query);
     }
 
+    @Override
     public Stream<ConceptSetMeasure> stream(GraqlCompute.Centrality query) {
         return runComputeCentrality(query);
     }
 
+    @Override
     public Stream<ConceptSet> stream(GraqlCompute.Cluster query) {
         return runComputeCluster(query);
     }
 
+    @Override
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
                                         @Nullable Set<LabelId> scope,
@@ -153,6 +160,7 @@ public class ComputeExecutor {
         return new OLAP(hadoopGraph).compute(program, mapReduce, scope, includesRolePlayerEdges);
     }
 
+    @Override
     public final ComputerResult compute(@Nullable VertexProgram<?> program,
                                         @Nullable MapReduce<?, ?, ?, ?, ?> mapReduce,
                                         @Nullable Set<LabelId> scope) {

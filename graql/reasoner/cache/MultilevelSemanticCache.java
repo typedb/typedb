@@ -25,17 +25,19 @@ import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.statement.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -44,6 +46,10 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<ReasonerAtomicQuery>, IndexedAnswerSet> {
+
+    public MultilevelSemanticCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(executorFactory, traversalPlanFactory);
+    }
 
     @Override public UnifierType unifierType() { return UnifierType.STRUCTURAL;}
 

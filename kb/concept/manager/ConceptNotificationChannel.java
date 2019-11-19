@@ -36,27 +36,29 @@ import grakn.core.kb.concept.structure.Casting;
 import java.util.List;
 import java.util.function.Supplier;
 
-public interface ConceptObserver {
+public interface ConceptNotificationChannel {
+    void subscribe(ConceptObserver conceptObserver);
+
     void thingDeleted(Thing thing);
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
     // when the edge is not inferred, which is probably most of the time
     void relationEdgeDeleted(RelationType edgeTypeDeleted, boolean isInferredEdge, Supplier<Concept> wrappingConceptGetter);
+    void castingDeleted(Casting casting);
+    void deleteReifiedOwner(Relation owner);
 
     void schemaConceptDeleted(SchemaConcept schemaConcept);
+    void roleDeleted(Role role);
+    void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
 
     <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred);
-
     void relationCreated(Relation relation, boolean isInferred);
-
     void entityCreated(Entity entity, boolean isInferred);
-
     void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred);
+    void rolePlayerCreated(Casting casting);
 
     void ruleCreated(Rule rule);
-
     void roleCreated(Role role);
-
     void relationTypeCreated(RelationType relationType);
 
     /*
@@ -73,13 +75,5 @@ public interface ConceptObserver {
 
     void trackAttributeInstancesRolesPlayed(AttributeType attributeType);
 
-    void castingDeleted(Casting casting);
 
-    void deleteReifiedOwner(Relation owner);
-
-    void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole);
-
-    void roleDeleted(Role role);
-
-    void rolePlayerCreated(Casting casting);
 }

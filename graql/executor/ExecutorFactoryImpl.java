@@ -20,29 +20,36 @@
 package grakn.core.graql.executor;
 
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ComputeExecutor;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
-public class ExecutorFactory {
+public class ExecutorFactoryImpl implements ExecutorFactory {
 
     private final ConceptManager conceptManager;
     private HadoopGraph hadoopGraph;
     private KeyspaceStatistics keyspaceStatistics;
+    private TraversalPlanFactory traversalPlanFactory;
 
-    public ExecutorFactory(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
+        this.traversalPlanFactory = traversalPlanFactory;
     }
 
+    @Override
     public ComputeExecutor compute() {
-        return new ComputeExecutor(conceptManager, this, hadoopGraph, keyspaceStatistics);
+        return new ComputeExecutorImpl(conceptManager, this, hadoopGraph, keyspaceStatistics);
     }
 
+    @Override
     public QueryExecutor transactional(Transaction transaction, boolean infer) {
-        return new QueryExecutorImpl(transaction, conceptManager, this, infer);
+        return new QueryExecutorImpl(transaction, conceptManager, this, infer, traversalPlanFactory);
     }
 
 }

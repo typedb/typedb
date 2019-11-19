@@ -40,12 +40,12 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.keyspace.Keyspace;
@@ -387,6 +387,7 @@ public interface Transaction extends AutoCloseable{
     // TODO determine if this should be exposed via Tx or in other ways
     TraversalPlanFactory traversalPlanFactory();
     // TODO we may not want to expose both Executor and PlanFactory
+    ExecutorFactory executorFactory();
     QueryExecutor executor();
     QueryExecutor executor(boolean infer);
 

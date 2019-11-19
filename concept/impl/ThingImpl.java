@@ -37,7 +37,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -78,8 +78,8 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
         return type.orElseThrow(() -> GraknConceptException.noType(this));
     });
 
-    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptManager, conceptObserver);
+    ThingImpl(VertexElement vertexElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptManager, conceptNotificationChannel);
     }
 
     public boolean isInferred() {
@@ -105,7 +105,7 @@ public abstract class ThingImpl<T extends Thing, V extends Type> extends Concept
 
         if (!isDeleted())  {
             // must happen before deleteNode() so we can access properties on the vertex
-            conceptObserver.thingDeleted(this);
+            conceptNotificationChannel.thingDeleted(this);
         }
 
         this.edgeRelations().forEach(Concept::delete);

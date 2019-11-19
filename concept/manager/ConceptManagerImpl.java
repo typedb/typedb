@@ -45,6 +45,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.VertexElement;
@@ -92,13 +93,13 @@ public class ConceptManagerImpl implements ConceptManager {
 
     private ElementFactory elementFactory;
     private TransactionCache transactionCache;
-    private ConceptObserverImpl conceptObserver;
+    private ConceptNotificationChannel conceptNotificationChannel;
     private ReadWriteLock graphLock;
 
-    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserverImpl conceptObserver, ReadWriteLock graphLock) {
+    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptNotificationChannel conceptNotificationChannel, ReadWriteLock graphLock) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
-        this.conceptObserver = conceptObserver;
+        this.conceptNotificationChannel = conceptNotificationChannel;
         this.graphLock = graphLock;
     }
 
@@ -131,7 +132,7 @@ public class ConceptManagerImpl implements ConceptManager {
 
     public EntityType createEntityType(Label label, EntityType superType) {
         VertexElement vertex = createSchemaVertex(label, ENTITY_TYPE, false);
-        EntityTypeImpl entityType = new EntityTypeImpl(vertex, this, conceptObserver);
+        EntityTypeImpl entityType = new EntityTypeImpl(vertex, this, conceptNotificationChannel);
         entityType.createShard();
         entityType.sup(superType);
         transactionCache.cacheConcept(entityType);
@@ -155,7 +156,7 @@ public class ConceptManagerImpl implements ConceptManager {
     public <V> AttributeType<V> createAttributeType(Label label, AttributeType<V> superType, AttributeType.DataType<V> dataType) {
         VertexElement vertexElement = createSchemaVertex(label, ATTRIBUTE_TYPE, false);
         vertexElement.propertyImmutable(Schema.VertexProperty.DATA_TYPE, dataType, null, AttributeType.DataType::name);
-        AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptObserver);
+        AttributeType<V> attributeType = new AttributeTypeImpl<>(vertexElement, this, conceptNotificationChannel);
         attributeType.createShard();
         attributeType.sup(superType);
         transactionCache.cacheConcept(attributeType);
@@ -178,28 +179,28 @@ public class ConceptManagerImpl implements ConceptManager {
         VertexElement vertexElement = createSchemaVertex(label, RULE, false);
         vertexElement.propertyImmutable(Schema.VertexProperty.RULE_WHEN, when, null, Pattern::toString);
         vertexElement.propertyImmutable(Schema.VertexProperty.RULE_THEN, then, null, Pattern::toString);
-        RuleImpl rule = new RuleImpl(vertexElement, this, conceptObserver);
+        RuleImpl rule = new RuleImpl(vertexElement, this, conceptNotificationChannel);
         rule.sup(superType);
-        conceptObserver.ruleCreated(rule);
+        conceptNotificationChannel.ruleCreated(rule);
         transactionCache.cacheConcept(rule);
         return rule;
     }
 
 
     private RelationTypeImpl createRelationType(VertexElement vertex, RelationType superType) {
-        RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptObserver);
+        RelationTypeImpl relationType = new RelationTypeImpl(vertex, this, conceptNotificationChannel);
         relationType.createShard();
         relationType.sup(superType);
-        conceptObserver.relationTypeCreated(relationType);
+        conceptNotificationChannel.relationTypeCreated(relationType);
         transactionCache.cacheConcept(relationType);
         return relationType;
     }
 
     private RoleImpl createRole(VertexElement vertex, Role superType) {
-        RoleImpl role = new RoleImpl(vertex, this, conceptObserver);
+        RoleImpl role = new RoleImpl(vertex, this, conceptNotificationChannel);
         role.sup(superType);
         transactionCache.cacheConcept(role);
-        conceptObserver.roleCreated(role);
+        conceptNotificationChannel.roleCreated(role);
         return role;
     }
 
@@ -280,10 +281,10 @@ public class ConceptManagerImpl implements ConceptManager {
         String index = Schema.generateAttributeIndex(type.label(), convertedValue.toString());
         vertex.property(Schema.VertexProperty.INDEX, index);
 
-        AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptObserver);
+        AttributeImpl<V> newAttribute = new AttributeImpl<>(vertex, this, conceptNotificationChannel);
         newAttribute.type(TypeImpl.from(type));
 
-        conceptObserver.attributeCreated(newAttribute, value, isInferred);
+        conceptNotificationChannel.attributeCreated(newAttribute, value, isInferred);
         return newAttribute;
     }
 
@@ -299,10 +300,10 @@ public class ConceptManagerImpl implements ConceptManager {
         edge.propertyImmutable(Schema.EdgeProperty.RELATION_ROLE_VALUE_LABEL_ID, value, null, v -> v.labelId().getValue());
         edge.propertyImmutable(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID, relationType, null, t -> t.labelId().getValue());
 
-        RelationEdge relationEdge = new RelationEdge(edge, this, conceptObserver);
+        RelationEdge relationEdge = new RelationEdge(edge, this, conceptNotificationChannel);
         // because the Relation hierarchy is still wrong, RelationEdge and RelationImpl doesn't set type(type) like other instances do
         RelationImpl newRelation = new RelationImpl(relationEdge);
-        conceptObserver.hasAttributeRelationCreated(newRelation, isInferred);
+        conceptNotificationChannel.hasAttributeRelationCreated(newRelation, isInferred);
 
         return newRelation;
     }
@@ -315,7 +316,7 @@ public class ConceptManagerImpl implements ConceptManager {
     @Override
     public RelationStructure createRelationReified(VertexElement vertex, RelationType type) {
         preCheckForInstanceCreation(type);
-        RelationReified relationReified = new RelationReified(vertex, this, conceptObserver);
+        RelationReified relationReified = new RelationReified(vertex, this, conceptNotificationChannel);
         relationReified.type(TypeImpl.from(type));
         return relationReified;
     }
@@ -333,7 +334,7 @@ public class ConceptManagerImpl implements ConceptManager {
         RelationReified relationReified = (RelationReified) createRelationReified(vertex, type);
 
         RelationImpl newRelation = new RelationImpl(relationReified);
-        conceptObserver.relationCreated(newRelation, isInferred);
+        conceptNotificationChannel.relationCreated(newRelation, isInferred);
 
         return newRelation;
     }
@@ -346,10 +347,10 @@ public class ConceptManagerImpl implements ConceptManager {
     public EntityImpl createEntity(EntityType type, boolean isInferred) {
         preCheckForInstanceCreation(type);
         VertexElement vertex = createInstanceVertex(ENTITY, isInferred);
-        EntityImpl newEntity = new EntityImpl(vertex, this, conceptObserver);
+        EntityImpl newEntity = new EntityImpl(vertex, this, conceptNotificationChannel);
         newEntity.type(TypeImpl.from(type));
 
-        conceptObserver.entityCreated(newEntity, isInferred);
+        conceptNotificationChannel.entityCreated(newEntity, isInferred);
 
         return newEntity;
     }
@@ -597,31 +598,31 @@ public class ConceptManagerImpl implements ConceptManager {
             Concept concept;
             switch (type) {
                 case RELATION:
-                    concept = new RelationImpl(new RelationReified(vertexElement, this, conceptObserver));
+                    concept = new RelationImpl(new RelationReified(vertexElement, this, conceptNotificationChannel));
                     break;
                 case TYPE:
-                    concept = new TypeImpl(vertexElement, this, conceptObserver);
+                    concept = new TypeImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case ROLE:
-                    concept = new RoleImpl(vertexElement, this, conceptObserver);
+                    concept = new RoleImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case RELATION_TYPE:
-                    concept = new RelationTypeImpl(vertexElement, this, conceptObserver);
+                    concept = new RelationTypeImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case ENTITY:
-                    concept = new EntityImpl(vertexElement, this, conceptObserver);
+                    concept = new EntityImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case ENTITY_TYPE:
-                    concept = new EntityTypeImpl(vertexElement, this, conceptObserver);
+                    concept = new EntityTypeImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case ATTRIBUTE_TYPE:
-                    concept = new AttributeTypeImpl(vertexElement, this, conceptObserver);
+                    concept = new AttributeTypeImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case ATTRIBUTE:
-                    concept = new AttributeImpl(vertexElement, this, conceptObserver);
+                    concept = new AttributeImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 case RULE:
-                    concept = new RuleImpl(vertexElement, this, conceptObserver);
+                    concept = new RuleImpl(vertexElement, this, conceptNotificationChannel);
                     break;
                 default:
                     throw GraknConceptException.unknownConceptType(type.name());
@@ -652,7 +653,7 @@ public class ConceptManagerImpl implements ConceptManager {
             Concept concept;
             switch (label) {
                 case ATTRIBUTE:
-                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptObserver));
+                    concept = new RelationImpl(new RelationEdge(edgeElement, this, conceptNotificationChannel));
                     break;
                 default:
                     throw GraknConceptException.unknownConceptType(label.name());
@@ -671,7 +672,7 @@ public class ConceptManagerImpl implements ConceptManager {
     public RelationImpl buildRelation(EdgeElement edge) {
         ConceptId conceptId = Schema.conceptId(edge.element());
         if (!transactionCache.isConceptCached(conceptId)) {
-            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptObserver));
+            RelationImpl relation = new RelationImpl(new RelationEdge(edge, this, conceptNotificationChannel));
             transactionCache.cacheConcept(relation);
             return relation;
         } else {

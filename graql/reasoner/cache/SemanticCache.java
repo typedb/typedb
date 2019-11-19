@@ -23,22 +23,24 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.rule.RuleUtils;
-import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import graql.lang.statement.Variable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
-
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.util.stream.Collectors.toSet;
 
@@ -79,6 +81,10 @@ public abstract class SemanticCache<
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
 
     UnifierType semanticUnifier(){ return UnifierType.RULE;}
+
+    SemanticCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory) {
+        super(executorFactory, traversalPlanFactory);
+    }
 
     @Override
     public boolean isComplete(ReasonerAtomicQuery query){

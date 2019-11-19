@@ -19,7 +19,6 @@
 
 package grakn.core.concept.manager;
 
-import grakn.core.concept.impl.RelationEdge;
 import grakn.core.concept.impl.RelationImpl;
 import grakn.core.concept.impl.RelationReified;
 import grakn.core.concept.impl.ThingImpl;
@@ -39,7 +38,6 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptObserver;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
-import grakn.core.kb.server.cache.CacheProvider;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
@@ -61,10 +59,10 @@ public class ConceptObserverImpl implements ConceptObserver {
     private RuleCache ruleCache;
     private UncomittedStatisticsDelta statistics;
 
-    public ConceptObserverImpl(CacheProvider cacheProvider, UncomittedStatisticsDelta statistics) {
-        this.transactionCache = cacheProvider.getTransactionCache();
-        this.queryCache = cacheProvider.getQueryCache();
-        this.ruleCache = cacheProvider.getRuleCache();
+    public ConceptObserverImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, UncomittedStatisticsDelta statistics) {
+        this.transactionCache = transactionCache;
+        this.queryCache = queryCache;
+        this.ruleCache = ruleCache;
         this.statistics = statistics;
     }
 
@@ -127,7 +125,8 @@ public class ConceptObserverImpl implements ConceptObserver {
         }
     }
 
-    <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
+    @Override
+    public <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
         Type type = attribute.type();
         //Track the attribute by index
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
@@ -135,28 +134,34 @@ public class ConceptObserverImpl implements ConceptObserver {
         thingCreated(attribute, isInferred);
     }
 
-    void relationCreated(Relation relation, boolean isInferred) {
+    @Override
+    public void relationCreated(Relation relation, boolean isInferred) {
         transactionCache.addNewRelation(relation);
         thingCreated(relation, isInferred);
     }
 
-    void entityCreated(Entity entity, boolean isInferred) {
+    @Override
+    public void entityCreated(Entity entity, boolean isInferred) {
         thingCreated(entity, isInferred);
     }
 
-    void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
+    @Override
+    public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
         thingCreated(hasAttributeRelation, isInferred);
     }
 
-    void ruleCreated(Rule rule) {
+    @Override
+    public void ruleCreated(Rule rule) {
         transactionCache.trackForValidation(rule);
     }
 
-    void roleCreated(Role role) {
+    @Override
+    public void roleCreated(Role role) {
         transactionCache.trackForValidation(role);
     }
 
-    void relationTypeCreated(RelationType relationType) {
+    @Override
+    public void relationTypeCreated(RelationType relationType) {
         transactionCache.trackForValidation(relationType);
     }
 

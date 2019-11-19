@@ -21,18 +21,18 @@ package grakn.core.graql.reasoner.cache;
 
 import com.google.common.base.Equivalence;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.server.Transaction;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
 import grakn.core.graql.reasoner.explanation.LookupExplanation;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
+import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.graql.reasoner.unifier.UnifierType;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.reasoner.cache.CacheEntry;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -50,8 +50,12 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
 
     private final ReasonerQueryEquivalence equivalence = ReasonerQueryEquivalence.StructuralEquivalence;
     private final Map<Equivalence.Wrapper<Q>, CacheEntry<Q, GraqlTraversal>> structCache;
+    private ExecutorFactory executorFactory;
+    private TraversalPlanFactory traversalPlanFactory;
 
-    StructuralCache(){
+    StructuralCache(ExecutorFactory executorFactory, TraversalPlanFactory traversalPlanFactory){
+        this.executorFactory = executorFactory;
+        this.traversalPlanFactory = traversalPlanFactory;
         this.structCache = new HashMap<>();
     }
 
@@ -61,8 +65,6 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
      */
     public Stream<ConceptMap> get(Q query){
         Equivalence.Wrapper<Q> structQuery = equivalence.wrap(query);
-        Transaction tx = query.tx();
-        TraversalPlanFactory planFactory = tx.traversalPlanFactory();
 
         CacheEntry<Q, GraqlTraversal> match = structCache.get(structQuery);
         if (match != null){
@@ -74,15 +76,15 @@ public class StructuralCache<Q extends ReasonerQueryImpl>{
 
             ReasonerQueryImpl transformedQuery = equivalentQuery.transformIds(idTransform);
 
-            return tx.executor().traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
+            return executorFactory.transactional(null, true).traverse(transformedQuery.getPattern(), traversal.transform(idTransform))
                     .map(unifier::apply)
                     .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
         }
 
-        GraqlTraversal traversal = planFactory.createTraversal(query.getPattern());
+        GraqlTraversal traversal = traversalPlanFactory.createTraversal(query.getPattern());
         structCache.put(structQuery, new CacheEntry<>(query, traversal));
 
-        return tx.executor().traverse(query.getPattern(), traversal)
+        return executorFactory.transactional(null, true).traverse(query.getPattern(), traversal)
                 .map(a -> a.explain(new LookupExplanation(), query.getPattern()));
     }
 

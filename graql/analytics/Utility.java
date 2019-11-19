@@ -19,13 +19,12 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Sets;
-import grakn.core.graql.executor.ExecutorFactory;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import graql.lang.Graql;
 import org.apache.tinkerpop.gremlin.process.computer.KeyValue;
 import org.apache.tinkerpop.gremlin.structure.Vertex;

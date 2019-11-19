@@ -29,7 +29,7 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class RelationEdge implements RelationStructure {
 
     private final EdgeElement edgeElement;
     private final ConceptManager conceptManager;
-    private ConceptObserver conceptObserver;
+    private ConceptNotificationChannel conceptNotificationChannel;
 
     private final ConceptCache<RelationType> relationType = new ConceptCache<>(() ->
             conceptManager().getSchemaConcept(LabelId.of(edge().property(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID))));
@@ -67,10 +67,10 @@ public class RelationEdge implements RelationStructure {
     private final ConceptCache<Thing> owner = new ConceptCache<>(() -> conceptManager().buildConcept(edge().source()));
     private final ConceptCache<Thing> value = new ConceptCache<>(() -> conceptManager().buildConcept(edge().target()));
 
-    public RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, ConceptObserver conceptObserver) {
+    public RelationEdge(EdgeElement edgeElement, ConceptManager conceptManager, ConceptNotificationChannel conceptNotificationChannel) {
         this.edgeElement = edgeElement;
         this.conceptManager = conceptManager;
-        this.conceptObserver = conceptObserver;
+        this.conceptNotificationChannel = conceptNotificationChannel;
     }
 
     private EdgeElement edge() {
@@ -156,7 +156,7 @@ public class RelationEdge implements RelationStructure {
     public void delete() {
         if (!isDeleted()) {
             Supplier<Concept> conceptRetriever = () -> conceptManager.getConcept(id());
-            conceptObserver.relationEdgeDeleted(this.type(), this.isInferred(), conceptRetriever);
+            conceptNotificationChannel.relationEdgeDeleted(this.type(), this.isInferred(), conceptRetriever);
             edge().delete();
         }
     }

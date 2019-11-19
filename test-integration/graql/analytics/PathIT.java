@@ -19,7 +19,7 @@
 package grakn.core.graql.analytics;
 
 import com.google.common.collect.Lists;
-import grakn.core.graql.executor.ExecutorFactory;
+import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptList;
@@ -29,6 +29,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.exception.InvalidKBException;
@@ -486,7 +487,7 @@ public class PathIT {
         }
 
         try (Transaction tx = session.readTransaction()) {
-            ExecutorFactory executorFactory = new ExecutorFactory(tx.conceptManager(), null, null);
+            ExecutorFactory executorFactory = new ExecutorFactoryImpl(tx.conceptManager(), null, null, tx.traversalPlanFactory());
             List<ConceptList> allPaths;
 
             // Path from power3 to power3

@@ -24,7 +24,7 @@ import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
@@ -44,8 +44,8 @@ import java.util.stream.Stream;
 public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implements RelationType {
     private final ConceptCache<Set<Role>> cachedRelates = new ConceptCache<>(() -> this.<Role>neighbours(Direction.OUT, Schema.EdgeLabel.RELATES).collect(Collectors.toSet()));
 
-    public RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptObserver conceptObserver) {
-        super(vertexElement, conceptBuilder, conceptObserver);
+    public RelationTypeImpl(VertexElement vertexElement, ConceptManager conceptBuilder, ConceptNotificationChannel conceptNotificationChannel) {
+        super(vertexElement, conceptBuilder, conceptNotificationChannel);
     }
 
     public static RelationTypeImpl from(RelationType relationType) {
@@ -100,7 +100,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
         // pass relation type, role, and castings to observer for validation
         List<Casting> conceptsPlayingRole = roleTypeImpl.rolePlayers().collect(Collectors.toList());
-        conceptObserver.relationRoleUnrelated(this, role, conceptsPlayingRole);
+        conceptNotificationChannel.relationRoleUnrelated(this, role, conceptsPlayingRole);
 
         //Remove from internal cache
         cachedRelates.ifCached(set -> set.remove(role));
@@ -115,7 +115,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
     public void delete() {
         cachedRelates.get().forEach(r -> {
             RoleImpl role = ((RoleImpl) r);
-            conceptObserver.roleDeleted(role);
+            conceptNotificationChannel.roleDeleted(role);
             ((RoleImpl) r).deleteCachedRelationType(this);
         });
 
@@ -124,7 +124,7 @@ public class RelationTypeImpl extends TypeImpl<RelationType, Relation> implement
 
     @Override
     void trackRolePlayers() {
-        conceptObserver.trackRelationInstancesRolePlayers(this);
+        conceptNotificationChannel.trackRelationInstancesRolePlayers(this);
     }
 
     @Override

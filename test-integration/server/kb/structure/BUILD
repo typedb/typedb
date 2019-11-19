@@ -28,6 +28,7 @@ java_test(
         "//concept/structure",
         "//concept/manager",
         "//core",
+        "//common",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",

@@ -22,5 +22,5 @@ package grakn.core.kb.graql.planning;
 import graql.lang.pattern.Pattern;
 
 public interface TraversalPlanFactory {
-    public GraqlTraversal createTraversal(Pattern pattern);
+    GraqlTraversal createTraversal(Pattern pattern);
 }

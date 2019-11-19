@@ -24,18 +24,18 @@ import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.answer.Answer;
 import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.AnswerUtil;
+import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
@@ -98,14 +98,12 @@ public class QueryExecutorImpl implements QueryExecutor {
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    public QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer) {
+    QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer, TraversalPlanFactory traversalPlanFactory) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.infer = infer;
         this.transaction = transaction;
-
-        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction, conceptManager, transaction.shardingThreshold(), transaction.session().keyspaceStatistics());
-
+        this.traversalPlanFactory = traversalPlanFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
 

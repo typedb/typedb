@@ -36,14 +36,10 @@ import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.graql.executor.ExecutorFactory;
-import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.concept.structure.GraknElementException;
-import grakn.core.kb.concept.structure.PropertyNotUniqueException;
+import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.core.Schema;
-import grakn.core.graql.executor.QueryExecutorImpl;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
-import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -57,17 +53,18 @@ import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.VertexElement;
-import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
-import grakn.core.server.cache.CacheProviderImpl;
-import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.InvalidKBException;
 import grakn.core.kb.server.exception.TransactionException;
@@ -137,9 +134,12 @@ public class TransactionImpl implements Transaction {
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
+    private TraversalPlanFactory traversalPlanFactory;
 
     public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
-                           CacheProviderImpl cacheProvider, UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory) {
+                           TransactionCache transactionCache, MultilevelSemanticCache queryCache, RuleCache ruleCache,
+                           UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory,
+                           TraversalPlanFactory traversalPlanFactory) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -148,10 +148,11 @@ public class TransactionImpl implements Transaction {
 
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
+        this.traversalPlanFactory = traversalPlanFactory;
 
-        this.transactionCache = cacheProvider.getTransactionCache();
-        this.queryCache = cacheProvider.getQueryCache();
-        this.ruleCache = cacheProvider.getRuleCache();
+        this.transactionCache = transactionCache;
+        this.queryCache = queryCache;
+        this.ruleCache = ruleCache;
         // TODO remove temporal coupling
         this.ruleCache.setTx(this);
 
@@ -1147,16 +1148,6 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public final QueryExecutor executor() {
-        return executorFactory.transactional(this, true);
-    }
-
-    @Override
-    public final QueryExecutor executor(boolean infer) {
-        return executorFactory.transactional(this, infer);
-    }
-
-    @Override
     public Stream<ConceptMap> stream(MatchClause matchClause) {
         return executor().match(matchClause);
     }
@@ -1207,11 +1198,26 @@ public class TransactionImpl implements Transaction {
         return conceptManager;
     }
 
-
     @Override
     public TraversalPlanFactory traversalPlanFactory() {
-        return new TraversalPlanFactoryImpl(conceptManager, shardingThreshold(), session.keyspaceStatistics());
+        return traversalPlanFactory;
     }
+
+    @Override
+    public ExecutorFactory executorFactory() {
+        return executorFactory;
+    }
+
+    @Override
+    public final QueryExecutor executor() {
+        return executorFactory.transactional(this, true);
+    }
+
+    @Override
+    public final QueryExecutor executor(boolean infer) {
+        return executorFactory.transactional(this, infer);
+    }
+
 
     @Override
     public PropertyExecutorFactory propertyExecutorFactory() {
