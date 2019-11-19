@@ -39,7 +39,6 @@ import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SparseWeightedGraph;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.pattern.Conjunction;
@@ -75,7 +74,6 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static final Logger LOG = LoggerFactory.getLogger(TraversalPlanFactoryImpl.class);
 
     private static final int MAX_STARTING_POINTS = 3;
-    private Transaction tx;
     private ConceptManager conceptManager;
     private long shardingThreshold;
     private KeyspaceStatistics keyspaceStatistics;
@@ -118,7 +116,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                 .flatMap(EquivalentFragmentSet::stream).collect(Collectors.toSet());
 
         // if role players' types are known, we can infer the types of the relation, adding label & isa fragments
-        Set<Fragment> inferredFragments = inferRelationTypes(tx, allFragments);
+        Set<Fragment> inferredFragments = inferRelationTypes(conceptManager, allFragments);
         allFragments.addAll(inferredFragments);
 
         // convert fragments into nodes - some fragments create virtual middle nodes to ensure the Janus edge is traversed
