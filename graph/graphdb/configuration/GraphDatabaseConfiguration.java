@@ -28,10 +28,8 @@ import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
-import grakn.core.graph.diskstorage.configuration.converter.ReadConfigurationConverter;
 import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
 import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
@@ -636,7 +634,7 @@ public class GraphDatabaseConfiguration {
     private final Configuration configuration;
     private final ReadConfiguration configurationAtOpen;
     private final String uniqueGraphId;
-    private final StoreFeatures storeFeatures;
+    private final boolean isDistributed;
 
     private boolean flushIDs;
     private boolean forceIndexUsage;
@@ -652,12 +650,37 @@ public class GraphDatabaseConfiguration {
     private String unknownIndexKeyName;
 
 
-    public GraphDatabaseConfiguration(ReadConfiguration configurationAtOpen, Configuration configuration, StoreFeatures storeFeatures) {
+    public GraphDatabaseConfiguration(ReadConfiguration configurationAtOpen, Configuration configuration, boolean isDistributed) {
         this.configurationAtOpen = configurationAtOpen;
         this.uniqueGraphId = configuration.get(UNIQUE_INSTANCE_ID);
         this.configuration = configuration;
-        this.storeFeatures = storeFeatures;
-        preLoadConfiguration();
+        this.isDistributed = isDistributed;
+        this.flushIDs = configuration.get(IDS_FLUSH);
+        this.forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
+        this.batchLoading = configuration.get(STORAGE_BATCH);
+
+        //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
+        if (batchLoading) {
+            defaultSchemaMaker = new DisableDefaultSchemaMaker();
+        } else {
+            defaultSchemaMaker = new JanusGraphDefaultSchemaMaker();
+        }
+
+        this.txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
+        //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
+        if (configuration.has(TX_DIRTY_SIZE)) {
+            txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
+        } else {
+            txDirtyVertexSize = batchLoading ? TX_DIRTY_SIZE_DEFAULT_WITH_BATCH : TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
+        }
+
+        this.propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
+        this.useMultiQuery = configuration.get(USE_MULTIQUERY);
+        this.batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
+        this.adjustQueryLimit = configuration.get(ADJUST_LIMIT);
+        this.logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
+
+        this.unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
     }
 
     public static ModifiableConfiguration buildGraphConfiguration() {
@@ -695,7 +718,7 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasPropertyPrefetching() {
         if (propertyPrefetching == null) {
-            return getStoreFeatures().isDistributed();
+            return isDistributed;
         } else {
             return propertyPrefetching;
         }
@@ -729,45 +752,15 @@ public class GraphDatabaseConfiguration {
         return configuration;
     }
 
-    public StoreFeatures getStoreFeatures() {
-        return storeFeatures;
-    }
-
     public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {
         return new StandardSchemaCache(retriever);
     }
 
     public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {
-        return ReadConfigurationConverter.getInstance().convert(configurationAtOpen);
-    }
-
-    private void preLoadConfiguration() {
-        flushIDs = configuration.get(IDS_FLUSH);
-        forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
-        batchLoading = configuration.get(STORAGE_BATCH);
-
-        //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
-        if (batchLoading) {
-            defaultSchemaMaker = new DisableDefaultSchemaMaker();
-        } else {
-            defaultSchemaMaker = new JanusGraphDefaultSchemaMaker();
+        BaseConfiguration result = new BaseConfiguration();
+        for (String k : configurationAtOpen.getKeys("")) {
+            result.setProperty(k, configurationAtOpen.get(k, Object.class));
         }
-
-        txVertexCacheSize = configuration.get(TX_CACHE_SIZE);
-        //Check for explicit dirty vertex cache size first, then fall back on batch-loading-dependent default
-        if (configuration.has(TX_DIRTY_SIZE)) {
-            txDirtyVertexSize = configuration.get(TX_DIRTY_SIZE);
-        } else {
-            txDirtyVertexSize = batchLoading ? TX_DIRTY_SIZE_DEFAULT_WITH_BATCH :
-                    TX_DIRTY_SIZE_DEFAULT_WITHOUT_BATCH;
-        }
-
-        propertyPrefetching = configuration.get(PROPERTY_PREFETCHING);
-        useMultiQuery = configuration.get(USE_MULTIQUERY);
-        batchPropertyPrefetching = configuration.get(BATCH_PROPERTY_PREFETCHING);
-        adjustQueryLimit = configuration.get(ADJUST_LIMIT);
-        logTransactions = configuration.get(SYSTEM_LOG_TRANSACTIONS);
-
-        unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
+        return result;
     }
 }

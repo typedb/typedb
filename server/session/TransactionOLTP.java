@@ -1025,7 +1025,6 @@ public class TransactionOLTP implements Transaction {
         try {
             if (janusTransaction.isOpen()) {
                 janusTransaction.rollback();
-                janusTransaction.close();
             }
         } finally {
             closeTransaction(closeMessage);

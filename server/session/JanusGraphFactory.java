@@ -66,7 +66,6 @@ final public class JanusGraphFactory {
     public synchronized StandardJanusGraph openGraph(String keyspace) {
         StandardJanusGraph janusGraph = configureGraph(keyspace, config);
         buildJanusIndexes(janusGraph);
-        janusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());

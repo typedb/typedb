@@ -326,19 +326,6 @@ public class ManagementSystem implements JanusGraphManagement {
                 .collect(Collectors.toList());
     }
 
-
-    private String getIndexType(JanusGraphIndex index) {
-        String type;
-        if (index.isCompositeIndex()) {
-            type = "Composite";
-        } else if (index.isMixedIndex()) {
-            type = "Mixed";
-        } else {
-            type = "Unknown";
-        }
-        return type;
-    }
-
     private void checkIndexName(String indexName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         Preconditions.checkArgument(getGraphIndex(indexName) == null, "An index with name '%s' has already been defined", indexName);
