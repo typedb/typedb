@@ -24,9 +24,9 @@ import grakn.core.graph.core.JanusGraphElement;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.VertexList;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
-import grakn.core.graph.util.datastructures.IterablesUtil;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -101,7 +101,7 @@ public class VertexArrayList implements VertexListInternal {
         VertexArrayList other = ((VertexArrayList) vertexlist);
         if (sorted && other.isSorted()) {
             //Merge sort
-            vertices = IterablesUtil.mergeSort(vertices, other.vertices, VERTEX_ID_COMPARATOR);
+            vertices = mergeSort(vertices, other.vertices);
         } else {
             sorted = false;
             vertices.addAll(other.vertices);
@@ -113,4 +113,31 @@ public class VertexArrayList implements VertexListInternal {
         return Iterators.unmodifiableIterator(vertices.iterator());
     }
 
+    private static List<JanusGraphVertex> mergeSort(Collection<JanusGraphVertex> a, Collection<JanusGraphVertex> b) {
+        Iterator<JanusGraphVertex> iteratorA = a.iterator(), iteratorB = b.iterator();
+        JanusGraphVertex headA = iteratorA.hasNext() ? iteratorA.next() : null;
+        JanusGraphVertex headB = iteratorB.hasNext() ? iteratorB.next() : null;
+        List<JanusGraphVertex> result = new ArrayList<>(a.size() + b.size());
+        while (headA != null || headB != null) {
+            JanusGraphVertex next;
+            if (headA == null) {
+                next = headB;
+                headB = null;
+            } else if (headB == null) {
+                next = headA;
+                headA = null;
+            } else if (VERTEX_ID_COMPARATOR.compare(headA, headB) <= 0) {
+                next = headA;
+                headA = null;
+            } else {
+                next = headB;
+                headB = null;
+            }
+
+            result.add(next);
+            if (headA == null) headA = iteratorA.hasNext() ? iteratorA.next() : null;
+            if (headB == null) headB = iteratorB.hasNext() ? iteratorB.next() : null;
+        }
+        return result;
+    }
 }

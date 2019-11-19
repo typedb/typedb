@@ -20,12 +20,8 @@ package grakn.core.graph.graphdb.database.idassigner.placement;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.idassigner.IDPoolExhaustedException;
-import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalElement;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import org.slf4j.Logger;
@@ -38,6 +34,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CONCURRENT_PARTITIONS;
+
 /**
  * A id placement strategy that assigns all vertices created in a transaction
  * to the same partition id. The partition id is selected randomly from a set
@@ -45,14 +43,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * The number of partition ids to choose from is configurable.
  */
-@PreInitializeConfigOptions
 public class SimpleBulkPlacementStrategy implements IDPlacementStrategy {
 
     private static final Logger LOG = LoggerFactory.getLogger(SimpleBulkPlacementStrategy.class);
-
-    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<>(
-            GraphDatabaseConfiguration.IDS_NS, "num-partitions",
-            "Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE, 10);
 
     public static final int PARTITION_FINDING_ATTEMPTS = 1000;
 

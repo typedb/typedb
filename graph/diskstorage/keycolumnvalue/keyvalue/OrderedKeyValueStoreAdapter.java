@@ -19,8 +19,6 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
@@ -49,6 +47,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.function.Predicate;
 
 /**
  * Wraps a {@link OrderedKeyValueStore} and exposes it as a {@link KeyColumnValueStore}.
@@ -216,7 +215,7 @@ public class OrderedKeyValueStoreAdapter extends BaseKeyColumnValueAdapter {
     }
 
     KVQuery convertQuery(KeySliceQuery query) {
-        Predicate<StaticBuffer> filter = Predicates.alwaysTrue();
+        Predicate<StaticBuffer> filter = (x) -> true;
         if (!hasFixedKeyLength()) {
             filter = keyAndColumn -> equalKey(keyAndColumn, query.getKey());
         }

@@ -27,8 +27,6 @@ import java.nio.charset.StandardCharsets;
 
 public class StringEncoding {
 
-    public static final String UTF8_ENCODING = "UTF-8";
-
     public static final Charset UTF8_CHARSET = StandardCharsets.UTF_8;
 
     public static boolean isAsciiString(String input) {
@@ -41,7 +39,6 @@ public class StringEncoding {
     }
 
     //Similar to {@link StringSerializer}
-
     public static int writeAsciiString(byte[] array, int startPos, String attribute) {
         Preconditions.checkArgument(isAsciiString(attribute));
         if (attribute.length()==0) {

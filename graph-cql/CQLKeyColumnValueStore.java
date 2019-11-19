@@ -137,7 +137,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      * @param configuration data used in creating this store
      * @param closer        callback used to clean up references to this store in the store manager
      */
-    public CQLKeyColumnValueStore(CQLStoreManager storeManager, String tableName, Configuration configuration, Runnable closer) {
+    CQLKeyColumnValueStore(CQLStoreManager storeManager, String tableName, Configuration configuration, Runnable closer) {
 
         this.storeManager = storeManager;
         this.tableName = tableName;

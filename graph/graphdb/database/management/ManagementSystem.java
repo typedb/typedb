@@ -121,7 +121,6 @@ import static grakn.core.graph.graphdb.database.management.RelationTypeIndexWrap
 public class ManagementSystem implements JanusGraphManagement {
 
     private static final Logger LOG = LoggerFactory.getLogger(ManagementSystem.class);
-    private static final String CURRENT_INSTANCE_SUFFIX = "(current)";
 
     private final StandardJanusGraph graph;
     private final Log sysLog;
@@ -143,7 +142,6 @@ public class ManagementSystem implements JanusGraphManagement {
     private final static String DASHBREAK = "---------------------------------------------------------------------------------------------------\n";
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog, ManagementLogger managementLogger, SchemaCache schemaCache) {
-        Preconditions.checkArgument(config != null && graph != null && sysLog != null && managementLogger != null);
         this.graph = graph;
         this.sysLog = sysLog;
         this.managementLogger = managementLogger;

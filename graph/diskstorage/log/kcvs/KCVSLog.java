@@ -30,7 +30,6 @@ import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.ReadBuffer;
 import grakn.core.graph.diskstorage.ResourceUnavailableException;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
 import grakn.core.graph.diskstorage.keycolumnvalue.KCVSUtil;
@@ -52,7 +51,6 @@ import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.WriteByteBuffer;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.util.system.BackgroundThread;
 import org.slf4j.Logger;
@@ -74,10 +72,13 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_KEY_CONSISTENT;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_MAX_READ_TIME;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_MAX_WRITE_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NUM_BUCKETS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_BATCH_SIZE;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_INTERVAL;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_LAG_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_READ_THREADS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_BATCH_SIZE;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_SEND_DELAY;
@@ -112,32 +113,11 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * <p>
  * Note: All time values in this class are in microseconds. Hence, there are many cases where milliseconds are converted to microseconds.
  */
-@PreInitializeConfigOptions
 public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(KCVSLog.class);
 
-    //########## Configuration Options #############
-
-    public static final ConfigOption<Duration> LOG_MAX_WRITE_TIME = new ConfigOption<>(LOG_NS, "max-write-time",
-            "Maximum time in ms to try persisting LOG messages against the backend before failing.",
-            ConfigOption.Type.MASKABLE, Duration.ofMillis(10000L));
-
-    public static final ConfigOption<Duration> LOG_MAX_READ_TIME = new ConfigOption<>(LOG_NS, "max-read-time",
-            "Maximum time in ms to try reading LOG messages from the backend before failing.",
-            ConfigOption.Type.MASKABLE, Duration.ofMillis(4000L));
-
-    public static final ConfigOption<Duration> LOG_READ_LAG_TIME = new ConfigOption<>(LOG_NS, "read-lag-time",
-            "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become" +
-                    "visible in the storage backend in this amount of time, a LOG reader might miss the message.",
-            ConfigOption.Type.MASKABLE, Duration.ofMillis(500L));
-
-    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<>(LOG_NS, "key-consistent",
-            "Whether to require consistency for LOG reading and writing messages to the storage backend",
-            ConfigOption.Type.MASKABLE, false);
-
     //########## INTERNAL CONSTANTS #############
-
     /**
      * The time period that is stored under one key in the underlying KCVS.
      * This value should NEVER be changed since this will cause backwards incompatibility.
@@ -386,7 +366,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         out.putLong(times.getTime(rawTimestamp));
         out.writeObjectNotNull(manager.senderId);
         out.putLong(numMsgCounter.incrementAndGet());
-        final int valuePos = out.getPosition();
+        int valuePos = out.getPosition();
         out.putBytes(content);
         return new StaticArrayEntry(out.getStaticBuffer(), valuePos);
     }
@@ -442,7 +422,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
         ResourceUnavailableException.verifyOpen(isOpen, "Log", name);
         Preconditions.checkArgument(content != null && content.length() > 0, "Content is empty");
         Preconditions.checkArgument(partitionId >= 0 && partitionId < (1 << manager.partitionBitWidth), "Invalid partition id: %s", partitionId);
-        final Instant timestamp = times.getTime();
+        Instant timestamp = times.getTime();
         KCVSMessage msg = new KCVSMessage(content, timestamp, manager.senderId);
         FutureMessage futureMessage = new FutureMessage(msg);
 
@@ -507,7 +487,7 @@ public class KCVSLog implements Log, BackendOperation.TransactionalProvider {
                         LOG.debug("Preparing to write {} to storage with column/timestamp {}", env, times.getTime(ts));
                     }
 
-                    final Map<StaticBuffer, KCVMutation> muts = new HashMap<>(mutations.keySet().size());
+                    Map<StaticBuffer, KCVMutation> muts = new HashMap<>(mutations.keySet().size());
                     for (StaticBuffer key : mutations.keySet()) {
                         muts.put(key, new KCVMutation(mutations.get(key), KeyColumnValueStore.NO_DELETIONS));
                         LOG.debug("Built mutation on key {} with {} additions", key, mutations.get(key).size());

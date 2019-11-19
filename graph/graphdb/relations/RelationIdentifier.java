@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.relations;
 
 import com.google.common.base.Preconditions;
-import org.apache.tinkerpop.gremlin.structure.Direction;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphTransaction;
@@ -28,9 +27,8 @@ import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.graphdb.internal.InternalRelation;
 import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
-import grakn.core.graph.graphdb.relations.StandardRelation;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
-import grakn.core.graph.util.encoding.LongEncoding;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -136,10 +134,10 @@ public final class RelationIdentifier implements Serializable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(LongEncoding.encode(relationId)).append(TOSTRING_DELIMITER).append(LongEncoding.encode(outVertexId))
-                .append(TOSTRING_DELIMITER).append(LongEncoding.encode(typeId));
+        s.append(relationId).append(TOSTRING_DELIMITER).append(outVertexId)
+                .append(TOSTRING_DELIMITER).append(typeId);
         if (inVertexId != 0) {
-            s.append(TOSTRING_DELIMITER).append(LongEncoding.encode(inVertexId));
+            s.append(TOSTRING_DELIMITER).append(inVertexId);
         }
         return s.toString();
     }
@@ -150,10 +148,10 @@ public final class RelationIdentifier implements Serializable {
             throw new IllegalArgumentException("Not a valid relation identifier: " + id);
         }
         try {
-            return new RelationIdentifier(LongEncoding.decode(elements[1]),
-                    LongEncoding.decode(elements[2]),
-                    LongEncoding.decode(elements[0]),
-                    elements.length == 4 ? LongEncoding.decode(elements[3]) : 0);
+            return new RelationIdentifier(Long.parseLong(elements[1]),
+                    Long.parseLong(elements[2]),
+                    Long.parseLong(elements[0]),
+                    elements.length == 4 ? Long.parseLong(elements[3]) : 0);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid id - each token expected to be a number", e);
         }

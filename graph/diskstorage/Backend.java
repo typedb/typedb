@@ -85,7 +85,7 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * Orchestrates and configures all backend systems:
  * The primary backend storage ({@link KeyColumnValueStore}) and all external indexing providers ({@link IndexProvider}).
  */
-public class Backend implements AutoCloseable {
+public class Backend {
 
     private static final Logger LOG = LoggerFactory.getLogger(Backend.class);
     /**
@@ -99,9 +99,6 @@ public class Backend implements AutoCloseable {
     public static final String EDGESTORE_NAME = "edgestore";
     public static final String INDEXSTORE_NAME = "graphindex";
     public static final String IDSTORE_NAME = "janusgraph_ids";
-
-
-    public static final String LOCK_STORE_SUFFIX = "_lock_";
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
     private static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
@@ -329,7 +326,7 @@ public class Backend implements AutoCloseable {
         return new BackendTransaction(cacheTx, configuration, storeFeatures, edgeStore, indexStore, txLogStore, maxReadTime, indexTx, threadPool);
     }
 
-    public synchronized void close() throws BackendException {
+    public synchronized void close() {
         if (!hasAttemptedClose) {
             try {
                 hasAttemptedClose = true;
@@ -342,8 +339,14 @@ public class Backend implements AutoCloseable {
                 systemConfig.close();
                 //Indexes
                 for (IndexProvider index : indexes.values()) index.close();
+            } catch (Exception e) {
+                LOG.warn("Exception while closing Backend." + e);
             } finally {
-                storeManager.close();
+                try {
+                    storeManager.close();
+                } catch (BackendException e) {
+                    LOG.warn("Exception while closing StoreManager." + e);
+                }
                 if (threadPool != null) {
                     threadPool.shutdown();
                 }

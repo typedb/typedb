@@ -34,11 +34,8 @@ import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
-import grakn.core.graph.graphdb.configuration.converter.RegisteredAttributeClassesConverter;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
 import grakn.core.graph.graphdb.database.cache.StandardSchemaCache;
-import grakn.core.graph.graphdb.database.serialize.Serializer;
-import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import grakn.core.graph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import grakn.core.graph.util.stats.NumberUtil;
@@ -46,7 +43,6 @@ import org.apache.commons.configuration.BaseConfiguration;
 
 import java.net.InetAddress;
 import java.time.Duration;
-import java.util.List;
 
 /**
  * Provides functionality to configure a {@link JanusGraph} INSTANCE.
@@ -91,7 +87,7 @@ public class GraphDatabaseConfiguration {
     public static final ConfigNamespace JOB_NS = new ConfigNamespace(null, "job", "Root Configuration Namespace for JanusGraph OLAP jobs");
 
     public static final ConfigOption<Long> JOB_START_TIME = new ConfigOption<>(JOB_NS, "start-time",
-            "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class).hide();
+            "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class);
 
 
     // ################ Transaction #######################
@@ -255,7 +251,6 @@ public class GraphDatabaseConfiguration {
 
     public static final ConfigNamespace STORAGE_NS = new ConfigNamespace(ROOT_NS, "storage", "Configuration options for the storage backend.  Some options are applicable only for certain backends.");
 
-
     /**
      * Define the storage backed to use for persistence
      */
@@ -273,13 +268,6 @@ public class GraphDatabaseConfiguration {
     public static final ConfigOption<Boolean> STORAGE_BATCH = new ConfigOption<>(STORAGE_NS, "batch-loading",
             "Whether to enable batch loading into the storage backend",
             ConfigOption.Type.LOCAL, false);
-
-    /**
-     * Enables transactions on storage backends that support them
-     */
-    public static final ConfigOption<Boolean> STORAGE_TRANSACTIONAL = new ConfigOption<>(STORAGE_NS, "transactions",
-            "Enables transactions on storage backends that support them",
-            ConfigOption.Type.MASKABLE, true);
 
     /**
      * Buffers graph mutations locally up to the specified number before persisting them against the storage backend.
@@ -317,7 +305,7 @@ public class GraphDatabaseConfiguration {
      * Configuration key for the port on which to connect to remote storage backend servers.
      */
     public static final ConfigOption<Integer> STORAGE_PORT = new ConfigOption<>(STORAGE_NS, "port",
-            "The port on which to connect to storage backend servers. For HBase, it is the Zookeeper port.",
+            "The port on which to connect to storage backend servers.",
             ConfigOption.Type.LOCAL, Integer.class);
 
     /**
@@ -368,62 +356,6 @@ public class GraphDatabaseConfiguration {
                     "Note that some backends always drop the graph database when clearing storage. Also note that indices are " +
                     "always dropped when clearing storage.",
             ConfigOption.Type.MASKABLE, true);
-
-    public static final ConfigNamespace LOCK_NS = new ConfigNamespace(STORAGE_NS, "lock", "Options for locking on eventually-consistent stores");
-
-    /**
-     * Number of times the system attempts to acquire a lock before giving up and throwing an exception.
-     */
-    public static final ConfigOption<Integer> LOCK_RETRY = new ConfigOption<>(LOCK_NS, "retries",
-            "Number of times the system attempts to acquire a lock before giving up and throwing an exception",
-            ConfigOption.Type.MASKABLE, 3);
-
-    /**
-     * The number of milliseconds the system waits for a lock application to be acknowledged by the storage backend.
-     * Also, the time waited at the end of all lock applications before verifying that the applications were successful.
-     * This value should be a small multiple of the average consistent write time.
-     */
-    public static final ConfigOption<Duration> LOCK_WAIT = new ConfigOption<>(LOCK_NS, "wait-time",
-            "Number of milliseconds the system waits for a lock application to be acknowledged by the storage backend. " +
-                    "Also, the time waited at the end of all lock applications before verifying that the applications were successful. " +
-                    "This value should be a small multiple of the average consistent write time.",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(100L));
-
-    /**
-     * Number of milliseconds after which a lock is considered to have expired. Lock applications that were not released
-     * are considered expired after this time and released.
-     * This value should be larger than the maximum time a transaction can take in order to guarantee that no correctly
-     * held applications are expired pre-maturely and as small as possible to avoid dead lock.
-     */
-    public static final ConfigOption<Duration> LOCK_EXPIRE = new ConfigOption<>(LOCK_NS, "expiry-time",
-            "Number of milliseconds after which a lock is considered to have expired. " +
-                    "Lock applications that were not released are considered expired after this time and released. " +
-                    "This value should be larger than the maximum time a transaction can take in order to guarantee " +
-                    "that no correctly held applications are expired pre-maturely and as small as possible to avoid dead lock.",
-            ConfigOption.Type.GLOBAL_OFFLINE, Duration.ofMillis(300 * 1000L));
-
-    /**
-     * Whether to attempt to delete expired locks from the storage backend. True
-     * will attempt to delete expired locks in a background daemon thread. False
-     * will never attempt to delete expired locks. This option is only
-     * meaningful for the default lock backend.
-     */
-    public static final ConfigOption<Boolean> LOCK_CLEAN_EXPIRED = new ConfigOption<>(LOCK_NS, "clean-expired",
-            "Whether to delete expired locks from the storage backend",
-            ConfigOption.Type.MASKABLE, false);
-
-    /**
-     * Configuration setting key for the local lock mediator prefix
-     */
-    public static final ConfigOption<String> LOCK_LOCAL_MEDIATOR_GROUP =
-            new ConfigOption<>(LOCK_NS, "local-mediator-group",
-                    "This option determines the LocalLockMediator instance used for early detection of lock contention " +
-                            "between concurrent JanusGraph graph instances within the same process which are connected to the same " +
-                            "storage backend.  JanusGraph instances that have the same value for this variable will attempt to discover " +
-                            "lock contention among themselves in memory before proceeding with the general-case distributed locking " +
-                            "code.  JanusGraph generates an appropriate default value for this option at startup.  Overridding " +
-                            "the default is generally only useful in testing.", ConfigOption.Type.LOCAL, String.class);
-
 
     // ################ STORAGE - META #######################
 
@@ -497,6 +429,10 @@ public class GraphDatabaseConfiguration {
                     "(expressed as a value between 0 and 1), JanusGraph asynchronously begins reserving another block. " +
                     "This helps avoid transaction commits waiting on ID reservation even if the block size is relatively small.",
             ConfigOption.Type.MASKABLE, 0.3);
+
+    public static final ConfigOption<Integer> CONCURRENT_PARTITIONS = new ConfigOption<>(
+            GraphDatabaseConfiguration.IDS_NS, "num-partitions",
+            "Number of partition block to allocate for placement of vertices", ConfigOption.Type.MASKABLE, 10);
 
     // ################ IDAUTHORITY ###################
     // ################################################
@@ -670,21 +606,35 @@ public class GraphDatabaseConfiguration {
                     "that the LOG implementation supports TTL.",
             ConfigOption.Type.GLOBAL, Duration.class, sd -> null != sd && !sd.isZero());
 
-    // ############## Attributes ######################
-    // ################################################
 
-    public static final ConfigNamespace ATTRIBUTE_NS = new ConfigNamespace(ROOT_NS, "attributes", "Configuration options for attribute handling");
+    //########## KCVSLog Configuration Options #############
 
-    public static final ConfigNamespace CUSTOM_ATTRIBUTE_NS = new ConfigNamespace(ATTRIBUTE_NS, "custom", "Custom attribute serialization and handling", true);
+    public static final ConfigOption<Duration> LOG_MAX_WRITE_TIME = new ConfigOption<>(LOG_NS, "max-write-time",
+            "Maximum time in ms to try persisting LOG messages against the backend before failing.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(10000L));
 
-    public static final String ATTRIBUTE_PREFIX = "attribute";
+    public static final ConfigOption<Duration> LOG_MAX_READ_TIME = new ConfigOption<>(LOG_NS, "max-read-time",
+            "Maximum time in ms to try reading LOG messages from the backend before failing.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(4000L));
 
-    public static final ConfigOption<String> CUSTOM_ATTRIBUTE_CLASS = new ConfigOption<>(CUSTOM_ATTRIBUTE_NS, "attribute-class",
-            "Class of the custom attribute to be registered",
-            ConfigOption.Type.GLOBAL_OFFLINE, String.class);
-    public static final ConfigOption<String> CUSTOM_SERIALIZER_CLASS = new ConfigOption<>(CUSTOM_ATTRIBUTE_NS, "serializer-class",
-            "Class of the custom attribute serializer to be registered",
-            ConfigOption.Type.GLOBAL_OFFLINE, String.class);
+    public static final ConfigOption<Duration> LOG_READ_LAG_TIME = new ConfigOption<>(LOG_NS, "read-lag-time",
+            "Maximum time in ms that it may take for reads to appear in the backend. If a write does not become" +
+                    "visible in the storage backend in this amount of time, a LOG reader might miss the message.",
+            ConfigOption.Type.MASKABLE, Duration.ofMillis(500L));
+
+    public static final ConfigOption<Boolean> LOG_KEY_CONSISTENT = new ConfigOption<>(LOG_NS, "key-consistent",
+            "Whether to require consistency for LOG reading and writing messages to the storage backend",
+            ConfigOption.Type.MASKABLE, false);
+
+    // KCVSLogManager
+    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<>(LOG_NS, "fixed-partition",
+            "Whether all LOG entries are written to one fixed partition even if the backend store is partitioned." +
+                    "This can cause imbalanced loads and should only be used on low volume logs",
+            ConfigOption.Type.GLOBAL_OFFLINE, false);
+
+    public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS, "max-partitions",
+            "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0 and a power of 2.",
+            ConfigOption.Type.FIXED, Integer.class, integer -> integer != null && integer > 0 && NumberUtil.isPowerOf2(integer));
 
     // ################ Begin Class Definition #######################
     // ###############################################################
@@ -752,14 +702,6 @@ public class GraphDatabaseConfiguration {
         return defaultSchemaMaker;
     }
 
-    public Duration getMaxCommitTime() {
-        return configuration.get(MAX_COMMIT_TIME);
-    }
-
-    public Duration getMaxWriteTime() {
-        return configuration.get(STORAGE_WRITE_WAITTIME);
-    }
-
     public boolean hasPropertyPrefetching() {
         if (propertyPrefetching == null) {
             return getStoreFeatures().isDistributed();
@@ -798,21 +740,6 @@ public class GraphDatabaseConfiguration {
 
     public StoreFeatures getStoreFeatures() {
         return storeFeatures;
-    }
-
-    public Serializer getSerializer() {
-        return getSerializer(configuration);
-    }
-
-    private static Serializer getSerializer(Configuration configuration) {
-        Serializer serializer = new StandardSerializer();
-
-        List<RegisteredAttributeClass<?>> registeredAttributeClasses = RegisteredAttributeClassesConverter.getInstance().convert(configuration);
-
-        for (RegisteredAttributeClass<?> clazz : registeredAttributeClasses) {
-            clazz.registerWith(serializer);
-        }
-        return serializer;
     }
 
     public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {

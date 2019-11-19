@@ -34,7 +34,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.configuration.builder.MergedConfigurationBuilder;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
-import grakn.core.graph.util.system.IOUtils;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -100,7 +99,7 @@ public class JanusGraphFactory {
         try {
             backend.clearStorage();
         } finally {
-            IOUtils.closeQuietly(backend);
+            backend.close();
         }
     }
 

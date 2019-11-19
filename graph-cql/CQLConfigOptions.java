@@ -22,12 +22,10 @@ import grakn.core.graph.diskstorage.configuration.ConfigElement;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 
 /**
  * Configuration options for the CQL storage backend. These are managed under the 'cql' namespace in the configuration.
  */
-@PreInitializeConfigOptions
 public interface CQLConfigOptions {
 
     ConfigNamespace CQL_NS = new ConfigNamespace(

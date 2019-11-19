@@ -100,7 +100,7 @@ final public class JanusGraphFactory {
         });
 
         LOG.debug("Opening graph {}", keyspace);
-        return (StandardJanusGraph) builder.open();
+        return builder.open();
     }
 
 

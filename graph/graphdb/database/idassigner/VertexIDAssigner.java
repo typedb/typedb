@@ -143,8 +143,7 @@ public class VertexIDAssigner implements AutoCloseable {
         try {
             idAuthority.close();
         } catch (BackendException e) {
-            // TODO potentially handle better, for a better future, a better world, a better us.
-            LOG.error("Exception while closing IdAuthority", e);
+            LOG.warn("Exception while closing IdAuthority", e);
         }
     }
 

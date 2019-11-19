@@ -44,6 +44,7 @@ import grakn.core.graph.graphdb.database.serialize.attribute.ByteArraySerializer
 import grakn.core.graph.graphdb.database.serialize.attribute.ByteSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.CharacterSerializer;
+import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleArraySerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DoubleSerializer;
 import grakn.core.graph.graphdb.database.serialize.attribute.DurationSerializer;
@@ -75,16 +76,13 @@ import grakn.core.graph.graphdb.types.TypeDefinitionDescription;
 import org.apache.tinkerpop.gremlin.process.traversal.traverser.util.TraverserSet;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-
-//import grakn.core.graph.graphdb.database.serialize.attribute.DateSerializer;
-
 
 public class StandardSerializer implements AttributeHandler, Serializer {
 
@@ -115,7 +113,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
 
         registerClassInternal(14, Character.class, new CharacterSerializer());
         registerClassInternal(15, Boolean.class, new BooleanSerializer());
-//        registerClassInternal(16, Date.class, new DateSerializer());
+        registerClassInternal(16, Date.class, new DateSerializer());
 
         registerClassInternal(18, String.class, new StringSerializer()); //supports null serialization
         registerClassInternal(19, Float.class, new FloatSerializer());
@@ -181,7 +179,7 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(CLASS_REGISTRATION_OFFSET + registrationNo, datatype, serializer);
     }
 
-    public synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {
+    private synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {
         Preconditions.checkArgument(registrationNo > 0); //must be bigger than 0 since 0 is used to indicate null values
         Preconditions.checkNotNull(datatype);
         Preconditions.checkArgument(!handlers.containsKey(datatype), "DataType has already been registered: %s", datatype);
@@ -305,11 +303,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
     @Override
     public DataOutput getDataOutput(int initialCapacity) {
         return new StandardDataOutput(initialCapacity);
-    }
-
-    @Override
-    public void close() throws IOException {
-        //Nothing to close
     }
 
     private class StandardDataOutput extends WriteByteBuffer implements DataOutput {
