@@ -21,6 +21,7 @@ package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
+import grakn.common.util.Pair;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Answer;
@@ -172,10 +173,16 @@ public class TransactionOLTP implements Transaction {
      * @return true if graph lock need to be acquired for commit
      */
     @VisibleForTesting
-    public boolean commitLockRequired(){
+    boolean commitLockRequired(){
         String txId = this.janusTransaction.toString();
         boolean attributeLockRequired = session.attributeManager().requiresLock(txId);
         boolean shardLockRequired = session.shardManager().requiresLock(txId);
+        boolean keyLockRequired = false;
+        Set<String> modifiedKeyIndices = cache().getModifiedKeyIndices();
+        if (!modifiedKeyIndices.isEmpty()){
+            Set<String> insertedIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
+            keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
+        }
         boolean lockRequired = attributeLockRequired
                 || shardLockRequired
                 // In this case we need to lock, so that other concurrent Transactions
@@ -183,7 +190,7 @@ public class TransactionOLTP implements Transaction {
                 // Not locking here might lead to concurrent transactions reading the attributesCache that still
                 // contains attributes that we are removing in this transaction.
                 || !cache().getRemovedAttributes().isEmpty()
-                || cache().modifiedKeyRelations();
+                || keyLockRequired;
         if (lockRequired) {
             LOG.warn(txId + " is about to acquire a " + (shardLockRequired ? "shard/" : "") +
                     (attributeLockRequired ? "attribute" : "") + " graphlock.");
@@ -245,7 +252,7 @@ public class TransactionOLTP implements Transaction {
     }
 
     @VisibleForTesting
-    public void computeShardCandidates() {
+    void computeShardCandidates() {
         String txId = this.janusTransaction.toString();
         uncomittedStatisticsDelta.instanceDeltas().entrySet().stream()
                 .filter(e -> !Schema.MetaSchema.isMetaLabel(e.getKey()))

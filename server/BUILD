@@ -19,15 +19,17 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@graknlabs_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
-load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "java_deps", "assemble_zip")
+load("@graknlabs_bazel_distribution//common:rules.bzl", "assemble_targz", "assemble_zip", "java_deps")
 load("@graknlabs_bazel_distribution//rpm:rules.bzl", "assemble_rpm", "deploy_rpm")
 load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 exports_files(
-    glob(["conf/**", "services/**"]),
-    visibility = ["//visibility:public"]
+    glob([
+        "conf/**",
+        "services/**",
+    ]),
+    visibility = ["//visibility:public"],
 )
-
 
 genrule(
     name = "version",
@@ -35,26 +37,44 @@ genrule(
         "templates/Version.java",
         "//:VERSION",
     ],
-    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     outs = ["Version.java"],
+    cmd = "VERSION=`cat $(location //:VERSION)`;sed -e \"s/{version}/$$VERSION/g\" $(location templates/Version.java) >> $@",
     visibility = ["//common:__subpackages__"],
 )
 
 java_library(
     name = "server",
-    srcs = glob(["**/*.java"], exclude=["templates/**", "test/**"]) + [":version"],
+    srcs = glob(
+        ["**/*.java"],
+        exclude = [
+            "templates/**",
+            "test/**",
+        ],
+    ) + [":version"],
+    resource_strip_prefix = "server",
+    resources = ["LICENSE"] + glob(["resources/*"]),
+    tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
+    visibility = ["//visibility:public"],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
+        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
+        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
+        "//graph-cql",
+        "//graph-hadoop",
+    ],
     deps = [
         # Internal dependencies
-        "//common:common",
-        "//kb/concept/api:api",
-        "//kb/concept/util:util",
-        "//kb/concept/structure:structure",
+        "//common",
+        "@graknlabs_common//:common",
+        "//kb/concept/api",
+        "//kb/concept/util",
+        "//kb/concept/structure",
         "//concept/structure:structureimpl",
-        "//concept/impl:impl",
-        "//concept/answer:answer",
-        "//kb:kb",
-        "//core:core",
-        "//graql:graql",
+        "//concept/impl",
+        "//concept/answer",
+        "//kb",
+        "//core",
+        "//graql",
         "//graph",
 
         # External dependencies from @graknlabs
@@ -65,15 +85,15 @@ java_library(
         # External dependencies from Maven
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-annotations",
         "//dependencies/maven/artifacts/com/google/code/findbugs:jsr305",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-        "//dependencies/maven/artifacts/commons-cli:commons-cli",
-        "//dependencies/maven/artifacts/commons-configuration:commons-configuration",
-        "//dependencies/maven/artifacts/commons-lang:commons-lang",
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/commons-cli",
+        "//dependencies/maven/artifacts/commons-configuration",
+        "//dependencies/maven/artifacts/commons-lang",
         "//dependencies/maven/artifacts/io/grpc:grpc-core",
         "//dependencies/maven/artifacts/io/grpc:grpc-netty",
         "//dependencies/maven/artifacts/io/grpc:grpc-stub",
         "//dependencies/maven/artifacts/io/netty:netty-all",
-        "//dependencies/maven/artifacts/io/zipkin/brave:brave",
+        "//dependencies/maven/artifacts/io/zipkin/brave",
         "//dependencies/maven/artifacts/org/apache/cassandra:cassandra-all",
         "//dependencies/maven/artifacts/org/apache/commons:commons-lang3",
         "//dependencies/maven/artifacts/org/apache/hadoop:hadoop-common",
@@ -86,142 +106,138 @@ java_library(
         "//dependencies/maven/artifacts/org/apache/tinkerpop:tinkergraph-gremlin",
         "//dependencies/maven/artifacts/org/scala-lang:scala-library",
         "//dependencies/maven/artifacts/org/slf4j:slf4j-api",
-        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core"
+        "//dependencies/maven/artifacts/com/datastax/oss:java-driver-core",
     ],
-    runtime_deps = [
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-classic",
-        "//dependencies/maven/artifacts/ch/qos/logback:logback-core",
-        "//dependencies/maven/artifacts/javax/servlet:javax-servlet-api",
-        "//graph-cql",
-        "//graph-hadoop"
-    ],
-    resources = ["LICENSE"] + glob(["resources/*"]),
-    resource_strip_prefix = "server",
-    tags = ["maven_coordinates=io.grakn.core:grakn-server:{pom_version}"],
-    visibility = ["//visibility:public"]
-
 )
 
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":server"
+        ":server",
     ],
 )
 
 java_binary(
     name = "server-binary",
     main_class = "grakn.core.daemon.GraknDaemon",
-    runtime_deps = [
-        "//daemon",
-        "//server:server"
-    ],
     tags = ["maven_coordinates=io.grakn.core:grakn-server-bin:{pom_version}"],
     visibility = ["//:__pkg__"],
+    runtime_deps = [
+        "//daemon",
+        "//server",
+    ],
 )
 
 java_deps(
     name = "server-deps",
-    target = ":server-binary",
     java_deps_root = "server/services/lib/",
-    visibility = ["//:__pkg__"],
     maven_name = True,
+    target = ":server-binary",
+    visibility = ["//:__pkg__"],
 )
 
 assemble_targz(
     name = "assemble-linux-targz",
-    output_filename = "grakn-core-server-linux",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
-    additional_files = {
-        "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "server/conf/grakn.properties",
-        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
-        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
-    },
-    empty_directories = [
-        "server/db/cassandra",
-        "server/db/queue"
-    ],
-    permissions = {
-      "server/services/cassandra/cassandra.yaml": "0777",
-      "server/db/cassandra": "0777",
-      "server/db/queue": "0777",
-    },
-    visibility = ["//visibility:public"]
-)
-
-assemble_zip(
-    name = "assemble-mac-zip",
-    output_filename = "grakn-core-server-mac",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bash-targz"],
-    additional_files = {
-        "//server:conf/logback.xml": "server/conf/logback.xml",
-        "//server:conf/grakn.properties": "server/conf/grakn.properties",
-        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
-        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
-    },
-    empty_directories = [
-        "server/db/cassandra",
-        "server/db/queue"
-    ],
-    permissions = {
-      "server/services/cassandra/cassandra.yaml": "0777",
-      "server/db/cassandra": "0777",
-      "server/db/queue": "0777",
-    },
-    visibility = ["//visibility:public"]
-)
-
-assemble_zip(
-    name = "assemble-windows-zip",
-    output_filename = "grakn-core-server-windows",
-    targets = [":server-deps", "@graknlabs_common//bin:assemble-bat-targz"],
     additional_files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
         "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
-        "//server:services/hadoop/bin/winutils.exe": "server/services/hadoop/bin/winutils.exe"
     },
     empty_directories = [
         "server/db/cassandra",
-        "server/db/queue"
+        "server/db/queue",
     ],
+    output_filename = "grakn-core-server-linux",
     permissions = {
-      "server/services/cassandra/cassandra.yaml": "0777",
-      "server/db/cassandra": "0777",
-      "server/db/queue": "0777",
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
     },
-    visibility = ["//visibility:public"]
+    targets = [
+        ":server-deps",
+        "@graknlabs_common//bin:assemble-bash-targz",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+assemble_zip(
+    name = "assemble-mac-zip",
+    additional_files = {
+        "//server:conf/logback.xml": "server/conf/logback.xml",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+    },
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue",
+    ],
+    output_filename = "grakn-core-server-mac",
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
+    targets = [
+        ":server-deps",
+        "@graknlabs_common//bin:assemble-bash-targz",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+assemble_zip(
+    name = "assemble-windows-zip",
+    additional_files = {
+        "//server:conf/logback.xml": "server/conf/logback.xml",
+        "//server:conf/grakn.properties": "server/conf/grakn.properties",
+        "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
+        "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
+        "//server:services/hadoop/bin/winutils.exe": "server/services/hadoop/bin/winutils.exe",
+    },
+    empty_directories = [
+        "server/db/cassandra",
+        "server/db/queue",
+    ],
+    output_filename = "grakn-core-server-windows",
+    permissions = {
+        "server/services/cassandra/cassandra.yaml": "0777",
+        "server/db/cassandra": "0777",
+        "server/db/queue": "0777",
+    },
+    targets = [
+        ":server-deps",
+        "@graknlabs_common//bin:assemble-bat-targz",
+    ],
+    visibility = ["//visibility:public"],
 )
 
 assemble_apt(
     name = "assemble-linux-apt",
     package_name = "grakn-core-server",
-    maintainer = "Grakn Labs <community@grakn.ai>",
-    description = "Grakn Core (server)",
-    depends = [
-      "openjdk-8-jre",
-      "grakn-bin (>=%{@graknlabs_common})"
-    ],
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps"],
-    installation_dir = "/opt/grakn/core/",
+    depends = [
+        "openjdk-8-jre",
+        "grakn-bin (>=%{@graknlabs_common})",
+    ],
+    description = "Grakn Core (server)",
+    empty_dirs = [
+        "opt/grakn/core/server/services/lib/",
+        "var/lib/grakn/db/queue",
+        "var/lib/grakn/db/cassandra",
+    ],
     files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
     },
-    empty_dirs = [
-        "opt/grakn/core/server/services/lib/",
-        "var/lib/grakn/db/queue",
-        "var/lib/grakn/db/cassandra"
-     ],
+    installation_dir = "/opt/grakn/core/",
+    maintainer = "Grakn Labs <community@grakn.ai>",
     permissions = {
         "var/lib/grakn/db/queue": "0777",
         "var/lib/grakn/db/cassandra": "0777",
@@ -229,45 +245,46 @@ assemble_apt(
     symlinks = {
         "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
 
 deploy_apt(
     name = "deploy-apt",
-    target = ":assemble-linux-apt",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    target = ":assemble-linux-apt",
 )
 
 assemble_rpm(
     name = "assemble-linux-rpm",
     package_name = "grakn-core-server",
-    installation_dir = "/opt/grakn/core/",
-    spec_file = "//config/rpm:grakn-core-server.spec",
-    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
     archives = [":server-deps"],
     empty_dirs = [
         "opt/grakn/core/server/services/lib/",
         "var/lib/grakn/db/queue",
-        "var/lib/grakn/db/cassandra"
-     ],
+        "var/lib/grakn/db/cassandra",
+    ],
     files = {
         "//server:conf/logback.xml": "server/conf/logback.xml",
         "//server:conf/grakn.properties": "server/conf/grakn.properties",
         "//server:services/cassandra/cassandra.yaml": "server/services/cassandra/cassandra.yaml",
         "//server:services/cassandra/logback.xml": "server/services/cassandra/logback.xml",
-        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt"
+        "//server:services/grakn/grakn-core-ascii.txt": "server/services/grakn/grakn-core-ascii.txt",
     },
+    installation_dir = "/opt/grakn/core/",
     permissions = {
         "services/cassandra/cassandra.yaml": "0777",
         "var/lib/grakn/db/queue": "0777",
         "var/lib/grakn/db/cassandra": "0777",
     },
+    spec_file = "//config/rpm:grakn-core-server.spec",
     symlinks = {
         "opt/grakn/core/server/db/": "/var/lib/grakn/db/",
     },
+    workspace_refs = "@graknlabs_grakn_core_workspace_refs//:refs.json",
 )
 
 deploy_rpm(
     name = "deploy-rpm",
-    target = ":assemble-linux-rpm",
     deployment_properties = "@graknlabs_build_tools//:deployment.properties",
+    target = ":assemble-linux-rpm",
 )

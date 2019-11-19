@@ -25,6 +25,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -126,7 +127,14 @@ public class ConceptObserver {
 
         //acknowledge key relation modification if the thing is one
         if (thingType.isImplicit() && Schema.ImplicitType.isKey(thingType.label())){
-            transactionCache.ackModifiedKeyRelation();
+            thing.asRelation().rolePlayers()
+                    .filter(Concept::isAttribute)
+                    .map(Concept::asAttribute)
+                    .forEach(key -> {
+                        Label label = Schema.ImplicitType.explicitLabel(thingType.label());
+                        String index = Schema.generateAttributeIndex(label, key.value().toString());
+                        transactionCache.addModifiedKeyIndex(index);
+                    });
         }
     }
 

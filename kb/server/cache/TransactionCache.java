@@ -80,7 +80,7 @@ public class TransactionCache {
     // Track the removed attributes so that we can evict old attribute indexes from attributesCache in session
     // after commit
     private Set<String> removedAttributes = new HashSet<>();
-    private boolean modifiedKeyRelations = false;
+    private Set<String> modifiedKeyIndices = new HashSet<>();
 
     public TransactionCache(KeyspaceSchemaCache keyspaceSchemaCache) {
         this.keyspaceSchemaCache = keyspaceSchemaCache;
@@ -295,8 +295,8 @@ public class TransactionCache {
         newAttributes.put(new Pair<>(label, index), conceptId);
     }
 
-    public void ackModifiedKeyRelation(){
-        modifiedKeyRelations = true;
+    public void addModifiedKeyIndex(String keyIndex){
+        modifiedKeyIndices.add(keyIndex);
     }
 
     public Map<Pair<Label, String>, ConceptId> getNewAttributes() {
@@ -320,7 +320,7 @@ public class TransactionCache {
         return modifiedRelationTypes;
     }
 
-    public boolean modifiedKeyRelations(){ return modifiedKeyRelations;}
+    public Set<String> getModifiedKeyIndices(){ return modifiedKeyIndices;}
 
     public Set<Rule> getModifiedRules() {
         return modifiedRules;
