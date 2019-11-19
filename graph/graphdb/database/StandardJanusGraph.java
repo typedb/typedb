@@ -125,7 +125,6 @@ public class StandardJanusGraph implements JanusGraph {
                 );
 
         //Register with cache
-        TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, graphStrategies);
     }
 
