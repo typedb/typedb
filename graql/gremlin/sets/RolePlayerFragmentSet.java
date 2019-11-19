@@ -94,7 +94,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * However, we must still retain the LabelFragmentSet because it is possible it is selected as a result or
      * referred to elsewhere in the query.
      */
-    public static final FragmentSetOptimisation ROLE_OPTIMISATION = (fragmentSets, tx) -> {
+    public static final FragmentSetOptimisation ROLE_OPTIMISATION = (fragmentSets, conceptManager) -> {
         Iterable<RolePlayerFragmentSet> rolePlayers =
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
@@ -113,7 +113,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
                 newRolePlayer = rolePlayer.removeRoleVar();
             } else {
                 Set<SchemaConcept> concepts = roleLabel.labels().stream()
-                        .map(tx::<SchemaConcept>getSchemaConcept)
+                        .map(conceptManager::<SchemaConcept>getSchemaConcept)
                         .collect(toSet());
 
                 if (concepts.stream().allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRole())) {
@@ -139,7 +139,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * - as we have transaction information here, we additionally filter the non-relevant variant between key- and has- attribute options.
      *
      */
-    static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, tx) -> {
+    static final FragmentSetOptimisation IMPLICIT_RELATION_OPTIMISATION = (fragmentSets, conceptManager) -> {
         Iterable<RolePlayerFragmentSet> rolePlayers =
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
@@ -151,14 +151,14 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
             if(relLabels == null || roleLabels == null) continue;
 
             Set<RelationType> relTypes = relLabels.stream()
-                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
                     .filter(Objects::nonNull)
                     .filter(Concept::isRelationType)
                     .map(Concept::asRelationType)
                     .collect(toSet());
 
             Set<Role> roles = roleLabels.stream()
-                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
                     .filter(Objects::nonNull)
                     .filter(Concept::isRole)
                     .map(Concept::asRole)
@@ -199,7 +199,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
      * it can help with performance: there are some instances where it makes sense to navigate from the RelationType
      * {@code foo} to all instances. In order to do that, the IsaFragmentSet must be present.
      */
-    static final FragmentSetOptimisation RELATION_TYPE_OPTIMISATION = (fragmentSets, graph) -> {
+    static final FragmentSetOptimisation RELATION_TYPE_OPTIMISATION = (fragmentSets, conceptManager) -> {
         Iterable<RolePlayerFragmentSet> rolePlayers =
                 EquivalentFragmentSets.fragmentSetOfType(RolePlayerFragmentSet.class, fragmentSets)::iterator;
 
@@ -216,7 +216,7 @@ public class RolePlayerFragmentSet extends EquivalentFragmentSetImpl {
             if (relationLabel == null) continue;
 
             Stream<SchemaConcept> concepts =
-                    relationLabel.labels().stream().map(graph::<SchemaConcept>getSchemaConcept);
+                    relationLabel.labels().stream().map(conceptManager::<SchemaConcept>getSchemaConcept);
 
             if (concepts.allMatch(schemaConcept -> schemaConcept != null && schemaConcept.isRelationType())) {
                 fragmentSets.remove(rolePlayer);

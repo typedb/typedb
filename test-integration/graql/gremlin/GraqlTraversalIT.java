@@ -322,7 +322,7 @@ public class GraqlTraversalIT {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         List<Set<List<Fragment>>> collect = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, tx))
+                .map(conjunction -> new ConjunctionQuery(conjunction, tx.conceptManager()))
                 .map(ConjunctionQuery::allFragmentOrders)
                 .collect(toList());
 

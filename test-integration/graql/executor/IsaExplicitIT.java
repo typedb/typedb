@@ -38,7 +38,6 @@ import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
-import org.apache.cassandra.thrift.ITransportFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.ClassRule;

@@ -80,8 +80,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private long shardingThreshold;
     private KeyspaceStatistics keyspaceStatistics;
 
-    public TraversalPlanFactoryImpl(Transaction tx, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
-        this.tx = tx;
+    public TraversalPlanFactoryImpl(ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
         this.conceptManager = conceptManager;
         this.shardingThreshold = shardingThreshold;
         this.keyspaceStatistics = keyspaceStatistics;
@@ -97,8 +96,8 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         Collection<Conjunction<Statement>> patterns = pattern.getDisjunctiveNormalForm().getPatterns();
 
         Set<List<? extends Fragment>> fragments = patterns.stream()
-                .map(conjunction -> new ConjunctionQuery(conjunction, tx))
-                .map((ConjunctionQuery query) -> planForConjunction(query))
+                .map(conjunction -> new ConjunctionQuery(conjunction, conceptManager))
+                .map(this::planForConjunction)
                 .collect(ImmutableSet.toImmutableSet());
 
         return new GraqlTraversalImpl(fragments);

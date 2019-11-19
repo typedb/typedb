@@ -84,7 +84,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, ImmutableSet.of(author, director), null),
@@ -105,7 +105,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }
@@ -124,7 +124,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }
@@ -144,7 +144,7 @@ public class RolePlayerFragmentSetTest {
                 authorLabelFragmentSet
         );
 
-        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.ROLE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         HashSet<EquivalentFragmentSet> expected = Sets.newHashSet(
                 new RolePlayerFragmentSet(null, a, b, c, null, null, null),
@@ -166,7 +166,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }
@@ -185,7 +185,7 @@ public class RolePlayerFragmentSetTest {
 
         Collection<EquivalentFragmentSet> expected = Sets.newHashSet(fragmentSets);
 
-        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx);
+        RolePlayerFragmentSet.RELATION_TYPE_OPTIMISATION.apply(fragmentSets, tx.conceptManager());
 
         assertEquals(expected, fragmentSets);
     }

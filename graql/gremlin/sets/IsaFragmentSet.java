@@ -82,7 +82,7 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
      *     <li>The labels {@code foo} and {@code bar} are all not types that may have edge instances</li>
      * </ol>
      */
-    static final FragmentSetOptimisation SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION = (fragments, tx) -> {
+    static final FragmentSetOptimisation SKIP_EDGE_INSTANCE_CHECK_OPTIMISATION = (fragments, conceptManager) -> {
         Iterable<IsaFragmentSet> isaSets = fragmentSetOfType(IsaFragmentSet.class, fragments)::iterator;
 
         for (IsaFragmentSet isaSet : isaSets) {
@@ -93,7 +93,7 @@ class IsaFragmentSet extends EquivalentFragmentSetImpl {
             if (labelSet == null) continue;
 
             boolean mayHaveEdgeInstances = labelSet.labels().stream()
-                    .map(tx::<SchemaConcept>getSchemaConcept)
+                    .map(conceptManager::<SchemaConcept>getSchemaConcept)
                     .anyMatch(IsaFragmentSet::mayHaveEdgeInstances);
 
             if (!mayHaveEdgeInstances) {

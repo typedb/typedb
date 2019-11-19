@@ -18,8 +18,8 @@
 
 package grakn.core.graql.gremlin.sets;
 
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.server.Transaction;
 
 import java.util.Collection;
 
@@ -39,8 +39,8 @@ public interface FragmentSetOptimisation {
      * </p>
      *
      * @param fragmentSets a mutable collection of EquivalentFragmentSets
-     * @param tx the Transaction that these EquivalentFragmentSets are going to operate against
+     * @param conceptManager the Transaction that these EquivalentFragmentSets are going to operate against
      * @return whether {@code fragmentSets} was modified
      */
-    boolean apply(Collection<EquivalentFragmentSet> fragmentSets, Transaction tx);
+    boolean apply(Collection<EquivalentFragmentSet> fragmentSets, ConceptManager conceptManager);
 }

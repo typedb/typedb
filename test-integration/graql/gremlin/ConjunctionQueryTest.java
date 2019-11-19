@@ -155,7 +155,7 @@ public class ConjunctionQueryTest {
 
         return feature(hasItem(contains(resourceIndexFragment)), "fragment sets", pattern -> {
             Conjunction<Statement> conjunction = pattern.getDisjunctiveNormalForm().getPatterns().iterator().next();
-            return new ConjunctionQuery(conjunction, tx).getEquivalentFragmentSets();
+            return new ConjunctionQuery(conjunction, tx.conceptManager()).getEquivalentFragmentSets();
         });
     }
 }

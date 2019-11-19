@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.server.Transaction;
 import graql.lang.property.VarProperty;
@@ -71,12 +72,12 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
      * Returns null if there is not exactly one label any of the Labels mentioned are not in the knowledge base.
      */
     @Nullable
-    LabelFragmentSet tryExpandSubs(Variable typeVar, Transaction tx) {
+    LabelFragmentSet tryExpandSubs(Variable typeVar, ConceptManager conceptManager) {
         if (labels().size() != 1) return null;
 
         Label oldLabel = Iterables.getOnlyElement(labels());
 
-        SchemaConcept concept = tx.getSchemaConcept(oldLabel);
+        SchemaConcept concept = conceptManager.getSchemaConcept(oldLabel);
         if (concept == null) return null;
 
         Set<Label> newLabels = concept.subs().map(SchemaConcept::label).collect(toSet());
@@ -93,7 +94,7 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
      *   <li>The fragment set is not the only remaining fragment set</li>
      * </ol>
      */
-    static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, graph) -> {
+    static final FragmentSetOptimisation REDUNDANT_LABEL_ELIMINATION_OPTIMISATION = (fragmentSets, conceptManager) -> {
 
         if (fragmentSets.size() <= 1) return false;
 
@@ -105,7 +106,7 @@ public class LabelFragmentSet extends EquivalentFragmentSetImpl {
             boolean hasReturnedVarVar = labelSet.var().isReturned();
             if (hasReturnedVarVar) continue;
 
-            boolean existsInGraph = labelSet.labels().stream().anyMatch(label -> graph.getSchemaConcept(label) != null);
+            boolean existsInGraph = labelSet.labels().stream().anyMatch(label -> conceptManager.getSchemaConcept(label) != null);
             if (!existsInGraph) continue;
 
             boolean varReferredToInOtherFragment = fragmentSets.stream()
