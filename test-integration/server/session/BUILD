@@ -132,5 +132,7 @@ checkstyle_test(
         ":transaction-oltp-it",
         ":keyspace-schema-cache-it",
         ":transaction-cache-it",
+        ":attribute-manager-it",
+        ":shard-manager-it",
     ],
 )
