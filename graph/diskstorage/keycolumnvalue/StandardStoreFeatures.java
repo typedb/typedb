@@ -44,7 +44,6 @@ public class StandardStoreFeatures implements StoreFeatures {
     private final boolean supportsPersist;
     private final Configuration keyConsistentTxConfig;
     private final Configuration localKeyConsistentTxConfig;
-    private final Configuration scanTxConfig;
     private final boolean supportsInterruption;
     private final boolean optimisticLocking;
 
@@ -139,11 +138,6 @@ public class StandardStoreFeatures implements StoreFeatures {
     }
 
     @Override
-    public Configuration getScanTxConfig() {
-        return scanTxConfig;
-    }
-
-    @Override
     public boolean hasLocalKeyPartition() {
         return localKeyPartition;
     }
@@ -181,7 +175,6 @@ public class StandardStoreFeatures implements StoreFeatures {
         private boolean keyConsistent;
         private Configuration keyConsistentTxConfig;
         private Configuration localKeyConsistentTxConfig;
-        private Configuration scanTxConfig;
         private boolean supportsInterruption = true;
         private boolean optimisticLocking;
 
@@ -214,7 +207,6 @@ public class StandardStoreFeatures implements StoreFeatures {
             if (template.isKeyConsistent()) {
                 keyConsistent(template.getKeyConsistentTxConfig(), template.getLocalKeyConsistentTxConfig());
             }
-            scanTxConfig(template.getScanTxConfig());
             supportsInterruption(template.supportsInterruption());
             optimisticLocking(template.hasOptimisticLocking());
         }
@@ -299,21 +291,10 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
-        public Builder keyConsistent(Configuration c) {
-            keyConsistent = true;
-            keyConsistentTxConfig = c;
-            return this;
-        }
-
         public Builder keyConsistent(Configuration global, Configuration local) {
             keyConsistent = true;
             keyConsistentTxConfig = global;
             localKeyConsistentTxConfig = local;
-            return this;
-        }
-
-        public Builder scanTxConfig(Configuration c) {
-            scanTxConfig = c;
             return this;
         }
 
@@ -329,7 +310,7 @@ public class StandardStoreFeatures implements StoreFeatures {
                     timestamps, preferredTimestamps, cellLevelTTL,
                     storeLevelTTL, visibility, supportsPersist,
                     keyConsistentTxConfig,
-                    localKeyConsistentTxConfig, scanTxConfig, supportsInterruption, optimisticLocking);
+                    localKeyConsistentTxConfig, supportsInterruption, optimisticLocking);
         }
     }
 
@@ -341,8 +322,7 @@ public class StandardStoreFeatures implements StoreFeatures {
                                   boolean cellLevelTTL, boolean storeLevelTTL,
                                   boolean visibility, boolean supportsPersist,
                                   Configuration keyConsistentTxConfig,
-                                  Configuration localKeyConsistentTxConfig,
-                                  Configuration scanTxConfig, boolean supportsInterruption, boolean optimisticLocking) {
+                                  Configuration localKeyConsistentTxConfig, boolean supportsInterruption, boolean optimisticLocking) {
         this.unorderedScan = unorderedScan;
         this.orderedScan = orderedScan;
         this.multiQuery = multiQuery;
@@ -361,7 +341,6 @@ public class StandardStoreFeatures implements StoreFeatures {
         this.supportsPersist = supportsPersist;
         this.keyConsistentTxConfig = keyConsistentTxConfig;
         this.localKeyConsistentTxConfig = localKeyConsistentTxConfig;
-        this.scanTxConfig = scanTxConfig;
         this.supportsInterruption = supportsInterruption;
         this.optimisticLocking = optimisticLocking;
     }

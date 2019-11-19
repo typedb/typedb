@@ -81,15 +81,6 @@ public class GraphDatabaseConfiguration {
                     "Leaving it unset is recommended.",
             ConfigOption.Type.LOCAL, String.class);
 
-    // ########## OLAP Style Processing ##########
-    // ################################################
-
-    public static final ConfigNamespace JOB_NS = new ConfigNamespace(null, "job", "Root Configuration Namespace for JanusGraph OLAP jobs");
-
-    public static final ConfigOption<Long> JOB_START_TIME = new ConfigOption<>(JOB_NS, "start-time",
-            "Timestamp (ms since epoch) when the job started. Automatically set.", ConfigOption.Type.LOCAL, Long.class);
-
-
     // ################ Transaction #######################
     // ################################################
 

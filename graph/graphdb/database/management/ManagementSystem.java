@@ -18,26 +18,20 @@
 
 package grakn.core.graph.graphdb.database.management;
 
-import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import grakn.core.graph.core.Cardinality;
 import grakn.core.graph.core.Connection;
 import grakn.core.graph.core.EdgeLabel;
-import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.core.JanusGraphVertex;
-import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.Multiplicity;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.VertexLabel;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.core.schema.EdgeLabelMaker;
-import grakn.core.graph.core.schema.Index;
 import grakn.core.graph.core.schema.JanusGraphIndex;
 import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.core.schema.JanusGraphSchemaElement;
@@ -45,14 +39,11 @@ import grakn.core.graph.core.schema.JanusGraphSchemaType;
 import grakn.core.graph.core.schema.Parameter;
 import grakn.core.graph.core.schema.PropertyKeyMaker;
 import grakn.core.graph.core.schema.RelationTypeIndex;
-import grakn.core.graph.core.schema.SchemaAction;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.core.schema.VertexLabelMaker;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.configuration.TransactionalConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.KCVSConfiguration;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.graphdb.database.IndexSerializer;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
@@ -63,9 +54,6 @@ import grakn.core.graph.graphdb.internal.InternalRelationType;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
 import grakn.core.graph.graphdb.internal.Order;
 import grakn.core.graph.graphdb.internal.Token;
-import grakn.core.graph.graphdb.olap.VertexJobConverter;
-import grakn.core.graph.graphdb.olap.job.IndexRemoveJob;
-import grakn.core.graph.graphdb.olap.job.IndexRepairJob;
 import grakn.core.graph.graphdb.query.QueryUtil;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.CompositeIndexType;
@@ -91,28 +79,18 @@ import grakn.core.graph.graphdb.types.vertices.PropertyKeyVertex;
 import grakn.core.graph.graphdb.types.vertices.RelationTypeVertex;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -137,9 +115,6 @@ public class ManagementSystem implements JanusGraphManagement {
 
     private boolean graphShutdownRequired;
     private boolean isOpen;
-
-    private final static String FIRSTDASH = "------------------------------------------------------------------------------------------------\n";
-    private final static String DASHBREAK = "---------------------------------------------------------------------------------------------------\n";
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog, ManagementLogger managementLogger, SchemaCache schemaCache) {
         this.graph = graph;
@@ -281,7 +256,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         //Compose signature
         long[] typeSig = ((InternalRelationType) type).getSignature();
-        Set<PropertyKey> signature = Sets.newHashSet();
+        Set<PropertyKey> signature = new HashSet<>();
         for (long typeId : typeSig) signature.add(transaction.getExistingPropertyKey(typeId));
         for (RelationType sortType : sortKeys) signature.remove(sortType);
         if (!signature.isEmpty()) {
@@ -290,9 +265,7 @@ public class ManagementSystem implements JanusGraphManagement {
         }
         RelationType typeIndex = maker.make();
         addSchemaEdge(type, typeIndex, TypeDefinitionCategory.RELATIONTYPE_INDEX, null);
-        RelationTypeIndexWrapper index = new RelationTypeIndexWrapper((InternalRelationType) typeIndex);
-        if (!type.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
-        return index;
+        return new RelationTypeIndexWrapper((InternalRelationType) typeIndex);
     }
 
     private static String composeRelationTypeIndexName(RelationType type, String name) {
@@ -319,12 +292,7 @@ public class ManagementSystem implements JanusGraphManagement {
     @Override
     public Iterable<RelationTypeIndex> getRelationIndexes(RelationType type) {
         Preconditions.checkArgument(type instanceof InternalRelationType, "Invalid relation type provided: %s", type);
-        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), internalRelationType -> !type.equals(internalRelationType)), new Function<InternalRelationType, RelationTypeIndex>() {
-            @Override
-            public RelationTypeIndex apply(@Nullable InternalRelationType internalType) {
-                return new RelationTypeIndexWrapper(internalType);
-            }
-        });
+        return Iterables.transform(Iterables.filter(((InternalRelationType) type).getRelationIndexes(), internalRelationType -> !type.equals(internalRelationType)), RelationTypeIndexWrapper::new);
     }
 
     /* --------------
@@ -358,158 +326,6 @@ public class ManagementSystem implements JanusGraphManagement {
                 .collect(Collectors.toList());
     }
 
-    @Override
-    public String printSchema() {
-        return printVertexLabels(false) + printEdgeLabels(false) + printPropertyKeys(false) + printIndexes(false);
-    }
-
-    @Override
-    public String printVertexLabels() {
-        return this.printVertexLabels(true);
-    }
-
-    private String printVertexLabels(boolean calledDirectly) {
-        StringBuilder sb = new StringBuilder();
-        String pattern = "%-30s | %-11s | %-50s |%n";
-        Iterable<VertexLabel> labels = getVertexLabels();
-        boolean hasResults = false;
-        sb.append(FIRSTDASH);
-        sb.append(String.format(pattern, "Vertex Label Name", "Partitioned", "Static"));
-        sb.append(DASHBREAK);
-        for (VertexLabel label : labels) {
-            hasResults = true;
-            sb.append(String.format(pattern, label.name(), label.isPartitioned(), label.isStatic()));
-        }
-        if (hasResults && calledDirectly) {
-            sb.append(DASHBREAK);
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public String printEdgeLabels() {
-        return this.printEdgeLabels(true);
-    }
-
-    private String printEdgeLabels(boolean calledDirectly) {
-        StringBuilder sb = new StringBuilder();
-        String pattern = "%-30s | %-11s | %-11s | %-36s |%n";
-        Iterable<EdgeLabel> labels = getRelationTypes(EdgeLabel.class);
-        boolean hasResults = false;
-        if (calledDirectly) {
-            sb.append(FIRSTDASH);
-        } else {
-            sb.append(DASHBREAK);
-        }
-        sb.append(String.format(pattern, "Edge Label Name", "Directed", "Unidirected", "Multiplicity"));
-        sb.append(DASHBREAK);
-        for (EdgeLabel label : labels) {
-            hasResults = true;
-            sb.append(String.format(pattern, label.name(), label.isDirected(), label.isUnidirected(), label.multiplicity()));
-        }
-        if (hasResults && calledDirectly) {
-            sb.append(DASHBREAK);
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public String printPropertyKeys() {
-        return this.printPropertyKeys(true);
-    }
-
-    private String printPropertyKeys(boolean calledDirectly) {
-        StringBuilder sb = new StringBuilder();
-        String pattern = "%-30s | %-11s | %-50s |\n";
-        Iterable<PropertyKey> keys = getRelationTypes(PropertyKey.class);
-        boolean hasResults = false;
-        if (calledDirectly) {
-            sb.append(FIRSTDASH);
-        } else {
-            sb.append(DASHBREAK);
-        }
-        sb.append(String.format(pattern, "Property Key Name", "Cardinality", "Data Type"));
-        sb.append(DASHBREAK);
-        for (PropertyKey key : keys) {
-            hasResults = true;
-            sb.append(String.format(pattern, key.name(), key.cardinality(), key.dataType()));
-        }
-        if (hasResults && calledDirectly) {
-            sb.append(DASHBREAK);
-        }
-        return sb.toString();
-    }
-
-    @Override
-    public String printIndexes() {
-        return this.printIndexes(true);
-    }
-
-    private String printIndexes(boolean calledDirectly) {
-        StringBuilder sb = new StringBuilder();
-        String pattern = "%-30s | %-11s | %-9s | %-14s | %-10s %10s |%n";
-        String relationPattern = "%-30s | %-11s | %-9s | %-14s | %-8s | %10s |%n";
-        Iterable<JanusGraphIndex> vertexIndexes = getGraphIndexes(Vertex.class);
-        Iterable<JanusGraphIndex> edgeIndexes = getGraphIndexes(Edge.class);
-        Iterable<RelationType> relationTypes = getRelationTypes(RelationType.class);
-        LinkedList<RelationTypeIndex> relationIndexes = new LinkedList<>();
-
-        for (RelationType rt : relationTypes) {
-            Iterable<RelationTypeIndex> rti = getRelationIndexes(rt);
-            rti.forEach(relationIndexes::add);
-        }
-
-        if (calledDirectly) {
-            sb.append(FIRSTDASH);
-        } else {
-            sb.append(DASHBREAK);
-        }
-        sb.append(String.format(pattern, "Vertex Index Name", "Type", "Unique", "Backing", "Key:", "Status"));
-        sb.append(DASHBREAK);
-        sb.append(iterateIndexes(pattern, vertexIndexes));
-
-        sb.append(DASHBREAK);
-        sb.append(String.format(pattern, "Edge Index (VCI) Name", "Type", "Unique", "Backing", "Key:", "Status"));
-        sb.append(DASHBREAK);
-        sb.append(iterateIndexes(pattern, edgeIndexes));
-
-        sb.append(DASHBREAK);
-        sb.append(String.format(relationPattern, "Relation Index", "Type", "Direction", "Sort Key", "Order", "Status"));
-        sb.append(DASHBREAK);
-        for (RelationTypeIndex ri : relationIndexes) {
-            sb.append(String.format(relationPattern, ri.name(), ri.getType(), ri.getDirection(), ri.getSortKey()[0], ri.getSortOrder(), ri.getIndexStatus().name()));
-        }
-        if (!relationIndexes.isEmpty()) {
-            sb.append(DASHBREAK);
-        }
-        return sb.toString();
-    }
-
-    private String iterateIndexes(String pattern, Iterable<JanusGraphIndex> indexes) {
-        StringBuilder sb = new StringBuilder();
-        for (JanusGraphIndex index : indexes) {
-            String type = getIndexType(index);
-            PropertyKey[] keys = index.getFieldKeys();
-            String[][] keyStatus = getKeyStatus(keys, index);
-            sb.append(String.format(pattern, index.name(), type, index.isUnique(), index.getBackingIndex(), keyStatus[0][0] + ":", keyStatus[0][1]));
-            if (keyStatus.length > 1) {
-                for (int i = 1; i < keyStatus.length; i++) {
-                    sb.append(String.format(pattern, "", "", "", "", keyStatus[i][0] + ":", keyStatus[i][1]));
-                }
-            }
-        }
-        return sb.toString();
-
-    }
-
-    private String[][] getKeyStatus(PropertyKey[] keys, JanusGraphIndex index) {
-        String[][] keyStatus = new String[keys.length][2];
-        for (int i = 0; i < keys.length; i++) {
-            keyStatus[i][0] = keys[i].name();
-            keyStatus[i][1] = index.getIndexStatus(keys[i]).name();
-        }
-        return keyStatus.length > 0 ? keyStatus : new String[][]{{"", ""}};
-    }
 
     private String getIndexType(JanusGraphIndex index) {
         String type;
@@ -523,43 +339,12 @@ public class ManagementSystem implements JanusGraphManagement {
         return type;
     }
 
-    /**
-     * Returns a {@link GraphIndexStatusWatcher} configured to watch
-     * {@code graphIndexName} through graph {@code g}.
-     * <p>
-     * This method just instantiates an object.
-     * Invoke {@link GraphIndexStatusWatcher#call()} to wait.
-     *
-     * @param g              the graph through which to read index information
-     * @param graphIndexName the name of a graph index to watch
-     */
-    public static GraphIndexStatusWatcher awaitGraphIndexStatus(JanusGraph g, String graphIndexName) {
-        return new GraphIndexStatusWatcher(g, graphIndexName);
-    }
-
-
-    /**
-     * Returns a {@link RelationIndexStatusWatcher} configured to watch the index specified by
-     * {@code relationIndexName} and {@code relationIndexType} through graph {@code g}.
-     * <p>
-     * This method just instantiates an object.
-     * Invoke {@link RelationIndexStatusWatcher#call()} to wait.
-     *
-     * @param g                 the graph through which to read index information
-     * @param relationIndexName the name of the relation index to watch
-     * @param relationTypeName  the type on the relation index to watch
-     */
-    public static RelationIndexStatusWatcher awaitRelationIndexStatus(JanusGraph g, String relationIndexName, String relationTypeName) {
-        return new RelationIndexStatusWatcher(g, relationIndexName, relationTypeName);
-    }
-
     private void checkIndexName(String indexName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
         Preconditions.checkArgument(getGraphIndex(indexName) == null, "An index with name '%s' has already been defined", indexName);
     }
 
-    private JanusGraphIndex createMixedIndex(String indexName, ElementCategory elementCategory,
-                                             JanusGraphSchemaType constraint, String backingIndex) {
+    private JanusGraphIndex createMixedIndex(String indexName, ElementCategory elementCategory, JanusGraphSchemaType constraint, String backingIndex) {
         Preconditions.checkArgument(graph.getIndexSerializer().containsIndex(backingIndex), "Unknown external index backend: %s", backingIndex);
         checkIndexName(indexName);
 
@@ -619,7 +404,6 @@ public class ManagementSystem implements JanusGraphManagement {
             throw new JanusGraphException("Could not register new index field with index backend", e);
         }
         if (!indexVertex.isNew()) updatedTypes.add(indexVertex);
-        if (!key.isNew()) updateIndex(index, SchemaAction.REGISTER_INDEX);
     }
 
     private JanusGraphIndex createCompositeIndex(String indexName, ElementCategory elementCategory, boolean unique, JanusGraphSchemaType constraint, PropertyKey... keys) {
@@ -659,9 +443,8 @@ public class ManagementSystem implements JanusGraphManagement {
             addSchemaEdge(indexVertex, (JanusGraphSchemaVertex) constraint, TypeDefinitionCategory.INDEX_SCHEMA_CONSTRAINT, null);
         }
         updateSchemaVertex(indexVertex);
-        JanusGraphIndexWrapper index = new JanusGraphIndexWrapper(indexVertex.asIndexType());
-        if (!oneNewKey) updateIndex(index, SchemaAction.REGISTER_INDEX);
-        return index;
+
+        return new JanusGraphIndexWrapper(indexVertex.asIndexType());
     }
 
     @Override
@@ -738,337 +521,6 @@ public class ManagementSystem implements JanusGraphManagement {
     /* --------------
     Schema Update
      --------------- */
-
-    @Override
-    public IndexJobFuture updateIndex(Index index, SchemaAction updateAction) {
-        Preconditions.checkArgument(index != null, "Need to provide an index");
-        Preconditions.checkArgument(updateAction != null, "Need to provide update action");
-
-        JanusGraphSchemaVertex schemaVertex = getSchemaVertex(index);
-        Set<JanusGraphSchemaVertex> dependentTypes;
-        Set<PropertyKeyVertex> keySubset = ImmutableSet.of();
-        if (index instanceof RelationTypeIndex) {
-            dependentTypes = ImmutableSet.of((JanusGraphSchemaVertex) ((InternalRelationType) schemaVertex).getBaseType());
-            if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) {
-                return null;
-            }
-        } else if (index instanceof JanusGraphIndex) {
-            IndexType indexType = schemaVertex.asIndexType();
-            dependentTypes = Sets.newHashSet();
-            if (indexType.isCompositeIndex()) {
-                if (!updateAction.isApplicableStatus(schemaVertex.getStatus())) {
-                    return null;
-                }
-                for (PropertyKey key : ((JanusGraphIndex) index).getFieldKeys()) {
-                    dependentTypes.add((PropertyKeyVertex) key);
-                }
-            } else {
-                keySubset = Sets.newHashSet();
-                MixedIndexType mixedIndexType = (MixedIndexType) indexType;
-                Set<SchemaStatus> applicableStatus = updateAction.getApplicableStatus();
-                for (ParameterIndexField field : mixedIndexType.getFieldKeys()) {
-                    if (applicableStatus.contains(field.getStatus())) {
-                        keySubset.add((PropertyKeyVertex) field.getFieldKey());
-                    }
-                }
-                if (keySubset.isEmpty()) {
-                    return null;
-                }
-
-                dependentTypes.addAll(keySubset);
-            }
-        } else throw new UnsupportedOperationException("Updates not supported for index: " + index);
-
-        IndexIdentifier indexId = new IndexIdentifier(index);
-        StandardScanner.Builder builder;
-        IndexJobFuture future;
-        switch (updateAction) {
-            case REGISTER_INDEX:
-                setStatus(schemaVertex, SchemaStatus.INSTALLED, keySubset);
-                updatedTypes.add(schemaVertex);
-                updatedTypes.addAll(dependentTypes);
-                setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.REGISTERED, keySubset));
-                future = new EmptyIndexJobFuture();
-                break;
-            case REINDEX:
-                builder = graph.getBackend().buildEdgeScanJob();
-                builder.setFinishJob(indexId.getIndexJobFinisher(graph, SchemaAction.ENABLE_INDEX));
-                builder.setJobId(indexId);
-                builder.setJob(VertexJobConverter.convert(graph, new IndexRepairJob(indexId.indexName, indexId.relationTypeName)));
-                try {
-                    future = builder.execute();
-                } catch (BackendException e) {
-                    throw new JanusGraphException(e);
-                }
-                break;
-            case ENABLE_INDEX:
-                setStatus(schemaVertex, SchemaStatus.ENABLED, keySubset);
-                updatedTypes.add(schemaVertex);
-                if (!keySubset.isEmpty()) {
-                    updatedTypes.addAll(dependentTypes);
-                }
-                future = new EmptyIndexJobFuture();
-                break;
-            case DISABLE_INDEX:
-                setStatus(schemaVertex, SchemaStatus.INSTALLED, keySubset);
-                updatedTypes.add(schemaVertex);
-                if (!keySubset.isEmpty()) {
-                    updatedTypes.addAll(dependentTypes);
-                }
-                setUpdateTrigger(new UpdateStatusTrigger(graph, schemaVertex, SchemaStatus.DISABLED, keySubset));
-                future = new EmptyIndexJobFuture();
-                break;
-            case REMOVE_INDEX:
-                if (index instanceof RelationTypeIndex) {
-                    builder = graph.getBackend().buildEdgeScanJob();
-                } else {
-                    JanusGraphIndex graphIndex = (JanusGraphIndex) index;
-                    if (graphIndex.isMixedIndex()) {
-                        throw new UnsupportedOperationException("External mixed indexes must be removed in the indexing system directly.");
-                    }
-                    builder = graph.getBackend().buildGraphIndexScanJob();
-                }
-                builder.setFinishJob(indexId.getIndexJobFinisher());
-                builder.setJobId(indexId);
-                builder.setJob(new IndexRemoveJob(graph, indexId.indexName, indexId.relationTypeName));
-                try {
-                    future = builder.execute();
-                } catch (BackendException e) {
-                    throw new JanusGraphException(e);
-                }
-                break;
-            default:
-                throw new UnsupportedOperationException("Update action not supported: " + updateAction);
-        }
-        return future;
-    }
-
-    private static class EmptyIndexJobFuture implements IndexJobFuture {
-
-        @Override
-        public ScanMetrics getIntermediateResult() {
-            return null;
-        }
-
-        @Override
-        public boolean cancel(boolean mayInterruptIfRunning) {
-            return false;
-        }
-
-        @Override
-        public boolean isCancelled() {
-            return false;
-        }
-
-        @Override
-        public boolean isDone() {
-            return true;
-        }
-
-        @Override
-        public ScanMetrics get() throws InterruptedException, ExecutionException {
-            return null;
-        }
-
-        @Override
-        public ScanMetrics get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-            return null;
-        }
-    }
-
-    private static class UpdateStatusTrigger implements Callable<Boolean> {
-
-        private static final Logger LOG = LoggerFactory.getLogger(UpdateStatusTrigger.class);
-
-        private final StandardJanusGraph graph;
-        private final long schemaVertexId;
-        private final SchemaStatus newStatus;
-        private final Set<Long> propertyKeys;
-
-        private UpdateStatusTrigger(StandardJanusGraph graph, JanusGraphSchemaVertex vertex, SchemaStatus newStatus, Iterable<PropertyKeyVertex> keys) {
-            this.graph = graph;
-            this.schemaVertexId = vertex.longId();
-            this.newStatus = newStatus;
-            this.propertyKeys = Sets.newHashSet(Iterables.transform(keys, (Function<PropertyKey, Long>) propertyKey -> propertyKey.longId()));
-        }
-
-        @Override
-        public Boolean call() throws Exception {
-            ManagementSystem management = (ManagementSystem) graph.openManagement();
-            try {
-                JanusGraphVertex vertex = management.transaction.getVertex(schemaVertexId);
-                Preconditions.checkArgument(vertex instanceof JanusGraphSchemaVertex);
-                JanusGraphSchemaVertex schemaVertex = (JanusGraphSchemaVertex) vertex;
-
-                Set<PropertyKeyVertex> keys = Sets.newHashSet();
-                for (Long keyId : propertyKeys) keys.add((PropertyKeyVertex) management.transaction.getVertex(keyId));
-                management.setStatus(schemaVertex, newStatus, keys);
-                management.updatedTypes.addAll(keys);
-                management.updatedTypes.add(schemaVertex);
-                if (LOG.isInfoEnabled()) {
-                    Set<String> propNames = Sets.newHashSet();
-                    for (PropertyKeyVertex v : keys) {
-                        try {
-                            propNames.add(v.name());
-                        } catch (Throwable t) {
-                            LOG.warn("Failed to get name for property key with id {}", v.longId(), t);
-                            propNames.add("(ID#" + v.longId() + ")");
-                        }
-                    }
-                    String schemaName = "(ID#" + schemaVertexId + ")";
-                    try {
-                        schemaName = schemaVertex.name();
-                    } catch (Throwable t) {
-                        LOG.warn("Failed to get name for schema vertex with id {}", schemaVertexId, t);
-                    }
-                    LOG.info("Set status {} on schema element {} with property keys {}", newStatus, schemaName, propNames);
-                }
-                management.commit();
-                return true;
-            } catch (RuntimeException e) {
-                management.rollback();
-                throw e;
-            }
-        }
-
-        @Override
-        public int hashCode() {
-            return Long.hashCode(schemaVertexId);
-        }
-
-        @Override
-        public boolean equals(Object oth) {
-            if (this == oth) {
-                return true;
-            } else if (!getClass().isInstance(oth)) {
-                return false;
-            }
-            return schemaVertexId == ((UpdateStatusTrigger) oth).schemaVertexId;
-        }
-
-    }
-
-    private void setUpdateTrigger(Callable<Boolean> trigger) {
-        updatedTypeTriggers.add(trigger);
-    }
-
-    private void setStatus(JanusGraphSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
-        if (keys.isEmpty()) setStatusVertex(vertex, status);
-        else setStatusEdges(vertex, status, keys);
-        vertex.resetCache();
-        updateSchemaVertex(vertex);
-    }
-
-    private void setStatusVertex(JanusGraphSchemaVertex vertex, SchemaStatus status) {
-        Preconditions.checkArgument(vertex instanceof RelationTypeVertex || vertex.asIndexType().isCompositeIndex());
-
-        //Delete current status
-        for (JanusGraphVertexProperty p : vertex.query().types(BaseKey.SchemaDefinitionProperty).properties()) {
-            if (p.<TypeDefinitionDescription>valueOrNull(BaseKey.SchemaDefinitionDesc).getCategory() == TypeDefinitionCategory.STATUS) {
-                if (p.value().equals(status)) return;
-                else p.remove();
-            }
-        }
-        //Add new status
-        JanusGraphVertexProperty p = transaction.addProperty(vertex, BaseKey.SchemaDefinitionProperty, status);
-        p.property(BaseKey.SchemaDefinitionDesc.name(), TypeDefinitionDescription.of(TypeDefinitionCategory.STATUS));
-    }
-
-    private void setStatusEdges(JanusGraphSchemaVertex vertex, SchemaStatus status, Set<PropertyKeyVertex> keys) {
-        Preconditions.checkArgument(vertex.asIndexType().isMixedIndex());
-
-        for (JanusGraphEdge edge : vertex.getEdges(TypeDefinitionCategory.INDEX_FIELD, Direction.OUT)) {
-            if (!keys.contains(edge.vertex(Direction.IN))) continue; //Only address edges with matching keys
-            TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
-            Parameter[] parameters = (Parameter[]) desc.getModifier();
-            if (parameters[parameters.length - 1].value().equals(status)) continue;
-
-            Parameter[] paraCopy = Arrays.copyOf(parameters, parameters.length);
-            paraCopy[parameters.length - 1] = ParameterType.STATUS.getParameter(status);
-            edge.remove();
-            addSchemaEdge(vertex, edge.vertex(Direction.IN), TypeDefinitionCategory.INDEX_FIELD, paraCopy);
-        }
-
-        for (PropertyKeyVertex prop : keys) prop.resetCache();
-    }
-
-    @Override
-    public IndexJobFuture getIndexJobStatus(Index index) {
-        IndexIdentifier indexId = new IndexIdentifier(index);
-        return graph.getBackend().getScanJobStatus(indexId);
-    }
-
-    private static class IndexIdentifier {
-
-        private final String indexName;
-        private final String relationTypeName;
-        private final int hashcode;
-
-        private IndexIdentifier(Index index) {
-            Preconditions.checkArgument(index != null);
-            indexName = index.name();
-            if (index instanceof RelationTypeIndex) relationTypeName = ((RelationTypeIndex) index).getType().name();
-            else relationTypeName = null;
-            Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
-            hashcode = Objects.hash(indexName, relationTypeName);
-        }
-
-        private Index retrieve(ManagementSystem management) {
-            if (relationTypeName == null) return management.getGraphIndex(indexName);
-            else return management.getRelationIndex(management.getRelationType(relationTypeName), indexName);
-        }
-
-        @Override
-        public String toString() {
-            String s = indexName;
-            if (relationTypeName != null) s += "[" + relationTypeName + "]";
-            return s;
-        }
-
-        @Override
-        public int hashCode() {
-            return hashcode;
-        }
-
-        @Override
-        public boolean equals(Object other) {
-            if (this == other) {
-                return true;
-            } else if (!getClass().isInstance(other)) {
-                return false;
-            }
-            IndexIdentifier oth = (IndexIdentifier) other;
-            return indexName.equals(oth.indexName) && (relationTypeName == oth.relationTypeName || (relationTypeName != null && relationTypeName.equals(oth.relationTypeName)));
-        }
-
-        public Consumer<ScanMetrics> getIndexJobFinisher() {
-            return getIndexJobFinisher(null, null);
-        }
-
-        public Consumer<ScanMetrics> getIndexJobFinisher(JanusGraph graph, SchemaAction action) {
-            Preconditions.checkArgument((graph != null && action != null) || (graph == null && action == null));
-            return metrics -> {
-                try {
-                    if (metrics.get(ScanMetrics.Metric.FAILURE) == 0) {
-                        if (action != null) {
-                            ManagementSystem management = (ManagementSystem) graph.openManagement();
-                            try {
-                                Index index = retrieve(management);
-                                management.updateIndex(index, action);
-                            } finally {
-                                management.commit();
-                            }
-                        }
-                        LOG.debug("Index update job successful for [{}]", IndexIdentifier.this.toString());
-                    } else {
-                        LOG.error("Index update job unsuccessful for [{}]. Check logs", IndexIdentifier.this.toString());
-                    }
-                } catch (Throwable e) {
-                    LOG.error("Error encountered when updating index after job finished [" + IndexIdentifier.this.toString() + "]: ", e);
-                }
-            };
-        }
-    }
 
 
     @Override

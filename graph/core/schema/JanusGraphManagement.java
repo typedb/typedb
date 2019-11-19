@@ -24,15 +24,11 @@ import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.PropertyKey;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.VertexLabel;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Element;
 
 import java.time.Duration;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /**
  * The JanusGraphManagement interface provides methods to define, update, and inspect the schema of a JanusGraph graph.
@@ -193,32 +189,6 @@ public interface JanusGraphManagement extends SchemaManager {
 
     }
 
-    interface IndexJobFuture extends Future<ScanMetrics> {
-
-        /**
-         * Returns a set of potentially incomplete and still-changing metrics
-         * for this job.  This is not guaranteed to be the same object as the
-         * one returned by {@link #get()}, nor will the metrics visible through
-         * the object returned by this method necessarily eventually converge
-         * on the same values in the object returned by {@link #get()}, though
-         * the implementation should attempt to provide both properties when
-         * practical.
-         * <p>
-         * The metrics visible through the object returned by this method may
-         * also change their values between reads.  In other words, this is not
-         * necessarily an immutable snapshot.
-         * <p>
-         * If the index job has failed and the implementation is capable of
-         * quickly detecting that, then the implementation should throw an
-         * {@code ExecutionException}.  Returning metrics in case of failure is
-         * acceptable, but throwing an exception is preferred.
-         *
-         * @return metrics for a potentially still-running job
-         * @throws ExecutionException if the index job threw an exception
-         */
-        ScanMetrics getIntermediateResult() throws ExecutionException;
-    }
-
     /*
     ##################### CONSISTENCY SETTING ##########################
      */
@@ -262,21 +232,6 @@ public interface JanusGraphManagement extends SchemaManager {
      */
     void changeName(JanusGraphSchemaElement element, String newName);
 
-    /**
-     * Updates the provided index according to the given {@link SchemaAction}
-     *
-     * @return a future that completes when the index action is done
-     */
-    IndexJobFuture updateIndex(Index index, SchemaAction updateAction);
-
-    /**
-     * If an index update job was triggered through {@link #updateIndex(Index, SchemaAction)} with schema actions
-     * {@link SchemaAction#REINDEX} or {@link SchemaAction#REMOVE_INDEX}
-     * then this method can be used to track the status of this asynchronous process.
-     *
-     * @return A message that reflects the status of the index job
-     */
-    IndexJobFuture getIndexJobStatus(Index index);
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################
@@ -314,44 +269,5 @@ public interface JanusGraphManagement extends SchemaManager {
      * @see JanusGraphTransaction#rollback()
      */
     void rollback();
-
-    /*
-    ##################### PRINT SCHEMA ELEMENTS ##########################
-     */
-
-    /**
-     * Prints out schema information related to vertex and edge labels, indexes, and property keys.
-     *
-     * @return a collection of all the mgmt API schema printing methods
-     */
-    String printSchema();
-
-    /**
-     * Prints out schema information related to vertex labels.
-     *
-     * @return String with vertex label schema information
-     */
-    String printVertexLabels();
-
-    /**
-     * Prints out schema infomration related to edge labels.
-     *
-     * @return String with edge label schema information
-     */
-    String printEdgeLabels();
-
-    /**
-     * Prints out schema information related to property keys.
-     *
-     * @return String with property key schema information
-     */
-    String printPropertyKeys();
-
-    /**
-     * Prints out schema information related to indexes
-     *
-     * @return String with graph index information
-     */
-    String printIndexes();
 
 }
