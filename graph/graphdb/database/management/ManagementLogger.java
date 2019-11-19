@@ -94,7 +94,7 @@ public class ManagementLogger implements MessageReader {
                 }
                 GraphCacheEvictionAction action = serializer.readObjectNotNull(in, GraphCacheEvictionAction.class);
                 Preconditions.checkNotNull(action);
-                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action, graph.getGraphName()));
+                Thread ack = new Thread(new SendAckOnTxClose(evictionId, senderId, graph.getOpenTransactions(), action));
                 ack.setDaemon(true);
                 ack.start();
                 break;
@@ -118,8 +118,7 @@ public class ManagementLogger implements MessageReader {
 
     }
 
-    void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes, boolean evictGraphFromCache, List<Callable<Boolean>> updatedTypeTriggers, Set<String> openInstances) {
-        Preconditions.checkArgument(!openInstances.isEmpty());
+    void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes, boolean evictGraphFromCache, List<Callable<Boolean>> updatedTypeTriggers) {
         long evictionId = evictionTriggerCounter.incrementAndGet();
         evictionTriggerMap.put(evictionId, new EvictionTrigger(evictionId, updatedTypeTriggers, graph));
         DataOutput out = graph.getDataSerializer().getDataOutput(128);
@@ -158,9 +157,10 @@ public class ManagementLogger implements MessageReader {
             this.graph = graph;
             this.evictionId = evictionId;
             this.updatedTypeTriggers = updatedTypeTriggers;
-            final JanusGraphManagement mgmt = graph.openManagement();
+            JanusGraphManagement mgmt = graph.openManagement();
             this.instancesToBeAcknowledged = ConcurrentHashMap.newKeySet();
-            instancesToBeAcknowledged.addAll(((ManagementSystem) mgmt).getOpenInstancesInternal());
+            // do we need this? probably not bye
+//            instancesToBeAcknowledged.addAll(((ManagementSystem) mgmt).getOpenInstancesInternal());
             mgmt.rollback();
         }
 
@@ -189,9 +189,6 @@ public class ManagementLogger implements MessageReader {
 
         int removeDroppedInstances() {
             JanusGraphManagement mgmt = graph.openManagement();
-            Set<String> updatedInstances = ((ManagementSystem) mgmt).getOpenInstancesInternal();
-            String instanceRemovedMsg = "Instance [{}] was removed list of open instances and therefore dropped from list of instances to be acknowledged.";
-            instancesToBeAcknowledged.stream().filter(it -> !updatedInstances.contains(it)).filter(instancesToBeAcknowledged::remove).forEach(it -> LOG.debug(instanceRemovedMsg, it));
             mgmt.rollback();
             return instancesToBeAcknowledged.size();
         }
@@ -203,14 +200,12 @@ public class ManagementLogger implements MessageReader {
         private final Set<? extends JanusGraphTransaction> openTx;
         private final String originId;
         private final GraphCacheEvictionAction action;
-        private final String graphName;
 
-        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx, GraphCacheEvictionAction action, String graphName) {
+        private SendAckOnTxClose(long evictionId, String originId, Set<? extends JanusGraphTransaction> openTx, GraphCacheEvictionAction action) {
             this.evictionId = evictionId;
             this.openTx = openTx;
             this.originId = originId;
             this.action = action;
-            this.graphName = graphName;
         }
 
         @Override
@@ -230,7 +225,7 @@ public class ManagementLogger implements MessageReader {
                 if (!txStillOpen && janusGraphManagerIsInBadState) {
                     LOG.error("JanusGraphManager should be instantiated on this server, but it is not. " +
                             "Please restart with proper server settings. " +
-                            "As a result, we could not evict graph {} from the cache.", graphName);
+                            "As a result, we could not evict graph from the cache.");
                     break;
                 } else if (!txStillOpen) {
                     //Send ack and finish up

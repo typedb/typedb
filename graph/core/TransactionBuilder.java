@@ -108,42 +108,6 @@ public interface TransactionBuilder {
      */
     TransactionBuilder commitTime(Instant instant);
 
-
-    /**
-     * Sets the group name for this transaction which provides a way for gathering
-     * reporting on multiple transactions into one group.
-     * <p>
-     * By setting a group one enables Metrics for this transaction, and defines what string
-     * should start the transaction's metric names.
-     * <p>
-     * If null, Metrics collection is totally disabled for this transaction.
-     * <p>
-     * If empty, Metrics collection is enabled, but there will be no prefix.
-     * Where the default setting would generate metrics names in the form
-     * "prefix.x.y.z", this transaction will instead use metric names in the
-     * form "x.y.z".
-     * <p>
-     * If nonempty, Metrics collection is enabled and the prefix will be used
-     * for all of this transaction's measurements.
-     * <p>
-     * Note: setting this to a non-null value only partially overrides
-     * {@link GraphDatabaseConfiguration#BASIC_METRICS} = false in the graph
-     * database configuration. When Metrics are disabled at the graph level and
-     * enabled at the transaction level, storage backend timings and counters
-     * will remain disabled.
-     * <p>
-     * The default value is
-     * {@link GraphDatabaseConfiguration#METRICS_PREFIX_DEFAULT}.
-     * <p>
-     * Sets the name prefix used for Metrics recorded by this transaction. If
-     * metrics is enabled via {@link GraphDatabaseConfiguration#BASIC_METRICS},
-     * this string will be prepended to all JanusGraph metric names.
-     *
-     * @param name Metric name prefix for this transaction
-     * @return Object containing transaction prefix name property
-     */
-    TransactionBuilder groupName(String name);
-
     /**
      * Name of the LOG to be used for logging the mutations in this transaction. If no LOG identifier is set,
      * then this transaction will not be logged.
@@ -162,14 +126,6 @@ public interface TransactionBuilder {
      */
     TransactionBuilder restrictedPartitions(int[] partitions);
 
-    /**
-     * Configures a custom option on this transaction which will be passed through to the storage and indexing backends.
-     *
-     * @param k Name of the configuration element.
-     * @param v Object containing the custom options to be applied.
-     * @return Object containing the properties in param v
-     */
-    TransactionBuilder customOption(String k, Object v);
 
     /**
      * Starts and returns the transaction build by this builder

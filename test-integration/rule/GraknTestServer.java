@@ -80,8 +80,6 @@ public class GraknTestServer extends ExternalResource {
     protected File updatedCassandraConfigPath;
     protected int storagePort;
     protected int nativeTransportPort;
-    protected int thriftPort;
-
 
     public GraknTestServer() {
         this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH);
@@ -166,7 +164,6 @@ public class GraknTestServer extends ExternalResource {
     protected void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
-        thriftPort = findUnusedLocalPort();
     }
 
     protected File buildCassandraConfigWithRandomPorts() throws IOException {
@@ -175,7 +172,6 @@ public class GraknTestServer extends ExternalResource {
 
         configString = configString + "\nstorage_port: " + storagePort;
         configString = configString + "\nnative_transport_port: " + nativeTransportPort;
-        configString = configString + "\nrpc_port: " + thriftPort;
         InputStream configStream = new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8));
 
         String directory = "target/embeddedCassandra";
@@ -206,7 +202,6 @@ public class GraknTestServer extends ExternalResource {
 
         //Override ports used by HadoopGraph
         config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, nativeTransportPort);
-        config.setConfigProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
 
         return config;
     }
@@ -217,13 +212,14 @@ public class GraknTestServer extends ExternalResource {
         janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
 
-        Integer cqlPort = serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT);
+        Integer storagePort = serverConfig.getProperty(ConfigKey.STORAGE_PORT);
         String storageHostname = serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME);
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
         CqlSession cqlSession = CqlSession.builder()
-                .addContactPoint(new InetSocketAddress(storageHostname, cqlPort))
+                .addContactPoint(new InetSocketAddress(storageHostname, storagePort))
                 .withLocalDatacenter("datacenter1")
                 .build();
+
         keyspaceManager = new KeyspaceManager(cqlSession);
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
 

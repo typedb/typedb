@@ -26,7 +26,6 @@ import java.util.Map;
 /**
  * Immutable map from long key ids to objects.
  * Implemented for memory and time efficiency.
- *
  */
 public class RelationCache{
     public final Direction direction;

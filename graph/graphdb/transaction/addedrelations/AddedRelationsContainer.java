@@ -18,12 +18,12 @@
 
 package grakn.core.graph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
 import grakn.core.graph.graphdb.internal.InternalRelation;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 
 public interface AddedRelationsContainer {
 
@@ -55,7 +55,7 @@ public interface AddedRelationsContainer {
 
         @Override
         public List<InternalRelation> getView(Predicate<InternalRelation> filter) {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
 
         @Override
@@ -65,7 +65,7 @@ public interface AddedRelationsContainer {
 
         @Override
         public Collection<InternalRelation> getAll() {
-            return ImmutableList.of();
+            return Collections.emptyList();
         }
     };
 

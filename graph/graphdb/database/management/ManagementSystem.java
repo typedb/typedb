@@ -38,7 +38,6 @@ import grakn.core.graph.core.VertexLabel;
 import grakn.core.graph.core.schema.ConsistencyModifier;
 import grakn.core.graph.core.schema.EdgeLabelMaker;
 import grakn.core.graph.core.schema.Index;
-import grakn.core.graph.core.schema.JanusGraphConfiguration;
 import grakn.core.graph.core.schema.JanusGraphIndex;
 import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.core.schema.JanusGraphSchemaElement;
@@ -50,11 +49,7 @@ import grakn.core.graph.core.schema.SchemaAction;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.core.schema.VertexLabelMaker;
 import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
-import grakn.core.graph.diskstorage.configuration.ConfigOption;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.TransactionalConfiguration;
-import grakn.core.graph.diskstorage.configuration.UserModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.KCVSConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanMetrics;
 import grakn.core.graph.diskstorage.keycolumnvalue.scan.StandardScanner;
@@ -104,7 +99,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -122,23 +116,17 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.database.management.RelationTypeIndexWrapper.RELATION_INDEX_SEPARATOR;
 
 public class ManagementSystem implements JanusGraphManagement {
 
     private static final Logger LOG = LoggerFactory.getLogger(ManagementSystem.class);
-    private static final String CURRENT_INSTANCE_SUFFIX = "(current)";
 
     private final StandardJanusGraph graph;
     private final Log sysLog;
     private final ManagementLogger managementLogger;
 
     private final TransactionalConfiguration transactionalConfig;
-    private final ModifiableConfiguration modifyConfig;
-    private final UserModifiableConfiguration userConfig;
     private final SchemaCache schemaCache;
 
     private final StandardJanusGraphTx transaction;
@@ -147,7 +135,6 @@ public class ManagementSystem implements JanusGraphManagement {
     private boolean evictGraphFromCache;
     private final List<Callable<Boolean>> updatedTypeTriggers;
 
-    private final Instant txStartTime;
     private boolean graphShutdownRequired;
     private boolean isOpen;
 
@@ -155,14 +142,11 @@ public class ManagementSystem implements JanusGraphManagement {
     private final static String DASHBREAK = "---------------------------------------------------------------------------------------------------\n";
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog, ManagementLogger managementLogger, SchemaCache schemaCache) {
-        Preconditions.checkArgument(config != null && graph != null && sysLog != null && managementLogger != null);
         this.graph = graph;
         this.sysLog = sysLog;
         this.managementLogger = managementLogger;
         this.schemaCache = schemaCache;
         this.transactionalConfig = new TransactionalConfiguration(config);
-        this.modifyConfig = new ModifiableConfiguration(ROOT_NS, transactionalConfig, BasicConfiguration.Restriction.GLOBAL);
-        this.userConfig = new UserModifiableConfiguration(modifyConfig, configVerifier);
 
         this.updatedTypes = new HashSet<>();
         this.evictGraphFromCache = false;
@@ -170,53 +154,7 @@ public class ManagementSystem implements JanusGraphManagement {
         this.graphShutdownRequired = false;
 
         this.transaction = graph.buildTransaction().disableBatchLoading().start();
-        this.txStartTime = graph.getConfiguration().getTimestampProvider().getTime();
         this.isOpen = true;
-    }
-
-    private final UserModifiableConfiguration.ConfigVerifier configVerifier = new UserModifiableConfiguration.ConfigVerifier() {
-        @Override
-        public void verifyModification(ConfigOption option) {
-            Preconditions.checkArgument(graph.getConfiguration().isUpgradeAllowed(option.getName()) ||
-                    option.getType() != ConfigOption.Type.FIXED, "Cannot change the fixed configuration option: %s", option);
-            Preconditions.checkArgument(option.getType() != ConfigOption.Type.LOCAL, "Cannot change the local configuration option: %s", option);
-            if (option.getType() == ConfigOption.Type.GLOBAL_OFFLINE) {
-                //Verify that there no other open JanusGraph graph instance and no open transactions
-                Set<String> openInstances = getOpenInstancesInternal();
-                Preconditions.checkArgument(openInstances.size() < 2, "Cannot change offline config option [%s] since multiple instances are currently open: %s", option, openInstances);
-                Preconditions.checkArgument(openInstances.contains(graph.getConfiguration().getUniqueGraphId()),
-                        "Only one open instance (" + openInstances.iterator().next() + "), but it's not the current one (" + graph.getConfiguration().getUniqueGraphId() + ")");
-                //Indicate that this graph must be closed
-                graphShutdownRequired = true;
-            }
-        }
-    };
-
-    public Set<String> getOpenInstancesInternal() {
-        Set<String> openInstances = Sets.newHashSet(modifyConfig.getContainedNamespaces(REGISTRATION_NS));
-        LOG.debug("Open instances: {}", openInstances);
-        return openInstances;
-    }
-
-    @Override
-    public Set<String> getOpenInstances() {
-        Set<String> openInstances = getOpenInstancesInternal();
-        String uid = graph.getConfiguration().getUniqueGraphId();
-        Preconditions.checkArgument(openInstances.contains(uid), "Current instance [%s] not listed as an open instance: %s", uid, openInstances);
-        openInstances.remove(uid);
-        openInstances.add(uid + CURRENT_INSTANCE_SUFFIX);
-        return openInstances;
-    }
-
-    @Override
-    public void forceCloseInstance(String instanceId) {
-        Preconditions.checkArgument(!graph.getConfiguration().getUniqueGraphId().equals(instanceId),
-                "Cannot force close this current instance [%s]. Properly shut down the graph instead.", instanceId);
-        Preconditions.checkArgument(modifyConfig.has(REGISTRATION_TIME, instanceId), "Instance [%s] is not currently open", instanceId);
-        Instant registrationTime = modifyConfig.get(REGISTRATION_TIME, instanceId);
-        Preconditions.checkArgument(registrationTime.compareTo(txStartTime) < 0, "The to-be-closed instance [%s] was started after this transaction" +
-                "which indicates a successful restart and can hence not be closed: %s vs %s", instanceId, registrationTime, txStartTime);
-        modifyConfig.remove(REGISTRATION_TIME, instanceId);
     }
 
     private void ensureOpen() {
@@ -240,7 +178,7 @@ public class ManagementSystem implements JanusGraphManagement {
 
         //Communicate schema changes
         if (!updatedTypes.isEmpty() || evictGraphFromCache) {
-            managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers, getOpenInstancesInternal());
+            managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers);
             for (JanusGraphSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
             }
@@ -905,22 +843,6 @@ public class ManagementSystem implements JanusGraphManagement {
         return future;
     }
 
-
-    private static class GraphCacheEvictionCompleteTrigger implements Callable<Boolean> {
-        private static final Logger LOG = LoggerFactory.getLogger(GraphCacheEvictionCompleteTrigger.class);
-        private final String graphName;
-
-        private GraphCacheEvictionCompleteTrigger(String graphName) {
-            this.graphName = graphName;
-        }
-
-        @Override
-        public Boolean call() {
-            LOG.info("Graph {} has been removed from the graph cache on every JanusGraph node in the cluster.", graphName);
-            return true;
-        }
-    }
-
     private static class EmptyIndexJobFuture implements IndexJobFuture {
 
         @Override
@@ -1450,19 +1372,5 @@ public class ManagementSystem implements JanusGraphManagement {
     public Iterable<VertexLabel> getVertexLabels() {
         return Iterables.filter(QueryUtil.getVertices(transaction, BaseKey.SchemaCategory,
                 JanusGraphSchemaCategory.VERTEXLABEL), VertexLabel.class);
-    }
-
-    // ###### USERMODIFIABLECONFIGURATION PROXY #########
-
-    @Override
-    public synchronized String get(String path) {
-        ensureOpen();
-        return userConfig.get(path);
-    }
-
-    @Override
-    public synchronized JanusGraphConfiguration set(String path, Object value) {
-        ensureOpen();
-        return userConfig.set(path, value);
     }
 }

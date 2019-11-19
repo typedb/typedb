@@ -19,17 +19,16 @@
 package grakn.core.graph.graphdb.types.vertices;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
-import grakn.core.graph.core.JanusGraphVertexQuery;
 import grakn.core.graph.core.schema.SchemaStatus;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.internal.JanusGraphSchemaCategory;
+import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import grakn.core.graph.graphdb.transaction.RelationConstructor;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
 import grakn.core.graph.graphdb.types.IndexType;
@@ -44,6 +43,9 @@ import grakn.core.graph.graphdb.types.system.BaseLabel;
 import grakn.core.graph.graphdb.vertices.CacheVertex;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
+
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource {
 
@@ -148,16 +150,11 @@ public class JanusGraphSchemaVertex extends CacheVertex implements SchemaSource 
     }
 
     public Iterable<JanusGraphEdge> getEdges(TypeDefinitionCategory def, Direction dir) {
-        return getEdges(def, dir, null);
-    }
-
-    public Iterable<JanusGraphEdge> getEdges(TypeDefinitionCategory def, Direction dir, JanusGraphSchemaVertex other) {
-        JanusGraphVertexQuery query = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
-        if (other != null) query.adjacent(other);
-        return Iterables.filter(query.edges(), (Predicate<JanusGraphEdge>) edge -> {
-            final TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
+        VertexCentricQueryBuilder queryBuilder = query().type(BaseLabel.SchemaDefinitionEdge).direction(dir);
+        return StreamSupport.stream(queryBuilder.edges().spliterator(), false).filter(edge -> {
+            TypeDefinitionDescription desc = edge.valueOrNull(BaseKey.SchemaDefinitionDesc);
             return desc.getCategory() == def;
-        });
+        }).collect(Collectors.toList());
     }
 
     @Override

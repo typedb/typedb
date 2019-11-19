@@ -18,31 +18,27 @@
 
 package grakn.core.graph.hadoop.formats.cql;
 
-import com.datastax.driver.core.Cluster;
-import com.datastax.driver.core.ColumnDefinitions;
-import com.datastax.driver.core.ColumnMetadata;
-import com.datastax.driver.core.LocalDate;
-import com.datastax.driver.core.Metadata;
-import com.datastax.driver.core.ResultSet;
-import com.datastax.driver.core.Row;
-import com.datastax.driver.core.Session;
-import com.datastax.driver.core.TableMetadata;
-import com.datastax.driver.core.Token;
-import com.datastax.driver.core.TupleValue;
-import com.datastax.driver.core.TypeCodec;
-import com.datastax.driver.core.UDTValue;
+import com.datastax.oss.driver.api.core.CqlIdentifier;
+import com.datastax.oss.driver.api.core.CqlSession;
+import com.datastax.oss.driver.api.core.ProtocolVersion;
+import com.datastax.oss.driver.api.core.cql.ColumnDefinitions;
+import com.datastax.oss.driver.api.core.cql.ResultSet;
+import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.detach.AttachmentPoint;
+import com.datastax.oss.driver.api.core.metadata.schema.ColumnMetadata;
+import com.datastax.oss.driver.api.core.metadata.schema.TableMetadata;
+import com.datastax.oss.driver.api.core.type.DataType;
+import com.datastax.oss.driver.api.core.type.codec.registry.CodecRegistry;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
-import com.google.common.reflect.TypeToken;
 import org.apache.cassandra.db.marshal.AbstractType;
 import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.hadoop.ColumnFamilySplit;
 import org.apache.cassandra.hadoop.ConfigHelper;
 import org.apache.cassandra.hadoop.HadoopCompat;
-import org.apache.cassandra.hadoop.cql3.CqlConfigHelper;
 import org.apache.cassandra.utils.AbstractIterator;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.apache.cassandra.utils.Pair;
@@ -55,20 +51,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
 
 /**
  * <p>
@@ -96,8 +86,7 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
     private String keyspace;
     private String cfName;
     private String cqlQuery;
-    private Cluster cluster;
-    private Session session;
+    private CqlSession session;
     private IPartitioner partitioner;
     private String inputColumns;
     private String userDefinedWhereClauses;
@@ -121,33 +110,26 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         cfName = ConfigHelper.getInputColumnFamily(conf);
         keyspace = ConfigHelper.getInputKeyspace(conf);
         partitioner = ConfigHelper.getInputPartitioner(conf);
-        inputColumns = CqlConfigHelper.getInputcolumns(conf);
-        userDefinedWhereClauses = CqlConfigHelper.getInputWhereClauses(conf);
+        inputColumns = GraknCqlConfigHelper.getInputcolumns(conf);
+        userDefinedWhereClauses = GraknCqlConfigHelper.getInputWhereClauses(conf);
 
         try {
-            if (cluster != null) {
-                return;
-            }
 
             // create a Cluster instance
             String[] locations = split.getLocations();
-            cluster = GraknInputFormat.getInputCluster(locations, conf);
+            session = GraknInputFormat.getInputSession(locations, conf);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
-        if (cluster != null) {
-            session = cluster.connect(quote(keyspace));
-        }
-
         //get negotiated serialization protocol
-        nativeProtocolVersion = cluster.getConfiguration().getProtocolOptions().getProtocolVersion().toInt();
+        nativeProtocolVersion = session.getContext().getProtocolVersion().getCode();
 
         // If the user provides a CQL query then we will use it without validation
         // otherwise we will fall back to building a query using the:
         //   inputColumns
         //   whereClauses
-        cqlQuery = CqlConfigHelper.getInputCql(conf);
+        cqlQuery = GraknCqlConfigHelper.getInputCql(conf);
         // validate that the user hasn't tried to give us a custom query along with input columns
         // and where clauses
         if (StringUtils.isNotEmpty(cqlQuery) && (StringUtils.isNotEmpty(inputColumns) || StringUtils.isNotEmpty(userDefinedWhereClauses))) {
@@ -166,9 +148,6 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
     public void close() {
         if (session != null) {
             session.close();
-        }
-        if (cluster != null) {
-            cluster.close();
         }
     }
 
@@ -252,13 +231,13 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         private long keyId = 0L;
         protected int totalRead = 0; // total number of cf rows read
         protected Iterator<Row> rows;
-        private Map<String, ByteBuffer> previousRowKey = new HashMap<String, ByteBuffer>(); // previous CF row key
+        private Map<String, ByteBuffer> previousRowKey = new HashMap<>(); // previous CF row key
 
         public RowIterator() {
             AbstractType type = partitioner.getTokenValidator();
-            ResultSet rs = session.execute(cqlQuery, type.compose(type.fromString(split.getStartToken())), type.compose(type.fromString(split.getEndToken())));
-            for (ColumnMetadata meta : cluster.getMetadata().getKeyspace(quote(keyspace)).getTable(quote(cfName)).getPartitionKey()) {
-                partitionBoundColumns.put(meta.getName(), Boolean.TRUE);
+            ResultSet rs = session.execute(session.prepare(cqlQuery).bind(type.compose(type.fromString(split.getStartToken())), type.compose(type.fromString(split.getEndToken()))));
+            for (ColumnMetadata meta : session.getMetadata().getKeyspace(quote(keyspace)).get().getTable(quote(cfName)).get().getPartitionKey()) {
+                partitionBoundColumns.put(meta.getName().toString(), Boolean.TRUE);
             }
             rows = rs.iterator();
         }
@@ -306,153 +285,23 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         }
 
         @Override
-        public boolean isNull(int i) {
-            return row.isNull(i);
+        public int firstIndexOf(CqlIdentifier id) {
+            return row.firstIndexOf(id);
         }
 
         @Override
-        public boolean isNull(String name) {
-            return row.isNull(name);
+        public DataType getType(CqlIdentifier id) {
+            return row.getType(id);
         }
 
         @Override
-        public Object getObject(int i) {
-            return row.getObject(i);
+        public int firstIndexOf(String name) {
+            return row.firstIndexOf(name);
         }
 
         @Override
-        public <T> T get(int i, Class<T> aClass) {
-            return row.get(i, aClass);
-        }
-
-        @Override
-        public <T> T get(int i, TypeToken<T> typeToken) {
-            return row.get(i, typeToken);
-        }
-
-        @Override
-        public <T> T get(int i, TypeCodec<T> typeCodec) {
-            return row.get(i, typeCodec);
-        }
-
-        @Override
-        public Object getObject(String s) {
-            return row.getObject(s);
-        }
-
-        @Override
-        public <T> T get(String s, Class<T> aClass) {
-            return row.get(s, aClass);
-        }
-
-        @Override
-        public <T> T get(String s, TypeToken<T> typeToken) {
-            return row.get(s, typeToken);
-        }
-
-        @Override
-        public <T> T get(String s, TypeCodec<T> typeCodec) {
-            return row.get(s, typeCodec);
-        }
-
-        @Override
-        public boolean getBool(int i) {
-            return row.getBool(i);
-        }
-
-        @Override
-        public boolean getBool(String name) {
-            return row.getBool(name);
-        }
-
-        @Override
-        public short getShort(int i) {
-            return row.getShort(i);
-        }
-
-        @Override
-        public short getShort(String s) {
-            return row.getShort(s);
-        }
-
-        @Override
-        public byte getByte(int i) {
-            return row.getByte(i);
-        }
-
-        @Override
-        public byte getByte(String s) {
-            return row.getByte(s);
-        }
-
-        @Override
-        public int getInt(int i) {
-            return row.getInt(i);
-        }
-
-        @Override
-        public int getInt(String name) {
-            return row.getInt(name);
-        }
-
-        @Override
-        public long getLong(int i) {
-            return row.getLong(i);
-        }
-
-        @Override
-        public long getLong(String name) {
-            return row.getLong(name);
-        }
-
-        @Override
-        public Date getTimestamp(int i) {
-            return row.getTimestamp(i);
-        }
-
-        @Override
-        public Date getTimestamp(String s) {
-            return row.getTimestamp(s);
-        }
-
-        @Override
-        public LocalDate getDate(int i) {
-            return row.getDate(i);
-        }
-
-        @Override
-        public LocalDate getDate(String s) {
-            return row.getDate(s);
-        }
-
-        @Override
-        public long getTime(int i) {
-            return row.getTime(i);
-        }
-
-        @Override
-        public long getTime(String s) {
-            return row.getTime(s);
-        }
-
-        @Override
-        public float getFloat(int i) {
-            return row.getFloat(i);
-        }
-
-        @Override
-        public float getFloat(String name) {
-            return row.getFloat(name);
-        }
-
-        @Override
-        public double getDouble(int i) {
-            return row.getDouble(i);
-        }
-
-        @Override
-        public double getDouble(String name) {
-            return row.getDouble(name);
+        public DataType getType(String name) {
+            return row.getType(name);
         }
 
         @Override
@@ -461,163 +310,33 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
         }
 
         @Override
-        public ByteBuffer getBytesUnsafe(String name) {
-            return row.getBytesUnsafe(name);
+        public int size() {
+            return row.size();
         }
 
         @Override
-        public ByteBuffer getBytes(int i) {
-            return row.getBytes(i);
+        public DataType getType(int i) {
+            return row.getType(i);
         }
 
         @Override
-        public ByteBuffer getBytes(String name) {
-            return row.getBytes(name);
+        public CodecRegistry codecRegistry() {
+            return row.codecRegistry();
         }
 
         @Override
-        public String getString(int i) {
-            return row.getString(i);
+        public ProtocolVersion protocolVersion() {
+            return row.protocolVersion();
         }
 
         @Override
-        public String getString(String name) {
-            return row.getString(name);
+        public boolean isDetached() {
+            return row.isDetached();
         }
 
         @Override
-        public BigInteger getVarint(int i) {
-            return row.getVarint(i);
-        }
-
-        @Override
-        public BigInteger getVarint(String name) {
-            return row.getVarint(name);
-        }
-
-        @Override
-        public BigDecimal getDecimal(int i) {
-            return row.getDecimal(i);
-        }
-
-        @Override
-        public BigDecimal getDecimal(String name) {
-            return row.getDecimal(name);
-        }
-
-        @Override
-        public UUID getUUID(int i) {
-            return row.getUUID(i);
-        }
-
-        @Override
-        public UUID getUUID(String name) {
-            return row.getUUID(name);
-        }
-
-        @Override
-        public InetAddress getInet(int i) {
-            return row.getInet(i);
-        }
-
-        @Override
-        public InetAddress getInet(String name) {
-            return row.getInet(name);
-        }
-
-        @Override
-        public <T> List<T> getList(int i, Class<T> elementsClass) {
-            return row.getList(i, elementsClass);
-        }
-
-        @Override
-        public <T> List<T> getList(int i, TypeToken<T> typeToken) {
-            return row.getList(i, typeToken);
-        }
-
-        @Override
-        public <T> List<T> getList(String name, Class<T> elementsClass) {
-            return row.getList(name, elementsClass);
-        }
-
-        @Override
-        public <T> List<T> getList(String s, TypeToken<T> typeToken) {
-            return row.getList(s, typeToken);
-        }
-
-        @Override
-        public <T> Set<T> getSet(int i, Class<T> elementsClass) {
-            return row.getSet(i, elementsClass);
-        }
-
-        @Override
-        public <T> Set<T> getSet(int i, TypeToken<T> typeToken) {
-            return row.getSet(i, typeToken);
-        }
-
-        @Override
-        public <T> Set<T> getSet(String name, Class<T> elementsClass) {
-            return row.getSet(name, elementsClass);
-        }
-
-        @Override
-        public <T> Set<T> getSet(String s, TypeToken<T> typeToken) {
-            return row.getSet(s, typeToken);
-        }
-
-        @Override
-        public <K, V> Map<K, V> getMap(int i, Class<K> keysClass, Class<V> valuesClass) {
-            return row.getMap(i, keysClass, valuesClass);
-        }
-
-        @Override
-        public <K, V> Map<K, V> getMap(int i, TypeToken<K> typeToken, TypeToken<V> typeToken1) {
-            return row.getMap(i, typeToken, typeToken1);
-        }
-
-        @Override
-        public <K, V> Map<K, V> getMap(String name, Class<K> keysClass, Class<V> valuesClass) {
-            return row.getMap(name, keysClass, valuesClass);
-        }
-
-        @Override
-        public <K, V> Map<K, V> getMap(String s, TypeToken<K> typeToken, TypeToken<V> typeToken1) {
-            return row.getMap(s, typeToken, typeToken1);
-        }
-
-        @Override
-        public UDTValue getUDTValue(int i) {
-            return row.getUDTValue(i);
-        }
-
-        @Override
-        public UDTValue getUDTValue(String name) {
-            return row.getUDTValue(name);
-        }
-
-        @Override
-        public TupleValue getTupleValue(int i) {
-            return row.getTupleValue(i);
-        }
-
-        @Override
-        public TupleValue getTupleValue(String name) {
-            return row.getTupleValue(name);
-        }
-
-        @Override
-        public Token getToken(int i) {
-            return row.getToken(i);
-        }
-
-        @Override
-        public Token getToken(String name) {
-            return row.getToken(name);
-        }
-
-        @Override
-        public Token getPartitionKeyToken() {
-            return row.getPartitionKeyToken();
+        public void attach(AttachmentPoint attachmentPoint) {
+            row.attach(attachmentPoint);
         }
     }
 
@@ -673,17 +392,16 @@ public class GraknCqlRecordReader extends RecordReader<Long, Row> implements org
 
     private void fetchKeys() {
         // get CF meta data
-        TableMetadata tableMetadata = session.getCluster()
+        TableMetadata tableMetadata = session
                 .getMetadata()
-                .getKeyspace(Metadata.quote(keyspace))
-                .getTable(Metadata.quote(cfName));
-        if (tableMetadata == null) {
-            throw new RuntimeException("No table metadata found for " + keyspace + "." + cfName);
-        }
+                .getKeyspace(keyspace).get()
+                .getTable(cfName)
+                .orElseThrow(() -> new RuntimeException("No table metadata found for " + keyspace + "." + cfName));
+
         //Here we assume that tableMetadata.getPartitionKey() always
         //returns the list of columns in order of component_index
         for (ColumnMetadata partitionKey : tableMetadata.getPartitionKey()) {
-            partitionKeys.add(partitionKey.getName());
+            partitionKeys.add(partitionKey.getName().toString());
         }
     }
 

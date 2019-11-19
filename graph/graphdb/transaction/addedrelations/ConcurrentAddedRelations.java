@@ -18,11 +18,10 @@
 
 package grakn.core.graph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
 import grakn.core.graph.graphdb.internal.InternalRelation;
-import grakn.core.graph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 
 public class ConcurrentAddedRelations extends SimpleAddedRelations {

@@ -18,12 +18,6 @@
 
 package grakn.core.graph.graphdb.types.system;
 
-import com.google.common.base.Predicate;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Property;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import grakn.core.graph.core.JanusGraphEdge;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
@@ -35,13 +29,17 @@ import grakn.core.graph.graphdb.internal.InternalRelation;
 import grakn.core.graph.graphdb.internal.InternalVertex;
 import grakn.core.graph.graphdb.query.vertex.VertexCentricQueryBuilder;
 import grakn.core.graph.graphdb.transaction.StandardJanusGraphTx;
-import grakn.core.graph.graphdb.types.system.BaseVertexLabel;
-import grakn.core.graph.graphdb.types.system.ImplicitKey;
 import grakn.core.graph.util.datastructures.Retriever;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.Predicate;
 
 public class EmptyVertex implements InternalVertex {
 

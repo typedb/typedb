@@ -23,7 +23,6 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.locking.PermanentLockingException;
 
 import java.util.List;
 import java.util.Map;
@@ -67,18 +66,11 @@ public interface KeyColumnValueStore {
     Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction txh) throws BackendException;
 
     /**
-     * Verifies acquisition of locks {@code txh} from previous calls to
-     * {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
-     * , then writes supplied {@code additions} and/or {@code deletions} to
+     * Writes supplied {@code additions} and/or {@code deletions} to
      * {@code key} in the underlying data store. Deletions are applied strictly
      * before additions. In other words, if both an addition and deletion are
      * supplied for the same column, then the column will first be deleted and
      * then the supplied Entry for the column will be added.
-     * <p>
-     * <p>
-     * <p>
-     * Implementations which don't support locking should skip the initial lock
-     * verification step but otherwise behave as described above.
      *
      * @param key       the key under which the columns in {@code additions} and
      *                  {@code deletions} will be written
@@ -87,61 +79,8 @@ public interface KeyColumnValueStore {
      * @param deletions the list of columns to delete from {@code key}, or null to
      *                  delete no columns
      * @param txh       the transaction to use
-     * @throws PermanentLockingException if locking is supported by the implementation and at least
-     *                                   one lock acquisition attempted by
-     *                                   {@link #acquireLock(StaticBuffer, StaticBuffer, StaticBuffer, StoreTransaction)}
-     *                                   has failed
      */
     void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException;
-
-    /**
-     * Attempts to claim a lock on the value at the specified {@code key} and
-     * {@code column} pair. These locks are discretionary.
-     * <p>
-     * <p>
-     * <p>
-     * If locking fails, implementations of this method may, but are not
-     * required to, throw {@link PermanentLockingException}.
-     * This method is not required
-     * to determine whether locking actually succeeded and may return without
-     * throwing an exception even when the lock can't be acquired. Lock
-     * acquisition is only only guaranteed to be verified by the first call to
-     * {@link #mutate(StaticBuffer, List, List, StoreTransaction)} on any given
-     * {@code txh}.
-     * <p>
-     * <p>
-     * <p>
-     * The {@code expectedValue} must match the actual value present at the
-     * {@code key} and {@code column} pair. If the true value does not match the
-     * {@code expectedValue}, the lock attempt fails and
-     * {@code LockingException} is thrown. This method may check
-     * {@code expectedValue}. The {@code mutate()} mutate is required to check
-     * it.
-     * <p>
-     * <p>
-     * <p>
-     * When this method is called multiple times on the same {@code key},
-     * {@code column}, and {@code txh}, calls after the first have no effect.
-     * <p>
-     * <p>
-     * <p>
-     * Locks acquired by this method must be automatically released on
-     * transaction {@code commit()} or {@code rollback()}.
-     * <p>
-     * <p>
-     * <p>
-     * Implementations which don't support locking should throw
-     * {@link UnsupportedOperationException}.
-     *
-     * @param key           the key on which to lock
-     * @param column        the column on which to lock
-     * @param expectedValue the expected value for the specified key-column pair on which
-     *                      to lock (null means the pair must have no value)
-     * @param txh           the transaction to use
-     * @throws PermanentLockingException the lock could not be acquired due to contention with other
-     *                                   transactions or a locking-specific storage problem
-     */
-    void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException;
 
     /**
      * Returns a {@link KeyIterator} over all keys that fall within the key-range specified by the given query and have one or more columns matching the column-range.

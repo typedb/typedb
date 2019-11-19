@@ -189,7 +189,7 @@ public class VertexJobConverter implements ScanJob {
 
         public void initializeGraph(Configuration config) {
             if (!provided) {
-                this.graph = (StandardJanusGraph) JanusGraphFactory.open((BasicConfiguration) config);
+                this.graph = JanusGraphFactory.open(((BasicConfiguration) config).getConfiguration());
             }
         }
 

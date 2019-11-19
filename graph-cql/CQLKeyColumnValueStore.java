@@ -137,13 +137,13 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
      * @param configuration data used in creating this store
      * @param closer        callback used to clean up references to this store in the store manager
      */
-    public CQLKeyColumnValueStore(CQLStoreManager storeManager, String tableName, Configuration configuration, Runnable closer) {
+    CQLKeyColumnValueStore(CQLStoreManager storeManager, String tableName, Configuration configuration, Runnable closer) {
 
         this.storeManager = storeManager;
         this.tableName = tableName;
         this.closer = closer;
         this.session = this.storeManager.getSession();
-        // NOTE: storeManager now only has access to localConfig (check JanusGraphFactory,
+        // NOTE: storeManager now only has access to localConfig (check JanusGraphFactory),
         // it gets initialised before reading globalConfig, so getMetaDataSchema will probably fail as it need to read configs from `system_properties`)
         // This is a temporary tradeoff so that we dont have to init StoreManager twice!!
         this.getter = new CQLColValGetter(storeManager.getMetaDataSchema(this.tableName)); // NOTE: this is reading only local config (not reading global configs from system_properties as originally designed)
@@ -236,6 +236,7 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
                 .withSpeculativeRetry("NONE");
 
 
+        // The following caching settings are copied from old Janus - need to verify if they actually provide any performance gain
         if (tableName.startsWith(EDGESTORE_NAME)) {
             createTable = createTable.withCaching(true, SchemaBuilder.RowsPerPartition.NONE);
         }
@@ -358,14 +359,6 @@ public class CQLKeyColumnValueStore implements KeyColumnValueStore {
     @Override
     public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction txh) throws BackendException {
         this.storeManager.mutateMany(Collections.singletonMap(this.tableName, Collections.singletonMap(key, new KCVMutation(additions, deletions))), txh);
-    }
-
-    @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction txh) throws BackendException {
-        boolean hasLocking = this.storeManager.getFeatures().hasLocking();
-        if (!hasLocking) {
-            throw new UnsupportedOperationException(String.format("%s doesn't support locking", getClass()));
-        }
     }
 
     @Override

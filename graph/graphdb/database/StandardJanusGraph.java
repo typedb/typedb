@@ -39,9 +39,7 @@ import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.configuration.BasicConfiguration;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.indexing.IndexEntry;
 import grakn.core.graph.diskstorage.indexing.IndexTransaction;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -67,6 +65,7 @@ import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
 import grakn.core.graph.graphdb.database.management.ManagementLogger;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.database.serialize.Serializer;
+import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalRelation;
 import grakn.core.graph.graphdb.internal.InternalRelationType;
@@ -86,7 +85,6 @@ import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import grakn.core.graph.util.system.IOUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
@@ -117,9 +115,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 
 public class StandardJanusGraph implements JanusGraph {
 
@@ -164,30 +159,30 @@ public class StandardJanusGraph implements JanusGraph {
 
     private final Set<StandardJanusGraphTx> openTransactions;
 
-    private final String name;
-
     private final AutomaticLocalTinkerTransaction tinkerTransaction = new AutomaticLocalTinkerTransaction();
 
     public StandardJanusGraph(GraphDatabaseConfiguration configuration, Backend backend) {
 
         this.config = configuration;
-        this.name = configuration.getGraphName();
         this.isOpen = true;
         this.txCounter = new AtomicLong(0);
         this.openTransactions = Collections.newSetFromMap(new ConcurrentHashMap<>(100, 0.75f, 1));
 
         // Collaborators:
         this.backend = backend;
-        this.idAssigner = new VertexIDAssigner(config.getConfiguration(), backend.getStoreManager(), backend.getStoreFeatures());
+        this.idAssigner = new VertexIDAssigner(config.getConfiguration(), backend);
         this.idManager = idAssigner.getIDManager();
         this.timestampProvider = configuration.getTimestampProvider();
 
 
         // Collaborators (Serializers)
-        this.serializer = config.getSerializer();
+        this.serializer = new StandardSerializer();
         StoreFeatures storeFeatures = backend.getStoreFeatures();
         this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer, this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
+
+        // The following query is used by VertexConstructors to check whether a vertex associated to a specific ID actually exists in the DB (and it's not a ghost)
+        // Full explanation on why this query is used: https://github.com/thinkaurelius/titan/issues/214
         this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
 
         // Collaborators (Caches)
@@ -199,21 +194,6 @@ public class StandardJanusGraph implements JanusGraph {
         Log managementLog = backend.getSystemMgmtLog();
         this.managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.timestampProvider);
         managementLog.registerReader(ReadMarker.fromNow(), this.managementLogger);
-
-
-        //Register instance and ensure uniqueness
-        String uniqueInstanceId = configuration.getUniqueGraphId();
-        ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
-        boolean instanceExists = globalConfig.has(REGISTRATION_TIME, uniqueInstanceId);
-        boolean replaceExistingInstance = configuration.getConfiguration().get(REPLACE_INSTANCE_IF_EXISTS);
-        if (instanceExists) {
-            if (!replaceExistingInstance) {
-                throw new JanusGraphException(String.format("A JanusGraph graph with the same instance id [%s] is already open. Might required forced shutdown.", uniqueInstanceId));
-            } else {
-                LOG.debug(String.format("Instance [%s] already exists. Opening the graph per " + REPLACE_INSTANCE_IF_EXISTS.getName() + " configuration.", uniqueInstanceId));
-            }
-        }
-        globalConfig.set(REGISTRATION_TIME, timestampProvider.getTime(), uniqueInstanceId);
     }
 
     // Get JanusTransaction which is wrapped inside the TinkerTransaction
@@ -239,7 +219,7 @@ public class StandardJanusGraph implements JanusGraph {
 
     @Override
     public String toString() {
-        return StringFactory.graphString(this, getConfiguration().getBackendDescription());
+        return StringFactory.graphString(this, backend.getStoreManager().getName());
     }
 
     @Override
@@ -367,10 +347,6 @@ public class StandardJanusGraph implements JanusGraph {
         }
     }
 
-    public String getGraphName() {
-        return this.name;
-    }
-
     @Override
     public boolean isOpen() {
         return isOpen;
@@ -393,16 +369,6 @@ public class StandardJanusGraph implements JanusGraph {
         Map<JanusGraphTransaction, RuntimeException> txCloseExceptions = new HashMap<>();
 
         try {
-            //Unregister instance
-            String uniqueId = null;
-            try {
-                uniqueId = config.getUniqueGraphId();
-                ModifiableConfiguration globalConfig = getGlobalSystemConfig(backend);
-                globalConfig.remove(REGISTRATION_TIME, uniqueId);
-            } catch (Exception e) {
-                LOG.warn("Unable to remove graph instance uniqueid {}", uniqueId, e);
-            }
-
             /* Assuming a couple of properties about openTransactions:
              * 1. no concurrent modifications during graph shutdown
              * 2. all contained localJanusTransaction are open
@@ -419,10 +385,8 @@ public class StandardJanusGraph implements JanusGraph {
                 }
             }
             tinkerTransaction.close();
-
-            IOUtils.closeQuietly(idAssigner);
-            IOUtils.closeQuietly(backend);
-            IOUtils.closeQuietly(serializer);
+            idAssigner.close();
+            backend.close();
         } finally {
             isOpen = false;
         }
@@ -530,8 +494,9 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(),
-                        StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(
+                        new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions)
+                );
                 consistentTx.getBackendTransaction().disableCache();
                 JanusGraphVertex v = Iterables.getOnlyElement(QueryUtil.getVertices(consistentTx, BaseKey.SchemaName, typeName), null);
                 return v != null ? v.longId() : null;
@@ -552,7 +517,7 @@ public class StandardJanusGraph implements JanusGraph {
             Configuration customTxOptions = backend.getStoreFeatures().getKeyConsistentTxConfig();
             StandardJanusGraphTx consistentTx = null;
             try {
-                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions).groupName(GraphDatabaseConfiguration.METRICS_SCHEMA_PREFIX_DEFAULT));
+                consistentTx = StandardJanusGraph.this.newTransaction(new StandardTransactionBuilder(getConfiguration(), StandardJanusGraph.this, customTxOptions));
                 consistentTx.getBackendTransaction().disableCache();
                 return edgeQuery(schemaId, query, consistentTx.getBackendTransaction());
             } finally {
@@ -614,10 +579,6 @@ public class StandardJanusGraph implements JanusGraph {
         List<EntryList> resultList = new ArrayList<>(result.size());
         for (StaticBuffer v : vertexIds) resultList.add(result.get(v));
         return resultList;
-    }
-
-    private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
-        return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS, backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
     }
 
     // ################### WRITE #########################
@@ -820,7 +781,7 @@ public class StandardJanusGraph implements JanusGraph {
 
                 try {
                     //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
-                    commitSummary = prepareCommit(addedRelations, deletedRelations, SCHEMA_FILTER, schemaMutator, tx);
+                    prepareCommit(addedRelations, deletedRelations, SCHEMA_FILTER, schemaMutator, tx);
                 } catch (Throwable e) {
                     //Roll back schema tx and escalate exception
                     schemaMutator.rollback();
@@ -879,7 +840,7 @@ public class StandardJanusGraph implements JanusGraph {
                         if (logTxIdentifier != null) {
                             try {
                                 userlogSuccess = false;
-                                final Log userLog = backend.getUserLog(logTxIdentifier);
+                                Log userLog = backend.getUserLog(logTxIdentifier);
                                 Future<Message> env = userLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
                                 if (env.isDone()) {
                                     try {

@@ -42,15 +42,9 @@ public class KCVSConfigurationBuilder {
      * Build KCVSConfiguration concerning Global Configuration, system wide
      */
     public KCVSConfiguration buildGlobalConfiguration(BackendOperation.TransactionalProvider txProvider, KeyColumnValueStore store, Configuration config) {
-        return buildConfiguration(txProvider, store, SYSTEM_CONFIGURATION_IDENTIFIER, config);
-    }
-
-    private KCVSConfiguration buildConfiguration(BackendOperation.TransactionalProvider txProvider, KeyColumnValueStore store, String identifier, Configuration config) {
         Duration setUpWaitingTime = config.get(SETUP_WAITTIME);
         TimestampProviders timestampProvider = config.get(TIMESTAMP_PROVIDER);
         Preconditions.checkArgument(Duration.ZERO.compareTo(setUpWaitingTime) < 0, "Wait time must be nonnegative: %s", setUpWaitingTime);
-
-        return new KCVSConfiguration(txProvider, timestampProvider, setUpWaitingTime, store, identifier);
+        return new KCVSConfiguration(txProvider, timestampProvider, setUpWaitingTime, store, SYSTEM_CONFIGURATION_IDENTIFIER);
     }
-
 }

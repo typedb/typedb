@@ -22,7 +22,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.StoreMetaData;
-import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -31,11 +30,9 @@ import grakn.core.graph.diskstorage.keycolumnvalue.ttl.TTLKCVSManager;
 import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.util.stats.NumberUtil;
-import grakn.core.graph.util.system.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,7 +45,8 @@ import java.util.List;
 import java.util.Map;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_NS;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_FIXED_PARTITION;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_MAX_PARTITIONS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.LOG_STORE_TTL;
 
 
@@ -56,22 +54,12 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
  * Implementation of {@link LogManager} against an arbitrary {@link KeyColumnValueStoreManager}. Issues {@link Log} instances
  * which wrap around a {@link KeyColumnValueStore}.
  */
-@PreInitializeConfigOptions
 public class KCVSLogManager implements LogManager {
 
     private static final Logger LOG = LoggerFactory.getLogger(KCVSLogManager.class);
 
-    public static final ConfigOption<Boolean> LOG_FIXED_PARTITION = new ConfigOption<>(LOG_NS, "fixed-partition",
-            "Whether all LOG entries are written to one fixed partition even if the backend store is partitioned." +
-                    "This can cause imbalanced loads and should only be used on low volume logs",
-            ConfigOption.Type.GLOBAL_OFFLINE, false);
-
-    public static final ConfigOption<Integer> LOG_MAX_PARTITIONS = new ConfigOption<Integer>(LOG_NS, "max-partitions",
-            "The maximum number of partitions to use for logging. Setting up this many actual or virtual partitions. Must be bigger than 0 and a power of 2.",
-            ConfigOption.Type.FIXED, Integer.class, integer -> integer != null && integer > 0 && NumberUtil.isPowerOf2(integer));
-
     /**
-     * If {@link #LOG_MAX_PARTITIONS} isn't set explicitly, the number of partitions is derived by taking the configured
+     * If LOG_MAX_PARTITIONS isn't set explicitly, the number of partitions is derived by taking the configured
      * {@link GraphDatabaseConfiguration#CLUSTER_MAX_PARTITIONS} and dividing
      * the number by this constant.
      */
@@ -244,8 +232,6 @@ public class KCVSLogManager implements LogManager {
          * LOG.close() -> manager.closedLog(LOG) -> openLogs.remove(LOG.getName()).
          */
         for (KCVSLog log : ImmutableMap.copyOf(openLogs).values()) log.close();
-
-        IOUtils.closeQuietly(serializer);
     }
 
 }

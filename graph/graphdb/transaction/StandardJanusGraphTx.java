@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.transaction;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
@@ -39,7 +38,6 @@ import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.JanusGraphVertex;
 import grakn.core.graph.core.JanusGraphVertexProperty;
 import grakn.core.graph.core.PropertyKey;
-import grakn.core.graph.core.ReadOnlyTransactionException;
 import grakn.core.graph.core.RelationType;
 import grakn.core.graph.core.SchemaViolationException;
 import grakn.core.graph.core.VertexLabel;
@@ -148,6 +146,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -470,7 +469,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
     private void verifyWriteAccess(JanusGraphVertex... vertices) {
         if (config.isReadOnly()) {
-            throw new ReadOnlyTransactionException("Cannot create new entities in read-only transaction");
+            throw new JanusGraphException("Cannot create new entities in read-only transaction");
         }
         for (JanusGraphVertex v : vertices) {
             if (v.hasId() && idManager.isUnmodifiableVertex(v.longId()) && !v.isNew()) {
@@ -1166,7 +1165,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                     private JanusGraphRelation previous = null;
 
                     @Override
-                    public boolean apply(InternalRelation relation) {
+                    public boolean test(InternalRelation relation) {
                         if ((relation instanceof JanusGraphEdge) && relation.isLoop()
                                 && query.getDirection() != Direction.BOTH) {
                             if (relation.equals(previous)) {

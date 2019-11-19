@@ -45,7 +45,7 @@ public class GraknDaemon {
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
     private static final String BENCHMARK_FLAG = "--benchmark";
-    private static final String VERSION_LABEL = "Version:";
+    private static final String VERSION_LABEL = "Version: ";
 
 
     private final Storage storageExecutor;

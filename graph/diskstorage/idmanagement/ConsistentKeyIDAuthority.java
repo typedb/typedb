@@ -33,7 +33,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyRange;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.locking.TemporaryLockingException;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.BufferUtil;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
@@ -110,9 +109,6 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
     private final StoreManager manager;
     private final KeyColumnValueStore idStore;
     private final StandardBaseTransactionConfig.Builder storeTxConfigBuilder;
-    /**
-     * This belongs in JanusGraphConfig.
-     */
     private final TimestampProvider times;
 
     private final Duration rollbackWaitTime = Duration.ofMillis(200L);
@@ -129,7 +125,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
 
     private final Duration idApplicationWaitMS;
 
-    protected final String uid;
+    private final String uid;
     private final byte[] uidBytes;
 
     private final IDBlockSizer blockSizer;
@@ -158,8 +154,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
         uniqueIdBitWidth = config.get(IDAUTHORITY_CAV_BITS);
         Preconditions.checkArgument(uniqueIdBitWidth <= 16 && uniqueIdBitWidth >= 0);
         uniqueIDUpperBound = 1 << uniqueIdBitWidth;
-        String metricsPrefix = GraphDatabaseConfiguration.METRICS_SYSTEM_PREFIX_DEFAULT;
-        storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().groupName(metricsPrefix).timestampProvider(times);
+        storeTxConfigBuilder = new StandardBaseTransactionConfig.Builder().timestampProvider(times);
 
         ConflictAvoidanceMode conflictAvoidanceMode = config.get(IDAUTHORITY_CONFLICT_AVOIDANCE);
 
@@ -232,7 +227,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
     }
 
     private long getCurrentID(StaticBuffer partitionKey) throws BackendException {
-        final List<Entry> blocks = BackendOperation.execute(
+        List<Entry> blocks = BackendOperation.execute(
                 (BackendOperation.Transactional<List<Entry>>) txh -> idStore.getSlice(new KeySliceQuery(partitionKey, LOWER_SLICE, UPPER_SLICE).setLimit(5), txh), this, times);
 
         if (blocks == null) throw new TemporaryBackendException("Could not read from storage");
@@ -364,19 +359,11 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
                         for (int attempt = 0; attempt < ROLLBACK_ATTEMPTS; attempt++) {
                             try {
                                 StaticBuffer finalTarget = target; // copy for the inner class
+                                BackendOperation.TransactionalProvider txProvider = BackendOperation.buildTxProvider(manager, storeTxConfigBuilder.build());//Use normal consistency level for these non-critical delete operations
                                 BackendOperation.execute(txh -> {
                                     idStore.mutate(partitionKey, KeyColumnValueStore.NO_ADDITIONS, Collections.singletonList(finalTarget), txh);
                                     return true;
-                                }, new BackendOperation.TransactionalProvider() { //Use normal consistency level for these non-critical delete operations
-                                    @Override
-                                    public StoreTransaction openTx() throws BackendException {
-                                        return manager.beginTransaction(storeTxConfigBuilder.build());
-                                    }
-
-                                    @Override
-                                    public void close() {
-                                    }
-                                }, times);
+                                }, txProvider, times);
 
                                 break;
                             } catch (BackendException e) {
@@ -398,7 +385,7 @@ public class ConsistentKeyIDAuthority implements BackendOperation.TransactionalP
             }
         }
 
-        throw new TemporaryLockingException(String.format("Reached timeout %d (%s elapsed) when attempting to allocate id block on partition(%d)-namespace(%d)",
+        throw new TemporaryBackendException(String.format("Reached timeout %d (%s elapsed) when attempting to allocate id block on partition(%d)-namespace(%d)",
                 timeout.getNano(), methodTime.toString(), partition, idNamespace));
     }
 

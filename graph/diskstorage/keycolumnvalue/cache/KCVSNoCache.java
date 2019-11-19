@@ -16,27 +16,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.graphdb.tinkerpop;
+package grakn.core.graph.diskstorage.keycolumnvalue.cache;
 
-import grakn.core.graph.core.Cardinality;
-import grakn.core.graph.core.schema.DefaultSchemaMaker;
+import grakn.core.graph.diskstorage.StaticBuffer;
+import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
+
+import java.util.List;
 
 
-public class Tp3DefaultSchemaMaker implements DefaultSchemaMaker {
+public class KCVSNoCache extends KCVSCache {
 
-    public static final DefaultSchemaMaker INSTANCE = new Tp3DefaultSchemaMaker();
-
-    private Tp3DefaultSchemaMaker() {
+    public KCVSNoCache(KeyColumnValueStore store) {
+        super(store);
     }
 
     @Override
-    public Cardinality defaultPropertyCardinality(String key) {
-        return Cardinality.LIST;
+    public void clearCache() {
     }
 
     @Override
-    public boolean ignoreUndefinedQueryTypes() {
-        return true;
+    protected void invalidate(StaticBuffer key, List<StaticBuffer> entries) {
     }
 
 }

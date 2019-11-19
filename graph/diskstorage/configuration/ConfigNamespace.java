@@ -20,8 +20,6 @@ package grakn.core.graph.diskstorage.configuration;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-import grakn.core.graph.core.util.ReflectiveConfigOptionLoader;
-import grakn.core.graph.diskstorage.configuration.ConfigElement;
 
 import java.util.Map;
 
@@ -77,17 +75,6 @@ public class ConfigNamespace extends ConfigElement {
         if (null != child) {
             return child;
         }
-
-        // Attempt to load
-        ReflectiveConfigOptionLoader.INSTANCE.loadStandard(this.getClass());
-        child = children.get(name);
-        if (null != child) {
-            return child;
-        }
-
-        ReflectiveConfigOptionLoader.INSTANCE.loadAll(this.getClass());
-        child = children.get(name);
-
         return child;
     }
 

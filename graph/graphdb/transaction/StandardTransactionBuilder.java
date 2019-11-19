@@ -23,19 +23,14 @@ import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.core.TransactionBuilder;
 import grakn.core.graph.core.schema.DefaultSchemaMaker;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
-import grakn.core.graph.diskstorage.configuration.ConfigElement;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.configuration.MergedConfiguration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 import java.time.Instant;
-
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 
 /**
  * Used to configure a {@link JanusGraphTransaction}.
@@ -72,11 +67,7 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
 
     private Instant userCommitTime = null;
 
-    private String groupName;
-
     private final boolean forceIndexUsage;
-
-    private final ModifiableConfiguration writableCustomOptions;
 
     private final Configuration customOptions;
 
@@ -88,17 +79,14 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
-        if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
-        this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.writableCustomOptions = GraphDatabaseConfiguration.buildGraphConfiguration();
-        this.customOptions = new MergedConfiguration(writableCustomOptions, graphConfig.getConfiguration());
+        this.customOptions = graphConfig.getConfiguration();
         vertexCacheSize(graphConfig.getTxVertexCacheSize());
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
     }
@@ -106,16 +94,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph, Configuration customOptions) {
         Preconditions.checkNotNull(graphConfig);
         Preconditions.checkNotNull(graph);
-        if (graphConfig.isReadOnly()) readOnly();
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
         this.assignIDsImmediately = graphConfig.hasFlushIDs();
         this.forceIndexUsage = graphConfig.hasForceIndexUsage();
-        this.groupName = graphConfig.getMetricsPrefix();
         this.logIdentifier = null;
         this.propertyPrefetching = graphConfig.hasPropertyPrefetching();
-        this.writableCustomOptions = null;
         this.customOptions = customOptions;
         vertexCacheSize(graphConfig.getTxVertexCacheSize());
         dirtyVertexSize(graphConfig.getTxDirtyVertexSize());
@@ -185,12 +170,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public StandardTransactionBuilder groupName(String p) {
-        this.groupName = p;
-        return this;
-    }
-
-    @Override
     public StandardTransactionBuilder logIdentifier(String logName) {
         this.logIdentifier = logName;
         return this;
@@ -204,22 +183,13 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public TransactionBuilder customOption(String k, Object v) {
-        if (null == writableCustomOptions) {
-            throw new IllegalStateException("This builder was not constructed with setCustomOption support");
-        }
-        writableCustomOptions.set((ConfigOption<Object>) ConfigElement.parse(ROOT_NS, k).element, v);
-        return this;
-    }
-
-    @Override
     public StandardJanusGraphTx start() {
         TransactionConfiguration immutable = new ImmutableTxCfg(isReadOnly, hasEnabledBatchLoading,
                 assignIDsImmediately, forceIndexUsage, verifyExternalVertexExistence,
                 verifyInternalVertexExistence,
                 propertyPrefetching, singleThreaded, threadBound, getTimestampProvider(), userCommitTime,
                 indexCacheWeight, getVertexCacheSize(), getDirtyVertexSize(),
-                logIdentifier, restrictedPartitions, groupName,
+                logIdentifier, restrictedPartitions,
                 defaultSchemaMaker, customOptions);
         return graph.newTransaction(immutable);
     }
@@ -309,16 +279,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     @Override
-    public String getGroupName() {
-        return groupName;
-    }
-
-    @Override
-    public boolean hasGroupName() {
-        return null != groupName;
-    }
-
-    @Override
     public Instant getCommitTime() {
         return userCommitTime;
     }
@@ -373,7 +333,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
                        boolean isThreadBound, TimestampProvider times, Instant commitTime,
                        long indexCacheWeight, int vertexCacheSize, int dirtyVertexSize, String logIdentifier,
                        int[] restrictedPartitions,
-                       String groupName,
                        DefaultSchemaMaker defaultSchemaMaker,
                        Configuration customOptions) {
             this.isReadOnly = isReadOnly;
@@ -394,7 +353,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
             this.handleConfig = new StandardBaseTransactionConfig.Builder()
                     .commitTime(commitTime)
                     .timestampProvider(times)
-                    .groupName(groupName)
                     .customOptions(customOptions).build();
         }
 
@@ -491,16 +449,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
         @Override
         public boolean hasCommitTime() {
             return handleConfig.hasCommitTime();
-        }
-
-        @Override
-        public String getGroupName() {
-            return handleConfig.getGroupName();
-        }
-
-        @Override
-        public boolean hasGroupName() {
-            return handleConfig.hasGroupName();
         }
 
         @Override

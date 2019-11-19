@@ -19,12 +19,8 @@
 package grakn.core.graph.graphdb.database.serialize;
 
 import grakn.core.graph.diskstorage.ScanBuffer;
-import grakn.core.graph.graphdb.database.serialize.AttributeHandler;
-import grakn.core.graph.graphdb.database.serialize.DataOutput;
 
-import java.io.Closeable;
-
-public interface Serializer extends AttributeHandler, Closeable {
+public interface Serializer extends AttributeHandler {
 
     Object readClassAndObject(ScanBuffer buffer);
 

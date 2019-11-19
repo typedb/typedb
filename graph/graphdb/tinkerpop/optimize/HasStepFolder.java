@@ -94,20 +94,20 @@ public interface HasStepFolder<S, E> extends Step<S, E> {
     static boolean validJanusGraphOrder(OrderGlobalStep orderGlobalStep, Traversal rootTraversal, boolean isVertexOrder) {
         List<Pair<Traversal.Admin, Object>> comparators = orderGlobalStep.getComparators();
         for (Pair<Traversal.Admin, Object> comp : comparators) {
-            final String key;
+            String key;
             if (comp.getValue0() instanceof ElementValueTraversal &&
                     comp.getValue1() instanceof Order) {
                 key = ((ElementValueTraversal) comp.getValue0()).getPropertyKey();
             } else if (comp.getValue1() instanceof ElementValueComparator) {
-                final ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
+                ElementValueComparator evc = (ElementValueComparator) comp.getValue1();
                 if (!(evc.getValueComparator() instanceof Order)) return false;
                 key = evc.getPropertyKey();
             } else {
                 // do not fold comparators that include nested traversals that are not simple ElementValues
                 return false;
             }
-            final JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
-            final PropertyKey pKey = tx.getPropertyKey(key);
+            JanusGraphTransaction tx = JanusGraphTraversalUtil.getTx(rootTraversal.asAdmin());
+            PropertyKey pKey = tx.getPropertyKey(key);
             if (pKey == null
                     || !(Comparable.class.isAssignableFrom(pKey.dataType()))
                     || (isVertexOrder && pKey.cardinality() != Cardinality.SINGLE)) {

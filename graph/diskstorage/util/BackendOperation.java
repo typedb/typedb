@@ -20,8 +20,8 @@ package grakn.core.graph.diskstorage.util;
 
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
-import grakn.core.graph.diskstorage.PermanentBackendException;
 import grakn.core.graph.diskstorage.TemporaryBackendException;
+import grakn.core.graph.diskstorage.keycolumnvalue.StoreManager;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import org.slf4j.Logger;
@@ -44,18 +44,11 @@ public class BackendOperation {
     }
 
     public static <V> V execute(Callable<V> exe, Duration totalWaitTime) throws JanusGraphException {
-        try {
-            return executeDirect(exe, totalWaitTime);
-        } catch (BackendException e) {
-            throw new JanusGraphException("Could not execute operation due to backend exception", e);
-        }
-    }
-
-    public static <V> V executeDirect(Callable<V> exe, Duration totalWaitTime) throws BackendException {
         long maxTime = System.currentTimeMillis() + totalWaitTime.toMillis();
         Duration waitTime = pertubTime(BASE_REATTEMPT_TIME);
         BackendException lastException;
-        while (true) {
+        boolean retryOperation = true;
+        do {
             try {
                 return exe.call();
             } catch (Throwable e) {
@@ -69,10 +62,8 @@ public class BackendOperation {
 
                 if (storeEx instanceof TemporaryBackendException) {
                     lastException = storeEx; // if this is a temporary exception, don't throw immediately but retry for a totalWaitTime time before throwing
-                } else if (e instanceof BackendException) {
-                    throw (BackendException) e;
                 } else {
-                    throw new PermanentBackendException("Permanent exception while executing backend operation " + exe.toString(), e);
+                    throw new JanusGraphException("Exception while executing backend operation " + exe.toString(), e);
                 }
             }
             //Wait and retry
@@ -83,14 +74,14 @@ public class BackendOperation {
                 } catch (InterruptedException r) {
                     // added thread interrupt signal to support traversal interruption
                     Thread.currentThread().interrupt();
-                    throw new PermanentBackendException("Interrupted while waiting to retry failed backend operation", r);
+                    throw new JanusGraphException("Interrupted while waiting to retry failed backend operation", r);
                 }
+                waitTime = pertubTime(waitTime.multipliedBy(2));
             } else {
-                break; // TODO: super lol to while(true) and else break;, refactor this beauty at some point
+                retryOperation = false;
             }
-            waitTime = pertubTime(waitTime.multipliedBy(2));
-        }
-        throw new TemporaryBackendException("Could not successfully complete backend operation due to repeated temporary exceptions after " + totalWaitTime, lastException);
+        } while(retryOperation);
+        throw new JanusGraphException("Could not successfully complete backend operation due to repeated temporary exceptions after " + totalWaitTime, lastException);
     }
 
     public static <R> R execute(Transactional<R> exe, TransactionalProvider provider, TimestampProvider times) throws BackendException {
@@ -101,7 +92,6 @@ public class BackendOperation {
             return exe.call(txh);
         } catch (BackendException e) {
             if (txh != null) txh.rollback();
-            txh = null;
             throw e;
         } finally {
             if (txh != null) txh.commit();
@@ -110,6 +100,7 @@ public class BackendOperation {
 
     /**
      * Method used by KCVSLog and KCVSConfiguration to run transactional operations on DB
+     * (read and write configs into a Store and read/write logs into another dedicated Store.)
      *
      * @param exe      Transactional operation on the Database that needs to happen inside a transaction
      * @param provider Transactions provider, will provide transaction on which execute the above operation
@@ -144,4 +135,17 @@ public class BackendOperation {
 
     }
 
+    public static TransactionalProvider buildTxProvider(StoreManager storeManager, StandardBaseTransactionConfig txConfig) {
+        return new TransactionalProvider() {
+            @Override
+            public StoreTransaction openTx() throws BackendException {
+                return storeManager.beginTransaction(txConfig);
+            }
+
+            @Override
+            public void close() {
+                //Do nothing, storeManager is closed explicitly by Backend
+            }
+        };
+    }
 }

@@ -22,12 +22,10 @@ import grakn.core.graph.diskstorage.configuration.ConfigElement;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
-import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 
 /**
  * Configuration options for the CQL storage backend. These are managed under the 'cql' namespace in the configuration.
  */
-@PreInitializeConfigOptions
 public interface CQLConfigOptions {
 
     ConfigNamespace CQL_NS = new ConfigNamespace(
@@ -68,19 +66,6 @@ public interface CQLConfigOptions {
                     "True to prevent any system queries from using QUORUM consistency " +
                             "and always use LOCAL_QUORUM instead",
                     ConfigOption.Type.MASKABLE, false);
-
-    ConfigOption<Boolean> USE_EXTERNAL_LOCKING = new ConfigOption<>(
-            CQL_NS,
-            "use-external-locking",
-            "True to prevent JanusGraph from using its own locking mechanism. Setting this to true eliminates " +
-                    "redundant checks when using an external locking mechanism outside of JanusGraph. Be aware that " +
-                    "when use-external-locking is set to true, that failure to employ a locking algorithm which locks " +
-                    "all columns that participate in a transaction upfront and unlocks them when the transaction ends, " +
-                    "will result in a 'read uncommitted' transaction isolation level guarantee. If set to true without " +
-                    "an appropriate external locking mechanism in place side effects such as " +
-                    "dirty/non-repeatable/phantom reads should be expected.",
-            ConfigOption.Type.MASKABLE,
-            false);
 
     // The number of statements in a batch
     ConfigOption<Integer> BATCH_STATEMENT_SIZE = new ConfigOption<>(

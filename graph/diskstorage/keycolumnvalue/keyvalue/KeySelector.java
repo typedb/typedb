@@ -19,9 +19,9 @@
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import grakn.core.graph.diskstorage.StaticBuffer;
+
+import java.util.function.Predicate;
 
 /**
  * A {@link KeySelector} utility that can be generated out of a given {@link KVQuery}
@@ -41,11 +41,11 @@ public class KeySelector {
     }
 
     public static KeySelector of(int limit) {
-        return new KeySelector(Predicates.alwaysTrue(), limit);
+        return new KeySelector((x) -> true, limit);
     }
 
     public boolean include(StaticBuffer key) {
-        if (keyFilter.apply(key)) {
+        if (keyFilter.test(key)) {
             count++;
             return true;
         } else return false;

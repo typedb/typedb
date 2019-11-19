@@ -21,7 +21,6 @@ package grakn.core.graph.graphdb.database.idassigner;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import grakn.core.graph.core.EdgeLabel;
 import grakn.core.graph.core.JanusGraphRelation;
 import grakn.core.graph.core.JanusGraphVertex;
@@ -30,13 +29,9 @@ import grakn.core.graph.core.VertexLabel;
 import grakn.core.graph.diskstorage.Backend;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.IDAuthority;
-import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
 import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
-import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
-import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
-import grakn.core.graph.graphdb.configuration.PreInitializeConfigOptions;
 import grakn.core.graph.graphdb.database.idassigner.placement.IDPlacementStrategy;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionAssignment;
 import grakn.core.graph.graphdb.database.idassigner.placement.PartitionIDRange;
@@ -64,23 +59,13 @@ import java.util.concurrent.ConcurrentMap;
 
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CLUSTER_MAX_PARTITIONS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_BLOCK_SIZE;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_BUFFER_PERCENTAGE;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_RENEW_TIMEOUT;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.IDS_STORE_NAME;
 
-@PreInitializeConfigOptions
 public class VertexIDAssigner implements AutoCloseable {
 
     private static final Logger LOG = LoggerFactory.getLogger(VertexIDAssigner.class);
-
     private static final int MAX_PARTITION_RENEW_ATTEMPTS = 1000;
-
-    public static final ConfigOption<String> PLACEMENT_STRATEGY = new ConfigOption<>(IDS_NS, "placement",
-            "Name of the vertex placement strategy or full class name", ConfigOption.Type.MASKABLE, "simple");
-
-    private static final Map<String, String> REGISTERED_PLACEMENT_STRATEGIES = ImmutableMap.of("simple", SimpleBulkPlacementStrategy.class.getName());
-
 
     private final ConcurrentMap<Integer, PartitionIDPool> idPools;
     private final StandardIDPool schemaIdPool;
@@ -93,22 +78,22 @@ public class VertexIDAssigner implements AutoCloseable {
     //For StandardIDPool
     private final Duration renewTimeoutMS;
     private final double renewBufferPercentage;
-
     private final int partitionIdBound;
     private final boolean hasLocalPartitions;
 
-    public VertexIDAssigner(Configuration config, IDAuthority idAuthority, StoreFeatures idAuthFeatures) {
+    public VertexIDAssigner(Configuration config, Backend backend) {
+        long baseBlockSize = config.get(IDS_BLOCK_SIZE);
+        SimpleVertexIDBlockSizer vertexIDBlockSizer = new SimpleVertexIDBlockSizer(baseBlockSize);
+        this.idAuthority = new ConsistentKeyIDAuthority(backend.getIDsStore(), backend.getStoreManager(), config, vertexIDBlockSizer);
+
         int partitionBits = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
-        this.idAuthority = idAuthority;
         idManager = new IDManager(partitionBits);
         Preconditions.checkArgument(idManager.getPartitionBound() <= Integer.MAX_VALUE && idManager.getPartitionBound() > 0);
-        this.partitionIdBound = (int) idManager.getPartitionBound();
-        hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
+        partitionIdBound = (int) idManager.getPartitionBound();
+        hasLocalPartitions = backend.getStoreFeatures().hasLocalKeyPartition();
 
-        placementStrategy = Backend.getImplementationClass(config, config.get(PLACEMENT_STRATEGY), REGISTERED_PLACEMENT_STRATEGIES);
-        placementStrategy.injectIDManager(idManager);
+        placementStrategy = new SimpleBulkPlacementStrategy(config);
         LOG.debug("Partition IDs? [{}], Local Partitions? [{}]", true, hasLocalPartitions);
-
 
         renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
         renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
@@ -119,39 +104,6 @@ public class VertexIDAssigner implements AutoCloseable {
         partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
                 PoolType.PARTITIONED_VERTEX.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage);
         setLocalPartitions(partitionBits);
-    }
-
-
-    //TODO remove one of the 2 constructors, for now we need 2 to make VertexIDAssignerTest happy
-    public VertexIDAssigner(Configuration config, KeyColumnValueStoreManager storeManager, StoreFeatures idAuthFeatures) {
-        try {
-            long baseBlockSize = config.get(IDS_BLOCK_SIZE);
-            SimpleVertexIDBlockSizer vertexIDBlockSizer = new SimpleVertexIDBlockSizer(baseBlockSize);
-            KeyColumnValueStore idStore = storeManager.openDatabase(config.get(IDS_STORE_NAME));
-            this.idAuthority = new ConsistentKeyIDAuthority(idStore, storeManager, config, vertexIDBlockSizer);
-            int partitionBits = NumberUtil.getPowerOf2(config.get(CLUSTER_MAX_PARTITIONS));
-            idManager = new IDManager(partitionBits);
-            Preconditions.checkArgument(idManager.getPartitionBound() <= Integer.MAX_VALUE && idManager.getPartitionBound() > 0);
-            this.partitionIdBound = (int) idManager.getPartitionBound();
-            hasLocalPartitions = idAuthFeatures.hasLocalKeyPartition();
-
-            placementStrategy = Backend.getImplementationClass(config, config.get(PLACEMENT_STRATEGY), REGISTERED_PLACEMENT_STRATEGIES);
-            placementStrategy.injectIDManager(idManager);
-            LOG.debug("Partition IDs? [{}], Local Partitions? [{}]", true, hasLocalPartitions);
-
-            renewTimeoutMS = config.get(IDS_RENEW_TIMEOUT);
-            renewBufferPercentage = config.get(IDS_RENEW_BUFFER_PERCENTAGE);
-
-            idPools = new ConcurrentHashMap<>(partitionIdBound);
-            schemaIdPool = new StandardIDPool(idAuthority, IDManager.SCHEMA_PARTITION, PoolType.SCHEMA.getIDNamespace(),
-                    IDManager.getSchemaCountBound(), renewTimeoutMS, renewBufferPercentage);
-            partitionVertexIdPool = new StandardIDPool(idAuthority, IDManager.PARTITIONED_VERTEX_PARTITION, PoolType.PARTITIONED_VERTEX.getIDNamespace(),
-                    PoolType.PARTITIONED_VERTEX.getCountBound(idManager), renewTimeoutMS, renewBufferPercentage);
-            setLocalPartitions(partitionBits);
-        } catch (BackendException e) {
-            // TODO handle better, or potentially pass the open store as Constructor parameter
-            throw new RuntimeException("Error while trying to open IDs store.", e);
-        }
     }
 
     private void setLocalPartitionsToGlobal(int partitionBits) {
@@ -191,8 +143,7 @@ public class VertexIDAssigner implements AutoCloseable {
         try {
             idAuthority.close();
         } catch (BackendException e) {
-            // TODO potentially handle better, for a better future, a better world, a better us.
-            LOG.error("Exception while closing IdAuthority", e);
+            LOG.warn("Exception while closing IdAuthority", e);
         }
     }
 

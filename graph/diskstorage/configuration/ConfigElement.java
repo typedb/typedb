@@ -27,8 +27,8 @@ import java.util.Objects;
 
 public abstract class ConfigElement {
 
-    public static final char SEPARATOR = '.';
-    public static final char[] ILLEGAL_CHARS = new char[]{SEPARATOR, ' ', '\t', '#', '@', '<', '>', '?', '/', ';', '"', '\'', ':', '+', '(', ')', '*', '^', '`', '~', '$', '%', '|', '\\', '{', '[', ']', '}'};
+    private static final char SEPARATOR = '.';
+    private static final char[] ILLEGAL_CHARS = new char[]{SEPARATOR, ' ', '\t', '#', '@', '<', '>', '?', '/', ';', '"', '\'', ':', '+', '(', ')', '*', '^', '`', '~', '$', '%', '|', '\\', '{', '[', ']', '}'};
 
     private final ConfigNamespace namespace;
     private final String name;
@@ -76,10 +76,6 @@ public abstract class ConfigElement {
     @Override
     public String toString() {
         return (namespace != null ? namespace.toString() + SEPARATOR : "") + name;
-    }
-
-    public String toStringWithoutRoot() {
-        return toString().substring(getRoot().toString().length() + 1);
     }
 
     @Override
@@ -174,7 +170,6 @@ public abstract class ConfigElement {
     }
 
     public static PathIdentifier parse(ConfigNamespace root, String path) {
-        Preconditions.checkNotNull(root);
         if (StringUtils.isBlank(path)) return new PathIdentifier(root, new String[]{}, false);
         String[] components = getComponents(path);
         Preconditions.checkArgument(components.length > 0, "Empty path provided: %s", path);
@@ -189,6 +184,7 @@ public abstract class ConfigElement {
             } else {
                 last = parent.getChild(components[i]);
                 Preconditions.checkArgument(last != null, "Unknown configuration element in namespace [%s]: %s", parent.toString(), components[i]);
+
                 if (i + 1 < components.length) {
                     Preconditions.checkArgument(last instanceof ConfigNamespace, "Expected namespace at position [%s] of [%s] but got: %s", i, path, last);
                     parent = (ConfigNamespace) last;
@@ -212,11 +208,6 @@ public abstract class ConfigElement {
             this.element = element;
             this.umbrellaElements = umbrellaElements;
         }
-
-        public boolean hasUmbrellaElements() {
-            return umbrellaElements.length > 0;
-        }
-
     }
 
 

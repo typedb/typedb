@@ -83,7 +83,6 @@ import grakn.core.graph.graphdb.types.IndexType;
 import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.ParameterIndexField;
 import grakn.core.graph.graphdb.types.ParameterType;
-import grakn.core.graph.util.encoding.LongEncoding;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.slf4j.Logger;
@@ -691,13 +690,13 @@ public class IndexSerializer {
 
     private static String element2String(Object elementId) {
         Preconditions.checkArgument(elementId instanceof Long || elementId instanceof RelationIdentifier);
-        if (elementId instanceof Long) return longID2Name((Long) elementId);
+        if (elementId instanceof Long) return Long.toString((Long) elementId);
         else return ((RelationIdentifier) elementId).toString();
     }
 
     private static Object string2ElementId(String str) {
         if (str.contains(RelationIdentifier.TOSTRING_DELIMITER)) return RelationIdentifier.parse(str);
-        else return name2LongID(str);
+        else return Long.parseLong(str);
     }
 
     private static String key2Field(MixedIndexType index, PropertyKey key) {
@@ -709,18 +708,8 @@ public class IndexSerializer {
     }
 
     private static String keyID2Name(PropertyKey key) {
-        return longID2Name(key.longId());
+        return Long.toString(key.longId());
     }
-
-    private static String longID2Name(long id) {
-        Preconditions.checkArgument(id > 0);
-        return LongEncoding.encode(id);
-    }
-
-    private static long name2LongID(String name) {
-        return LongEncoding.decode(name);
-    }
-
 
     private StaticBuffer getIndexKey(CompositeIndexType index, RecordEntry[] record) {
         return getIndexKey(index, IndexRecords.getValues(record));

@@ -18,26 +18,12 @@
 
 package grakn.core.graph.diskstorage.configuration;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableSet;
-import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
-import grakn.core.graph.diskstorage.util.time.TimestampProviders;
-import grakn.core.graph.graphdb.database.management.ManagementSystem;
-import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Set;
-
+import java.util.function.Predicate;
 
 public class ConfigOption<O> extends ConfigElement {
 
@@ -68,56 +54,13 @@ public class ConfigOption<O> extends ConfigElement {
         LOCAL
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(ConfigOption.class);
-    private static final EnumSet<Type> managedTypes = EnumSet.of(Type.FIXED, Type.GLOBAL_OFFLINE, Type.GLOBAL);
-
-    /**
-     * This is a subset of types accepted by StandardSerializer.
-     * Inclusion is enforced in the static initializer block further down this file.
-     */
-    private static final Set<Class<?>> ACCEPTED_DATATYPES;
-
-    private static final String ACCEPTED_DATATYPES_STRING;
-
-    static {
-        ACCEPTED_DATATYPES = ImmutableSet.of(
-                ConflictAvoidanceMode.class,
-                Duration.class,
-                TimestampProviders.class,
-                Instant.class,
-                Boolean.class,
-                Short.class,
-                Integer.class,
-                Byte.class,
-                Long.class,
-                Float.class,
-                Double.class,
-                String.class,
-                String[].class
-        );
-
-        StandardSerializer ss = new StandardSerializer();
-        for (Class<?> c : ACCEPTED_DATATYPES) {
-            if (!ss.validDataType(c)) {
-                String msg = String.format("%s datatype %s is not accepted by %s",
-                        ConfigOption.class.getSimpleName(), c, StandardSerializer.class.getSimpleName());
-                LOG.error(msg);
-                throw new IllegalStateException(msg);
-            }
-        }
-
-        ACCEPTED_DATATYPES_STRING = Joiner.on(", ").join(ACCEPTED_DATATYPES);
-    }
-
     private final Type type;
     private final Class<O> datatype;
     private final O defaultValue;
     private final Predicate<O> verificationFct;
-    private boolean isHidden = false;
-    private ConfigOption<?> supersededBy;
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, O defaultValue) {
-        this(parent, name, description, type, defaultValue, disallowEmpty((Class<O>) defaultValue.getClass()));
+        this(parent, name, description, type, defaultValue, disallowEmpty());
     }
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, O defaultValue, Predicate<O> verificationFct) {
@@ -125,7 +68,7 @@ public class ConfigOption<O> extends ConfigElement {
     }
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType) {
-        this(parent, name, description, type, dataType, disallowEmpty(dataType));
+        this(parent, name, description, type, dataType, disallowEmpty());
     }
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, Predicate<O> verificationFct) {
@@ -133,14 +76,10 @@ public class ConfigOption<O> extends ConfigElement {
     }
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue) {
-        this(parent, name, description, type, dataType, defaultValue, disallowEmpty(dataType));
+        this(parent, name, description, type, dataType, defaultValue, disallowEmpty());
     }
 
     public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct) {
-        this(parent, name, description, type, dataType, defaultValue, verificationFct, null);
-    }
-
-    public ConfigOption(ConfigNamespace parent, String name, String description, Type type, Class<O> dataType, O defaultValue, Predicate<O> verificationFct, ConfigOption<?> supersededBy) {
         super(parent, name, description);
         Preconditions.checkNotNull(type);
         Preconditions.checkNotNull(dataType);
@@ -149,22 +88,6 @@ public class ConfigOption<O> extends ConfigElement {
         this.datatype = dataType;
         this.defaultValue = defaultValue;
         this.verificationFct = verificationFct;
-        this.supersededBy = supersededBy;
-        // A static initializer calls this constructor, so LOG before throwing the IAE
-        if (!ACCEPTED_DATATYPES.contains(dataType)) {
-            String msg = String.format("Datatype %s is not one of %s", dataType, ACCEPTED_DATATYPES_STRING);
-            LOG.error(msg);
-            throw new IllegalArgumentException(msg);
-        }
-    }
-
-    public ConfigOption<O> hide() {
-        this.isHidden = true;
-        return this;
-    }
-
-    public boolean isHidden() {
-        return isHidden;
     }
 
     public Type getType() {
@@ -187,32 +110,8 @@ public class ConfigOption<O> extends ConfigElement {
         return type == Type.FIXED || type == Type.GLOBAL_OFFLINE || type == Type.GLOBAL || type == Type.MASKABLE;
     }
 
-    /**
-     * Returns true on config options whose values are not local or maskable, that is,
-     * cluster-wide options that are either fixed or which can be changed only by using
-     * the {@link ManagementSystem}
-     * (and not by editing the local config).
-     *
-     * @return true for managed options, false otherwise
-     */
-    public boolean isManaged() {
-        return managedTypes.contains(type);
-    }
-
-    public static EnumSet<Type> getManagedTypes() {
-        return EnumSet.copyOf(managedTypes);
-    }
-
     public boolean isLocal() {
         return type == Type.MASKABLE || type == Type.LOCAL;
-    }
-
-    public boolean isDeprecated() {
-        return null != supersededBy;
-    }
-
-    public ConfigOption<?> getDeprecationReplacement() {
-        return supersededBy;
     }
 
     @Override
@@ -225,7 +124,7 @@ public class ConfigOption<O> extends ConfigElement {
             input = defaultValue;
         }
         if (input == null) {
-            Preconditions.checkState(verificationFct.apply((O) input), "Need to set configuration value: %s", this.toString());
+            Preconditions.checkState(verificationFct.test((O) input), "Need to set configuration value: %s", this.toString());
             return null;
         } else {
             return verify(input);
@@ -236,25 +135,14 @@ public class ConfigOption<O> extends ConfigElement {
         Preconditions.checkNotNull(input);
         Preconditions.checkArgument(datatype.isInstance(input), "Invalid class for configuration value [%s]. Expected [%s] but given [%s]", this.toString(), datatype, input.getClass());
         O result = (O) input;
-        Preconditions.checkArgument(verificationFct.apply(result), "Invalid configuration value for [%s]: %s", this.toString(), input);
+        Preconditions.checkArgument(verificationFct.test(result), "Invalid configuration value for [%s]: %s", this.toString(), input);
         return result;
     }
 
 
     //########### HELPER METHODS ##################
 
-    public static <E extends Enum> E getEnumValue(String str, Class<E> enumClass) {
-        final String trimmed = str.trim();
-        if (StringUtils.isBlank(trimmed)) {
-            return null;
-        }
-        return Arrays.stream(enumClass.getEnumConstants())
-                .filter(e -> e.toString().equalsIgnoreCase(trimmed))
-                .findAny()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid enum string provided for [" + enumClass + "]: " + trimmed));
-    }
-
-    public static <O> Predicate<O> disallowEmpty(Class<O> clazz) {
+    private static <O> Predicate<O> disallowEmpty() {
         return o -> {
             if (o == null) {
                 return false;
@@ -270,14 +158,4 @@ public class ConfigOption<O> extends ConfigElement {
     public static Predicate<Integer> positiveInt() {
         return num -> num != null && num > 0;
     }
-
-    public static Predicate<Integer> nonnegativeInt() {
-        return num -> num != null && num >= 0;
-    }
-
-    public static Predicate<Long> positiveLong() {
-        return num -> num != null && num > 0;
-    }
-
-
 }

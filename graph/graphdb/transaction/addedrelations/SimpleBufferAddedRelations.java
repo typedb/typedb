@@ -18,15 +18,14 @@
 
 package grakn.core.graph.graphdb.transaction.addedrelations;
 
-import com.google.common.base.Predicate;
 import grakn.core.graph.graphdb.internal.InternalRelation;
-import grakn.core.graph.graphdb.transaction.addedrelations.AddedRelationsContainer;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Predicate;
 
 
 public class SimpleBufferAddedRelations implements AddedRelationsContainer {
@@ -79,7 +78,7 @@ public class SimpleBufferAddedRelations implements AddedRelationsContainer {
         cleanup();
         final List<InternalRelation> result = new ArrayList<>();
         for (InternalRelation r : added) {
-            if (filter.apply(r)) result.add(r);
+            if (filter.test(r)) result.add(r);
         }
         return result;
     }

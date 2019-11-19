@@ -21,13 +21,10 @@ package grakn.core.graph.diskstorage.configuration.backend;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import grakn.core.graph.core.JanusGraphException;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.configuration.ConcurrentWriteConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
 import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
@@ -40,7 +37,8 @@ import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
-import grakn.core.graph.util.system.IOUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.Graph;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -50,8 +48,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * This class provides READ and WRITE access to Configuration persisted into a KCVStore,
+ */
 
-public class KCVSConfiguration implements ConcurrentWriteConfiguration {
+public class KCVSConfiguration implements WriteConfiguration {
 
     private final BackendOperation.TransactionalProvider txProvider;
     private final TimestampProvider times;
@@ -97,10 +98,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         return staticBuffer2Object(result, dataType);
     }
 
-    public <O> void set(String key, O value, O expectedValue) {
-        set(key, value, expectedValue, true);
-    }
-
     /**
      * Sets a configuration property for this StoreManager.
      *
@@ -109,10 +106,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
      */
     @Override
     public <O> void set(String key, O value) {
-        set(key, value, null, false);
-    }
-
-    public <O> void set(String key, O value, O expectedValue, boolean checkExpectedValue) {
         StaticBuffer column = string2StaticBuffer(key);
         List<Entry> additions;
         List<StaticBuffer> deletions;
@@ -125,19 +118,10 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
             additions = KeyColumnValueStore.NO_ADDITIONS;
             deletions = Lists.newArrayList(column);
         }
-        StaticBuffer expectedValueBuffer;
-        if (checkExpectedValue && expectedValue != null) {
-            expectedValueBuffer = object2StaticBuffer(expectedValue);
-        } else {
-            expectedValueBuffer = null;
-        }
 
         BackendOperation.execute(new BackendOperation.Transactional<Boolean>() {
             @Override
             public Boolean call(StoreTransaction txh) throws BackendException {
-                if (checkExpectedValue) {
-                    store.acquireLock(rowKey, column, expectedValueBuffer, txh);
-                }
                 store.mutate(rowKey, additions, deletions, txh);
                 return true;
             }
@@ -191,7 +175,6 @@ public class KCVSConfiguration implements ConcurrentWriteConfiguration {
         try {
             store.close();
             txProvider.close();
-            IOUtils.closeQuietly(serializer);
         } catch (BackendException e) {
             throw new JanusGraphException("Could not close configuration store", e);
         }

@@ -289,7 +289,6 @@ public class StandardStoreFeatures implements StoreFeatures {
             return this;
         }
 
-
         public Builder visibility(boolean b) {
             visibility = b;
             return this;
@@ -310,11 +309,6 @@ public class StandardStoreFeatures implements StoreFeatures {
             keyConsistent = true;
             keyConsistentTxConfig = global;
             localKeyConsistentTxConfig = local;
-            return this;
-        }
-
-        public Builder notKeyConsistent() {
-            keyConsistent = false;
             return this;
         }
 

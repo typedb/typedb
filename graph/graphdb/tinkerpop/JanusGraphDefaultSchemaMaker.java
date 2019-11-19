@@ -27,14 +27,9 @@ import java.util.Date;
 import java.util.UUID;
 
 /**
- * {@link DefaultSchemaMaker} implementation for Blueprints graphs
+ * {@link DefaultSchemaMaker} implementation for Janus graphs
  */
 public class JanusGraphDefaultSchemaMaker implements DefaultSchemaMaker {
-
-    public static final DefaultSchemaMaker INSTANCE = new JanusGraphDefaultSchemaMaker();
-
-    private JanusGraphDefaultSchemaMaker() {
-    }
 
     @Override
     public Cardinality defaultPropertyCardinality(String key) {

@@ -53,12 +53,11 @@ public class ConfigKey<T> {
     public static final ConfigKey<String> SERVER_HOST_NAME = key("server.host");
     public static final ConfigKey<Integer> GRPC_PORT = key("grpc.port", INT);
 
-    public static final ConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname", STRING);
-    public static final ConfigKey<String> STORAGE_BACKEND = key("storage.backend", STRING);
+    public static final ConfigKey<String> STORAGE_HOSTNAME = key("storage.hostname");
+    public static final ConfigKey<String> STORAGE_BACKEND = key("storage.backend");
     public static final ConfigKey<Integer> STORAGE_PORT = key("storage.port", INT);
     public static final ConfigKey<Integer> HADOOP_STORAGE_PORT = key("janusgraphmr.ioformat.conf.storage.port", INT);
-    public static final ConfigKey<Integer> STORAGE_CQL_NATIVE_PORT = key("cassandra.input.native.port", INT);
-    public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cql.keyspace", STRING);
+    public static final ConfigKey<String> STORAGE_KEYSPACE = key("storage.cql.keyspace");
 
     public static final ConfigKey<Long> TYPE_SHARD_THRESHOLD = key("knowledge-base.type-shard-threshold", LONG);
     public static final ConfigKey<String> DATA_DIR = key("data-dir");

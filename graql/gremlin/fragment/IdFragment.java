@@ -71,7 +71,7 @@ class IdFragment extends FragmentImpl {
         if (canOperateOnEdges()) {
             return traversal.or(
                     edgeTraversal(),
-                    vertexTraversal(__.identity())
+                    vertexTraversal(__.start())
             );
         } else {
             return vertexTraversal(traversal);
@@ -118,7 +118,7 @@ class IdFragment extends FragmentImpl {
         // if the ID may be for an edge,
         // we must extend the traversal that normally just operates on vertices
         // to operate on both edges and vertices
-        traversal.union(__.identity(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
+        traversal.union(__.start(), __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
     }
 
     @Override

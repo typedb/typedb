@@ -18,18 +18,14 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.keyvalue;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import grakn.core.graph.diskstorage.StaticBuffer;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeySelector;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.KeyValueEntry;
-import grakn.core.graph.diskstorage.keycolumnvalue.keyvalue.OrderedKeyValueStore;
 import grakn.core.graph.graphdb.query.BaseQuery;
+
+import java.util.function.Predicate;
 
 /**
  * A query against a {@link OrderedKeyValueStore}. Retrieves all the results that lie between start (inclusive) and
  * end (exclusive) which satisfy the filter. Returns up to the specified limit number of key-value pairs {@link KeyValueEntry}.
- *
  */
 public class KVQuery extends BaseQuery {
 
@@ -38,11 +34,11 @@ public class KVQuery extends BaseQuery {
     private final Predicate<StaticBuffer> keyFilter;
 
     public KVQuery(StaticBuffer start, StaticBuffer end) {
-        this(start,end, BaseQuery.NO_LIMIT);
+        this(start, end, BaseQuery.NO_LIMIT);
     }
 
     public KVQuery(StaticBuffer start, StaticBuffer end, int limit) {
-        this(start,end, Predicates.alwaysTrue(),limit);
+        this(start, end, (staticBuffer) -> true, limit);
     }
 
     public KVQuery(StaticBuffer start, StaticBuffer end, Predicate<StaticBuffer> keyFilter, int limit) {
@@ -61,7 +57,7 @@ public class KVQuery extends BaseQuery {
     }
 
     public KeySelector getKeySelector() {
-        return new KeySelector(keyFilter,getLimit());
+        return new KeySelector(keyFilter, getLimit());
     }
 
 

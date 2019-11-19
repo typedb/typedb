@@ -20,31 +20,10 @@ package grakn.core.graph.graphdb.database.log;
 
 import com.google.common.base.Preconditions;
 import grakn.core.graph.core.TransactionBuilder;
-import grakn.core.graph.graphdb.log.StandardTransactionId;
 import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
 
 
 public enum LogTxMeta {
-
-    GROUPNAME {
-        @Override
-        public Object getValue(TransactionConfiguration txConfig) {
-            if (!txConfig.hasGroupName()) return null;
-            else return txConfig.getGroupName();
-        }
-
-        @Override
-        public void setValue(TransactionBuilder builder, Object value) {
-            Preconditions.checkArgument(value!=null && (value instanceof String));
-            builder.groupName((String) value);
-        }
-
-        @Override
-        public Class dataType() {
-            return String.class;
-        }
-
-    },
 
     LOG_ID {
         @Override
@@ -54,34 +33,15 @@ public enum LogTxMeta {
 
         @Override
         public void setValue(TransactionBuilder builder, Object value) {
-            Preconditions.checkArgument(value!=null && (value instanceof String));
+            Preconditions.checkArgument(value != null && (value instanceof String));
             builder.logIdentifier((String) value);
         }
+
         @Override
         public Class dataType() {
             return String.class;
         }
-    },
-
-    SOURCE_TRANSACTION {
-        @Override
-        public Object getValue(TransactionConfiguration txConfig) {
-            return null;
-        }
-
-        @Override
-        public void setValue(TransactionBuilder builder, Object value) {
-            //Do nothing
-        }
-
-        @Override
-        public Class dataType() {
-            return StandardTransactionId.class;
-        }
-    }
-
-
-    ;
+    };
 
     public abstract Object getValue(TransactionConfiguration txConfig);
 

@@ -29,7 +29,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeySliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.diskstorage.keycolumnvalue.StoreTransaction;
-import grakn.core.graph.diskstorage.util.CacheMetricsAction;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,13 +38,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static grakn.core.graph.util.datastructures.ByteSize.GUAVA_CACHE_ENTRY_SIZE;
-import static grakn.core.graph.util.datastructures.ByteSize.OBJECT_HEADER;
-import static grakn.core.graph.util.datastructures.ByteSize.OBJECT_REFERENCE;
-import static grakn.core.graph.util.datastructures.ByteSize.STATICARRAYBUFFER_RAW_SIZE;
+public class KCVSExpirationCache extends KCVSCache {
 
-
-public class ExpirationKCVSCache extends KCVSCache {
+    private static final int GUAVA_CACHE_ENTRY_SIZE = 104;
+    private static final int OBJECT_HEADER = 12;
+    private static final int OBJECT_REFERENCE = 8;
+    private static final int STATICARRAYBUFFER_RAW_SIZE = OBJECT_HEADER + 2*4 + 6 + (OBJECT_REFERENCE + OBJECT_HEADER + 8); // 6 = overhead & padding, (byte[] array)
 
     //Weight estimation
     private static final int STATIC_ARRAY_BUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length
@@ -63,9 +61,8 @@ public class ExpirationKCVSCache extends KCVSCache {
     private final long invalidationGracePeriodMS;
     private final CleanupThread cleanupThread;
 
-    public ExpirationKCVSCache(KeyColumnValueStore store, String metricsName, long cacheTimeMS, long invalidationGracePeriodMS, long maximumByteSize) {
-        super(store, metricsName);
-        Preconditions.checkArgument(cacheTimeMS > 0, "Cache expiration must be positive: %s", cacheTimeMS);
+    public KCVSExpirationCache(KeyColumnValueStore store, long cacheTimeMS, long invalidationGracePeriodMS, long maximumByteSize) {
+        super(store);
         Preconditions.checkArgument(System.currentTimeMillis() + 1000L * 3600 * 24 * 365 * 100 + cacheTimeMS > 0, "Cache expiration time too large, overflow may occur: %s", cacheTimeMS);
         this.cacheTimeMS = cacheTimeMS;
         int concurrencyLevel = Runtime.getRuntime().availableProcessors();
@@ -88,17 +85,12 @@ public class ExpirationKCVSCache extends KCVSCache {
 
     @Override
     public EntryList getSlice(KeySliceQuery query, StoreTransaction txh) throws BackendException {
-        incActionBy(1, CacheMetricsAction.RETRIEVAL, txh);
         if (isExpired(query)) {
-            incActionBy(1, CacheMetricsAction.MISS, txh);
             return store.getSlice(query, unwrapTx(txh));
         }
 
         try {
-            return cache.get(query, () -> {
-                incActionBy(1, CacheMetricsAction.MISS, txh);
-                return store.getSlice(query, unwrapTx(txh));
-            });
+            return cache.get(query, () -> store.getSlice(query, unwrapTx(txh)));
         } catch (Exception e) {
             if (e instanceof JanusGraphException) {
                 throw (JanusGraphException) e;
@@ -115,10 +107,9 @@ public class ExpirationKCVSCache extends KCVSCache {
         Map<StaticBuffer, EntryList> results = new HashMap<>(keys.size());
         List<StaticBuffer> remainingKeys = new ArrayList<>(keys.size());
         KeySliceQuery[] ksqs = new KeySliceQuery[keys.size()];
-        incActionBy(keys.size(), CacheMetricsAction.RETRIEVAL, txh);
         //Find all cached queries
         for (int i = 0; i < keys.size(); i++) {
-            final StaticBuffer key = keys.get(i);
+            StaticBuffer key = keys.get(i);
             ksqs[i] = new KeySliceQuery(key, query);
             EntryList result = null;
             if (!isExpired(ksqs[i])) result = cache.getIfPresent(ksqs[i]);
@@ -128,7 +119,6 @@ public class ExpirationKCVSCache extends KCVSCache {
         }
         //Request remaining ones from backend
         if (!remainingKeys.isEmpty()) {
-            incActionBy(remainingKeys.size(), CacheMetricsAction.MISS, txh);
             Map<StaticBuffer, EntryList> subresults = store.getSlice(remainingKeys, query, unwrapTx(txh));
             for (int i = 0; i < keys.size(); i++) {
                 StaticBuffer key = keys.get(i);

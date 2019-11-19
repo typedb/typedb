@@ -19,7 +19,6 @@
 package grakn.core.graph.graphdb.vertices;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicate;
 import grakn.core.graph.diskstorage.EntryList;
 import grakn.core.graph.diskstorage.keycolumnvalue.SliceQuery;
 import grakn.core.graph.graphdb.internal.ElementLifeCycle;
@@ -31,6 +30,7 @@ import grakn.core.graph.graphdb.transaction.addedrelations.SimpleAddedRelations;
 import grakn.core.graph.util.datastructures.Retriever;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 
 public class StandardVertex extends AbstractVertex {

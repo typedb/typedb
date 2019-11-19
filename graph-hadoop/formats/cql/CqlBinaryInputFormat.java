@@ -57,9 +57,7 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
     @Override
     public RecordReader<StaticBuffer, Iterable<Entry>> createRecordReader(InputSplit inputSplit, TaskAttemptContext taskAttemptContext) throws IOException, InterruptedException {
         GraknCqlRecordReader recordReader = (GraknCqlRecordReader) cqlInputFormat.createRecordReader(inputSplit, taskAttemptContext);
-        CqlBinaryRecordReader reader = new CqlBinaryRecordReader(recordReader);
-
-        return reader;
+        return new CqlBinaryRecordReader(recordReader);
     }
 
     @Override
@@ -71,11 +69,10 @@ public class CqlBinaryInputFormat extends AbstractBinaryInputFormat {
         if (janusgraphConf.has(GraphDatabaseConfiguration.STORAGE_PORT)) {
             ConfigHelper.setInputRpcPort(config, String.valueOf(janusgraphConf.get(GraphDatabaseConfiguration.STORAGE_PORT)));
         }
-        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME)) {
-            ConfigHelper.setInputKeyspaceUserName(config, janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
-        }
-        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
-            ConfigHelper.setInputKeyspacePassword(config, janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD));
+        if (janusgraphConf.has(GraphDatabaseConfiguration.AUTH_USERNAME) && janusgraphConf.has(GraphDatabaseConfiguration.AUTH_PASSWORD)) {
+            GraknCqlConfigHelper.setUserNameAndPassword(config,
+                    janusgraphConf.get(GraphDatabaseConfiguration.AUTH_PASSWORD),
+                    janusgraphConf.get(GraphDatabaseConfiguration.AUTH_USERNAME));
         }
         // Copy keyspace, force the CF setting to edgestore, honor widerows when set
         boolean wideRows = config.getBoolean(INPUT_WIDEROWS_CONFIG, false);

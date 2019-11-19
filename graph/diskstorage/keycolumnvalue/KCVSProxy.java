@@ -49,12 +49,6 @@ public class KCVSProxy implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue,
-                            StoreTransaction txh) throws BackendException {
-        store.acquireLock(key, column, expectedValue, unwrapTx(txh));
-    }
-
-    @Override
     public KeyIterator getKeys(KeyRangeQuery keyQuery, StoreTransaction txh) throws BackendException {
         return store.getKeys(keyQuery, unwrapTx(txh));
     }
