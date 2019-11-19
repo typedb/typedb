@@ -126,7 +126,7 @@ public class BasicConfiguration implements Configuration {
         return result;
     }
 
-    protected Map<String, Object> getSubset(ReadConfiguration config, ConfigNamespace umbrella, String... umbrellaElements) {
+    private Map<String, Object> getSubset(ReadConfiguration config, ConfigNamespace umbrella, String... umbrellaElements) {
         verifyElement(umbrella);
 
         String prefix = umbrella.isRoot() ? "" : ConfigElement.getPath(umbrella, umbrellaElements);
@@ -145,7 +145,6 @@ public class BasicConfiguration implements Configuration {
         }
         return result;
     }
-
 
     /**
      * Return a new Configuration which contains a subset of current BasicConfiguration
