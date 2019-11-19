@@ -70,7 +70,7 @@ public class JanusGraphFactory {
 
         // Initialise the 2 components needed by StandardJanusGraph
         Backend backend = new Backend(mergedConfig, storeManager);
-        GraphDatabaseConfiguration dbConfig = new GraphDatabaseConfiguration(configuration, mergedConfig, storeManager.getFeatures());
+        GraphDatabaseConfiguration dbConfig = new GraphDatabaseConfiguration(configuration, mergedConfig, storeManager.getFeatures().isDistributed());
 
         return new StandardJanusGraph(dbConfig, backend);
     }

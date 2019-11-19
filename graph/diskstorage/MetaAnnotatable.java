@@ -19,8 +19,6 @@
 package grakn.core.graph.diskstorage;
 
 
-import grakn.core.graph.diskstorage.EntryMetaData;
-
 public interface MetaAnnotatable {
 
     Object setMetaData(EntryMetaData key, Object value);

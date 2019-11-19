@@ -60,10 +60,6 @@ public class ManagementLogger implements MessageReader {
     private final StandardJanusGraph graph;
     private final SchemaCache schemaCache;
     private final Log sysLog;
-
-    /**
-     * This belongs in JanusGraphConfig.
-     */
     private final TimestampProvider times;
 
     private final AtomicInteger evictionTriggerCounter = new AtomicInteger(0);
@@ -166,7 +162,7 @@ public class ManagementLogger implements MessageReader {
 
         void receivedAcknowledgement(String senderId) {
             if (instancesToBeAcknowledged.remove(senderId)) {
-                final int ackCounter = instancesToBeAcknowledged.size();
+                int ackCounter = instancesToBeAcknowledged.size();
                 LOG.debug("Received acknowledgement for eviction [{}] from senderID={} ({} more acks still outstanding)",
                         evictionId, senderId, ackCounter);
                 if (ackCounter == 0) {
