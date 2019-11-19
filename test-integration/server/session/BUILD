@@ -38,14 +38,14 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.session.TransactionOLTPIT",
     deps = [
-        "//common:common",
+        "//common",
         "//concept/answer",
-        "//concept/impl:impl",
+        "//concept/impl",
         "//core",
-        "//graph",
         "//dependencies/maven/artifacts/com/google/guava",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//graph",
         "//kb",
         "//kb/concept/api",
         "//kb/concept/structure",
@@ -83,8 +83,45 @@ java_test(
         "//kb",
         "//kb/concept/api",
         "//test-integration/rule:grakn-test-server",
-        "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "attribute-manager-it",
+    srcs = ["AttributeManagerIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.session.AttributeManagerIT",
+    deps = [
+        "//core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
+    ],
+)
+
+java_test(
+    name = "shard-manager-it",
+    srcs = ["ShardManagerIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.server.session.ShardManagerIT",
+    deps = [
+        "//common",
+        "//core",
+        "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//kb",
+        "//kb/concept/api",
+        "//server",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_common//:common",
+        "@graknlabs_graql//java:graql",
     ],
 )
 

@@ -20,6 +20,7 @@
 
 package grakn.core.kb.server;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.ConceptId;
 
@@ -40,13 +41,15 @@ import grakn.core.kb.concept.api.ConceptId;
 public interface AttributeManager {
 
     Cache<String, ConceptId> attributesCache();
-
     void ackAttributeInsert(String index, String txId);
     void ackAttributeDelete(String index, String txId);
     void ackAttributeCommit(String index, String txId);
     void ackCommit(String txId);
-
     boolean requiresLock(String txId);
+
+    @VisibleForTesting
     boolean lockCandidatesPresent();
-    boolean shardRequestsPresent();
+
+    @VisibleForTesting
+    boolean ephemeralAttributesPresent();
 }

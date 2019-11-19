@@ -463,7 +463,7 @@ public class TransactionOLTPIT {
         for (int i = 0 ; i < noOfEntities ; i++){
             statements.add(Graql.var().isa(entityLabel));
         }
-        GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
+        GraqlTestUtil.insertStatementsConcurrently(session, statements, threads, insertsPerCommit);
         try(Transaction tx = session.writeTransaction()) {
             final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(noOfEntities, noOfConcepts);
@@ -528,14 +528,14 @@ public class TransactionOLTPIT {
             values.add(value);
             statements.add(Graql.var("x" + i).isa(attributeLabel).val(value));
         }
-        GraqlTestUtil.insertStatements(session, statements, threads, insertsPerCommit);
+        GraqlTestUtil.insertStatementsConcurrently(session, statements, threads, insertsPerCommit);
         try(Transaction tx = session.writeTransaction()) {
             final long noOfAttributes = tx.execute(Graql.parse("compute count in someAttribute;").asComputeStatistics()).get(0).number().longValue();
             TestCase.assertEquals(values.size(), noOfAttributes);
         }
 
         assertFalse(session.attributeManager().lockCandidatesPresent());
-        assertFalse(session.attributeManager().shardRequestsPresent());
+        assertFalse(session.attributeManager().ephemeralAttributesPresent());
         session.close();
     }
 

@@ -18,10 +18,10 @@
 
 package grakn.core.util;
 
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
@@ -29,20 +29,19 @@ import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
 import graql.lang.statement.Statement;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import org.apache.commons.collections.CollectionUtils;
-
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.Collection;
-import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertFalse;
@@ -124,8 +123,8 @@ public class GraqlTestUtil {
         return things.iterator().next();
     }
 
-    public static void insertStatements(Session session, List<Statement> statements,
-                                  int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
+    public static void insertStatementsConcurrently(Session session, List<Statement> statements,
+                                                    int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
         ExecutorService executorService = Executors.newFixedThreadPool(threads);
         int listSize = statements.size();
         int listChunk = listSize / threads;

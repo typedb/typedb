@@ -34,7 +34,7 @@ public class AttributeManagerImpl implements AttributeManager {
 
     private final Cache<String, ConceptId> attributesCache;
     //we track txs that insert an attribute with given index
-    private final ConcurrentHashMap<String, Set<String>> ephemeralAttributeCache;
+    private final ConcurrentHashMap<String, Set<String>> ephemeralAttributes;
     private final Set<String> lockCandidates;
 
     public AttributeManagerImpl(){
@@ -43,7 +43,7 @@ public class AttributeManagerImpl implements AttributeManager {
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
 
-        this.ephemeralAttributeCache = new ConcurrentHashMap<>();
+        this.ephemeralAttributes = new ConcurrentHashMap<>();
         this.lockCandidates = ConcurrentHashMap.newKeySet();
     }
 
@@ -54,7 +54,7 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public void ackAttributeInsert(String index, String txId) {
-        ephemeralAttributeCache.compute(index, (ind, entry) -> {
+        ephemeralAttributes.compute(index, (ind, entry) -> {
             if (entry == null) {
                 Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
@@ -70,7 +70,7 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public void ackAttributeDelete(String index, String txId) {
-        ephemeralAttributeCache.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
+        ephemeralAttributes.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
             if (existingValue.size() == 1) return null;
             existingValue.remove(txId);
             return existingValue;
@@ -98,7 +98,7 @@ public class AttributeManagerImpl implements AttributeManager {
     }
 
     @Override
-    public boolean shardRequestsPresent() {
-        return !ephemeralAttributeCache.values().isEmpty();
+    public boolean ephemeralAttributesPresent() {
+        return !ephemeralAttributes.values().isEmpty();
     }
 }
