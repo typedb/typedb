@@ -121,13 +121,11 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.Io;
-import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadedTransaction;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
@@ -321,19 +319,17 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
     @Override
     public <I extends Io> I io(Io.Builder<I> builder) {
-        return getGraph().io(builder);
+        return null; // Not used
     }
 
     @Override
     public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
-        StandardJanusGraph graph = getGraph();
-        if (isOpen()) commit();
-        return graph.compute(graphComputerClass);
+        return null; // This is only implemented in HadoopGraph
     }
 
     @Override
     public GraphComputer compute() throws IllegalArgumentException {
-        return null; // TODO think about this at some point in the future.
+        return null; // This is only implemented in HadoopGraph
     }
 
     /**
@@ -457,15 +453,6 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
     /*
      * ------------------------------------ External Access ------------------------------------
      */
-
-    public StandardJanusGraphTx getNextTx() {
-        Preconditions.checkArgument(isClosed());
-        if (!config.isThreadBound()) {
-            throw new IllegalStateException("Cannot access element because its enclosing transaction is closed and unbound");
-        } else {
-            return (StandardJanusGraphTx) graph.getCurrentThreadTx();
-        }
-    }
 
     public TransactionConfiguration getConfiguration() {
         return config;

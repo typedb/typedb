@@ -131,7 +131,7 @@ public class MedianVertexProgram extends GraknVertexProgram<Long> {
     }
 
     @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
+    public void loadState(Graph graph, Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(RESOURCE_TYPE).getKeys().forEachRemaining(key ->
                 statisticsResourceLabelIds.add((LabelId) configuration.getProperty(RESOURCE_TYPE + "." + key)));

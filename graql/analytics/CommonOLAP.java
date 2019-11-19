@@ -57,7 +57,7 @@ public abstract class CommonOLAP {
      *
      * @param configuration the apache config object that will be propagated
      */
-    public void storeState(final Configuration configuration) {
+    public void storeState(Configuration configuration) {
         // clear properties from vertex program
         Set<String> oldKeys = new HashSet<>();
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys()
@@ -80,7 +80,7 @@ public abstract class CommonOLAP {
      * @param graph         the tinker graph
      * @param configuration the apache config object containing the values
      */
-    public void loadState(final Graph graph, final Configuration configuration) {
+    public void loadState(Graph graph, Configuration configuration) {
         // load selected types
         configuration.subset(PREFIX_SELECTED_TYPE_KEY).getKeys().forEachRemaining(key ->
                 selectedTypes.add((LabelId) configuration.getProperty(PREFIX_SELECTED_TYPE_KEY + "." + key)));
