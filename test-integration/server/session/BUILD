@@ -94,14 +94,12 @@ java_test(
     classpath_resources = ["//test-integration/resources:logback-test"],
     test_class = "grakn.core.server.session.AttributeManagerIT",
     deps = [
-        "//core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",
         "//kb/concept/api",
         "//server",
         "//test-integration/rule:grakn-test-server",
-        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -113,14 +111,11 @@ java_test(
     test_class = "grakn.core.server.session.ShardManagerIT",
     deps = [
         "//common",
-        "//core",
         "//dependencies/maven/artifacts/org/apache/tinkerpop:gremlin-core",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//kb",
-        "//kb/concept/api",
         "//server",
         "//test-integration/rule:grakn-test-server",
-        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
 )
