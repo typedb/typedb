@@ -503,7 +503,7 @@ public class QueryPlannerIT {
     }
 
     private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
+        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx, tx.conceptManager());
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

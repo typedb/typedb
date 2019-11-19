@@ -176,8 +176,6 @@ public interface Transaction extends AutoCloseable{
 
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
-    void checkMutationAllowed();
-
     /**
      * @param label A unique label for the EntityType
      * @return A new or existing EntityType with the provided label

@@ -747,7 +747,7 @@ public class ComputeExecutor {
                         scopeLabels.stream()
                                 .map(type -> patternFunction.apply(attributeType, type))
                                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                                .flatMap(pattern -> executorFactory.read().traverse(pattern))
+                                .flatMap(pattern -> executorFactory.transactional(null, true).traverse(pattern))
                 ).findFirst().isPresent();
     }
 
@@ -824,7 +824,7 @@ public class ComputeExecutor {
                 .map(type -> Graql.var("x").isa(Graql.type(type.getValue())))
                 .map(Pattern.class::cast)
                 .map(pattern -> Graql.and(Collections.singleton(pattern)))
-                .flatMap(pattern -> executorFactory.read().traverse(pattern))
+                .flatMap(pattern -> executorFactory.transactional(null, false).traverse(pattern))
                 .findFirst().isPresent();
     }
 

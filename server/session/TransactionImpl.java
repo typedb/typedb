@@ -312,6 +312,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(GraqlDefine query) {
+        checkMutationAllowed();
         return executorFactory.transactional(this, false).define(query);
     }
 
@@ -324,6 +325,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(GraqlUndefine query) {
+        checkMutationAllowed();
         return executorFactory.transactional(this, false).undefine(query);
     }
 
@@ -347,6 +349,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<ConceptMap> stream(GraqlInsert query, boolean infer) {
+        checkMutationAllowed();
         return executor().insert(query);
     }
 
@@ -369,6 +372,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public Stream<Void> stream(GraqlDelete query, boolean infer) {
+        checkMutationAllowed();
         return Stream.of(executor(infer).delete(query));
     }
 
@@ -637,7 +641,6 @@ public class TransactionImpl implements Transaction {
         return superSet.stream();
     }
 
-    @Override
     public void checkMutationAllowed() {
         if (Type.READ.equals(type())) throw TransactionException.transactionReadOnly(this);
     }
@@ -1145,12 +1148,12 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public final QueryExecutor executor() {
-        return new QueryExecutorImpl(this, conceptManager, true);
+        return executorFactory.transactional(this, true);
     }
 
     @Override
     public final QueryExecutor executor(boolean infer) {
-        return new QueryExecutorImpl(this, conceptManager, infer);
+        return executorFactory.transactional(this, infer);
     }
 
     @Override
@@ -1207,7 +1210,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public TraversalPlanFactory traversalPlanFactory() {
-        return new TraversalPlanFactoryImpl(this);
+        return new TraversalPlanFactoryImpl(this, conceptManager);
     }
 
     @Override

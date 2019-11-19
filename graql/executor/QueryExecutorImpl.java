@@ -37,7 +37,6 @@ import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.QueryExecutor;
-import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.planning.GraqlTraversal;
@@ -105,7 +104,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         this.infer = infer;
         this.transaction = transaction;
 
-        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction);
+        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction, conceptManager);
 
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
@@ -292,10 +291,10 @@ public class QueryExecutorImpl implements QueryExecutor {
 
             Stream<ConceptMap> answers = executorFactory.transactional(transaction, infer).match(match);
             answerStream = answers
-                    .flatMap(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream(answer))
+                    .flatMap(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            answerStream = WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream();
+            answerStream = WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write();
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);
@@ -362,7 +361,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
-        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream();
+        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write();
     }
 
     @Override
@@ -377,7 +376,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
             }
         }
-        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).stream();
+        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write();
     }
 
 

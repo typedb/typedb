@@ -27,6 +27,7 @@ import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
@@ -74,9 +75,11 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
 
     private static final int MAX_STARTING_POINTS = 3;
     private Transaction tx;
+    private ConceptManager conceptManager;
 
-    public TraversalPlanFactoryImpl(Transaction tx) {
+    public TraversalPlanFactoryImpl(Transaction tx, ConceptManager conceptManager) {
         this.tx = tx;
+        this.conceptManager = conceptManager;
     }
 
     /**
@@ -102,7 +105,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
      * @param query the conjunction query to find a traversal plan
      * @return a semi-optimal traversal plan to execute the given conjunction
      */
-    private static List<Fragment> planForConjunction(ConjunctionQuery query, Transaction tx) {
+    private List<Fragment> planForConjunction(ConjunctionQuery query, Transaction tx) {
         // a query plan is an ordered list of fragments
         final List<Fragment> plan = new ArrayList<>();
 
@@ -154,7 +157,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     }
 
 
-    private static Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes, Transaction tx) {
+    private Arborescence<Node> computeArborescence(Set<Fragment> connectedFragments, ImmutableMap<NodeId, Node> nodes, Transaction tx) {
         final Map<Node, Double> nodesWithFixedCost = new HashMap<>();
 
         connectedFragments.forEach(fragment -> {
@@ -311,12 +314,12 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
         return fragmentSetMap.values();
     }
 
-    private static double getLogInstanceCount(Transaction tx, Fragment fragment) {
+    private double getLogInstanceCount(Transaction tx, Fragment fragment) {
         // set the weight of the node as a starting point based on log(number of this node)
         double logInstanceCount;
         if (fragment instanceof LabelFragment) {
             // only LabelFragment (corresponding to type vertices) can be sharded
-            Long shardCount = ((LabelFragment) fragment).getShardCount(tx);
+            Long shardCount = ((LabelFragment) fragment).getShardCount(conceptManager);
             logInstanceCount = Math.log(shardCount - 1D + SHARD_LOAD_FACTOR) +
                     Math.log(tx.shardingThreshold());
         } else {

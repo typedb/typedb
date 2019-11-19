@@ -20,8 +20,10 @@ package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import grakn.core.concept.impl.TypeImpl;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
@@ -90,12 +92,12 @@ public class LabelFragment extends FragmentImpl {
         return true;
     }
 
-    public Long getShardCount(Transaction tx) {
+    public Long getShardCount(ConceptManager conceptManager) {
         return labels().stream()
-                .map(tx::<SchemaConcept>getSchemaConcept)
+                .map(conceptManager::<SchemaConcept>getSchemaConcept)
                 .filter(schemaConcept -> schemaConcept != null && schemaConcept.isType())
                 .flatMap(SchemaConcept::subs)
-                .mapToLong(schemaConcept -> tx.getShardCount(schemaConcept.asType()))
+                .mapToLong(schemaConcept -> TypeImpl.from(schemaConcept.asType()).shardCount())
                 .sum();
     }
 

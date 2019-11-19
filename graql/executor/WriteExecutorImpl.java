@@ -37,8 +37,6 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ConceptBuilder;
-import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
@@ -47,11 +45,9 @@ import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.kb.server.Transaction;
 import grakn.core.core.Schema;
 import graql.lang.property.VarProperty;
-import graql.lang.query.GraqlDefine;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
-import java.util.List;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -113,12 +109,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         this.dependencies = ImmutableMultimap.copyOf(executorDependency);
     }
 
-    public Transaction tx() {
-        return transaction;
-    }
-
     static WriteExecutor create(Transaction transaction, ConceptManager conceptManager, ImmutableSet<Writer> writers) {
-        transaction.checkMutationAllowed();
         /*
             We build several many-to-many relations, indicated by a `Multimap<X, Y>`. These are used to represent
             the dependencies between properties and variables.
@@ -244,11 +235,11 @@ public class WriteExecutorImpl implements WriteExecutor {
         return dependency;
     }
 
-    public Stream<ConceptMap> stream() {
-        return stream(new ConceptMap());
+    public Stream<ConceptMap> write() {
+        return write(new ConceptMap());
     }
 
-    public Stream<ConceptMap> stream(ConceptMap preExisting) {
+    public Stream<ConceptMap> write(ConceptMap preExisting) {
         concepts.putAll(preExisting.map());
 
         // time to execute writers for properties
@@ -272,7 +263,6 @@ public class WriteExecutorImpl implements WriteExecutor {
         ServerTracing.closeScopedChildSpan(deleteConceptsSpanId);
 
         // time to build concepts
-
         int buildConceptsSpanId = ServerTracing.startScopedChildSpan("WriteExecutor.write build concepts for answer");
 
         conceptBuilders.forEach((var, builder) -> buildConcept(var, builder));
@@ -292,7 +282,7 @@ public class WriteExecutorImpl implements WriteExecutor {
 
         // mark all inferred concepts that are required for the insert for persistence explicitly
         // can avoid this potentially expensive check if there aren't any inferred concepts to start with
-        if (tx().cache().getInferredInstances().findAny().isPresent()) {
+        if (transaction.cache().getInferredInstances().findAny().isPresent()) {
             markConceptsForPersistence(namedConcepts.values());
         }
 

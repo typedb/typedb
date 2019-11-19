@@ -63,10 +63,8 @@ public interface WriteExecutor {
      */
     Concept getConcept(Variable var);
 
-    Stream<ConceptMap> stream(ConceptMap preExisting);
-    Stream<ConceptMap> stream();
-
-    Transaction tx();
+    Stream<ConceptMap> write(ConceptMap preExisting);
+    Stream<ConceptMap> write();
 
     boolean isConceptDefined(Variable var);
 

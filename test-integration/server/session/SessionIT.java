@@ -26,6 +26,7 @@ import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.Session;
+import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -202,14 +203,14 @@ public class SessionIT {
 
     @Test
     public void transactionRead_checkMutationsAllowedThrows(){
-        Transaction tx1 = session.readTransaction();
+        TransactionImpl tx1 = (TransactionImpl) session.readTransaction();
         expectedException.expect(TransactionException.class);
         tx1.checkMutationAllowed();
         tx1.close();
-        Transaction tx2 = session.writeTransaction();
+        TransactionImpl tx2 = (TransactionImpl) session.writeTransaction();
         tx2.checkMutationAllowed();
         tx2.close();
-        Transaction tx3 = session.readTransaction();
+        TransactionImpl tx3 = (TransactionImpl) session.readTransaction();
         expectedException.expect(TransactionException.class);
         tx3.checkMutationAllowed();
         tx3.close();

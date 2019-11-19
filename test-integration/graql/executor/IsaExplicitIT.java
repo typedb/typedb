@@ -63,7 +63,7 @@ public class IsaExplicitIT {
     @Before
     public void loadSimpleData() {
         tx = server.sessionWithNewKeyspace().writeTransaction();
-        traversalPlanFactory = new TraversalPlanFactoryImpl(tx);
+        traversalPlanFactory = new TraversalPlanFactoryImpl(tx, tx.conceptManager());
         EntityType entityType0 = tx.putEntityType("entityType0");
         EntityType entityType1 = tx.putEntityType("entityType1");
         EntityType entityType2 = tx.putEntityType("entityType2");

@@ -24,7 +24,6 @@ java_library(
     name = "impl",
     srcs = glob(["**/*.java"]),
     deps = [
-        "//kb",
         "//core",
         "//kb/concept/manager",
         "//kb/concept/structure",

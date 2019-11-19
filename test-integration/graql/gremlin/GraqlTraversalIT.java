@@ -304,7 +304,7 @@ public class GraqlTraversalIT {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx);
+        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx, tx.conceptManager());
         return planFactory.createTraversal(pattern);
     }
 
