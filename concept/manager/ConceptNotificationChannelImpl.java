@@ -32,7 +32,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
-import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.structure.Casting;
 
 import java.util.List;
@@ -40,101 +40,101 @@ import java.util.function.Supplier;
 
 public class ConceptNotificationChannelImpl implements ConceptNotificationChannel {
 
-    private ConceptObserver conceptObserver;
+    private ConceptListener conceptListener;
 
     @Override
-    public void subscribe(ConceptObserver conceptObserver) {
-        this.conceptObserver = conceptObserver;
+    public void subscribe(ConceptListener conceptListener) {
+        this.conceptListener = conceptListener;
     }
 
     @Override
     public void thingDeleted(Thing thing) {
-        conceptObserver.thingDeleted(thing);
+        conceptListener.thingDeleted(thing);
     }
 
     @Override
     public void relationEdgeDeleted(RelationType edgeTypeDeleted, boolean isInferredEdge, Supplier<Concept> wrappingConceptGetter) {
-        conceptObserver.relationEdgeDeleted(edgeTypeDeleted, isInferredEdge, wrappingConceptGetter);
+        conceptListener.relationEdgeDeleted(edgeTypeDeleted, isInferredEdge, wrappingConceptGetter);
     }
 
     @Override
     public void schemaConceptDeleted(SchemaConcept schemaConcept) {
-        conceptObserver.schemaConceptDeleted(schemaConcept);
+        conceptListener.schemaConceptDeleted(schemaConcept);
     }
 
     @Override
     public void labelRemoved(SchemaConcept schemaConcept) {
-        conceptObserver.labelRemoved(schemaConcept);
+        conceptListener.labelRemoved(schemaConcept);
     }
 
     @Override
     public void labelAdded(SchemaConcept schemaConcept) {
-        conceptObserver.labelRemoved(schemaConcept);
+        conceptListener.labelRemoved(schemaConcept);
     }
 
     @Override
     public void conceptSetAbstract(Type type, boolean isAbstract) {
-        conceptObserver.conceptSetAbstract(type, isAbstract);
+        conceptListener.conceptSetAbstract(type, isAbstract);
     }
 
     @Override
     public void trackRelationInstancesRolePlayers(RelationType relationType) {
-        conceptObserver.trackRelationInstancesRolePlayers(relationType);
+        conceptListener.trackRelationInstancesRolePlayers(relationType);
     }
 
     @Override
     public void trackEntityInstancesRolesPlayed(EntityType entity) {
-        conceptObserver.trackEntityInstancesRolesPlayed(entity);
+        conceptListener.trackEntityInstancesRolesPlayed(entity);
     }
 
     @Override
     public void trackAttributeInstancesRolesPlayed(AttributeType attributeType) {
-        conceptObserver.trackAttributeInstancesRolesPlayed(attributeType);
+        conceptListener.trackAttributeInstancesRolesPlayed(attributeType);
     }
 
     @Override
     public void castingDeleted(Casting casting) {
-        conceptObserver.castingDeleted(casting);
+        conceptListener.castingDeleted(casting);
     }
 
     @Override
     public void deleteReifiedOwner(Relation owner) {
-        conceptObserver.deleteReifiedOwner(owner);
+        conceptListener.deleteReifiedOwner(owner);
     }
 
     @Override
     public void relationRoleUnrelated(RelationType relationType, Role role, List<Casting> conceptsPlayingRole) {
-        conceptObserver.relationRoleUnrelated(relationType, role, conceptsPlayingRole);
+        conceptListener.relationRoleUnrelated(relationType, role, conceptsPlayingRole);
     }
 
     @Override
     public <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
-        conceptObserver.attributeCreated(attribute, value, isInferred);
+        conceptListener.attributeCreated(attribute, value, isInferred);
     }
 
     @Override
     public void relationCreated(Relation relation, boolean isInferred) {
-        conceptObserver.relationCreated(relation, isInferred);
+        conceptListener.relationCreated(relation, isInferred);
     }
 
     @Override
     public void entityCreated(Entity entity, boolean isInferred) {
-        conceptObserver.entityCreated(entity, isInferred);
+        conceptListener.entityCreated(entity, isInferred);
     }
 
     @Override
     public void hasAttributeRelationCreated(Relation hasAttributeRelation, boolean isInferred) {
-        conceptObserver.hasAttributeRelationCreated(hasAttributeRelation, isInferred);
+        conceptListener.hasAttributeRelationCreated(hasAttributeRelation, isInferred);
     }
 
     @Override
     public void roleDeleted(Role role) {
-        conceptObserver.roleDeleted(role);
+        conceptListener.roleDeleted(role);
     }
 
     @Override
     public void rolePlayerCreated(Casting casting) {
-        conceptObserver.rolePlayerCreated(casting);
+        conceptListener.rolePlayerCreated(casting);
     }
 
     @Override

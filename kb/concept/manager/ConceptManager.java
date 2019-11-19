@@ -92,7 +92,7 @@ public interface ConceptManager {
 
     Set<Concept> getConcepts(Schema.VertexProperty key, Object value);
 
-    // TODO these should not be here, overexposed interface
+    // TODO these should not be here, overexposed interface or incorrect location
     LabelId convertToId(Label label);
     VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType);
 }

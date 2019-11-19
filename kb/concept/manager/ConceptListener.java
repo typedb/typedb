@@ -36,7 +36,7 @@ import grakn.core.kb.concept.structure.Casting;
 import java.util.List;
 import java.util.function.Supplier;
 
-public interface ConceptObserver {
+public interface ConceptListener {
     void thingDeleted(Thing thing);
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept

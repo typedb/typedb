@@ -32,12 +32,11 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.concept.manager.ConceptObserverImpl;
+import grakn.core.concept.manager.ConceptListenerImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.planning.TraversalPlanFactory;
-import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -176,7 +175,7 @@ public class SessionImpl implements Session {
 
         TransactionImpl tx = new TransactionImpl(this, janusGraphTransaction, conceptManager, transactionCache, queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory);
 
-        ConceptObserverImpl conceptObserver = new ConceptObserverImpl(transactionCache, queryCache, ruleCache, statisticsDelta);
+        ConceptListenerImpl conceptObserver = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta);
         conceptNotificationChannel.subscribe(conceptObserver);
 
         tx.open(type);

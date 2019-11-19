@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.function.Supplier;
 
 public interface ConceptNotificationChannel {
-    void subscribe(ConceptObserver conceptObserver);
+    void subscribe(ConceptListener conceptListener);
 
     void thingDeleted(Thing thing);
 

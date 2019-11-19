@@ -35,7 +35,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.manager.ConceptObserver;
+import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
@@ -52,14 +52,14 @@ import java.util.function.Supplier;
  *
  * The observer is entirely used to WRITE to the caches and statistics, and not read at all
  */
-public class ConceptObserverImpl implements ConceptObserver {
+public class ConceptListenerImpl implements ConceptListener {
 
     private TransactionCache transactionCache;
     private QueryCache queryCache;
     private RuleCache ruleCache;
     private UncomittedStatisticsDelta statistics;
 
-    public ConceptObserverImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, UncomittedStatisticsDelta statistics) {
+    public ConceptListenerImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, UncomittedStatisticsDelta statistics) {
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
