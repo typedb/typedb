@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
@@ -29,6 +30,7 @@ import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
@@ -289,9 +291,11 @@ public abstract class FragmentImpl implements Fragment {
      * These are cost heuristic proxies using statistics
      *
      * @return
+     * @param conceptManager
+     * @param keyspaceStatistics
      */
     @Override
-    public double estimatedCostAsStartingPoint(Transaction tx) {
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics) {
         throw new UnsupportedOperationException("Fragment of type " + this.getClass() + " is not a fixed cost starting point - no esimated cost as a starting point.");
     }
 

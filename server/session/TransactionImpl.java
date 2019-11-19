@@ -1210,7 +1210,7 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public TraversalPlanFactory traversalPlanFactory() {
-        return new TraversalPlanFactoryImpl(this, conceptManager);
+        return new TraversalPlanFactoryImpl(this, conceptManager, shardingThreshold(), session.keyspaceStatistics());
     }
 
     @Override

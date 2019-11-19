@@ -104,7 +104,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         this.infer = infer;
         this.transaction = transaction;
 
-        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction, conceptManager);
+        traversalPlanFactory = new TraversalPlanFactoryImpl(transaction, conceptManager, transaction.shardingThreshold(), transaction.session().keyspaceStatistics());
 
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }

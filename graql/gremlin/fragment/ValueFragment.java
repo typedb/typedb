@@ -23,6 +23,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.graql.executor.property.value.ValueComparison;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
@@ -91,9 +92,7 @@ public class ValueFragment extends FragmentImpl {
     }
 
     @Override
-    public double estimatedCostAsStartingPoint(Transaction tx) {
-        KeyspaceStatistics statistics = tx.session().keyspaceStatistics();
-
+    public double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics statistics) {
         // compute the sum of all @has-attribute implicit relations
         // and the sum of all attribute instances
         // then compute some mean number of owners per attribute
@@ -103,15 +102,15 @@ public class ValueFragment extends FragmentImpl {
         long totalImplicitRels = 0;
         long totalAttributes = 0;
 
-        AttributeType attributeType = tx.getSchemaConcept(attributeLabel).asAttributeType();
+        AttributeType attributeType = conceptManager.getSchemaConcept(attributeLabel).asAttributeType();
         Stream<AttributeType> attributeSubs = attributeType.subs();
 
         for (Iterator<AttributeType> it = attributeSubs.iterator(); it.hasNext(); ) {
             AttributeType attrType = it.next();
             Label attrLabel = attrType.label();
             Label implicitAttrRelLabel = Schema.ImplicitType.HAS.getLabel(attrLabel);
-            totalAttributes += statistics.count(tx.conceptManager(), attrLabel);
-            totalImplicitRels += statistics.count(tx.conceptManager(), implicitAttrRelLabel);
+            totalAttributes += statistics.count(conceptManager, attrLabel);
+            totalImplicitRels += statistics.count(conceptManager, implicitAttrRelLabel);
         }
 
         if (totalAttributes == 0) {

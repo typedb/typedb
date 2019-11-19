@@ -21,11 +21,13 @@ package grakn.core.kb.graql.planning;
 
 import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
 import grakn.core.kb.server.Transaction;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -136,8 +138,10 @@ public interface Fragment {
      * These are cost heuristic proxies using statistics
      *
      * @return
+     * @param conceptManager
+     * @param keyspaceStatistics
      */
-    double estimatedCostAsStartingPoint(Transaction tx);
+    double estimatedCostAsStartingPoint(ConceptManager conceptManager, KeyspaceStatistics keyspaceStatistics);
 
     /**
      * If a fragment has fixed cost, the traversal is done using index. This makes the fragment a good starting point.
