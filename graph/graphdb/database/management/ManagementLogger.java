@@ -113,7 +113,7 @@ public class ManagementLogger implements MessageReader {
 
     }
 
-    void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes, boolean evictGraphFromCache, List<Callable<Boolean>> updatedTypeTriggers) {
+    void sendCacheEviction(Set<JanusGraphSchemaVertex> updatedTypes, List<Callable<Boolean>> updatedTypeTriggers) {
         long evictionId = evictionTriggerCounter.incrementAndGet();
         evictionTriggerMap.put(evictionId, new EvictionTrigger(evictionId, updatedTypeTriggers, graph));
         DataOutput out = graph.getDataSerializer().getDataOutput(128);
@@ -123,11 +123,8 @@ public class ManagementLogger implements MessageReader {
         for (JanusGraphSchemaVertex type : updatedTypes) {
             VariableLong.writePositive(out, type.longId());
         }
-        if (evictGraphFromCache) {
-            out.writeObjectNotNull(EVICT);
-        } else {
-            out.writeObjectNotNull(DO_NOT_EVICT);
-        }
+        out.writeObjectNotNull(DO_NOT_EVICT);
+
         sysLog.add(out.getStaticBuffer());
     }
 

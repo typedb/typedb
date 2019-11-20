@@ -110,10 +110,8 @@ public class ManagementSystem implements JanusGraphManagement {
     private final StandardJanusGraphTx transaction;
 
     private final Set<JanusGraphSchemaVertex> updatedTypes;
-    private boolean evictGraphFromCache;
     private final List<Callable<Boolean>> updatedTypeTriggers;
 
-    private boolean graphShutdownRequired;
     private boolean isOpen;
 
     public ManagementSystem(StandardJanusGraph graph, KCVSConfiguration config, Log sysLog, ManagementLogger managementLogger, SchemaCache schemaCache) {
@@ -124,9 +122,7 @@ public class ManagementSystem implements JanusGraphManagement {
         this.transactionalConfig = new TransactionalConfiguration(config);
 
         this.updatedTypes = new HashSet<>();
-        this.evictGraphFromCache = false;
         this.updatedTypeTriggers = new ArrayList<>();
-        this.graphShutdownRequired = false;
 
         this.transaction = graph.buildTransaction().disableBatchLoading().start();
         this.isOpen = true;
@@ -152,14 +148,13 @@ public class ManagementSystem implements JanusGraphManagement {
         transaction.commit();
 
         //Communicate schema changes
-        if (!updatedTypes.isEmpty() || evictGraphFromCache) {
-            managementLogger.sendCacheEviction(updatedTypes, evictGraphFromCache, updatedTypeTriggers);
+        if (!updatedTypes.isEmpty()) {
+            managementLogger.sendCacheEviction(updatedTypes, updatedTypeTriggers);
             for (JanusGraphSchemaVertex schemaVertex : updatedTypes) {
                 schemaCache.expireSchemaElement(schemaVertex.longId());
             }
         }
 
-        if (graphShutdownRequired) graph.close();
         close();
     }
 

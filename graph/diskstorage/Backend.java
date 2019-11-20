@@ -243,7 +243,6 @@ public class Backend {
             LOG.debug("Configuring index [{}]", index);
             IndexProvider provider = getIndexProviderClass(config.restrictTo(index), config.get(INDEX_BACKEND, index),
                     StandardIndexProvider.getAllProviderClasses());
-            Preconditions.checkNotNull(provider);
             builder.put(index, provider);
         }
         return builder.build();
