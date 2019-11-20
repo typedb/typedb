@@ -183,7 +183,7 @@ public class TransactionOLTP implements Transaction {
             Set<String> insertedIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
             keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
         }
-        boolean lockRequired = attributeLockRequired
+        return attributeLockRequired
                 || shardLockRequired
                 // In this case we need to lock, so that other concurrent Transactions
                 // that are trying to create new attributes will read an updated version of attributesCache
@@ -191,13 +191,6 @@ public class TransactionOLTP implements Transaction {
                 // contains attributes that we are removing in this transaction.
                 || !cache().getRemovedAttributes().isEmpty()
                 || keyLockRequired;
-        if (lockRequired) {
-            LOG.warn(txId + " is about to acquire a " + (shardLockRequired ? "shard/" : "") +
-                    (attributeLockRequired ? "attribute" : "") + " graphlock.");
-        } else {
-            LOG.warn(txId + " doesn't require a graphlock.");
-        }
-        return lockRequired;
     }
 
     private void commitInternal() throws InvalidKBException {
@@ -260,7 +253,6 @@ public class TransactionOLTP implements Transaction {
             long instanceCount = session.keyspaceStatistics().count(this, label) + uncommittedCount;
             long hardCheckpoint = getShardCheckpoint(label);
             if (instanceCount - hardCheckpoint >= typeShardThreshold) {
-                LOG.warn(txId + " requests a shard for type: " + label + ", instance count: " + instanceCount);
                 session().shardManager().ackShardRequest(label, txId);
                 //update cache to signal fulfillment of shard request later at commit time
                 cache().getNewShards().put(label, instanceCount);
@@ -276,11 +268,9 @@ public class TransactionOLTP implements Transaction {
                     long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.delta(label);
                     if (softCheckPoint == null || instanceCount - softCheckPoint >= typeShardThreshold) {
                         session.shardManager().shardCache().put(label, instanceCount);
-                        LOG.warn(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount + " ,");
+                        LOG.trace(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount + " ,");
                         shard(getType(label).id());
                         setShardCheckpoint(label, instanceCount);
-                    } else {
-                        LOG.warn(txId + " omits shard creation for type: " + label + ", instance count: " + instanceCount);
                     }
         });
     }
