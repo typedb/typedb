@@ -4,7 +4,7 @@ java_library(
         "//external:jar/org/javatuples/javatuples"
     ],
     visibility = [
-        "//dependencies/maven/artifacts:__subpackages__"
+        "//visibility:public"
     ]
 )
 

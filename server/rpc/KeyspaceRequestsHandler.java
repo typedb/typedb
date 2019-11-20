@@ -20,7 +20,15 @@ package grakn.core.server.rpc;
 
 import grakn.protocol.keyspace.KeyspaceProto;
 
+
+/**
+ * This interface has 2 different implementations in Grakn Core and Grakn KGMS
+ * It is used to handle retrieve and delete keyspace requests.
+ */
 public interface KeyspaceRequestsHandler {
+
     Iterable<String> retrieve(KeyspaceProto.Keyspace.Retrieve.Req request);
+
     void delete(KeyspaceProto.Keyspace.Delete.Req request);
+
 }

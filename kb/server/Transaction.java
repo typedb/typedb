@@ -65,7 +65,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 
-public interface Transaction extends AutoCloseable{
+public interface Transaction extends AutoCloseable {
     void open(Type type);
 
     Session session();
@@ -374,9 +374,11 @@ public interface Transaction extends AutoCloseable{
 
     // TODO determine if this should be exposed via Tx or in other ways
     TraversalPlanFactory traversalPlanFactory();
+
     // TODO we may not want to expose both Executor and PlanFactory
     ExecutorFactory executorFactory();
     QueryExecutor executor();
+
     QueryExecutor executor(boolean infer);
     JanusTraversalSourceProvider janusTraversalSourceProvider();
 

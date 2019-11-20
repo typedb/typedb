@@ -32,10 +32,14 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Sets;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.concept.util.ConceptUtils;
-import grakn.core.kb.concept.api.Concept;
+import grakn.core.common.util.Partition;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.concept.impl.ConceptVertex;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.concept.util.ConceptUtils;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.kb.graql.executor.WriteExecutor;
@@ -43,7 +47,7 @@ import grakn.core.kb.graql.executor.property.PropertyExecutor.Writer;
 import grakn.core.common.util.Partition;
 import grakn.core.concept.impl.ConceptVertex;
 import grakn.core.kb.server.Transaction;
-import grakn.core.core.Schema;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
@@ -64,6 +68,7 @@ import java.util.Optional;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Stream;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
@@ -292,7 +297,7 @@ public class WriteExecutorImpl implements WriteExecutor {
         return Stream.of(new ConceptMap(namedConcepts));
     }
 
-    private void markConceptsForPersistence(Collection<Concept> concepts){
+    private void markConceptsForPersistence(Collection<Concept> concepts) {
         Set<Thing> things = concepts.stream()
                 .filter(Concept::isThing)
                 .map(Concept::asThing)

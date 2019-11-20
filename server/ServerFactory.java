@@ -19,7 +19,7 @@
 
 package grakn.core.server;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import grakn.benchmark.lib.instrumentation.ServerTracing;
 import grakn.core.common.config.Config;
@@ -39,6 +39,7 @@ import io.grpc.netty.NettyServerBuilder;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -65,13 +66,15 @@ public class ServerFactory {
         // locks
         LockManager lockManager = new LockManager();
 
+        Integer storagePort = config.getProperty(ConfigKey.STORAGE_PORT);
+        String storageHostname = config.getProperty(ConfigKey.STORAGE_HOSTNAME);
         // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
-        Cluster cluster = Cluster.builder()
-                .addContactPoint(config.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(config.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
+        CqlSession cqlSession = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(storageHostname, storagePort))
+                .withLocalDatacenter("datacenter1")
                 .build();
 
-        KeyspaceManager keyspaceManager = new grakn.core.server.keyspace.KeyspaceManager(cluster);
+        KeyspaceManager keyspaceManager = new KeyspaceManager(cqlSession);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(config);
 
         // session factory
@@ -105,26 +108,26 @@ public class ServerFactory {
     /**
      * Build a GrpcServer using the Netty default builder.
      * The Netty builder accepts 3 thread executors (threadpools):
-     *  - Boss Event Loop Group  (a.k.a. bossEventLoopGroup() )
-     *  - Worker Event Loop Group ( a.k.a. workerEventLoopGroup() )
-     *  - Application Executor (a.k.a. executor() )
-     *
+     * - Boss Event Loop Group  (a.k.a. bossEventLoopGroup() )
+     * - Worker Event Loop Group ( a.k.a. workerEventLoopGroup() )
+     * - Application Executor (a.k.a. executor() )
+     * <p>
      * The Boss group can be the same as the worker group.
      * It's purpose is to accept calls from the network, and create Netty channels (not gRPC Channels) to handle the socket.
-     *
+     * <p>
      * Once the Netty channel has been created it gets passes to the Worker Event Loop Group.
      * This is the threadpool dedicating to doing socket read() and write() calls.
-     *
+     * <p>
      * The last thread group is the application executor, also called the "app thread".
      * This is where the gRPC stubs do their main work.
      * It is for handling the callbacks that bubble up from the network thread.
-     *
+     * <p>
      * Note from grpc-java developers:
      * Most people should use either reuse the same boss event loop group as the worker group.
      * Barring this, the boss eventloop group should be a single thread, since it does very little work.
      * For the app thread, users should provide a fixed size thread pool, as the default unbounded cached threadpool
      * is not the most efficient, and can be dangerous in some circumstances.
-     *
+     * <p>
      * More info here: https://groups.google.com/d/msg/grpc-io/LrnAbWFozb0/VYCVarkWBQAJ
      */
     private static io.grpc.Server createServerRPC(Config config, SessionFactory sessionFactory, KeyspaceManager keyspaceManager, JanusGraphFactory janusGraphFactory) {

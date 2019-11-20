@@ -48,8 +48,8 @@ import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import org.janusgraph.core.JanusGraphTransaction;
-import org.janusgraph.graphdb.database.StandardJanusGraph;
+import grakn.core.graph.core.JanusGraphTransaction;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
 
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
@@ -99,13 +99,12 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-     public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                        Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+                       HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
+                       Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
-        // Open Janus Graph
         this.graph = graph;
 
         this.keyspaceSchemaCache = keyspaceSchemaCache;
@@ -154,7 +153,7 @@ public class SessionImpl implements Session {
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
 
         // janus elements
-        JanusGraphTransaction janusGraphTransaction = graph.buildTransaction().threadBound().consistencyChecks(false).start();
+        JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         JanusTraversalSourceProvider janusTraversalSourceProvider = new JanusTraversalSourceProvider(janusGraphTransaction);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction, janusTraversalSourceProvider);
 
@@ -179,8 +178,6 @@ public class SessionImpl implements Session {
 
     /**
      * This creates the first meta schema in an empty keyspace which has not been initialised yet
-     *
-     * @param tx
      */
     private void initialiseMetaConcepts(TransactionImpl tx) {
         tx.createMetaConcepts();
@@ -188,8 +185,6 @@ public class SessionImpl implements Session {
 
     /**
      * Copy schema concepts labels to current KeyspaceCache
-     *
-     * @param tx
      */
     private void copySchemaConceptLabelsToKeyspaceCache(Transaction tx) {
         copyToCache(tx.getMetaConcept());

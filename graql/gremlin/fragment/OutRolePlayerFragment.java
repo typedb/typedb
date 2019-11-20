@@ -124,7 +124,7 @@ public class OutRolePlayerFragment extends AbstractRolePlayerFragment {
     private GraphTraversal<Element, Vertex> edgeRelationTraversal(
             ConceptManager conceptManager, Direction direction, Schema.EdgeProperty roleProperty, Collection<Variable> vars) {
 
-        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.identity());
+        GraphTraversal<Element, Edge> edgeTraversal = Fragments.isEdge(__.start());
 
         // Filter by any provided type labels
         applyLabelsToTraversal(edgeTraversal, roleProperty, roleLabels(), conceptManager);

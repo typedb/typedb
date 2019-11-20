@@ -1,7 +1,10 @@
 java_library(
-    name = "groovy",
+    name = "groovy-cli-picocli",
     exports = [
-        "//external:jar/org/codehaus/groovy/groovy"
+        "//external:jar/org/codehaus/groovy/groovy-cli-picocli"
+    ],
+    runtime_deps = [
+        "//dependencies/maven/artifacts/info/picocli:picocli"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -16,7 +19,7 @@ java_library(
         "//external:jar/org/codehaus/groovy/groovy-console"
     ],
     runtime_deps = [
-        ":groovy",
+        ":groovy-cli-picocli",
         ":groovy-swing",
         ":groovy-templates"
     ],
@@ -34,7 +37,7 @@ java_library(
     ],
     runtime_deps = [
         "//dependencies/maven/artifacts/jline:jline",
-        ":groovy",
+        ":groovy-cli-picocli",
         ":groovy-console"
     ],
     visibility = [
@@ -61,9 +64,6 @@ java_library(
     exports = [
         "//external:jar/org/codehaus/groovy/groovy-json-jar-indy"
     ],
-    runtime_deps = [
-        ":groovy"
-    ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
     ]
@@ -76,9 +76,6 @@ java_library(
     exports = [
         "//external:jar/org/codehaus/groovy/groovy-jsr223-jar-indy"
     ],
-    runtime_deps = [
-        ":groovy"
-    ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
     ]
@@ -90,9 +87,6 @@ java_library(
     name = "groovy-swing",
     exports = [
         "//external:jar/org/codehaus/groovy/groovy-swing"
-    ],
-    runtime_deps = [
-        ":groovy"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"
@@ -107,7 +101,6 @@ java_library(
         "//external:jar/org/codehaus/groovy/groovy-templates"
     ],
     runtime_deps = [
-        ":groovy",
         ":groovy-xml"
     ],
     visibility = [
@@ -121,9 +114,6 @@ java_library(
     name = "groovy-xml",
     exports = [
         "//external:jar/org/codehaus/groovy/groovy-xml"
-    ],
-    runtime_deps = [
-        ":groovy"
     ],
     visibility = [
         "//dependencies/maven/artifacts:__subpackages__"

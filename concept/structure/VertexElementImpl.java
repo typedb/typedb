@@ -127,6 +127,7 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex> implements Ve
         }
     }
 
+
     /**
      * @param key The key of the non-unique property to retrieve
      * @return The value stored in the property
@@ -154,15 +155,10 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex> implements Ve
      */
     @Override
     public void property(Schema.VertexProperty key, Object value) {
-        if (value == null) {
-            element().property(key.name()).remove();
-        } else {
-            Property<Object> foundProperty = element().property(key.name());
-            if (!foundProperty.isPresent() || !foundProperty.value().equals(value)) {
-                element().property(key.name(), value);
-            }
+        element().property(key.name()).remove();
+        if (value != null) {
+            element().property(key.name(), value);
         }
-
     }
 
     /**
@@ -232,7 +228,6 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex> implements Ve
 
     /**
      * Create a new vertex that is a shard and connect it to the owning vertex (this vertex)
-     * @return
      */
     public Shard shard() {
         VertexElement shardVertex = elementFactory.addVertexElement(Schema.BaseType.SHARD);
@@ -256,7 +251,7 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex> implements Ve
     }
 
     public Stream<VertexElement> getShortcutNeighbors(Set<Integer> ownerRoleIds, Set<Integer> valueRoleIds,
-                                                                                       boolean ownerToValueOrdering) {
+                                                      boolean ownerToValueOrdering) {
         return elementFactory.shortcutNeighbors(id().toString(), ownerRoleIds, valueRoleIds, ownerToValueOrdering);
     }
 

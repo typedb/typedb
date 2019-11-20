@@ -39,6 +39,7 @@ import grakn.client.concept.Concept;
 import grakn.client.concept.ConceptId;
 import grakn.client.concept.Entity;
 import grakn.client.concept.EntityType;
+import grakn.client.concept.EntityTypeImpl;
 import grakn.client.concept.Label;
 import grakn.client.concept.Relation;
 import grakn.client.concept.RelationType;
@@ -116,7 +117,7 @@ public class GraknClientIT {
     @Before
     public void setUp() {
         localSession = server.sessionWithNewKeyspace();
-        graknClient = new GraknClient(server.grpcUri().toString());
+        graknClient = new GraknClient(server.grpcUri());
         remoteSession = graknClient.session(localSession.keyspace().name());
     }
 
@@ -776,7 +777,7 @@ public class GraknClientIT {
 
 
     @Test
-    public void testExecutingComputeQueryies_ResultsAreCorrect() {
+    public void testExecutingComputeQueries_ResultsAreCorrect() {
         grakn.core.kb.concept.api.ConceptId idCoco, idMike, idCocoAndMike;
         try (Transaction tx = localSession.writeTransaction()) {
             grakn.core.kb.concept.api.Role pet = tx.putRole("pet");
@@ -1078,7 +1079,7 @@ public class GraknClientIT {
         graknClient.keyspaces().delete(keyspace.name());
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("Graph has been closed");
+        exception.expectMessage("Operation cannot be executed because the enclosing transaction is closed");
 
         // try to operate on an open tx
         tx.getEntityType("entity");

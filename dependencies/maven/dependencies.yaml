@@ -20,14 +20,14 @@ options:
   languages: ["java"]
   resolverType: coursier
   resolvers:
-  - id: mavencentral
-    type: default
-    url: https://repo.maven.apache.org/maven2/
-  - id: mavengraknai
-    url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
-  - id: repograknai
-    type: default
-    url: https://repo.grakn.ai/repository/maven-snapshot/
+    - id: mavencentral
+      type: default
+      url: https://repo.maven.apache.org/maven2/
+    - id: mavengraknai
+      url: http://maven.grakn.ai/nexus/content/repositories/snapshots/
+    - id: repograknai
+      type: default
+      url: https://repo.grakn.ai/repository/maven-snapshot/
   strictVisibility: true
   transitivity: runtime_deps
   versionConflictPolicy: highest
@@ -43,19 +43,12 @@ dependencies:
       version: "1.2.3"
       lang: java
 
-  com.datastax.cassandra:
-    cassandra-driver-core:
-      version: "3.7.1"
-      lang: java
-      exclude:
-      - "io.netty:netty-handler"
-
   com.fasterxml.jackson.core:
     jackson-core:
-      version: "2.9.9"
+      version: "2.9.10"
       lang: java
     jackson-databind:
-      version: "2.9.9.1"
+      version: "2.9.10.1"
       lang: java
 
   com.fasterxml.jackson.dataformat:
@@ -63,7 +56,6 @@ dependencies:
       version: "2.9.9"
       lang: java
 
-  # TODO: Remove once com.fasterxml.jackson.core is removed
   com.fasterxml.jackson.module:
     jackson-module-scala_2.11:
       version: "2.9.9"
@@ -126,7 +118,7 @@ dependencies:
 
   io.netty:
     netty-all:
-      version: "4.1.30.Final"
+      version: "4.1.39.Final"
       lang: java
 
   io.zipkin.brave:
@@ -149,11 +141,11 @@ dependencies:
       version: "3.11.3"
       lang: java
       exclude:
-      - "ch.qos.logback:logback-classic"
-      - "ch.qos.logback:logback-core"
-      - "it.unimi.dsi:fastutil"
-      - "com.addthis.metrics:reporter-config3" # include this if we need to debug cassandra
-      - "org.eclipse.jdt.core.compiler:ecj"
+        - "ch.qos.logback:logback-classic"
+        - "ch.qos.logback:logback-core"
+        - "it.unimi.dsi:fastutil"
+        - "com.addthis.metrics:reporter-config3" # include this if we need to debug cassandra
+        - "org.eclipse.jdt.core.compiler:ecj"
     cassandra-thrift:
       version: "3.11.3"
       lang: java
@@ -183,81 +175,80 @@ dependencies:
       version: "2.7.2"
       lang: java
       exclude:
-      - "javax.servlet:servlet-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "io.netty:netty"
+        - "javax.servlet:servlet-api"
+        - "org.slf4j:slf4j-log4j12"
+        - "io.netty:netty"
     hadoop-mapreduce-client-core:
       version: "2.7.2"
       lang: java
       exclude:
-      - "javax.servlet:servlet-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "io.netty:netty"
+        - "javax.servlet:servlet-api"
+        - "org.slf4j:slf4j-log4j12"
+        - "io.netty:netty"
 
   org.apache.spark:
     spark-core_2.11:
       version: "2.2.0"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "io.netty:netty"
-      - "javax.servlet:javax.servlet-api"
-      - "log4j:log4j"
-      - "org.scala-lang.modules:scala-xml_2.11"
-      - "org.slf4j:jcl-over-slf4j"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:slf4j-log4j12"
+        - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+        - "io.netty:netty"
+        - "javax.servlet:javax.servlet-api"
+        - "log4j:log4j"
+        - "org.scala-lang.modules:scala-xml_2.11"
+        - "org.slf4j:jcl-over-slf4j"
+        - "org.slf4j:slf4j-api"
+        - "org.slf4j:slf4j-log4j12"
     spark-launcher_2.11:
       version: "2.2.0"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "io.netty:netty"
-      - "javax.servlet:javax.servlet-api"
-      - "log4j:log4j"
-      - "org.scala-lang.modules:scala-xml_2.11"
-      - "org.slf4j:jcl-over-slf4j"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:slf4j-log4j12"
+        - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+        - "io.netty:netty"
+        - "javax.servlet:javax.servlet-api"
+        - "log4j:log4j"
+        - "org.scala-lang.modules:scala-xml_2.11"
+        - "org.slf4j:jcl-over-slf4j"
+        - "org.slf4j:slf4j-api"
+        - "org.slf4j:slf4j-log4j12"
 
   org.apache.tinkerpop:
     gremlin-core:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
-      - "org.slf4j:jcl-over-slf4j"
-      - "org.slf4j:slf4j-log4j12"
+        - "org.slf4j:jcl-over-slf4j"
+        - "org.slf4j:slf4j-log4j12"
     hadoop-gremlin:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.core:jackson-core"
-      - "com.fasterxml.jackson.core:jackson-databind"
-      - "com.sun.jersey:jersey-client"
-      - "commons-logging:commons-logging"
-      - "io.netty:netty"
-      - "javax.servlet:javax.servlet-api"
-      - "javax.servlet:javax.servlet-api"
-      - "log4j:log4j"
-      - "org.mortbay.jetty:jetty-util"
-      - "org.slf4j:jcl-over-slf4j"
-      - "org.slf4j:slf4j-log4j12"
-      - "org.slf4j:slf4j-nop"
+        - "com.fasterxml.jackson.core:jackson-core"
+        - "com.fasterxml.jackson.core:jackson-databind"
+        - "com.sun.jersey:jersey-client"
+        - "commons-logging:commons-logging"
+        - "io.netty:netty"
+        - "javax.servlet:javax.servlet-api"
+        - "log4j:log4j"
+        - "org.mortbay.jetty:jetty-util"
+        - "org.slf4j:jcl-over-slf4j"
+        - "org.slf4j:slf4j-log4j12"
+        - "org.slf4j:slf4j-nop"
     spark-gremlin:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
-      - "com.fasterxml.jackson.core:jackson-annotations"
-      - "com.fasterxml.jackson.core:jackson-core"
-      - "com.fasterxml.jackson.core:jackson-databind"
-      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "io.netty:netty"
-      - "javax.servlet:javax.servlet-api"
+        - "com.fasterxml.jackson.core:jackson-annotations"
+        - "com.fasterxml.jackson.core:jackson-core"
+        - "com.fasterxml.jackson.core:jackson-databind"
+        - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
+        - "io.netty:netty"
+        - "javax.servlet:javax.servlet-api"
     tinkergraph-gremlin:
-      version: "3.3.3"
+      version: "3.4.1"
       lang: java
       exclude:
-      - "org.slf4j:slf4j-log4j12"
+        - "org.slf4j:slf4j-log4j12"
 
   org.hamcrest:
     hamcrest-all:
@@ -269,56 +260,6 @@ dependencies:
     hamcrest-library:
       version: "1.3"
       lang: java
-
-  org.janusgraph:
-    janusgraph-cassandra:
-      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
-      lang: java
-      exclude:
-      - "ch.qos.logback:logback-classic"
-      - "com.boundary:high-scale-lib"
-      - "javax.servlet:javax.servlet-api"
-      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
-      - "org.mortbay.jetty:servlet-api"
-      - "org.mortbay.jetty:servlet-api-2.5"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
-      - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
-      - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
-    janusgraph-core:
-      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
-      lang: java
-      exclude:
-      - "ch.qos.logback:logback-classic"
-      - "com.codahale.metrics:metrics-core" # CONFLICTING WITH DROPWIZARD METRICS
-      - "com.codahale.metrics:metrics-ganglia" # CONFLICTING WITH DROPWIZARD METRICS
-      - "com.codahale.metrics:metrics-graphite" # CONFLICTING WITH DROPWIZARD METRICS
-      - "com.boundary:high-scale-lib"
-      - "javax.servlet:javax.servlet-api"
-      - "org.apache.servicemix.bundles:org.apache.servicemix.bundles.commons-csv"
-      - "org.mortbay.jetty:servlet-api"
-      - "org.mortbay.jetty:servlet-api-2.5"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:slf4j-log4j12"
-    janusgraph-hadoop:
-      version: "0.4.0-6bff801ea8c17f75cfc12d22e58bdfc4b2ae83d4"
-      lang: java
-      exclude:
-      - "com.codahale.metrics:metrics-core"
-      - "com.fasterxml.jackson.module:jackson-module-scala_2.10"
-      - "log4j:log4j"
-      - "org.openrdf.sesame:sesame-rio-n3"
-      - "org.openrdf.sesame:sesame-rio-ntriples"
-      - "org.openrdf.sesame:sesame-rio-rdfxml"
-      - "org.openrdf.sesame:sesame-rio-trig"
-      - "org.openrdf.sesame:sesame-rio-trix"
-      - "org.openrdf.sesame:sesame-rio-turtle"
-      - "org.slf4j:slf4j-api"
-      - "org.slf4j:slf4j-log4j12"
-      - "org.janusgraph:janusgraph-hbase"
-      - "org.janusgraph:janusgraph-es"
-      - "io.netty:netty"
 
   org.mockito:
     mockito-core:
@@ -346,4 +287,27 @@ dependencies:
       version: "1.10"
       lang: java
       exclude:
-      - "commons-io:commons-io"
+        - "commons-io:commons-io"
+
+  # Grakn Graph dependencies:
+
+  com.datastax.oss:
+    java-driver-core:
+      version: "4.3.0"
+      lang: java
+      exclude:
+        - "com.github.jnr:jnr-ffi"
+    java-driver-query-builder:
+      version: "4.3.0"
+      lang: java
+      exclude:
+        - "com.github.jnr:jnr-ffi"
+  io.vavr:
+    vavr:
+      version: "0.9.0"
+      lang: java
+
+  org.javatuples:
+    javatuples:
+      version: "1.2"
+      lang: java

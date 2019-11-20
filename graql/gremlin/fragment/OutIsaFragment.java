@@ -62,13 +62,13 @@ public class OutIsaFragment extends EdgeFragment {
 
         // from the traversal, branch to take either of these paths
         return Fragments.union(traversal, ImmutableSet.of(
-                Fragments.isVertex(__.identity()).out(ISA.getLabel()).out(SHARD.getLabel()),
+                Fragments.isVertex(__.start()).out(ISA.getLabel()).out(SHARD.getLabel()),
                 edgeTraversal() // what is this doing?
         ));
     }
 
     private GraphTraversal<Element, Vertex> edgeTraversal() {
-        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.identity()), RELATION_TYPE_LABEL_ID);
+        return Fragments.traverseSchemaConceptFromEdge(Fragments.isEdge(__.start()), RELATION_TYPE_LABEL_ID);
     }
 
     @Override

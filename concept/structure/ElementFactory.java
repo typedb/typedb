@@ -21,6 +21,7 @@ package grakn.core.concept.structure;
 
 import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
+import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.Role;
@@ -34,7 +35,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.janusgraph.core.JanusGraphTransaction;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -45,7 +45,7 @@ import java.util.stream.Stream;
 
 /**
  * TODO update
- *
+ * <p>
  * Constructs Concepts And Edges
  * This class turns Tinkerpop Vertex and Edge
  * into Grakn Concept and EdgeElement.

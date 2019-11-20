@@ -83,13 +83,13 @@ public class InIsaFragment extends EdgeFragment {
                     __.<Vertex>hasLabel(RELATION_TYPE.name()).has(IS_IMPLICIT.name(), true);
 
             GraphTraversal<Vertex, Element> toVertexAndEdgeInstances = Fragments.union(ImmutableSet.of(
-                    toVertexInstances(__.identity()),
+                    toVertexInstances(__.start()),
                     toEdgeInstances()
             ));
 
             return choose(vertexTraversal, isImplicitRelationType,
                     toVertexAndEdgeInstances,
-                    toVertexInstances(__.identity())
+                    toVertexInstances(__.start())
             );
         } else {
             return toVertexInstances(vertexTraversal);
