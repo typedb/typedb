@@ -40,8 +40,6 @@ public interface SchemaCache {
 
     EntryList getSchemaRelations(long schemaId, BaseRelationType type, Direction dir);
 
-    void expireSchemaElement(long schemaId);
-
     interface StoreRetrieval {
 
         Long retrieveSchemaByName(String typeName);

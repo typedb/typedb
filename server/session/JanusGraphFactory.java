@@ -73,7 +73,6 @@ final public class JanusGraphFactory {
             strategies.removeStrategies(PathRetractionStrategy.class, LazyBarrierStrategy.class);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }
-
         return janusGraph;
     }
 

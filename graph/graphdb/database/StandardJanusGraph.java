@@ -51,7 +51,6 @@ import grakn.core.graph.diskstorage.keycolumnvalue.StoreFeatures;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.Message;
-import grakn.core.graph.diskstorage.log.ReadMarker;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
 import grakn.core.graph.diskstorage.util.RecordIterator;
 import grakn.core.graph.diskstorage.util.StaticArrayEntry;
@@ -63,7 +62,6 @@ import grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner;
 import grakn.core.graph.graphdb.database.idhandling.IDHandler;
 import grakn.core.graph.graphdb.database.log.LogTxStatus;
 import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
-import grakn.core.graph.graphdb.database.management.ManagementLogger;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
@@ -144,16 +142,12 @@ public class StandardJanusGraph implements JanusGraph {
     private final RelationQueryCache queryCache;
     private final SchemaCache schemaCache;
 
-    //Log
-    private final ManagementLogger managementLogger;
-
     private volatile boolean isOpen;
     private final AtomicLong txCounter; // used to generate unique transaction IDs
 
     private final Set<StandardJanusGraphTx> openTransactions;
 
     public StandardJanusGraph(GraphDatabaseConfiguration configuration, Backend backend) {
-
         this.config = configuration;
         this.isOpen = true;
         this.txCounter = new AtomicLong(0);
@@ -172,19 +166,13 @@ public class StandardJanusGraph implements JanusGraph {
         this.indexSerializer = new IndexSerializer(configuration.getConfiguration(), this.serializer, this.backend.getIndexInformation(), storeFeatures.isDistributed() && storeFeatures.isKeyOrdered());
         this.edgeSerializer = new EdgeSerializer(this.serializer);
 
-        // The following query is used by VertexConstructors to check whether a vertex associated to a specific ID actually exists in the DB (and it's not a ghost)
+        // The following query is used by VertexConstructors(inside JanusTransaction) to check whether a vertex associated to a specific ID actually exists in the DB (and it's not a ghost)
         // Full explanation on why this query is used: https://github.com/thinkaurelius/titan/issues/214
         this.vertexExistenceQuery = edgeSerializer.getQuery(BaseKey.VertexExists, Direction.OUT, new EdgeSerializer.TypedInterval[0]).setLimit(1);
 
         // Collaborators (Caches)
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
         this.schemaCache = new StandardSchemaCache(typeCacheRetrieval);
-
-
-        // Log Manager
-        Log managementLog = backend.getSystemMgmtLog();
-        this.managementLogger = new ManagementLogger(this, managementLog, schemaCache, this.timestampProvider);
-        managementLog.registerReader(ReadMarker.fromNow(), this.managementLogger);
     }
 
     @Override
@@ -208,11 +196,6 @@ public class StandardJanusGraph implements JanusGraph {
 
     @Override
     public synchronized void close() throws JanusGraphException {
-        closeInternal();
-    }
-
-    private synchronized void closeInternal() {
-
         if (!isOpen) return;
 
         Map<JanusGraphTransaction, RuntimeException> txCloseExceptions = new HashMap<>();
@@ -285,7 +268,7 @@ public class StandardJanusGraph implements JanusGraph {
 
     @Override
     public JanusGraphManagement openManagement() {
-        return new ManagementSystem(this, backend.getGlobalSystemConfig(), backend.getSystemMgmtLog(), managementLogger, schemaCache);
+        return new ManagementSystem(this, backend.getGlobalSystemConfig());
     }
 
     public Set<? extends JanusGraphTransaction> getOpenTransactions() {
