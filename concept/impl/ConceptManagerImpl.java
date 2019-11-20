@@ -493,6 +493,13 @@ public class ConceptManagerImpl implements ConceptManager {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
     }
 
+    /**
+     * This is used when assigning a type to a concept - we check the current shard.
+     * The read vertex property contains the current shard vertex id.
+     * We use a readLock as janusGraph commit does not seem to be atomic - the property might get updated before the corresponding vertex is actually created.
+     * As a result, without a lock we could get a ghost vertex READ - a vertex that's partially created.
+     * Further investigation needed
+     */
     Shard getShardWithLock(String typeId) {
         graphLock.readLock().lock();
         Vertex shardVertex;
