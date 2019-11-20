@@ -20,7 +20,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;

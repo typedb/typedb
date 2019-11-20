@@ -39,8 +39,8 @@ import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.GraqlSemanticException;
@@ -225,7 +225,7 @@ public class QueryExecutorImpl implements QueryExecutor {
     @Override
     public Stream<ConceptMap> traverse(Conjunction<Pattern> pattern, GraqlTraversal graqlTraversal) {
         Set<Variable> vars = Sets.filter(pattern.variables(), Variable::isReturned);
-        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(transaction, vars);
+        GraphTraversal<Vertex, Map<String, Element>> traversal = graqlTraversal.getGraphTraversal(vars);
 
         return traversal.toStream()
                 .map(elements -> createAnswer(vars, elements))

@@ -17,10 +17,15 @@
  *
  */
 
-package grakn.core.kb.graql.planning;
+package grakn.core.kb.graql.gremlin;
 
-import graql.lang.pattern.Pattern;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
-public interface TraversalPlanFactory {
-    GraqlTraversal createTraversal(Pattern pattern);
+public interface JanusTraversalSourceProvider {
+    /**
+     * As a janus optimisation, the traversal source should be created once and re-used to spawn new
+     * Traversal instances when needed.
+     * @return A read-only Tinkerpop traversal for traversing the graph
+     */
+    GraphTraversalSource getTinkerTraversal();
 }

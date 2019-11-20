@@ -24,7 +24,6 @@ import grakn.core.graql.executor.property.value.ValueComparison;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -58,7 +57,7 @@ public class ValueFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
         return predicate().apply(traversal);
     }
 

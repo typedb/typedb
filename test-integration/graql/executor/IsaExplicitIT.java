@@ -32,7 +32,7 @@ import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
@@ -63,7 +63,7 @@ public class IsaExplicitIT {
     @Before
     public void loadSimpleData() {
         tx = server.sessionWithNewKeyspace().writeTransaction();
-        traversalPlanFactory = new TraversalPlanFactoryImpl(tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
+        traversalPlanFactory = new TraversalPlanFactoryImpl(tx.janusTraversalSourceProvider(), tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
         EntityType entityType0 = tx.putEntityType("entityType0");
         EntityType entityType1 = tx.putEntityType("entityType1");
         EntityType entityType2 = tx.putEntityType("entityType2");

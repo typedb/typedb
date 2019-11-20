@@ -117,7 +117,7 @@ public class TransactionOLTPIT {
     public void whenAttemptingToMutateViaTraversal_Throw() {
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        tx.getTinkerTraversal().V().drop().iterate();
+        tx.janusTraversalSourceProvider().getTinkerTraversal().V().drop().iterate();
     }
 
     @Test

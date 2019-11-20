@@ -25,6 +25,8 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
+import grakn.core.graql.gremlin.JanusTraversalSourceProviderImpl;
+import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.RuleCacheImpl;
@@ -36,14 +38,13 @@ import grakn.core.concept.manager.ConceptListenerImpl;
 import grakn.core.concept.structure.ElementFactory;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
-import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
@@ -68,9 +69,6 @@ import java.util.function.Consumer;
 public class SessionImpl implements Session {
 
     private final HadoopGraph hadoopGraph;
-
-    // Session can have at most 1 transaction per thread, so we keep a local reference here
-    private final ThreadLocal<Transaction> localOLTPTransactionContainer = new ThreadLocal<>();
 
     private final Keyspace keyspace;
     private final Config config;
@@ -150,10 +148,6 @@ public class SessionImpl implements Session {
             throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
         }
 
-        Transaction localTx = localOLTPTransactionContainer.get();
-        // If transaction is already open in current thread throw exception
-        if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
-
         // caches
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         RuleCache ruleCache = new RuleCacheImpl();
@@ -162,24 +156,24 @@ public class SessionImpl implements Session {
 
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.buildTransaction().threadBound().consistencyChecks(false).start();
+        JanusTraversalSourceProvider janusTraversalSourceProvider = new JanusTraversalSourceProviderImpl(janusGraphTransaction);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, graphLock);
         ruleCache.setConceptManager(conceptManager);
 
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(conceptManager, this.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), keyspaceStatistics);
+        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, this.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), keyspaceStatistics);
         ExecutorFactory executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory);
 
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
-        TransactionImpl tx = new TransactionImpl(this, janusGraphTransaction, conceptManager, transactionCache, queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory);
+        TransactionImpl tx = new TransactionImpl(this, janusGraphTransaction, conceptManager, janusTraversalSourceProvider, transactionCache, queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory);
 
         ConceptListenerImpl conceptObserver = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta);
         conceptNotificationChannel.subscribe(conceptObserver);
 
         tx.open(type);
-        localOLTPTransactionContainer.set(tx);
 
         return tx;
     }
@@ -233,11 +227,6 @@ public class SessionImpl implements Session {
      */
     @Override
     public void invalidate() {
-        Transaction localTx = localOLTPTransactionContainer.get();
-        if (localTx != null) {
-            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
-            localOLTPTransactionContainer.set(null);
-        }
         isClosed = true;
     }
 
@@ -249,12 +238,6 @@ public class SessionImpl implements Session {
     public void close() {
         if (isClosed) {
             return;
-        }
-
-        Transaction localTx = localOLTPTransactionContainer.get();
-        if (localTx != null) {
-            localTx.close(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
-            localOLTPTransactionContainer.set(null);
         }
 
         if (this.onClose != null) {

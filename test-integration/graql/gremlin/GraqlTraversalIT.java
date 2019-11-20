@@ -30,8 +30,8 @@ import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
@@ -304,7 +304,7 @@ public class GraqlTraversalIT {
     }
 
     private static GraqlTraversal semiOptimal(Pattern pattern) {
-        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
+        TraversalPlanFactory planFactory = new TraversalPlanFactoryImpl(tx.janusTraversalSourceProvider(), tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
         return planFactory.createTraversal(pattern);
     }
 
@@ -315,7 +315,7 @@ public class GraqlTraversalIT {
     @SafeVarargs
     private static GraqlTraversal traversal(ImmutableList<Fragment>... fragments) {
         Set<List<? extends Fragment>> fragmentsSet = ImmutableSet.copyOf(fragments);
-        return new GraqlTraversalImpl(fragmentsSet);
+        return new GraqlTraversalImpl(null, null, fragmentsSet);
     }
 
     private static Stream<GraqlTraversal> allGraqlTraversals(Pattern pattern) {
@@ -350,7 +350,7 @@ public class GraqlTraversalIT {
             }
         }
 
-        return Optional.of(new GraqlTraversalImpl(fragments));
+        return Optional.of(new GraqlTraversalImpl(null, null, fragments));
     }
 
     private static Fragment outRolePlayer(Variable relation, Variable rolePlayer) {

@@ -27,7 +27,6 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
@@ -65,10 +64,10 @@ public class LabelFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         Set<Integer> labelIds =
-                labels().stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
+                labels().stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
 
         if (labelIds.size() == 1) {
             int labelId = Iterables.getOnlyElement(labelIds);

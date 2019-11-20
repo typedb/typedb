@@ -28,12 +28,13 @@ import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
 import grakn.core.kb.graql.planning.EquivalentFragmentSet;
 import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.GraqlTraversal;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
@@ -74,11 +75,13 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
     private static final Logger LOG = LoggerFactory.getLogger(TraversalPlanFactoryImpl.class);
 
     private static final int MAX_STARTING_POINTS = 3;
+    private JanusTraversalSourceProvider janusTraversalSourceProvider;
     private ConceptManager conceptManager;
     private long shardingThreshold;
     private KeyspaceStatistics keyspaceStatistics;
 
-    public TraversalPlanFactoryImpl(ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
+    public TraversalPlanFactoryImpl(JanusTraversalSourceProvider janusTraversalSourceProvider, ConceptManager conceptManager, long shardingThreshold, KeyspaceStatistics keyspaceStatistics) {
+        this.janusTraversalSourceProvider = janusTraversalSourceProvider;
         this.conceptManager = conceptManager;
         this.shardingThreshold = shardingThreshold;
         this.keyspaceStatistics = keyspaceStatistics;
@@ -98,7 +101,7 @@ public class TraversalPlanFactoryImpl implements TraversalPlanFactory {
                 .map(this::planForConjunction)
                 .collect(ImmutableSet.toImmutableSet());
 
-        return new GraqlTraversalImpl(fragments);
+        return new GraqlTraversalImpl(janusTraversalSourceProvider, conceptManager, fragments);
     }
 
     /**

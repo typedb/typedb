@@ -172,7 +172,7 @@ public class RelationIT {
                 containsInAnyOrder(entity1r1, entity2r1, entity3r2r3, entity4r3, entity5r1, entity6r1r2r3));
     }
     private Set<Concept> followRolePlayerEdgesToNeighbours(Transaction tx, Thing thing) {
-        List<Vertex> vertices = tx.getTinkerTraversal().V().
+        List<Vertex> vertices = tx.janusTraversalSourceProvider().getTinkerTraversal().V().
                 hasId(Schema.elementId(thing.id())).
                 in(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).
                 out(Schema.EdgeLabel.ROLE_PLAYER.getLabel()).toList();

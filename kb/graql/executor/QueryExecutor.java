@@ -20,16 +20,12 @@
 package grakn.core.kb.graql.executor;
 
 import grakn.core.concept.answer.AnswerGroup;
-import grakn.core.concept.answer.ConceptList;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
-import grakn.core.concept.answer.ConceptSetMeasure;
 import grakn.core.concept.answer.Numeric;
 import grakn.core.concept.answer.Void;
-import grakn.core.kb.graql.planning.GraqlTraversal;
+import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
-import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlDelete;
 import graql.lang.query.GraqlGet;

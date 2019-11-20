@@ -17,12 +17,12 @@
  *
  */
 
-package grakn.core.kb.graql.planning;
+package grakn.core.kb.graql.gremlin;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;
@@ -38,14 +38,14 @@ public interface GraqlTraversal {
     //                |           List of fragments in order of execution
     //                |             |
     //                V             V
-    ImmutableSet<ImmutableList<? extends  Fragment>> fragments();
+    ImmutableSet<ImmutableList<? extends Fragment>> fragments();
 
     /**
      * Get the {@code GraphTraversal} that this {@code GraqlTraversal} represents.
      */
     // Because 'union' accepts an array, we can't use generics
     @SuppressWarnings("unchecked")
-    GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Transaction tx, Set<Variable> vars);
+    GraphTraversal<Vertex, Map<String, Element>> getGraphTraversal(Set<Variable> vars);
 
     /**
      * @param transform map defining id transform var -> new id

@@ -43,7 +43,8 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -59,7 +60,6 @@ import graql.lang.query.GraqlInsert;
 import graql.lang.query.GraqlQuery;
 import graql.lang.query.GraqlUndefine;
 import graql.lang.query.MatchClause;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import javax.annotation.CheckReturnValue;
 import java.util.Collection;
@@ -164,15 +164,6 @@ public interface Transaction extends AutoCloseable{
     boolean isOpen();
 
     Type type();
-
-    /**
-     * Utility function to get a read-only Tinkerpop traversal.
-     *
-     * @return A read-only Tinkerpop traversal for manually traversing the graph
-     * <p>
-     * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
-     */
-    GraphTraversalSource getTinkerTraversal();
 
     Stream<SchemaConcept> sups(SchemaConcept schemaConcept);
 
@@ -390,6 +381,8 @@ public interface Transaction extends AutoCloseable{
     ExecutorFactory executorFactory();
     QueryExecutor executor();
     QueryExecutor executor(boolean infer);
+    JanusTraversalSourceProvider janusTraversalSourceProvider();
+
 
     PropertyExecutorFactory propertyExecutorFactory();
 

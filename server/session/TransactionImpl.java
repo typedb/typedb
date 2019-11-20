@@ -39,6 +39,7 @@ import grakn.core.concept.util.ConceptUtils;
 import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.core.Schema;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -60,7 +61,7 @@ import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.executor.QueryExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.Session;
@@ -83,7 +84,6 @@ import graql.lang.query.MatchClause;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
@@ -129,15 +129,18 @@ public class TransactionImpl implements Transaction {
     private boolean isTxOpen;
     private UncomittedStatisticsDelta uncomittedStatisticsDelta;
 
-    // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
+    // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread because
+    // reaching across threads in a single threaded janus transaction leads to errors
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     @Nullable
     private GraphTraversalSource graphTraversalSource = null;
     private TraversalPlanFactory traversalPlanFactory;
+    private JanusTraversalSourceProvider janusTraversalSourceProvider;
 
     public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
-                           TransactionCache transactionCache, MultilevelSemanticCache queryCache, RuleCache ruleCache,
+                           JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
+                           MultilevelSemanticCache queryCache, RuleCache ruleCache,
                            UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory,
                            TraversalPlanFactory traversalPlanFactory) {
         createdInCurrentThread.set(true);
@@ -145,6 +148,7 @@ public class TransactionImpl implements Transaction {
         this.session = session;
 
         this.janusTransaction = janusTransaction;
+        this.janusTraversalSourceProvider = janusTraversalSourceProvider;
 
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
@@ -216,7 +220,7 @@ public class TransactionImpl implements Transaction {
                 // in a Read Committed fashion
                 ConceptId targetId = session.attributesCache().getIfPresent(labelIndexPair.second());
                 if (targetId != null) {
-                    merge(getTinkerTraversal(), conceptId, targetId);
+                    merge(conceptId, targetId);
                     statisticsDelta().decrementAttribute(labelIndexPair.first());
                 } else {
                     session.attributesCache().put(labelIndexPair.second(), conceptId);
@@ -241,7 +245,8 @@ public class TransactionImpl implements Transaction {
         });
     }
 
-    private static void merge(GraphTraversalSource tinkerTraversal, ConceptId duplicateId, ConceptId targetId) {
+    private void merge(ConceptId duplicateId, ConceptId targetId) {
+        GraphTraversalSource tinkerTraversal = janusTraversalSourceProvider.getTinkerTraversal();
         Vertex duplicate = tinkerTraversal.V(Schema.elementId(duplicateId)).next();
         Vertex mergeTargetV = tinkerTraversal.V(Schema.elementId(targetId)).next();
 
@@ -269,7 +274,7 @@ public class TransactionImpl implements Transaction {
         duplicate.remove();
     }
 
-    private static void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {
+    private void mergeRolePlayerEdge(Vertex mergeTargetV, GraphTraversal<Vertex, Edge> rolePlayerEdge) {
         Edge edge = rolePlayerEdge.next();
         Vertex relationVertex = edge.outVertex();
         Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
@@ -277,14 +282,14 @@ public class TransactionImpl implements Transaction {
         edge.remove();
     }
 
-    private static void mergeAttributeEdge(Vertex mergeTargetV, Vertex ent, GraphTraversal<Vertex, Edge> attributeEdge) {
+    private void mergeAttributeEdge(Vertex mergeTargetV, Vertex ent, GraphTraversal<Vertex, Edge> attributeEdge) {
         Edge edge = attributeEdge.next();
         Object[] properties = propertiesToArray(Lists.newArrayList(edge.properties()));
         ent.addEdge(Schema.EdgeLabel.ATTRIBUTE.getLabel(), mergeTargetV, properties);
         edge.remove();
     }
 
-    private static Object[] propertiesToArray(ArrayList<Property<Object>> propertiesAsKeyValue) {
+    private Object[] propertiesToArray(ArrayList<Property<Object>> propertiesAsKeyValue) {
         ArrayList<Object> propertiesAsObj = new ArrayList<>();
         for (Property<Object> property : propertiesAsKeyValue) {
             propertiesAsObj.add(property.key());
@@ -612,21 +617,6 @@ public class TransactionImpl implements Transaction {
         return this.txType;
     }
 
-    /**
-     * Utility function to get a read-only Tinkerpop traversal.
-     *
-     * @return A read-only Tinkerpop traversal for manually traversing the graph
-     * <p>
-     * Mostly used for tests // TODO refactor push this implementation down from Transaction itself, should not be here
-     */
-    @Override
-    public GraphTraversalSource getTinkerTraversal() {
-        checkGraphIsOpen();
-        if (graphTraversalSource == null) {
-            graphTraversalSource = janusTransaction.traversal().withStrategies(ReadOnlyStrategy.instance());
-        }
-        return graphTraversalSource;
-    }
 
     //----------------------------------------------General Functionality-----------------------------------------------
 
@@ -653,13 +643,17 @@ public class TransactionImpl implements Transaction {
      *                              or current transaction is not local (i.e. it was open in another thread)
      */
     private void checkGraphIsOpen() {
-        if (!isLocal() || !isOpen()) throw TransactionException.transactionClosed(this, this.closedReason);
+        if (!isLocal()) {
+            throw TransactionException.notInOriginatingThread();
+        }
+        if (!isOpen()) {
+            throw TransactionException.transactionClosed(this, this.closedReason);
+        }
     }
 
     private boolean isLocal() {
         return createdInCurrentThread.get();
     }
-
 
 
     /**
@@ -1218,10 +1212,14 @@ public class TransactionImpl implements Transaction {
         return executorFactory.transactional(this, infer);
     }
 
-
     @Override
     public PropertyExecutorFactory propertyExecutorFactory() {
         return new PropertyExecutorFactoryImpl();
     }
 
+    @Override
+    @VisibleForTesting
+    public JanusTraversalSourceProvider janusTraversalSourceProvider() {
+        return janusTraversalSourceProvider;
+    }
 }

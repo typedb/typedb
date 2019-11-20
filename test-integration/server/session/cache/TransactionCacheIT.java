@@ -272,7 +272,7 @@ public class TransactionCacheIT {
         aRelation.has(newProvenance);
 
         // retireve the specific janus vertex
-        Vertex relationVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex relationVertex = tx.janusTraversalSourceProvider().getTinkerTraversal().V(Schema.elementId(relationId)).next();
         relationVertex.property("testKey", "testValue");
 
         // do a bunch of janus ops to evict the relation
@@ -281,7 +281,7 @@ public class TransactionCacheIT {
             person.create();
         }
 
-        Vertex janusVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex janusVertex = tx.janusTraversalSourceProvider().getTinkerTraversal().V(Schema.elementId(relationId)).next();
 
         // confirm we have the exact same object from Janus
         assertSame(janusVertex, relationVertex);
@@ -324,17 +324,17 @@ public class TransactionCacheIT {
         // retrieve the vertex as a concept
         aRelation = tx.getConcept(relationId);
         // retrieve the specific janus vertex
-        Vertex relationVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex relationVertex = tx.janusTraversalSourceProvider().getTinkerTraversal().V(Schema.elementId(relationId)).next();
 
         // read a bunch of janus vertices to evict the relation
-        List<Vertex> vertices = tx.getTinkerTraversal().V(fillerJanusVertices).toStream().collect(Collectors.toList());
+        List<Vertex> vertices = tx.janusTraversalSourceProvider().getTinkerTraversal().V(fillerJanusVertices).toStream().collect(Collectors.toList());
 
         // modify the vertex by adding a property
         provenance = tx.getAttributeType("provenance");
         relationVertex.property("testKey", "testValue");
 
         // re-retrieve the specific janus vertex
-        Vertex janusVertex = tx.getTinkerTraversal().V(Schema.elementId(relationId)).next();
+        Vertex janusVertex = tx.janusTraversalSourceProvider().getTinkerTraversal().V(Schema.elementId(relationId)).next();
 
         // confirm we have the exact same object from Janus
         assertSame(janusVertex, relationVertex);

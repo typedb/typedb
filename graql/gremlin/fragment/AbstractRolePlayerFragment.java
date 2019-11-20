@@ -19,7 +19,9 @@
 package grakn.core.graql.gremlin.fragment;
 
 import com.google.common.collect.ImmutableSet;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.planning.spanningtree.graph.InstanceNode;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
@@ -99,11 +101,11 @@ abstract class AbstractRolePlayerFragment extends EdgeFragment {
 
     static void applyLabelsToTraversal(
             GraphTraversal<?, Edge> traversal, Schema.EdgeProperty property,
-            @Nullable Set<Label> typeLabels, Transaction tx) {
+            @Nullable Set<Label> typeLabels, ConceptManager conceptManager) {
 
         if (typeLabels != null) {
             Set<Integer> typeIds =
-                    typeLabels.stream().map(label -> tx.convertToId(label).getValue()).collect(toSet());
+                    typeLabels.stream().map(label -> conceptManager.convertToId(label).getValue()).collect(toSet());
             traversal.has(property.name(), P.within(typeIds));
         }
     }

@@ -31,7 +31,7 @@ import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.graql.gremlin.fragment.NeqFragment;
 import grakn.core.graql.gremlin.fragment.OutIsaFragment;
 import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.graql.planning.TraversalPlanFactory;
+import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
@@ -503,7 +503,7 @@ public class QueryPlannerIT {
     }
 
     private ImmutableList<? extends Fragment> getPlan(Pattern pattern) {
-        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
+        TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(tx.janusTraversalSourceProvider(), tx.conceptManager(), tx.shardingThreshold(), tx.session().keyspaceStatistics());
         return traversalPlanFactory.createTraversal(pattern).fragments().iterator().next();
     }
 }

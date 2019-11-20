@@ -18,7 +18,7 @@
 
 package grakn.core.graql.gremlin.fragment;
 
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.concept.manager.ConceptManager;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 import graql.lang.util.StringUtil;
@@ -46,7 +46,7 @@ class RegexFragment extends FragmentImpl {
 
     @Override
     public GraphTraversal<Vertex, ? extends Element> applyTraversalInner(
-            GraphTraversal<Vertex, ? extends Element> traversal, Transaction tx, Collection<Variable> vars) {
+            GraphTraversal<Vertex, ? extends Element> traversal, ConceptManager conceptManager, Collection<Variable> vars) {
 
         return traversal.has(REGEX.name(), regex());
     }
