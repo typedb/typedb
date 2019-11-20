@@ -19,9 +19,9 @@
 
 package grakn.core.core;
 
+import grakn.core.graph.core.JanusGraphTransaction;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
-import org.janusgraph.core.JanusGraphTransaction;
 
 import javax.annotation.Nullable;
 

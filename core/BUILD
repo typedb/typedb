@@ -28,7 +28,7 @@ java_library(
         "//kb/concept/api:api",
 
         # TEMPORARY
-        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
+        "//graph",
 
 
 
