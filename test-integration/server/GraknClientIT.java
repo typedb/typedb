@@ -1083,7 +1083,6 @@ public class GraknClientIT {
 
         // try to operate on an open tx
         tx.getEntityType("entity");
-
     }
 
     @Test

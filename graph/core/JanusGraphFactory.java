@@ -162,7 +162,6 @@ public class JanusGraphFactory {
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException | ClassCastException e) {
             throw new IllegalArgumentException("Could not instantiate StoreManager class: " + className, e);
         }
-
     }
 
 }

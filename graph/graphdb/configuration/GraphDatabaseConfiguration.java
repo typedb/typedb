@@ -25,15 +25,11 @@ import grakn.core.graph.diskstorage.StandardIndexProvider;
 import grakn.core.graph.diskstorage.configuration.ConfigNamespace;
 import grakn.core.graph.diskstorage.configuration.ConfigOption;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
 import grakn.core.graph.diskstorage.configuration.ReadConfiguration;
-import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.idmanagement.ConflictAvoidanceMode;
 import grakn.core.graph.diskstorage.idmanagement.ConsistentKeyIDAuthority;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
-import grakn.core.graph.graphdb.database.cache.SchemaCache;
-import grakn.core.graph.graphdb.database.cache.StandardSchemaCache;
 import grakn.core.graph.graphdb.tinkerpop.JanusGraphDefaultSchemaMaker;
 import grakn.core.graph.graphdb.types.typemaker.DisableDefaultSchemaMaker;
 import grakn.core.graph.util.stats.NumberUtil;
@@ -683,11 +679,6 @@ public class GraphDatabaseConfiguration {
         this.unknownIndexKeyName = configuration.get(IGNORE_UNKNOWN_INDEX_FIELD) ? UNKNOWN_FIELD_NAME : null;
     }
 
-    public static ModifiableConfiguration buildGraphConfiguration() {
-        return new ModifiableConfiguration(ROOT_NS,
-                new CommonsConfiguration(new BaseConfiguration()));
-    }
-
     public boolean hasFlushIDs() {
         return flushIDs;
     }
@@ -750,10 +741,6 @@ public class GraphDatabaseConfiguration {
 
     public Configuration getConfiguration() {
         return configuration;
-    }
-
-    public SchemaCache getTypeCache(SchemaCache.StoreRetrieval retriever) {
-        return new StandardSchemaCache(retriever);
     }
 
     public org.apache.commons.configuration.Configuration getConfigurationAtOpen() {

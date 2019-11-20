@@ -166,11 +166,6 @@ public class HadoopConfiguration implements WriteConfiguration {
         config.unset(getInternalKey(key));
     }
 
-    @Override
-    public WriteConfiguration copy() {
-        return new HadoopConfiguration(new Configuration(config), prefix);
-    }
-
     private <O> O constructFromStringArgument(Class<O> dataType, String arg) {
         try {
             Constructor<O> ctor = dataType.getConstructor(String.class);

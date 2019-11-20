@@ -138,11 +138,6 @@ public class KCVSConfiguration implements WriteConfiguration {
         set(key, null);
     }
 
-    @Override
-    public WriteConfiguration copy() {
-        throw new UnsupportedOperationException();
-    }
-
     public ReadConfiguration asReadConfiguration() {
         Map<String, Object> entries = toMap();
         return new ReadConfiguration() {

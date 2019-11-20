@@ -20,7 +20,7 @@ package grakn.core.graph.graphdb.database.serialize;
 
 import grakn.core.graph.diskstorage.ScanBuffer;
 
-public interface Serializer extends AttributeHandler {
+public interface Serializer {
 
     Object readClassAndObject(ScanBuffer buffer);
 
