@@ -54,13 +54,15 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public void ackAttributeInsert(String index, String txId) {
+        //transaction of txId signals that it inserted an attribute with specific index:
+        // - if we don't have the index in the cache, we create an appropriate entry
+        // - if index is present in the cache, we update the entry with txId and recommend all txs in the entry to lock
         ephemeralAttributes.compute(index, (ind, entry) -> {
             if (entry == null) {
                 Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
                 return txSet;
-            }
-            else{
+            } else {
                 entry.add(txId);
                 if (entry.size() > 1) lockCandidates.addAll(entry);
                 return entry;
@@ -70,9 +72,12 @@ public class AttributeManagerImpl implements AttributeManager {
 
     @Override
     public void ackAttributeDelete(String index, String txId) {
+        //transaction of txId signals that it deleted an attribute with specific index:
+        // - we remove this txId from ephemeral attributes
+        // - if the removal leads to emptying the ephemeral attribute entry, we remove the entry
         ephemeralAttributes.merge(index, ConcurrentHashMap.newKeySet(), (existingValue, zero) -> {
-            if (existingValue.size() == 1) return null;
             existingValue.remove(txId);
+            if (existingValue.size() == 0) return null;
             return existingValue;
         });
     }

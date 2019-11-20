@@ -52,13 +52,15 @@ public class ShardManagerImpl implements ShardManager {
 
     @Override
     public void ackShardRequest(Label type, String txId) {
+        //transaction of txId signals that it needs to create a shard for a specific label:
+        // - if we don't have the label in the cache, we create an appropriate entry
+        // - if label is present in the cache, we update the entry with this txId and recommend all txs in the entry to lock
         shardRequests.compute(type, (ind, entry) -> {
             if (entry == null) {
                 Set<String> txSet = ConcurrentHashMap.newKeySet();
                 txSet.add(txId);
                 return txSet;
-            }
-            else{
+            } else {
                 entry.add(txId);
                 if (entry.size() > 1) lockCandidates.addAll(entry);
                 return entry;
@@ -68,9 +70,12 @@ public class ShardManagerImpl implements ShardManager {
 
     @Override
     public void ackShardCommit(Label type, String txId) {
+        //transaction of txId signals that it commited a shard for a specific label:
+        // - we remove this txId from shard requests
+        // - if the removal leads to emptying the entry of the shard requests, we remove the entry
         shardRequests.merge(type, ConcurrentHashMap.newKeySet(), (existingValue, newValue) -> {
-            if (existingValue.size() == 1) return null;
             existingValue.remove(txId);
+            if (existingValue.size() == 0) return null;
             return existingValue;
         });
     }

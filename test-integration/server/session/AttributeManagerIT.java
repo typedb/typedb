@@ -124,6 +124,43 @@ public class AttributeManagerIT {
     }
 
     @Test
+    public void whenMultipleTxsInsertDifferentAttributesAsAKeyOrNot_weDontLock() throws ExecutionException, InterruptedException {
+        try(Transaction tx = session.writeTransaction()){
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            tx.putEntityType("someEntity").has(someAttribute);
+            tx.putEntityType("keyEntity").key(someAttribute);
+            tx.commit();
+        }
+        int threads = 8;
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        for (int threadNo = 0; threadNo < threads; threadNo++) {
+            GraqlInsert query = threadNo % 2 == 0?
+                    Graql.parse("insert $x isa someEntity, has someAttribute " + threadNo + ";").asInsert() :
+                    Graql.parse("insert $x isa keyEntity, has someAttribute " + threadNo + ";").asInsert() ;
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                tx.execute(query);
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                assertFalse(tx.commitLockRequired());
+                tx.commit();
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+
+        assertFalse(session.attributeManager().lockCandidatesPresent());
+        assertFalse(session.attributeManager().ephemeralAttributesPresent());
+    }
+
+    @Test
     public void whenMultipleTxsInsertSameAttribute_weLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.writeTransaction()){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
@@ -137,6 +174,45 @@ public class AttributeManagerIT {
         List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
         for (int threadNo = 0; threadNo < threads; threadNo++) {
             GraqlInsert query = Graql.parse("insert $x 1337 isa someAttribute;").asInsert();
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                tx.execute(query);
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                assertTrue(tx.commitLockRequired());
+                tx.commit();
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+
+        assertFalse(session.attributeManager().lockCandidatesPresent());
+        assertFalse(session.attributeManager().ephemeralAttributesPresent());
+    }
+
+    @Test
+    public void whenMultipleTxsInsertSameAttributeAsAKeyOrNot_weLock() throws ExecutionException, InterruptedException {
+        try(Transaction tx = session.writeTransaction()){
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            tx.putEntityType("someEntity").has(someAttribute);
+            tx.putEntityType("keyEntity").key(someAttribute);
+            tx.commit();
+        }
+        int threads = 8;
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        for (int threadNo = 0; threadNo < threads; threadNo++) {
+            //lower half of the threads insert keys 0, 1 ,2 ...
+            //uper half of the threads insert attributes 0, 1, 2, ...
+            GraqlInsert query = threadNo < threads/2?
+                    Graql.parse("insert $x isa keyEntity, has someAttribute " + threadNo + ";").asInsert() :
+                    Graql.parse("insert $x isa someEntity, has someAttribute " + (threadNo - threads/2) + ";").asInsert() ;
             CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
                 TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
                 tx.execute(query);
