@@ -52,8 +52,9 @@ public class CommonsConfiguration implements WriteConfiguration {
         if (!config.containsKey(key)) return null;
 
         if (dataType.isArray()) {
-            if (dataType.getComponentType() != String.class)
+            if (dataType.getComponentType() != String.class) {
                 throw new IllegalArgumentException("Only string arrays are supported: " + dataType);
+            }
             return (O) config.getStringArray(key);
         } else if (Number.class.isAssignableFrom(dataType)) {
             // A properties file configuration returns Strings even for numeric

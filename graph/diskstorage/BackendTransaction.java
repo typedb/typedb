@@ -396,7 +396,6 @@ public class BackendTransaction implements LoggableTransaction {
         return executeRead(new TotalsCallable(query, indexTx));
     }
 
-
     private <V> V executeRead(Callable<V> exe) throws JanusGraphException {
         try {
             return BackendOperation.execute(exe, maxReadTime);
