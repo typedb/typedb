@@ -81,7 +81,8 @@ public class ShardManagerImpl implements ShardManager {
     }
 
     @Override
-    public void ackCommit(String txId) {
+    public void ackCommit(Set<Label> labels, String txId) {
+        labels.forEach(label -> ackShardCommit(label, txId));
         lockCandidates.remove(txId);
     }
 

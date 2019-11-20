@@ -222,11 +222,9 @@ public class TransactionOLTP implements Transaction {
         janusTransaction.commit();
         String txId = this.janusTransaction.toString();
 
-        cache().getNewShards().forEach((label, count) -> session.shardManager().ackShardCommit(label, txId));
-        session.shardManager().ackCommit(txId);
-
-        session.attributeManager().ackCommit(txId);
-        cache().getNewAttributes().keySet().forEach(p -> session.attributeManager().ackAttributeCommit(p.second(), txId));
+        Set<String> newAttributeIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
+        session.shardManager().ackCommit(cache().getNewShards().keySet(), txId);
+        session.attributeManager().ackCommit(newAttributeIndices, txId);
 
         LOG.trace("Graph committed.");
     }

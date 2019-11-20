@@ -23,6 +23,7 @@ package grakn.core.kb.server;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.ConceptId;
+import java.util.Set;
 
 /**
  * When loading concurrently, we want to minimise the amount of locking needed for correctness and consistency.
@@ -44,7 +45,7 @@ public interface AttributeManager {
     void ackAttributeInsert(String index, String txId);
     void ackAttributeDelete(String index, String txId);
     void ackAttributeCommit(String index, String txId);
-    void ackCommit(String txId);
+    void ackCommit(Set<String> indices, String txId);
     boolean requiresLock(String txId);
 
     @VisibleForTesting

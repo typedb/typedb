@@ -88,7 +88,8 @@ public class AttributeManagerImpl implements AttributeManager {
     }
 
     @Override
-    public void ackCommit(String txId) {
+    public void ackCommit(Set<String> indices, String txId) {
+        indices.forEach(index -> ackAttributeCommit(index, txId));
         lockCandidates.remove(txId);
     }
 
