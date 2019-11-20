@@ -68,8 +68,7 @@ public class ShardManagerImpl implements ShardManager {
         });
     }
 
-    @Override
-    public void ackShardCommit(Label type, String txId) {
+    private void ackShardCommit(Label type, String txId) {
         //transaction of txId signals that it commited a shard for a specific label:
         // - we remove this txId from shard requests
         // - if the removal leads to emptying the entry of the shard requests, we remove the entry

@@ -44,7 +44,6 @@ public interface AttributeManager {
     Cache<String, ConceptId> attributesCache();
     void ackAttributeInsert(String index, String txId);
     void ackAttributeDelete(String index, String txId);
-    void ackAttributeCommit(String index, String txId);
     void ackCommit(Set<String> indices, String txId);
     boolean requiresLock(String txId);
 

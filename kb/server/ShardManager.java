@@ -40,7 +40,6 @@ import java.util.Set;
 public interface ShardManager {
 
     void ackShardRequest(Label type, String txId);
-    void ackShardCommit(Label type, String txId);
     void ackCommit(Set<Label> labels, String txId);
     boolean requiresLock(String txId);
     Cache<Label, Long> shardCache();

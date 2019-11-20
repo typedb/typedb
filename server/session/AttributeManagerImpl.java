@@ -81,9 +81,8 @@ public class AttributeManagerImpl implements AttributeManager {
             return existingValue;
         });
     }
-
-    @Override
-    public void ackAttributeCommit(String index, String txId) {
+    
+    private void ackAttributeCommit(String index, String txId) {
         ackAttributeDelete(index, txId);
     }
 
