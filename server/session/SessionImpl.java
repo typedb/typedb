@@ -44,6 +44,7 @@ import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.exception.SessionException;
+import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
@@ -66,6 +67,10 @@ import java.util.function.Consumer;
  * - A transaction cannot be shared between multiple threads, each thread will need to get a new transaction from a session.
  */
 public class SessionImpl implements Session {
+
+    // TODO this is probably redundant in real gRPC use cases
+    // Session can have at most 1 transaction per thread, so we keep a local reference here
+    private final ThreadLocal<Transaction> localOLTPTransactionContainer = new ThreadLocal<>();
 
     private final HadoopGraph hadoopGraph;
 
@@ -146,6 +151,10 @@ public class SessionImpl implements Session {
             throw new SessionException(ErrorMessage.SESSION_CLOSED.getMessage(keyspace()));
         }
 
+        Transaction localTx = localOLTPTransactionContainer.get();
+        // If transaction is already open in current thread throw exception
+        if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
+
         // caches
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
         RuleCache ruleCache = new RuleCacheImpl();
@@ -172,6 +181,7 @@ public class SessionImpl implements Session {
         conceptNotificationChannel.subscribe(conceptObserver);
 
         tx.open(type);
+        localOLTPTransactionContainer.set(tx);
 
         return tx;
     }
