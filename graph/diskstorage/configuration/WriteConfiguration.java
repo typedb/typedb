@@ -32,6 +32,4 @@ public interface WriteConfiguration extends ReadConfiguration {
 
     void remove(String key);
 
-    WriteConfiguration copy();
-
 }

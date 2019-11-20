@@ -18,12 +18,7 @@
 
 package grakn.core.graph.graphdb.database.serialize;
 
-import grakn.core.graph.core.attribute.AttributeSerializer;
-
-
 public interface AttributeHandler {
-
-    <T> void registerClass(int registrationNo, Class<T> type, AttributeSerializer<T> attributeHandler);
 
     boolean validDataType(Class datatype);
 

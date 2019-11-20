@@ -51,11 +51,6 @@ public class TransactionalConfiguration implements WriteConfiguration {
     }
 
     @Override
-    public WriteConfiguration copy() {
-        return config.copy();
-    }
-
-    @Override
     public <O> O get(String key, Class<O> datatype) {
         Object value = writtenValues.get(key);
         if (value != null) return (O) value;

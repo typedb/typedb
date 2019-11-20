@@ -18,8 +18,6 @@
 
 package grakn.core.graph.diskstorage.configuration.backend;
 
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
 import grakn.core.graph.diskstorage.configuration.WriteConfiguration;
 import grakn.core.graph.diskstorage.util.time.Durations;
 import org.apache.commons.configuration.BaseConfiguration;
@@ -32,6 +30,7 @@ import java.lang.reflect.Constructor;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -40,25 +39,21 @@ import java.util.List;
  */
 public class CommonsConfiguration implements WriteConfiguration {
 
-    private final Configuration config;
-
     private static final Logger LOG = LoggerFactory.getLogger(CommonsConfiguration.class);
 
+    private final Configuration config;
+
     public CommonsConfiguration() {
-        this(new BaseConfiguration());
+        this.config = new BaseConfiguration();
     }
-
-    public CommonsConfiguration(Configuration config) {
-        this.config = Preconditions.checkNotNull(config);
-    }
-
 
     @Override
     public <O> O get(String key, Class<O> dataType) {
         if (!config.containsKey(key)) return null;
 
         if (dataType.isArray()) {
-            Preconditions.checkArgument(dataType.getComponentType() == String.class, "Only string arrays are supported: %s", dataType);
+            if (dataType.getComponentType() != String.class)
+                throw new IllegalArgumentException("Only string arrays are supported: " + dataType);
             return (O) config.getStringArray(key);
         } else if (Number.class.isAssignableFrom(dataType)) {
             // A properties file configuration returns Strings even for numeric
@@ -79,7 +74,6 @@ public class CommonsConfiguration implements WriteConfiguration {
             return (O) Boolean.valueOf(config.getBoolean(key));
         } else if (dataType.isEnum()) {
             Enum[] constants = (Enum[]) dataType.getEnumConstants();
-            Preconditions.checkState(null != constants && 0 < constants.length, "Zero-length or undefined enum");
 
             String enumString = config.getProperty(key).toString();
             for (Enum ec : constants) {
@@ -111,17 +105,6 @@ public class CommonsConfiguration implements WriteConfiguration {
                 }
                 return (O) Duration.of(Long.valueOf(comps[0]), unit);
             }
-            // Lists are deliberately not supported.  List's generic parameter
-            // is subject to erasure and can't be checked at runtime.  Someone
-            // could create a ConfigOption<List<Number>>; we would instead return
-            // a List<String> like we always do at runtime, and it wouldn't break
-            // until the client tried to use the contents of the list.
-            //
-            // We could theoretically get around this by adding a type token to
-            // every declaration of a List-typed ConfigOption, but it's just
-            // not worth doing since we only actually use String[] anyway.
-//        } else if (List.class.isAssignableFrom(dataType)) {
-//            return (O) config.getProperty(key);
         } else throw new IllegalArgumentException("Unsupported data type: " + dataType);
     }
 
@@ -129,8 +112,6 @@ public class CommonsConfiguration implements WriteConfiguration {
         try {
             Constructor<O> ctor = dataType.getConstructor(String.class);
             return ctor.newInstance(arg);
-            // ReflectiveOperationException is narrower and more appropriate than Exception, but only @since 1.7
-            //} catch (ReflectiveOperationException e) {
         } catch (Exception e) {
             LOG.error("Failed to parse configuration string \"{}\" into type {} due to the following reflection exception", arg, dataType, e);
             throw new RuntimeException(e);
@@ -139,7 +120,7 @@ public class CommonsConfiguration implements WriteConfiguration {
 
     @Override
     public Iterable<String> getKeys(String prefix) {
-        List<String> result = Lists.newArrayList();
+        List<String> result = new ArrayList<>();
         Iterator<String> keys;
         if (StringUtils.isNotBlank(prefix)) keys = config.getKeys(prefix);
         else keys = config.getKeys();
@@ -166,13 +147,6 @@ public class CommonsConfiguration implements WriteConfiguration {
     @Override
     public void remove(String key) {
         config.clearProperty(key);
-    }
-
-    @Override
-    public WriteConfiguration copy() {
-        BaseConfiguration copy = new BaseConfiguration();
-        copy.copy(config);
-        return new CommonsConfiguration(copy);
     }
 
 }

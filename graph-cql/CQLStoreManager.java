@@ -47,6 +47,8 @@ import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.StoreMetaData.Container;
 import grakn.core.graph.diskstorage.common.AbstractStoreManager;
 import grakn.core.graph.diskstorage.configuration.Configuration;
+import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
+import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.keycolumnvalue.KCVMutation;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStore;
 import grakn.core.graph.diskstorage.keycolumnvalue.KeyColumnValueStoreManager;
@@ -64,7 +66,6 @@ import io.vavr.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Resource;
 import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -82,12 +83,10 @@ import static com.datastax.oss.driver.api.querybuilder.QueryBuilder.truncate;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.createKeyspace;
 import static com.datastax.oss.driver.api.querybuilder.SchemaBuilder.dropKeyspace;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.ATOMIC_BATCH_MUTATE;
-import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.BATCH_STATEMENT_SIZE;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.KEYSPACE;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.LOCAL_DATACENTER;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.LOCAL_MAX_CONNECTIONS_PER_HOST;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.MAX_REQUESTS_PER_CONNECTION;
-import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.PROTOCOL_VERSION;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.READ_CONSISTENCY;
 import static grakn.core.graph.diskstorage.cql.CQLConfigOptions.REMOTE_MAX_CONNECTIONS_PER_HOST;
@@ -105,10 +104,10 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.AUTH_USERNAME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.CONNECTION_TIMEOUT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DROP_ON_CLEAR;
+import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.ROOT_NS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_PORT;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.TIMESTAMP_PROVIDER;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.buildGraphConfiguration;
 import static io.vavr.API.$;
 import static io.vavr.API.Case;
 import static io.vavr.API.Match;
@@ -125,12 +124,9 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
     private static final int DEFAULT_PORT = 9042;
 
     private final String keyspace;
-    private final int batchSize;
     private final boolean atomicBatch;
     private final TimestampProvider times;
 
-
-    @Resource
     private CqlSession session;
     private final StoreFeatures storeFeatures;
     private final Map<String, CQLKeyColumnValueStore> openStores;
@@ -142,7 +138,6 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
     public CQLStoreManager(Configuration configuration) throws PermanentBackendException {
         super(configuration);
         this.keyspace = configuration.get(KEYSPACE);
-        this.batchSize = configuration.get(BATCH_STATEMENT_SIZE);
         this.atomicBatch = configuration.get(ATOMIC_BATCH_MUTATE);
         this.times = configuration.get(TIMESTAMP_PROVIDER);
         this.semaphore = new Semaphore(configuration.get(MAX_REQUESTS_PER_CONNECTION));
@@ -158,13 +153,12 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
                 .set(READ_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM)
                 .set(WRITE_CONSISTENCY, CONSISTENCY_LOCAL_QUORUM);
 
-        Boolean onlyUseLocalConsistency = configuration.get(ONLY_USE_LOCAL_CONSISTENCY_FOR_SYSTEM_OPERATIONS);
 
         StandardStoreFeatures.Builder fb = new StandardStoreFeatures.Builder();
 
         fb.batchMutation(true).distributed(true);
         fb.timestamps(true).cellTTL(true);
-        fb.keyConsistent((onlyUseLocalConsistency ? local : global), local);
+        fb.keyConsistent(global, local);
         fb.locking(false);
         fb.optimisticLocking(true);
         fb.multiQuery(false);
@@ -333,7 +327,7 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
 
     @VisibleForTesting
     TableMetadata getTableMetadata(String name) throws BackendException {
-        final KeyspaceMetadata keyspaceMetadata = (this.session.getMetadata().getKeyspace(this.keyspace))
+        KeyspaceMetadata keyspaceMetadata = (this.session.getMetadata().getKeyspace(this.keyspace))
                 .orElseThrow(() -> new PermanentBackendException(String.format("Unknown keyspace '%s'", this.keyspace)));
         return keyspaceMetadata.getTable(name)
                 .orElseThrow(() -> new PermanentBackendException(String.format("Unknown table '%s'", name)));
@@ -398,7 +392,12 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
         }
     }
 
-    // Use a single logged batch
+    // We never use Logged Batches: this is because they are a performance hit as they need to ensure that all statements succeed on all nodes.
+    // Logged batches might be potentially be useful in the future, specially when mutating different tables
+    // Brief explanation:
+    //"Logged batches are used to ensure that all the statements will eventually succeed. Cassandra achieves this by first writing all the statements to a batch log.
+    // That batch log is replicated to two other nodes in case the coordinator fails. If the coordinator fails then another replica for the batch log will take over."
+    // Basically only useful when need to guarantee success in a multi-node cluster (so more a KGMS kind of thing).
     private void mutateManyLogged(Map<String, Map<StaticBuffer, KCVMutation>> mutations, StoreTransaction txh) throws BackendException {
         MaskedTimestamp commitTime = new MaskedTimestamp(txh);
         long deletionTime = commitTime.getDeletionTime(this.times);
@@ -525,5 +524,9 @@ public class CQLStoreManager extends AbstractStoreManager implements KeyColumnVa
         private Instant getAdditionTimeInstant(TimestampProvider times) {
             return times.getTime(getAdditionTime(times));
         }
+    }
+
+    private ModifiableConfiguration buildGraphConfiguration() {
+        return new ModifiableConfiguration(ROOT_NS, new CommonsConfiguration());
     }
 }

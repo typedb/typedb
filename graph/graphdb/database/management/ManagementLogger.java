@@ -70,7 +70,6 @@ public class ManagementLogger implements MessageReader {
         this.schemaCache = schemaCache;
         this.sysLog = sysLog;
         this.times = times;
-        Preconditions.checkNotNull(times);
     }
 
     @Override

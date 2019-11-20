@@ -58,13 +58,13 @@ import grakn.core.graph.diskstorage.util.StaticArrayEntry;
 import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration;
 import grakn.core.graph.graphdb.database.cache.SchemaCache;
+import grakn.core.graph.graphdb.database.cache.StandardSchemaCache;
 import grakn.core.graph.graphdb.database.idassigner.VertexIDAssigner;
 import grakn.core.graph.graphdb.database.idhandling.IDHandler;
 import grakn.core.graph.graphdb.database.log.LogTxStatus;
 import grakn.core.graph.graphdb.database.log.TransactionLogHeader;
 import grakn.core.graph.graphdb.database.management.ManagementLogger;
 import grakn.core.graph.graphdb.database.management.ManagementSystem;
-import grakn.core.graph.graphdb.database.serialize.Serializer;
 import grakn.core.graph.graphdb.database.serialize.StandardSerializer;
 import grakn.core.graph.graphdb.idmanagement.IDManager;
 import grakn.core.graph.graphdb.internal.InternalRelation;
@@ -137,7 +137,7 @@ public class StandardJanusGraph implements JanusGraph {
     //Serializers
     private final IndexSerializer indexSerializer;
     private final EdgeSerializer edgeSerializer;
-    protected final Serializer serializer;
+    protected final StandardSerializer serializer;
 
     //Caches
     public final SliceQuery vertexExistenceQuery;
@@ -178,7 +178,7 @@ public class StandardJanusGraph implements JanusGraph {
 
         // Collaborators (Caches)
         this.queryCache = new RelationQueryCache(this.edgeSerializer);
-        this.schemaCache = configuration.getTypeCache(typeCacheRetrieval);
+        this.schemaCache = new StandardSchemaCache(typeCacheRetrieval);
 
 
         // Log Manager
@@ -271,7 +271,7 @@ public class StandardJanusGraph implements JanusGraph {
         return edgeSerializer;
     }
 
-    public Serializer getDataSerializer() {
+    public StandardSerializer getDataSerializer() {
         return serializer;
     }
 
