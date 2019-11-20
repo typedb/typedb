@@ -74,13 +74,9 @@ public class EdgeElementImpl extends AbstractElementImpl<Edge> implements EdgeEl
      */
     @Override
     public void property(Schema.EdgeProperty key, Object value) {
-        if (value == null) {
-            element().property(key.name()).remove();
-        } else {
-            Property<Object> foundProperty = element().property(key.name());
-            if (!foundProperty.isPresent() || !foundProperty.value().equals(value)) {
-                element().property(key.name(), value);
-            }
+        element().property(key.name()).remove();
+        if (value != null) {
+            element().property(key.name(), value);
         }
     }
 

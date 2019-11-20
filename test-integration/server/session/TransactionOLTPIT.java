@@ -118,7 +118,7 @@ public class TransactionOLTPIT {
     public void whenAttemptingToMutateViaTraversal_Throw() {
         expectedException.expect(VerificationException.class);
         expectedException.expectMessage("not read only");
-        ((TransactionImpl)tx).janusTraversalSourceProvider().getTinkerTraversal().V().drop().iterate();
+        tx.janusTraversalSourceProvider().getTinkerTraversal().V().drop().iterate();
     }
 
     @Test
@@ -580,7 +580,7 @@ public class TransactionOLTPIT {
         tx.commit();
 
         tx = session.writeTransaction();
-        List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"));
+        List<ConceptMap> answers = tx.execute(Graql.<GraqlGet>parse("match $p isa person, has score $score; get;"), true);
         assertEquals(2, answers.size());
         tx.commit();
 

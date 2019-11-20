@@ -357,7 +357,39 @@ public class TransactionImpl implements Transaction {
     @Override
     public Stream<ConceptMap> stream(GraqlInsert query, boolean infer) {
         checkMutationAllowed();
-        return executor().insert(query);
+        Stream<ConceptMap> inserted = executor().insert(query);
+
+        Stream<ConceptMap> explicitlyPersisted = inserted.peek(conceptMap -> {
+            // mark all inferred concepts that are required for the insert for persistence explicitly
+            // can avoid this potentially expensive check if there aren't any inferred concepts to start with
+            if (cache().getInferredInstances().findAny().isPresent()) {
+                markConceptsForPersistence(conceptMap.concepts());
+            }
+        });
+
+        return explicitlyPersisted;
+    }
+
+    /**
+     * Mark all objects inserted explicitly for persistence, if they are inferred
+     * The inferred objects also transitively check their generating concepts to be marked for persistence
+     *
+     * We do the persistence operation at the top level in the Transaction, because we have access to the Caches here
+     * However, it may be better performed directly in the ConceptManager or elsewhere
+     */
+    private void markConceptsForPersistence(Collection<Concept> concepts) {
+        Set<Thing> things = concepts.stream()
+                .filter(Concept::isThing)
+                .map(Concept::asThing)
+                .collect(Collectors.toSet());
+
+        ConceptUtils.getDependentConcepts(things)
+                .filter(Thing::isInferred)
+                .forEach(t -> {
+                    //as we are going to persist the concepts, reset the inferred flag
+                    ConceptVertex.from(t).vertex().property(Schema.VertexProperty.IS_INFERRED, false);
+                   cache().inferredInstanceToPersist(t);
+                });
     }
 
     // Delete query

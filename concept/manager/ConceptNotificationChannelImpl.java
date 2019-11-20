@@ -139,16 +139,16 @@ public class ConceptNotificationChannelImpl implements ConceptNotificationChanne
 
     @Override
     public void ruleCreated(Rule rule) {
-
+        conceptListener.ruleCreated(rule);
     }
 
     @Override
     public void roleCreated(Role role) {
-
+        conceptListener.roleCreated(role);
     }
 
     @Override
     public void relationTypeCreated(RelationType relationType) {
-
+        conceptListener.relationTypeCreated(relationType);
     }
 }

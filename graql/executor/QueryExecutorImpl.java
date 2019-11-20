@@ -289,10 +289,11 @@ public class QueryExecutorImpl implements QueryExecutor {
 
             Stream<ConceptMap> answers = executorFactory.transactional(transaction, infer).match(match);
             answerStream = answers
-                    .flatMap(answer -> WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write(answer))
+                    .map(answer -> answer.project(projectedVars))
+                    .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
                     .collect(toList()).stream();
         } else {
-            answerStream = WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write();
+            answerStream = WriteExecutorImpl.create(conceptManager, executors.build()).write();
         }
 
         ServerTracing.closeScopedChildSpan(answerStreamSpanId);
@@ -359,7 +360,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             }
         }
 
-        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write();
+        return WriteExecutorImpl.create(conceptManager, executors.build()).write();
     }
 
     @Override
@@ -374,7 +375,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 executors.addAll(propertyExecutorFactory.definable(statement.var(), property).undefineExecutors());
             }
         }
-        return WriteExecutorImpl.create(transaction, conceptManager, executors.build()).write();
+        return WriteExecutorImpl.create(conceptManager, executors.build()).write();
     }
 
 
