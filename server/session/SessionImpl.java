@@ -25,8 +25,7 @@ import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.manager.ConceptManagerImpl;
 import grakn.core.concept.manager.ConceptNotificationChannelImpl;
-import grakn.core.graql.gremlin.JanusTraversalSourceProviderImpl;
-import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.RuleCacheImpl;
@@ -156,8 +155,8 @@ public class SessionImpl implements Session {
 
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.buildTransaction().threadBound().consistencyChecks(false).start();
-        JanusTraversalSourceProvider janusTraversalSourceProvider = new JanusTraversalSourceProviderImpl(janusGraphTransaction);
-        ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
+        JanusTraversalSourceProvider janusTraversalSourceProvider = new JanusTraversalSourceProvider(janusGraphTransaction);
+        ElementFactory elementFactory = new ElementFactory(janusGraphTransaction, janusTraversalSourceProvider);
 
         // Grakn elements
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, graphLock);

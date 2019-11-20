@@ -37,9 +37,9 @@ import grakn.core.concept.impl.SchemaConceptImpl;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.concept.util.ConceptUtils;
 import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
-import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -48,7 +48,6 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
-import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Rule;
@@ -1178,11 +1177,6 @@ public class TransactionImpl implements Transaction {
         relationType.addEdge(type, Schema.EdgeLabel.SUB);
         resourceType.addEdge(type, Schema.EdgeLabel.SUB);
         entityType.addEdge(type, Schema.EdgeLabel.SUB);
-    }
-
-    @Override
-    public LabelId convertToId(Label label) {
-        return conceptManager.convertToId(label);
     }
 
     @Override

@@ -31,7 +31,7 @@ import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;

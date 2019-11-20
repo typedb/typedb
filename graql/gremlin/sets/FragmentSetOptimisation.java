@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.sets;
 
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 
 import java.util.Collection;
 

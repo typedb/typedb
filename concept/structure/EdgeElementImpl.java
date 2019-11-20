@@ -20,15 +20,21 @@
 package grakn.core.concept.structure;
 
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.EdgeElement;
+import grakn.core.kb.concept.structure.GraknElementException;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Edge;
-import grakn.core.kb.concept.structure.EdgeElement;
+import org.apache.tinkerpop.gremlin.structure.Property;
+
+import javax.annotation.Nullable;
+import java.util.Objects;
+import java.util.function.Function;
 
 /**
  * Represent an Edge in a TransactionOLTP
  * Wraps a tinkerpop Edge constraining it to the Grakn Object Model.
  */
-public class EdgeElementImpl extends AbstractElementImpl<Edge, Schema.EdgeProperty> implements EdgeElement {
+public class EdgeElementImpl extends AbstractElementImpl<Edge> implements EdgeElement {
 
     public EdgeElementImpl(ElementFactory elementFactory, Edge e) {
         super(elementFactory, e);
@@ -40,6 +46,65 @@ public class EdgeElementImpl extends AbstractElementImpl<Edge, Schema.EdgeProper
     public void delete() {
         element().remove();
     }
+
+    /**
+     * @param key The key of the non-unique property to retrieve
+     * @return The value stored in the property
+     */
+    @Override
+    @Nullable
+    public <X> X property(Schema.EdgeProperty key) {
+        Property<X> property = element().property(key.name());
+        if (property != null && property.isPresent()) {
+            return property.value();
+        }
+        return null;
+    }
+
+    @Override
+    public Boolean propertyBoolean(Schema.EdgeProperty key) {
+        Boolean value = property(key);
+        if (value == null) return false;
+        return value;
+    }
+
+    /**
+     * @param key   The key of the property to mutate
+     * @param value The value to commit into the property
+     */
+    @Override
+    public void property(Schema.EdgeProperty key, Object value) {
+        if (value == null) {
+            element().property(key.name()).remove();
+        } else {
+            Property<Object> foundProperty = element().property(key.name());
+            if (!foundProperty.isPresent() || !foundProperty.value().equals(value)) {
+                element().property(key.name(), value);
+            }
+        }
+    }
+
+
+    /**
+     * Sets a property which cannot be mutated
+     *
+     * @param property   The key of the immutable property to mutate
+     * @param newValue   The new value to put on the property (if the property is not set)
+     * @param foundValue The current value of the property
+     * @param converter  Helper method to ensure data is persisted in the correct format
+     */
+    @Override
+    public <X> void propertyImmutable(Schema.EdgeProperty property, X newValue, @Nullable X foundValue, Function<X, Object> converter) {
+        Objects.requireNonNull(property);
+
+        if (foundValue == null) {
+            property(property, converter.apply(newValue));
+
+        } else if (!foundValue.equals(newValue)) {
+            throw GraknElementException.immutableProperty(foundValue, newValue, property);
+        }
+    }
+
 
     @Override
     public int hashCode() {

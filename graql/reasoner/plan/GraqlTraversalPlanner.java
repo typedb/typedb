@@ -25,7 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;

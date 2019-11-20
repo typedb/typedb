@@ -25,8 +25,7 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.graql.executor.property.value.ValueOperation;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 

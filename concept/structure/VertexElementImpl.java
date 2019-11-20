@@ -19,21 +19,27 @@
 
 package grakn.core.concept.structure;
 
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.LabelId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.GraknElementException;
+import grakn.core.kb.concept.structure.PropertyNotUniqueException;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 
+import javax.annotation.Nullable;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -46,7 +52,7 @@ import static java.util.stream.Collectors.toSet;
  * This is used to wrap common functionality between exposed Concept and unexposed
  * internal vertices.
  */
-public class VertexElementImpl extends AbstractElementImpl<Vertex, Schema.VertexProperty> implements VertexElement {
+public class VertexElementImpl extends AbstractElementImpl<Vertex> implements VertexElement {
 
     public VertexElementImpl(ElementFactory elementFactory, Vertex element) {
         super(elementFactory, element);
@@ -119,6 +125,90 @@ public class VertexElementImpl extends AbstractElementImpl<Vertex, Schema.Vertex
                 if (delete) edge.remove();
             });
         }
+    }
+
+    /**
+     * @param key The key of the non-unique property to retrieve
+     * @return The value stored in the property
+     */
+    @Override
+    @Nullable
+    public <X> X property(Schema.VertexProperty key) {
+        Property<X> property = element().property(key.name());
+        if (property != null && property.isPresent()) {
+            return property.value();
+        }
+        return null;
+    }
+
+    @Override
+    public Boolean propertyBoolean(Schema.VertexProperty key) {
+        Boolean value = property(key);
+        if (value == null) return false;
+        return value;
+    }
+
+    /**
+     * @param key   The key of the property to mutate
+     * @param value The value to commit into the property
+     */
+    @Override
+    public void property(Schema.VertexProperty key, Object value) {
+        if (value == null) {
+            element().property(key.name()).remove();
+        } else {
+            Property<Object> foundProperty = element().property(key.name());
+            if (!foundProperty.isPresent() || !foundProperty.value().equals(value)) {
+                element().property(key.name(), value);
+            }
+        }
+
+    }
+
+    /**
+     * Sets a property which cannot be mutated
+     *
+     * @param property   The key of the immutable property to mutate
+     * @param newValue   The new value to put on the property (if the property is not set)
+     * @param foundValue The current value of the property
+     * @param converter  Helper method to ensure data is persisted in the correct format
+     */
+    @Override
+    public <X> void propertyImmutable(Schema.VertexProperty property, X newValue, @Nullable X foundValue, Function<X, Object> converter) {
+        Objects.requireNonNull(property);
+
+        if (foundValue == null) {
+            property(property, converter.apply(newValue));
+
+        } else if (!foundValue.equals(newValue)) {
+            throw GraknElementException.immutableProperty(foundValue, newValue, property);
+        }
+    }
+
+    @Override
+    public <X> void propertyImmutable(Schema.VertexProperty property, X newValue, X foundValue) {
+        propertyImmutable(property, newValue, foundValue, Function.identity());
+    }
+
+    /**
+     * Sets the value of a property with the added restriction that no other vertex can have that property.
+     *
+     * @param key   The key of the unique property to mutate
+     * @param value The new value of the unique property
+     */
+    @Override
+    public void propertyUnique(Schema.VertexProperty key, String value) {
+        Iterator<VertexElement> verticesWithProperty = elementFactory.getVerticesWithProperty(key, value).iterator();
+
+        if (verticesWithProperty.hasNext()) {
+            Vertex vertex = verticesWithProperty.next().element();
+            if (!vertex.equals(element()) || verticesWithProperty.hasNext()) {
+                if (verticesWithProperty.hasNext()) vertex = verticesWithProperty.next().element();
+                throw PropertyNotUniqueException.cannotChangeProperty(element(), vertex, key, value);
+            }
+        }
+
+        property(key, value);
     }
 
     public Shard asShard() {

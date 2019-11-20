@@ -25,11 +25,8 @@ import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.server.exception.InvalidKBException;
 import graql.lang.pattern.Pattern;
-import graql.lang.statement.Variable;
 
 public interface ConceptBuilder {
 

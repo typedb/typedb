@@ -19,7 +19,7 @@
 package grakn.core.graql.gremlin.fragment;
 
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.graph.SchemaNode;

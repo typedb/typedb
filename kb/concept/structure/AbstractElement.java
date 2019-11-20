@@ -21,11 +21,7 @@ package grakn.core.kb.concept.structure;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 
-import javax.annotation.Nullable;
-import java.util.Objects;
-import java.util.function.Function;
-
-public interface AbstractElement<E extends Element, P> {
+public interface AbstractElement<E extends Element> {
 
     E element();
 
@@ -34,25 +30,6 @@ public interface AbstractElement<E extends Element, P> {
     void delete();
 
     boolean isDeleted();
-
-    void property(P key, Object value);
-
-    <X> X property(P key);
-
-    Boolean propertyBoolean(P key);
-
-    void propertyUnique(P key, String value);
-
-    /**
-     * Sets a property which cannot be mutated
-     *
-     * @param property   The key of the immutable property to mutate
-     * @param newValue   The new value to put on the property (if the property is not set)
-     * @param foundValue The current value of the property
-     * @param converter  Helper method to ensure data is persisted in the correct format
-     */
-    <X> void propertyImmutable(P property, X newValue, @Nullable X foundValue, Function<X, Object> converter);
-    <X> void propertyImmutable(P property, X newValue, X foundValue);
 
     /**
      * @return the label of the element in the graph.

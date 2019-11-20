@@ -23,16 +23,16 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import grakn.common.util.Pair;
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.graql.gremlin.fragment.InIsaFragment;
 import grakn.core.graql.gremlin.fragment.InSubFragment;
 import grakn.core.graql.gremlin.fragment.LabelFragment;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.gremlin.JanusTraversalSourceProvider;
 import grakn.core.kb.graql.planning.Arborescence;
 import grakn.core.kb.graql.planning.ChuLiuEdmonds;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.Fragment;
 import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
@@ -65,7 +65,7 @@ import java.util.stream.Collectors;
 import static grakn.core.graql.gremlin.NodesUtil.buildNodesWithDependencies;
 import static grakn.core.graql.gremlin.NodesUtil.nodeVisitedDependenciesFragments;
 import static grakn.core.graql.gremlin.RelationTypeInference.inferRelationTypes;
-import static grakn.core.kb.graql.planning.Fragment.SHARD_LOAD_FACTOR;
+import static grakn.core.kb.graql.gremlin.Fragment.SHARD_LOAD_FACTOR;
 
 /**
  * Class for generating greedy traversal plans

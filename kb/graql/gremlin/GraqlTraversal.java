@@ -22,7 +22,6 @@ package grakn.core.kb.graql.gremlin;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.graql.planning.Fragment;
 import graql.lang.statement.Variable;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Element;

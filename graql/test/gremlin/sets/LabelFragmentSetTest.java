@@ -22,7 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Type;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.server.Transaction;
 import grakn.core.server.session.TransactionImpl;
 import graql.lang.statement.Variable;

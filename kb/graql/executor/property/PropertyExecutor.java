@@ -25,7 +25,7 @@ import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.WriteExecutor;
 
 import java.util.Set;

@@ -17,15 +17,13 @@
  *
  */
 
-package grakn.core.kb.graql.planning;
+package grakn.core.kb.graql.gremlin;
 
 import graql.lang.property.VarProperty;
 
 import javax.annotation.Nullable;
 import java.util.Set;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.joining;
 
 /**
  * a pattern to match in the graph. comprised of {@code Fragments}, each describing one way to represent the traversal,

@@ -24,8 +24,7 @@ import grakn.core.graql.gremlin.fragment.Fragments;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
-import grakn.core.kb.graql.planning.Fragment;
-import grakn.core.kb.server.Transaction;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;
 

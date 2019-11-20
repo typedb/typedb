@@ -17,7 +17,7 @@
  *
  */
 
-package grakn.core.kb.graql.planning;
+package grakn.core.kb.graql.gremlin;
 
 import grakn.common.util.Pair;
 import grakn.core.kb.concept.api.ConceptId;
@@ -26,7 +26,6 @@ import grakn.core.kb.graql.planning.spanningtree.graph.DirectedEdge;
 import grakn.core.kb.graql.planning.spanningtree.graph.Node;
 import grakn.core.kb.graql.planning.spanningtree.graph.NodeId;
 import grakn.core.kb.graql.planning.spanningtree.util.Weighted;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Variable;

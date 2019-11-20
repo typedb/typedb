@@ -19,6 +19,7 @@
 
 package grakn.core.concept.structure;
 
+import grakn.core.core.JanusTraversalSourceProvider;
 import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.LabelId;
@@ -30,14 +31,11 @@ import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
-import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.ReadOnlyStrategy;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphTransaction;
 
-import javax.annotation.Nullable;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Optional;
@@ -57,12 +55,11 @@ import java.util.stream.Stream;
  */
 public final class ElementFactory {
     private final JanusGraphTransaction janusTx;
+    private JanusTraversalSourceProvider traversalSourceProvider;
 
-    @Nullable
-    private GraphTraversalSource graphTraversalSource = null;
-
-    public ElementFactory(JanusGraphTransaction janusTransaction) {
+    public ElementFactory(JanusGraphTransaction janusTransaction, JanusTraversalSourceProvider traversalSourceProvider) {
         this.janusTx = janusTransaction;
+        this.traversalSourceProvider = traversalSourceProvider;
     }
 
     public VertexElement getVertexWithProperty(Schema.VertexProperty key, Object value) {
@@ -72,12 +69,12 @@ public final class ElementFactory {
     }
 
     public Stream<VertexElement> getVerticesWithProperty(Schema.VertexProperty key, Object value) {
-        Stream<Vertex> vertices = getTinkerTraversal().V().has(key.name(), value).toStream();
+        Stream<Vertex> vertices = traversalSourceProvider.getTinkerTraversal().V().has(key.name(), value).toStream();
         return vertices.map(vertex -> buildVertexElement(vertex));
     }
 
     public Vertex getVertexWithId(String id) {
-        Iterator<Vertex> vertices = getTinkerTraversal().V(id);
+        Iterator<Vertex> vertices = traversalSourceProvider.getTinkerTraversal().V(id);
         if (vertices.hasNext()) {
             return vertices.next();
         }
@@ -85,7 +82,7 @@ public final class ElementFactory {
     }
 
     public EdgeElement getEdgeElementWithId(String id) {
-        GraphTraversal<Edge, Edge> traversal = getTinkerTraversal().E(id);
+        GraphTraversal<Edge, Edge> traversal = traversalSourceProvider.getTinkerTraversal().E(id);
         if (traversal.hasNext()) {
             return buildEdgeElement(traversal.next());
         }
@@ -157,15 +154,8 @@ public final class ElementFactory {
     }
 
 
-    private GraphTraversalSource getTinkerTraversal() {
-        if (graphTraversalSource == null) {
-            graphTraversalSource = janusTx.traversal().withStrategies(ReadOnlyStrategy.instance());
-        }
-        return graphTraversalSource;
-    }
-
     Stream<EdgeElement> rolePlayerEdges(String vertexId, Type type, Set<Integer> roleTypesIds) {
-        return getTinkerTraversal()
+        return traversalSourceProvider.getTinkerTraversal()
                 .V(vertexId)
                 .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
                 .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), type.labelId().getValue())
@@ -177,7 +167,7 @@ public final class ElementFactory {
 
     boolean rolePlayerEdgeExists(String startVertexId, Type relationType, Role role, String endVertexId) {
         //Checking if the edge exists
-        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
+        GraphTraversal<Vertex, Edge> traversal = traversalSourceProvider.getTinkerTraversal().V(startVertexId)
                 .outE(Schema.EdgeLabel.ROLE_PLAYER.getLabel())
                 .has(Schema.EdgeProperty.RELATION_TYPE_LABEL_ID.name(), relationType.labelId().getValue())
                 .has(Schema.EdgeProperty.ROLE_LABEL_ID.name(), role.labelId().getValue())
@@ -212,7 +202,7 @@ public final class ElementFactory {
         GraphTraversal<Vertex, Vertex> attributeEdgeTraversal = __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()).inV();
 
         //noinspection unchecked
-        return getTinkerTraversal()
+        return traversalSourceProvider.getTinkerTraversal()
                 .V(startConceptId)
                 .union(shortcutTraversal, attributeEdgeTraversal)
                 .toStream()
@@ -220,12 +210,17 @@ public final class ElementFactory {
     }
 
     Stream<VertexElement> inFromSourceId(String startId, Schema.EdgeLabel edgeLabel) {
-        return getTinkerTraversal().V(startId).in(edgeLabel.getLabel()).toStream().map(vertex -> buildVertexElement(vertex));
+        return traversalSourceProvider.getTinkerTraversal()
+                .V(startId)
+                .in(edgeLabel.getLabel())
+                .toStream()
+                .map(vertex -> buildVertexElement(vertex));
     }
 
     Stream<VertexElement> inFromSourceIdWithProperty(String startId, Schema.EdgeLabel edgeLabel,
                                                      Schema.EdgeProperty edgeProperty, Set<Integer> roleTypesIds) {
-        return getTinkerTraversal().V(startId)
+        return traversalSourceProvider.getTinkerTraversal()
+                .V(startId)
                 .inE(edgeLabel.getLabel())
                 .has(edgeProperty.name(), org.apache.tinkerpop.gremlin.process.traversal.P.within(roleTypesIds))
                 .outV()
@@ -234,7 +229,8 @@ public final class ElementFactory {
     }
 
     Stream<EdgeElement> edgeRelationsConnectedToInstancesOfType(String typeVertexId, LabelId edgeInstanceLabelId) {
-        return getTinkerTraversal().V()
+        return traversalSourceProvider.getTinkerTraversal()
+                .V()
                 .hasId(typeVertexId)
                 .in(Schema.EdgeLabel.SHARD.getLabel())
                 .in(Schema.EdgeLabel.ISA.getLabel())
@@ -246,7 +242,8 @@ public final class ElementFactory {
 
     EdgeElement edgeBetweenVertices(String startVertexId, String endVertexId, Schema.EdgeLabel edgeLabel) {
         // TODO try not to access the tinker traversal directly
-        GraphTraversal<Vertex, Edge> traversal = getTinkerTraversal().V(startVertexId)
+        GraphTraversal<Vertex, Edge> traversal = traversalSourceProvider.getTinkerTraversal()
+                .V(startVertexId)
                 .outE(edgeLabel.getLabel()).as("edge").otherV()
                 .hasId(endVertexId)
                 .select("edge");

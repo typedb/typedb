@@ -27,6 +27,11 @@ java_library(
         "//common:common",
         "//kb/concept/api:api",
 
+        # TEMPORARY
+        "//dependencies/maven/artifacts/org/janusgraph:janusgraph-core",
+
+
+
         # External dependenicies from @graknlabs
         "@graknlabs_graql//java:graql",
         "@graknlabs_common//:common",

@@ -19,8 +19,8 @@
 
 package grakn.core.graql.gremlin.sets;
 
-import grakn.core.kb.graql.planning.EquivalentFragmentSet;
-import grakn.core.kb.graql.planning.Fragment;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.gremlin.Fragment;
 import graql.lang.property.VarProperty;
 
 import javax.annotation.CheckReturnValue;
