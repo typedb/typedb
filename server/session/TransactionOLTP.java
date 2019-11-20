@@ -1073,7 +1073,6 @@ public class TransactionOLTP implements Transaction {
         try {
             if (janusTransaction.isOpen()) {
                 janusTransaction.rollback();
-                janusTransaction.close();
             }
         } finally {
             closeTransaction(closeMessage);
@@ -1145,8 +1144,6 @@ public class TransactionOLTP implements Transaction {
 
     /**
      * Set a new type shard checkpoint for a given label
-     *
-     * @param label
      */
     private void setShardCheckpoint(Label label, long checkpoint) {
         Concept schemaConcept = getSchemaConcept(label);

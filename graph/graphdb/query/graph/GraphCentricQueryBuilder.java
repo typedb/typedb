@@ -131,7 +131,6 @@ public class GraphCentricQueryBuilder implements JanusGraphQuery<GraphCentricQue
         this.serializer = serializer;
     }
 
-
     /* ---------------------------------------------------------------
      * Query Execution
      * ---------------------------------------------------------------

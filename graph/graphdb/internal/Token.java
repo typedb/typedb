@@ -27,7 +27,6 @@ public class Token {
     public static final char SEPARATOR_CHAR = 0x1e;
 
     public static final String systemETprefix = Graph.Hidden.hide("T$");
-    public static final String NON_EXISTANT_TYPE = systemETprefix + "doesNotExist";
 
     public static String getSeparatedName(String... components) {
         for (String component : components) verifyName(component);

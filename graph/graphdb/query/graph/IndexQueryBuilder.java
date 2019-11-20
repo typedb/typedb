@@ -58,7 +58,7 @@ import java.util.stream.Stream;
  */
 public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery {
 
-    private static final Logger log = LoggerFactory.getLogger(IndexQueryBuilder.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IndexQueryBuilder.class);
 
     private static final String VERTEX_PREFIX = "v.";
     private static final String EDGE_PREFIX = "e.";
@@ -70,11 +70,11 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     /**
      * The name of the indexing backend this query is directed at
      */
-    private String indexName;
+    private final String indexName;
     /**
      * Query string conforming to the query language supported by the indexing backend.
      */
-    private String query;
+    private final String query;
     /**
      * Sorting parameters
      */
@@ -99,12 +99,13 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
      */
     private int offset;
 
-    public IndexQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer) {
+    public IndexQueryBuilder(StandardJanusGraphTx tx, IndexSerializer serializer, String indexName, String query) {
         Preconditions.checkNotNull(tx);
         Preconditions.checkNotNull(serializer);
         this.tx = tx;
         this.serializer = serializer;
-
+        this.indexName = indexName;
+        this.query = query;
         parameters = Lists.newArrayList();
         orders = Lists.newArrayList();
         unknownKeyName = tx.getGraph().getConfiguration().getUnknownIndexKeyName();
@@ -155,18 +156,6 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     // Builder Methods
     //################################################
 
-    public IndexQueryBuilder setIndex(String indexName) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(indexName));
-        this.indexName = indexName;
-        return this;
-    }
-
-    public IndexQueryBuilder setQuery(String query) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(query));
-        this.query = query;
-        return this;
-    }
-
     @Override
     public IndexQueryBuilder offset(int offset) {
         Preconditions.checkArgument(offset >= 0, "Invalid offset provided: %s", offset);
@@ -205,21 +194,19 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
         return this;
     }
 
-    private <E extends JanusGraphElement> Stream<Result<E>> execute(ElementCategory resultType, Class<E> resultClass) {
-        Preconditions.checkNotNull(indexName);
-        Preconditions.checkNotNull(query);
+    private <E extends JanusGraphElement> Stream<Result<E>> execute(ElementCategory resultType) {
         if (tx.hasModifications()) {
-            log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}", query);
+            LOG.warn("Modifications in this transaction might not be accurately reflected in this index query: {}", query);
         }
-        return serializer.executeQuery(this, resultType, tx.getBackendTransaction(), tx).map(r -> (Result<E>) new ResultImpl<>(tx.getConversionFunction(resultType).apply(r.getResult()), r.getScore())).filter(r -> !r.getElement().isRemoved());
+        return serializer.executeQuery(this, resultType, tx.getBackendTransaction(), tx)
+                .map(r -> (Result<E>) new ResultImpl<>(tx.getConversionFunction(resultType).apply(r.getResult()), r.getScore()))
+                .filter(r -> !r.getElement().isRemoved());
     }
 
     private Long executeTotals(ElementCategory resultType) {
-        Preconditions.checkNotNull(indexName);
-        Preconditions.checkNotNull(query);
         this.setLimit(0);
         if (tx.hasModifications()) {
-            log.warn("Modifications in this transaction might not be accurately reflected in this index query: {}", query);
+            LOG.warn("Modifications in this transaction might not be accurately reflected in this index query: {}", query);
         }
         return serializer.executeTotals(this, resultType, tx.getBackendTransaction(), tx);
     }
@@ -233,7 +220,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     @Override
     public Stream<Result<JanusGraphVertex>> vertexStream() {
         setPrefixInternal(VERTEX_PREFIX);
-        return execute(ElementCategory.VERTEX, JanusGraphVertex.class);
+        return execute(ElementCategory.VERTEX);
     }
 
     @Deprecated
@@ -245,7 +232,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     @Override
     public Stream<Result<JanusGraphEdge>> edgeStream() {
         setPrefixInternal(EDGE_PREFIX);
-        return execute(ElementCategory.EDGE, JanusGraphEdge.class);
+        return execute(ElementCategory.EDGE);
     }
 
     @Deprecated
@@ -257,7 +244,7 @@ public class IndexQueryBuilder extends BaseQuery implements JanusGraphIndexQuery
     @Override
     public Stream<Result<JanusGraphVertexProperty>> propertyStream() {
         setPrefixInternal(PROPERTY_PREFIX);
-        return execute(ElementCategory.PROPERTY, JanusGraphVertexProperty.class);
+        return execute(ElementCategory.PROPERTY);
     }
 
     @Override

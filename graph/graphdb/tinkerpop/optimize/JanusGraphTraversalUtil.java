@@ -97,17 +97,11 @@ public class JanusGraphTraversalUtil {
         Graph graph = optGraph.get();
         if (graph instanceof JanusGraphTransaction) {
             tx = (JanusGraphTransaction) graph;
-        } else if (graph instanceof StandardJanusGraph) {
-            tx = ((StandardJanusGraph) graph).getCurrentThreadTx();
         } else {
             throw new IllegalArgumentException("Traversal is not bound to a JanusGraph Graph, but: " + graph);
         }
 
-        if (tx == null) {
-            throw new IllegalArgumentException("Not a valid start step for a JanusGraph traversal: " + traversal);
-        }
-        if (tx.isOpen()) return tx;
-        else return ((StandardJanusGraphTx) tx).getNextTx();
+        return tx;
     }
 
     /**

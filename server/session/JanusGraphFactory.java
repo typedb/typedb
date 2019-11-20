@@ -63,16 +63,14 @@ final public class JanusGraphFactory {
         this.config = config;
     }
 
-    public synchronized StandardJanusGraph openGraph(String keyspace) {
+    public StandardJanusGraph openGraph(String keyspace) {
         StandardJanusGraph janusGraph = configureGraph(keyspace, config);
         buildJanusIndexes(janusGraph);
-        janusGraph.tx().onClose(org.apache.tinkerpop.gremlin.structure.Transaction.CLOSE_BEHAVIOR.ROLLBACK);
         if (!strategiesApplied.getAndSet(true)) {
-            TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraph.class);
+            TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraphTx.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
             //TODO: find out why Tinkerpop added these strategies. They result in many NoOpBarrier steps which slowed down our queries so we had to remove them.
             strategies.removeStrategies(PathRetractionStrategy.class, LazyBarrierStrategy.class);
-            TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, strategies);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }
 

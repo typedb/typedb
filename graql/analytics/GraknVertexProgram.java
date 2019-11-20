@@ -57,12 +57,12 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
             () -> __.outE(Schema.EdgeLabel.ATTRIBUTE.getLabel()));
 
     @Override
-    public Set<MessageScope> getMessageScopes(final Memory memory) {
+    public Set<MessageScope> getMessageScopes(Memory memory) {
         return messageScopeSetInAndOut;
     }
 
     @Override
-    public void storeState(final Configuration configuration) {
+    public void storeState(Configuration configuration) {
         super.storeState(configuration);
 
         // store class name for reflection on spark executor
@@ -70,7 +70,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     }
 
     @Override
-    public void setup(final Memory memory) {
+    public void setup(Memory memory) {
     }
 
     @Override
@@ -106,7 +106,7 @@ public abstract class GraknVertexProgram<T> extends CommonOLAP implements Vertex
     public GraknVertexProgram<T> clone() {
         try {
             return (GraknVertexProgram) super.clone();
-        } catch (final CloneNotSupportedException e) {
+        } catch (CloneNotSupportedException e) {
             throw GraknServerException.unreachableStatement(e);
         }
     }

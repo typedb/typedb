@@ -21,10 +21,7 @@ package grakn.core.graph.diskstorage;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import grakn.core.graph.core.JanusGraphException;
-import grakn.core.graph.core.schema.JanusGraphManagement;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.configuration.ModifiableConfiguration;
-import grakn.core.graph.diskstorage.configuration.backend.CommonsConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.KCVSConfiguration;
 import grakn.core.graph.diskstorage.configuration.backend.builder.KCVSConfigurationBuilder;
 import grakn.core.graph.diskstorage.indexing.IndexInformation;
@@ -39,16 +36,13 @@ import grakn.core.graph.diskstorage.keycolumnvalue.cache.CacheTransaction;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSExpirationCache;
 import grakn.core.graph.diskstorage.keycolumnvalue.cache.KCVSNoCache;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.StandardScanner;
 import grakn.core.graph.diskstorage.log.Log;
 import grakn.core.graph.diskstorage.log.LogManager;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLog;
 import grakn.core.graph.diskstorage.log.kcvs.KCVSLogManager;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.diskstorage.util.StandardBaseTransactionConfig;
-import grakn.core.graph.diskstorage.util.time.TimestampProvider;
 import grakn.core.graph.graphdb.transaction.TransactionConfiguration;
-import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,8 +62,6 @@ import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.DB_CACHE_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_BACKEND;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.INDEX_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.JOB_NS;
-import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.JOB_START_TIME;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.MANAGEMENT_LOG;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.PARALLEL_BACKEND_OPS;
 import static grakn.core.graph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_BATCH;
@@ -114,7 +106,6 @@ public class Backend {
     private final KCVSCache indexStore;
     private final KCVSCache txLogStore;
     private final KCVSConfiguration systemConfig;
-    private final StandardScanner scanner;
     private final KCVSLogManager managementLogManager;
     private final KCVSLogManager txLogManager;
     private final LogManager userLogManager;
@@ -146,7 +137,6 @@ public class Backend {
         } else {
             threadPool = null;
         }
-        scanner = new StandardScanner(storeManager);
 
         try {
             KeyColumnValueStore edgeStoreRaw = storeManager.openDatabase(EDGESTORE_NAME);
@@ -233,31 +223,6 @@ public class Backend {
         }
     }
 
-    public StandardScanner.Builder buildEdgeScanJob() {
-        return buildStoreIndexScanJob(EDGESTORE_NAME);
-    }
-
-    public StandardScanner.Builder buildGraphIndexScanJob() {
-        return buildStoreIndexScanJob(INDEXSTORE_NAME);
-    }
-
-    private StandardScanner.Builder buildStoreIndexScanJob(String storeName) {
-        TimestampProvider provider = config.get(TIMESTAMP_PROVIDER);
-        ModifiableConfiguration jobConfig = buildJobConfiguration();
-        jobConfig.set(JOB_START_TIME, provider.getTime().toEpochMilli());
-        return scanner.build()
-                .setStoreName(storeName)
-                .setTimestampProvider(provider)
-                .setJobConfiguration(jobConfig)
-                .setGraphConfiguration(config)
-                .setNumProcessingThreads(1)
-                .setWorkBlockSize(10000);
-    }
-
-    public JanusGraphManagement.IndexJobFuture getScanJobStatus(Object jobId) {
-        return scanner.getRunningJob(jobId);
-    }
-
     public Log getUserLog(String identifier) throws BackendException {
         return userLogManager.openLog(getUserLogName(identifier));
     }
@@ -333,7 +298,6 @@ public class Backend {
                 managementLogManager.close();
                 txLogManager.close();
                 userLogManager.close();
-                scanner.close();
                 edgeStore.close();
                 indexStore.close();
                 systemConfig.close();
@@ -366,7 +330,6 @@ public class Backend {
             managementLogManager.close();
             txLogManager.close();
             userLogManager.close();
-            scanner.close();
             edgeStore.close();
             indexStore.close();
             systemConfig.close();
@@ -380,9 +343,5 @@ public class Backend {
         } else {
             LOG.warn("Backend {} has already been closed or cleared", this);
         }
-    }
-
-    private ModifiableConfiguration buildJobConfiguration() {
-        return new ModifiableConfiguration(JOB_NS, new CommonsConfiguration(new BaseConfiguration()));
     }
 }

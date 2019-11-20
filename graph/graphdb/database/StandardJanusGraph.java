@@ -85,16 +85,9 @@ import grakn.core.graph.graphdb.types.MixedIndexType;
 import grakn.core.graph.graphdb.types.system.BaseKey;
 import grakn.core.graph.graphdb.types.system.BaseRelationType;
 import grakn.core.graph.graphdb.types.vertices.JanusGraphSchemaVertex;
-import org.apache.tinkerpop.gremlin.process.computer.GraphComputer;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.Transaction;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.io.Io;
-import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
-import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +97,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,7 +104,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -127,11 +118,13 @@ public class StandardJanusGraph implements JanusGraph {
 
     static {
         TraversalStrategies graphStrategies = TraversalStrategies.GlobalCache.getStrategies(Graph.class).clone()
-                .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(),
-                        JanusGraphLocalQueryOptimizerStrategy.instance(), JanusGraphStepStrategy.instance());
+                .addStrategies(
+                        AdjacentVertexFilterOptimizerStrategy.instance(),
+                        JanusGraphLocalQueryOptimizerStrategy.instance(),
+                        JanusGraphStepStrategy.instance()
+                );
 
         //Register with cache
-        TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraph.class, graphStrategies);
         TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, graphStrategies);
     }
 
@@ -158,8 +151,6 @@ public class StandardJanusGraph implements JanusGraph {
     private final AtomicLong txCounter; // used to generate unique transaction IDs
 
     private final Set<StandardJanusGraphTx> openTransactions;
-
-    private final AutomaticLocalTinkerTransaction tinkerTransaction = new AutomaticLocalTinkerTransaction();
 
     public StandardJanusGraph(GraphDatabaseConfiguration configuration, Backend backend) {
 
@@ -196,155 +187,13 @@ public class StandardJanusGraph implements JanusGraph {
         managementLog.registerReader(ReadMarker.fromNow(), this.managementLogger);
     }
 
-    // Get JanusTransaction which is wrapped inside the TinkerTransaction
-    // it opens the JanusTransaction if not initialised yet
-    private StandardJanusGraphTx getLocalJanusTransaction() {
-        if (!tinkerTransaction.isOpen()) {
-            tinkerTransaction.readWrite(); // creates a new JanusGraphTransaction internally (inside AutomaticLocalTinkerTransaction)
-        }
-        StandardJanusGraphTx tx = tinkerTransaction.getJanusTransaction();
-        Preconditions.checkNotNull(tx, "Invalid read-write behavior configured: Should either open transaction or throw exception.");
-        return tx;
-    }
-
-    //This returns the JanusTransaction contained inside tinkerTransaction -> it opens/creates a new one if the previous one is closed!
-    public JanusGraphTransaction getCurrentThreadTx() {
-        return getLocalJanusTransaction();
-    }
-
-    @Override
-    public Transaction tx() {
-        return tinkerTransaction;
-    }
-
     @Override
     public String toString() {
-        return StringFactory.graphString(this, backend.getStoreManager().getName());
+        return "StandardJanusGraph[" + backend.getStoreManager().getName() + "]";
     }
 
-    @Override
     public org.apache.commons.configuration.Configuration configuration() {
         return getConfiguration().getConfigurationAtOpen();
-    }
-
-    @Override
-    public <I extends Io> I io(Io.Builder<I> builder) {
-        return null;
-    }
-
-    @Override
-    public Variables variables() {
-        return null;
-    }
-
-    @Override
-    public <C extends GraphComputer> C compute(Class<C> graphComputerClass) throws IllegalArgumentException {
-        return null; //TODO, yeah...
-    }
-
-    // ########## TRANSACTIONAL FORWARDING ###########################
-
-    @Override
-    public JanusGraphVertex addVertex(Object... keyValues) {
-        return getLocalJanusTransaction().addVertex(keyValues);
-    }
-
-    @Override
-    public Iterator<Vertex> vertices(Object... vertexIds) {
-        return getLocalJanusTransaction().vertices(vertexIds);
-    }
-
-    @Override
-    public Iterator<Edge> edges(Object... edgeIds) {
-        return getLocalJanusTransaction().edges(edgeIds);
-    }
-
-    @Override
-    public GraphComputer compute() throws IllegalArgumentException {
-        return null; // TODO possibly think about this in the future.
-    }
-
-    @Override
-    public JanusGraphVertex addVertex(String vertexLabel) {
-        return getLocalJanusTransaction().addVertex(vertexLabel);
-    }
-
-    // Tinkerpop wrapper around StandardJanusGraph transaction, automatic transaction used by the graph
-    // when user cannot be bother to use manual/explicit transactions,
-    // i.e. when user wants to do graph.addVertex(); graph.tx().commit();
-    // rather than tx = graph.newTransaction(); tx.addVertex(); tx.commit();
-    // This wrapper internally uses the thread-local Janusgraph transaction.
-
-    //This transaction is AUTOmatic in so that it does not need to be explicitly open -> it will invoke readWrite which triggers tx.open() if not open yet
-    // It is also automatic because it is possible to invoke tx.close() directly without first explicitly invoking commit or rollback,
-    // when invoking close directly, the tx will internally trigger tx.rollback.
-    // Also this is public just so that we can use it in tests
-    public class AutomaticLocalTinkerTransaction extends AbstractThreadLocalTransaction {
-
-        private ThreadLocal<StandardJanusGraphTx> localJanusTransaction = ThreadLocal.withInitial(() -> null);
-
-        AutomaticLocalTinkerTransaction() {
-            super(StandardJanusGraph.this);
-        }
-
-        public StandardJanusGraphTx getJanusTransaction() {
-            return localJanusTransaction.get();
-        }
-
-        @Override
-        public void doOpen() {
-            StandardJanusGraphTx tx = localJanusTransaction.get();
-            if (tx != null && tx.isOpen()) throw Transaction.Exceptions.transactionAlreadyOpen();
-            tx = newThreadBoundTransaction();
-            localJanusTransaction.set(tx);
-        }
-
-        @Override
-        public void doCommit() {
-            localJanusTransaction.get().commit();
-        }
-
-        @Override
-        public void doRollback() {
-            localJanusTransaction.get().rollback();
-        }
-
-        @Override
-        public JanusGraphTransaction createThreadedTx() {
-            return newTransaction();
-        }
-
-        @Override
-        public boolean isOpen() {
-            if (StandardJanusGraph.this.isClosed()) {
-                // Graph has been closed
-                return false;
-            }
-            StandardJanusGraphTx tx = localJanusTransaction.get();
-            return tx != null && tx.isOpen();
-        }
-
-        @Override
-        protected void doClose() {
-            super.doClose();
-            transactionListeners.remove();
-            localJanusTransaction.remove();
-        }
-
-        @Override
-        public Transaction onReadWrite(Consumer<Transaction> transactionConsumer) {
-            if (StandardJanusGraph.this.isClosed()) { //cannot start a transaction if the enclosing graph is closed
-                throw new IllegalStateException("Graph has been closed");
-            }
-            Preconditions.checkArgument(transactionConsumer instanceof READ_WRITE_BEHAVIOR, "Only READ_WRITE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
-            return super.onReadWrite(transactionConsumer);
-        }
-
-        @Override
-        public Transaction onClose(Consumer<Transaction> transactionConsumer) {
-            Preconditions.checkArgument(transactionConsumer instanceof CLOSE_BEHAVIOR, "Only CLOSE_BEHAVIOR instances are accepted argument, got: %s", transactionConsumer);
-            return super.onClose(transactionConsumer);
-        }
     }
 
     @Override
@@ -384,7 +233,6 @@ public class StandardJanusGraph implements JanusGraph {
                     txCloseExceptions.put(otx, e);
                 }
             }
-            tinkerTransaction.close();
             idAssigner.close();
             backend.close();
         } finally {
@@ -403,8 +251,7 @@ public class StandardJanusGraph implements JanusGraph {
 
     // ################### Simple Getters #########################
 
-    @Override
-    public Features features() {
+    public Graph.Features features() {
         return JanusGraphFeatures.getFeatures(this, backend.getStoreFeatures());
     }
 

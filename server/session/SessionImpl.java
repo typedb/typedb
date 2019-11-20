@@ -100,7 +100,6 @@ public class SessionImpl implements Session {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
-        // Open Janus Graph
         this.graph = graph;
 
         this.keyspaceSchemaCache = keyspaceSchemaCache;

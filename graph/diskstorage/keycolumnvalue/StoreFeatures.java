@@ -23,7 +23,6 @@ import grakn.core.graph.diskstorage.EntryMetaData;
 import grakn.core.graph.diskstorage.StaticBuffer;
 import grakn.core.graph.diskstorage.StoreMetaData;
 import grakn.core.graph.diskstorage.configuration.Configuration;
-import grakn.core.graph.diskstorage.keycolumnvalue.scan.ScanJob;
 import grakn.core.graph.diskstorage.util.time.TimestampProviders;
 
 /**
@@ -185,17 +184,6 @@ public interface StoreFeatures {
      */
     Configuration getLocalKeyConsistentTxConfig();
 
-
-    /**
-     * Get a transaction configuration suitable for reading data into a
-     * {@link ScanJob}.  Transactions opened on this config will only be
-     * used to read data, not to write it, and they'll be rolled back
-     * when those reads are completed.  The configuration returned by this
-     * method should disable transaction isolation, if the store supports it.
-     *
-     * @return a transaction configuration suitable for scanjob data reading
-     */
-    Configuration getScanTxConfig();
 
 
     /**

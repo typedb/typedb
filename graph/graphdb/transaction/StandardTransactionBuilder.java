@@ -77,8 +77,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
      * Constructs a new JanusGraphTransaction configuration with default configuration parameters.
      */
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph) {
-        Preconditions.checkNotNull(graphConfig);
-        Preconditions.checkNotNull(graph);
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();
@@ -92,8 +90,6 @@ public class StandardTransactionBuilder implements TransactionConfiguration, Tra
     }
 
     public StandardTransactionBuilder(GraphDatabaseConfiguration graphConfig, StandardJanusGraph graph, Configuration customOptions) {
-        Preconditions.checkNotNull(graphConfig);
-        Preconditions.checkNotNull(graph);
         if (graphConfig.isBatchLoading()) enableBatchLoading();
         this.graph = graph;
         this.defaultSchemaMaker = graphConfig.getDefaultSchemaMaker();

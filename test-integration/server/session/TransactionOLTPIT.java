@@ -26,6 +26,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraph;
+import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -373,8 +374,10 @@ public class TransactionOLTPIT {
         }
         Set<Vertex> typeShards;
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            JanusGraphTransaction tx = janusGraph.newTransaction();
+            typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(1, typeShards.size());
+            tx.close();
         }
         ConceptId p1;
         try (Session session = sessionFactory.session(keyspace)) {
@@ -385,10 +388,12 @@ public class TransactionOLTPIT {
         }
         Vertex typeShardForP1;
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            typeShardForP1 = janusGraph.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
+            JanusGraphTransaction tx = janusGraph.newTransaction();
+            typeShardForP1 = tx.traversal().V(p1.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toList().get(0);
             assertEquals(typeShards.iterator().next(), typeShardForP1);
-            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(2, typeShards.size());
+            tx.close();
         }
         ConceptId p2;
         try (Session session = sessionFactory.session(keyspace)) {
@@ -398,10 +403,12 @@ public class TransactionOLTPIT {
             }
         }
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            Vertex typeShardForP2 = janusGraph.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
+            JanusGraphTransaction tx = janusGraph.newTransaction();
+            Vertex typeShardForP2 = tx.traversal().V(p2.getValue().substring(1)).out(Schema.EdgeLabel.ISA.getLabel()).toSet().iterator().next();
             assertEquals(Sets.difference(typeShards, Sets.newHashSet(typeShardForP1)).iterator().next(), typeShardForP2);
-            typeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            typeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, typeShards.size());
+            tx.close();
         }
     }
 
@@ -442,10 +449,12 @@ public class TransactionOLTPIT {
             }
         }
         try (JanusGraph janusGraph = janusGraphFactory.openGraph(keyspace.name())) {
-            Set<Vertex> personTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
+            JanusGraphTransaction tx = janusGraph.newTransaction();
+            Set<Vertex> personTypeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "person").in().hasLabel("SHARD").toSet();
             assertEquals(3, personTypeShards.size());
-            Set<Vertex> companyTypeShards = janusGraph.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet();
+            Set<Vertex> companyTypeShards = tx.traversal().V().has(Schema.VertexProperty.SCHEMA_LABEL.name(), "company").in().hasLabel("SHARD").toSet();
             assertEquals(2, companyTypeShards.size());
+            tx.close();
         }
     }
 

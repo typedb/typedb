@@ -18,8 +18,6 @@
 
 package grakn.core.graph.diskstorage;
 
-import grakn.core.graph.diskstorage.EntryMetaData;
-
 import java.util.Map;
 
 
