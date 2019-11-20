@@ -37,9 +37,7 @@ public abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
 
     String degreePropertyKey;
 
-    StatisticsMapReduce() {
-
-    }
+    StatisticsMapReduce() {}
 
     StatisticsMapReduce(Set<LabelId> selectedLabelIds, AttributeType.DataType resourceDataType, String degreePropertyKey) {
         super(selectedLabelIds, resourceDataType);
@@ -48,7 +46,7 @@ public abstract class StatisticsMapReduce<T> extends GraknMapReduce<T> {
     }
 
     @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
+    public void loadState(Graph graph, Configuration configuration) {
         super.loadState(graph, configuration);
         degreePropertyKey = (String) persistentProperties.get(DegreeVertexProgram.DEGREE);
     }

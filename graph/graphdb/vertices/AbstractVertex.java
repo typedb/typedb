@@ -55,17 +55,21 @@ public abstract class AbstractVertex extends AbstractElement implements Internal
 
     @Override
     public final InternalVertex it() {
-        if (tx.isOpen()) {
-            return this;
-        }
-        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(longId());
-        if (next == null) throw InvalidElementException.removedException(this);
-        else return next;
+        return this;
+        //The logic in Janus used to be the following:
+//        if (tx.isOpen()) {
+//            return this;
+//        }
+//        InternalVertex next = (InternalVertex) tx.getNextTx().getVertex(longId());
+//        if (next == null) throw InvalidElementException.removedException(this);
+//        else return next;
+
+        // But we have deleted the tx.getNextTx() method to make everything look less magical.
     }
 
     @Override
     public final StandardJanusGraphTx tx() {
-        return tx.isOpen() ? tx : tx.getNextTx();
+        return tx; //See comment above, original code: tx.isOpen() ? tx : tx.getNextTx();
     }
 
     public final boolean isTxOpen() {

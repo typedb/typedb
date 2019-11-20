@@ -63,7 +63,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     @Override
-    public void loadState(final Graph graph, final Configuration configuration) {
+    public void loadState(Graph graph, Configuration configuration) {
         super.loadState(graph, configuration);
         configuration.subset(OF_LABELS).getKeys().forEachRemaining(key ->
                 ofLabelIds.add((LabelId) configuration.getProperty(OF_LABELS + "." + key)));
@@ -75,13 +75,13 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     @Override
-    public Set<MessageScope> getMessageScopes(final Memory memory) {
+    public Set<MessageScope> getMessageScopes(Memory memory) {
         return memory.isInitialIteration() ?
                 Sets.newHashSet(messageScopeResourceIn, messageScopeOut) : Collections.emptySet();
     }
 
     @Override
-    public void safeExecute(final Vertex vertex, Messenger<Long> messenger, final Memory memory) {
+    public void safeExecute(Vertex vertex, Messenger<Long> messenger, Memory memory) {
         switch (memory.getIteration()) {
             case 0:
                 degreeMessagePassing(messenger);
@@ -95,7 +95,7 @@ public class DegreeVertexProgram extends GraknVertexProgram<Long> {
     }
 
     @Override
-    public boolean terminate(final Memory memory) {
+    public boolean terminate(Memory memory) {
         LOGGER.debug("Finished Degree Iteration " + memory.getIteration());
         return memory.getIteration() == 1;
     }

@@ -1079,7 +1079,7 @@ public class GraknClientIT {
         graknClient.keyspaces().delete(keyspace.name());
 
         exception.expect(IllegalStateException.class);
-        exception.expectMessage("Graph has been shut down");
+        exception.expectMessage("Operation cannot be executed because the enclosing transaction is closed");
 
         // try to operate on an open tx
         tx.getEntityType("entity");
