@@ -10,7 +10,7 @@ java_test(
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.distribution.GraknGraqlCommandsE2E",
     deps = [
-        "//common:common",
+        "//common",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -28,7 +28,7 @@ java_test(
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.distribution.GraknGraqlCommands_WithARunningGraknE2E",
     deps = [
-        "//common:common",
+        "//common",
         "//dependencies/maven/artifacts/commons-io",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
@@ -38,20 +38,26 @@ java_test(
 
 java_test(
     name = "concurrency-e2e",
-    size = "large",
+    size = "enormous",
     srcs = [
         "ConcurrencyE2E.java",
         "DistributionE2EConstants.java",
+        "element/AttributeElement.java",
+        "element/Element.java",
+        "element/Record.java",
     ],
     classpath_resources = ["//test-integration/resources:logback-test"],
     data = ["//:assemble-mac-zip"],
     test_class = "grakn.core.distribution.ConcurrencyE2E",
     deps = [
-        "//common:common",
+        "//common",
         "//dependencies/maven/artifacts/commons-io",
+        "//dependencies/maven/artifacts/commons-lang",
         "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
         "//dependencies/maven/artifacts/org/zeroturnaround:zt-exec",
+        "@com-google-guava-guava//jar",
         "@graknlabs_client_java//:client-java",
+        "@graknlabs_common//:common",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -67,7 +73,7 @@ java_test(
     test_class = "grakn.core.distribution.AttributeUniquenessE2E",
     deps = [
         # Internal dependencies
-        "//common:common",
+        "//common",
 
         # External dependencies from @graknlabs
         "@graknlabs_client_java//:client-java",

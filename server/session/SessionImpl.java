@@ -19,15 +19,15 @@
 
 package grakn.core.server.session;
 
-import com.google.common.cache.Cache;
 import grakn.core.common.config.Config;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.impl.ConceptManagerImpl;
 import grakn.core.concept.impl.ConceptObserver;
 import grakn.core.concept.structure.ElementFactory;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.ShardManager;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.TransactionAnalytics;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
@@ -37,13 +37,12 @@ import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
 import grakn.core.server.cache.CacheProviderImpl;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Consumer;
+import javax.annotation.CheckReturnValue;
 import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
-
-import javax.annotation.CheckReturnValue;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.function.Consumer;
 
 /**
  * This class represents a Grakn Session.
@@ -68,7 +67,8 @@ public class SessionImpl implements Session {
     private final StandardJanusGraph graph;
     private final KeyspaceSchemaCache keyspaceSchemaCache;
     private final KeyspaceStatistics keyspaceStatistics;
-    private final Cache<String, ConceptId> attributesCache;
+    private final AttributeManager attributeManager;
+    private final ShardManager shardManager;
     private final ReadWriteLock graphLock;
     private Consumer<Session> onClose;
 
@@ -81,8 +81,9 @@ public class SessionImpl implements Session {
      * @param keyspace to which keyspace the session should be bound to
      * @param config   config to be used.
      */
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
-        this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributesCache, graphLock);
+    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics,
+                       AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
+        this(keyspace, config, keyspaceSchemaCache, graph, null, keyspaceStatistics, attributeManager, shardManager, graphLock);
     }
 
     /**
@@ -93,9 +94,9 @@ public class SessionImpl implements Session {
      * @param config   config to be used.
      */
     // NOTE: this method is used by Grakn KGMS and should be kept public
-    public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
-                       HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
-                       Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock) {
+     public SessionImpl(Keyspace keyspace, Config config, KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph,
+                        HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics,
+                        AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock) {
         this.keyspace = keyspace;
         this.config = config;
         this.hadoopGraph = hadoopGraph;
@@ -103,7 +104,8 @@ public class SessionImpl implements Session {
 
         this.keyspaceSchemaCache = keyspaceSchemaCache;
         this.keyspaceStatistics = keyspaceStatistics;
-        this.attributesCache = attributesCache;
+        this.attributeManager = attributeManager;
+        this.shardManager = shardManager;
         this.graphLock = graphLock;
 
         TransactionOLTP tx = this.transaction(Transaction.Type.WRITE);
@@ -144,14 +146,14 @@ public class SessionImpl implements Session {
         // If transaction is already open in current thread throw exception
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
-        // caches
-        CacheProviderImpl cacheProvider = new CacheProviderImpl(keyspaceSchemaCache);
-        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta);
-
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
+
+        // caches
+        CacheProviderImpl cacheProvider = new CacheProviderImpl(keyspaceSchemaCache);
+        UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
+        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager(), janusGraphTransaction.toString());
 
         // Grakn elements
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
@@ -273,7 +275,12 @@ public class SessionImpl implements Session {
     }
 
     @Override
-    public Cache<String, ConceptId> attributesCache() {
-        return attributesCache;
+    public AttributeManager attributeManager() {
+        return attributeManager;
+    }
+
+    @Override
+    public ShardManager shardManager() {
+        return shardManager;
     }
 }

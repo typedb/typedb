@@ -19,13 +19,10 @@
 
 package grakn.core.kb.server;
 
-import com.google.common.cache.Cache;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.kb.server.keyspace.Keyspace;
-
-import javax.annotation.CheckReturnValue;
+import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import java.util.function.Consumer;
+import javax.annotation.CheckReturnValue;
 
 public interface Session extends AutoCloseable {
     Transaction readTransaction();
@@ -60,5 +57,7 @@ public interface Session extends AutoCloseable {
 
     KeyspaceStatistics keyspaceStatistics();
 
-    Cache<String, ConceptId> attributesCache();
+    AttributeManager attributeManager();
+
+    ShardManager shardManager();
 }

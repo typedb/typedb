@@ -14,27 +14,17 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
- *
  */
 
-package grakn.core.kb.concept.manager;
+package grakn.core.distribution.element;
 
-import grakn.core.kb.concept.api.Concept;
-import grakn.core.kb.concept.api.LabelId;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.structure.Shard;
-import grakn.core.kb.concept.structure.VertexElement;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.statement.Variable;
 
-public interface ConceptManager {
-    <T extends SchemaConcept> T getSchemaConcept(LabelId labelId);
+public interface Element {
 
-    <T extends Concept> T buildConcept(Vertex vertex);
-    <T extends Concept> T buildConcept(VertexElement vertex);
-
-    Role getRole(String label);
-
-    RelationType getRelationType(String label);
+    default Pattern patternise(){ return patternise(Graql.var().var().asReturnedVar());}
+    Pattern patternise(Variable var);
+    int conceptSize();
 }

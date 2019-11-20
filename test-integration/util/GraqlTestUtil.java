@@ -18,23 +18,30 @@
 
 package grakn.core.util;
 
-import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Attribute;
-import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
+import graql.lang.query.GraqlInsert;
 import graql.lang.query.MatchClause;
-import org.apache.commons.collections.CollectionUtils;
-
+import graql.lang.statement.Statement;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
+import org.apache.commons.collections.CollectionUtils;
 
 import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertFalse;
@@ -114,5 +121,44 @@ public class GraqlTestUtil {
             throw new IllegalStateException("Multiple things with given resource value");
         }
         return things.iterator().next();
+    }
+
+    public static void insertStatementsConcurrently(Session session, List<Statement> statements,
+                                                    int threads, int insertsPerCommit) throws ExecutionException, InterruptedException {
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        int listSize = statements.size();
+        int listChunk = listSize / threads;
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        for (int threadNo = 0; threadNo < threads; threadNo++) {
+            boolean lastChunk = threadNo == threads - 1;
+            final int startIndex = threadNo * listChunk;
+            int endIndex = (threadNo + 1) * listChunk;
+            if (endIndex > listSize && lastChunk) endIndex = listSize;
+
+            List<Statement> subList = statements.subList(startIndex, endIndex);
+            System.out.println("indices: " + startIndex + "-" + endIndex + " , size: " + subList.size());
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                long start2 = System.currentTimeMillis();
+                Transaction tx = session.writeTransaction();
+                int inserted = 0;
+                for (Statement statement : subList) {
+                    GraqlInsert insert = Graql.insert(statement);
+                    tx.execute(insert);
+                    inserted++;
+                    if (inserted % insertsPerCommit == 0) {
+                        tx.commit();
+                        inserted = 0;
+                        tx = session.writeTransaction();
+                    }
+                }
+                if (inserted != 0) tx.commit();
+                System.out.println("Thread: " + Thread.currentThread().getId() + " elements: " + subList.size() + " time: " + (System.currentTimeMillis() - start2));
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+        executorService.shutdown();
     }
 }
