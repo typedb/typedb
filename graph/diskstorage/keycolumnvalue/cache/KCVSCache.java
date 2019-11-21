@@ -18,7 +18,6 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.cache;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
@@ -46,9 +45,6 @@ public abstract class KCVSCache extends KCVSProxy {
         return true;
     }
 
-    @VisibleForTesting
-    public abstract void clearCache();
-
     protected abstract void invalidate(StaticBuffer key, List<StaticBuffer> entries);
 
     @Override
@@ -56,8 +52,8 @@ public abstract class KCVSCache extends KCVSProxy {
         throw new UnsupportedOperationException("Only supports mutateEntries()");
     }
 
-    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, StoreTransaction txh) throws BackendException {
-        ((CacheTransaction) txh).mutate(this, key, additions, deletions);
+    public void mutateEntries(StaticBuffer key, List<Entry> additions, List<Entry> deletions, CacheTransaction txh) throws BackendException {
+        txh.mutate(this, key, additions, deletions);
     }
 
     @Override

@@ -18,7 +18,6 @@
 
 package grakn.core.graph.diskstorage;
 
-import grakn.core.graph.diskstorage.BaseTransaction;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
 
 

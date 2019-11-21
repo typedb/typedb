@@ -18,8 +18,6 @@
 
 package grakn.core.graph.diskstorage;
 
-import grakn.core.graph.diskstorage.BackendException;
-
 /**
  * Represents a transaction for a particular storage backend.
  *

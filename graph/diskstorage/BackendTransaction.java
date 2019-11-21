@@ -340,7 +340,6 @@ public class BackendTransaction implements LoggableTransaction {
 
     }
 
-
     public Stream<String> indexQuery(String index, IndexQuery query) {
         IndexTransaction indexTx = getIndexTransaction(index);
         return executeRead(new Callable<Stream<String>>() {
