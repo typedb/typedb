@@ -62,7 +62,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
      * @return this query in the composite form
      */
     @CheckReturnValue
-    abstract CompositeQuery asComposite();
+    public abstract CompositeQuery asComposite();
 
     /**
      * @param sub substitution to be inserted into the query
@@ -94,7 +94,7 @@ public abstract class ResolvableQuery implements ReasonerQuery {
      * @return true if this query requires atom decomposition
      */
     @CheckReturnValue
-    abstract boolean requiresDecomposition();
+    public abstract boolean requiresDecomposition();
 
     /**
      * reiteration might be required if rule graph contains loops with negative flux

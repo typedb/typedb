@@ -55,4 +55,8 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
         return new QueryExecutorImpl(conceptManager, this, infer, traversalPlanFactory, reasonerQueryFactory);
     }
 
+    public void setReasonerQueryFactory(ReasonerQueryFactory reasonerQueryFactory) {
+        this.reasonerQueryFactory = reasonerQueryFactory;
+    }
+
 }

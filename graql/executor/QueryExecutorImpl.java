@@ -41,7 +41,6 @@ import grakn.core.kb.graql.executor.property.PropertyExecutor;
 import grakn.core.kb.graql.executor.property.PropertyExecutorFactory;
 import grakn.core.kb.graql.gremlin.GraqlTraversal;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
-import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.exception.GraknServerException;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.Graql;

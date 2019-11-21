@@ -174,11 +174,13 @@ public class SessionImpl implements Session {
         // Grakn elements
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, graphLock);
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, this.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), keyspaceStatistics);
-        ExecutorFactory executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory);
+        ExecutorFactoryImpl executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory, null);
         RuleCache ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
         ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, executorFactory);
+        // TODO this circular dependency will need to be broken ASAP, and rely on interface rather than impl
+        executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
 
         TransactionImpl tx = new TransactionImpl(
                 this, janusGraphTransaction, conceptManager,
