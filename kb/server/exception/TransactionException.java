@@ -105,13 +105,6 @@ public class TransactionException extends GraknException {
         return new TransactionException(ErrorMessage.TRANSACTION_CHANGED_THREAD.getMessage());
     }
 
-    /**
-     * Thrown when trying to add a Schema.VertexProperty to a Concept which does not accept that type
-     * of Schema.VertexProperty
-     */
-    public static TransactionException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
-        return create(INVALID_PROPERTY_USE.getMessage(concept, property));
-    }
 
     /**
      * Thrown when creating an invalid KeyspaceImpl

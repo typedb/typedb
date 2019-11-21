@@ -42,11 +42,14 @@ import grakn.core.graql.reasoner.state.VariableComparisonState;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
-import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 
@@ -64,8 +67,8 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     private final Atom atom;
 
-    ReasonerAtomicQuery(Conjunction<Statement> pattern, Transaction tx) {
-        super(pattern, tx);
+    ReasonerAtomicQuery(Conjunction<Statement> pattern, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(pattern, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -74,13 +77,13 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Atom at) {
-        super(at);
+    ReasonerAtomicQuery(Atom at, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(at, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
-    ReasonerAtomicQuery(Set<Atomic> atoms, Transaction tx){
-        super(atoms, tx);
+    ReasonerAtomicQuery(Set<Atomic> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(atoms, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -89,12 +92,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     public ReasonerAtomicQuery withSubstitution(ConceptMap sub){
-        return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), AtomicFactory.answerToPredicates(sub, this)), this.tx());
+        return new ReasonerAtomicQuery(Sets.union(this.getAtoms(), AtomicFactory.answerToPredicates(sub, this)), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
     }
 
     @Override
     public ReasonerAtomicQuery inferTypes() {
-        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), tx());
+        return new ReasonerAtomicQuery(getAtoms().stream().map(Atomic::inferTypes).collect(Collectors.toSet()), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
     }
 
     @Override
@@ -206,12 +209,12 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        return getAtom().atomOptions(sub).stream().map(ReasonerAtomicQuery::new);
+        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(atom, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory));
     }
 
     @Override
     public Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> visitedSubGoals) {
-        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(tx().queryCache()).getAnswerStreamWithUnifier(this);
+        Pair<Stream<ConceptMap>, MultiUnifier> cacheEntry = CacheCasting.queryCacheCast(queryCache).getAnswerStreamWithUnifier(this);
         Iterator<AnswerState> dbIterator = cacheEntry.first()
                 .map(a -> a.explain(a.explanation(), this.getPattern()))
                 .map(ans -> new AnswerState(ans, parent.getUnifier(), parent))
@@ -223,7 +226,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         boolean visited = visitedSubGoals.contains(this);
         //if this is ground and exists in the db then do not resolve further
         boolean doNotResolveFurther = visited
-                || CacheCasting.queryCacheCast(tx().queryCache()).isComplete(this)
+                || CacheCasting.queryCacheCast(queryCache).isComplete(this)
                 || (this.isGround() && dbIterator.hasNext());
         Iterator<ResolutionState> subGoalIterator = !doNotResolveFurther?
                 ruleStateIterator(parent, visitedSubGoals) :

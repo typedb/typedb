@@ -29,9 +29,11 @@ import grakn.core.concept.impl.TypeImpl;
 import grakn.core.core.Schema;
 import grakn.core.graql.reasoner.query.CompositeQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.rule.RuleUtils;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
@@ -40,6 +42,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Thing;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
@@ -241,7 +244,7 @@ public class ValidateGlobalRules {
      * @param thing The thing to be validated
      * @return An error message if the thing does not have all the required resources
      */
-    public static Optional<String> validateInstancePlaysAllRequiredRoles(Transaction tx, Thing thing) {
+    public static Optional<String> validateInstancePlaysAllRequiredRoles(ConceptManager conceptManager, Thing thing) {
         TypeImpl<?, ?> type = (TypeImpl) thing.type();
 
         while (type != null) {
@@ -256,7 +259,7 @@ public class ValidateGlobalRules {
                         return Optional.of(VALIDATION_NOT_EXACTLY_ONE_KEY.getMessage(thing.id(), attributeLabel));
                     }
 
-                    Optional<String> uniquenessViolation = validateKeyUniqueness(tx, thing, role, type, attributeLabel);
+                    Optional<String> uniquenessViolation = validateKeyUniqueness(conceptManager, thing, role, type, attributeLabel);
                     if (uniquenessViolation.isPresent()) return uniquenessViolation;
                 }
             }
@@ -265,10 +268,10 @@ public class ValidateGlobalRules {
         return Optional.empty();
     }
 
-    public static Optional<String> validateKeyUniqueness(Transaction tx, Thing thing, Role role, Type ownerType, Label attributeLabel){
+    public static Optional<String> validateKeyUniqueness(ConceptManager conceptManager, Thing thing, Role role, Type ownerType, Label attributeLabel){
         //validate key uniqueness
         Relation keyRelation = thing.relations(role).findFirst().get();
-        final Role keyValueRole = tx.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeLabel).getValue());
+        final Role keyValueRole = conceptManager.getRole(Schema.ImplicitType.KEY_VALUE.getLabel(attributeLabel).getValue());
         final Attribute<?> keyValue = keyRelation.rolePlayers(keyValueRole).findFirst().get().asAttribute();
         if (keyValue.owners().filter(owner -> owner.type().sups().anyMatch(t -> t.equals(ownerType))).limit(2).count() > 1) {
             Label resourceTypeLabel = Schema.ImplicitType.explicitLabel(role.label());
@@ -278,12 +281,11 @@ public class ValidateGlobalRules {
     }
 
     /**
-     * @param tx context in which rules need to be stratifiable
      * @return Error messages if the rules in the db are not stratifiable (cycles with negation are present)
      */
-    public static Set<String> validateRuleStratifiability(Transaction tx){
+    public static Set<String> validateRuleStratifiability(ConceptManager conceptManager){
         Set<String> errors = new HashSet<>();
-        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(tx);
+        List<Set<Type>> negativeCycles = RuleUtils.negativeCycles(conceptManager);
         if (!negativeCycles.isEmpty()){
             errors.add(ErrorMessage.VALIDATION_RULE_GRAPH_NOT_STRATIFIABLE.getMessage(negativeCycles));
         }
@@ -291,60 +293,56 @@ public class ValidateGlobalRules {
     }
 
     /**
-     * @param graph graph used to ensure the rule is a valid clause
      * @param rule the rule to be validated
      * @return Error messages if the rule is not a valid clause (in implication form, conjunction in the body, single-atom conjunction in the head)
      */
-    public static Set<String> validateRuleIsValidClause(Transaction graph, Rule rule) {
+    public static Set<String> validateRuleIsValidClause(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Pattern>> patterns = rule.when().getNegationDNF().getPatterns();
         if (patterns.size() > 1) {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_BODY.getMessage(rule.label()));
         } else {
-            errors.addAll(CompositeQuery.validateAsRuleBody(Iterables.getOnlyElement(patterns), rule, graph));
+            errors.addAll(CompositeQuery.validateAsRuleBody(Iterables.getOnlyElement(patterns), rule, reasonerQueryFactory));
         }
 
         if (errors.isEmpty()) {
-            errors.addAll(validateRuleHead(graph, rule));
+            errors.addAll(validateRuleHead(reasonerQueryFactory, rule));
         }
         return errors;
     }
 
     /**
-     * @param graph graph (tx) of interest
      * @param rule  the rule to be cast into a combined conjunction query
      * @return a combined conjunction created from statements from both the body and the head of the rule
      */
-    private static ReasonerQuery combinedRuleQuery(Transaction graph, Rule rule) {
-        ReasonerQuery bodyQuery = ReasonerQueries.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
-        ReasonerQuery headQuery = ReasonerQueries.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())), graph);
+    private static ReasonerQuery combinedRuleQuery(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
+        ReasonerQuery bodyQuery = reasonerQueryFactory.create(Graql.and(rule.when().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
+        ReasonerQuery headQuery = reasonerQueryFactory.create(Graql.and(rule.then().getDisjunctiveNormalForm().getPatterns().stream().flatMap(conj -> conj.getPatterns().stream()).collect(Collectors.toSet())));
         return headQuery.conjunction(bodyQuery);
     }
 
     /**
      * NB: this only gets checked if the rule obeys the Horn clause form
      *
-     * @param graph graph used to ensure the rule is a valid Horn clause
      * @param rule  the rule to be validated ontologically
      * @return Error messages if the rule has ontological inconsistencies
      */
-    public static Set<String> validateRuleOntologically(Transaction graph, Rule rule) {
+    public static Set<String> validateRuleOntologically(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
         Set<String> errors = new HashSet<>();
 
         //both body and head refer to the same graph and have to be valid with respect to the schema that governs it
         //as a result the rule can be ontologically validated by combining them into a conjunction
         //this additionally allows to cross check body-head references
-        ReasonerQuery combinedQuery = combinedRuleQuery(graph, rule);
+        ReasonerQuery combinedQuery = combinedRuleQuery(reasonerQueryFactory, rule);
         errors.addAll(combinedQuery.validateOntologically(rule.label()));
         return errors;
     }
 
     /**
-     * @param graph graph used to ensure the rule head is valid
      * @param rule  the rule to be validated
      * @return Error messages if the rule head is invalid - is not a single-atom conjunction, doesn't contain illegal atomics and is ontologically valid
      */
-    private static Set<String> validateRuleHead(Transaction graph, Rule rule) {
+    private static Set<String> validateRuleHead(ReasonerQueryFactory reasonerQueryFactory, Rule rule) {
         Set<String> errors = new HashSet<>();
         Set<Conjunction<Statement>> headPatterns = rule.then().getDisjunctiveNormalForm().getPatterns();
         Set<Conjunction<Statement>> bodyPatterns = rule.when().getDisjunctiveNormalForm().getPatterns();
@@ -352,8 +350,8 @@ public class ValidateGlobalRules {
         if (headPatterns.size() != 1) {
             errors.add(ErrorMessage.VALIDATION_RULE_DISJUNCTION_IN_HEAD.getMessage(rule.label()));
         } else {
-            ReasonerQuery bodyQuery = ReasonerQueries.create(Iterables.getOnlyElement(bodyPatterns), graph);
-            ReasonerQuery headQuery = ReasonerQueries.create(Iterables.getOnlyElement(headPatterns), graph);
+            ReasonerQuery bodyQuery = reasonerQueryFactory.create(Iterables.getOnlyElement(bodyPatterns));
+            ReasonerQuery headQuery = reasonerQueryFactory.create(Iterables.getOnlyElement(headPatterns));
             ReasonerQuery combinedQuery = headQuery.conjunction(bodyQuery);
 
             Set<Atomic> headAtoms = headQuery.getAtoms();
@@ -377,21 +375,20 @@ public class ValidateGlobalRules {
      * @param rule The rule to be validated
      * @return Error messages if the when or then of a rule refers to a non existent type
      */
-    public static Set<String> validateRuleSchemaConceptExist(Transaction graph, Rule rule) {
+    public static Set<String> validateRuleSchemaConceptExist(ConceptManager conceptManager, Rule rule) {
         Set<String> errors = new HashSet<>();
-        errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
-        errors.addAll(checkRuleSideInvalid(graph, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
+        errors.addAll(checkRuleSideInvalid(conceptManager, rule, Schema.VertexProperty.RULE_WHEN, rule.when()));
+        errors.addAll(checkRuleSideInvalid(conceptManager, rule, Schema.VertexProperty.RULE_THEN, rule.then()));
         return errors;
     }
 
     /**
-     * @param graph   The graph to query against
      * @param rule    The rule the pattern was extracted from
      * @param side    The side from which the pattern was extracted
      * @param pattern The pattern from which we will extract the types in the pattern
      * @return A list of errors if the pattern refers to any non-existent types in the graph
      */
-    private static Set<String> checkRuleSideInvalid(Transaction graph, Rule rule, Schema.VertexProperty side, Pattern pattern) {
+    private static Set<String> checkRuleSideInvalid(ConceptManager conceptManager, Rule rule, Schema.VertexProperty side, Pattern pattern) {
         Set<String> errors = new HashSet<>();
 
         pattern.getNegationDNF().getPatterns().stream()
@@ -400,7 +397,7 @@ public class ValidateGlobalRules {
                         .flatMap(statement -> statement.innerStatements().stream())
                         .flatMap(statement -> statement.getTypes().stream())
                         .forEach(type -> {
-                            SchemaConcept schemaConcept = graph.getSchemaConcept(Label.of(type));
+                            SchemaConcept schemaConcept = conceptManager.getSchemaConcept(Label.of(type));
                             if(schemaConcept == null){
                                 errors.add(ErrorMessage.VALIDATION_RULE_MISSING_ELEMENTS.getMessage(side, rule.label(), type));
                             } else {
@@ -417,7 +414,7 @@ public class ValidateGlobalRules {
                                         RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                                     }
                                 } else {
-                                    throw TransactionException.invalidPropertyUse(rule, side);
+                                    throw GraknConceptException.invalidPropertyUse(rule, side);
                                 }
                             }
                         }));

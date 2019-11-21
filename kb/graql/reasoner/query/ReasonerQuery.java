@@ -47,12 +47,6 @@ public interface ReasonerQuery{
     ReasonerQuery conjunction(ReasonerQuery q);
 
     /**
-     * @return tx associated with this reasoner query
-     */
-    @CheckReturnValue
-    Transaction tx();
-
-    /**
      * @return true if this query contains strictly non-negated atomics
      */
     @CheckReturnValue
