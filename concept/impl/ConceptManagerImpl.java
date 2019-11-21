@@ -384,7 +384,7 @@ public class ConceptManagerImpl implements ConceptManager {
         if (concept != null) return concept;
 
         //check EPHA
-        if (attributeManager.attributesEphemeral().containsKey(index)) return null;
+        if (attributeManager.isAttributeEphemeral(index)) return null;
 
         //check AC
         ConceptId attributeCommitted = attributeManager.attributesCommitted().getIfPresent(index);

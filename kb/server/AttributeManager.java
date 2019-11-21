@@ -24,7 +24,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.cache.Cache;
 import grakn.core.kb.concept.api.ConceptId;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * When loading concurrently, we want to minimise the amount of locking needed for correctness and consistency.
@@ -42,12 +41,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface AttributeManager {
 
-    ConcurrentHashMap<String, Set<String>> attributesEphemeral();
     Cache<String, ConceptId> attributesCommitted();
     void ackAttributeInsert(String index, String txId);
     void ackAttributeDelete(String index, String txId);
     void ackCommit(Set<String> indices, String txId);
     boolean requiresLock(String txId);
+    boolean isAttributeEphemeral(String index);
 
     @VisibleForTesting
     boolean lockCandidatesPresent();

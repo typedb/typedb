@@ -349,8 +349,6 @@ public final class Schema {
         }
     }
 
-    private static String indexSeparator = ":";
-
     /**
      * @param label The AttributeType label
      * @param value The value of the Attribute
@@ -358,13 +356,7 @@ public final class Schema {
      */
     @CheckReturnValue
     public static String generateAttributeIndex(Label label, String value) {
-        return label + indexSeparator + value;
-    }
-
-    @CheckReturnValue
-    public static Label labelFromAttributeIndex(String index){
-        int separatorInd = index.indexOf(indexSeparator);
-        if (separatorInd == -1) throw new IllegalArgumentException();
-        return Label.of(index.substring(0, separatorInd));
+        //TODO trim it down in the future
+        return Schema.BaseType.ATTRIBUTE.name() + "-" + label + "-" + value;
     }
 }

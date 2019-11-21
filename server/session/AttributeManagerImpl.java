@@ -48,8 +48,8 @@ public class AttributeManagerImpl implements AttributeManager {
     }
 
     @Override
-    public ConcurrentHashMap<String, Set<String>> attributesEphemeral() {
-        return attributesEphemeral;
+    public boolean isAttributeEphemeral(String index) {
+        return attributesEphemeral.containsKey(index);
     }
 
     @Override
