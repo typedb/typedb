@@ -183,7 +183,7 @@ public class TransactionOLTP implements Transaction {
             Set<String> insertedIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
             keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
         }
-        boolean needsLock = attributeLockRequired
+        boolean lockRequired = attributeLockRequired
                 || shardLockRequired
                 // In this case we need to lock, so that other concurrent Transactions
                 // that are trying to create new attributes will read an updated version of attributesCache
@@ -191,12 +191,14 @@ public class TransactionOLTP implements Transaction {
                 // contains attributes that we are removing in this transaction.
                 || !cache().getRemovedAttributes().isEmpty()
                 || keyLockRequired;
-        LOG.warn(txId + " needs lock: " +
-                (attributeLockRequired? "attribute" : "") +
-                (shardLockRequired? "shard" : "") +
-                (keyLockRequired? "key" : "")+
-                (!cache().getRemovedAttributes().isEmpty()? "delete" : ""));
-        return needsLock;
+        if (lockRequired){
+            LOG.debug(txId + " needs lock: " +
+                    (attributeLockRequired? "attribute" : "") +
+                    (shardLockRequired? "shard" : "") +
+                    (keyLockRequired? "key" : "")+
+                    (!cache().getRemovedAttributes().isEmpty()? "delete" : ""));
+        }
+        return lockRequired;
     }
 
     private void commitInternal() throws InvalidKBException {
