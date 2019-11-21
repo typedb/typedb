@@ -19,9 +19,6 @@
 package grakn.core.graph.diskstorage;
 
 
-import grakn.core.graph.diskstorage.BaseTransaction;
-import grakn.core.graph.diskstorage.BaseTransactionConfig;
-
 /**
  * An extension to the {@link BaseTransaction} interface that exposes a
  * configuration object of type {@link BaseTransactionConfig} for this particular transaction.
@@ -31,8 +28,6 @@ public interface BaseTransactionConfigurable extends BaseTransaction {
 
     /**
      * Get the configuration for this transaction
-     *
-     * @return
      */
     BaseTransactionConfig getConfiguration();
 

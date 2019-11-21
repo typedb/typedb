@@ -23,12 +23,6 @@ import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.BaseTransaction;
 import grakn.core.graph.diskstorage.BaseTransactionConfig;
 import grakn.core.graph.diskstorage.LoggableTransaction;
-import grakn.core.graph.diskstorage.indexing.IndexEntry;
-import grakn.core.graph.diskstorage.indexing.IndexMutation;
-import grakn.core.graph.diskstorage.indexing.IndexProvider;
-import grakn.core.graph.diskstorage.indexing.IndexQuery;
-import grakn.core.graph.diskstorage.indexing.KeyInformation;
-import grakn.core.graph.diskstorage.indexing.RawQuery;
 import grakn.core.graph.diskstorage.util.BackendOperation;
 import grakn.core.graph.graphdb.database.idhandling.VariableLong;
 import grakn.core.graph.graphdb.database.serialize.DataOutput;
@@ -47,7 +41,7 @@ import java.util.stream.Stream;
  * Also acts as a proxy to the {@link IndexProvider} methods.
  */
 
-public class IndexTransaction implements BaseTransaction, LoggableTransaction {
+public class IndexTransaction implements LoggableTransaction {
 
     private static final int DEFAULT_OUTER_MAP_SIZE = 3;
     private static final int DEFAULT_INNER_MAP_SIZE = 5;
