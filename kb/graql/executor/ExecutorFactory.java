@@ -19,10 +19,7 @@
 
 package grakn.core.kb.graql.executor;
 
-import grakn.core.kb.server.Transaction;
-
 public interface ExecutorFactory {
     ComputeExecutor compute();
-
-    QueryExecutor transactional(Transaction transaction, boolean infer);
+    QueryExecutor transactional(boolean infer);
 }

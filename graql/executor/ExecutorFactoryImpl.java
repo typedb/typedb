@@ -19,6 +19,7 @@
 
 package grakn.core.graql.executor;
 
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.executor.ComputeExecutor;
 import grakn.core.kb.graql.executor.ExecutorFactory;
@@ -34,12 +35,14 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
     private HadoopGraph hadoopGraph;
     private KeyspaceStatistics keyspaceStatistics;
     private TraversalPlanFactory traversalPlanFactory;
+    private ReasonerQueryFactory reasonerQueryFactory;
 
-    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory) {
+    public ExecutorFactoryImpl(ConceptManager conceptManager, HadoopGraph hadoopGraph, KeyspaceStatistics keyspaceStatistics, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
         this.conceptManager = conceptManager;
         this.hadoopGraph = hadoopGraph;
         this.keyspaceStatistics = keyspaceStatistics;
         this.traversalPlanFactory = traversalPlanFactory;
+        this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     @Override
@@ -48,8 +51,8 @@ public class ExecutorFactoryImpl implements ExecutorFactory {
     }
 
     @Override
-    public QueryExecutor transactional(Transaction transaction, boolean infer) {
-        return new QueryExecutorImpl(transaction, conceptManager, this, infer, traversalPlanFactory);
+    public QueryExecutor transactional(boolean infer) {
+        return new QueryExecutorImpl(conceptManager, this, infer, traversalPlanFactory, reasonerQueryFactory);
     }
 
 }

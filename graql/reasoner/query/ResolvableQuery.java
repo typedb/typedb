@@ -20,20 +20,20 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.graql.executor.ExecutorFactory;
-import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.state.AnswerPropagatorState;
 import grakn.core.graql.reasoner.state.ResolutionState;
+import grakn.core.kb.graql.executor.ExecutorFactory;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 
+import javax.annotation.CheckReturnValue;
 import java.util.HashSet;
 import java.util.Iterator;
-import javax.annotation.CheckReturnValue;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -45,9 +45,11 @@ import java.util.stream.Stream;
 public abstract class ResolvableQuery implements ReasonerQuery {
 
     final ExecutorFactory executorFactory;
+    final QueryCache queryCache;
 
-    ResolvableQuery(ExecutorFactory executorFactory) {
+    ResolvableQuery(ExecutorFactory executorFactory, QueryCache queryCache) {
         this.executorFactory = executorFactory;
+        this.queryCache = queryCache;
     }
 
     @CheckReturnValue
@@ -134,9 +136,9 @@ public abstract class ResolvableQuery implements ReasonerQuery {
     public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
-            return executorFactory.transactional(null, true).traverse(getPattern());
+            return executorFactory.transactional(true).traverse(getPattern());
         } else {
-            return new ResolutionIterator(this, subGoals).hasStream();
+            return new ResolutionIterator(this, subGoals, queryCache).hasStream();
         }
     }
 

@@ -31,7 +31,6 @@ import grakn.core.concept.answer.Void;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
-import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
@@ -94,17 +93,15 @@ public class QueryExecutorImpl implements QueryExecutor {
     private ConceptManager conceptManager;
     private ExecutorFactory executorFactory;
     private final boolean infer;
-    private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
     private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
+    QueryExecutorImpl(ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.infer = infer;
-        this.transaction = transaction;
         this.traversalPlanFactory = traversalPlanFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
@@ -126,7 +123,7 @@ public class QueryExecutorImpl implements QueryExecutor {
                 // custom workaround to deal with non-lazy Java 8 flatMap() functions is in LazyMergingStream
                 Stream<Conjunction<Statement>> conjunctions = matchClause.getPatterns().getDisjunctiveNormalForm().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> ReasonerQueries.create(p, transaction))
+                        .map(p -> reasonerQueryFactory.create(p))
                         .map(ReasonerQueryImpl::getPattern)
                         .map(p -> traverse(p));
 
@@ -173,7 +170,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
                 .map(p -> Graql.and(Collections.singleton(p)))
-                .forEach(pattern -> ReasonerQueries.createWithoutRoleInference(pattern, transaction).checkValid());
+                .forEach(pattern -> reasonerQueryFactory.createWithoutRoleInference(pattern).checkValid());
         if (!infer) {
             boolean containsNegation = negationDNF.getPatterns().stream()
                     .flatMap(p -> p.getPatterns().stream())
@@ -290,7 +287,7 @@ public class QueryExecutorImpl implements QueryExecutor {
             LinkedHashSet<Variable> projectedVars = new LinkedHashSet<>(matchVars);
             projectedVars.retainAll(insertVars);
 
-            Stream<ConceptMap> answers = executorFactory.transactional(transaction, infer).match(match);
+            Stream<ConceptMap> answers = executorFactory.transactional(infer).match(match);
             answerStream = answers
                     .map(answer -> answer.project(projectedVars))
                     .flatMap(answer -> WriteExecutorImpl.create(conceptManager, executors.build()).write(answer))
@@ -307,7 +304,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
     @Override
     public Void delete(GraqlDelete query) {
-        Stream<ConceptMap> answers = executorFactory.transactional(transaction, infer).match(query.match())
+        Stream<ConceptMap> answers = executorFactory.transactional(infer).match(query.match())
                 .map(result -> result.project(query.vars()))
                 .distinct();
 

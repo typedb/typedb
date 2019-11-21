@@ -122,7 +122,7 @@ public class Utility {
      */
     public static ConceptId getResourceEdgeId(ConceptManager conceptManager, ExecutorFactory executorFactory, ConceptId conceptId1, ConceptId conceptId2) {
         if (mayHaveResourceEdge(conceptManager, conceptId1, conceptId2)) {
-            Optional<Concept> firstConcept = executorFactory.transactional(null, true).match(
+            Optional<Concept> firstConcept = executorFactory.transactional(true).match(
                     Graql.match(
                             var("x").id(conceptId1.getValue()),
                             var("y").id(conceptId2.getValue()),

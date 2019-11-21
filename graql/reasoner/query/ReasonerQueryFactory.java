@@ -54,7 +54,7 @@ public class ReasonerQueryFactory {
      * @return a composite reasoner query constructed from provided conjunctive pattern
      */
     public CompositeQuery composite(Conjunction<Pattern> pattern){
-        return new CompositeQuery(pattern, this, executorFactory).inferTypes();
+        return new CompositeQuery(pattern, this, executorFactory, queryCache).inferTypes();
     }
 
     /**
@@ -64,7 +64,7 @@ public class ReasonerQueryFactory {
      * @return corresponding composite query
      */
     public CompositeQuery composite(ReasonerQueryImpl conj, Set<ResolvableQuery> comp){
-        return new CompositeQuery(conj, comp, this, executorFactory).inferTypes();
+        return new CompositeQuery(conj, comp, this, executorFactory, queryCache).inferTypes();
     }
 
     /**
@@ -72,7 +72,7 @@ public class ReasonerQueryFactory {
      * @return a resolvable reasoner query constructed from provided conjunctive pattern
      */
     public ResolvableQuery resolvable(Conjunction<Pattern> pattern){
-        CompositeQuery query = new CompositeQuery(pattern, this, executorFactory).inferTypes();
+        CompositeQuery query = new CompositeQuery(pattern, this, executorFactory, queryCache).inferTypes();
         return query.isAtomic()?
                 new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this) :
                 query.isPositive()?

@@ -33,6 +33,7 @@ import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.RuleCacheImpl;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
@@ -159,13 +160,12 @@ public class SessionImpl implements Session {
         if (localTx != null && localTx.isOpen()) throw TransactionException.transactionOpen(localTx);
 
 
-        // caches
+        // Data structures
         ConceptNotificationChannel conceptNotificationChannel = new ConceptNotificationChannelImpl();
-        RuleCache ruleCache = new RuleCacheImpl();
         TransactionCache transactionCache = new TransactionCache(keyspaceSchemaCache);
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
 
-        // janus elements
+        // Janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         JanusTraversalSourceProvider janusTraversalSourceProvider = new JanusTraversalSourceProvider(janusGraphTransaction);
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction, janusTraversalSourceProvider);
@@ -173,14 +173,18 @@ public class SessionImpl implements Session {
 
         // Grakn elements
         ConceptManager conceptManager = new ConceptManagerImpl(elementFactory, transactionCache, conceptNotificationChannel, graphLock);
-        ruleCache.setConceptManager(conceptManager);
-
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(janusTraversalSourceProvider, conceptManager, this.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), keyspaceStatistics);
         ExecutorFactory executorFactory = new ExecutorFactoryImpl(conceptManager, hadoopGraph, keyspaceStatistics, traversalPlanFactory);
-
+        RuleCache ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
-        TransactionImpl tx = new TransactionImpl(this, janusGraphTransaction, conceptManager, janusTraversalSourceProvider, transactionCache, queryCache, ruleCache, statisticsDelta, executorFactory, traversalPlanFactory);
+        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, executorFactory);
+
+        TransactionImpl tx = new TransactionImpl(
+                this, janusGraphTransaction, conceptManager,
+                janusTraversalSourceProvider, transactionCache, queryCache, ruleCache, statisticsDelta,
+                executorFactory, traversalPlanFactory, reasonerQueryFactory
+        );
 
         ConceptListenerImpl conceptObserver = new ConceptListenerImpl(transactionCache, queryCache, ruleCache, statisticsDelta,attributeManager(), janusGraphTransaction.toString());
         conceptNotificationChannel.subscribe(conceptObserver);

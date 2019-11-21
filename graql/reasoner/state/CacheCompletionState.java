@@ -23,6 +23,7 @@ import grakn.core.concept.answer.ConceptMap;
 import grakn.core.graql.reasoner.CacheCasting;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 
 /**
  *
@@ -31,16 +32,18 @@ import grakn.core.graql.reasoner.utils.ReasonerUtils;
  */
 public class CacheCompletionState extends ResolutionState {
 
+    private QueryCache queryCache;
     final private ReasonerAtomicQuery query;
 
-    public CacheCompletionState(ReasonerAtomicQuery query, ConceptMap sub, AnswerPropagatorState parent) {
+    public CacheCompletionState(QueryCache queryCache, ReasonerAtomicQuery query, ConceptMap sub, AnswerPropagatorState parent) {
         super(sub, parent);
+        this.queryCache = queryCache;
         this.query = query;
     }
 
     @Override
     public ResolutionState generateChildState() {
-        CacheCasting.queryCacheCast(query.tx().queryCache()).ackDBCompleteness(query);
+        CacheCasting.queryCacheCast(queryCache).ackDBCompleteness(query);
         return null;
     }
 

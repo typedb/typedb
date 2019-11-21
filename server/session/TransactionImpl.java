@@ -360,7 +360,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public Stream<ConceptMap> stream(GraqlDefine query) {
         checkMutationAllowed();
-        return executorFactory.transactional(this, false).define(query);
+        return executorFactory.transactional( false).define(query);
     }
 
     // Undefine Query
@@ -373,7 +373,7 @@ public class TransactionImpl implements Transaction {
     @Override
     public Stream<ConceptMap> stream(GraqlUndefine query) {
         checkMutationAllowed();
-        return executorFactory.transactional(this, false).undefine(query);
+        return executorFactory.transactional(false).undefine(query);
     }
 
     // Insert query
@@ -1263,12 +1263,12 @@ public class TransactionImpl implements Transaction {
 
     @Override
     public final QueryExecutor executor() {
-        return executorFactory.transactional(this, true);
+        return executorFactory.transactional( true);
     }
 
     @Override
     public final QueryExecutor executor(boolean infer) {
-        return executorFactory.transactional(this, infer);
+        return executorFactory.transactional( infer);
     }
 
     @Override

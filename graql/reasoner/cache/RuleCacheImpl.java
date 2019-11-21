@@ -61,8 +61,7 @@ public class RuleCacheImpl implements RuleCache {
         this.tx = tx;
     }
 
-    @Override
-    public void setConceptManager(ConceptManager conceptManager) {
+    public RuleCacheImpl(ConceptManager conceptManager) {
         this.conceptManager = conceptManager;
     }
 
