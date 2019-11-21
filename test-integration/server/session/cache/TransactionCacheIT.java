@@ -230,7 +230,7 @@ public class TransactionCacheIT {
         tx = session.writeTransaction();
         tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
         tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
-        assertFalse(tx.cache().getNewAttributes().containsKey(index));
+        assertFalse(tx.cache().getNewAttributes().containsKey(new Pair<>(Label.of(testAttributeLabel), index)));
         assertTrue(tx.cache().getRemovedAttributes().contains(index));
     }
 
