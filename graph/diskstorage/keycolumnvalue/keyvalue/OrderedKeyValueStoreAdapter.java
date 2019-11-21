@@ -68,6 +68,7 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
 
     private final OrderedKeyValueStore store;
     private final int keyLength;
+    private boolean isClosed = false;
 
     public OrderedKeyValueStoreAdapter(OrderedKeyValueStore store) {
         this(store, variableKeyLength);
@@ -157,6 +158,11 @@ public class OrderedKeyValueStoreAdapter implements KeyColumnValueStore {
     @Override
     public void close() throws BackendException {
         store.close();
+        isClosed = true;
+    }
+
+    public boolean isClosed() {
+        return isClosed;
     }
 
     private EntryList convert(RecordIterator<KeyValueEntry> entries) throws BackendException {
