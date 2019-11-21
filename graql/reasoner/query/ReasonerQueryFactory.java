@@ -27,7 +27,6 @@ import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
-import grakn.core.kb.server.Transaction;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
 import graql.lang.statement.Statement;
@@ -41,14 +40,12 @@ public class ReasonerQueryFactory {
     private final QueryCache queryCache;
     private final RuleCache ruleCache;
     private ExecutorFactory executorFactory;
-    private ReasonerQueryFactory reasonerQueryFactory;
 
-    public ReasonerQueryFactory(ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+    public ReasonerQueryFactory(ConceptManager conceptManager, QueryCache queryCache, RuleCache ruleCache, ExecutorFactory executorFactory) {
         this.conceptManager = conceptManager;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
         this.executorFactory = executorFactory;
-        this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     /**
@@ -57,7 +54,7 @@ public class ReasonerQueryFactory {
      * @return a composite reasoner query constructed from provided conjunctive pattern
      */
     public CompositeQuery composite(Conjunction<Pattern> pattern){
-        return new CompositeQuery(pattern, this).inferTypes();
+        return new CompositeQuery(pattern, this, executorFactory).inferTypes();
     }
 
     /**
@@ -67,7 +64,7 @@ public class ReasonerQueryFactory {
      * @return corresponding composite query
      */
     public CompositeQuery composite(ReasonerQueryImpl conj, Set<ResolvableQuery> comp){
-        return new CompositeQuery(conj, comp, this).inferTypes();
+        return new CompositeQuery(conj, comp, this, executorFactory).inferTypes();
     }
 
     /**
@@ -75,7 +72,7 @@ public class ReasonerQueryFactory {
      * @return a resolvable reasoner query constructed from provided conjunctive pattern
      */
     public ResolvableQuery resolvable(Conjunction<Pattern> pattern){
-        CompositeQuery query = new CompositeQuery(pattern, this).inferTypes();
+        CompositeQuery query = new CompositeQuery(pattern, this, executorFactory).inferTypes();
         return query.isAtomic()?
                 new ReasonerAtomicQuery(query.getAtoms(), conceptManager, ruleCache, queryCache, executorFactory, this) :
                 query.isPositive()?

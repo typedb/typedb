@@ -95,12 +95,11 @@ import java.util.stream.Stream;
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
  *
  */
-public class ReasonerQueryImpl implements ResolvableQuery {
+public class ReasonerQueryImpl extends ResolvableQuery {
 
     final ConceptManager conceptManager;
     final RuleCache ruleCache;
     final QueryCache queryCache;
-    final ExecutorFactory executorFactory;
     final ReasonerQueryFactory reasonerQueryFactory;
 
     private final ImmutableSet<Atomic> atomSet;
@@ -111,10 +110,10 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     private Set<Variable> varNames = null;
 
     ReasonerQueryImpl(Conjunction<Statement> pattern, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(executorFactory);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.queryCache = queryCache;
-        this.executorFactory = executorFactory;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
                 .build();
@@ -122,17 +121,18 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     ReasonerQueryImpl(Set<Atomic> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(executorFactory);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.atomSet = ImmutableSet.<Atomic>builder()
                 .addAll(atoms.stream().map(at -> at.copy(this)).iterator())
                 .build();
         this.queryCache = queryCache;
-        this.executorFactory = executorFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
     ReasonerQueryImpl(List<Atom> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(executorFactory);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
         this.atomSet =  ImmutableSet.<Atomic>builder()
@@ -141,7 +141,6 @@ public class ReasonerQueryImpl implements ResolvableQuery {
                         .map(at -> at.copy(this)).iterator())
                 .build();
         this.queryCache = queryCache;
-        this.executorFactory = executorFactory;
         this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
@@ -150,8 +149,8 @@ public class ReasonerQueryImpl implements ResolvableQuery {
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
+        super(q.executorFactory);
         this.conceptManager = q.conceptManager;
-        this.executorFactory = q.executorFactory;
         this.queryCache = q.queryCache;
         this.ruleCache = q.ruleCache;
         this.reasonerQueryFactory = q.reasonerQueryFactory;
@@ -174,7 +173,7 @@ public class ReasonerQueryImpl implements ResolvableQuery {
 
     @Override
     public CompositeQuery asComposite() {
-        return new CompositeQuery(getPattern(), reasonerQueryFactory);
+        return new CompositeQuery(getPattern(), reasonerQueryFactory, executorFactory);
     }
 
     @Override

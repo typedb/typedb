@@ -72,6 +72,10 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
+    /**
+     * Copy constructor
+     * @param query
+     */
     ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);

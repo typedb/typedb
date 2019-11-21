@@ -21,8 +21,6 @@ package grakn.core.kb.concept.api;
 
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.common.exception.GraknException;
-import grakn.core.core.Schema;
-import grakn.core.kb.server.exception.TransactionException;
 
 import java.util.stream.Collectors;
 
@@ -220,7 +218,7 @@ public class GraknConceptException extends GraknException {
      * Thrown when trying to add a Schema.VertexProperty to a Concept which does not accept that type
      * of Schema.VertexProperty
      */
-    public static GraknConceptException invalidPropertyUse(Concept concept, Schema.VertexProperty property) {
+    public static GraknConceptException invalidPropertyUse(Concept concept, String property) {
         return create(INVALID_PROPERTY_USE.getMessage(concept, property));
     }
 

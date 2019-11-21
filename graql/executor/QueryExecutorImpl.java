@@ -32,6 +32,7 @@ import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.executor.util.LazyMergingStream;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.manager.ConceptManager;
@@ -95,15 +96,17 @@ public class QueryExecutorImpl implements QueryExecutor {
     private final boolean infer;
     private final Transaction transaction;
     private final TraversalPlanFactory traversalPlanFactory;
+    private ReasonerQueryFactory reasonerQueryFactory;
     private final PropertyExecutorFactory propertyExecutorFactory;
     private static final Logger LOG = LoggerFactory.getLogger(QueryExecutorImpl.class);
 
-    QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer, TraversalPlanFactory traversalPlanFactory) {
+    QueryExecutorImpl(Transaction transaction, ConceptManager conceptManager, ExecutorFactory executorFactory, boolean infer, TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.infer = infer;
         this.transaction = transaction;
         this.traversalPlanFactory = traversalPlanFactory;
+        this.reasonerQueryFactory = reasonerQueryFactory;
         propertyExecutorFactory = new PropertyExecutorFactoryImpl();
     }
 
@@ -134,7 +137,7 @@ public class QueryExecutorImpl implements QueryExecutor {
 
                 Stream<Conjunction<Pattern>> conjunctions = matchClause.getPatterns().getNegationDNF().getPatterns().stream();
                 Stream<Stream<ConceptMap>> answerStreams = conjunctions
-                        .map(p -> ReasonerQueries.resolvable(p, transaction).rewrite())
+                        .map(p -> reasonerQueryFactory.resolvable(p).rewrite())
                         // we return an answer with the substituted IDs in the pattern
                         .map(q -> q.resolve().map(ans -> ans.withPattern(q.withSubstitution(ans).getPattern())));
 

@@ -20,6 +20,7 @@
 package grakn.core.graql.reasoner.query;
 
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.gremlin.TraversalPlanFactory;
 import grakn.core.graql.reasoner.ResolutionIterator;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -41,51 +42,57 @@ import java.util.stream.Stream;
  * Interface for resolvable reasoner queries.
  *
  */
-public interface ResolvableQuery extends ReasonerQuery {
+public abstract class ResolvableQuery implements ReasonerQuery {
+
+    final ExecutorFactory executorFactory;
+
+    ResolvableQuery(ExecutorFactory executorFactory) {
+        this.executorFactory = executorFactory;
+    }
 
     @CheckReturnValue
-    ResolvableQuery copy();
+    abstract ResolvableQuery copy();
 
     @CheckReturnValue
-    Stream<Atom> selectAtoms();
+    public abstract Stream<Atom> selectAtoms();
 
     /**
      * @return this query in the composite form
      */
     @CheckReturnValue
-    CompositeQuery asComposite();
+    abstract CompositeQuery asComposite();
 
     /**
      * @param sub substitution to be inserted into the query
      * @return corresponding query with additional substitution
      */
     @CheckReturnValue
-    ResolvableQuery withSubstitution(ConceptMap sub);
+    public abstract ResolvableQuery withSubstitution(ConceptMap sub);
 
     /**
      * @return corresponding query with variable predicates removed
      */
     @CheckReturnValue
-    ResolvableQuery constantValuePredicateQuery();
+    abstract ResolvableQuery constantValuePredicateQuery();
 
     /**
      * @return corresponding reasoner query with inferred types
      */
     @CheckReturnValue
-    ResolvableQuery inferTypes();
+    abstract ResolvableQuery inferTypes();
 
     /**
      * @param q query to be compared with
      * @return true if two queries are alpha-equivalent
      */
     @CheckReturnValue
-    boolean isEquivalent(ResolvableQuery q);
+    abstract boolean isEquivalent(ResolvableQuery q);
 
     /**
      * @return true if this query requires atom decomposition
      */
     @CheckReturnValue
-    boolean requiresDecomposition();
+    abstract boolean requiresDecomposition();
 
     /**
      * reiteration might be required if rule graph contains loops with negative flux
@@ -93,13 +100,13 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @return true if because of the rule graph form, the resolution of this query may require reiteration
      */
     @CheckReturnValue
-    boolean requiresReiteration();
+    public abstract boolean requiresReiteration();
 
     /**
      * @return corresponding Get query
      */
     @CheckReturnValue
-    default GraqlGet getQuery() {
+    public GraqlGet getQuery() {
         return Graql.match(getPattern()).get();
     }
 
@@ -107,14 +114,14 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @return rewritten (decomposed) version of the query
      */
     @CheckReturnValue
-    ResolvableQuery rewrite();
+    public abstract ResolvableQuery rewrite();
 
     /**
      * resolves the query
      * @return stream of answers
      */
     @CheckReturnValue
-    default Stream<ConceptMap> resolve(){
+    public Stream<ConceptMap> resolve(){
         return resolve(new HashSet<>());
     }
 
@@ -124,11 +131,10 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @return stream of resolved answers
      */
     @CheckReturnValue
-    default Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
+    public Stream<ConceptMap> resolve(Set<ReasonerAtomicQuery> subGoals){
         boolean doNotResolve = getAtoms().isEmpty() || (isPositive() && !isRuleResolvable());
         if (doNotResolve) {
-            TraversalPlanFactory planFactory = tx().traversalPlanFactory();
-            return tx().executor().traverse(getPattern(), planFactory.createTraversal(getPattern()));
+            return executorFactory.transactional(null, true).traverse(getPattern());
         } else {
             return new ResolutionIterator(this, subGoals).hasStream();
         }
@@ -142,7 +148,7 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @return resolution state formed from this query
      */
     @CheckReturnValue
-    ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
+    public abstract ResolutionState resolutionState(ConceptMap sub, Unifier u, AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 
     /**
      * @param parent parent state
@@ -150,5 +156,5 @@ public interface ResolvableQuery extends ReasonerQuery {
      * @return inner query state iterator (db iter + unifier + state iter) for this query
      */
     @CheckReturnValue
-    Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
+    abstract Iterator<ResolutionState> innerStateIterator(AnswerPropagatorState parent, Set<ReasonerAtomicQuery> subGoals);
 }

@@ -42,6 +42,7 @@ import grakn.core.core.Schema;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -136,12 +137,13 @@ public class TransactionImpl implements Transaction {
     private GraphTraversalSource graphTraversalSource = null;
     private TraversalPlanFactory traversalPlanFactory;
     private JanusTraversalSourceProvider janusTraversalSourceProvider;
+    private ReasonerQueryFactory reasonerQueryFactory;
 
     public TransactionImpl(SessionImpl session, JanusGraphTransaction janusTransaction, ConceptManager conceptManager,
                            JanusTraversalSourceProvider janusTraversalSourceProvider, TransactionCache transactionCache,
                            MultilevelSemanticCache queryCache, RuleCache ruleCache,
                            UncomittedStatisticsDelta statisticsDelta, ExecutorFactory executorFactory,
-                           TraversalPlanFactory traversalPlanFactory) {
+                           TraversalPlanFactory traversalPlanFactory, ReasonerQueryFactory reasonerQueryFactory) {
         createdInCurrentThread.set(true);
 
         this.session = session;
@@ -152,6 +154,7 @@ public class TransactionImpl implements Transaction {
         this.conceptManager = conceptManager;
         this.executorFactory = executorFactory;
         this.traversalPlanFactory = traversalPlanFactory;
+        this.reasonerQueryFactory = reasonerQueryFactory;
 
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
@@ -1137,7 +1140,7 @@ public class TransactionImpl implements Transaction {
     }
 
     private void validateGraph() throws InvalidKBException {
-        Validator validator = new Validator(this);
+        Validator validator = new Validator(reasonerQueryFactory, transactionCache, conceptManager);
         if (!validator.validate()) {
             List<String> errors = validator.getErrorsFound();
             if (!errors.isEmpty()) throw InvalidKBException.validationErrors(errors);

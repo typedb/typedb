@@ -29,6 +29,7 @@ import grakn.core.kb.concept.api.Label;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.executor.ExecutorFactory;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.reasoner.atom.Atom;
@@ -67,13 +68,14 @@ import java.util.stream.Stream;
  * The negative part is stored in terms of the negation complement - hence all stored queries are positive.
  *
  */
-public class CompositeQuery implements ResolvableQuery {
+public class CompositeQuery extends ResolvableQuery {
 
     final private ReasonerQueryImpl conjunctiveQuery;
     final private Set<ResolvableQuery> complementQueries;
-    private ReasonerQueryFactory queryFactory;
+    final private ReasonerQueryFactory queryFactory;
 
-    CompositeQuery(Conjunction<Pattern> pattern, ReasonerQueryFactory queryFactory) throws ReasonerException {
+    CompositeQuery(Conjunction<Pattern> pattern, ReasonerQueryFactory queryFactory, ExecutorFactory executorFactory) throws ReasonerException {
+        super(executorFactory);
         this.queryFactory = queryFactory;
         Conjunction<Statement> positiveConj = Graql.and(
                 pattern.getPatterns().stream()
@@ -93,7 +95,8 @@ public class CompositeQuery implements ResolvableQuery {
         }
     }
 
-    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, ReasonerQueryFactory queryFactory) {
+    CompositeQuery(ReasonerQueryImpl conj, Set<ResolvableQuery> comp, ReasonerQueryFactory queryFactory, ExecutorFactory executorFactory) {
+        super(executorFactory);
         this.conjunctiveQuery = conj;
         this.complementQueries = comp;
         this.queryFactory = queryFactory;
@@ -208,13 +211,14 @@ public class CompositeQuery implements ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().withSubstitution(sub),
                 getComplementQueries().stream().map(q -> q.withSubstitution(sub)).collect(Collectors.toSet()),
-                queryFactory
+                queryFactory,
+                executorFactory
         );
     }
 
     @Override
     public CompositeQuery inferTypes() {
-        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), queryFactory);
+        return new CompositeQuery(getConjunctiveQuery().inferTypes(), getComplementQueries(), queryFactory, executorFactory);
     }
 
     @Override
@@ -222,7 +226,8 @@ public class CompositeQuery implements ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().constantValuePredicateQuery(),
                 getComplementQueries(),
-                queryFactory);
+                queryFactory,
+                executorFactory);
     }
 
     public ReasonerQueryImpl getConjunctiveQuery() {
@@ -238,7 +243,8 @@ public class CompositeQuery implements ResolvableQuery {
         return new CompositeQuery(
                 getConjunctiveQuery().copy(),
                 getComplementQueries().stream().map(ResolvableQuery::copy).collect(Collectors.toSet()),
-                queryFactory
+                queryFactory,
+                executorFactory
         );
     }
 
@@ -280,7 +286,8 @@ public class CompositeQuery implements ResolvableQuery {
                                 this.getPattern().getPatterns(),
                                 q.getPattern().getPatterns()
                         )),
-                queryFactory
+                queryFactory,
+                executorFactory
         );
     }
 
@@ -368,7 +375,8 @@ public class CompositeQuery implements ResolvableQuery {
                 getComplementQueries().isEmpty()?
                         getComplementQueries() :
                         getComplementQueries().stream().map(ResolvableQuery::rewrite).collect(Collectors.toSet()),
-                queryFactory
+                queryFactory,
+                executorFactory
         );
     }
 

@@ -414,7 +414,7 @@ public class ValidateGlobalRules {
                                         RuleImpl.from(rule).addConclusion(schemaConcept.asType());
                                     }
                                 } else {
-                                    throw GraknConceptException.invalidPropertyUse(rule, side);
+                                    throw GraknConceptException.invalidPropertyUse(rule, side.toString());
                                 }
                             }
                         }));
