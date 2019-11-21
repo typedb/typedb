@@ -121,7 +121,7 @@ public class Backend {
         storeManager = manager;
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
-        txLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(TRANSACTION_LOG));
+        txLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(TRANSACTION_LOG)); //KCVStore where tx LOG will be persisted
         userLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(USER_LOG));
         bufferSize = configuration.get(BUFFER_SIZE);
         maxWriteTime = configuration.get(STORAGE_WRITE_WAITTIME);
@@ -156,8 +156,6 @@ public class Backend {
                 indexStore = new KCVSNoCache(indexStoreRaw);
             }
 
-            //Just open them so that they are cached
-            txLogManager.openLog(SYSTEM_TX_LOG_NAME);
             txLogStore = new KCVSNoCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
 
             //Open global configuration
