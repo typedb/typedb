@@ -22,29 +22,32 @@ package grakn.core.graql.reasoner.atom.binary;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.kb.concept.api.ConceptId;
-import grakn.core.kb.concept.api.SchemaConcept;
-import grakn.core.kb.concept.api.Type;
 import grakn.core.graql.reasoner.ReasonerCheckedException;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.Predicate;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.SchemaConcept;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.concept.manager.ConceptManager;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.property.IsaProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
 
 /**
  *
@@ -59,11 +62,13 @@ import javax.annotation.Nullable;
  */
 public abstract class Binary extends Atom {
 
+    final ConceptManager conceptManager;
     private final Variable predicateVariable;
 
-    Binary(Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
+    Binary(ConceptManager conceptManager, RuleCache ruleCache, Variable varName, Statement pattern, ReasonerQuery reasonerQuery, ConceptId typeId,
            Variable predicateVariable) {
-        super(reasonerQuery, varName, pattern, typeId);
+        super(ruleCache, reasonerQuery, varName, pattern, typeId);
+        this.conceptManager = conceptManager;
         this.predicateVariable = predicateVariable;
     }
 
@@ -92,7 +97,7 @@ public abstract class Binary extends Atom {
     @Override
     public SchemaConcept getSchemaConcept(){
         if (type == null && getTypeId() != null) {
-            SchemaConcept concept = tx().getConcept(getTypeId());
+            SchemaConcept concept = conceptManager.getConcept(getTypeId());
             if (concept == null) throw ReasonerCheckedException.idNotFound(getTypeId());
             type = concept;
         }

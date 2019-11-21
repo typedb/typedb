@@ -43,11 +43,11 @@ import grakn.core.graql.reasoner.rule.InferenceRule;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
 import grakn.core.graql.reasoner.ReasonerException;
-import grakn.core.graql.reasoner.utils.ReasonerUtils;
 import graql.lang.property.IsaProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -69,10 +69,12 @@ import static java.util.stream.Collectors.toSet;
 public abstract class Atom extends AtomicBase {
 
     private Set<InferenceRule> applicableRules = null;
+    protected final RuleCache ruleCache;
     private final ConceptId typeId;
 
-    public Atom(ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
+    public Atom(RuleCache ruleCache, ReasonerQuery reasonerQuery, Variable varName, Statement pattern, ConceptId typeId) {
         super(reasonerQuery, varName, pattern);
+        this.ruleCache = ruleCache;
         this.typeId = typeId;
     }
 
@@ -241,7 +243,7 @@ public abstract class Atom extends AtomicBase {
                 .map(IsaProperty::isExplicit).orElse(false);
 
         return getPossibleTypes().stream()
-                .flatMap(type -> tx().ruleCache().getRulesWithType(type, isDirect))
+                .flatMap(type -> ruleCache.getRulesWithType(type, isDirect))
                 .distinct();
     }
 
@@ -252,7 +254,7 @@ public abstract class Atom extends AtomicBase {
         if (applicableRules == null) {
             applicableRules = new HashSet<>();
             getPotentialRules()
-                    .map(rule -> CacheCasting.ruleCacheCast(tx().ruleCache()).getRule(rule))
+                    .map(rule -> CacheCasting.ruleCacheCast(ruleCache).getRule(rule))
                     .filter(this::isRuleApplicable)
                     .map(r -> r.rewrite(this))
                     .forEach(applicableRules::add);
@@ -275,7 +277,7 @@ public abstract class Atom extends AtomicBase {
      */
     public boolean requiresDecomposition() {
         return this.getPotentialRules()
-                .map(r -> CacheCasting.ruleCacheCast(tx().ruleCache()).getRule(r))
+                .map(r -> CacheCasting.ruleCacheCast(ruleCache).getRule(r))
                 .anyMatch(InferenceRule::appendsRolePlayers);
     }
 

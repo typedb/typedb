@@ -43,7 +43,7 @@ import java.util.Set;
 
 import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
-public class IsaExecutor  implements PropertyExecutor.Insertable {
+public class IsaExecutor implements PropertyExecutor.Insertable {
 
     private final Variable var;
     private final IsaProperty property;
@@ -66,28 +66,6 @@ public class IsaExecutor  implements PropertyExecutor.Insertable {
                     EquivalentFragmentSets.isa(property, var, property.type().var(), true)
             );
         }
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //IsaProperty is unique within a var, so skip if this is a relation
-        if (statement.hasProperty(RelationProperty.class)) return null;
-
-        Variable typeVar = property.type().var();
-
-        IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-
-        //isa part
-        Statement isaVar;
-
-        if (property.isExplicit()) {
-            isaVar = new Statement(var).isaX(new Statement(typeVar));
-        } else {
-            isaVar = new Statement(var).isa(new Statement(typeVar));
-        }
-
-        return IsaAtom.create(var, typeVar, isaVar, predicateId, parent);
     }
 
     @Override

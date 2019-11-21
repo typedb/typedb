@@ -19,14 +19,30 @@
 
 package grakn.core.graql.reasoner.atom;
 
+import com.google.common.collect.ImmutableMap;
 import grakn.core.concept.answer.ConceptMap;
+import grakn.core.graql.executor.property.PropertyExecutorFactoryImpl;
+import grakn.core.graql.reasoner.atom.binary.AttributeAtom;
+import grakn.core.graql.reasoner.atom.binary.HasAtom;
+import grakn.core.graql.reasoner.atom.binary.IsaAtom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
+import grakn.core.graql.reasoner.atom.property.DataTypeAtom;
+import grakn.core.graql.reasoner.atom.property.IsAbstractAtom;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.graql.reasoner.utils.ReasonerUtils;
+import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
+import graql.lang.property.DataTypeProperty;
 import graql.lang.property.HasAttributeProperty;
+import graql.lang.property.HasAttributeTypeProperty;
+import graql.lang.property.IsaProperty;
+import graql.lang.property.RelationProperty;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -38,10 +54,86 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
+import static grakn.core.graql.reasoner.utils.ReasonerUtils.getValuePredicates;
+
 /**
  * Factory class for creating Atomic objects.
  */
 public class AtomicFactory {
+
+    public Atomic hasAttributeType(Variable var, HasAttributeTypeProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
+        String label = property.attributeType().getType().orElse(null);
+
+        Variable predicateVar = new Variable();
+        SchemaConcept attributeType = parent.tx().getSchemaConcept(Label.of(label));
+        ConceptId predicateId = attributeType != null ? attributeType.id() : null;
+        return HasAtom.create(var, predicateVar, predicateId, parent);
+    }
+
+    Atomic hasAttribute(Variable var, HasAttributeProperty property, ReasonerQuery parent, Set<Statement> otherStatements) {
+        //NB: HasAttributeProperty always has (type) label specified
+        Variable varName = var.asReturnedVar();
+
+        //NB: we always make the attribute variable explicit
+        Variable attributeVariable = property.attribute().var().asReturnedVar();
+        Variable relationVariable = property.relation().var();
+        Variable predicateVariable = new Variable();
+        Set<ValuePredicate> predicates = getValuePredicates(attributeVariable, property.attribute(), otherStatements, parent,
+                new PropertyExecutorFactoryImpl());
+
+        IsaProperty isaProp = property.attribute().getProperties(IsaProperty.class).findFirst().orElse(null);
+        Statement typeVar = isaProp != null ? isaProp.type() : null;
+        IdPredicate predicate = typeVar != null ? getIdPredicate(predicateVariable, typeVar, otherStatements, parent) : null;
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+
+        //add resource atom
+        Statement resVar = relationVariable.isReturned() ?
+                new Statement(varName).has(property.type(), new Statement(attributeVariable), new Statement(relationVariable)) :
+                new Statement(varName).has(property.type(), new Statement(attributeVariable));
+        return AttributeAtom.create(resVar, attributeVariable, relationVariable, predicateVariable, predicateId, predicates, parent);
+    }
+
+
+    public DataTypeAtom dataType(Variable var, DataTypeProperty property, ReasonerQuery parent) {
+        ImmutableMap.Builder<Graql.Token.DataType, AttributeType.DataType<?>> dataTypesBuilder = new ImmutableMap.Builder<>();
+        dataTypesBuilder.put(Graql.Token.DataType.BOOLEAN, AttributeType.DataType.BOOLEAN);
+        dataTypesBuilder.put(Graql.Token.DataType.DATE, AttributeType.DataType.DATE);
+        dataTypesBuilder.put(Graql.Token.DataType.DOUBLE, AttributeType.DataType.DOUBLE);
+        dataTypesBuilder.put(Graql.Token.DataType.LONG, AttributeType.DataType.LONG);
+        dataTypesBuilder.put(Graql.Token.DataType.STRING, AttributeType.DataType.STRING);
+        ImmutableMap<Graql.Token.DataType, AttributeType.DataType<?>> dataTypes = dataTypesBuilder.build();
+        return DataTypeAtom.create(var, property, parent, dataTypes.get(property.dataType()));
+    }
+
+    Atomic isAbstract(Variable var, ReasonerQuery parent) {
+        return IsAbstractAtom.create(var, parent);
+    }
+
+    Atomic isa(Variable var, IsaProperty property, ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
+        //IsaProperty is unique within a var, so skip if this is a relation
+        if (statement.hasProperty(RelationProperty.class)) return null;
+
+        Variable typeVar = property.type().var();
+
+        IdPredicate predicate = getIdPredicate(typeVar, property.type(), otherStatements, parent);
+        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
+
+        //isa part
+        Statement isaVar;
+
+        if (property.isExplicit()) {
+            isaVar = new Statement(var).isaX(new Statement(typeVar));
+        } else {
+            isaVar = new Statement(var).isa(new Statement(typeVar));
+        }
+
+        return IsaAtom.create(var, typeVar, isaVar, predicateId, parent);
+    }
+
+
+
 
     /**
      * @param pattern conjunction of patterns to be converted to atoms

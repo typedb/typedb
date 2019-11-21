@@ -79,10 +79,6 @@ public class DataTypeExecutor implements PropertyExecutor.Definable {
         ));
     }
 
-    @Override
-    public DataTypeAtom atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return DataTypeAtom.create(var, property, parent, dataType);
-    }
 
     @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {

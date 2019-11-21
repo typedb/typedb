@@ -113,7 +113,6 @@ public class PropertyExecutorFactoryImpl implements PropertyExecutorFactory {
 
         } else if (property instanceof WhenProperty) {
             return new WhenExecutor(var, (WhenProperty) property);
-
         } else {
             throw new IllegalArgumentException("Unrecognised subclass of PropertyExecutor");
         }

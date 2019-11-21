@@ -55,11 +55,6 @@ public class AbstractExecutor implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        return IsAbstractAtom.create(var, parent);
-    }
-
-    @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
         return ImmutableSet.of(new DefineIsAbstract());
     }

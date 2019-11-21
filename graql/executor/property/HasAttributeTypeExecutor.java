@@ -138,17 +138,6 @@ public class HasAttributeTypeExecutor  implements PropertyExecutor.Definable {
     }
 
     @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        //NB: HasResourceType is a special case and it doesn't allow variables as resource types
-        String label = property.attributeType().getType().orElse(null);
-
-        Variable predicateVar = new Variable();
-        SchemaConcept attributeType = parent.tx().getSchemaConcept(Label.of(label));
-        ConceptId predicateId = attributeType != null ? attributeType.id() : null;
-        return HasAtom.create(var, predicateVar, predicateId, parent);
-    }
-
-    @Override
     public Set<PropertyExecutor.Writer> defineExecutors() {
         return ImmutableSet.of(new DefineHasAttributeType());
     }
