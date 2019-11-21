@@ -18,28 +18,28 @@
 
 package grakn.core.graql.reasoner.benchmark;
 
-import grakn.core.kb.concept.api.Concept;
+
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.kb.concept.api.Entity;
-import grakn.core.kb.concept.api.EntityType;
-import grakn.core.kb.concept.api.RelationType;
-import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.reasoner.graph.DiagonalGraph;
 import grakn.core.graql.reasoner.graph.LinearTransitivityMatrixGraph;
 import grakn.core.graql.reasoner.graph.PathTreeGraph;
 import grakn.core.graql.reasoner.graph.TransitivityChainGraph;
 import grakn.core.graql.reasoner.graph.TransitivityMatrixGraph;
-import grakn.core.rule.GraknTestServer;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Entity;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.server.Session;
 import grakn.core.kb.server.Transaction;
+import grakn.core.rule.GraknTestServer;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+import java.util.List;
 import org.junit.ClassRule;
 import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +48,6 @@ public class BenchmarkSmallIT {
 
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
-
 
     /**
      * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:

@@ -26,7 +26,6 @@ import grakn.core.kb.server.exception.TransactionException;
 import grakn.core.server.keyspace.KeyspaceImpl;
 import grakn.core.kb.server.Transaction;
 import grakn.core.kb.server.Session;
-import grakn.core.server.session.TransactionImpl;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

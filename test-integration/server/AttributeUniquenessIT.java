@@ -366,7 +366,7 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
-        assertNotNull(session.attributesCache().getIfPresent(index));
+        assertNotNull(session.attributeManager().attributesCache().getIfPresent(index));
 
 
         try (Transaction tx = session.writeTransaction()) {
@@ -374,14 +374,14 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
-        assertNull(session.attributesCache().getIfPresent(index));
+        assertNull(session.attributeManager().attributesCache().getIfPresent(index));
 
         try (Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
 
-        assertNotNull(session.attributesCache().getIfPresent(index));
+        assertNotNull(session.attributeManager().attributesCache().getIfPresent(index));
 
     }
 
@@ -413,7 +413,7 @@ public class AttributeUniquenessIT {
             assertEquals(1, attribute.size());
             String newAttributeId = attribute.get(0).get("x").id().getValue();
             assertNotEquals(newAttributeId, oldAttributeId);
-            assertEquals(ConceptId.of(newAttributeId), session.attributesCache().getIfPresent(index));
+            assertEquals(ConceptId.of(newAttributeId), session.attributeManager().attributesCache().getIfPresent(index));
         }
     }
 
@@ -433,7 +433,7 @@ public class AttributeUniquenessIT {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
             tx.commit();
-            assertNull(session.attributesCache().getIfPresent(index));
+            assertNull(session.attributeManager().attributesCache().getIfPresent(index));
         }
         try (Transaction tx = session.writeTransaction()) {
             List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());

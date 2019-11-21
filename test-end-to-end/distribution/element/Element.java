@@ -16,20 +16,15 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package grakn.core.graph.graphdb.database.serialize;
+package grakn.core.distribution.element;
 
-import grakn.core.graph.diskstorage.ScanBuffer;
+import graql.lang.Graql;
+import graql.lang.pattern.Pattern;
+import graql.lang.statement.Variable;
 
-public interface Serializer {
+public interface Element {
 
-    Object readClassAndObject(ScanBuffer buffer);
-
-    <T> T readObject(ScanBuffer buffer, Class<T> type);
-
-    <T> T readObjectByteOrder(ScanBuffer buffer, Class<T> type);
-
-    <T> T readObjectNotNull(ScanBuffer buffer, Class<T> type);
-
-    DataOutput getDataOutput(int initialCapacity);
-
+    default Pattern patternise(){ return patternise(Graql.var().var().asReturnedVar());}
+    Pattern patternise(Variable var);
+    int conceptSize();
 }

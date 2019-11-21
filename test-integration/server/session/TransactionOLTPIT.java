@@ -25,6 +25,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.impl.TypeImpl;
 import grakn.core.core.Schema;
+import grakn.core.graph.core.JanusGraph;
 import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
@@ -32,6 +33,7 @@ import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.concept.api.SchemaConcept;
@@ -45,30 +47,34 @@ import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.rule.GraknTestServer;
 import grakn.core.server.util.LockManager;
 import grakn.core.util.ConceptDowncasting;
+import grakn.core.util.GraqlTestUtil;
 import graql.lang.Graql;
 import graql.lang.query.GraqlDefine;
 import graql.lang.query.GraqlGet;
 import graql.lang.query.GraqlInsert;
+import graql.lang.statement.Statement;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import junit.framework.TestCase;
 import org.apache.tinkerpop.gremlin.process.traversal.strategy.verification.VerificationException;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.hamcrest.core.IsInstanceOf;
-import grakn.core.graph.core.JanusGraph;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 import static grakn.core.util.GraqlTestUtil.assertCollectionsNonTriviallyEqual;
 import static graql.lang.Graql.define;
@@ -178,7 +184,13 @@ public class TransactionOLTPIT {
 
     @Test
     public void whenGettingTheShardingThreshold_TheCorrectValueIsReturned() {
-        assertEquals(250000L, tx.shardingThreshold());
+        final long threshold = 333333L;
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, threshold);
+        try(Session session = server.sessionWithNewKeyspace()) {
+            try (Transaction tx = session.readTransaction()) {
+                assertEquals(threshold, tx.shardingThreshold());
+            }
+        }
     }
 
     @Test
@@ -446,10 +458,99 @@ public class TransactionOLTPIT {
         }
     }
 
+    private void loadEntitiesConcurrentlyWithSpecificShardingThreshold(long shardingThreshold, int insertsPerCommit, long noOfEntities, int threads, double tol) throws ExecutionException, InterruptedException {
+        Long oldThreshold = server.serverConfig().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD);
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, shardingThreshold);
+        Session session = server.sessionWithNewKeyspace();
+
+        String entityLabel = "someEntity";
+        try(Transaction tx = session.writeTransaction()){
+            tx.putEntityType(entityLabel);
+            tx.commit();
+        }
+        List<Statement> statements = new ArrayList<>();
+        for (int i = 0 ; i < noOfEntities ; i++){
+            statements.add(Graql.var().isa(entityLabel));
+        }
+        GraqlTestUtil.insertStatementsConcurrently(session, statements, threads, insertsPerCommit);
+        try(Transaction tx = session.writeTransaction()) {
+            final long noOfConcepts = tx.execute(Graql.parse("compute count in someEntity;").asComputeStatistics()).get(0).number().longValue();
+            TestCase.assertEquals(noOfEntities, noOfConcepts);
+            //NB one extra shard comes from the fact that if we have <shardThreshold> number of instances we will have 2 shards (instance count equal to thresh triggers sharding)
+            long expectedShards = noOfEntities/shardingThreshold + 1;
+            long createdShards = tx.getShardCount(tx.getType(Label.of(entityLabel)));
+            System.out.println("expected shards: " + expectedShards);
+            System.out.println("created shards: " + createdShards);
+            assertEquals(expectedShards, createdShards, tol*expectedShards);
+        }
+        assertFalse(session.shardManager().lockCandidatesPresent());
+        assertFalse(session.shardManager().shardRequestsPresent());
+        session.close();
+        server.serverConfig().setConfigProperty(ConfigKey.TYPE_SHARD_THRESHOLD, oldThreshold);
+    }
+
+    @Test
+    public void whenMultipleTXsCreateShards_shardingThresholdEqualToInsertSize_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        //NB: in this configuration each tx should be creating a shard on commit provided it no other tx creates a shard at the same time
+        int threads = 16;
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(200L,200, 80000, 16, 1.0/threads);
+    }
+
+    @Test
+    public void whenMultipleTXsCreateShards_shardingThresholdMultipleOfInsertSize_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        //NB: in this configuration each thread creates a shard every 4 txs provided it no other tx creates a shard at the same time
+        int threads = 16;
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(400L,100, 80000, threads, 1.0/threads);
+    }
+
+    @Test
+    public void whenMultipleTXsCreateShards_insertSizeMultipleOfShardingThreshold_currentShardsDontGoOutOfSyncAndShardManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        int threads = 16;
+        //NB: here within a single tx, we exceed the sharding threshold multiple times. In such scenario we don't create multiple shards - we create a single one.
+        //Hence the final number of shards will be ~<shardingThreshold>/<insertsPerCommit> * <noOfEntities>/<shardingThreshold>
+        long threshold = 100L;
+        int insertsPerCommit = 400;
+        double tol = 1.0 - (double )threshold/insertsPerCommit + 1.0/threads;
+        loadEntitiesConcurrentlyWithSpecificShardingThreshold(100L, 400, 80000, threads, tol);
+    }
+
+    @Test
+    public void whenMultipleTxsInsertAttributes_noGhostVerticesAreCreatedAndAttributeManagerIsEmptyAfterLoading() throws ExecutionException, InterruptedException {
+        Session session = server.sessionWithNewKeyspace();
+
+        String entityLabel = "someEntity";
+        String attributeLabel = "someAttribute";
+        try(Transaction tx = session.writeTransaction()){
+            AttributeType<Long> someAtttribute = tx.putAttributeType(attributeLabel, AttributeType.DataType.LONG);
+            tx.putEntityType(entityLabel).has(someAtttribute);
+            tx.commit();
+        }
+        final int insertsPerCommit = 200;
+        final int noOfEntities = 100000;
+        final int threads = 8;
+
+        List<Statement> statements = new ArrayList<>();
+        Random rand = new Random();
+        Set<Integer> values = new HashSet<>();
+        for (int i = 0 ; i < noOfEntities ; i++){
+            int value = rand.nextInt(10);
+            values.add(value);
+            statements.add(Graql.var("x" + i).isa(attributeLabel).val(value));
+        }
+        GraqlTestUtil.insertStatementsConcurrently(session, statements, threads, insertsPerCommit);
+        try(Transaction tx = session.writeTransaction()) {
+            final long noOfAttributes = tx.execute(Graql.parse("compute count in someAttribute;").asComputeStatistics()).get(0).number().longValue();
+            TestCase.assertEquals(values.size(), noOfAttributes);
+        }
+
+        assertFalse(session.attributeManager().lockCandidatesPresent());
+        assertFalse(session.attributeManager().ephemeralAttributesPresent());
+        session.close();
+    }
+
     @Test
     public void whenCreatingAValidSchemaInSeparateThreads_EnsureValidationRulesHold() throws ExecutionException, InterruptedException {
         Session localSession = server.sessionWithNewKeyspace();
-
         ExecutorService executor = Executors.newCachedThreadPool();
 
         executor.submit(() -> {

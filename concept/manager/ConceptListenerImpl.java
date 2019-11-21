@@ -28,6 +28,7 @@ import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
 import grakn.core.kb.concept.api.Entity;
 import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.Relation;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
@@ -38,6 +39,7 @@ import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptListener;
 import grakn.core.kb.concept.structure.Casting;
 import grakn.core.kb.graql.reasoner.cache.QueryCache;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.statistics.UncomittedStatisticsDelta;
@@ -54,16 +56,20 @@ import java.util.function.Supplier;
  */
 public class ConceptListenerImpl implements ConceptListener {
 
-    private TransactionCache transactionCache;
-    private QueryCache queryCache;
-    private RuleCache ruleCache;
-    private UncomittedStatisticsDelta statistics;
+    private final TransactionCache transactionCache;
+    private final QueryCache queryCache;
+    private final RuleCache ruleCache;
+    private final UncomittedStatisticsDelta statistics;
+    private final AttributeManager attributeManager;
+    private final String txId;
 
-    public ConceptListenerImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, UncomittedStatisticsDelta statistics) {
+    public ConceptListenerImpl(TransactionCache transactionCache, QueryCache queryCache, RuleCache ruleCache, UncomittedStatisticsDelta statistics, AttributeManager attributeManager, String txId) {
         this.transactionCache = transactionCache;
         this.queryCache = queryCache;
         this.ruleCache = ruleCache;
         this.statistics = statistics;
+        this.attributeManager = attributeManager;
+        this.txId = txId;
     }
 
     private void conceptDeleted(Concept concept) {
@@ -76,6 +82,7 @@ public class ConceptListenerImpl implements ConceptListener {
         statistics.decrement(type);
         queryCache.ackDeletion(type);
         conceptDeleted(thing);
+        if(thing.isAttribute()) attributeDeleted(thing.asAttribute());
     }
 
     // Using a supplier instead of the concept avoids fetching the wrapping concept
@@ -126,7 +133,14 @@ public class ConceptListenerImpl implements ConceptListener {
 
         //acknowledge key relation modification if the thing is one
         if (thingType.isImplicit() && Schema.ImplicitType.isKey(thingType.label())){
-            transactionCache.ackModifiedKeyRelation();
+            thing.asRelation().rolePlayers()
+                    .filter(Concept::isAttribute)
+                    .map(Concept::asAttribute)
+                    .forEach(key -> {
+                        Label label = Schema.ImplicitType.explicitLabel(thingType.label());
+                        String index = Schema.generateAttributeIndex(label, key.value().toString());
+                        transactionCache.addModifiedKeyIndex(index);
+                    });
         }
     }
 
@@ -137,6 +151,14 @@ public class ConceptListenerImpl implements ConceptListener {
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
         transactionCache.addNewAttribute(type.label(), index, attribute.id());
         thingCreated(attribute, isInferred);
+        attributeManager.ackAttributeInsert(index, txId);
+    }
+
+    private <D> void attributeDeleted(Attribute<D> attribute) {
+        Type type = attribute.type();
+        //Track the attribute by index
+        String index = Schema.generateAttributeIndex(type.label(), attribute.value().toString());
+        attributeManager.ackAttributeDelete(index, txId);
     }
 
     @Override

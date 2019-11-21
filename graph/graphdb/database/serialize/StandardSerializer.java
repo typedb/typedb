@@ -86,15 +86,6 @@ import java.util.concurrent.TimeUnit;
 
 public class StandardSerializer implements AttributeHandler, Serializer {
 
-    /**
-     * This offset is used by user registration to make sure they don't collide with internal class
-     * registrations. It must be ensured that this number is LARGER than any internally used
-     * registration number.
-     * This value may NEVER EVER be changed or compatibility to older versions breaks
-     */
-    private static final int CLASS_REGISTRATION_OFFSET = 100;
-    private static final int MAX_REGISTRATION_NO = 100000;
-
     private final BiMap<Integer, Class> registrations;
     private final Map<Class, AttributeSerializer> handlers;
 
@@ -160,23 +151,6 @@ public class StandardSerializer implements AttributeHandler, Serializer {
         registerClassInternal(67, TraverserSet.class, new SerializableSerializer());
         registerClassInternal(68, HashMap.class, new SerializableSerializer());
         registerClassInternal(69, GraphCacheEvictionAction.class, new EnumSerializer<>(GraphCacheEvictionAction.class));
-    }
-
-    @Override
-    public synchronized <V> void registerClass(int registrationNo, Class<V> datatype, AttributeSerializer<V> serializer) {
-        Preconditions.checkArgument(registrationNo >= 0 && registrationNo < MAX_REGISTRATION_NO, "Registration number" +
-                " out of range [0,%s]: %s", MAX_REGISTRATION_NO, registrationNo);
-
-        if (datatype == HashMap.class) {
-            final Integer hashMapRegNo = registrations.inverse().get(normalizeDataType(HashMap.class));
-            if (hashMapRegNo != null) {
-                // Remove the default HashMap serializer so we can replace it with the custom one
-                registrations.remove(hashMapRegNo);
-                handlers.remove(datatype);
-            }
-        }
-
-        registerClassInternal(CLASS_REGISTRATION_OFFSET + registrationNo, datatype, serializer);
     }
 
     private synchronized <V> void registerClassInternal(int registrationNo, Class<? extends V> datatype, AttributeSerializer<V> serializer) {

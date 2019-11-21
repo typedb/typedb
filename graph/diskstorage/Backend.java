@@ -93,7 +93,6 @@ public class Backend {
     public static final String IDSTORE_NAME = "janusgraph_ids";
 
     public static final String SYSTEM_TX_LOG_NAME = "txlog";
-    private static final String SYSTEM_MGMT_LOG_NAME = "systemlog";
 
     // The sum of the following 2 fields should be 1
     private static final double EDGESTORE_CACHE_PERCENT = 0.8;
@@ -106,7 +105,6 @@ public class Backend {
     private final KCVSCache indexStore;
     private final KCVSCache txLogStore;
     private final KCVSConfiguration systemConfig;
-    private final KCVSLogManager managementLogManager;
     private final KCVSLogManager txLogManager;
     private final LogManager userLogManager;
     private final Map<String, IndexProvider> indexes;
@@ -123,7 +121,6 @@ public class Backend {
         storeManager = manager;
         indexes = getIndexes(configuration);
         storeFeatures = storeManager.getFeatures();
-        managementLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(MANAGEMENT_LOG));
         txLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(TRANSACTION_LOG));
         userLogManager = new KCVSLogManager(storeManager, configuration.restrictTo(USER_LOG));
         bufferSize = configuration.get(BUFFER_SIZE);
@@ -161,7 +158,6 @@ public class Backend {
 
             //Just open them so that they are cached
             txLogManager.openLog(SYSTEM_TX_LOG_NAME);
-            managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
             txLogStore = new KCVSNoCache(storeManager.openDatabase(SYSTEM_TX_LOG_NAME));
 
             //Open global configuration
@@ -207,14 +203,6 @@ public class Backend {
         }
     }
 
-    public Log getSystemMgmtLog() {
-        try {
-            return managementLogManager.openLog(SYSTEM_MGMT_LOG_NAME);
-        } catch (BackendException e) {
-            throw new JanusGraphException("Could not re-open management LOG", e);
-        }
-    }
-
     public KeyColumnValueStore getIDsStore() {
         try {
             return storeManager.openDatabase(IDSTORE_NAME);
@@ -243,7 +231,6 @@ public class Backend {
             LOG.debug("Configuring index [{}]", index);
             IndexProvider provider = getIndexProviderClass(config.restrictTo(index), config.get(INDEX_BACKEND, index),
                     StandardIndexProvider.getAllProviderClasses());
-            Preconditions.checkNotNull(provider);
             builder.put(index, provider);
         }
         return builder.build();
@@ -295,7 +282,6 @@ public class Backend {
         if (!hasAttemptedClose) {
             try {
                 hasAttemptedClose = true;
-                managementLogManager.close();
                 txLogManager.close();
                 userLogManager.close();
                 edgeStore.close();
@@ -327,7 +313,6 @@ public class Backend {
     public synchronized void clearStorage() throws BackendException {
         if (!hasAttemptedClose) {
             hasAttemptedClose = true;
-            managementLogManager.close();
             txLogManager.close();
             userLogManager.close();
             edgeStore.close();

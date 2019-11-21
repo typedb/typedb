@@ -48,6 +48,7 @@ import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.manager.ConceptNotificationChannel;
 import grakn.core.kb.concept.structure.EdgeElement;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.concept.util.attribute.Serialiser;
 import grakn.core.kb.server.cache.TransactionCache;
@@ -67,6 +68,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE;
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE_TYPE;
@@ -393,8 +395,7 @@ public class ConceptManagerImpl implements ConceptManager {
     @Override
     @Nullable
     public Attribute getCachedAttribute(String index) {
-        Attribute concept = transactionCache.getAttributeCache().get(index);
-        return concept;
+        return transactionCache.getAttributeCache().get(index);
     }
 
     /**
@@ -532,6 +533,25 @@ public class ConceptManagerImpl implements ConceptManager {
     @Override
     public Role getRole(String label) {
         return getSchemaConcept(Label.of(label), Schema.BaseType.ROLE);
+    }
+
+    /**
+     * This is used when assigning a type to a concept - we check the current shard.
+     * The read vertex property contains the current shard vertex id.
+     * We use a readLock as janusGraph commit does not seem to be atomic - the property might get updated before the corresponding vertex is actually created.
+     * As a result, without a lock we could get a ghost vertex READ - a vertex that's partially created.
+     * Further investigation needed
+     */
+    public Shard getShardWithLock(String typeId) {
+        graphLock.readLock().lock();
+        Vertex shardVertex;
+        try {
+            Object currentShardId = elementFactory.getVertexWithId(typeId).property(Schema.VertexProperty.CURRENT_SHARD.name()).value();
+            shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
+        } finally {
+            graphLock.readLock().unlock();
+        }
+        return elementFactory.getShard(shardVertex);
     }
 
     public Rule getRule(String label) {

@@ -42,32 +42,27 @@ public class EdgeIT {
     public void setUp(){
         String keyspaceName = "ksp_"+UUID.randomUUID().toString().substring(0, 20).replace("-", "_");
         Keyspace keyspace = new KeyspaceImpl(keyspaceName);
-        final int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
-        final int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
         // obtain components to create sessions and transactions
         JanusGraphFactory janusGraphFactory = server.janusGraphFactory();
         StandardJanusGraph graph = janusGraphFactory.openGraph(keyspace.name());
 
         // create the session
-        Cache<String, ConceptId> attributeCache = CacheBuilder.newBuilder()
-                .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
-                .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
-                .build();
+        AttributeManager attributeManager = new AttributeManagerImpl();
 
         session = new SessionImpl(keyspace, server.serverConfig(), new KeyspaceSchemaCache(), graph,
-                new KeyspaceStatistics(), attributeCache, new ReentrantReadWriteLock());
+                new KeyspaceStatistics(), attributeManager, new ShardManagerImpl(), new ReentrantReadWriteLock());
 
         // create the transaction
         CacheProviderImpl cacheProvider = new CacheProviderImpl(new KeyspaceSchemaCache());
         UncomittedStatisticsDelta statisticsDelta = new UncomittedStatisticsDelta();
-        ConceptObserverImpl conceptObserver = new ConceptObserverImpl(cacheProvider, statisticsDelta);
 
         // janus elements
         JanusGraphTransaction janusGraphTransaction = graph.newThreadBoundTransaction();
         ElementFactory elementFactory = new ElementFactory(janusGraphTransaction);
 
         // Grakn elements
+        ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager, janusGraphTransaction.toString());
         ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, new ReentrantReadWriteLock());
         TraversalPlanFactory traversalPlanFactory = new TraversalPlanFactoryImpl(conceptManager, session.config().getProperty(ConfigKey.TYPE_SHARD_THRESHOLD), session.keyspaceStatistics());
         ExecutorFactory executorFactory = new ExecutorFactory(conceptManager, null, new KeyspaceStatistics(), traversalPlanFactory);

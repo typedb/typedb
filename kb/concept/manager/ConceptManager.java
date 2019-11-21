@@ -36,6 +36,7 @@ import grakn.core.kb.concept.api.Rule;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.structure.EdgeElement;
+import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import graql.lang.pattern.Pattern;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -95,4 +96,6 @@ public interface ConceptManager {
     // TODO these should not be here, overexposed interface or incorrect location
     LabelId convertToId(Label label);
     VertexElement addTypeVertex(LabelId id, Label label, Schema.BaseType baseType);
+
+    Shard getShardWithLock(String toString);
 }

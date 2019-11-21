@@ -18,26 +18,23 @@
 
 package grakn.core.server.session;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import grakn.core.common.config.Config;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.graph.graphdb.database.StandardJanusGraph;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.Session;
+import grakn.core.kb.server.ShardManager;
 import grakn.core.kb.server.cache.KeyspaceSchemaCache;
 import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.kb.server.statistics.KeyspaceStatistics;
 import grakn.core.server.util.LockManager;
-import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
-import grakn.core.graph.graphdb.database.StandardJanusGraph;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import org.apache.tinkerpop.gremlin.hadoop.structure.HadoopGraph;
 
 /**
  * Grakn Server's internal {@link SessionImpl} Factory
@@ -45,8 +42,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * it is possible to also update the Keyspace Store (which tracks all existing keyspaces).
  */
 public class SessionFactory {
-    private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
-    private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
+
     // Keep visibility to protected as this is used by KGMS
     protected final JanusGraphFactory janusGraphFactory;
     // Keep visibility to protected as this is used by KGMS
@@ -77,7 +73,8 @@ public class SessionFactory {
         StandardJanusGraph graph;
         KeyspaceSchemaCache cache;
         KeyspaceStatistics keyspaceStatistics;
-        Cache<String, ConceptId> attributesCache;
+        AttributeManager attributeManager;
+        ShardManager shardManager;
         ReadWriteLock graphLock;
         HadoopGraph hadoopGraph;
 
@@ -91,7 +88,8 @@ public class SessionFactory {
                 graph = cacheContainer.graph();
                 cache = cacheContainer.cache();
                 keyspaceStatistics = cacheContainer.keyspaceStatistics();
-                attributesCache = cacheContainer.attributesCache();
+                attributeManager = cacheContainer.attributeManager();
+                shardManager = cacheContainer.shardManager();
                 graphLock = cacheContainer.graphLock();
                 hadoopGraph = cacheContainer.hadoopGraph();
 
@@ -100,27 +98,20 @@ public class SessionFactory {
                 hadoopGraph = hadoopGraphFactory.getGraph(keyspace);
                 cache = new KeyspaceSchemaCache();
                 keyspaceStatistics = new KeyspaceStatistics();
-                attributesCache = buildAttributeCache();
+                attributeManager = new AttributeManagerImpl();
+                shardManager = new ShardManagerImpl();
                 graphLock = new ReentrantReadWriteLock();
-                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributesCache, graphLock, hadoopGraph);
+                cacheContainer = new SharedKeyspaceData(cache, graph, keyspaceStatistics, attributeManager, shardManager, graphLock, hadoopGraph);
                 sharedKeyspaceDataMap.put(keyspace, cacheContainer);
             }
 
-            Session session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributesCache, graphLock);
+            Session session = new SessionImpl(keyspace, config, cache, graph, hadoopGraph, keyspaceStatistics, attributeManager, shardManager, graphLock);
             session.setOnClose(this::onSessionClose);
             cacheContainer.addSessionReference(session);
             return session;
         } finally {
             lock.unlock();
         }
-    }
-
-    // Keep visibility to protected as this is used by KGMS
-    protected Cache<String, ConceptId> buildAttributeCache() {
-        return CacheBuilder.newBuilder()
-                .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
-                .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
-                .build();
     }
 
     /**
@@ -192,18 +183,22 @@ public class SessionFactory {
 
         // Map<AttributeIndex, ConceptId> used to map an attribute index to a unique id
         // so that concurrent transactions can merge the same attribute indexes using a unique id
-        private final Cache<String, ConceptId> attributesCache;
+        private final AttributeManager attributeManager;
+
+        private final ShardManager shardManager;
 
         private final ReadWriteLock graphLock;
 
         // Keep visibility to public as this is used by KGMS
-        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics, Cache<String, ConceptId> attributesCache, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
+        public SharedKeyspaceData(KeyspaceSchemaCache keyspaceSchemaCache, StandardJanusGraph graph, KeyspaceStatistics keyspaceStatistics,
+                                  AttributeManager attributeManager, ShardManager shardManager, ReadWriteLock graphLock, HadoopGraph hadoopGraph) {
             this.keyspaceSchemaCache = keyspaceSchemaCache;
             this.graph = graph;
             this.hadoopGraph = hadoopGraph;
             this.sessions = new ArrayList<>();
             this.keyspaceStatistics = keyspaceStatistics;
-            this.attributesCache = attributesCache;
+            this.attributeManager = attributeManager;
+            this.shardManager = shardManager;
             this.graphLock = graphLock;
         }
 
@@ -247,9 +242,11 @@ public class SessionFactory {
         }
 
         // Keep visibility to public as this is used by KGMS
-        public Cache<String, ConceptId> attributesCache() {
-            return attributesCache;
+        public AttributeManager attributeManager() {
+            return attributeManager;
         }
+
+        public ShardManager shardManager(){ return shardManager;}
 
         // Keep visibility to public as this is used by KGMS
         public HadoopGraph hadoopGraph() {

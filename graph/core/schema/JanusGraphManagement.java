@@ -200,38 +200,10 @@ public interface JanusGraphManagement extends SchemaManager {
     ConsistencyModifier getConsistency(JanusGraphSchemaElement element);
 
     /**
-     * Sets the consistency modifier for the given {@link JanusGraphSchemaElement}. Note, that only {@link RelationType}s
-     * and composite graph indexes allow changing of the consistency level.
-     */
-    void setConsistency(JanusGraphSchemaElement element, ConsistencyModifier consistency);
-
-    /**
      * Retrieves the time-to-live for the given {@link JanusGraphSchemaType} as a {@link Duration}.
      * If no TTL has been defined, the returned Duration will be zero-length ("lives forever").
      */
     Duration getTTL(JanusGraphSchemaType type);
-
-    /**
-     * Sets the time-to-live for the given {@link JanusGraphSchemaType}. The most granular time unit used for TTL values
-     * is seconds. Any argument will be rounded to seconds if it is more granular than that.
-     * The {@code ttl} must be non-negative.  When {@code ttl} is zero, any existing TTL on {@code type} is removed
-     * ("lives forever"). Positive {@code ttl} values are interpreted literally.
-     *
-     * @param type     the affected type
-     * @param duration time-to-live
-     */
-    void setTTL(JanusGraphSchemaType type, Duration duration);
-
-    /*
-    ##################### SCHEMA UPDATE ##########################
-     */
-
-    /**
-     * Changes the name of a {@link JanusGraphSchemaElement} to the provided new name.
-     * The new name must be valid and not already in use, otherwise an {@link IllegalArgumentException} is thrown.
-     */
-    void changeName(JanusGraphSchemaElement element, String newName);
-
 
     /*
     ##################### CLUSTER MANAGEMENT ##########################

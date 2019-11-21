@@ -77,9 +77,7 @@ public class TypeUtil {
         else return baseType;
     }
 
-    private static <T> T getTypeModifier(SchemaSource schema,
-                                         final ModifierType modifierType,
-                                         final T defaultValue) {
+    private static <T> T getTypeModifier(SchemaSource schema, ModifierType modifierType, T defaultValue) {
         for (SchemaSource.Entry entry : schema.getRelated(TypeDefinitionCategory.TYPE_MODIFIER, Direction.OUT)) {
             T value = entry.getSchemaType().getDefinition().getValue(modifierType.getCategory());
             if (null != value) {
