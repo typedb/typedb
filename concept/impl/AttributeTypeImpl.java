@@ -156,7 +156,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
      */
     private Attribute<D> getAttributeWithLock(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-        return conceptManager.getAttributeWithLock(index);
+        return conceptManager.getAttribute(index);
     }
 
     /**

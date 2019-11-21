@@ -19,6 +19,8 @@
 
 package grakn.core.concept.impl;
 
+import grakn.core.concept.structure.ElementFactory;
+import grakn.core.core.Schema;
 import grakn.core.kb.concept.api.Attribute;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.concept.api.Concept;
@@ -34,22 +36,15 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.concept.structure.EdgeElement;
-import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.kb.concept.util.ValueConverter;
 import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
-import org.apache.tinkerpop.gremlin.structure.Direction;
-import org.apache.tinkerpop.gremlin.structure.Edge;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
-import grakn.core.concept.structure.ElementFactory;
-import grakn.core.kb.concept.util.ValueConverter;
-
-import javax.annotation.Nullable;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
@@ -57,7 +52,10 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import javax.annotation.Nullable;
+import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE;
 import static grakn.core.core.Schema.BaseType.ATTRIBUTE_TYPE;
@@ -380,9 +378,8 @@ public class ConceptManagerImpl implements ConceptManager {
 
     /**
      * This is only used when checking if attribute exists before trying to create a new one.
-     * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
-    Attribute getAttributeWithLock(String index) {
+    Attribute getAttribute(String index) {
         Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
@@ -394,12 +391,7 @@ public class ConceptManagerImpl implements ConceptManager {
         if (attributeCommitted != null) return getConcept(attributeCommitted);
 
         //check graph
-        graphLock.readLock().lock();
-        try {
-            return getConcept(Schema.VertexProperty.INDEX, index);
-        } finally {
-            graphLock.readLock().unlock();
-        }
+        return getConcept(Schema.VertexProperty.INDEX, index);
     }
 
     public <T extends Concept> T getConcept(Schema.VertexProperty key, Object value) {
