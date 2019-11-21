@@ -31,10 +31,6 @@ public class KCVSNoCache extends KCVSCache {
     }
 
     @Override
-    public void clearCache() {
-    }
-
-    @Override
     protected void invalidate(StaticBuffer key, List<StaticBuffer> entries) {
     }
 

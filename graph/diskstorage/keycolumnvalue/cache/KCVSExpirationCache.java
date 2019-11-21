@@ -43,7 +43,7 @@ public class KCVSExpirationCache extends KCVSCache {
     private static final int GUAVA_CACHE_ENTRY_SIZE = 104;
     private static final int OBJECT_HEADER = 12;
     private static final int OBJECT_REFERENCE = 8;
-    private static final int STATICARRAYBUFFER_RAW_SIZE = OBJECT_HEADER + 2*4 + 6 + (OBJECT_REFERENCE + OBJECT_HEADER + 8); // 6 = overhead & padding, (byte[] array)
+    private static final int STATICARRAYBUFFER_RAW_SIZE = OBJECT_HEADER + 2 * 4 + 6 + (OBJECT_REFERENCE + OBJECT_HEADER + 8); // 6 = overhead & padding, (byte[] array)
 
     //Weight estimation
     private static final int STATIC_ARRAY_BUFFER_SIZE = STATICARRAYBUFFER_RAW_SIZE + 10; // 10 = last number is average length
@@ -132,18 +132,15 @@ public class KCVSExpirationCache extends KCVSCache {
         return results;
     }
 
-    @Override
-    public void clearCache() {
-        cache.invalidateAll();
-        expiredKeys.clear();
-        penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
-    }
-
+    // Invalidate workflow:
+    // - a key gets invalidated by Cache Transaction
+    // - we move the key in expiredKeys and we generate a "valid period" -> this period becomes the value
+    // - randomly countdown on the penalty if something something
     @Override
     public void invalidate(StaticBuffer key, List<StaticBuffer> entries) {
         Preconditions.checkArgument(!hasValidateKeysOnly() || entries.isEmpty());
         expiredKeys.put(key, getExpirationTime());
-        if (Math.random() < 1.0 / INVALIDATE_KEY_FRACTION_PENALTY) penaltyCountdown.countDown();
+        if (Math.random() < (1.0 / INVALIDATE_KEY_FRACTION_PENALTY)) penaltyCountdown.countDown();
     }
 
     @Override
@@ -172,17 +169,20 @@ public class KCVSExpirationCache extends KCVSCache {
         return until < System.currentTimeMillis();
     }
 
+    // return time expressing how long a key has been cached for
     private long getAge(long until) {
-        long age = System.currentTimeMillis() - (until - cacheTimeMS);
-        assert age >= 0;
-        return age;
+        return System.currentTimeMillis() - (until - cacheTimeMS);
     }
 
+    // Fancy daemon thread used to read from expiredKeys and decide whether the keys in there should be actually be removed from the real cache.
+    // This is because when a key gets invalidated it's not immediately removed from the cache!
+    // It's possible to keep expired keys in cache for a invalidationGracePeriodMS
+    // Does all of this really lead to a smarter caching? 🤔
     private class CleanupThread extends Thread {
 
         private boolean stop = false;
 
-        public CleanupThread() {
+        CleanupThread() {
             this.setDaemon(true);
             this.setName("ExpirationStoreCache-" + getId());
         }
@@ -203,19 +203,24 @@ public class KCVSExpirationCache extends KCVSCache {
                     }
                 }
                 //Do clean up work by invalidating all entries for expired keys
-                Map<StaticBuffer, Long> expiredKeysCopy = new HashMap<>(expiredKeys.size());
+                Map<StaticBuffer, Long> keysToInvalidate = new HashMap<>(expiredKeys.size());
                 for (Map.Entry<StaticBuffer, Long> expKey : expiredKeys.entrySet()) {
+                    //if it's already beyond the main cache's expiration time, then the cache will have already invalidated the key by now,
+                    // so just get rid of it also in expiredKeys
                     if (isBeyondExpirationTime(expKey.getValue())) {
                         expiredKeys.remove(expKey.getKey(), expKey.getValue());
-                    } else if (getAge(expKey.getValue()) >= invalidationGracePeriodMS) {
-                        expiredKeysCopy.put(expKey.getKey(), expKey.getValue());
+                    }
+                    // If we get here it's because the key is not old enough for the main cache to delete it, so let's check if we need to speed up the invalidation:
+                    // if the key has been cached for a time between invalidationGracePeriodMS and cacheTimeMS, we force the deletion from the main cache
+                    else if (getAge(expKey.getValue()) >= invalidationGracePeriodMS) {
+                        keysToInvalidate.put(expKey.getKey(), expKey.getValue());
                     }
                 }
                 for (KeySliceQuery ksq : cache.asMap().keySet()) {
-                    if (expiredKeysCopy.containsKey(ksq.getKey())) cache.invalidate(ksq);
+                    if (keysToInvalidate.containsKey(ksq.getKey())) cache.invalidate(ksq);
                 }
                 penaltyCountdown = new CountDownLatch(PENALTY_THRESHOLD);
-                for (Map.Entry<StaticBuffer, Long> expKey : expiredKeysCopy.entrySet()) {
+                for (Map.Entry<StaticBuffer, Long> expKey : keysToInvalidate.entrySet()) {
                     expiredKeys.remove(expKey.getKey(), expKey.getValue());
                 }
             }

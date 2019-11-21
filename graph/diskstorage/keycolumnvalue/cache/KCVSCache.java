@@ -18,7 +18,6 @@
 
 package grakn.core.graph.diskstorage.keycolumnvalue.cache;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableList;
 import grakn.core.graph.diskstorage.BackendException;
 import grakn.core.graph.diskstorage.Entry;
@@ -45,9 +44,6 @@ public abstract class KCVSCache extends KCVSProxy {
     protected boolean hasValidateKeysOnly() {
         return true;
     }
-
-    @VisibleForTesting
-    public abstract void clearCache();
 
     protected abstract void invalidate(StaticBuffer key, List<StaticBuffer> entries);
 

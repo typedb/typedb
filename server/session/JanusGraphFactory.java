@@ -70,6 +70,7 @@ final public class JanusGraphFactory {
             TraversalStrategies strategies = TraversalStrategies.GlobalCache.getStrategies(StandardJanusGraphTx.class);
             strategies = strategies.clone().addStrategies(new JanusPreviousPropertyStepStrategy());
             //TODO: find out why Tinkerpop added these strategies. They result in many NoOpBarrier steps which slowed down our queries so we had to remove them.
+            // 2019 NOTE: find out if removing these strategies still makes a difference, probably not.
             strategies.removeStrategies(PathRetractionStrategy.class, LazyBarrierStrategy.class);
             TraversalStrategies.GlobalCache.registerStrategies(StandardJanusGraphTx.class, strategies);
         }
