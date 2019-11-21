@@ -383,13 +383,13 @@ public class ConceptManagerImpl implements ConceptManager {
         Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
-        //check EPHA
-        if (attributeManager.isAttributeEphemeral(index)) return null;
-
         //check AC
         ConceptId attributeCommitted = attributeManager.attributesCommitted().getIfPresent(index);
         if (attributeCommitted != null) return getConcept(attributeCommitted);
 
+        //check EPHA
+        if (attributeManager.isAttributeEphemeral(index)) return null;
+        
         //check graph
         return getConcept(Schema.VertexProperty.INDEX, index);
     }
