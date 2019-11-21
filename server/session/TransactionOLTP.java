@@ -21,7 +21,6 @@ package grakn.core.server.session;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-import grakn.common.util.Pair;
 import grakn.core.common.config.ConfigKey;
 import grakn.core.common.exception.ErrorMessage;
 import grakn.core.concept.answer.Answer;
@@ -86,8 +85,10 @@ import graql.lang.query.MatchClause;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -128,6 +129,7 @@ public class TransactionOLTP implements Transaction {
     private String closedReason = null;
     private boolean isTxOpen;
     private UncomittedStatisticsDelta uncomittedStatisticsDelta;
+    private Map<String, ConceptId> deduplicatedAttributes = new HashMap<>();
 
     // Thread-local boolean which is set to true in the constructor. Used to check if current Tx is created in current Thread.
     private final ThreadLocal<Boolean> createdInCurrentThread = ThreadLocal.withInitial(() -> Boolean.FALSE);
@@ -180,10 +182,11 @@ public class TransactionOLTP implements Transaction {
         boolean keyLockRequired = false;
         Set<String> modifiedKeyIndices = cache().getModifiedKeyIndices();
         if (!modifiedKeyIndices.isEmpty()){
-            Set<String> insertedIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
+            Set<String> insertedIndices = cache().getNewAttributes().keySet();
             keyLockRequired = modifiedKeyIndices.stream().anyMatch(keyIndex -> !insertedIndices.contains(keyIndex));
         }
-        return attributeLockRequired
+
+        boolean needsLock = attributeLockRequired
                 || shardLockRequired
                 // In this case we need to lock, so that other concurrent Transactions
                 // that are trying to create new attributes will read an updated version of attributesCache
@@ -191,6 +194,8 @@ public class TransactionOLTP implements Transaction {
                 // contains attributes that we are removing in this transaction.
                 || !cache().getRemovedAttributes().isEmpty()
                 || keyLockRequired;
+        LOG.warn(txId + " needs lock: " + needsLock);
+        return needsLock;
     }
 
     private void commitInternal() throws InvalidKBException {
@@ -200,9 +205,7 @@ public class TransactionOLTP implements Transaction {
             createNewTypeShardsWhenThresholdReached();
             if (!cache().getNewAttributes().isEmpty()) mergeAttributes();
             persistInternal();
-            if (cache().getNewAttributes().isEmpty()){
-                cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
-            }
+
         } finally {
             if (lockRequired) session.graphLock().writeLock().unlock();
         }
@@ -213,31 +216,43 @@ public class TransactionOLTP implements Transaction {
         session.keyspaceStatistics().commit(this, uncomittedStatisticsDelta);
         LOG.trace("Graph is valid. Committing graph...");
         janusTransaction.commit();
-        String txId = this.janusTransaction.toString();
-
-        Set<String> newAttributeIndices = cache().getNewAttributes().keySet().stream().map(Pair::second).collect(Collectors.toSet());
-        session.shardManager().ackCommit(cache().getNewShards().keySet(), txId);
-        session.attributeManager().ackCommit(newAttributeIndices, txId);
-
+        ackCommit();
         LOG.trace("Graph committed.");
+    }
+
+    private void ackCommit(){
+        String txId = this.janusTransaction.toString();
+        session.shardManager().ackCommit(cache().getNewShards().keySet(), txId);
+        //this should ack all inserts so that insert requests are cleared
+        session.attributeManager().ackCommit(cache().getNewAttributes().keySet(), txId);
+
+        //this should ack all inserts that weren't deduplicated so that we have correct attributes in attributesCommitted
+        cache().getNewAttributes().forEach((index, conceptId) -> {
+            ConceptId deduplicated = deduplicatedAttributes.get(index);
+            if (deduplicated == null) session.attributeManager().attributesCommitted().put(index, conceptId);
+        });
+        if (cache().getNewAttributes().isEmpty()){
+            //this should ack all deletions not including ones coming from deduplication
+            cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
+        }
     }
 
     // When there are new attributes in the current transaction that is about to be committed
     // we serialise the commit by locking and merge attributes that are duplicates.
     private void mergeAttributes() {
-        cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCache().invalidate(index));
-        cache().getNewAttributes().forEach(((labelIndexPair, conceptId) -> {
-            // If the same index is contained in attributesCache, it means
+        cache().getRemovedAttributes().forEach(index -> session.attributeManager().attributesCommitted().invalidate(index));
+        cache().getNewAttributes().forEach(((index, conceptId) -> {
+            // If the same index is contained in attributesCommitted, it means
             // another concurrent transaction inserted the same attribute, time to merge!
-            // NOTE: we still need to rely on attributesCache instead of checking in the graph
+            // NOTE: we still need to rely on attributesCommitted instead of checking in the graph
             // if the index exists, because apparently JanusGraph does not make indexes available
             // in a Read Committed fashion
-            ConceptId targetId = session.attributeManager().attributesCache().getIfPresent(labelIndexPair.second());
+            ConceptId targetId = session.attributeManager().attributesCommitted().getIfPresent(index);
             if (targetId != null) {
+                Label label = Schema.labelFromAttributeIndex(index);
                 merge(getTinkerTraversal(), conceptId, targetId);
-                statisticsDelta().decrementAttribute(labelIndexPair.first());
-            } else {
-                session.attributeManager().attributesCache().put(labelIndexPair.second(), conceptId);
+                deduplicatedAttributes.put(index, conceptId);
+                statisticsDelta().decrementAttribute(label);
             }
         }));
     }

@@ -142,7 +142,7 @@ public class ConceptObserver {
         Type type = attribute.type();
         //Track the attribute by index
         String index = Schema.generateAttributeIndex(type.label(), value.toString());
-        transactionCache.addNewAttribute(type.label(), index, attribute.id());
+        transactionCache.addNewAttribute(index, attribute.id());
         thingCreated(attribute, isInferred);
         attributeManager.ackAttributeInsert(index, txId);
     }

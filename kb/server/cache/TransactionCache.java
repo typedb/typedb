@@ -76,7 +76,7 @@ public class TransactionCache {
 
     //New attributes are tracked so that we can merge any duplicate attributes at commit time.
     // The label, index and id are directly cached to prevent unneeded reads
-    private Map<Pair<Label, String>, ConceptId> newAttributes = new HashMap<>();
+    private Map<String, ConceptId> newAttributes = new HashMap<>();
     // Track the removed attributes so that we can evict old attribute indexes from attributesCache in session
     // after commit
     private Set<String> removedAttributes = new HashSet<>();
@@ -147,7 +147,7 @@ public class TransactionCache {
             // this is probably slower than reading index from vertex but we don't have access to AttributeImpl here (cyclic dep)
             Label attrLabel = attr.type().label();
             String attrIndex = Schema.generateAttributeIndex(attrLabel, attr.value().toString());
-            newAttributes.remove(new Pair<>(attrLabel, attrIndex));
+            newAttributes.remove(attrIndex);
             attributeCache.remove(attrIndex);
             removedAttributes.add(attrIndex);
         }
@@ -291,15 +291,15 @@ public class TransactionCache {
         return labelCache.get(label);
     }
 
-    public void addNewAttribute(Label label, String index, ConceptId conceptId) {
-        newAttributes.put(new Pair<>(label, index), conceptId);
+    public void addNewAttribute(String index, ConceptId conceptId) {
+        newAttributes.put(index, conceptId);
     }
 
     public void addModifiedKeyIndex(String keyIndex){
         modifiedKeyIndices.add(keyIndex);
     }
 
-    public Map<Pair<Label, String>, ConceptId> getNewAttributes() {
+    public Map<String, ConceptId> getNewAttributes() {
         return newAttributes;
     }
 

@@ -306,7 +306,6 @@ public class AttributeUniquenessIT {
 
     @Test
     public void shouldAlsoMergeRolePlayerEdgesInTheMerging() {
-
         String ownedAttributeLabel = "owned-attribute";
         String ownedAttributeValue = "owned-attribute-value";
 
@@ -321,16 +320,10 @@ public class AttributeUniquenessIT {
         }
 
         // insert relations, each having an attribute as one of the role player
-        GraqlInsert query1 = Graql.insert(
+        GraqlInsert query = Graql.insert(
                 var("erp").isa("owned-entity"), var("arp").isa(ownedAttributeLabel).val(ownedAttributeValue),
                 var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp")));
-        GraqlInsert query2 = Graql.insert(
-                var("erp").isa("owned-entity"), var("arp").isa(ownedAttributeLabel).val(ownedAttributeValue),
-                var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp")));
-        GraqlInsert query3 = Graql.insert(
-                var("erp").isa("owned-entity"), var("arp").isa(ownedAttributeLabel).val(ownedAttributeValue),
-                var("owner").isa("owner").rel("entity-role-player", var("erp")).rel("attribute-role-player", var("arp")));
-        insertConcurrently(Collections.list(query1, query2, query3));
+        insertConcurrently(Collections.list(query, query, query));
 
         // verify
         try (Transaction tx = session.readTransaction()) {
@@ -366,7 +359,7 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
-        assertNotNull(session.attributeManager().attributesCache().getIfPresent(index));
+        assertNotNull(session.attributeManager().attributesCommitted().getIfPresent(index));
 
 
         try (Transaction tx = session.writeTransaction()) {
@@ -374,14 +367,14 @@ public class AttributeUniquenessIT {
             tx.commit();
         }
 
-        assertNull(session.attributeManager().attributesCache().getIfPresent(index));
+        assertNull(session.attributeManager().attributesCommitted().getIfPresent(index));
 
         try (Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.commit();
         }
 
-        assertNotNull(session.attributeManager().attributesCache().getIfPresent(index));
+        assertNotNull(session.attributeManager().attributesCommitted().getIfPresent(index));
 
     }
 
@@ -413,7 +406,7 @@ public class AttributeUniquenessIT {
             assertEquals(1, attribute.size());
             String newAttributeId = attribute.get(0).get("x").id().getValue();
             assertNotEquals(newAttributeId, oldAttributeId);
-            assertEquals(ConceptId.of(newAttributeId), session.attributeManager().attributesCache().getIfPresent(index));
+            assertEquals(ConceptId.of(newAttributeId), session.attributeManager().attributesCommitted().getIfPresent(index));
         }
     }
 
@@ -433,7 +426,7 @@ public class AttributeUniquenessIT {
             tx.execute(Graql.insert(var("x").isa(testAttributeLabel).val(testAttributeValue)));
             tx.execute(Graql.match(var("x").isa(testAttributeLabel).val(testAttributeValue)).delete());
             tx.commit();
-            assertNull(session.attributeManager().attributesCache().getIfPresent(index));
+            assertNull(session.attributeManager().attributesCommitted().getIfPresent(index));
         }
         try (Transaction tx = session.writeTransaction()) {
             List<ConceptMap> attribute = tx.execute(Graql.parse("match $x isa test-attribute; get;").asGet());

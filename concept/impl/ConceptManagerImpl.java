@@ -38,6 +38,7 @@ import grakn.core.core.Schema;
 import grakn.core.kb.concept.structure.Shard;
 import grakn.core.kb.concept.structure.VertexElement;
 import grakn.core.kb.concept.util.Serialiser;
+import grakn.core.kb.server.AttributeManager;
 import grakn.core.kb.server.cache.TransactionCache;
 import grakn.core.kb.server.exception.TemporaryWriteException;
 import graql.lang.Graql;
@@ -81,15 +82,17 @@ import static grakn.core.core.Schema.BaseType.RULE;
  */
 public class ConceptManagerImpl implements ConceptManager {
 
-    private ElementFactory elementFactory;
-    private TransactionCache transactionCache;
-    private ConceptObserver conceptObserver;
-    private ReadWriteLock graphLock;
+    private final ElementFactory elementFactory;
+    private final TransactionCache transactionCache;
+    private final ConceptObserver conceptObserver;
+    private final AttributeManager attributeManager;
+    private final ReadWriteLock graphLock;
 
-    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, ReadWriteLock graphLock) {
+    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, AttributeManager attributeManager, ReadWriteLock graphLock) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptObserver = conceptObserver;
+        this.attributeManager = attributeManager;
         this.graphLock = graphLock;
     }
 
@@ -383,6 +386,14 @@ public class ConceptManagerImpl implements ConceptManager {
         Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
+        //check EPHA
+        if (attributeManager.attributesEphemeral().containsKey(index)) return null;
+
+        //check AC
+        ConceptId attributeCommitted = attributeManager.attributesCommitted().getIfPresent(index);
+        if (attributeCommitted != null) return getConcept(attributeCommitted);
+
+        //check graph
         graphLock.readLock().lock();
         try {
             return getConcept(Schema.VertexProperty.INDEX, index);
