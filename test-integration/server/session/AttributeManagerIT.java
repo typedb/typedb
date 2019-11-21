@@ -161,6 +161,44 @@ public class AttributeManagerIT {
     }
 
     @Test
+    public void whenMultipleTxsInsertExistingAttributes_weDontLock() throws ExecutionException, InterruptedException {
+        try(Transaction tx = session.writeTransaction()){
+            AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);
+            tx.putEntityType("someEntity").has(someAttribute);
+            someAttribute.create(1337L);
+            someAttribute.create(1667L);
+            tx.commit();
+        }
+        int threads = 8;
+        ExecutorService executorService = Executors.newFixedThreadPool(threads);
+        CyclicBarrier barrier = new CyclicBarrier(threads);
+
+        List<CompletableFuture<Void>> asyncInsertions = new ArrayList<>();
+        for (int threadNo = 0; threadNo < threads; threadNo++) {
+            GraqlInsert query = threadNo % 2 == 0?
+                    Graql.parse("insert $x 1337 isa someAttribute;").asInsert() :
+                    Graql.parse("insert $x 1667 isa someAttribute;").asInsert();
+            CompletableFuture<Void> asyncInsert = CompletableFuture.supplyAsync(() -> {
+                TransactionOLTP tx = (TransactionOLTP) session.writeTransaction();
+                tx.execute(query);
+                try {
+                    barrier.await();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                assertFalse(tx.commitLockRequired());
+                tx.commit();
+                return null;
+            }, executorService);
+            asyncInsertions.add(asyncInsert);
+        }
+        CompletableFuture.allOf(asyncInsertions.toArray(new CompletableFuture[]{})).get();
+
+        assertFalse(session.attributeManager().lockCandidatesPresent());
+        assertFalse(session.attributeManager().ephemeralAttributesPresent());
+    }
+
+    @Test
     public void whenMultipleTxsInsertSameAttribute_weLock() throws ExecutionException, InterruptedException {
         try(Transaction tx = session.writeTransaction()){
             AttributeType<Long> someAttribute = tx.putAttributeType("someAttribute", AttributeType.DataType.LONG);

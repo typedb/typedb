@@ -389,7 +389,7 @@ public class ConceptManagerImpl implements ConceptManager {
 
         //check EPHA
         if (attributeManager.isAttributeEphemeral(index)) return null;
-        
+
         //check graph
         return getConcept(Schema.VertexProperty.INDEX, index);
     }
