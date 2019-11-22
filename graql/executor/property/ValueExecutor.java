@@ -20,22 +20,23 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.server.exception.GraqlSemanticException;
-import grakn.core.kb.graql.executor.WriteExecutor;
 import grakn.core.graql.executor.property.value.ValueAssignment;
 import grakn.core.graql.executor.property.value.ValueOperation;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.atom.predicate.ValuePredicate;
 import grakn.core.graql.reasoner.atom.predicate.VariableValuePredicate;
+import grakn.core.kb.graql.executor.WriteExecutor;
+import grakn.core.kb.graql.executor.property.PropertyExecutor;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import grakn.core.kb.graql.reasoner.atom.Atomic;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import graql.lang.property.ValueProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
+
 import java.util.Set;
 
 public class ValueExecutor  implements PropertyExecutor.Insertable {

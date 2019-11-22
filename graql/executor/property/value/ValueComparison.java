@@ -19,12 +19,17 @@
 
 package grakn.core.graql.executor.property.value;
 
-import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.concept.util.attribute.Serialiser;
-import graql.lang.Graql;
 import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.AttributeType;
+import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
 import graql.lang.statement.Statement;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
+import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -33,10 +38,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.apache.tinkerpop.gremlin.process.traversal.P;
-import org.apache.tinkerpop.gremlin.process.traversal.Traversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 
 public abstract class ValueComparison<T, U> extends ValueOperation<T, U> {
 

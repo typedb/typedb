@@ -47,6 +47,7 @@ import grakn.core.graql.reasoner.cache.VariableDefinition;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.query.ReasonerQueryEquivalence;
+import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
 import grakn.core.graql.reasoner.query.ReasonerQueryImpl;
 import grakn.core.graql.reasoner.unifier.MultiUnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
@@ -65,6 +66,7 @@ import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.concept.api.Type;
 import grakn.core.kb.concept.manager.ConceptManager;
 import grakn.core.kb.graql.reasoner.atom.Atomic;
+import grakn.core.kb.graql.reasoner.cache.QueryCache;
 import grakn.core.kb.graql.reasoner.cache.RuleCache;
 import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
 import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
@@ -107,6 +109,7 @@ import static graql.lang.Graql.var;
  */
 public class RelationAtom extends IsaAtomBase {
 
+    private QueryCache queryCache;
     private final ImmutableList<RelationProperty.RolePlayer> relationPlayers;
     private final ImmutableSet<Label> roleLabels;
     private ImmutableList<Type> possibleTypes = null;
@@ -121,8 +124,10 @@ public class RelationAtom extends IsaAtomBase {
     private Multimap<Role, Variable> roleVarMap = null;
 
     private RelationAtom(
+            ReasonerQueryFactory reasonerQueryFactory,
             ConceptManager conceptManager,
             RuleCache ruleCache,
+            QueryCache queryCache,
             Variable varName,
             Statement pattern,
             ReasonerQuery parentQuery,
@@ -131,7 +136,7 @@ public class RelationAtom extends IsaAtomBase {
             ImmutableList<RelationProperty.RolePlayer> relationPlayers,
             ImmutableSet<Label> roleLabels) {
         super(conceptManager, ruleCache, varName, pattern, parentQuery, typeId, predicateVariable);
-
+        this.queryCache = queryCache;
         this.relationPlayers = relationPlayers;
         this.roleLabels = roleLabels;
     }
@@ -247,8 +252,10 @@ public class RelationAtom extends IsaAtomBase {
                 var(ownerVariable).has(explicitLabel.getValue(), var(attributeVariable), var(relationVariable)) :
                 var(ownerVariable).has(explicitLabel.getValue(), var(attributeVariable));
         AttributeAtom attributeAtom = AttributeAtom.create(
+                reasonerQueryFactory,
                 conceptManager,
                 ruleCache,
+                queryCache,
                 attributeStatement,
                 attributeVariable,
                 relationVariable,
@@ -593,8 +600,6 @@ public class RelationAtom extends IsaAtomBase {
     }
 
     private Stream<Role> getExplicitRoles() {
-        ReasonerQueryImpl parent = (ReasonerQueryImpl) getParentQuery();
-
         return getRelationPlayers().stream()
                 .map(RelationProperty.RolePlayer::getRole)
                 .flatMap(Streams::optionalToStream)
@@ -1113,7 +1118,7 @@ public class RelationAtom extends IsaAtomBase {
 
     private Relation findRelation(ConceptMap sub) {
         ReasonerAtomicQuery query = ReasonerQueries.atomic(this).withSubstitution(sub);
-        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(tx().queryCache());
+        MultilevelSemanticCache queryCache = CacheCasting.queryCacheCast(this.queryCache);
         ConceptMap answer = queryCache.getAnswerStream(query).findFirst().orElse(null);
 
         if (answer == null) queryCache.ackDBCompleteness(query);

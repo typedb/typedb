@@ -20,16 +20,11 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.RelationType;
 import grakn.core.kb.concept.api.Role;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.RelatesAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import graql.lang.property.RelatesProperty;
 import graql.lang.property.VarProperty;
 import graql.lang.statement.Statement;
@@ -41,7 +36,6 @@ import java.util.Set;
 
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.relates;
 import static grakn.core.graql.gremlin.sets.EquivalentFragmentSets.sub;
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class RelatesExecutor  implements PropertyExecutor.Definable {
 
@@ -62,13 +56,6 @@ public class RelatesExecutor  implements PropertyExecutor.Definable {
         } else {
             return ImmutableSet.of(relates, sub(property, property.role().var(), superRole.var()));
         }
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.role().var(), property.role(), otherStatements, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return RelatesAtom.create(var, property.role().var(), predicateId, parent);
     }
 
     @Override

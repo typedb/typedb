@@ -20,29 +20,21 @@
 package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.SchemaConcept;
 import grakn.core.kb.graql.executor.ConceptBuilder;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.graql.reasoner.atom.binary.SubAtom;
-import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.server.exception.InvalidKBException;
 import graql.lang.property.SubProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
-import static grakn.core.graql.reasoner.utils.ReasonerUtils.getIdPredicate;
 
 public class SubExecutor  implements PropertyExecutor.Definable {
 
@@ -57,13 +49,6 @@ public class SubExecutor  implements PropertyExecutor.Definable {
     @Override
     public Set<EquivalentFragmentSet> matchFragments() {
         return ImmutableSet.of(EquivalentFragmentSets.sub(property, var, property.type().var(), property.isExplicit()));
-    }
-
-    @Override
-    public Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements) {
-        IdPredicate predicate = getIdPredicate(property.type().var(), property.type(), otherStatements, parent);
-        ConceptId predicateId = predicate != null ? predicate.getPredicate() : null;
-        return SubAtom.create(var, property.type().var(), predicateId, parent);
     }
 
     @Override

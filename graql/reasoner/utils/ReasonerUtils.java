@@ -24,6 +24,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
+import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.concept.api.RelationType;
@@ -154,21 +155,18 @@ public class ReasonerUtils {
      * @return set of mapped ValuePredicates
      */
     public static Set<ValuePredicate> getValuePredicates(Variable valueVariable, Statement statement, Set<Statement> fullContext,
-                                                         ReasonerQuery parent, PropertyExecutorFactory propertyExecutorFactory){
+                                                         ReasonerQuery parent, AtomicFactory atomicFactory){
         Set<Statement> context = statement.var().isReturned()?
                 fullContext.stream().filter(v -> v.var().equals(valueVariable)).collect(toSet()) :
                 Collections.singleton(statement);
 
         return context.stream()
-                .flatMap(s -> s.getProperties(ValueProperty.class)
-                        .map(property ->
-                                propertyExecutorFactory
-                                        .create(statement.var(), property)
-                                        .atomic(parent, statement, fullContext)
-                        )
-                        .filter(ValuePredicate.class::isInstance)
-                        .map(ValuePredicate.class::cast)
-                )
+                .flatMap(s ->
+                        s.getProperties(ValueProperty.class)
+                        .map(property -> atomicFactory.value(property, parent, statement, fullContext)
+                ))
+                .filter(ValuePredicate.class::isInstance)
+                .map(ValuePredicate.class::cast)
                 .collect(toSet());
     }
 

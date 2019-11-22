@@ -65,11 +65,14 @@ import java.util.stream.Stream;
  */
 public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
-    private final Atom atom;
+    private Atom atom;
 
-    ReasonerAtomicQuery(Conjunction<Statement> pattern, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
-        super(pattern, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
-        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
+    /**
+     * BUILDER constructor should only be used in the ReasonerQueryFactory because it utilises
+     * the setAtomSet method to work around an ordering constraint
+     */
+    ReasonerAtomicQuery(ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+        super(conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
     }
 
     /**
@@ -78,11 +81,6 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
      */
     ReasonerAtomicQuery(ReasonerQueryImpl query) {
         super(query);
-        this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
-    }
-
-    ReasonerAtomicQuery(Atom at, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
-        super(at, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
         this.atom = Iterables.getOnlyElement(selectAtoms()::iterator);
     }
 
@@ -213,7 +211,7 @@ public class ReasonerAtomicQuery extends ReasonerQueryImpl {
 
     @Override
     protected Stream<ReasonerQueryImpl> getQueryStream(ConceptMap sub){
-        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(atom, conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory));
+        return getAtom().atomOptions(sub).stream().map(atom -> new ReasonerAtomicQuery(Collections.singleton(atom), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory));
     }
 
     @Override

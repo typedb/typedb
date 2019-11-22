@@ -24,7 +24,6 @@ import graql.lang.statement.Variable;
 
 public interface PropertyExecutorFactory {
     PropertyExecutor create(Variable var, VarProperty property);
-
     PropertyExecutor.Definable definable(Variable var, VarProperty property);
     PropertyExecutor.Insertable insertable(Variable var, VarProperty property);
 }

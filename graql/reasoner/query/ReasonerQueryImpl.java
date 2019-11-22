@@ -93,29 +93,44 @@ import java.util.stream.Stream;
  * Base reasoner query providing resolution and atom handling facilities for conjunctive graql queries.
  *
  */
-public class ReasonerQueryImpl extends ResolvableQuery {
+class ReasonerQueryImpl extends ResolvableQuery {
 
     final ConceptManager conceptManager;
     final RuleCache ruleCache;
     final ReasonerQueryFactory reasonerQueryFactory;
 
-    private final ImmutableSet<Atomic> atomSet;
+    private ImmutableSet<Atomic> atomSet;
     private ConceptMap substitution = null;
     private ImmutableSetMultimap<Variable, Type> varTypeMap = null;
     private ResolutionPlan resolutionPlan = null;
     private Conjunction<Pattern> pattern = null;
     private Set<Variable> varNames = null;
 
-    ReasonerQueryImpl(Conjunction<Statement> pattern, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
+    /**
+     * BUILDER constructor should only be used in the ReasonerQueryFactory because it utilises
+     * the setAtomSet method to work around an ordering constraint
+     */
+    ReasonerQueryImpl(ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
         super(executorFactory, queryCache);
         this.conceptManager = conceptManager;
         this.ruleCache = ruleCache;
-        this.atomSet = ImmutableSet.<Atomic>builder()
-                .addAll(AtomicFactory.createAtoms(pattern, this).iterator())
-                .build();
+        this.atomSet = null;
         this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
+    /*
+    TODO this should not be needed in a better structure, is a risky split of constructor
+     */
+    void setAtomSet(ImmutableSet<Atomic> atoms) {
+        if (atomSet != null) {
+            throw new RuntimeException("Should not re-set the atomSet once set, treating as immutable");
+        }
+        this.atomSet = atoms;
+    }
+
+    /**
+     * create a reasoner query from provided set of atomics
+     **/
     ReasonerQueryImpl(Set<Atomic> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
         super(executorFactory, queryCache);
         this.conceptManager = conceptManager;
@@ -126,6 +141,10 @@ public class ReasonerQueryImpl extends ResolvableQuery {
         this.reasonerQueryFactory = reasonerQueryFactory;
     }
 
+    /**
+     * create a reasoner query from provided list of atoms
+     * NB: atom constraints (types and predicates, if any) will be included in the query
+     **/
     ReasonerQueryImpl(List<Atom> atoms, ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
         super(executorFactory, queryCache);
         this.conceptManager = conceptManager;
@@ -136,10 +155,6 @@ public class ReasonerQueryImpl extends ResolvableQuery {
                         .map(at -> at.copy(this)).iterator())
                 .build();
         this.reasonerQueryFactory = reasonerQueryFactory;
-    }
-
-    ReasonerQueryImpl(Atom atom,ConceptManager conceptManager, RuleCache ruleCache, QueryCache queryCache, ExecutorFactory executorFactory, ReasonerQueryFactory reasonerQueryFactory) {
-        this(Collections.singletonList(atom), conceptManager, ruleCache, queryCache, executorFactory, reasonerQueryFactory);
     }
 
     ReasonerQueryImpl(ReasonerQueryImpl q) {
@@ -369,7 +384,7 @@ public class ReasonerQueryImpl extends ResolvableQuery {
                 .map(p -> new Pair<>(p, conceptManager.<Concept>getConcept(p.getPredicate())))
                 .filter(p -> Objects.nonNull(p.second()))
                 .filter(p -> p.second().isEntity())
-                .map(p -> IsaAtom.create(p.first().getVarName(), new Variable(), p.second().asEntity().type(), false,this));
+                .map(p -> AtomicFactory.isa(p.first().getVarName(), new Variable(), p.second().asEntity().type(), false,this));
     }
 
     private Multimap<Variable, Type> getVarTypeMap(Stream<IsaAtomBase> isas){

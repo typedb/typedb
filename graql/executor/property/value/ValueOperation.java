@@ -20,16 +20,17 @@
 package grakn.core.graql.executor.property.value;
 
 import com.google.common.collect.Iterables;
-import grakn.core.kb.concept.api.AttributeType;
-import grakn.core.core.Schema;
 import grakn.core.concept.util.attribute.Serialiser;
+import grakn.core.core.Schema;
+import grakn.core.kb.concept.api.AttributeType;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @param <T> compared type

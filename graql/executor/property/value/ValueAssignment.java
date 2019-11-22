@@ -22,8 +22,9 @@ package grakn.core.graql.executor.property.value;
 import grakn.core.concept.util.attribute.Serialiser;
 import graql.lang.Graql;
 import graql.lang.property.ValueProperty;
-import java.time.LocalDateTime;
 import org.apache.tinkerpop.gremlin.process.traversal.P;
+
+import java.time.LocalDateTime;
 
 public abstract class ValueAssignment<T, U> extends ValueOperation<T, U> {
 

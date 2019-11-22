@@ -21,17 +21,14 @@ package grakn.core.graql.executor.property;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
 import grakn.core.kb.concept.api.AttributeType;
 import grakn.core.kb.graql.executor.WriteExecutor;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
-import grakn.core.graql.gremlin.sets.EquivalentFragmentSets;
-import grakn.core.graql.reasoner.atom.property.DataTypeAtom;
 import grakn.core.kb.graql.executor.property.PropertyExecutor;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import graql.lang.Graql;
 import graql.lang.property.DataTypeProperty;
 import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
 
 import java.util.Collections;

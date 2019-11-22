@@ -63,7 +63,7 @@ public class VariableValuePredicate extends VariablePredicate {
         return new VariableValuePredicate(varName, predicateVar, op, pattern, parent);
     }
 
-    public static Atomic fromValuePredicate(ValuePredicate predicate){
+    public static VariableValuePredicate fromValuePredicate(ValuePredicate predicate){
         return create(predicate.getVarName(), predicate.getPredicate(), predicate.getParentQuery());
     }
 

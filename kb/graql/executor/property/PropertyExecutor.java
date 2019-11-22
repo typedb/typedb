@@ -20,13 +20,10 @@
 package grakn.core.kb.graql.executor.property;
 
 import com.google.common.collect.ImmutableSet;
-import grakn.core.kb.graql.reasoner.atom.Atomic;
-import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
-import graql.lang.property.VarProperty;
-import graql.lang.statement.Statement;
-import graql.lang.statement.Variable;
-import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
 import grakn.core.kb.graql.executor.WriteExecutor;
+import grakn.core.kb.graql.gremlin.EquivalentFragmentSet;
+import graql.lang.property.VarProperty;
+import graql.lang.statement.Variable;
 
 import java.util.Set;
 
@@ -34,8 +31,6 @@ import java.util.Set;
 public interface PropertyExecutor {
 
     Set<EquivalentFragmentSet> matchFragments();
-
-    Atomic atomic(ReasonerQuery parent, Statement statement, Set<Statement> otherStatements);
 
     interface Referrable extends Definable, Insertable {
 

@@ -31,6 +31,7 @@ import grakn.core.graph.core.JanusGraphTransaction;
 import grakn.core.graph.graphdb.database.StandardJanusGraph;
 import grakn.core.graql.executor.ExecutorFactoryImpl;
 import grakn.core.graql.gremlin.TraversalPlanFactoryImpl;
+import grakn.core.graql.reasoner.atom.AtomicFactory;
 import grakn.core.graql.reasoner.cache.MultilevelSemanticCache;
 import grakn.core.graql.reasoner.cache.RuleCacheImpl;
 import grakn.core.graql.reasoner.query.ReasonerQueryFactory;
@@ -178,7 +179,8 @@ public class SessionImpl implements Session {
         RuleCache ruleCache = new RuleCacheImpl(conceptManager);
         MultilevelSemanticCache queryCache = new MultilevelSemanticCache(executorFactory, traversalPlanFactory);
 
-        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, executorFactory);
+        AtomicFactory atomicFactory = new AtomicFactory(conceptManager, ruleCache, queryCache);
+        ReasonerQueryFactory reasonerQueryFactory = new ReasonerQueryFactory(conceptManager, queryCache, ruleCache, executorFactory, atomicFactory);
         // TODO this circular dependency will need to be broken ASAP, and rely on interface rather than impl
         executorFactory.setReasonerQueryFactory(reasonerQueryFactory);
 

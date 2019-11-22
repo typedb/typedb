@@ -169,7 +169,7 @@ public class QueryExecutorImpl implements QueryExecutor {
         negationDNF.getPatterns().stream()
                 .flatMap(p -> p.statements().stream())
                 .map(p -> Graql.and(Collections.singleton(p)))
-                .forEach(pattern -> reasonerQueryFactory.createWithoutRoleInference(pattern).checkValid());
+                .forEach(pattern -> reasonerQueryFactory.withoutRoleInference(pattern).checkValid());
         if (!infer) {
             boolean containsNegation = negationDNF.getPatterns().stream()
                     .flatMap(p -> p.getPatterns().stream())
