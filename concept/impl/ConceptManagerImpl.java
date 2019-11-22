@@ -383,7 +383,9 @@ public class ConceptManagerImpl implements ConceptManager {
         Attribute concept = getCachedAttribute(index);
         if (concept != null) return concept;
 
-        //check AC
+        //We check committed attributes first. In certain situations (adding the same attribute in multiple txs),
+        //the ephemeral cache might be populated for a longer period of time.
+        //As a result checking ephemeral attributes first might result in locking all the time.
         ConceptId attributeCommitted = attributeManager.attributesCommitted().getIfPresent(index);
         if (attributeCommitted != null) return getConcept(attributeCommitted);
 
