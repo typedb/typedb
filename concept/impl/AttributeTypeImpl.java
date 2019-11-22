@@ -112,7 +112,7 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
         if (dataType().equals(DataType.STRING)) checkConformsToRegexes((String) value);
 
-        Attribute<D> instance = getAttributeWithLock(value);
+        Attribute<D> instance = getAttribute(value);
         if (instance == null) {
             // create a brand new vertex and concept
             instance = conceptManager.createAttribute( this, value, isInferred);
@@ -152,11 +152,10 @@ public class AttributeTypeImpl<D> extends TypeImpl<AttributeType<D>, Attribute<D
 
     /**
      * This is only used when checking if attribute exists before trying to create a new one.
-     * We use a readLock as janusGraph commit does not seem to be atomic. Further investigation needed
      */
-    private Attribute<D> getAttributeWithLock(D value) {
+    private Attribute<D> getAttribute(D value) {
         String index = Schema.generateAttributeIndex(label(), value.toString());
-        return conceptManager.getAttributeWithLock(index);
+        return conceptManager.getAttribute(index);
     }
 
     /**

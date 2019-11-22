@@ -156,7 +156,7 @@ public class SessionImpl implements Session {
         ConceptObserver conceptObserver = new ConceptObserver(cacheProvider, statisticsDelta, attributeManager(), janusGraphTransaction.toString());
 
         // Grakn elements
-        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, graphLock);
+        ConceptManagerImpl conceptManager = new ConceptManagerImpl(elementFactory, cacheProvider.getTransactionCache(), conceptObserver, attributeManager(), graphLock);
 
         TransactionOLTP tx = new TransactionOLTP(this, janusGraphTransaction, conceptManager, cacheProvider, statisticsDelta);
 

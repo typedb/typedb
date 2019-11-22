@@ -141,8 +141,9 @@ public class ConceptObserver {
     <D> void attributeCreated(Attribute<D> attribute, D value, boolean isInferred) {
         Type type = attribute.type();
         //Track the attribute by index
-        String index = Schema.generateAttributeIndex(type.label(), value.toString());
-        transactionCache.addNewAttribute(type.label(), index, attribute.id());
+        Label label = type.label();
+        String index = Schema.generateAttributeIndex(label, value.toString());
+        transactionCache.addNewAttribute(label, index, attribute.id());
         thingCreated(attribute, isInferred);
         attributeManager.ackAttributeInsert(index, txId);
     }
