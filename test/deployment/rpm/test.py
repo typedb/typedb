@@ -104,7 +104,7 @@ try:
     lprint('Copying grakn distribution from CircleCI job into "' + instance + '"')
 
     sp.check_call(['cat', 'VERSION'])
-    sp.check_call(['git', 'archive', '--format', 'zip', '--output', 'grakn.zip', 'HEAD'])
+    sp.check_call(['zip', '-r', 'grakn.zip', '--exclude=*.git*', '.'])
     gcloud_scp(instance, local='grakn.zip', remote='~')
     gcloud_ssh(instance, 'mkdir /tmp/grakn && unzip grakn.zip -d /tmp/grakn')
 
