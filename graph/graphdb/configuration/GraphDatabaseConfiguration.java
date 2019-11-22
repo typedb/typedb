@@ -111,13 +111,6 @@ public class GraphDatabaseConfiguration {
 
     public static final String UNKNOWN_FIELD_NAME = "unknown_key";
 
-
-    public static final ConfigOption<Boolean> FORCE_INDEX_USAGE = new ConfigOption<>(QUERY_NS, "force-index",
-            "Whether JanusGraph should throw an exception if a graph query cannot be answered using an index. Doing so" +
-                    "limits the functionality of JanusGraph's graph queries but ensures that slow graph queries are avoided " +
-                    "on large graphs. Recommended for production use of JanusGraph.",
-            ConfigOption.Type.MASKABLE, false);
-
     public static final ConfigOption<Boolean> PROPERTY_PREFETCHING = new ConfigOption<>(QUERY_NS, "fast-property",
             "Whether to pre-fetch all properties on first singular vertex property access. This can eliminate backend calls on subsequent" +
                     "property access for the same vertex at the expense of retrieving all properties at once. This can be " +
@@ -633,7 +626,6 @@ public class GraphDatabaseConfiguration {
     private final boolean isDistributed;
 
     private boolean flushIDs;
-    private boolean forceIndexUsage;
     private boolean batchLoading;
     private int txVertexCacheSize;
     private int txDirtyVertexSize;
@@ -652,7 +644,6 @@ public class GraphDatabaseConfiguration {
         this.configuration = configuration;
         this.isDistributed = isDistributed;
         this.flushIDs = configuration.get(IDS_FLUSH);
-        this.forceIndexUsage = configuration.get(FORCE_INDEX_USAGE);
         this.batchLoading = configuration.get(STORAGE_BATCH);
 
         //Disable auto-type making when batch-loading is enabled since that may overwrite types without warning
@@ -681,10 +672,6 @@ public class GraphDatabaseConfiguration {
 
     public boolean hasFlushIDs() {
         return flushIDs;
-    }
-
-    public boolean hasForceIndexUsage() {
-        return forceIndexUsage;
     }
 
     public int getTxVertexCacheSize() {

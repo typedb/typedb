@@ -275,9 +275,14 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
         this.indexCache = CacheBuilder.newBuilder().weigher((Weigher<JointIndexQuery.Subquery, List<Object>>) (q, r) -> 2 + r.size()).concurrencyLevel(concurrencyLevel).maximumWeight(config.getIndexCacheWeight()).build();
 
         this.deletedRelations = EMPTY_DELETED_RELATIONS;
+
+        //The following 2 variables need to be reworked completely, but in order to do that
+        // correctly, the whole hierarchy Transaction-QueryBuilder-QueryProcessor needs to be reworked
         elementProcessor = elementProcessorImpl;
         edgeProcessor = edgeProcessorImpl;
 
+        // Ideally we should try to remove the dependency IndexSerialiser to Tx (which is why we can only open BackendTransaction here),
+        // and find a proper structure so that this Tx and BackendTransaction don't have this awkward coupling.
         this.backendTransaction = graph.openBackendTransaction(this); // awkward!
     }
 
@@ -1054,6 +1059,7 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
 
     @Override
     public JanusGraphMultiVertexQuery multiQuery(JanusGraphVertex... vertices) {
+        // The interesting question here is: why does the QueryBuilder also implements Query interface?
         MultiVertexCentricQueryBuilder builder = new MultiVertexCentricQueryBuilder(this);
         for (JanusGraphVertex v : vertices) {
             builder.addVertex(v);
@@ -1256,9 +1262,6 @@ public class StandardJanusGraphTx implements JanusGraphTransaction, TypeInspecto
                 iterator = new SubQueryIterator(indexQuery.getQuery(0), indexSerializer, backendTransaction, indexCache, indexQuery.getLimit(), getConversionFunction(query.getResultType()),
                         retrievals.isEmpty() ? null : QueryUtil.processIntersectingRetrievals(retrievals, Query.NO_LIMIT));
             } else {
-                if (config.hasForceIndexUsage()) {
-                    throw new JanusGraphException("Could not find a suitable index to answer graph query and graph scans are disabled: " + query);
-                }
                 LOG.warn("Query requires iterating over all vertices [{}]. For better performance, use indexes", query.getCondition());
 
                 QueryProfiler sub = profiler.addNested("scan");

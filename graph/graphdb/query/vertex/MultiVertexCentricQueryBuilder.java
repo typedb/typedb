@@ -103,7 +103,7 @@ public class MultiVertexCentricQueryBuilder extends BasicVertexCentricQueryBuild
      */
     protected <Q> Map<JanusGraphVertex, Q> execute(RelationCategory returnType, ResultConstructor<Q> resultConstructor) {
         Preconditions.checkArgument(!vertices.isEmpty(), "Need to add at least one vertex to query");
-        final Map<JanusGraphVertex, Q> result = new HashMap<>(vertices.size());
+        Map<JanusGraphVertex, Q> result = new HashMap<>(vertices.size());
         BaseVertexCentricQuery bq = super.constructQuery(returnType);
         profiler.setAnnotation(QueryProfiler.MULTIQUERY_ANNOTATION, true);
         profiler.setAnnotation(QueryProfiler.NUMVERTICES_ANNOTATION, vertices.size());
