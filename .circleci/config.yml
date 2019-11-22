@@ -456,6 +456,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
@@ -469,6 +470,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
@@ -482,6 +484,7 @@ workflows:
               only: master
           requires:
             - build
+            - build-checkstyle
             - build-analysis
             - test-common
             - test-server
