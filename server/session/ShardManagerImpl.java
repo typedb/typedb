@@ -23,7 +23,6 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import grakn.core.kb.concept.api.Label;
 import grakn.core.kb.server.ShardManager;
-import java.util.Collection;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +31,12 @@ public class ShardManagerImpl implements ShardManager {
     private final static int TIMEOUT_MINUTES_ATTRIBUTES_CACHE = 2;
     private final static int ATTRIBUTES_CACHE_MAX_SIZE = 10000;
 
-    private final Cache<Label, Long> shardCache;
+    private final Cache<Label, Long> shardsEphemeral;
     private final ConcurrentHashMap<Label, Set<String>> shardRequests;
     private final Set<String> lockCandidates;
 
     public ShardManagerImpl(){
-        this.shardCache = CacheBuilder.newBuilder()
+        this.shardsEphemeral = CacheBuilder.newBuilder()
                 .expireAfterAccess(TIMEOUT_MINUTES_ATTRIBUTES_CACHE, TimeUnit.MINUTES)
                 .maximumSize(ATTRIBUTES_CACHE_MAX_SIZE)
                 .build();
@@ -45,10 +44,9 @@ public class ShardManagerImpl implements ShardManager {
         this.lockCandidates = ConcurrentHashMap.newKeySet();
     }
 
-    @Override
-    public Cache<Label, Long> shardCache() {
-        return shardCache;
-    }
+
+    public Long getEphemeralShardCount(Label type){ return shardsEphemeral.getIfPresent(type);}
+    public void updateEphemeralShardCount(Label type, Long count){ shardsEphemeral.put(type, count);}
 
     @Override
     public void ackShardRequest(Label type, String txId) {

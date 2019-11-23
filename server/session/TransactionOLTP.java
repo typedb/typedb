@@ -283,10 +283,10 @@ public class TransactionOLTP implements Transaction {
         String txId = this.janusTransaction.toString();
         cache().getNewShards()
                 .forEach((label, count) -> {
-                    Long softCheckPoint = session.shardManager().shardCache().getIfPresent(label);
+                    Long softCheckPoint = session.shardManager().getEphemeralShardCount(label);
                     long instanceCount = session.keyspaceStatistics().count(this, label) + uncomittedStatisticsDelta.delta(label);
                     if (softCheckPoint == null || instanceCount - softCheckPoint >= typeShardThreshold) {
-                        session.shardManager().shardCache().put(label, instanceCount);
+                        session.shardManager().updateEphemeralShardCount(label, instanceCount);
                         LOG.trace(txId + " creates a shard for type: " + label + ", instance count: " + instanceCount + " ,");
                         shard(getType(label).id());
                         setShardCheckpoint(label, instanceCount);
