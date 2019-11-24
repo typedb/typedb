@@ -84,16 +84,13 @@ public class ConceptManagerImpl implements ConceptManager {
     private final TransactionCache transactionCache;
     private final ConceptObserver conceptObserver;
     private final AttributeManager attributeManager;
-    private final ReadWriteLock graphLock;
 
-    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, AttributeManager attributeManager, ReadWriteLock graphLock) {
+    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, AttributeManager attributeManager) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptObserver = conceptObserver;
         this.attributeManager = attributeManager;
-        this.graphLock = graphLock;
     }
-
 
     /*
 
