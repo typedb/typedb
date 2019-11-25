@@ -19,11 +19,11 @@
 package grakn.core.graql.reasoner.reasoning;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.query.GraqlGet;
 import graql.lang.statement.Statement;
@@ -36,9 +36,9 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import static grakn.core.server.kb.Schema.ImplicitType.HAS;
-import static grakn.core.server.kb.Schema.ImplicitType.HAS_OWNER;
-import static grakn.core.server.kb.Schema.ImplicitType.HAS_VALUE;
+import static grakn.core.core.Schema.ImplicitType.HAS;
+import static grakn.core.core.Schema.ImplicitType.HAS_OWNER;
+import static grakn.core.core.Schema.ImplicitType.HAS_VALUE;
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
 import static graql.lang.Graql.var;
@@ -58,7 +58,7 @@ public class AttributeAttachmentIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl attributeAttachmentSession;
+    private static Session attributeAttachmentSession;
     @BeforeClass
     public static void loadContext(){
         attributeAttachmentSession = server.sessionWithNewKeyspace();
@@ -74,7 +74,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void whenUsingNonPersistedDataType_noDuplicatesAreCreated() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -91,7 +91,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void reusingAttribute_reattachingAttributeToEntity() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -108,7 +108,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void reusingAttributes_queryingForGenericRelation() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
 
             String queryString = "match $x isa genericEntity;($x, $y); get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -125,7 +125,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void reusingAttributes_usingExistingAttributeToDefineSubAttribute() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
                         String queryString = "match $x isa genericEntity, has subResource $y; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(tx.getEntityType("genericEntity").instances().count(), answers.size());
@@ -147,7 +147,7 @@ public class AttributeAttachmentIT {
 
     @Test
     public void whenReasoningWithAttributesInRelationForm_ResultsAreComplete() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String queryString = "match " +
                     "$rel($role:$x) isa @has-reattachable-resource-string; " +
                     "$x isa genericEntity; " +
@@ -184,7 +184,7 @@ public class AttributeAttachmentIT {
 
     @Test
     public void whenReasoningWithAttributesWithRelationVar_ResultsAreComplete() {
-        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try (Transaction tx = attributeAttachmentSession.writeTransaction()) {
             Statement has = var("x").has("reattachable-resource-string", var("y"), var("r"));
             List<ConceptMap> answers = tx.execute(Graql.match(has).get());
             assertEquals(5, answers.size());
@@ -204,11 +204,11 @@ public class AttributeAttachmentIT {
         String generalQuery = "match " +
                 "$rel ($x); " +
                 "get;";
-        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try (Transaction tx = attributeAttachmentSession.writeTransaction()) {
             List<ConceptMap> attributeAnswers = tx.execute(Graql.parse(attributeQuery).asGet());
             noOfAttributes = attributeAnswers.size();
         }
-        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try (Transaction tx = attributeAttachmentSession.writeTransaction()) {
             List<ConceptMap> attributeRelationAnswers = tx.execute(Graql.parse(attributeRelationQuery).asGet());
 
             assertEquals(
@@ -229,7 +229,7 @@ public class AttributeAttachmentIT {
             noOfGeneralAnswers = genericAnswers.size();
         }
 
-        try (TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try (Transaction tx = attributeAttachmentSession.writeTransaction()) {
             List<ConceptMap> genericAnswers = tx.execute(Graql.parse(generalQuery).asGet());
             assertEquals(noOfGeneralAnswers, genericAnswers.size());
         }
@@ -237,7 +237,7 @@ public class AttributeAttachmentIT {
 
     @Test
     public void whenExecutingAQueryWithImplicitTypes_InferenceHasAtLeastAsManyResults() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
 
             Statement owner = type(HAS_OWNER.getLabel("reattachable-resource-string").getValue());
             Statement value = type(HAS_VALUE.getLabel("reattachable-resource-string").getValue());
@@ -260,7 +260,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains resource assertions, the respective unique resources should be generated or reused.
     public void reusingAttributes_attachingExistingAttributeToARelation() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
 
             String queryString = "match $x isa genericEntity, has reattachable-resource-string $y; $z isa relation0; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
@@ -289,7 +289,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void reusingAttributes_derivingAttributeFromOtherAttributeWithConditionalValue() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
                         String queryString = "match $x has derived-resource-boolean $r; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(1, answers.size());
@@ -299,7 +299,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void derivingAttributeWithSpecificValue() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
             String queryString = "match $x has derived-resource-string 'value'; get;";
             String queryString2 = "match $x has derived-resource-string $r; get;";
             GraqlGet query = Graql.parse(queryString).asGet();
@@ -317,7 +317,7 @@ public class AttributeAttachmentIT {
     @Test
     //Expected result: When the head of a rule contains attribute assertions, the respective unique attributes should be generated or reused.
     public void reusingAttributes_attachingStrayAttributeToEntityDoesntThrowErrors() {
-        try(TransactionOLTP tx = attributeAttachmentSession.transaction().write()) {
+        try(Transaction tx = attributeAttachmentSession.writeTransaction()) {
                         String queryString = "match $x isa yetAnotherEntity, has derived-resource-string 'unattached'; get;";
             List<ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
             assertEquals(2, answers.size());

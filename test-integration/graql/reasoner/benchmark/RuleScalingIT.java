@@ -20,8 +20,8 @@ package grakn.core.graql.reasoner.benchmark;
 
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlDefine;
@@ -42,9 +42,9 @@ public class RuleScalingIT {
     public void ruleScaling() {
         final int N = 60;
         final int populatedChains = 3;
-        SessionImpl session = server.sessionWithNewKeyspace();
+        Session session = server.sessionWithNewKeyspace();
 
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.<GraqlDefine>parse(
                     "define " +
                             "baseEntity sub entity, plays someRole, plays anotherRole;" +
@@ -77,7 +77,7 @@ public class RuleScalingIT {
                         "(someRole: $x, anotherRole: $y) isa baseRelation;" +
                         "(someRole: $y, anotherRole: $link) isa anotherBaseRelation;";
 
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             for (int i = 0; i < N; i++) {
                 Pattern specificPattern = Graql.parsePattern(
                         "{" +
@@ -128,7 +128,7 @@ public class RuleScalingIT {
             tx.commit();
         }
 
-        try(TransactionOLTP tx = session.transaction().write()) {
+        try(Transaction tx = session.writeTransaction()) {
             for (int k = 0; k < populatedChains; k++) {
                 tx.execute(Graql.<GraqlInsert>parse(
                         "insert " +
@@ -146,7 +146,7 @@ public class RuleScalingIT {
             tx.commit();
         }
 
-        try( TransactionOLTP tx = session.transaction().write()) {
+        try( Transaction tx = session.writeTransaction()) {
             String query = "match " +
                     "$x isa someEntity;" +
                     "(someRole: $x, anotherRole: $y) isa baseRelation;" +
@@ -163,7 +163,7 @@ public class RuleScalingIT {
 
     }
 
-    private List<ConceptMap> executeQuery(String queryString, TransactionOLTP transaction){
+    private List<ConceptMap> executeQuery(String queryString, Transaction transaction){
         final long startTime = System.currentTimeMillis();
         List<ConceptMap> results = transaction.execute(Graql.parse(queryString).asGet());
         final long answerTime = System.currentTimeMillis() - startTime;

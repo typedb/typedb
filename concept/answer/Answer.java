@@ -14,37 +14,15 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concept.answer;
 
-import javax.annotation.CheckReturnValue;
-import javax.annotation.Nullable;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
 /**
- * An object that contains the answer of every Graql Query.
+ * An empty interface that in the future will contain a proper API that all answer types should share
+ * TODO redesign Answer interface
  */
 public abstract class Answer {
 
-    /**
-     * @return an explanation object indicating how this answer was obtained
-     */
-    @Nullable
-    @CheckReturnValue
-    public abstract Explanation explanation();
-
-    /**
-     * @return all explanations taking part in the derivation of this answer
-     */
-    @CheckReturnValue
-    public Set<Explanation> explanations() {
-        if (this.explanation() == null) return Collections.emptySet();
-        Set<Explanation> explanations = new HashSet<>();
-        explanations.add(this.explanation());
-        this.explanation().getAnswers().forEach(ans -> explanations.addAll(ans.explanations()));
-        return explanations;
-    }
 }

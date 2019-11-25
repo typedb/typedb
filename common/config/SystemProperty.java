@@ -25,12 +25,8 @@ import javax.annotation.Nullable;
  */
 public enum SystemProperty {
 
-    // TODO: clean and document how these behave and interact
-    // what's the difference between grakn.dir and main.basedir? how do they relate to grakn.conf? etc.
     CURRENT_DIRECTORY("grakn.dir"),
     CONFIGURATION_FILE("grakn.conf"),
-    TEST_PROFILE("grakn.test-profile"), // Only used in tests
-    PROJECT_RELATIVE_DIR("main.basedir"), // Only used in tests
     GRAKN_PID_FILE("grakn.pidfile"),
     SERVER_JAVAOPTS("server.javaopts"),
     STORAGE_JAVAOPTS("storage.javaopts");

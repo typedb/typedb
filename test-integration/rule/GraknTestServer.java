@@ -18,9 +18,11 @@
 
 package grakn.core.rule;
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.oss.driver.api.core.CqlSession;
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.keyspace.Keyspace;
 import grakn.core.server.GraknStorage;
 import grakn.core.server.Server;
 import grakn.core.server.ServerFactory;
@@ -35,7 +37,6 @@ import grakn.core.server.rpc.SessionService;
 import grakn.core.server.session.HadoopGraphFactory;
 import grakn.core.server.session.JanusGraphFactory;
 import grakn.core.server.session.SessionFactory;
-import grakn.core.server.session.SessionImpl;
 import grakn.core.server.util.LockManager;
 import io.grpc.ServerBuilder;
 import org.apache.commons.io.FileUtils;
@@ -47,6 +48,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -71,14 +73,13 @@ public class GraknTestServer extends ExternalResource {
     protected KeyspaceManager keyspaceManager;
     protected SessionFactory sessionFactory;
     protected Path dataDirTmp;
+    protected JanusGraphFactory janusGraphFactory;
 
     // Cassandra
     protected final Path originalCassandraConfigPath;
     protected File updatedCassandraConfigPath;
     protected int storagePort;
     protected int nativeTransportPort;
-    protected int thriftPort;
-
 
     public GraknTestServer() {
         this(DEFAULT_SERVER_CONFIG_PATH, DEFAULT_CASSANDRA_CONFIG_PATH);
@@ -133,21 +134,25 @@ public class GraknTestServer extends ExternalResource {
         return serverConfig.getProperty(ConfigKey.SERVER_HOST_NAME) + ":" + serverConfig.getProperty(ConfigKey.GRPC_PORT);
     }
 
-    public SessionImpl sessionWithNewKeyspace() {
-        KeyspaceImpl randomKeyspace = randomKeyspaceName();
+    public Session sessionWithNewKeyspace() {
+        Keyspace randomKeyspace = randomKeyspaceName();
         return session(randomKeyspace);
     }
 
-    public KeyspaceImpl randomKeyspaceName() {
-        return KeyspaceImpl.of("a" + UUID.randomUUID().toString().replaceAll("-", ""));
+    public Keyspace randomKeyspaceName() {
+        return new KeyspaceImpl("a" + UUID.randomUUID().toString().replaceAll("-", ""));
     }
 
-    public SessionImpl session(KeyspaceImpl keyspace) {
+    public Session session(Keyspace keyspace) {
         return sessionFactory.session(keyspace);
     }
 
     public SessionFactory sessionFactory() {
         return sessionFactory;
+    }
+
+    public JanusGraphFactory janusGraphFactory() {
+        return janusGraphFactory;
     }
 
     public Config serverConfig() {
@@ -159,7 +164,6 @@ public class GraknTestServer extends ExternalResource {
     protected void generateCassandraRandomPorts() throws IOException {
         storagePort = findUnusedLocalPort();
         nativeTransportPort = findUnusedLocalPort();
-        thriftPort = findUnusedLocalPort();
     }
 
     protected File buildCassandraConfigWithRandomPorts() throws IOException {
@@ -168,7 +172,6 @@ public class GraknTestServer extends ExternalResource {
 
         configString = configString + "\nstorage_port: " + storagePort;
         configString = configString + "\nnative_transport_port: " + nativeTransportPort;
-        configString = configString + "\nrpc_port: " + thriftPort;
         InputStream configStream = new ByteArrayInputStream(configString.getBytes(StandardCharsets.UTF_8));
 
         String directory = "target/embeddedCassandra";
@@ -195,11 +198,10 @@ public class GraknTestServer extends ExternalResource {
         //Override gRPC port with a random free port
         config.setConfigProperty(ConfigKey.GRPC_PORT, grpcPort);
         //Override Storage Port used by Janus to communicate with Cassandra Backend
-        config.setConfigProperty(ConfigKey.STORAGE_PORT, thriftPort);
+        config.setConfigProperty(ConfigKey.STORAGE_PORT, nativeTransportPort);
 
         //Override ports used by HadoopGraph
-        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, thriftPort);
-        config.setConfigProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT, nativeTransportPort);
+        config.setConfigProperty(ConfigKey.HADOOP_STORAGE_PORT, nativeTransportPort);
 
         return config;
     }
@@ -207,13 +209,18 @@ public class GraknTestServer extends ExternalResource {
     private Server createServer() {
         // distributed locks
         LockManager lockManager = new LockManager();
-        JanusGraphFactory janusGraphFactory = new JanusGraphFactory(serverConfig);
+        janusGraphFactory = new JanusGraphFactory(serverConfig);
         HadoopGraphFactory hadoopGraphFactory = new HadoopGraphFactory(serverConfig);
-        Cluster cluster = Cluster.builder()
-                .addContactPoint(serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME))
-                .withPort(serverConfig.getProperty(ConfigKey.STORAGE_CQL_NATIVE_PORT))
+
+        Integer storagePort = serverConfig.getProperty(ConfigKey.STORAGE_PORT);
+        String storageHostname = serverConfig.getProperty(ConfigKey.STORAGE_HOSTNAME);
+        // CQL cluster used by KeyspaceManager to fetch all existing keyspaces
+        CqlSession cqlSession = CqlSession.builder()
+                .addContactPoint(new InetSocketAddress(storageHostname, storagePort))
+                .withLocalDatacenter("datacenter1")
                 .build();
-        keyspaceManager = new KeyspaceManager(cluster);
+
+        keyspaceManager = new KeyspaceManager(cqlSession);
         sessionFactory = new SessionFactory(lockManager, janusGraphFactory, hadoopGraphFactory, serverConfig);
 
         OpenRequest requestOpener = new ServerOpenRequest(sessionFactory);
@@ -228,4 +235,5 @@ public class GraknTestServer extends ExternalResource {
 
         return ServerFactory.createServer(serverRPC);
     }
+
 }

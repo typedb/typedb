@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concept.answer;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 
 import java.util.Collections;
 import java.util.List;
@@ -26,25 +27,15 @@ import java.util.List;
 /**
  * A type of Answer object that contains a List of Concepts.
  */
-public class ConceptList extends Answer {
+public class ConceptList extends Answer{
 
     // TODO: change to store List<Concept> once we are able to construct Concept without a database look up
     private final List<ConceptId> list;
-    private final Explanation explanation;
 
     public ConceptList(List<ConceptId> list) {
-        this(list, new Explanation());
-    }
-
-    public ConceptList(List<ConceptId> list, Explanation explanation) {
         this.list = Collections.unmodifiableList(list);
-        this.explanation = explanation;
     }
 
-    @Override
-    public Explanation explanation() {
-        return explanation;
-    }
 
     public List<ConceptId> list() {
         return list;

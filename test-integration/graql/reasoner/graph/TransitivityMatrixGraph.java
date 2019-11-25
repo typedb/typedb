@@ -18,14 +18,14 @@
 
 package grakn.core.graql.reasoner.graph;
 
-import grakn.core.concept.ConceptId;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Role;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.concept.api.ConceptId;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFile;
 import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
@@ -33,23 +33,23 @@ import static grakn.core.util.GraqlTestUtil.putEntityWithResource;
 @SuppressWarnings("CheckReturnValue")
 public class TransitivityMatrixGraph{
 
-    private final SessionImpl session;
+    private final Session session;
     private final static String gqlPath = "test-integration/graql/reasoner/resources/";
     private final static String gqlFile = "quadraticTransitivity.gql";
     private final static Label key = Label.of("index");
 
-    public TransitivityMatrixGraph(SessionImpl session){
+    public TransitivityMatrixGraph(Session session){
         this.session = session;
     }
 
     public final void load(int n, int m) {
-        TransactionOLTP tx = session.transaction().write();
+        Transaction tx = session.writeTransaction();
         loadFromFile(gqlPath, gqlFile, tx);
         buildExtensionalDB(n, m, tx);
         tx.commit();
     }
 
-    protected void buildExtensionalDB(int n, int m, TransactionOLTP tx){
+    protected void buildExtensionalDB(int n, int m, Transaction tx){
         Role qfrom = tx.getRole("Q-from");
         Role qto = tx.getRole("Q-to");
 

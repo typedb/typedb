@@ -24,21 +24,21 @@ import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
+import grakn.core.kb.concept.api.Concept;
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.Role;
+import grakn.core.kb.concept.api.Role;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.binary.RelationAtom;
 import grakn.core.graql.reasoner.query.ReasonerAtomicQuery;
 import grakn.core.graql.reasoner.query.ReasonerQueries;
 import grakn.core.graql.reasoner.rule.InferenceRule;
-import grakn.core.graql.reasoner.unifier.MultiUnifier;
-import grakn.core.graql.reasoner.unifier.Unifier;
+import grakn.core.kb.graql.reasoner.unifier.MultiUnifier;
+import grakn.core.kb.graql.reasoner.unifier.Unifier;
 import grakn.core.graql.reasoner.unifier.UnifierImpl;
 import grakn.core.graql.reasoner.unifier.UnifierType;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
@@ -50,9 +50,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -73,9 +70,9 @@ public class AtomicUnificationIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl genericSchemaSession;
+    private static Session genericSchemaSession;
 
-    private TransactionOLTP tx;
+    private Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -90,7 +87,7 @@ public class AtomicUnificationIT {
 
     @Before
     public void setUp(){
-        tx = genericSchemaSession.transaction().write();
+        tx = genericSchemaSession.writeTransaction();
     }
 
     @After
@@ -441,7 +438,7 @@ public class AtomicUnificationIT {
         unification(baseQuery, childQuery, UnifierType.EXACT, true, true);
     }
 
-    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, TransactionOLTP tx){
+    private void roleInference(String patternString, ImmutableSetMultimap<Role, Variable> expectedRoleMAp, Transaction tx){
         RelationAtom atom = (RelationAtom) ReasonerQueries.atomic(conjunction(patternString, tx), tx).getAtom();
         Multimap<Role, Variable> roleMap = roleSetMap(atom.getRoleVarMap());
         assertEquals(expectedRoleMAp, roleMap);
@@ -459,7 +456,7 @@ public class AtomicUnificationIT {
         assertTrue(childAtom.getMultiUnifier(parentAtom, UnifierType.EXACT).isEmpty());
     }
 
-    private void nonExistentUnifier(String parentPatternString, String childPatternString, TransactionOLTP tx){
+    private void nonExistentUnifier(String parentPatternString, String childPatternString, Transaction tx){
         nonExistentUnifier(
                 ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
                 ReasonerQueries.atomic(conjunction(childPatternString, tx), tx)
@@ -508,7 +505,7 @@ public class AtomicUnificationIT {
     }
 
     private void unification(String parentPatternString, String childPatternString, 
-                             UnifierType unifierType, boolean checkInverse, boolean checkEquality, TransactionOLTP tx){
+                             UnifierType unifierType, boolean checkInverse, boolean checkEquality, Transaction tx){
         unification(
                 ReasonerQueries.atomic(conjunction(parentPatternString, tx), tx),
                 ReasonerQueries.atomic(conjunction(childPatternString, tx), tx),
@@ -523,7 +520,7 @@ public class AtomicUnificationIT {
         return roleMap;
     }
 
-    private Conjunction<Statement> conjunction(String patternString, TransactionOLTP tx){
+    private Conjunction<Statement> conjunction(String patternString, Transaction tx){
         Set<Statement> vars = Graql.parsePattern(patternString)
                 .getDisjunctiveNormalForm().getPatterns()
                 .stream().flatMap(p -> p.getPatterns().stream()).collect(toSet());

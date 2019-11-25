@@ -23,7 +23,7 @@ import grakn.core.common.exception.ErrorMessage;
 import grakn.core.daemon.executor.Executor;
 import grakn.core.daemon.executor.Server;
 import grakn.core.daemon.executor.Storage;
-import grakn.core.server.Version;
+import grakn.core.server.templates.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +45,7 @@ public class GraknDaemon {
     private static final String STORAGE = "storage";
     private static final String EMPTY_STRING = "";
     private static final String BENCHMARK_FLAG = "--benchmark";
-    private static final String VERSION_LABEL = "Version:";
+    private static final String VERSION_LABEL = "Version: ";
 
 
     private final Storage storageExecutor;

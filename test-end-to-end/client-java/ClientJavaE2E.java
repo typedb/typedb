@@ -1,8 +1,27 @@
+/*
+ * GRAKN.AI - THE KNOWLEDGE GRAPH
+ * Copyright (C) 2019 Grakn Labs Ltd
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 package grakn.core.client;
 
 import grakn.client.GraknClient;
-import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.answer.ConceptSet;
+import grakn.client.answer.ConceptMap;
+import grakn.client.answer.ConceptSet;
+import grakn.client.answer.Void;
 import graql.lang.Graql;
 import graql.lang.query.GraqlCompute;
 import graql.lang.query.GraqlDefine;
@@ -255,7 +274,7 @@ public class ClientJavaE2E {
             LOG.info("clientJavaE2E() - match delete...");
             GraqlDelete deleteQuery = Graql.match(var("m").isa("mating")).delete("m");
             LOG.info("clientJavaE2E() - '" + deleteQuery + "'");
-            List<ConceptSet> answer = tx.execute(deleteQuery);
+            tx.execute(deleteQuery);
             List<ConceptMap> matings = tx.execute(Graql.match(var("m").isa("mating")).get());
             assertThat(matings, hasSize(0));
             LOG.info("clientJavaE2E() - done.");

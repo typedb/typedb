@@ -20,14 +20,13 @@ package grakn.core.distribution;
 
 import grakn.core.common.config.Config;
 import grakn.core.common.config.ConfigKey;
-import org.junit.Assert;
-import org.zeroturnaround.exec.ProcessExecutor;
-
 import java.io.IOException;
 import java.net.Socket;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.TimeoutException;
+import org.junit.Assert;
+import org.zeroturnaround.exec.ProcessExecutor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -51,7 +50,7 @@ public class DistributionE2EConstants {
 
     public static void assertZipExists() {
         if(!ZIP_FULLPATH.toFile().exists()) {
-            Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toAbsolutePath().toString() + "' could not be found. Please ensure it has been build (ie., run `mvn package`)");
+            Assert.fail("Grakn distribution '" + ZIP_FULLPATH.toAbsolutePath().toString() + "' could not be found. Please ensure it has been build (ie., run `bazel build //:assemble-mac-zip`)");
         }
     }
 

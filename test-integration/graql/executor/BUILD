@@ -20,20 +20,19 @@ load("@graknlabs_build_tools//checkstyle:rules.bzl", "checkstyle_test")
 
 java_test(
     name = "isa-explicit-it",
-    test_class = "grakn.core.graql.executor.IsaExplicitIT",
-    srcs = ["IsaExplicitIT.java"],
-    deps = [
-        "//concept:concept",
-        "//server:server",
-        "//test-integration/rule:grakn-test-server",
-
-        "@graknlabs_graql//java:graql",
-
-        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
-        "//dependencies/maven/artifacts/com/google/guava:guava",
-    ],
     size = "large",
-    classpath_resources = ["//test-integration/resources:logback-test"]
+    srcs = ["IsaExplicitIT.java"],
+    classpath_resources = ["//test-integration/resources:logback-test"],
+    test_class = "grakn.core.graql.executor.IsaExplicitIT",
+    deps = [
+        "//dependencies/maven/artifacts/com/google/guava",
+        "//dependencies/maven/artifacts/org/hamcrest:hamcrest-library",
+        "//graql:graql",
+        "//kb",
+        "//kb/concept/api",
+        "//test-integration/rule:grakn-test-server",
+        "@graknlabs_graql//java:graql",
+    ],
 )
 
 checkstyle_test(

@@ -14,11 +14,12 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concept.answer;
 
-import grakn.core.concept.ConceptId;
+import grakn.core.kb.concept.api.ConceptId;
 
 import java.util.Set;
 
@@ -30,11 +31,7 @@ public class ConceptSetMeasure extends ConceptSet {
     private final Number measurement;
 
     public ConceptSetMeasure(Set<ConceptId> set, Number measurement) {
-        this(set, measurement, new Explanation());
-    }
-
-    public ConceptSetMeasure(Set<ConceptId> set, Number measurement, Explanation explanation) {
-        super(set, explanation);
+        super(set);
         this.measurement = measurement;
     }
 

@@ -14,6 +14,7 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.query;
@@ -21,28 +22,22 @@ package grakn.core.graql.reasoner.query;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import com.google.common.collect.UnmodifiableIterator;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.type.Type;
 import grakn.core.graql.gremlin.NodesUtil;
 import grakn.core.graql.reasoner.atom.Atom;
 import grakn.core.graql.reasoner.atom.predicate.IdPredicate;
 import grakn.core.graql.reasoner.plan.ResolutionPlan;
 import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.graql.reasoner.query.ReasonerQuery;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.statement.Statement;
 import graql.lang.statement.Variable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -54,6 +49,14 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.var;
@@ -78,8 +81,8 @@ public class ResolutionPlanIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl planSession;
-    private TransactionOLTP tx;
+    private static Session planSession;
+    private Transaction tx;
 
     @BeforeClass
     public static void loadContext(){
@@ -95,7 +98,7 @@ public class ResolutionPlanIT {
 
     @Before
     public void setUp(){
-        tx = planSession.transaction().write();
+        tx = planSession.writeTransaction();
     }
 
     @After
@@ -134,7 +137,7 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "$w id Vsampleid;" +
+                "$w id V123;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -152,7 +155,7 @@ public class ResolutionPlanIT {
         String queryString = "{" +
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa derivedRelation;" +
-                "$z id Vsampleid;" +
+                "$z id V123;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -170,8 +173,8 @@ public class ResolutionPlanIT {
                 "(someRole:$x, otherRole: $y) isa someRelation;" +
                 "(someRole:$y, otherRole: $z) isa anotherRelation;" +
                 "(someRole:$z, otherRole: $w) isa yetAnotherRelation;" +
-                "$z id Vsampleid;" +
-                "$w id Vsampleid2;" +
+                "$z id V123;" +
+                "$w id V1232;" +
                 "};";
         ReasonerQueryImpl query = ReasonerQueries.create(conjunction(queryString), tx);
         ImmutableList<Atom> correctPlan = ImmutableList.of(
@@ -326,8 +329,8 @@ public class ResolutionPlanIT {
     @Repeat( times = repeat )
     public void whenRelationLinkWithSubbedEndsAndRuleRelationAtEnd_exploitDBRelationsAndConnectivity(){
         String queryString = "{" +
-                "$start id Vsomesampleid;" +
-                "$end id Vanothersampleid;" +
+                "$start id V123;" +
+                "$end id V456;" +
                 "(someRole: $link, otherRole: $start) isa someRelation;" +
                 "(someRole: $anotherlink, otherRole: $link) isa anotherRelation;" +
                 "(someRole: $end, otherRole: $anotherlink) isa derivedRelation;" +
@@ -688,7 +691,7 @@ public class ResolutionPlanIT {
         return query.getAtoms(Atom.class).filter(at -> at.getVarNames().containsAll(vars)).findFirst().orElse(null);
     }
 
-    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, TransactionOLTP tx){
+    private Atom getAtomOfType(ReasonerQueryImpl query, String typeString, Transaction tx){
         Type type = tx.getType(Label.of(typeString));
         return query.getAtoms(Atom.class).filter(at -> at.getTypeId().equals(type.id())).findFirst().orElse(null);
     }

@@ -18,20 +18,20 @@
 
 package grakn.core.graql.query;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.ConceptId;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.ConceptId;
 import grakn.core.concept.answer.AnswerGroup;
 import grakn.core.concept.answer.ConceptMap;
 import grakn.core.concept.answer.Numeric;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.AttributeType;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.Role;
-import grakn.core.graql.exception.GraqlSemanticException;
+import grakn.core.kb.concept.api.Thing;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Role;
+import grakn.core.kb.server.exception.GraqlSemanticException;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.exception.GraqlException;
 import graql.lang.pattern.Pattern;
@@ -70,8 +70,8 @@ public class GraqlGetIT {
 
     @ClassRule
     public static GraknTestServer graknServer = new GraknTestServer();
-    private static SessionImpl session;
-    private TransactionOLTP tx;
+    private static Session session;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -81,7 +81,7 @@ public class GraqlGetIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After

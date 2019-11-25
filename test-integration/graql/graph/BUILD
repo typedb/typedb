@@ -23,9 +23,9 @@ java_library(
     srcs = ["MovieGraph.java"],
     visibility = ["//test-integration:__subpackages__"],
     deps = [
-        "//concept:concept",
-        "//server:server",
-
+        "//core",
+        "//kb",
+        "//kb/concept/api",
         "@graknlabs_graql//java:graql",
     ],
 )
@@ -33,6 +33,6 @@ java_library(
 checkstyle_test(
     name = "checkstyle",
     targets = [
-        ":movie-graph"
+        ":movie-graph",
     ],
- )
+)

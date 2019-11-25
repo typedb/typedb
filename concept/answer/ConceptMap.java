@@ -14,18 +14,22 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.concept.answer;
 
-import grakn.core.concept.Concept;
-import grakn.core.concept.exception.GraknConceptException;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.GraknConceptException;
+import graql.lang.pattern.Pattern;
 import graql.lang.statement.Variable;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -39,26 +43,59 @@ public class ConceptMap extends Answer {
 
     private final Map<Variable, Concept> map;
     private final Explanation explanation;
+    private final Pattern pattern;
 
     public ConceptMap() {
         this.map = Collections.emptyMap();
         this.explanation = new Explanation();
+        pattern = null;
     }
 
     public ConceptMap(ConceptMap map) {
-        this(map.map, map.explanation);
+        this(map.map, map.explanation, map.pattern);
     }
 
-    public ConceptMap(Map<Variable, Concept> map, Explanation exp) {
+    public ConceptMap(Map<Variable, Concept> map, Explanation exp, Pattern pattern) {
         this.map = Collections.unmodifiableMap(map);
         this.explanation = exp;
+        this.pattern = pattern;
     }
 
     public ConceptMap(Map<Variable, Concept> m) {
-        this(m, new Explanation());
+        this(m, new Explanation(), null);
     }
 
-    @Override
+    /**
+     * @param pattern
+     * @return Copy of this concept map with a new pattern set
+     */
+    public ConceptMap withPattern(Pattern pattern) {
+        ConceptMap copy = new ConceptMap(map(), explanation(), pattern);
+        return copy;
+    }
+
+    /**
+     * @return query pattern associated this concept map
+     * In other words, return the pattern for which this concept map is a valid substitution
+     * Null if reasoner was not utilised
+     */
+    @CheckReturnValue
+    @Nullable
+    public Pattern getPattern() { return pattern;}
+
+    /**
+     * @return all explanations taking part in the derivation of this answer
+     */
+    @Nullable
+    @CheckReturnValue
+    public Set<Explanation> explanations() {
+        if (this.explanation() == null) return Collections.emptySet();
+        Set<Explanation> explanations = new HashSet<>();
+        explanations.add(this.explanation());
+        this.explanation().getAnswers().stream().forEach(conceptMap -> explanations.addAll(conceptMap.explanations()));
+        return explanations;
+    }
+
     public Explanation explanation() {
         return explanation;
     }
@@ -126,8 +163,8 @@ public class ConceptMap extends Answer {
      * @param exp explanation for this answer
      * @return explained answer
      */
-    public ConceptMap explain(Explanation exp) {
-        return new ConceptMap(this.map, exp.childOf(this));
+    public ConceptMap explain(Explanation exp, Pattern pattern) {
+        return new ConceptMap(this.map, exp.childOf(this), pattern);
     }
 
     /**
@@ -140,7 +177,8 @@ public class ConceptMap extends Answer {
                 this.map.entrySet().stream()
                         .filter(e -> vars.contains(e.getKey()))
                         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)),
-                this.explanation()
+                this.explanation,
+                this.pattern
         );
     }
 }

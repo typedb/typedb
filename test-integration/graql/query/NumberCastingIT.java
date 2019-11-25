@@ -19,11 +19,12 @@
 package grakn.core.graql.query;
 
 import grakn.core.concept.answer.ConceptMap;
-import grakn.core.concept.type.AttributeType;
+import grakn.core.kb.concept.api.AttributeType;
+import grakn.core.kb.concept.api.GraknConceptException;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.exception.TransactionException;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.exception.TransactionException;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
 import graql.lang.query.GraqlInsert;
@@ -46,12 +47,12 @@ public class NumberCastingIT {
 
     @ClassRule
     public static final GraknTestServer graknServer = new GraknTestServer();
-    public static SessionImpl session;
+    public static Session session;
 
     @Before
     public void newSession() {
         session = graknServer.sessionWithNewKeyspace();
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             tx.putAttributeType("attr-long", AttributeType.DataType.LONG);
             tx.putAttributeType("attr-double", AttributeType.DataType.DOUBLE);
             tx.putAttributeType("attr-date", AttributeType.DataType.DATE);
@@ -64,25 +65,25 @@ public class NumberCastingIT {
         session.close();
     }
 
-    private void verifyWrite(SessionImpl session, Pattern pattern) {
+    private void verifyWrite(Session session, Pattern pattern) {
         GraqlInsert insert = Graql.insert(pattern.statements());
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             tx.execute(insert);
             tx.commit();
         }
     }
 
-    private void verifyRead(SessionImpl session, Pattern pattern) {
+    private void verifyRead(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             List<ConceptMap> answers = tx.execute(match);
             assertFalse(answers.isEmpty());
         }
     }
 
-    private void cleanup(SessionImpl session, Pattern pattern) {
+    private void cleanup(Session session, Pattern pattern) {
         MatchClause match = Graql.match(pattern.statements());
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             tx.execute(match.delete());
             tx.commit();
         }
@@ -152,28 +153,28 @@ public class NumberCastingIT {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Test
-    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingDateAsNonDate_exceptionIsThrown() throws GraknConceptException {
         double value = 10000000.0;
         Pattern pattern = Graql.var("x").val(value).isa("attr-date");
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.time.LocalDateTime]");
         verifyWrite(session, pattern);
     }
 
     @Test
-    public void whenAddressingDoubleAsBoolean_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingDoubleAsBoolean_exceptionIsThrown() throws GraknConceptException {
         boolean value = true;
         Pattern pattern = Graql.var("x").val(value).isa("attr-double");
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Boolean] must be of datatype [java.lang.Double]");
         verifyWrite(session, pattern);
     }
 
     @Test
-    public void whenAddressingLongAsDouble_exceptionIsThrown() throws TransactionException {
+    public void whenAddressingLongAsDouble_exceptionIsThrown() throws GraknConceptException {
         double value = 10.1;
         Pattern pattern = Graql.var("x").val(value).isa("attr-long");
-        expectedException.expect(TransactionException.class);
+        expectedException.expect(GraknConceptException.class);
         expectedException.expectMessage("The value [" + value + "] of type [Double] must be of datatype [java.lang.Long]");
         verifyWrite(session, pattern);
     }
@@ -183,14 +184,14 @@ public class NumberCastingIT {
         int one_int = 1, two_int = 2;
         double one_double = 1.0, two_double = 2.0;
 
-        try (TransactionOLTP tx = session.transaction().write()) {
+        try (Transaction tx = session.writeTransaction()) {
             tx.execute(Graql.insert(Graql.val(one_int).isa("attr-long")));
             tx.execute(Graql.insert(Graql.val(two_double).isa("attr-double")));
             tx.commit();
         }
 
         List<ConceptMap> answers;
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             answers = tx.execute(Graql.match(Graql.var("x").eq(one_int).isa("attr-long")).get());
             assertEquals(1, answers.size());
 
@@ -198,7 +199,7 @@ public class NumberCastingIT {
             assertEquals(1, answers.size());
         }
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             answers = tx.execute(Graql.match(Graql.var("x").eq(two_int).isa("attr-double")).get());
             assertEquals(1, answers.size());
 
@@ -206,7 +207,7 @@ public class NumberCastingIT {
             assertEquals(1, answers.size());
         }
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             answers = tx.execute(Graql.match(Graql.var("x").val(one_double).isa("attr-long")).get());
             assertEquals(1, answers.size());
 
@@ -214,7 +215,7 @@ public class NumberCastingIT {
             assertEquals(1, answers.size());
         }
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             answers = tx.execute(Graql.match(Graql.var("x").gte(one_int).isa("attribute")).get());
             assertEquals(2, answers.size());
 
@@ -222,7 +223,7 @@ public class NumberCastingIT {
             assertEquals(2, answers.size());
         }
 
-        try (TransactionOLTP tx = session.transaction().read()) {
+        try (Transaction tx = session.readTransaction()) {
             answers = tx.execute(Graql.match(Graql.var("x").lt(two_int).isa("attribute")).get());
             assertEquals(1, answers.size());
 

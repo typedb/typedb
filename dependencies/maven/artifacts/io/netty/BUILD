@@ -31,6 +31,8 @@ java_library(
         "//external:jar/io/netty/netty-codec"
     ],
     runtime_deps = [
+        ":netty-buffer",
+        ":netty-common",
         ":netty-transport"
     ],
     visibility = [
@@ -106,6 +108,7 @@ java_library(
     runtime_deps = [
         ":netty-buffer",
         ":netty-codec",
+        ":netty-common",
         ":netty-transport"
     ],
     visibility = [
@@ -154,6 +157,7 @@ java_library(
     ],
     runtime_deps = [
         ":netty-buffer",
+        ":netty-common",
         ":netty-resolver"
     ],
     visibility = [

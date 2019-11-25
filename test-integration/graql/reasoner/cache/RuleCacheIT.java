@@ -14,32 +14,33 @@
  *
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
  */
 
 package grakn.core.graql.reasoner.cache;
 
 import com.google.common.collect.Sets;
-import grakn.core.concept.Concept;
-import grakn.core.concept.Label;
-import grakn.core.concept.thing.Thing;
-import grakn.core.concept.type.EntityType;
-import grakn.core.concept.type.RelationType;
-import grakn.core.concept.type.Rule;
-import grakn.core.concept.type.Type;
-import grakn.core.graql.reasoner.rule.InferenceRule;
+import grakn.core.graql.reasoner.CacheCasting;
+import grakn.core.graql.reasoner.cache.RuleCacheImpl;
+import grakn.core.kb.concept.api.Concept;
+import grakn.core.kb.concept.api.EntityType;
+import grakn.core.kb.concept.api.Label;
+import grakn.core.kb.concept.api.RelationType;
+import grakn.core.kb.concept.api.Rule;
+import grakn.core.kb.concept.api.Type;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
-import grakn.core.server.session.cache.RuleCache;
 import graql.lang.Graql;
 import graql.lang.pattern.Pattern;
-import java.util.Collections;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static grakn.core.util.GraqlTestUtil.loadFromFileAndCommit;
 import static graql.lang.Graql.type;
@@ -56,7 +57,7 @@ public class RuleCacheIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    private static SessionImpl ruleApplicabilitySession;
+    private static Session ruleApplicabilitySession;
 
     @BeforeClass
     public static void loadContext() {
@@ -71,8 +72,8 @@ public class RuleCacheIT {
 
     @Test
     public void whenGettingRulesWithType_correctRulesAreObtained(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
-            RuleCache ruleCache = tx.ruleCache();
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
+            RuleCacheImpl ruleCache = CacheCasting.ruleCacheCast(tx.ruleCache());
 
             Type reifyingRelation = tx.getType(Label.of("reifying-relation"));
             Type ternary = tx.getType(Label.of("ternary"));
@@ -93,7 +94,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARule_cacheContainsUpdatedEntry(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
             Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
             Rule dummyRule = tx.putRule("dummyRule", when, then);
@@ -106,7 +107,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenAddingARuleAfterClosingTx_cacheContainsConsistentEntry(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
 
             Pattern when = Graql.parsePattern("{ $x isa entity;$y isa entity; };");
             Pattern then = Graql.parsePattern("{ (someRole: $x, subRole: $y) isa binary; };");
@@ -121,11 +122,11 @@ public class RuleCacheIT {
 
     @Test
     public void whenDeletingARule_cacheContainsUpdatedEntry(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             tx.execute(Graql.undefine(type("rule-0").sub("rule")));
             tx.commit();
         }
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             Type binary = tx.getType(Label.of("binary"));
             Set<Rule> rules = tx.ruleCache().getRulesWithType(binary).collect(Collectors.toSet());
             assertTrue(rules.isEmpty());
@@ -134,7 +135,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenFetchingRules_fruitlessRulesAreNotReturned(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             Type description = tx.getType(Label.of("description"));
             Set<Rule> rulesWithInstances = description.thenRules()
                     .filter(r -> tx.stream(Graql.match(r.when())).findFirst().isPresent())
@@ -151,7 +152,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasDirectInstances_itIsNotAbsent(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             EntityType anotherNoRoleEntity = tx.getEntityType("anotherNoRoleEntity");
             assertFalse(tx.ruleCache().absentTypes(Collections.singleton(anotherNoRoleEntity)));
         }
@@ -159,7 +160,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasIndirectInstances_itIsNotAbsent(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             //no direct instances present, however anotherTwoRoleEntity subs anotherSingleRoleEntity and has instances
             EntityType anotherSingleRoleEntity = tx.getEntityType("anotherSingleRoleEntity");
             assertFalse(tx.ruleCache().absentTypes(Collections.singleton(anotherSingleRoleEntity)));
@@ -168,7 +169,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             Type description = tx.getType(Label.of("description"));
             assertFalse(description.instances().findFirst().isPresent());
             assertFalse(tx.ruleCache().absentTypes(Collections.singleton(description)));
@@ -177,7 +178,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenTypeSubTypeHasFruitfulRulesButNotDirectInstances_itIsNotAbsent(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             RelationType binary = tx.getRelationType("binary");
             binary.instances().forEach(Concept::delete);
 
@@ -189,7 +190,7 @@ public class RuleCacheIT {
 
     @Test
     public void whenInsertHappensDuringTransaction_extraInstanceIsAcknowledged(){
-        try(TransactionOLTP tx = ruleApplicabilitySession.transaction().write()) {
+        try(Transaction tx = ruleApplicabilitySession.writeTransaction()) {
             EntityType singleRoleEntity = tx.getEntityType("singleRoleEntity");
             singleRoleEntity.instances().forEach(Concept::delete);
             assertTrue(tx.ruleCache().absentTypes(Collections.singleton(singleRoleEntity)));

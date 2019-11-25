@@ -21,8 +21,8 @@ package grakn.core.graql.query;
 import com.google.common.collect.Sets;
 import grakn.core.graql.graph.MovieGraph;
 import grakn.core.rule.GraknTestServer;
-import grakn.core.server.session.SessionImpl;
-import grakn.core.server.session.TransactionOLTP;
+import grakn.core.kb.server.Session;
+import grakn.core.kb.server.Transaction;
 import graql.lang.Graql;
 import graql.lang.pattern.Conjunction;
 import graql.lang.pattern.Pattern;
@@ -48,8 +48,8 @@ public class QueryAdminIT {
 
     @ClassRule
     public static GraknTestServer graknServer = new GraknTestServer();
-    private static SessionImpl session;
-    private TransactionOLTP tx;
+    private static Session session;
+    private Transaction tx;
 
     @BeforeClass
     public static void newSession() {
@@ -59,7 +59,7 @@ public class QueryAdminIT {
 
     @Before
     public void newTransaction() {
-        tx = session.transaction().write();
+        tx = session.writeTransaction();
     }
 
     @After
