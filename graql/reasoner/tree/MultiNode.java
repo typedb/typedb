@@ -42,7 +42,7 @@ public class MultiNode extends Node{
 
     @Override
     public String toString(){
-        return nodes.iterator().next().getStates().iterator().next().getClass().getSimpleName() + "::" +
+        return getStates().iterator().next().getClass().getSimpleName() + "::" +
                 "@" + Integer.toHexString(nodes.hashCode()) +
                 " Cost:" + nodes.stream().mapToLong(Node::totalTime).sum() +
                 " answers: " + nodes.stream().mapToLong(n -> n.answers().size()).sum();

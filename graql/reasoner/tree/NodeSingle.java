@@ -46,7 +46,8 @@ public class NodeSingle extends Node{
 
     @Override
     public String toString(){
-        return state.getClass().getSimpleName() + "@" + Integer.toHexString(state.hashCode()) +
+        return state.getClass().getSimpleName() +
+                "@" + Integer.toHexString(state.hashCode()) +
                 " Cost: " + totalTime() +
                 " answers: " + answers().size();
     }
