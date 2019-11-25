@@ -110,7 +110,7 @@ public class CqlBinaryRecordReader extends RecordReader<StaticBuffer, Iterable<E
 
     private static class KV {
         private final StaticArrayBuffer key;
-        private ArrayList<Entry> entries = new ArrayList<>();
+        private final ArrayList<Entry> entries = new ArrayList<>();
 
         public KV(StaticArrayBuffer key) {
             this.key = key;
