@@ -19,10 +19,6 @@
 
 package grakn.core.graql.reasoner.tree;
 
-import grakn.core.graql.reasoner.plan.ResolutionPlan;
-import grakn.core.graql.reasoner.plan.ResolutionQueryPlan;
-import grakn.core.graql.reasoner.state.AnswerPropagatorState;
-import grakn.core.graql.reasoner.state.ConjunctiveState;
 import grakn.core.graql.reasoner.state.ResolutionState;
 import java.util.stream.Stream;
 
