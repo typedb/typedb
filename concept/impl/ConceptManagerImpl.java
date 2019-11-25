@@ -84,16 +84,13 @@ public class ConceptManagerImpl implements ConceptManager {
     private final TransactionCache transactionCache;
     private final ConceptObserver conceptObserver;
     private final AttributeManager attributeManager;
-    private final ReadWriteLock graphLock;
 
-    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, AttributeManager attributeManager, ReadWriteLock graphLock) {
+    public ConceptManagerImpl(ElementFactory elementFactory, TransactionCache transactionCache, ConceptObserver conceptObserver, AttributeManager attributeManager) {
         this.elementFactory = elementFactory;
         this.transactionCache = transactionCache;
         this.conceptObserver = conceptObserver;
         this.attributeManager = attributeManager;
-        this.graphLock = graphLock;
     }
-
 
     /*
 
@@ -501,20 +498,18 @@ public class ConceptManagerImpl implements ConceptManager {
     /**
      * This is used when assigning a type to a concept - we check the current shard.
      * The read vertex property contains the current shard vertex id.
-     * We use a readLock as janusGraph commit does not seem to be atomic - the property might get updated before the corresponding vertex is actually created.
-     * As a result, without a lock we could get a ghost vertex READ - a vertex that's partially created.
-     * Further investigation needed
      */
     Shard getShardWithLock(String typeId) {
-        graphLock.readLock().lock();
-        Vertex shardVertex;
-        try {
-            Object currentShardId = elementFactory.getVertexWithId(typeId).property(Schema.VertexProperty.CURRENT_SHARD.name()).value();
-            shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
-        } finally {
-            graphLock.readLock().unlock();
-        }
-        return elementFactory.getShard(shardVertex);
+        Object currentShardId = elementFactory.getVertexWithId(typeId).property(Schema.VertexProperty.CURRENT_SHARD.name()).value();
+
+        //Try to fetch the current shard vertex, because janus commits are not atomic, property might exists but the corresponding
+        //vertex might not yet be created. Consequently the fetch might return null.
+        Vertex shardVertex = elementFactory.getVertexWithId(currentShardId.toString());
+        if (shardVertex != null) return elementFactory.getShard(shardVertex);
+
+        //If current shard fetch fails. We pick any of the existing shards.
+        Vertex typeVertex = elementFactory.getVertexWithId(typeId);
+        return elementFactory.buildVertexElement(typeVertex).shards().findFirst().orElse(null);
     }
 
     public Rule getRule(String label) {
