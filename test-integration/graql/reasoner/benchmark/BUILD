@@ -45,7 +45,6 @@ java_test(
     resources = [
         "//test-integration/graql/reasoner/resources:generic-schema",
         "//test-integration/graql/reasoner/resources:unification-with-types",
-        "//test-integration/graql/reasoner/stubs:reasoning-stubs",
     ],
     test_class = "grakn.core.graql.reasoner.benchmark.BenchmarkSmallIT",
     deps = [
@@ -60,7 +59,6 @@ java_test(
         "//test-integration/graql/reasoner/graph:transitivity-matrix-graph",
         "//test-integration/rule:grakn-test-server",
         "//test-integration/util:graql-test-util",
-        "@graknlabs_client_java//:client-java",
         "@graknlabs_graql//java:graql",
     ],
 )

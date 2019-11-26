@@ -84,6 +84,12 @@ public interface QueryCache<
      */
     boolean contains(Q query);
 
+    /**
+     * @param query to be checked for answers
+     * @return true if cache answers the input query
+     */
+    boolean answersQuery(Q query);
+
 
     Set<Q> queries();
 

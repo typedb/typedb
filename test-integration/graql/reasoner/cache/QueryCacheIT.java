@@ -89,7 +89,6 @@ public class QueryCacheIT {
     public void whenRecordingAndMatchExists_entryIsUpdated(){
         try(Transaction tx = genericSchemaSession.readTransaction()) {
             MultilevelSemanticCache cache = new MultilevelSemanticCache();
-
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa binary;"), tx);
 
             //mock answer
@@ -109,7 +108,9 @@ public class QueryCacheIT {
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(query);
             assertFalse(cacheEntry.cachedElement().contains(specificAnswer));
             cache.record(query, specificAnswer);
-            TestCase.assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
+
+            assertTrue(cacheEntry.cachedElement().contains(specificAnswer));
+            assertTrue(cache.answersQuery(query.withSubstitution(specificAnswer)));
         }
     }
 
@@ -148,7 +149,10 @@ public class QueryCacheIT {
             assertNull(cache.getEntry(childQuery));
             cache.record(childQuery, specificAnswer);
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> cacheEntry = cache.getEntry(childQuery);
-            TestCase.assertEquals(tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()), cacheEntry.cachedElement().getAll());
+            assertEquals(
+                    tx.stream(Graql.<GraqlGet>parse("match (subRole1: $x, subRole2: $y) isa binary; get;")).collect(toSet()),
+                    cacheEntry.cachedElement().getAll()
+            );
         }
     }
 
@@ -237,7 +241,7 @@ public class QueryCacheIT {
                     tx);
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
-            assertTrue(!anotherChildAnswers.isEmpty());
+            assertFalse(anotherChildAnswers.isEmpty());
             assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
             //should be false cause there is no parent and we do not ack it explicitly
             assertFalse(cache.isDBComplete(anotherChildQuery));
@@ -296,7 +300,7 @@ public class QueryCacheIT {
                     tx);
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
-            assertTrue(!anotherChildAnswers.isEmpty());
+            assertFalse(anotherChildAnswers.isEmpty());
             assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
             assertNull(cache.getEntry(anotherChildQuery));
             assertFalse(cache.isDBComplete(anotherChildQuery));
@@ -354,7 +358,7 @@ public class QueryCacheIT {
                     tx);
 
             Set<ConceptMap> anotherChildAnswers = cache.getAnswers(anotherChildQuery);
-            assertTrue(!anotherChildAnswers.isEmpty());
+            assertFalse(anotherChildAnswers.isEmpty());
             assertEquals(tx.stream(anotherChildQuery.getQuery(), false).collect(toSet()), anotherChildAnswers);
             assertNotNull(cache.getEntry(anotherChildQuery));
             assertTrue(cache.isDBComplete(anotherChildQuery));
@@ -376,7 +380,6 @@ public class QueryCacheIT {
             //retrieve
             Set<ConceptMap> cacheAnswers = cache.getAnswers(query);
             assertEquals(tx.stream(query.getQuery()).collect(toSet()), cacheAnswers);
-
             assertEquals(cacheAnswers, cache.getEntry(query).cachedElement().getAll());
         }
     }
@@ -404,7 +407,10 @@ public class QueryCacheIT {
 
             //retrieve
             Set<ConceptMap> cacheAnswers = cache.getAnswers(query);
-            assertTrue(cacheAnswers.containsAll(tx.stream(query.getQuery()).collect(toSet())));
+            tx.stream(query.getQuery()).forEach(ans -> {
+                assertTrue(cacheAnswers.contains(ans));
+                assertTrue(cache.answersQuery(query.withSubstitution(ans)));
+            });
             assertTrue(cacheAnswers.contains(inferredAnswer));
             assertEquals(cacheAnswers, cache.getEntry(query).cachedElement().getAll());
         }
@@ -540,7 +546,8 @@ public class QueryCacheIT {
             CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> match = cache.getEntry(query);
 
             assertNotNull(match);
-            TestCase.assertEquals(answers, match.cachedElement().getAll());
+            assertEquals(answers, match.cachedElement().getAll());
+            answers.forEach(ans -> assertTrue(cache.answersQuery(query.withSubstitution(ans))));
         }
     }
 
@@ -550,7 +557,7 @@ public class QueryCacheIT {
             MultilevelSemanticCache cache = CacheCasting.queryCacheCast(tx.queryCache());
             ReasonerAtomicQuery query = ReasonerQueries.atomic(conjunction("(role: $x, role: $y) isa baseRelation;"), tx);
 
-            Set<ConceptMap> answers = query.resolve().collect(toSet());
+            query.resolve().collect(toSet());
             cache.queries().forEach(q -> assertEquals(cache.isDBComplete(q), cache.isComplete(q)));
         }
     }

@@ -56,38 +56,6 @@ public class BenchmarkSmallIT {
     @ClassRule
     public static final GraknTestServer server = new GraknTestServer();
 
-    @Test
-    public void test() {
-        Session localSession = server.sessionWithNewKeyspace();
-        GraknClient graknClient = new GraknClient(server.grpcUri());
-        GraknClient.Session remoteSession = graknClient.session(localSession.keyspace().name());
-
-        String gqlPath = "test-integration/graql/reasoner/stubs/";
-        String file = "finance.gql";
-
-        try(GraknClient.Transaction tx = remoteSession.transaction().write()) {
-            try {
-                System.out.println("Loading... " + gqlPath + file);
-                InputStream inputStream = GraqlTestUtil.class.getClassLoader().getResourceAsStream(gqlPath + file);
-                String s = new BufferedReader(new InputStreamReader(inputStream)).lines().collect(Collectors.joining("\n"));
-                Graql.parseList(s).forEach(tx::execute);
-                tx.commit();
-            } catch (Exception e) {
-                System.err.println(e);
-                throw new RuntimeException(e);
-            }
-        }
-
-        String queryString = "match $bnk isa bank; $rsk isa risk-score, has risk-level \"high\"; $r (risk-value: $rsk, risk-subject: $bnk); get;";
-
-        try(GraknClient.Transaction tx = remoteSession.transaction().write()){
-            List<grakn.client.answer.ConceptMap> answers = tx.execute(Graql.parse(queryString).asGet());
-            List<Explanation> collect = answers.stream().map(grakn.client.answer.ConceptMap::explanation).collect(Collectors.toList());
-            System.out.println();
-        }
-
-    }
-
     /**
      * Executes a scalability test defined in terms of the number of rules in the system. Creates a simple rule chain:
      *

@@ -68,22 +68,6 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    boolean answersQuery(ReasonerAtomicQuery query) {
-        CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
-        if (entry == null) return false;
-        ReasonerAtomicQuery cacheQuery = entry.query();
-        IndexedAnswerSet answerSet = entry.cachedElement();
-        Set<Variable> cacheIndex = cacheQuery.getAnswerIndex().vars();
-        //MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, semanticUnifier());
-        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, unifierType());
-
-        return queryToCacheUnifier.apply(query.getAnswerIndex())
-                .anyMatch(sub ->
-                        answerSet.get(sub.project(cacheIndex)).stream()
-                                .anyMatch(ans -> ans.containsAll(sub)));
-    }
-
-    @Override
     boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
                                     boolean propagateInferred) {
@@ -133,6 +117,21 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
                 .map(ans -> ans.withPattern(query.getPattern())),
                 multiUnifier
         );
+    }
+
+    @Override
+    public boolean answersQuery(ReasonerAtomicQuery query) {
+        CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
+        if (entry == null) return false;
+        ReasonerAtomicQuery cacheQuery = entry.query();
+        IndexedAnswerSet answerSet = entry.cachedElement();
+        Set<Variable> cacheIndex = cacheQuery.getAnswerIndex().vars();
+        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, unifierType());
+
+        return queryToCacheUnifier.apply(query.getAnswerIndex())
+                .anyMatch(sub ->
+                        answerSet.get(sub.project(cacheIndex)).stream()
+                                .anyMatch(ans -> ans.containsAll(sub)));
     }
 }
 
