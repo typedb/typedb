@@ -68,14 +68,14 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected boolean answersQuery(ReasonerAtomicQuery query) {
-        //TODO debug this
+    boolean answersQuery(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry = getEntry(query);
         if (entry == null) return false;
         ReasonerAtomicQuery cacheQuery = entry.query();
         IndexedAnswerSet answerSet = entry.cachedElement();
         Set<Variable> cacheIndex = cacheQuery.getAnswerIndex().vars();
-        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, semanticUnifier());
+        //MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, semanticUnifier());
+        MultiUnifier queryToCacheUnifier = query.getMultiUnifier(cacheQuery, unifierType());
 
         return queryToCacheUnifier.apply(query.getAnswerIndex())
                 .anyMatch(sub ->
@@ -84,7 +84,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
+    boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> parentEntry,
                                     CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> childEntry,
                                     boolean propagateInferred) {
         ReasonerAtomicQuery parent = parentEntry.query();
@@ -118,12 +118,7 @@ public class MultilevelSemanticCache extends SemanticCache<Equivalence.Wrapper<R
     }
 
     @Override
-    protected Stream<ConceptMap> entryToAnswerStream(CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
-        return entry.cachedElement().get(entry.query().getAnswerIndex()).stream();
-    }
-
-    @Override
-    protected Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
+    Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, IndexedAnswerSet> entry) {
         ConceptMap answerIndex = query.getAnswerIndex();
         ReasonerAtomicQuery equivalentQuery = entry.query();
         AnswerSet answers = entry.cachedElement();

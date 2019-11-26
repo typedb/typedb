@@ -78,7 +78,7 @@ public abstract class SemanticCache<
     final private HashMultimap<SchemaConcept, QE> families = HashMultimap.create();
     final private HashMultimap<QE, QE> parents = HashMultimap.create();
 
-    UnifierType semanticUnifier(){ return UnifierType.RULE;}
+    private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
 
     @Override
     public boolean isComplete(ReasonerAtomicQuery query){
@@ -101,17 +101,15 @@ public abstract class SemanticCache<
      * @param inferred true if inferred answers should be propagated
      * @return true if new answers were found during propagation
      */
-    protected abstract boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
+    abstract boolean propagateAnswers(CacheEntry<ReasonerAtomicQuery, SE> parentEntry, CacheEntry<ReasonerAtomicQuery, SE> childEntry, boolean inferred);
 
-    protected abstract Stream<ConceptMap> entryToAnswerStream(CacheEntry<ReasonerAtomicQuery, SE> entry);
-
-    protected abstract Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, SE> entry);
+    abstract Pair<Stream<ConceptMap>, MultiUnifier> entryToAnswerStreamWithUnifier(ReasonerAtomicQuery query, CacheEntry<ReasonerAtomicQuery, SE> entry);
 
     /**
      * @param query to be checked for answers
      * @return true if cache answers the input query
      */
-    protected abstract boolean answersQuery(ReasonerAtomicQuery query);
+    abstract boolean answersQuery(ReasonerAtomicQuery query);
 
     abstract CacheEntry<ReasonerAtomicQuery, SE> createEntry(ReasonerAtomicQuery query, Set<ConceptMap> answers);
 
@@ -274,8 +272,6 @@ public abstract class SemanticCache<
         );
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(SemanticCache.class);
-
     @Override
     public Pair<Stream<ConceptMap>, MultiUnifier> getAnswerStreamWithUnifier(ReasonerAtomicQuery query) {
         CacheEntry<ReasonerAtomicQuery, SE> match = getEntry(query);
@@ -285,7 +281,7 @@ public abstract class SemanticCache<
             boolean answersToGroundQuery = false;
             boolean queryDBComplete = isDBComplete(query);
             if (queryGround) {
-                boolean newAnswersPropagated = propagateAnswersToQuery(query, match, true);
+                propagateAnswersToQuery(query, match, true);
                 answersToGroundQuery = answersQuery(query);
             }
 
